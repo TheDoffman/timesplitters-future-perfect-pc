@@ -32,6 +32,7 @@ import vulkan_sdk
 from release_channels import identity as release_identity
 from build_textures import ensure_pack, optional_identity, zip_entries, write_zip, write_source_files
 from bundle_online_macos import bundle as bundle_online
+from bundle_mod_runtime import copy as copy_mod_runtime
 
 ROOT = _layout_root
 GAME = 'Bin/futureperfect_recomp'
@@ -220,8 +221,10 @@ def main():
 
     copy(executable, GAME)
     libraries = bundle_libraries(executable, stage, sdk)
+    mod_runtime = copy_mod_runtime(ROOT, ROOT/'build/macos', stage)
     online = bundle_online(ROOT, stage, copy)
     minimum = minimum_macos([stage/GAME, *sorted((stage/'Bin').glob('*.dylib')),
+        *[stage/'Bin/ModRuntime'/mod_runtime['identity']/name for name in mod_runtime['files'] if name!='Lua.txt'],
         stage/'Support/Python/bin/python-real', *sorted((stage/'Support/Python/lib/native').iterdir()),
         *sorted((stage/'Support/Python').rglob('*.so'))])
     shutil.copytree(args.launcher/APP, stage/APP)
@@ -306,7 +309,7 @@ Source and third-party notices: Source and Licenses.
         packaging_commit=run('git','rev-parse','HEAD'),
         packaging_changes=run('git','status','--porcelain'),
         renderer='vulkan', vulkan_driver='moltenvk', minimum_macos=minimum,
-        signing='ad-hoc; not notarized', runtime_libraries=libraries, native_build=native, online=online,
+        signing='ad-hoc; not notarized', runtime_libraries=libraries, native_build=native, online=online, mod_runtime=mod_runtime,
         launcher_version=json.loads((stage/'Support/Launcher/manifest.json').read_text())['version'],
         files={p.relative_to(stage).as_posix(): digest(p) for p in sorted(stage.rglob('*')) if p.is_file()})
     manifest['textures'] = textures

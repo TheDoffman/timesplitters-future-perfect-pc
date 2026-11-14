@@ -1,6 +1,9 @@
 #ifndef TSFP_PC_DISPLAY_MENU_H
 #define TSFP_PC_DISPLAY_MENU_H
 #include <stdint.h>
+#ifdef TSFP_MOD_GAME
+#include "pc_mod_game.h"
+#endif
 void pc_visibility_begin(void (*original)(void));
 void pc_visibility_end(void (*original)(void));
 int pc_visibility_result(uint32_t index,uint32_t result_va,uint32_t stamp_va);

@@ -1,3 +1,8 @@
+[Script handoff](../development/mod-source-handoff.md): ModScriptLaunch.cs is a
+shared bounded encoder, compiled on Windows/Mac/Linux. Its golden wire/hash/save-
+identity vector also drives the native reader tests. Package authorization must
+precede encoding; startup/profile activation has not adopted it yet.
+
 Installed display-reader capability: BUILD.json display_settings_version gates
 Crosshair Size (>=4) and Weapon FOV degrees (>=5). Missing/invalid metadata
 retains V1-V3 compatibility; unpackaged development builds support5. Older
@@ -876,3 +881,44 @@ sliders share a named PageTheme.Details Expander. Only Player1 starts expanded;
 expansion is excluded from Draft() and keeps pending values. The tab is Controls.
 Shared UI checks cover defaults, presentation-only toggling, readouts and per-player
 persistence. Save/conflict handling and game-side deadzone behavior are unchanged.
+Community workshop: [source, client, native library and host contracts](mod-workshop.md).
+Shared ModWorkshopPage adds ModsNav/ModsHost browsing/search, verified download
+and native installation. Installed view enables texture-only overlays, disables,
+switches retained versions and uninstalls with dependency/conflict and personal-
+file preservation guards. ModLibraryPage.cs owns the shared package/profile model.
+GameSettings.StartInfo gains a two-argument bypass for Play without mods while
+retaining the existing one-argument contract. Its normal path verifies the active
+overlay before passing TSFP_MOD_TEXTURE_DIR. Maps/audio/scripts cannot be enabled.
+Internet origins require HTTPS; redirects/external URLs fail closed; downloads
+recheck fresh scans.19 workshop groups run with --workshop and shared UI suites.
+ZIP central records are bounded before ZipArchive allocation. Shared ModJson
+caps depth/nodes/collections and matches numbers without repeated suffix copies.
+Map JSON is4MiB and Lua source1MiB/file. The current Windows full run passes66 UI
+groups; current Mac67/Linux68 UI groups and package checks also pass. Native
+checkpoints and Windows live texture-menu evidence are in STATUS.
+The [private creator API](../development/mod-creator-service.md) has no native
+creator UI yet; public hosting and gameplay scripting remain incomplete.
+ModTrustPage.cs now verifies Python-produced signatures and persists the signed
+catalog/root chain before listings. ModWorkshopClient is installation-bound;
+HTTPS-only reads and before/after-transfer availability checks precede caching.
+Schema2 workshop receipts bind origin; fresh trust/revocation checks precede
+install, enable and normal game mounting. Original-game recovery is unchanged.
+Shared workshop_trust.cs/public vectors run on all three native hosts; production
+pins and public internet acceptance remain required. See [catalog trust](../development/mod-catalog-trust.md)
+for state/rotation bounds and recovery contracts.
+The Windows session child-readiness fixture retries sharing violations within
+its existing10s bound; file existence alone does not prove a readable handoff.
+See [Mac setup](../development/mac-mod-hosting.md).
+Public game packages now preserve verified mod helper bundles; see the
+[bundle checks](build-test-details.md). The portable Mac language-capability
+fixture supplies its unrelated helper collaborator explicitly. Script activation
+and native release-package acceptance remain pending.
+The Windows synthetic package-layout fixture likewise supplies that producer;
+it asserts helper/Lua-notice inclusion and manifest metadata. Native provenance,
+tamper refusal and relocated execution remain in the real helper tests.
+Mac launcher signing clears generated-bundle metadata again after nested signing,
+immediately before sealing the app. Finder reattached root FinderInfo during the
+first clear/sign interval on the actual Mac; clear/reseal/deep strict verification
+passed. No source, personal data or packaged worker images are altered by that step.
+Publication tests check nested signing before the bundle, a final metadata clear
+between them and mandatory deep strict verification, rather than fixed call indices.

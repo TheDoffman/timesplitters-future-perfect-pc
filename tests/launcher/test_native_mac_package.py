@@ -197,6 +197,7 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
             put(stage/'Bin'/name)
         return []
     monkeypatch.setattr(package, 'bundle_libraries', libraries)
+    monkeypatch.setattr(package, 'copy_mod_runtime', lambda *args: dict(identity='0'*64,files={}))
     def online(root, stage, copy):
         for name in ('bin/python3', 'bin/python-real'):
             put(stage/'Support/Python'/name)

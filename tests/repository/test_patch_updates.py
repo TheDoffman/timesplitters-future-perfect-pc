@@ -370,6 +370,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
+        if patch.name == '2710-mod-game-hooks.patch':
+            continue  # Requires the Story frame/network wrapper installed by the full migration.
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
@@ -409,6 +411,10 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     cmake = (checkout / 'titles/futureperfect/CMakeLists.txt').read_text()
     assert 'TSFP_NATIVE_DIR' in cmake and 'pc_network.c' in cmake
     manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    assert 'pc_mod_game_frame(pc_mod_stock_frame)' in manual
+    assert 'pc_mod_game_score(sub_000641C0_gen)' in manual
+    assert 'pc_mod_game_ranking(sub_00064810_gen)' in manual
+    assert 'pc_mod_game_limits(sub_000674C0_gen)' in manual
     assert 'pc_story_failure_trace(sub_00067450_gen,0x00067450u)' in manual
     assert 'pc_story_network_frame(sub_000681C0_gen)' in manual
     assert 'pc_story_lobby_details(sub_001986A0_gen)' in manual

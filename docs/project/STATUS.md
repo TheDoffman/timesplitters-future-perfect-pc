@@ -1,3 +1,130 @@
+Fresh-epoch follow-up (base1989b18d): both new network-fresh/authority-fresh
+cases reproduce admission after unsupported flags were restored. The runtime
+now consumes that identity; Windows12 runtime plus4 visibility checks pass.
+The imported queue fixture's conditional copy and unconditional increment are
+separate statements, preserving behavior with GCC indentation warnings enabled.
+Source63821e5e follow-up:16 runtime/visibility checks pass EACH Windows/Mac/Linux;
+Mac/Linux host ASan/UBSan12 runtime checks pass EACH. All three native game
+builds/platform checks pass. CI43643876179 is running with no observed failure.
+Integrated1989b18d game regeneration,
+builds and platform checks pass on all three hosts. Mac focused merge71 pass/4
+skips; Linux68 pass/6 skips plus the queue warning now fixed. CI43640843210 is
+green:23 success,2 intentional skips. Production game binding remains unfinished.
+
+Mac hosting preparation: official Tailscale1.104.7 checksum, strict/deep Developer
+ID signature and Apple notarization verified; installed in /Applications and
+opened in the background. Its CLI still reports Failed to save preferences.
+An older1.94.1 extension is activated/enabled; working sign-in is not verified.
+Account question pending; no Funnel/public service was enabled.
+
+Runtime resource/preflight integration with mainb00de49e (feature/mod-platform):
+resource118be4e3 verified Windows60 pass/6 skips, Mac/Linux59 pass/7 skips EACH;
+Mac/Linux ASan/UBSan resource/save suite also59 pass/7 skips EACH. All three
+native game builds/platform checks pass. Preflight6cd13c52 verified Windows10
+checks; Mac/Linux22 preflight/manager checks pass EACH, including ASan/UBSan22
+EACH. All three native game builds/platform checks at6cd13c52 pass.
+
+Main's sun/visibility/allocator changes were merged INTO this feature branch to
+resolve PR conflicts; main itself is untouched. Both mod and visibility header
+interfaces are preserved. Compiler default now512KiB, retaining our configurable
+positive byte limit, UTF8-plus-LF accounting and unsplit functions in one iterator.
+Focused merge tests72 pass/2 skips; one visibility-registration fixture initially
+saw the old ignored runtime. After supported patch preparation updated10 runtime
+files, all4 visibility fixtures pass. Merged native builds/CI still pending.
+Automatic production startup/title binding, read-only bootstrap probe adapter,
+fault/HUD/message UX and shutdown drain remain required. No public activation.
+
+Background native match preflight (feature/mod-platform, base118be4e3):
+ScriptRuntime runs retained save/cache probes on one background thread and bounds
+one pending request/result. Simulation polls with try-lock and cannot bind stale
+or failed approvals; close waits asynchronously for probe and contained match.
+Windows10 blocked-probe/epoch/lifecycle checks pass with real contained workers.
+Cross-host follow-up and native game builds pending for this component. Resource
+source118be4e3 is verified: Windows60 pass/6 skips; Mac/Linux59 pass/7 skips EACH,
+including native resource/save ASan/UBSan on Mac/Linux. All three game builds and
+platform checks at118be4e3 pass. Automatic startup/title binding, bootstrap probe
+adapter, message/fault UX and game shutdown integration remain unfinished.
+
+CI43637861713 (source46295f44) finished GREEN:23 success,2 intentional skips.
+
+Native resource/cache milestone (feature/mod-platform, base5cf5b93a):
+RuntimeResources derives the actual executable location, validates generated bundle
+shape/name/pins and retains a verified private helper snapshot. PrivateDirectory
+creates strict native-permission caches independently of save files, holds native
+identity and removes only its own empty directory. Persistent saves retain their
+existing exFAT fallback; executable caches require native permissions. Windows
+resource/save fixtures:59 pass,6 platform skips; revised environment decoy2 pass.
+Read-only OS cache-parent and Mac/Linux/native game builds pending. Production automatic game binding and
+private-cache crash recovery remain unfinished. No public activation claimed.
+
+Match lifetime acceptance (feature/mod-platform, owner679f5687; integrated
+source46295f44): Windows/Mac/Linux owner+title adapter33 pass EACH. Mac/Linux
+host ASan/UBSan33 pass EACH. All three native game builds/platform checks pass,
+both before and after importing main5426485f controller hints INTO this branch.
+Only two guide conflicts were resolved, retaining mod notes and new pad links;
+main was not modified. Merged UI checks: Windows16 pass/2 skips, Mac14 pass/4 skips,
+Linux12 pass/6 skips. No actual automatic script binding/gameplay is claimed.
+
+The long Windows bootstrap/storage/capsule/lease/transition run finished147 pass,
+5 platform skips and one byte-roundtrip failure because the2711 Unicode patch
+changed during that test. The failed fixture hash exactly matches the current
+NULL-root variant; reversing ONLY that expression reproduces the expected old
+getenv hash. No patch-install defect was found. The affected false/pc-presentation
+case reran with fixed source:1 pass,37 deselected. No full-suite rerun was needed.
+
+PR561's newer CI had been prevented by merge conflicts with concurrent main.
+After integration, current-source CI43637861713 started for46295f44; still running
+at this record, with no observed failure. Earlier b00 source CI43635970573 was
+23 success/2 intentional skips. Public workshop deployment, native automatic
+resource discovery/binding, lease-recheck/fault/HUD/shutdown integration and the
+remaining full mod ecosystem acceptance are still required.
+
+Native match lifetime owner (feature/mod-platform, base299236d5): shared
+MatchManager retains verified config/source, closes unsupported/faulted matches,
+forbids reopening a retired epoch and waits for native reap before a successor.
+The title capture distinguishes true round boundaries from transient rejected
+network/roster/policy reads. Windows owner/title tests:33 pass, including startup cancellation;
+cross-host/native game build follow-up pending. Automatic game
+binding/resource discovery, recheck/fault/HUD/shutdown integration remain unfinished.
+The previous bootstrap sourceb00bdf42 CI43635970573 finished23 success,2 intentional
+skips. The c1a07da3 Unicode follow-up still has no observed current-source CI run.
+No public script activation or new gameplay acceptance is claimed.
+
+Verified source/save startup milestone (feature/mod-platform, sourcec1a07da3):
+Windows native game build/platform checks pass; Mac ARM64 and Linux x64 native
+game builds/platform checks pass. Windows focused bootstrap+storage UI:20 pass,
+including Unicode capsule/save roots, empty/oversized environment pairs and
+irreversible picker lock. Mac/Linux capsule+lease+storage+bootstrap/UI suite:
+107 pass,12 platform skips EACH. Native host ASan/UBSan bootstrap:19 pass EACH
+Mac/Linux. These check the startup source/save gate; no custom game mode has
+started in a real game scene. Source remains unavailable until kernel root and
+held lease commit successfully. Production launcher still does not emit scripts.
+Public deployment, in-game manager/lifetime/offline policy, signed production
+trust and complete gameplay/update/rollback/backup acceptance remain unfinished.
+Runtime CI run43635970573 checks earlier sourceb00bdf42 and is still running;
+current-source CI is not yet observed. Windows full patch-transition regression
+is still running separately; no failure has been reported so far.
+
+Bootstrap follow-up (base2e430b04): all three native game builds/platform checks
+passed; Windows build sourceb00bdf42, Mac/Linux2e430b04. A new Unicode capsule test
+found ANSI getenv corrupted Windows paths. Shared bootstrap now uses wide CRT
+plus strict UTF8 conversion and bounded values; Windows startup obtains its
+explicit original root through that adapter. Fixed Windows focused17 checks pass;
+expanded empty/oversized request cases and cross-host follow-up pending.
+
+Mod bootstrap storage milestone (feature/mod-platform, base28f42934): shared
+native startup now consumes an explicit developer capsule, resolves original save
+preferences read-only, leases package-isolated saves, permanently locks host save
+location changes and binds the kernel fence before initialization. Source is only
+published after actual save-root/lease verification. Launcher script emission,
+match manager, offline/lifetime/fault gates and custom-mode gameplay remain pending.
+Windows/Mac/Linux focused bootstrap+storage menu:16 pass each. Native game builds
+and full integration checks pending.
+Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Windows
+67 shared UI groups; Mac68, Linux69. Mac Desktop FinderInfo still disrupts signing;
+Mac build passes using supported --output under the owned Library/Caches folder.
+No public workshop service, production trust activation or release is claimed.
+
 Sun repair main integration with5426485f: Windows Release/debug build passes;
 42 targeted checks pass with2Mac skips. Newer crosshair/FOV/tutorial changes
 remain intact. Published preview package remains the earlier tested snapshot.
@@ -43470,3 +43597,723 @@ PR546 first integrated CI exposed a duplicate POSIX SRWLOCK fixture declaration
 and native .NET JSON Unicode-escaping '+' in inherited pad axis tokens. Removed
 the redundant typedef and matched native JSON data encoding to Framework literal
 axis tokens; retain the failing shared UI regression. Host rerun pending.
+# Mod workshop foundation (2026-11-14)
+
+Local `feature/mod-platform` worktree based on main1375e144; uncommitted.
+Added deterministic creator packages, portable path/hash/type/size validation,
+ClamAV fail-closed adapter, private SQLite/blob quarantine with explicit review,
+scan expiry, immutable versions, revocation, loopback search/browser/download,
+and atomic inactive staging with exact dependency checks. No original game data
+is bundled. See [scope and usage](../development/mod-workshop.md).
+
+Windows x64 using the existing host-local Python environment:178 tests passed
+across `tests/mods/test_mod_workshop.py`, `test_ci_runtime_scope.py` and
+`test_runtime_checks.py`, plus21 repository-context tests (51 workshop cases).
+Context/index checks against1375e144 and whitespace validation passed.
+The HTTP fixture performs real
+loopback search/download/staging/revocation. Example CLI pack/validate passed.
+Scanner fixtures cover missing executable, clean/detected/error exit codes,
+limit-alert flags and timeout; **live ClamAV detection is unverified**, because
+the engine is not installed locally. Shared source is registered for Windows,
+macOS and Linux CI, but actual native Mac/Linux execution remains unverified.
+
+This is a developer prototype. Installed mods remain inactive; no game asset
+loader, Lua runtime/sandbox, launcher browser, authenticated public uploader,
+production hosting, signed catalog or multiplayer mod compatibility exists yet.
+No game rebuild or gameplay claim is made. Existing launchers, game files,
+texture installation, personal settings and saves were not changed. Source is
+local only; other devices are not synchronized.
+# Launcher workshop and Mac hosting follow-up (2026-11-14)
+
+Same local/uncommitted feature/mod-platform branch, base1375e144. The selected
+public host is the owner's Mac mini, with no purchased domain. Added the shared
+Mods page, Windows and native Mac/Linux navigation, offline sample preview,
+bounded HTTPS catalog/download client, source/scan-date checks, pre-download
+removal recheck, SHA-256 verification and partial-download cleanup. Packages
+remain inactive; no game/mod execution or asset loading was added. Blank service
+configuration shows the workshop as unavailable while normal play remains usable.
+
+Added approved static snapshot export/preflight, read-only loopback Caddy config
+and Mac host supervisor that stops at snapshot expiry. Public routing is a
+documented Tailscale Funnel trial; no remote account changes, tunnel, host
+installation or deployment were performed. SSH/Mac access is not available in
+this Windows task. Private quarantine and SQLite never enter the public snapshot.
+See [Mac hosting and launcher connection](../development/mac-mod-hosting.md).
+
+Windows build passes. Five focused workshop groups and all52 shared launcher UI
+groups passed. The full -Test run also passed116 updater regressions,28 download/
+recovery,13 game-version,15 startup,30 news and49 settings checks; it then stopped
+at crash-report export's existing global game-running guard. It is **not** a full
+launcher-suite pass. No running game process was stopped. Log:
+logs/mod-launcher-validation.txt. The offscreen Mods preview was rendered and
+inspected in build/mod-workshop-preview.png; it contains explicitly labeled
+interface examples and makes no network requests.
+
+169 Python checks passed for workshop/publication, layout translation and CI
+selection/suite manifests. A separate launcher/source run passed63 tests with
+1 host-specific skip and31 subtests. Actual native Mac/Linux launcher execution,
+live ClamAV detection, Caddy runtime validation on the Mac and public internet
+connectivity remain unverified. No signed catalog, public uploader/authentication,
+script sandbox or active mod manager exists yet. All source is local/uncommitted;
+other devices and published launcher releases do not contain this change yet.
+# Native mod library and texture overlay (2026-11-14)
+
+Active full-completion goal continues on feature/mod-platform, base1375e144.
+Added the shared native package model in ModLibraryPage.cs: bounded strict JSON,
+portable ZIP/path/type/hash/format checks, snapshot-before-install, immutable
+version directories, hash-bound active profiles, dependency/cycle/conflict guards,
+texture-only enable/disable, retained-version rollback, safe uninstall and owned
+cache cleanup. Unknown personal files are preserved. Installed controls, install
+actions and Play without mods are wired into both launcher adapters. Recovery
+bypasses a broken profile without rewriting it. Lua/maps/audio cannot be enabled.
+
+The shared texture worker now reads TSFP_MOD_TEXTURE_DIR first for valid keyed
+DDS files and falls back to the ordinary pack on reader rejection/missing files.
+Originals/official texture files are not modified or duplicated. Existing
+Classic/Enhanced admission and renderer resource/alpha guards remain. Creator
+validation now matches the bounded DDS header/mip/format contract. No actual
+modded game build or scene acceptance is claimed yet.
+
+Windows x64: full build-launcher.ps1 -Test passes;59 shared UI groups including
+12 workshop groups. Targeted --workshop also passes independently. Logs:
+logs/mod-library-validation.txt. Runtime snapshot was reconstructed at the pinned
+d90c9298 revision and the full patch stack verified (170 runtime files updated).
+33 initial texture/parser/stream/Classic/preference/overlay checks passed.
+235 final Python workshop/overlay/launcher/texture/CI/context checks passed,
+including UTF-8/BOM validation and schema updates. The final focused12 workshop
+groups pass after catalog/package identity binding. A later complete -Test run
+stopped in an unrelated save-folder test because another game process became
+active; no process was stopped and that interrupted rerun is not called a pass.
+The earlier full suite pass remains scoped to its recorded source state.
+The updated Mods preview was rendered and visually inspected.
+
+Mac SSH is verified (Darwin arm64, macOS27.0.1); root AGENTS hashes match. Its
+existing checkout is on an unrelated pause-menu branch with STATUS changes and
+untracked cloud-conflict duplicates, all preserved. Python3.14.3 and Caddy2.11.2
+are available via Homebrew paths. ClamAV is absent; the existing Tailscale wrapper
+points to a missing application. No public tunnel or service was started. A
+separate task worktree/source synchronization and native host checks are next.
+
+Full goal remains incomplete. Track all original requirements in
+[the acceptance matrix](mod-workshop-acceptance.md), including real game asset
+types, scripting isolation/API, accounts/uploads/moderation, signed trust,
+production scanning/operations, multiplayer, three-host and public release checks.
+# Native Mac workshop validation (2026-11-14)
+
+Source checkpoint f6770b2b is committed/pushed on feature/mod-platform and was
+checked out on the Mac through Git in a separate .nosync worktree. Primary Mac
+branch and unrelated edits/cloud-conflict files were preserved. AGENTS hashes
+match. No merge or public release was performed.
+
+Apple Silicon/macOS27.0.1: the native launcher build/sign/package/test command
+passed using the existing pinned dotnet8.0.426 SDK and locked Avalonia11.3.22
+dependencies;60 shared UI groups passed, including12 workshop groups.186 Python/C
+workshop/layout/CI tests passed under host-local Python3.12.12. Actual GUI/native
+client and package contracts are verified; actual modded gameplay remains unrun.
+
+Generated output under the FileProvider-managed Desktop acquired FinderInfo and
+code signing failed despite the builder's existing xattr cleanup. Moving only
+generated output to ~/Library/Caches/tsfp-mod-platform/launcher allowed the same
+source to build, seal and pass checks. No signing keys/policy were changed.
+Native log copied into ignored logs/mac-mod-native-validation.txt.
+
+Real Caddy2.11.2 was exercised on Mac loopback against a temporary empty approved
+snapshot: catalog200/JSON/nosniff, POST405, private/invalid package paths404,
+snapshot expiry exit2 and closed listener all passed. The test completed and
+left no serving process. Log copied to logs/mac-mod-caddy-live-validation.txt.
+No internet tunnel/public endpoint exists yet. ClamAV remains absent; Tailscale
+still points to a missing app. The full goal and remaining requirements stay
+open in [the acceptance matrix](mod-workshop-acceptance.md).
+
+# Linux workshop validation (2026-11-14)
+
+At source ff580de3, a separate native-filesystem WSL Ubuntu24.04 checkout passes
+all77 workshop Python/C checks. The native Linux launcher build/test/package
+command passes61 shared UI groups plus package install, corruption rejection,
+repair through its copied helper and restart/render, preserving saves and game
+metadata. Existing unrelated Linux source and SDK were preserved. Linux gameplay
+and public internet acceptance remain unrun; the full completion goal stays open.
+
+The standalone C11 texture-reader fixture now requests POSIX2008 clock
+declarations on POSIX hosts. Actual WSL execution verifies the earlier Linux CI
+compile failure is resolved. The ff580de3 CI Linux Vulkan and all three native
+launcher jobs also pass; the overall runtime workflow was still running when
+checked. These checks do not imply a public release or in-game mod acceptance.
+
+# Isolated workshop antivirus and Windows game build (2026-11-14)
+
+Source59686d4e is pushed and synchronized to the separate Mac task worktree.
+ClamAV1.5.4 and official daily28183/main63/bytecode339 databases are installed
+under private workshop Application Support storage. No scanner service or
+public endpoint was started. Real isolated submissions pass clean-to-review/
+approval, harmless EICAR rejection, empty-database/missing-engine failure and
+revocation checks. Disposable canaries pass private read/write/symlink/child
+execution/network denial and permitted content/temp access; CPU150/fd128/core0
+limits are observed in the actual child.86 mod checks pass on Windows and Mac.
+
+The scanner uses deny-default Mac Seatbelt, private temp and sanitized environment;
+CPU/file/fd/time limits plus bounded diagnostics. Definitions must be official
+and at most2 days old. Legacy reports without policyv2 cannot be approved/served
+until rescan/review. The initial1MiB file cap produced ClamAV coverage warnings;
+it was corrected to512MiB per file (matching its scan budget), with a separate
+parent diagnostic limit1MiB/retained64KiB. Clean-exit diagnostics fail closed.
+Real live scans at policyv2 are clean without warnings. Memory/concurrency/global
+storage supervision, service identity, queues, scheduled updates/rescans and
+production account/upload/trust/moderation operations remain incomplete.
+
+Windows game generation/build and all required tsfp.ps1 Build checks now pass
+using the verified US XBE, pinned runtime and -SkipTextures. A changing upstream
+FFmpeg latest asset failed the existing hash check; shared setup now pins a dated
+8.1 release with its verified published digest. Setup passes. MSBuild project
+parallelism alone left MSVC /MP unbounded and exhausted heap/pagefile space.
+Own build attempts were stopped; CL_MPCount=2 plus project parallelism1 compiled
+successfully with stable disk headroom, then the normal Build checks passed.
+Executable SHA256 d85dde23beaa3b923eb635bcd2f513c74df169d5a1a4f00de212009239782f29.
+Game build success remains separate from live mod/scene acceptance. Original
+game data and concurrent checkouts were preserved. Full goal stays active.
+
+Follow-up: tsfp.ps1 now exposes -BuildJobs1..32 (default2), bounding both MSBuild
+projects and MSVC compiler processes. Invoke-Checked selects the first executable
+when PATH has multiple Git applications. Normal unfiltered-PATH Setup passes;
+both redirected-stderr/exit-status regression cases pass.
+
+Windows live texture evidence: original synthetic BC1 packages1.0.0/1.1.0 were
+installed, enabled and version-switched through the compiled native ModLibrary
+API. In the actual game profile scene, version1.1.0 replaces background key
+91c931f8b951fbbb and the RHI trace records loaded/512x512/10mips. Renderer captures
+show a purple background (201124 of307200 pixels in the color check). Rollback
+to retained1.0.0 restores blue (0 purple pixels). Disable/uninstall both versions
+emits no mount; a subsequent run loads no replacements and retains blue (0).
+Unknown sentinel and canonical Test Lab fixture were preserved; these runs exit0.
+The first window screenshot showed the occluded desktop and is excluded; only
+renderer BMPs were visually reviewed. This is native model-to-game menu evidence,
+not launcher public-download/UI, Story gameplay, script or other-host acceptance.
+Ignored evidence: logs/mod-runtime-visual-evidence.json, mod-game-*-validation.txt
+and private/test-saves/mod-live-*-capture/mod-frame*.bmp.86 mod checks now also
+pass under WSL Linux;202 focused workshop/context/CI checks pass on Windows.
+
+# Private creator HTTP service and bounded metadata (2026-11-14)
+
+Source0087f582 is committed/pushed and synchronized through Git to the separate
+Mac and WSL task checkouts; AGENTS hashes match. Primary device checkouts and
+personal saves/settings were preserved. No merge, public service or release.
+
+Implemented invitation-based creator/moderator/admin accounts, scrypt password
+hashing, hashed/revocable12-hour sessions, password change/recovery/suspension,
+bounded persistent rate/audit counters and operator-only ownership adoption.
+The private WSGI API reserves digest/identity/size/storage before upload, validates
+ownership again at finalization, never serves quarantine files, and checks
+authentication again after transfer. A serial OS-locked queue retains private
+scan/review states, retries engine errors and recovers committed jobs without
+reapproving them. Moderator permission, approval/revocation and audit are one
+SQLite transaction; failed audit rolls publication back. Quota/lease bounds and
+remaining production gaps are in the creator-service guide.
+
+Real Mac acceptance uses pinned/hash-verified Gunicorn27.0.1, two sync workers
+on a disposable loopback port, real isolated ClamAV1.5.4 and official definitions.
+Creator invitation redemption, authenticated reservation/body/status, denied
+creator approval, clean-to-moderator-review, approved exact snapshot bytes,
+EICAR rejection, revocation and credential exclusion from public metadata pass.
+Wrong HTTP scheme is rejected; the test simulates a trusted local HTTPS proxy
+header and does not establish internet TLS. Owned server group exits and its
+listener closes. No persistent real accounts or server process were left.
+
+Shared Python/native ZIP preflight bounds actual central records before eager
+decoder allocation. JSON preflight limits nesting/collections/tokens/numeric
+range, with Lua1MiB and map descriptors4MiB. Native numeric parsing no longer
+copies the whole remaining string per value. Windows full launcher checks pass
+(60 shared UI groups,13 workshop groups); native Mac build/sign/package/tests
+pass61 groups; WSL Linux build/test/package passes62 groups plus real package
+install/corruption/repair/restart/preservation. Mac and WSL each pass141 mod
+tests; the final Windows mod rerun also passes141 cases. Prior combined checks
+passed233 cases, with final focused parsing/control/Unicode checks passing.
+Audit actors now use user:/system: namespaces; a further regression case passes
+for a creator named operator. This prevents ambiguous service/user attribution.
+Production factory also rejects UID0 and unsupported hosts before opening
+storage; both refusal cases pass. The complete affected account/API tests pass.
+
+The actual Mac isolation probe additionally compiles a harmless C executable
+and observes hard CPU150s/file512MiB/fd128/core0 bounds plus the180s alarm across
+exec. Filesystem/symlink/child-exec/network canaries pass. Logs copied locally:
+mac-mod-creator-live.txt, mac-mod-creator-isolation.txt, mac-mod-creator-native.txt
+and mac-mod-creator-unit.txt under ignored logs/. Public Caddy routing, native
+creator/moderator screens and credential vaults, worker RSS supervision/service
+identity/scheduling, signed catalog trust, reports/backups, gameplay scripting,
+other content loaders and broader game/public acceptance remain incomplete.
+
+# Signed workshop producer metadata (2026-11-14; base eb75e03d)
+
+The feature/mod-platform branch now signs exact catalog bytes, binds HTTPS
+origin/root version, and publishes offline-threshold root rotations, expiry
+and permanent bounded revocations. SQLite reserves monotonically increasing
+publication versions before exposure, including concurrent publishers/crashes.
+The Mac host now requires an independent root and rejects unsigned snapshots.
+Unix key ceremony keeps encrypted root keys separate from online catalog signing;
+only public descriptors enter roots. Signing wheels are version/hash pinned.
+
+Windows:282 selected mod/CI-scope/runtime-suite checks pass,2 Unix-only key tests
+skip; real signature tampering, two-threshold rotation, replay/equivocation,
+revocation retention and counter persistence are covered. Native code unchanged.
+Exact source b01ad2a5 is synchronized through Git to the separate Mac/WSL
+checkouts. Mac284 selected checks pass, including actual encrypted-root key
+ceremony/private permissions/online export; WSL283 pass with the non-root ceremony
+skipped. Hash-pinned wheel installation passes on all three hosts. Actual Mac
+Caddy validates the new configuration and serves signed catalog/numbered-root GET
+bytes that pass verification; private/missing routes404 and writes405. Its owned
+process stops and loopback8766 closes. This is loopback HTTP evidence, not public
+TLS or native client trust. No production key, persistent service or public
+endpoint was created. Native signature enforcement/checkpoints/pins are still required
+before public client distribution; see mod-catalog-trust.md and the full matrix.
+
+# Native workshop trust enforcement (2026-11-14; base ee72804d)
+
+Shared ModTrustPage.cs verifies the producer's RSA3072 signatures and root
+rotations, persists complete signed catalogs/root chains under a per-origin
+exclusive lock, and rejects replay/equivocation/expiry/clock rollback/corruption.
+ModWorkshopClient requires HTTPS and checks signed availability before/after
+transfer. Schema2 workshop receipts preserve origin; install, enable and normal
+game mounting check fresh availability/revocations. Disable/remove and original-
+game recovery remain available without changing the profile. Production root
+and service constants remain blank; no public service/key was provisioned.
+
+Windows full native build/tests pass:66 shared UI groups, including six new
+real-crypto trust groups using Python-generated public golden vectors and an
+original synthetic DDS package. Tests include restart/rotation, rollback, damage,
+expiry, revocation during transfer/activation/mounting and recovery. Selected
+Python mod/fixture/shared-layout/CI-scope/runtime checks:286 pass,2 Unix skips.
+One existing Windows session fixture encountered a transient sharing violation
+reading its child-ready file; it now retries only sharing errors within its
+existing10s bound. The full subsequent run passes. Exact source24236283 is
+synchronized through Git and verified on all three native hosts: Windows66,
+Mac67 and Linux68 shared UI groups. Mac sign/package and post-test signature
+verification pass. Linux install/corruption/repair/copied-helper/restart/render
+preservation checks pass. Mac288 selected Python checks pass; WSL287 pass with
+one non-root ceremony skip. New trust test sources/public vectors are bound in
+Mac/Linux build receipts and Windows build-cache inputs. Public pin provisioning,
+live HTTPS and the rest of the full mod acceptance matrix remain incomplete.
+
+# Experimental native gameplay script worker (2026-11-14; base164c36a0)
+
+Added a separately built native Lua5.5.1 worker, exact pristine/fixed-source
+hash pins and four attributed upstream fixes applied only to build copies.
+A restricted API1 executes original custom-mode callbacks and queues score/end/
+message commands from copied roster snapshots. Lua heap16MiB, instruction and
+host-call limits, terminal all-or-nothing faults, strict binary frames and a
+500ms worker wall watchdog are implemented. The original First to Three SDK
+example is tested through actual native execution, including its winning kill.
+Windows361 selected mod/CI/context checks pass,2 Unix skips;56 worker checks cover
+real quotas, unavailable libraries, transactions, events, 64-bit ticks, numeric
+fixes, protocol attacks and expensive-C-function termination. Verification found
+and corrected Git silently skipping fixes in an ignored checkout build path;
+committed post-fix hashes now bind both in/out-of-checkout builds. Never force
+Lua's C89 selection externally: a64-bit integer assertion/test guards Windows.
+
+Source42828ec0 is synchronized to the separate Mac/WSL checkouts. All56 worker
+checks pass natively on Windows/Mac/Linux, plus56 ASan/UBSan checks on each of
+Mac and Linux. Full selected suites: Windows361 pass2 Unix skips (source65d257ed,
+with final worker rechecked at42828ec0), Mac363 pass and WSL362 pass1 non-root
+ceremony skip (source42828ec0). Actual SDK example pack/validate passes; its README
+lives beside the source folder because package roots accept only content files.
+Lua payload source is LF across Git checkouts. This is not a complete sandbox or
+playable game bridge. Independent native
+process/RSS/pipe supervision, Windows/Mac/Linux OS confinement and escape probes,
+verified real guest hooks/commands, multiplayer/save contracts and game packaging
+remain required. Launcher script activation is still refused. No original game
+code/generated output or personal data was modified. See mod-gameplay-scripting.md.
+
+# Native script process confinement (base b4043614; in progress)
+
+A C++17 Process interface supplies nonblocking private pipes and resource usage;
+a separate batch tsfp-mod-runner bounds2s wall/1.5s CPU/128MiB resident memory,
+4MiB input/1MiB output/4096 diagnostic bytes. It kills/reaps its owned worker on
+failure and never applies game commands. Windows stages the trusted worker in
+an owned GUID cache, with a temporary capability-free low-privilege AppContainer,
+explicit read-only package ACLs, restricted inherited handles, synthetic environment,
+dynamic-code/Win32k mitigations and a kill-on-close one-process128MiB job assigned
+before resume. The production worker checks its token/job/mitigation before any
+protocol input. The documented LPAC creation attribute is required; unsupported
+GetTokenInformation class46 is not a detection API. Linux no-new-privileges/TSYNC
+seccomp and Mac deny-default Seatbelt adapters await actual host checks.
+
+Windows7 production-process tests and56 VM tests pass. Native escape canaries
+have successful unconfined controls, including an explicit ALL_APPLICATION_PACKAGES
+file grant denied by LPAC. Files, loopback network, process spawning, parent access,
+inherited secret handles/environment, private registry and own executable ACL
+writes are denied. Native hangs without the Lua watchdog and stdout/stderr floods
+are stopped by the parent; native allocation is capped. The original First to Three
+mode executes through the confined production worker. Invalid-handle denial can
+raise STATUS_INVALID_HANDLE on this host; the test canary catches only that code.
+No other exceptions are hidden. Temporary cache profiles are removed and existing
+cache sentinel bytes preserved. VM tests use an explicitly separate test executable;
+production has no runtime isolation-bypass switch. These are Windows component
+checks, not live game integration or cross-host/public acceptance. Mac/Linux checks,
+asynchronous persistent game supervision, native reply validation, Mac parent-death
+handling, verified guest adapters and full public-system acceptance remain pending.
+
+Expanded Windows profile-write canary found default AppContainer permission grants
+still allowed writes despite a merged package-SID deny. Replaced owned-object ACLs
+with exact protected broker/system/admin-full plus package-read/execute entries.
+Windows7 expanded process checks pass, including a disposable positive profile-write
+control and denied worker profile/private-registry writes. Zero temporary TSFP.Mod
+profiles remain after checks. Linux at a668698f passed62 process/VM tests (one
+Windows-only skip). Mac at1b551f33 passed61 with one skip; the remaining assertion
+expected CPU-budget wording although the independent wall deadline correctly killed
+the native hang. The test now accepts either independent limit; rerun pending.
+
+Source ac772502 full mod/CI suites pass: Windows347/2 skips, Mac348/1 skip,
+Linux347/2 skips. Mac/Linux each pass56 ASan/UBSan VM tests. Script process
+coverage was then expanded with actual abrupt broker death. Windows8 checks
+pass, proving the exact worker exits when its broker job handle closes. A new
+Darwin trusted guardian addresses the previously documented parent-death gap;
+Mac/Linux expanded reruns pending. Windows stale crash-profile/cache recovery
+still needs production implementation; the test explicitly cleans its owned GUID
+profile after waiting for the worker process handle. Game activation stays off.
+
+# Verified native script process boundary (source6457f1fe; 2026-11-14)
+
+Expanded real production-process tests pass: Windows8; native Mac7 plus one
+Windows-only skip; WSL Linux7 plus one skip. Native escape controls/denials,
+resource faults and original First to Three mode round trip pass. Actual abrupt
+parent death now terminates the no-watchdog native canary on all three hosts.
+Mac uses a separate trusted guardian with private liveness/PID pipes, inherited
+stdio allowlist and waitpid ownership; it kills/reaps only its exact owned child,
+avoiding PID-reuse signalling. The game parent meters worker CPU/RSS. Parent
+signal-permission probes are denied under Mac Seatbelt/Linux seccomp. Windows
+final process/CI-scope/runtime-check recheck passes118. No leftover Windows test
+profiles remain. Crash-time automatic profile/cache recovery is still pending;
+the abrupt-death test explicitly removes only its own disposable GUID identity.
+
+Host/tool evidence: Windows x64 MSVC19.44.35224/SDK10.0.26100; Mac mini macOS27.0.1
+arm64/Python3.12.12/AppleClang21.0.0; WSL Ubuntu24.04 x86_64/Linux6.18.58.1/
+Python3.12.3/GCC13.3.0. All use CMake4.4.4. Ignored logs: mod-process-*-lifetime.txt,
+mod-process-final-windows.txt, mod-process-*-full.txt and mod-process-*-asan.txt.
+Earlier ac772502 full suites pass Windows347/2 skips, Mac348/1 skip, Linux347/2 skips;
+56 VM ASan/UBSan checks pass on each of Mac/Linux. The later changes affect OS
+lifetime/pipe setup and add a test-only parent; no Lua feature implementation changed.
+
+This establishes the named native process contracts, not a complete integrated
+mod system. Scripts remain inactive in the launcher. Persistent asynchronous
+per-event game supervision/native reply validation, verified game hooks/commands,
+mod saves/multiplayer agreement, verified signed helper packaging/recovery, native
+creator/moderation flows, public HTTPS hosting/backups and end-to-end public/game
+acceptance remain required. The full goal remains active; no main merge performed.
+
+Mac final source c12b8541:8 production-process checks pass, one Windows-only skip.
+The additional missing-guardian test refuses before worker input and preserves
+its copied worker bytes; no direct-spawn fallback exists. CI source6457f1fe run
+43603840993 was in progress at last inspection, not established passing.
+
+# Persistent native mod sessions (base e183dbc5; 2026-11-14)
+
+Implemented shared C++ Session background-owned process supervision and strict
+native transaction decoding. Game-side API uses try-lock/backpressure and never
+waits for child IO; cancellation is asynchronous and stopped() confirms cleanup.
+Independent load/event wall, request/idle/session CPU and RSS budgets, unsolicited
+output/diagnostic rejection and lifecycle/roster/numeric checks are enforced.
+Windows pending-IO events/POSIX poll replace timer-rounded background pipe polling;
+submit/close wake the idle condition variable. No system timer policy changed.
+
+Windows63 session/process checks pass with one Mac-only skip;55 are new Session
+cases covering actual original mode beyond2s,100 stateful ticks and Stop, malformed
+native replies/partial transactions, native hangs/crash/stderr/idle abuse, full1MiB
+source, backpressure and asynchronous close. The driver retries Busy on a later
+iteration: try-lock contention is not rejection or event consumption. Oversized
+source cases use bounded explicit pytest IDs to avoid overflowing Windows'
+PYTEST_CURRENT_TEST environment value. Test-only hostile workers remain OS-sealed
+and have no VM watchdog. Actual Mac/Linux Session validation is pending. This does
+not add guest hooks, activate scripts, apply game commands or provision public
+hosting. Installed helper verification, live match epoch/authority/save contracts
+and real title integration/public acceptance remain required.
+
+At658ae09e actual Session/process checks pass native Mac63/one skip, WSL Linux62/
+two skips, matching Windows63/one skip. The shared parent parser accepts the valid
+control corpus and rejects malformed native responses on all three hosts. A new
+idle-metering follow-up uses50ms CPU per1s idle window, preventing long legitimate
+pauses from eventually exhausting a cumulative idle allowance. Windows passes a
+native four-window25ms-CPU/window positive control. The trusted-parent ASan/UBSan
+build mode is implemented separately from VM sanitizer mode; sealed child binaries
+remain ordinary. Actual host-sanitizer/updated Unix checks are still pending.
+
+Windows full mod/CI suite passes404 with3 platform skips. Atb2afea90 Linux full
+suite also passes404/3 skips; all56 trusted-parent ASan/UBSan Session checks pass.
+Mac full suite passed405/one skip but failed renewed idle busy-spin metering.
+Investigation confirmed proc_pid_rusage user/system totals use Mach ticks, not
+nanoseconds (Apple XNU fill_task_rusage/task_power_info_locked); the previous
+/1000 undercounted Apple Silicon CPU. Corrected with mach_timebase_info scaling,
+128-bit intermediates and fail-closed unavailable/overflow guards. Updated Mac
+full/sanitizer checks are pending; do not count earlier wall-deadline success as
+proof that the old Mac CPU accounting was correct. CI e183dbc5 run43604433695
+completed successfully; newer Session revisions have separate CI acceptance.
+
+Atf37ee9ba corrected Mac full mod/CI suite passes406 with one platform skip;
+all56 trusted-parent ASan/UBSan Session checks pass, including idle busy-spin and
+allowed renewing idle CPU windows. Linux404/three skips and56 host-sanitizer checks
+pass atb2afea90; Windows404/three skips pass for matching source bytes. Mac CPU
+units are now verified by adversarial idle behavior, not inferred from wall limits.
+
+A test-host error-path drain guard and explicit forced-failure case now pass on
+Windows. Earlier failed driver exits had left three empty temporary GUID profiles;
+those exact identities were verified against creation times matching these tests,
+protected4-rule ACLs/current broker ownership/derived package SID, then removed via
+DeleteAppContainerProfile. Ignored ownership evidence is in
+logs/mod-session-owned-orphan-profiles.json. Unknown profiles/files were not deleted.
+This is manual test cleanup; automatic production crash-profile recovery remains
+pending. The final extra teardown case still needs Mac/Linux ordinary/sanitizer
+reruns. No script activation, guest mutation, main merge or public deployment.
+
+# Final native Session acceptance (source46a34727; 2026-11-14)
+
+57 persistent Session checks pass on Windows, Mac and Linux. All57 trusted-parent
+ASan/UBSan checks also pass on each of native Mac/Linux. Combined Session/Process:
+Windows65 pass/one Mac-only skip; Mac65 pass/one Windows-only skip; Linux64 pass/
+two skips. Windows with CI selection/runtime-check cases:175 pass/one skip.
+Normal/source logs: mod-session-final-{win,mac,linux}.txt; sanitized logs:
+mod-session-host-asan-final-{mac,linux}.txt. Full earlier matching-production suites:
+Windows404/3 skips; Linux404/3 skips atb2afea90; Mac406/one skip atf37ee9ba. The
+46a34727 follow-up only adds test-host error-path draining and its explicit case.
+
+The explicit failure-teardown test now keeps its host alive until cleanup ends;
+no temporary Windows profiles remain after the final test pass. Actual scripted
+matches in the original game are still unimplemented/unverified: test events are
+synthetic. No originals/settings/saves were changed. Scripts remain inactive in
+the launcher; public service/production pins, verified helper game packaging,
+stale crash-profile recovery, save/multiplayer agreements and full public release
+acceptance remain required. Full goal remains active; no main merge performed.
+
+# Native match bridge (2026-11-14, task base e7c1ca82)
+
+Shared mod_match C ABI and supported-US guest hooks are implemented, with no
+launcher activation/bootstrap entry. Windows83 match/Session/Process checks pass
+(one Mac-only skip), including18 match/controlled-world fixtures with real
+isolated Lua. Original title functions in the guest fixture are mocks. The
+full game build is pending; these tests do not establish actual custom-mode play.
+Patch2710 applies successfully with the full patch stack and preserves existing
+Story frame routing; stock behavior remains the default while unbound. Native
+Mac/Linux new bridge checks and trusted-parent sanitizer checks are pending.
+
+Initial title support is offline, non-team Arcade rules-index0. Verified helper
+packaging, trusted bootstrap/save namespaces, HUD messages, fault UX, launcher
+lifecycle, multiplayer agreements and full public workshop acceptance remain
+required. No public deployment, main merge or private asset publication occurred.
+
+Native bridge sourceb8504672 ordinary checks pass on all configured hosts:
+Windows83/one skip, Mac83/one skip, Linux82/two skips. Sanitizers on Mac/Linux
+found an unaligned read in a16-bit raw-stat fixture assertion; corrected to two
+byte reads. Updated Windows19 match/original-title checks pass. The local-only
+original-title fixture lifts pinned US640C0/641C0/64810/67450, checks unbound raw
+scoring/ranking, then real isolated Lua score/ranking/End. Death/frame/final finish
+side effects remain mocked; actual gameplay remains unverified. Non-team API
+snapshots report team0 rather than the title's raw actor identity comparison.
+
+Windows full build regenerates/compiles new wrappers but MSVC C1002 exhausts
+backend heap in recomp_0011.c, including with one job and /MP1. A local smaller
+generation split is being tested. This is not a successful game build or a reason
+to enable scripting. Mac/Linux updated sanitizer/original-title checks pending.
+
+At source186c62ac (later da938bbf changes context only), all19 bridge/original-title
+checks pass on Windows, Mac and Linux. On each native Mac/Linux host the18 bridge
+checks and separate original-title check also pass under trusted-parent ASan/UBSan,
+without skips. The supported XBE was hash-verified and copied only to ignored
+owned task directories; runtime snapshots/pins and Capstone5.0.9 were prepared
+there. No private instructions/assets were committed or uploaded. Logs:
+mod-match-original-{win,mac,linux}.txt and mod-original-score[-asan]-{mac,linux}.txt.
+
+Earlier e7c1ca82 CI run43608212712 completed successfully, including aggregate PR
+validation. New run43613354821 exposed one historical Mac-only upgrade fixture:
+it included2710 before the intentionally excluded Story frame/network wrapper.
+The fixture now omits2710 only in its old subset, then verifies all four mod hooks
+after the complete upgrade. Production patch ordering is unchanged. The focused Windows upgrade fixture
+passes; updated CI is pending. Local split250 Windows compilation has progressed
+beyond its first20 units; full game build remains pending.
+
+Windows full game compilation with count-only split250 still fails C1002 in
+recomp_0045.c:250 functions expanded to155544 lines/5970675 bytes. The same
+original003A03A0 function compiles alone with /O2 /Ob2 and /O2 /Ob0. This narrows
+the observed issue to compilation-unit complexity; no compiler flags were changed.
+The shared batch generator now caps emitted UTF8 function bodies at1MiB plus the
+existing function count, preserving order and each complete function. A single
+oversized body stays alone. Windows12 batch tests and CLI/generation tests pass;
+weighted full game build and Unix batch tests remain pending. This is a build
+repair needed for native mod integration, not live mod gameplay acceptance.
+
+The old full Windows patch suite finished61 passes and one historical-fixture
+failure from its pre-correction collected function. The corrected focused fixture
+passes separately on Windows/Mac/Linux. CI for278e9845 is still pending.
+
+Read-only SDK reuse for isolated native game builds is implemented through
+`--sdk-root` in both builders. Both SDK adapters compare the source checkout pin
+to the current pin and perform normal receipt/file verification, including the
+Mac post-build self-test path. Reuse never invokes SDK installation. Runtime,
+Python setup, submodules and build outputs stay in the task root. Windows SDK,
+Linux foundation and Mac build-tool regressions pass63 with3 platform skips;
+actual host reuse/build checks remain pending. This avoids another SDK copy on
+the disk-constrained Mac/WSL hosts while preserving other checkouts' work.
+
+Read-only SDK reuse contracts pass Windows63/three skips, native Mac65/one skip
+and Linux66/no skips; actual SDK receipts/pins verify on both native hosts. Their
+full game builds now run in owned task roots. Fresh Mac setup exposed missing
+Vulkan-Headers/volk/VMA initialization; Vulkan setup now includes those pinned
+submodules (GL keeps its smaller dependency list). Mac configure rerun pending.
+
+The first Linux generation resolved the shared game-data symlink and wrote its
+analysis/symbol caches beside that executable. The supported executable hash
+remains intact; saves/settings/assets were not changed. Generation now stages
+only the verified executable under the task's private/pipeline/input before
+calling tools that write beside their input. Existing differing staged content
+is refused and preserved. Windows updated build/dependency checks pass64/three
+skips, including source/cache preservation and mismatch refusal. Native reruns
+and staged-generation output checks remain pending.
+
+The fresh Mac mod-parent game build links an arm64 executable with the reused
+verified SDK; post-build checks are still running. Fresh Linux generation finishes
+with0 failed functions, but configure inherited GCC and rejected the existing
+Clang-only no-vectorization flags. The game builder now explicitly selects
+Clang/Clang++ to match that established policy and its compiler manifest. No
+optimization flags or game behavior changed; native rebuild remains pending.
+
+Mac mod-parent native build/self-test pass at a3ecd7e1 using the verified reused
+SDK: arm64 executable link, GPU renderer/input/settings/debug/path checks and
+owned sparse test-disk cleanup complete. This verifies compilation/platform
+contracts with NULL default mod binding, not a live custom-mode match. Mac full
+scene acceptance is next. Bounded Mac/Linux source runners now accept the same
+verified --sdk-root; Linux package relocation explicitly refuses SDK reuse so
+packaged dependency acceptance stays independent. Windows runner/build/SDK checks
+pass97 with9 platform skips; native runner checks remain pending.
+
+Windows full game build with weighted source424d0db9 succeeds, including native
+parent C++ link, all scripted build regressions and crash-symbol matching. The
+ordinary units now number254 with at most1MiB emitted bodies (a single larger
+function remains indivisible). No optimization flags changed. The first isolated
+Windows scene attempt exposed a runtime capture-rotation race in the observer;
+its lstat/unlink handling now tolerates only missing owned captures and retains
+link/regular-file/containment checks. Two race/preservation tests pass.
+
+The completed Windows scene rerun rendered the original disc-error screen:
+this task had only the executable, not pak/xmv. Scene preflight now refuses that
+incomplete data. Owned junctions reuse the existing primary pak/xmv folders,
+and the subsequent full build/content identity/tests pass. Updated scene check
+is in progress; the failed run does not establish Story gameplay. Other checkout
+processes were preserved, including a separately running Launcher Controls game.
+
+Mac's30-second isolated boot shows the1-player menu and records1500 guest/host
+presents, zero native/shader/Vulkan validation failures, normal time-limit exit.
+A120-second synthetic Test Lab run reaches a rendered Story intro (reviewed
+Cortez capture), records6900 guest/host presents and zero such failures, and exits
+normally. It does not prove active Story movement or custom-mode play. The helper
+uses isolated configs/saves and recycles only owned sparse disks. Selected images
+and receipts stay ignored. Linux Clang rebuild is still compiling after successful
+local-staged generation; shared input/cache preservation check remains pending.
+
+# Native mod-parent build and stock-scene acceptance (2026-11-14)
+
+Shared mod parent/title adapter now builds on Windows, native Mac arm64 and
+Linux/WSL x64. Windows full build and build regressions pass with weighted
+translation; final asset-complete binary SHA256806c4d07d2f520f9df183b3a8e429628bf65cda79fb95b42b7186e3aacfccd9d.
+The120-second isolated native60 observer passes Story/weapon/presentation checks,
+records139 gameplay samples and a reviewed pistol/HUD capture. Exit1 in its
+receipt is the runner's intentional termination, not an unexpected game crash.
+Earlier disc-error evidence came from executable-only task data and is superseded
+by the complete-data rerun; assets are reused through owned pak/xmv junctions.
+
+Mac build/platform self-tests pass (build sourcea3ecd7e1, unchanged game source
+throughc5ed602d). Binary SHA256c670dc7cb9960178cc877958fb646683ba73c1f834136e2a291b5662c95d5564.
+After synthetic Escape skips the intro, a120-second isolated run shows active
+Story pistol/HUD in the reviewed capture, records at least6900 guest/host
+presents, zero native/shader/Vulkan validation failures and normal bounded exit.
+This is visual scene acceptance, not a state/movement benchmark or full campaign.
+
+Linux Clang build and protected-MMIO test pass (receipt sourcec5ed602d). Binary
+SHA256410808ca16431698e5f34c9fe5ebaa172c7431a5ee1ed799c311901f44c6087d.
+The120-second isolated Test Lab run on software Vulkan/llvmpipe passes: scene2
+active from51.113s, at least5100 guest/host presents, no failed/interpolated
+presents or Vulkan validation errors, reviewed pistol/HUD capture and a
+state-verified2531-frame gameplay window. That software/validation window averages
+39.67 host presents/s; this does not establish physical Linux/Steam Deck performance.
+Shared executable and analysis/symbol-cache hashes AND mtimes match before/after
+local-staged generation/build. Owned sparse disks are cleaned after each run.
+
+Capture-rotation regression cases pass2 each on Windows/Mac/Linux. CI source
+c5ed602d run43618218415/1399 completes successfully, including aggregate PR
+validation and every selected runtime/launcher check. Sources are pushed and
+synchronized through Git; no main merge/public deployment occurred. All these
+game checks have NULL mod binding: they do not establish actual Lua custom-mode
+play. Verified helper packaging/bootstrap/save namespace/launcher lifecycle and
+full public workshop acceptance remain required. Real Tailscale application is
+still absent on the Mac at its standard path; only a wrapper is present. No
+public endpoint, production pins or signing-key ceremony has been provisioned.
+
+# Native helper image verification (task base ef5e35b6, 2026-11-14)
+
+Native ImageStage copies trusted worker/guardian streams into exclusive private
+cache directories, checks OS SHA256 against caller-supplied pins before execution,
+bounds each image to32MiB and protects completed copies read-only. Paths reject
+linked ancestors and cache staging is local; POSIX cache roots must be owner-
+writable only. Cleanup removes only owned files/empty directories and preserves
+unknown contents. Cancellation is checked between chunks. Windows uses CNG, Mac
+CommonCrypto and Linux OpenSSL EVP; no hashing library is added to the worker.
+
+Session::open_verified stages on its existing background thread, owns the copies
+until child cleanup finishes and publishes stopped only afterward. The game match
+C ABI now requires expected helper digests and uses only that verified entry.
+It refuses absent pins immediately and changed images before any transaction.
+Standalone diagnostic Session::open remains separate from the game match route.
+Production compiled pins/helper packaging/bootstrap are not wired, so no new
+launcher activation exists. Windows100 native image/match/original-title/Session/
+Process checks pass with5 platform skips. Native Mac/Linux and sanitizer checks
+for this change remain pending. Existing game build evidence is for prior source.
+
+Native-image follow-up: Windows16 image checks pass/4 platform skips; macOS104 combined native checks pass/1 skip and39 host-ASan image/match/original-title checks pass. Linux strict GCC compilation found misleading indentation; the shared source now separates the statements, with rerun pending. Windows paths additionally reject trailing-dot/space and ADS aliases. Production helper producer now verifies current build sources, production flags, native image hashes and Lua license, emits immutable helper-only bundles plus generated pins;12 real-build producer tests pass on Windows. Normal game-builder/package integration and updated game links remain pending.
+
+Production helper source01633814: Mac30 producer/image checks pass/2 skips; Linux112 producer/image/match/original/Session/Process checks pass/7 skips, including the repaired strict GCC compile. Follow-up normal Windows/Mac/Linux builders now invoke production helper staging before CMake and game-only match startup compares against compiled hashes. Windows33 real producer/match checks pass, including a valid caller-selected image refused by the compiled game gate. New native game links, release-package copying and bootstrap remain pending.
+
+Compiled-helper game source1fced3c9: Windows native game build and all build tests pass; Mac33 producer/match checks, native arm64 game build and platform tests pass. Linux33 producer/match checks pass; game rebuild still running. Public game packagers now validate/copy exact immutable helper bundles with generated-header consistency; Linux excludes helpers from RPATH rewriting, requires host-only dependencies and preserves complete ELF source/Lua-notice audit. Windows71 producer/package/audit checks pass with5 host skips, including a real relocated production worker under OS confinement. These checks do not establish a complete release package or scripted game activation.
+
+Sourceca99617d package checks: Mac72 pass/4 skips, including a real relocated production worker. Windows full mods351 pass/7 skips. Linux host-ASan images/match/original37 pass/5 platform skips. Actual native helper-bundle inspection matches compiled headers on Windows/Mac. Windows game SHA ea915c0249384e22a9d247916bafe865b1386f192e15c5b36a0bde1384f9a8f4; Mac edfaaca0c55d75d431c49d5b5476bd6a65f7938680dc1d4eb262a75578ee77a1 (native source1fced3c9). Inspection found Mac helper minOS27 inherited from the host. Builder now explicitly targets macOS11.0 and production staging requires that cached floor; native minimum-version test/rerun and refreshed game pins pending. This preserves older Apple Silicon compatibility without claiming an older-host run.
+
+Mac deployment-floor repair source573c8aad:19 real producer/Mach-O checks pass; Windows18 pass/1 Mac skip. Refreshed Windows/Mac native game builds and build/platform tests pass. Expanded relocated production First to Three protocol test passes on Windows18 checks/1 skip, including real start/three deaths/stop, scores1/2/3, End and cleanup. Mac/Linux expanded protocol checks and Linux native game rebuild remain pending. PR561 remains open/draft/unmerged; its head matches the task source but currently reports merge conflicts, so no pull-request CI runs exist for latest head. Main integration/revalidation is still required before release; no merge/publication occurred.
+
+Verified helper production milestone (source349fbafb, 2026-11-14): Windows and
+Mac refreshed native game/build/platform checks pass (native source573c8aad),
+Linux full native build/MMIO and refreshed four-step incremental build/MMIO pass.
+Mac full mods356 pass/3 skips; Linux full mods plus package/ELF checks408 pass/
+9 skips, including actual relocated production First to Three score/End protocol.
+Windows full mods351 pass/7 skips before the Mac-only minimum-version test;
+latest focused production/relocated checks18 pass/1 Mac skip. Earlier Linux
+host-ASan images/match/original37 pass/5 platform skips. No new runtime binding
+or live Lua gameplay is inferred from these worker/build checks.
+
+Current game SHA256: Windowsf67254ea3db4ebbf7a58e48c455d8843ac6992e0fa91ba7727def3115c42a3bc;
+Mac38cffae0ba9b84e75ba8dbc1d0a4f161fc280bbd2f70bbd399593b32a17180e9;
+Linux44e9832b1a4e312ff81db939d9aada920e1954f8ebd9be27218fd6ce9dbaaeea.
+Actual bundle/header/build inspections pass on all3. Bundle identities: Windows
+98c2e359be91728b17cfc5b21a6c0bba816016f25bfc9f7b73e9da0b70749272;
+Macf2fce736215e8b69c3c960ce839c5f3421e2bd9bf05f4f8b96cfba47321f4364;
+Linux8c72e6f0d1adf8fe44dfeb331aa01d2b92829b959b74c863c0a82d58c6971794.
+All three retain identical multiplayer compatibility identity
+0c78e5ab5f489f99dd8331564303f3cc2437b3fd8f209b1c202000785a09050f.
+Mac actual helper minimum11.0 records pass. Source is pushed/synchronized through
+Git; separate primary checkouts, settings, saves and original game data remain
+preserved. Full task-base repo-context and diff checks pass. Full native release
+package/signature/relocation acceptance, trusted bootstrap and separate save
+policy, launcher Lua activation/custom matches and public workshop/release remain
+required. PR561 stays draft/unmerged; main's two newer UI commits require conflict
+integration/revalidation in this task branch before release. No main merge or
+public deployment has occurred; full completion goal remains active.
+
+Native mod save lease (task base8a6dc507, 2026-11-14): shared mod_saves.cpp/.hpp creates persistent sibling ModSaves/profile-SHA namespaces with versioned ownership markers and an exclusive lifetime lease. It neither copies nor writes normal saves; incomplete/unknown trees remain untouched on refusal. Rechecks reject symlink/reparse/hard-link redirects, changed markers, special files, excessive depth/count and unsafe filesystem writers. Windows uses protected current-user/System/admin ACLs and recognizes OWNER RIGHTS only after owner verification; POSIX checks uid/modes, with recognized exFAT structural fallback. Actual exFAT/storage/sandbox acceptance remains pending. Windows39 native save cases pass/5 POSIX skips; earlier combined save/image53 pass/9 skips. Strict native game build found duplicate Windows macro definitions; guarded defines repair it, rerun pending. Mac/Linux native and sanitizer checks pending. No bootstrap or guest storage selects the lease yet, so scripts remain unavailable in launcher.
+
+Native save lease sourced5bbc9e9: Windows39 save tests pass/5 POSIX skips (including real OWNER RIGHTS/broad-write ACL checks, Unicode paths, explicit same-filesystem relocation and crash/concurrency preservation). Mac77 combined save/image/match checks pass/8 platform skips; Linux74 pass/11 skips. Mac/Linux native save-lease host-ASan/UBSan38 each pass/6 Windows skips. All three updated native game links/build/platform checks pass; guarded Windows defines repair the standalone-vs-game macro collision. No test used personal saves. The system-drive space shortage was transient; disposable Windows checks used an owned F: scratch directory and the later native build had space again. Real exFAT device/sandbox and cross-filesystem relocation remain unverified, and bootstrap/storage/launcher scripting integration is still required.
+
+Task-branch integration (baseafd3e4a6): incorporates origin/mained38b639 and42ff0f11 into feature/mod-platform. All documentation conflicts preserve mod contracts and current UI/FOV/crosshair references; extracted guide bodies stay in subguides to retain root-size limits. Source auto-merges preserve helper staging, package receipts and launcher mod configuration alongside display_settings_version5. Main itself is unchanged. Focused integration/native checks are pending.
+
+Merged task source90cfb4a9: focused save/producer/package/UI integration98 Windows checks pass/8 skips, Mac96/10 skips and Linux93/13 skips. Updated native games/build/platform checks pass on all three hosts. Windows launcher build/shared UI/20 maintenance checks pass. CI43627335647 now runs after branch conflict resolution; Windows launcher packaging fixture fails because its fully synthetic layout omitted the new mandatory helper-producer collaborator. Explicit fixture collaboration now verifies helper/Lua inclusion and metadata; exact failing-stage command passes13 tests/2 subtests locally. Actual Mac launcher build found root FinderInfo reattached between metadata clearing and final signing. Clear/reseal plus deep strict verification passes; builder now clears again after nested signing, before sealing, with full rerun pending. Linux launcher retry uses the existing pinned SDK at external/dotnet-linux (initial path selection was missing). No production helper or game bootstrap policy was relaxed.
+
+Sourcec53f73ef: actual Mac launcher build/sign/deep verification plus67 shared UI groups pass after the final metadata-clear repair. Linux launcher test/68 shared UI groups pass using the existing verified pinned dotnet-linux SDK. Exact Windows startup/package/icon stage13 tests/2 subtests passes. CI43628069752 exposes an older publication test with fixed signing-call indices; it now verifies nested signing, post-nested cleanup, bundle sealing and checked deep strict verification by relative order. Full Windows publication-policy34 tests pass. One Mac CI job separately fails before checkout in actions/setup-python manifest provisioning; other jobs using the same pin run normally, so no dependency-pin change is warranted. Current CI acceptance remains pending.
+
+Source05de48cb CI43628489245: Windows Runtime3 reports1155 passed/176 skipped with15 setup errors, all from the production-helper fixture assuming cmake.exe lives beside system python.exe. Discovery now matches process fixtures: adjacent virtualenv tool when present, otherwise PATH. Windows18 producer checks pass/1 Mac skip; an injected system-interpreter path with a real PATH-discovered native CMake/build/bundle verifies the other layout (1 pass/18 deselected). Native policy was unchanged. All three local merged game builds retain compatibility47532ac34e32ac5e65d20622a968f611c1fcf769e484aac0805851df0f6d056b; current game SHA Windows75efa9499ebd80143ae39f5cd6464ef94e79d8676b8e030064af7a30158ea69f, Macc4a46cf876ebefd639139f7ef1356d405c4a240fe7f9349acd7fbbb77a31d70c, Linux604aa994ebaeecd025587aa35e0f524faaddee03eae1fc315afd5f1dd80bc89c. New CI acceptance is pending.
+
+Final save-lease/integration CI source7cad0c10: run43629577400 completes23 successful jobs/2 intentional skips, no failures, including selected runtime/patch/launcher/release checks and aggregate PR validation. CMake discovery repair also passes local real producer checks on Mac19, Linux18/1 Mac skip, Windows18/1 Mac skip and the injected system-interpreter layout case. Full source is pushed/synchronized to all three task checkouts; current task-base context/diff checks pass. This validates the native save-lease component and merged build/launcher contracts. Storage/launcher still do not select mod save leases or execute scripts; source bootstrap, prevention of lazy default-root/profile-override escape, actual custom matches, real exFAT/cross-filesystem checks, public hosting/trust/backups and full release acceptance remain required. No main merge or public deployment occurred.
+
+Native storage startup fence (task base6fc70768, 2026-11-14): shared guest_storage state can require one immutable root before initialization. Invalid/late registration closes snapshots and later init attempts; profile overrides are cleared/refused while guarded. Kernel adapter checks before defaults/mkdir/images, so explicit/env/lazy fallback cannot reach personal storage. Ordinary unguarded behavior stays covered by existing tests. Windows24 storage checks pass, including actual native six-image/backend cases, bad registration/lazy translation, negative mutations and nonsparse failure fixtures. Test defaults/canaries are disposable and isolated. Mac/Linux native checks and updated game linking pending; no mod startup route arms this policy yet. Source/package bootstrap and actual script activation remain required.
+
+Storage fence source080d971b: Windows24 storage checks and Mac/Linux18 each pass/6 Windows-only skips. All three updated native games/build/platform tests pass. Source handoff now has a shared C# encoder and native reader with exact SHA256-pinned snapshots, strict UTF8/bytecode/NUL/size/ordering/length checks and package-derived save identity. Whole-file pin comes from the trusted launcher/local developer authority; publisher/package authentication remains caller-owned. No helper/save paths or policy flags are accepted in the wire. Windows47 capsule/image checks pass/4 host skips; shared launcher build and67 UI groups plus settings/maintenance checks pass, including the same C#/native golden vector. First maximum-source test used an oversized pytest case ID, overflowing Windows test environment; bounded IDs repair that fixture. Native Mac/Linux capsule/launcher and updated capsule game linking pending. Neither source handoff nor storage fence is registered by game startup yet; no script activation is claimed.

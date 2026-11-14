@@ -25,6 +25,7 @@ from runtime_licenses import prepare as prepare_runtime_licenses
 from linux_dependency_sources import collect as collect_dependency_sources
 from release_channels import identity as release_identity
 from build_textures import optional_identity, write_source_files
+from bundle_mod_runtime import copy as copy_mod_runtime
 
 # These are the host ABI, not distributable application dependencies. Keep the
 # host GPU/GL/Vulkan drivers and loader selection; never ship a hardware ICD.
@@ -274,6 +275,16 @@ def main():
             origin=args.launcher/member.relative_to(stage)
             roots.append((origin if origin.is_file() else member,member))
     records=bundle_libraries(roots,stage)
+    # Keep sealed helpers out of RPATH rewriting, while retaining their source
+    # and license provenance in the complete ELF audit below.
+    mod_runtime=copy_mod_runtime(ROOT,build,stage)
+    for name in mod_runtime['files']:
+        if name!='Lua.txt':
+            target=stage/'Bin/ModRuntime'/mod_runtime['identity']/name
+            for library,_ in dependencies(target):
+                if not HOST.fullmatch(library):raise ValueError('Mod helper requires an unbundled application dependency: '+library)
+            origin=ROOT/'build/mod-worker/cmake'/name
+            records[target.relative_to(stage).as_posix()]=dict(source=str(origin),source_sha256=digest(origin))
     if digest(stage/'TimeSplitters.Launcher')!=json.loads((stage/'Support/Launcher/manifest.json').read_text())['files']['TimeSplitters.Launcher']:
         raise ValueError('Relocation changed the signed launcher bundle')
     subprocess.run([sys.executable,str(repo_file(ROOT,'tools','network-identity.py')),'--output',str(build/'generated'),'--seal-executable',str(game)],check=True)
@@ -290,7 +301,7 @@ def main():
     public_native={k:v for k,v in native.items() if k not in ('game_directory','configure_command','runtime_libraries','working_tree_changes')}
     manifest=dict(display_settings_version=native.get('display_settings_version',3),version=args.version,platform='linux-x64',renderer='vulkan',release_channel=release,source_commit=native['source_revision'],packaging_commit=run('git','rev-parse','HEAD'),
         launcher_version=launcher_manifest['version'],textures=optional_identity(ROOT) or dict(delivery='optional'),
-        minimum_glibc=run('getconf','GNU_LIBC_VERSION').split()[-1],native_build=public_native,python=python,
+        minimum_glibc=run('getconf','GNU_LIBC_VERSION').split()[-1],native_build=public_native,python=python,mod_runtime=mod_runtime,
         runtime_libraries=audit['components'],media=media_receipt['pin'],files={p.relative_to(stage).as_posix():digest(p) for p in stage.rglob('*') if p.is_file()})
     (stage/'BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n');verify_payload(stage,manifest)
     env=dict(os.environ);env.pop('PYTHONPATH',None)

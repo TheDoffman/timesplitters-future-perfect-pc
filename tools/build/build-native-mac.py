@@ -68,6 +68,7 @@ def main():
     parser.add_argument('--vulkan-driver', choices=tuple(vulkan_sdk.DRIVERS), default=vulkan_sdk.DEFAULT_DRIVER,
                         help='Pinned Vulkan driver recorded in the build manifest (default: MoltenVK)')
     parser.add_argument('--runtime-root', type=Path, default=ROOT, help='Reuse this same-host checkout’s ignored dependencies, game data and single native build')
+    parser.add_argument('--sdk-root', type=Path, help='Read-only SDK reuse from another checkout with the same verified pin; keep runtime/build local')
     args = parser.parse_args()
     runtime_root=args.runtime_root.resolve()
     UPSTREAM=runtime_root/'external/ts3FPrecomp'; PYTHON=runtime_root/'.venv/bin/python'
@@ -93,7 +94,10 @@ def main():
         # back to a different frontend when its SDK fails verification.
         sdk = None
         if renderer == 'vulkan':
-            sdk = vulkan_sdk.setup(runtime_root) if args.setup else vulkan_sdk.verify_install(runtime_root)
+            if args.sdk_root:
+                sdk = vulkan_sdk.verify_install(runtime_root, source_root=args.sdk_root)
+            else:
+                sdk = vulkan_sdk.setup(runtime_root) if args.setup else vulkan_sdk.verify_install(runtime_root)
     except (OSError, ValueError, RuntimeError) as error:
         raise SystemExit(f'Native renderer prerequisite: {error}') from error
     print(f'Native renderer: {renderer} (requested {args.renderer})', flush=True)
@@ -112,8 +116,11 @@ def main():
         _, _, textures = ensure_pack(ROOT)
     run(PYTHON, ROOT / 'tools/build/apply-patches.py', UPSTREAM, ROOT / 'patches')
     if args.setup:
+        submodules=['third_party/SDL','third_party/XbSymbolDatabase']
+        if renderer=='vulkan':
+            submodules+=['third_party/Vulkan-Headers','third_party/volk','third_party/VulkanMemoryAllocator']
         run('git', '-C', UPSTREAM, 'submodule', 'update', '--init', '--depth', '1',
-            'third_party/SDL', 'third_party/XbSymbolDatabase')
+            *submodules)
         db = UPSTREAM / 'third_party/XbSymbolDatabase'
         run(CMAKE, '-S', db, '-B', db / 'build', '-G', 'Ninja',
             f'-DCMAKE_MAKE_PROGRAM={NINJA}', '-DCMAKE_BUILD_TYPE=Release', '-DXBSDB_BUILD_UNITTEST=OFF')
@@ -138,6 +145,8 @@ def main():
     run(PYTHON, ROOT / 'tools/build/network-identity.py', '--runtime', UPSTREAM,
         '--game', runtime_root / 'private/game', '--output', BUILD / 'generated')
     # Source builds may reuse another checkout's interpreter and build tree.
+    run(PYTHON, ROOT / 'tools/build/mod_runtime_images.py', '--output', runtime_root / 'build/mod-worker',
+        '--cmake', CMAKE, '--runtime-root', BUILD / 'ModRuntime', '--header', BUILD / 'generated/mod-runtime-images.h')
     (BUILD / 'generated/online-python.h').write_text(
         '#define TSFP_ONLINE_PYTHON ' + json.dumps(str(PYTHON)) + '\n', encoding='utf-8')
     command = [CMAKE, '-S', UPSTREAM / 'titles/futureperfect', '-B', BUILD, '-G', 'Ninja',
@@ -187,7 +196,8 @@ def main():
                        XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
                        XDG_CACHE_HOME=str(test / 'xdg-cache'))
             if renderer=='vulkan':
-                env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(runtime_root),vulkan_sdk.select_driver(manifest))
+                verified_sdk=vulkan_sdk.verify_install(runtime_root,source_root=args.sdk_root) if args.sdk_root else vulkan_sdk.verify_install(runtime_root)
+                env=vulkan_sdk.with_probe_gpu_environment(env,verified_sdk,vulkan_sdk.select_driver(manifest))
                 env['RECOMP_VK_VALIDATION']='1'
             for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test', '--debug-self-test'):
                 if check in ('--settings-self-test', '--debug-self-test'):

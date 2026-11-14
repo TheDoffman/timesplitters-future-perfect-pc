@@ -157,6 +157,8 @@ def test_packaged_runtime_uses_manifest_hash_without_checkout_sdk(tmp_path,monke
     monkeypatch.setattr(runner.linux_vulkan_sdk,'verify_install',lambda:pytest.fail('Packaged game used checkout SDK'))
     monkeypatch.setenv('LD_LIBRARY_PATH','checkout-sdk');monkeypatch.setenv('VK_DRIVER_FILES','checkout-driver')
     env=runner.runtime_environment(tmp_path)
+    with pytest.raises(ValueError,match='Packaged acceptance'):
+        runner.runtime_environment(tmp_path,tmp_path/'checkout-sdk')
     assert 'LD_LIBRARY_PATH' not in env and 'VK_DRIVER_FILES' not in env
     assert env['RECOMP_FFMPEG_DIR']==str(tmp_path/'Bin')
     exe.write_bytes(b'changed')

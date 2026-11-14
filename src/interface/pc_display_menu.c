@@ -1774,3 +1774,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
 #include "pc_developer_lobby_guest.inc"
 
 #include "pc_video_sidebar.inc"
+
+#ifdef TSFP_MOD_GAME
+#include "pc_mod_guest.inc"
+#endif

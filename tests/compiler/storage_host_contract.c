@@ -72,9 +72,59 @@ static void expect(const char *guest,const char *root,const char *relative) {
     for(i=0;actual[i];++i)if(actual[i]=='\\')actual[i]='/';
     CHECK(!strcmp(actual,wanted));
 }
+#ifdef TSFP_STORAGE_FENCE_TEST
+static char fence_default[4096];
+#ifdef _WIN32
+HRESULT WINAPI tsfp_test_default_folder(HWND window,int folder,HANDLE token,DWORD flags,LPWSTR out) {
+    (void)window;(void)folder;(void)token;(void)flags;
+    return MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,fence_default,-1,out,MAX_PATH)>0?S_OK:E_FAIL;
+}
+#endif
+static int fence_test(const char *root,const char *mode) {
+    char game[4096],save[4096],isolated[4096],profile[4096],environment[4096],out[4096],before[4096],bad[4097];
+    xbox_host_char translated[MAX_PATH];int valid=!strcmp(mode,"valid"),late=!strcmp(mode,"late");
+    path(game,root,"game");path(save,root,"save");path(isolated,root,"other");path(profile,root,"profile");path(environment,root,"environment");
+    path(fence_default,root,"default");
+#ifdef _WIN32
+    CHECK(!_putenv_s("RECOMP_SAVE_DIR",environment));
+#else
+    CHECK(!setenv("RECOMP_SAVE_DIR",environment,1) && !setenv("XDG_DATA_HOME",fence_default,1));
+    CHECK(!setenv("HOME",fence_default,1));
+#endif
+    CHECK(xbox_set_profile_root_utf8(profile));
+    if(late)xbox_path_init(game,save);
+    if(valid)CHECK(xbox_require_save_root_utf8(isolated));
+    else {
+        const char *request=NULL;
+        if(!strcmp(mode,"empty"))request="";
+        if(!strcmp(mode,"relative"))request="relative";
+        if(!strcmp(mode,"oversize")){memset(bad,'x',4096);bad[4096]=0;request=bad;}
+        if(!strcmp(mode,"missing")){path(bad,root,"absent");request=bad;}
+        if(late)request=isolated;
+        CHECK(!xbox_require_save_root_utf8(request));
+    }
+    CHECK(!xbox_require_save_root_utf8(save));
+    CHECK(!xbox_set_profile_root_utf8(profile) && xbox_set_profile_root_utf8(""));
+    xbox_path_init(game,save);xbox_path_init(game,NULL);xbox_path_init(NULL,NULL);
+    memset(out,0x66,sizeof(out));memcpy(before,out,sizeof(out));
+    if(valid) {
+        CHECK(xbox_save_root_utf8(out,sizeof(out)) && !strcmp(out,isolated));
+        expect("U:\\a",isolated,"UserData/a");expect("T:\\a",isolated,"TitleData/a");
+        xbox_path_init(game,environment);CHECK(xbox_save_root_utf8(out,sizeof(out)) && !strcmp(out,isolated));
+    }else {
+        CHECK(!xbox_save_root_utf8(out,sizeof(out)) && !memcmp(out,before,sizeof(out)));
+        CHECK(!xbox_translate_path("U:\\should-not-write",translated,MAX_PATH));
+        CHECK(!xbox_translate_path("T:\\should-not-write",translated,MAX_PATH));
+    }
+    puts("PASS: actual native initialization and lazy translation obey the startup fence");return 0;
+}
+#endif
 int main(int argc,char **argv) {
     char game[4096],save[4096],other[4096],environment[4096],profile[4096],image0[4096],image1[4096],bad[4096],out[4096],before[4096];
     unsigned char bytes[512];info first0,first1,after;unsigned i;uint64_t expected;
+#ifdef TSFP_STORAGE_FENCE_TEST
+    if(argc==3)return fence_test(argv[1],argv[2]);
+#endif
     CHECK(argc==2);path(game,argv[1],"game");path(save,argv[1],"save");path(other,argv[1],"other");path(environment,argv[1],"environment");path(profile,argv[1],"profile");path(bad,argv[1],"not-a-directory");
     memset(out,0x77,sizeof(out));memcpy(before,out,sizeof(out));CHECK(!xbox_save_root_utf8(out,sizeof(out)) && !memcmp(out,before,sizeof(out)));
     CHECK(xbox_set_profile_root_utf8(profile));xbox_path_init(game,save);CHECK(xbox_save_root_utf8(out,sizeof(out)) && !strcmp(out,save));

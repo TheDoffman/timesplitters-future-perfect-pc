@@ -61,6 +61,30 @@ RELEASE_INPUTS = {
 # Unknown runtime inputs still select GPU validation. New files must not
 # silently lose coverage; only known offline scripts are exempted.
 CPU_TOOLS = {
+    'tools/mods/mod_package.py', 'tools/mods/mod_repository.py',
+    'tools/mods/mod_server.py', 'tools/mods/mod-workshop.py',
+    'tools/mods/mod_publication.py', 'tools/mods/hosting/host-mac.py',
+    'tools/mods/hosting/run-mac-mod-host.sh', 'tools/mods/hosting/Caddyfile',
+    'tests/mods/test_mod_workshop.py',
+    'tools/mods/mod_scan_sandbox.py', 'tools/mods/scan_child.py',
+    'tests/mods/test_scanner_process.py', 'tests/mods/live_clamav.py',
+    'tests/mods/live_scan_isolation.py',
+    'tools/mods/mod_accounts.py', 'tools/mods/mod_uploads.py', 'tools/mods/mod_api.py',
+    'tools/mods/mod_operator.py', 'tools/mods/hosting/gunicorn.conf.py', 'tools/mods/hosting/requirements.txt',
+    'tests/mods/test_creator_service.py', 'tests/mods/test_creator_api.py', 'tests/mods/test_package_budgets.py',
+    'tests/mods/live_creator_service.py', 'tests/mods/scan_limits_probe.c',
+    'tools/mods/mod_trust.py', 'tools/mods/mod_signing.py',
+    'tools/mods/hosting/requirements-signing.txt', 'tests/mods/conftest.py', 'tests/mods/test_catalog_trust.py',
+    'tests/mods/test_native_trust_fixtures.py',
+    'tools/build/build-mod-worker.py', 'tools/mods/mod_script_protocol.py', 'tests/mods/test_script_worker.py',
+    'config/mods/lua-source.json', 'src/mods/CMakeLists.txt', 'src/mods/mod_script.c', 'src/mods/mod_script.h',
+    'src/mods/mod_worker.c', 'src/mods/mod_watchdog.c', 'src/mods/mod_watchdog.h',
+    'src/mods/mod_process.hpp', 'src/mods/mod_process_windows.cpp', 'src/mods/mod_process_posix.cpp',
+    'src/mods/mod_runner.cpp', 'src/mods/mod_seal.c', 'src/mods/mod_seal.h',
+    'tests/mods/test_script_process.py', 'tests/mods/native_process_probe.c',
+    'src/mods/mod_guardian_mac.c', 'tests/mods/native_lifetime_probe.cpp',
+    'src/mods/mod_session.hpp', 'src/mods/mod_session.cpp',
+    'tests/mods/test_script_session.py', 'tests/mods/native_session_driver.cpp', 'tests/mods/native_session_worker.c',
     'tests/compiler/test_guest_abi.py',
     'tests/compiler/test_guest_call_frames.py',
     'tests/compiler/test_guest_dispatch.py',
@@ -186,7 +210,7 @@ def affected(paths, *, full=False):
             selected.add('native')  # Online HTTPS tests use the packaged certificate provider.
         elif path in RELEASE_INPUTS:
             selected.add('release')
-        elif path in CPU_TOOLS or (
+        elif path in CPU_TOOLS or path.startswith('src/mods/lua-fixes/') or (
             path.endswith('.py') and path.startswith(
                 ('tools/textures/', 'tests/textures/'))
         ):

@@ -1,3 +1,182 @@
+Main visibility integration retains positive explicit max_chunk_bytes validation and UTF8-plus-LF body accounting; defaults now use main's512KiB budget through the same shared chunk iterator. Both helper and full publisher budget tests pass.
+
+test_mod_runtime.py includes network-fresh/authority-fresh; both reproduce the
+old admission bug. The fix consumes unsupported incoming identities before
+restoring flags. The imported visibility_queue.c separates its conditional copy
+from the unconditional increment so GCC's indentation check stays enabled.
+
+## Native scanner and build fixtures
+
+[Native preflight/CI tests](build-test-details.md), [context](investigation.md),
+[mods](mod-scripting.md); [pads](video-options.md).
+Windows FFmpeg [pin details](build-test-details.md); scanner bounds use real children.
+Windows -BuildJobs defaults2 and bounds MSBuild plus MSVC /MP; see pin details.
+The standalone texture-mod reader fixture uses C11 with `_POSIX_C_SOURCE=200809L`
+on POSIX hosts so the real trace clock declarations remain available. Run
+`pytest tests/mods/test_texture_mod_mount.py` under Linux as well as Windows/Mac.
+Scanner/creator/API/parser tests run in Windows/Mac native suites and all mods
+tests under Linux CI, including audit name collisions; live checks use the Mac.
+
+Native test_mod_runtime.py blocks a background probe while polling simulation, validates epoch-specific approval and real contained VM cleanup, including close/exception/stale/roster/network/authority faults.
+
+Native test_mod_resources.py relocates a real driver/bundle and executes a contained worker through a fresh identity-held cache; test_mod_saves.py checks the shared permission adapter default remains unchanged.
+
+Native test_mod_manager.py covers retained configuration, retiring epochs and reap-before-successor with real OS-contained workers; game binding is separate acceptance.
+
+Bootstrap fixtures also execute Unicode capsule/root environment reads, and empty/oversized handoff rejection.
+
+## Script startup storage
+
+tests/mods/test_mod_bootstrap.py builds the real native bootstrap/capsule/save lease with shared guest_storage.c metadata and narrow UI/kernel adapters. It checks source publication only after commit, original-save canaries, preference resolution before picker lock, live exclusive lease and tampered marker refusal. tests/storage/test_storage_menu.py separately checks the real permanent UI lock before any target creation. Actual game builds/patch validation remain required; this fixture does not start a custom match.
+
+# Feature test index
+
+test_mod_capsule.py uses the same mod-launch-vectors.json embedded in all launcher
+test builds. It verifies native byte snapshots/save identity, malformed digests,
+counts/lengths/dependency ordering, binary Lua/UTF8 boundaries, maximum source,
+links and replacement after capture. Large byte parameters have bounded IDs so
+PYTEST_CURRENT_TEST stays below the Windows environment-variable limit.
+Shared launcher UI tests validate exact C# bytes/digests/identity and refusals.
+Both native parent builds link the reader with the existing OS hash providers;
+worker/VM code receives no new filesystem API. No startup caller is wired yet.
+
+test_guest_storage.py adds pure fence metadata checks and actual native backend
+cases for valid, NULL/empty/relative/oversize/missing and late root registration.
+They exercise explicit/environment/default reinitialization, lazy U/T translation
+and pre-init profile clearing while preserving normal-save canaries. Windows
+default-folder lookup is redirected only inside the fixture so even a broken
+fence cannot use personal defaults; POSIX HOME/XDG defaults are isolated too.
+Ordinary storage policy, negative mutations, sparse and regular-allocation/failure
+fixtures remain selected. Registration is not yet called by the mod bootstrap.
+
+Production-helper fixtures resolve CMake beside the interpreter or through PATH,
+matching native process fixtures. System Python's pip-installed Scripts directory
+is separate from python.exe; a virtualenv's adjacent-tool layout is not assumed.
+
+The synthetic Windows package_launcher.py fixture supplies the mandatory native
+helper producer alongside its other mocked binary builders. It checks helper/
+Lua notice inclusion and manifest hashes; test_runtime_images.py independently
+tests the real producer, rejection policy and OS-confined execution.
+Mac launcher sign_bundle performs its final generated-output xattr clear after
+nested Mach-O signing, then seals/verifies the app. Real-host inspection found
+root FinderInfo reappeared during that interval; immediate clear/reseal and deep
+strict verification pass. Bundled native signatures remain embedded in images.
+The publication-policy test enforces that relative signing/cleanup order and
+checked strict verification while allowing the extra metadata cleanup command.
+
+`tests/mods/test_mod_saves.py` uses native leases and disposable save canaries:
+persistence without copying originals, absent roots, independent profiles,
+exclusive concurrent processes, abrupt-exit release, marker/collision refusal,
+link/hard-link redirects, live tamper rechecks, bounded depth, POSIX modes/FIFOs/
+large sparse metadata and native Windows broad-write ACL rejection. Parent
+Unicode/space paths and explicit same-filesystem relocation retain both normal
+and mod progress; cross-filesystem/device acceptance remains separate. Parent
+OWNER RIGHTS ACLs are accepted only after current-user ownership is verified.
+Filesystem adapters recognize exFAT without assuming it supports ACLs; real
+exFAT device/storage/sandbox acceptance remains pending. No disk-image allocation
+or guest storage routing is performed by this component. It is not Lua activation.
+
+`tests/mods/test_runtime_images.py` builds real production helpers and checks
+exact bundle contents/header pins, stable repeat staging and refusal of testing,
+sanitizer, changed source/image/configuration/license receipts. Unknown bundle
+files/headers survive refusal. Worker receipts capture source hashes before
+compilation and refuse source changes before overwriting a prior receipt.
+All native game builders run that producer before game CMake and place its
+generated header under the build's generated directory. Game CMake refuses a
+missing header. test_mod_match.py also compiles the actual game-only gate with
+a different digest and proves caller-supplied hashes of a real valid worker are
+refused before a process or private cache is created.
+Public Windows/Mac/Linux game packagers use bundle_mod_runtime.py to validate
+production receipts, immutable metadata and generated header consistency before
+copying helper-only trees under Bin/ModRuntime. They never merge existing output.
+Mac includes helpers in minimum-OS inspection and leaves their signatures intact.
+Linux copies after RPATH rewriting, requires only host-ABI dependencies and adds
+the worker plus Lua notice/source to its complete ELF provider audit. Relocated
+real-worker protocol and tamper/unknown-file tests live in test_runtime_images.py.
+Mac helper builds explicitly set deployment target11.0; production staging
+rejects other cached targets and native tests inspect worker/guardian Mach-O
+minimum versions. The newer game's renderer/dependency minimum stays separate.
+The relocated helper check uses production First to Three start/death/stop
+frames, verifies scores1/2/3 and End, and checks private cache cleanup. No game
+binding or save/launcher acceptance is inferred from this developer protocol test.
+
+`tests/mods/test_script_images.py` exercises real OS SHA256 providers, immutable
+private helper staging, digest/pin/size/cancellation/path rejection and cleanup
+that preserves unknown files. Darwin requires a verified lifetime guardian.
+Match fixtures pass expected hashes explicitly and exercise missing/bad pin
+refusal before any transaction. Linux parent builds link OpenSSL::Crypto; Windows
+uses bcrypt and Apple uses CommonCrypto. No Lua is added to the game parent.
+
+The historical Mac-only upgrade fixture omits2710 from its old subset because
+that subset intentionally excludes the Story frame/network wrapper. It then
+asserts all four mod hooks after the complete upgrade. Production order is unchanged.
+
+`test_translation_batch.py` checks deterministic byte/count partitioning, UTF8
+weight, indivisible oversized functions and invalid-budget output preservation.
+The shared default body cap is1MiB. Count-only250 still grouped155k lines/6MB of
+SIMD bodies in one MSVC unit and failed C1002; an individual failing routine
+compiled with unchanged /O2 /Ob2. Full weighted game build validation is pending.
+
+Native game builders accept `--sdk-root` for read-only same-host reuse. The source
+checkout's SDK pin must equal the current pin, then its receipt/required files
+must pass normal verification. `--setup` still installs Python/submodules into
+the task runtime root and never sets up a reused SDK. Runtime and build outputs
+stay local. Mac's broader `--runtime-root` continues to share those outputs, so
+do not use it to borrow dependencies from an independently edited checkout.
+`test_vulkan_sdk.py` covers both hosts' pin mismatch/tamper rejection and no writes.
+Linux generation stages only the hash-verified executable under its owned
+private/pipeline/input. Symbol/analysis tools otherwise write beside the input;
+they must not receive the shared asset executable. Network identity still hashes
+the selected original game directory. Existing differing staged inputs are
+preserved and refused. The Linux foundation test checks source/cache preservation.
+Fresh Mac Vulkan setup also initializes pinned Vulkan-Headers/volk/VMA submodules,
+matching the backend's existing prerequisite checks. GL keeps its smaller setup.
+Linux game configure explicitly selects Clang/Clang++ for the existing Clang
+numeric/vectorization policy, rather than relying on a preexisting CMake cache
+or inherited CC/CXX. Its symbol-scanner setup remains independent.
+Bounded Mac/Linux source runners also accept `--sdk-root` with the same receipt
+verification. Linux package relocation rejects combining it with `--package-root`;
+package acceptance must continue to find all libraries without a checkout SDK.
+The Windows native scene observer snapshots each capture's lstat once and
+ignores only FileNotFound during enumeration/deletion: the runtime rotates those
+owned files concurrently. Links/nonregular files and other errors still fail;
+other tags remain untouched. The native timing test simulates both race windows.
+The Windows scene observer also refuses executable-only inputs without pak/xmv
+directories; a compiled game is not proof that playable data was provisioned.
+
+Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
+n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.
+The versioned cache and dated URL replace the mutable latest asset; checksum
+mismatch still stops setup. The archive was downloaded and matched upstream's
+published digest; Windows Setup completed. Other host adapters/runtime pin are
+unchanged. Game build and media playback remain separate acceptance checks.
+
+Windows tsfp.ps1 accepts -BuildJobs1..32 (default2), bounding both MSBuild project
+parallelism and MSVC's separate CL_MPCount. Project parallelism alone leaves
+/MP unbounded and caused observed heap/pagefile exhaustion during the mod game
+build. Invoke-Checked chooses the first matching executable when PATH has more
+than one application (normal Windows/Codex PATH contained two Git executables).
+
+[Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
+[0.6.2 rollback](control-presets.md); [Tex](texture-preference.md).
+[Hints](video-options.md).
+[Throw](native-uplink.md); [Beams](native-projectiles.md).
+[Vietnam](network-performance.md).
+[Tools](developer-tools-integration.md).
+Developer warnings: [launcher](launcher.md).
+[Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
+[Icons](controls-options.md).
+[Context](investigation.md)
+
+[Effect depth](native-effect-depth.md).
+[Update tests](main-menu-update.md).
+[Weapon FOV](video-options.md#weapon-aperture).
+[HUD/MSAA tests](../development/graphics-options.md).
+[SDL/input fixtures](linux-game.md).
+[Font/escape tests](audio-options.md).
+`test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
+[Kill feed](../development/arcade-kill-feed.md)
+
 # Story release flag regression
 
 `tests/graphics/test_quit_menu.py::test_story_version_feature_flag` compiles the

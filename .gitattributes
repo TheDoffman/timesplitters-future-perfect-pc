@@ -6,6 +6,7 @@ docs/agent-context/*.md text eol=lf
 *.command text eol=lf
 *.sh text eol=lf
 *.py text eol=lf
+*.lua text eol=lf
 tools/compiler/xbe_kernel_exports.def text eol=lf
 tools/compiler/translation_host_symbols.txt text eol=lf
 tools/compiler/translation_host_symbols.json text eol=lf
@@ -28,4 +29,5 @@ vendor/smaa/SearchTex.h -text -filter -whitespace linguist-vendored
 vendor/smaa/LICENSE.txt -text -filter -whitespace linguist-vendored
 
 assets/ui/fonts/*.ttf -text -filter
+vendor/lua-5.5.1/** -text -filter -whitespace linguist-vendored
 vendor/stb/** -text -filter -whitespace linguist-vendored

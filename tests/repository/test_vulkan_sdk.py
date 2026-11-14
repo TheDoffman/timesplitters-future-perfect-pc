@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import io
+import json
 import sys
 import zipfile
 import pytest
@@ -10,6 +11,7 @@ import pytest
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 import vulkan_sdk as sdk
+import linux_vulkan_sdk as linux_sdk
 
 
 def root_fixture(tmp_path):
@@ -29,6 +31,33 @@ def test_sdk_receipt_detects_changed_installed_file(tmp_path):
     (installed/'macOS/lib/libdxcompiler.dylib').write_bytes(b'changed')
     with pytest.raises(RuntimeError,match='installed file changed'):
         sdk.verify_install(root)
+
+
+@pytest.mark.parametrize('module',[sdk,linux_sdk])
+def test_sdk_reuse_checks_current_pin_and_every_required_file_without_writes(tmp_path,module):
+    target=root_fixture(tmp_path/'target');source=root_fixture(tmp_path/'source')
+    for root in (target,source):
+        (root/'config/build/vulkan-sdk-linux.json').write_bytes((ROOT/'config/build/vulkan-sdk-linux.json').read_bytes())
+    installed=module.install_path(source);spec=module.pin(source)
+    files={}
+    for name in module.CRITICAL:
+        path=installed/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(name.encode())
+        files[name]=module.sha256(path)
+    (installed/'Licenses').mkdir(exist_ok=True)
+    (installed/'tsfp-receipt.json').write_text(json.dumps(dict(version=spec['version'],archive_sha256=spec['sha256'],files=files)))
+    before={p.relative_to(source).as_posix():(p.read_bytes(),p.stat().st_mtime_ns) for p in source.rglob('*') if p.is_file()}
+    expected=installed/('macOS' if module is sdk else 'x86_64')
+    assert module.verify_install(target,source_root=source)==expected
+    assert not (target/'external').exists()
+    assert before=={p.relative_to(source).as_posix():(p.read_bytes(),p.stat().st_mtime_ns) for p in source.rglob('*') if p.is_file()}
+    config=target/'config/build'/('vulkan-sdk.json' if module is sdk else 'vulkan-sdk-linux.json')
+    changed=json.loads(config.read_text());changed['sha256']='0'*64;config.write_text(json.dumps(changed))
+    with pytest.raises(RuntimeError,match='current shared pin'):
+        module.verify_install(target,source_root=source)
+    changed['sha256']=spec['sha256'];config.write_text(json.dumps(changed))
+    (installed/module.CRITICAL[-1]).write_bytes(b'tampered dependency')
+    with pytest.raises(RuntimeError,match='file changed'):
+        module.verify_install(target,source_root=source)
 
 
 def test_unknown_existing_install_is_preserved(tmp_path):

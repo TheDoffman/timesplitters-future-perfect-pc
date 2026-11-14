@@ -62,3 +62,7 @@ as required by GPLv3; a license file alone does not satisfy that requirement.
 Developer Tools typography: Microsoft Selawik and Google Fonts Cousine,
 SIL Open Font License1.1; see assets/ui/fonts. Shared stb_truetype rasterizer
 by Sean Barrett and contributors, MIT option; see vendor/stb/LICENSE.
+
+Lua mod worker: Lua5.5.1, Copyright1994-2026 Lua.org, PUC-Rio, MIT license.
+Pristine source: vendor/lua-5.5.1; license: LICENSES/Lua.txt.
+Pinned upstream fixes are applied only to verified build copies.

@@ -176,14 +176,31 @@ static int default_save(char *out) {
     return tsfp_path_join(root,n,"xboxrecomp",10,'/',out,TSFP_PATH_LIMIT,&n);
 #endif
 }
+/* Trusted startup supplies a previously validated, leased namespace. Invalid
+ * requests still close the fence, so lazy path translation cannot use defaults. */
+int xbox_require_save_root_utf8(const char *root) {
+    size_t n=host_length(root);int valid=n && n<TSFP_PATH_LIMIT,result;
+#ifdef _WIN32
+    WCHAR name[MAX_PATH];
+    if(valid)valid=wide(root,name) && name[0] && name[1]==L':' && (name[2]==L'/' || name[2]==L'\\');
+#else
+    if(valid)valid=root[0]=='/';
+#endif
+    if(valid)valid=host_directory(root);
+    init_enter();result=tsfp_storage_require(&storage,valid?root:NULL);init_leave();
+    return valid && result;
+}
 void xbox_path_init(const char *game,const char *save) {
     tsfp_storage_snapshot paths;tsfp_storage_report report;unsigned source=TSFP_STORAGE_DEFAULT;
-    char game_default[TSFP_PATH_LIMIT],save_default[TSFP_PATH_LIMIT],directory[TSFP_PATH_LIMIT];size_t bytes;
+    char game_default[TSFP_PATH_LIMIT],save_default[TSFP_PATH_LIMIT],directory[TSFP_PATH_LIMIT],required[TSFP_PATH_LIMIT];size_t bytes;
     const char *environment=getenv("RECOMP_SAVE_DIR");
-    static const char *const folders[]={"TitleData","UserData","Cache","SystemData"};unsigned i;int ok=1;
+    static const char *const folders[]={"TitleData","UserData","Cache","SystemData"};unsigned i;int ok=1,fence;
     init_enter();
-    if(!game && !default_game(game_default))ok=0;
-    if(!save && (!environment || !environment[0]) && !default_save(save_default))ok=0;
+    fence=tsfp_storage_required(&storage,required,sizeof(required));
+    if(fence<0)ok=0;
+    if(fence>0){save=required;environment=NULL;}
+    if(ok && !game && !default_game(game_default))ok=0;
+    if(ok && !save && (!environment || !environment[0]) && !default_save(save_default))ok=0;
     if(ok)ok=tsfp_storage_select(game,save,environment,game_default,save_default,&paths,&source);
 #ifdef _WIN32
     if(ok) {WCHAR check[MAX_PATH];ok=wide(paths.game,check) && wide(paths.save,check);}

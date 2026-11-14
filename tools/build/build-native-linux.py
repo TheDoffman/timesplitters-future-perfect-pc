@@ -21,11 +21,29 @@ from vulkan_sdk import sha256
 def run(*args,cwd=ROOT,env=None):
     subprocess.run([str(a) for a in args],cwd=cwd,env=dict(os.environ if env is None else env,TSFP_PROJECT_ROOT=str(ROOT)),check=True)
 
+def stage_generation_input(root,xbe,expected):
+    """Keep symbol/analysis outputs beside an owned executable, not shared assets."""
+    root=Path(root).resolve();directory=root/'private/pipeline/input'
+    for parent in (root/'private',root/'private/pipeline',directory):
+        if parent.is_symlink():raise ValueError('Refusing linked generation input directory')
+    directory.mkdir(parents=True,exist_ok=True)
+    target=directory/'default.xbe'
+    if target.is_symlink():raise ValueError('Refusing linked generation executable')
+    if target.exists():
+        if sha256(target)!=expected:raise ValueError('Existing generation executable differs; preserve and inspect it')
+    else:
+        data=Path(xbe).read_bytes()
+        if hashlib.sha256(data).hexdigest()!=expected:raise ValueError('Generation executable changed before staging')
+        with target.open('xb') as output:output.write(data)
+    return target
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game-dir',type=Path,required=True,help='Existing supported game folder; no duplicate asset extract')
     parser.add_argument('--jobs',type=int,default=2,help='Compiler workers (default2 limits WSL memory use)')
     parser.add_argument('--setup',action='store_true',help='Initialize pinned submodules and build the symbol scanner')
+    parser.add_argument('--sdk-root',type=Path,help='Read-only SDK reuse from another checkout with the same verified pin; keep runtime/build local')
     parser.add_argument('--generate',action='store_true',help='Generate current guest C from the verified XBE')
     parser.add_argument('--test',action='store_true',help='Run protected-MMIO regression after building')
     parser.add_argument('--release-media',action='store_true',help='Compile/link against the verified decoder-only media build for packaging')
@@ -43,7 +61,7 @@ def main():
     if not xbe.is_file() or sha256(xbe)!=expected:parser.error('Missing/unsupported US Xbox executable')
     if not (game/'pak').is_dir() or not (game/'xmv').is_dir():parser.error('Game folder must contain pak and xmv')
     if shutil.disk_usage(ROOT).free<4*1024**3:parser.error('Build needs at least 4 GiB free')
-    sdk=linux_vulkan_sdk.verify_install(ROOT)
+    sdk=linux_vulkan_sdk.verify_install(ROOT,source_root=args.sdk_root) if args.sdk_root else linux_vulkan_sdk.verify_install(ROOT)
     tools=Path(sys.executable).parent;cmake=tools/'cmake';ninja=tools/'ninja'
     if not cmake.is_file() or not ninja.is_file():parser.error('Install shared requirements.txt in this Linux environment')
     runtime=ROOT/'external/ts3FPrecomp';build=ROOT/'build/linux/game'
@@ -59,18 +77,22 @@ def main():
             '-DCMAKE_MAKE_PROGRAM='+str(ninja),'-DXBSDB_BUILD_UNITTEST=OFF')
         run(cmake,'--build',db/'build','--target','XbSymbolDatabaseCLI','--parallel','4')
     if args.generate:
-        run(sys.executable,'-m','tools.xdk_symbols',xbe,cwd=runtime)
-        run(sys.executable,'scripts/recompile.py',xbe,'--work-dir',ROOT/'private/pipeline',
+        generation_xbe=stage_generation_input(ROOT,xbe,expected)
+        run(sys.executable,'-m','tools.xdk_symbols',generation_xbe,cwd=runtime)
+        run(sys.executable,'scripts/recompile.py',generation_xbe,'--work-dir',ROOT/'private/pipeline',
             '--project','titles/futureperfect','--game-name','TimeSplitters: Future Perfect','--trace-all-entries',cwd=runtime)
         run(sys.executable,ROOT/'tools/build/recomp-generation.py',runtime,'--record')
     run(sys.executable,ROOT/'tools/build/recomp-generation.py',runtime)
     run(sys.executable,ROOT/'tools/build/network-identity.py','--runtime',runtime,'--game',game,'--output',build/'generated')
     (build/'generated/online-python.h').write_text('#define TSFP_ONLINE_PYTHON '+json.dumps(sys.executable)+'\n')
+    run(sys.executable,ROOT/'tools/build/mod_runtime_images.py','--output',ROOT/'build/mod-worker',
+        '--cmake',cmake,'--runtime-root',build/'ModRuntime','--header',build/'generated/mod-runtime-images.h')
     # Keep Debug assertions and symbols, plus the title's existing precise
     # -O2/no-vectorization policy. Host libraries need optimization as well.
     host_flags='-O2 -g' if args.host_optimization=='optimized' else '-g'
     command=[cmake,'-S',runtime/'titles/futureperfect','-B',build,'-G','Ninja',
         '-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_MAKE_PROGRAM='+str(ninja),
+        '-DCMAKE_C_COMPILER=clang','-DCMAKE_CXX_COMPILER=clang++',
         '-DCMAKE_C_FLAGS_DEBUG='+host_flags,'-DCMAKE_CXX_FLAGS_DEBUG='+host_flags,
         '-DTSFP_NATIVE_DIR='+str(ROOT/'src/native'),'-DTSFP_NATIVE_RHI=ON','-DTSFP_VULKAN_SDK='+str(sdk)]
     media=None;configure_env=dict(os.environ)

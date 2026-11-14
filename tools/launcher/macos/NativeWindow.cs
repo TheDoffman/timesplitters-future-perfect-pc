@@ -21,6 +21,7 @@ namespace TimeSplitters.Launcher
         readonly ReleaseClient client=new ReleaseClient();
         CancellationTokenSource operation;Release latest;bool busy,gameRunning;int checkRevision;SettingsPage settings;SavesPage savesPage;
         FileStream installationLock;DispatcherTimer issuesTimer;NativeNews newsPage;
+        ModWorkshopPage modsPage;
         public NativeWindow():this(Program.Root??AppContext.BaseDirectory,Program.Arguments??Array.Empty<string>()) { }
         public NativeWindow(string root,string[] args)
         {
@@ -30,6 +31,7 @@ namespace TimeSplitters.Launcher
             channelPicker.SetReleases(Array.Empty<Release>(),GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
             Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  "+LauncherPlatform.HostName);
             Click("HomeNav",()=>Page("CommandCenter"));Click("SettingsNav",ShowSettings);Click("NewsNav",()=>Run(News));
+            Click("ModsNav",()=>Run(Mods));
             Click("RepairNav",()=>Maintenance());Click("SupportNav",()=>NativeHost.Open("https://github.com/"+ReleaseClient.Repository+"/issues"));
             Click("DiscordNav",()=>NativeHost.Open(ReleaseClient.DiscordInvite));
             Click("JoinDiscordButton",()=>NativeHost.Open(ReleaseClient.DiscordInvite));
@@ -64,7 +66,7 @@ namespace TimeSplitters.Launcher
             }catch(Exception ex){Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
             Activated+=(s,e)=>{if(newsPage!=null&&Find<Control>("NewsHost").IsVisible&&!busy)Run(newsPage.RefreshIssuesIfDue);};
             Closing+=(s,e)=>{if(!NativeStartup.HandingOff && (busy || gameRunning)){e.Cancel=true;Status("Wait for the operation or game to finish before closing the launcher.");}};
-            Closed+=(s,e)=>{issuesTimer?.Stop();newsPage?.Dispose();operation?.Cancel();installationLock?.Dispose();client.Dispose();};
+            Closed+=(s,e)=>{modsPage?.Dispose();issuesTimer?.Stop();newsPage?.Dispose();operation?.Cancel();installationLock?.Dispose();client.Dispose();};
         }
         T Find<T>(string name) where T:Control { return this.FindControl<T>(name)??throw new InvalidOperationException("Missing launcher control: "+name); }
         void Click(string name,Action action){Find<Button>(name).Click+=(s,e)=>{try{action();}catch(Exception ex){Status(ex.Message);}};}
@@ -78,8 +80,9 @@ namespace TimeSplitters.Launcher
         {channelPicker.SetReleases(releases,selected);}
         void Page(string name){
             if(name!="SettingsHost"&&settings!=null)settings.DismissPrompt();
-            foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost"),("SavesNav","SavesHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
-            foreach(var p in new[]{"CommandCenter","NewsHost","SettingsHost","MaintenanceHost","VersionsHost","SavesHost"})Find<Control>(p).IsVisible=p==name;}
+            foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("ModsNav","ModsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost"),("SavesNav","SavesHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
+            foreach(var p in new[]{"CommandCenter","NewsHost","ModsHost","SettingsHost","MaintenanceHost","VersionsHost","SavesHost"})Find<Control>(p).IsVisible=p==name;}
+        async Task Mods(){if(busy)return;if(modsPage==null){modsPage=new ModWorkshopPage(root,render);modsPage.FileBusyChanged+=value=>{busy=value;Refresh();};modsPage.PlayWithoutModsRequested+=()=>Run(()=>Play(true));Find<ContentControl>("ModsHost").Content=modsPage.View;}Page("ModsHost");await modsPage.Load();}
         void OpenFolder(string name){var path=Core.PathIn(root,name);if(!Directory.Exists(path)){Status("This folder has not been created yet.");return;}NativeHost.Open(path);}
         void Artwork()
         {
@@ -91,7 +94,7 @@ namespace TimeSplitters.Launcher
         }
         void Refresh()
         {
-            foreach(var name in new[]{"HomeNav","NewsNav","RepairNav","SettingsNav","SavesNav"})Find<Button>(name).IsEnabled=!busy;
+            foreach(var name in new[]{"HomeNav","NewsNav","ModsNav","RepairNav","SettingsNav","SavesNav"})Find<Button>(name).IsEnabled=!busy;
             bool installed=File.Exists(Core.PathIn(root,LauncherPlatform.GamePath(root)));
             bool data=File.Exists(Core.PathIn(root,LauncherPlatform.Data(root)+"/default.xbe"));
             Label("InstalledLabel",render?"LOCAL BUILD":NativeHost.Version(root));
@@ -126,12 +129,14 @@ namespace TimeSplitters.Launcher
             Refresh();
         }
         async Task Play()
+        {await Play(false);}
+        async Task Play(bool withoutMods)
         {
             if(busy||gameRunning)return;
             Core.Require(!Core.GameRunning(),"Close the running game before starting another session.");
             await Task.Run(()=>{NativeHost.CheckData(root);NativeHost.CheckBuild(root);});
             Core.Require(!Core.GameRunning(),"The game is already running.");
-            NativeHost.Prepare(root);var info=GameSettings.StartInfo(root);
+            NativeHost.Prepare(root);var info=GameSettings.StartInfo(root,withoutMods);
             await MonitorGame(info,root);
         }
         bool lastWindowObserved;
@@ -244,6 +249,7 @@ namespace TimeSplitters.Launcher
                 dialog.Close(false);await shown;Close();return;
             }
             if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);if(mode.Contains("audio"))settings.SelectTab(3);}
+            if(mode.Contains("mods")){await Mods();}
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
             if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>SelectedGameChannel);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}

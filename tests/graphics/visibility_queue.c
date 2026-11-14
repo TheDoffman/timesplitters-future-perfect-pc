@@ -9,7 +9,8 @@ static unsigned queued;
 static int hle_d3d8_defer_recording(void){return deferred;}
 static void hle_d3d8_defer_op(void (*fn)(const void *),const void *arg,size_t size) {
     assert(queued<8 && size<=32);queue[queued].fn=fn;queue[queued].size=size;
-    if(size)memcpy(queue[queued].bytes,arg,size);queued++;
+    if(size)memcpy(queue[queued].bytes,arg,size);
+    queued++;
 }
 int xbox_D3D8VisibilityBegin(void){events[count++]=1;return 1;}
 void xbox_D3D8VisibilityEnd(uint32_t i,int a){events[count++]=3;fake_index=i;fake_accepted=a;}

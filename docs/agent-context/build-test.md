@@ -1,22 +1,8 @@
-[Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
-[0.6.2 rollback](control-presets.md); [Tex](texture-preference.md).
-[Pads](video-options.md).
+[Native preflight/CI tests](build-test-details.md); [context](investigation.md).
 [Visibility tests](fidelity-comparison.md); [batch bounds](independent.md).
-[Throw](native-uplink.md); [Beams](native-projectiles.md).
-[Vietnam](network-performance.md).
-[Tools](developer-tools-integration.md).
-Developer warnings: [launcher](launcher.md).
-[Save tests](multiplayer-exit.md#validation).
-[Icons](controls-options.md).
-[Effect depth](native-effect-depth.md).
-[Update tests](main-menu-update.md).
-[Weapon FOV](video-options.md#weapon-aperture).
-[HUD/MSAA tests](../development/graphics-options.md).
-[SDL/input fixtures](linux-game.md).
-[Font/escape tests](audio-options.md).
-`test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
-[Kill feed](../development/arcade-kill-feed.md)
-# Tests ([Aim](hud-sizing.md))
+
+Fresh-epoch and GCC fixture checks: build-test-details.md.
+# Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.
 Fixtures:32 combinations, unknown files, speech, ducking, dynamics, queued gains,
@@ -1044,5 +1030,8 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 Players: controls-options.md.
 
 Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
+[Mod worker and trust checks](mod-scripting.md).
 
 [PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).
+
+Native script VM/process/session, teardown and host-ASan tests: see mod-scripting.md.

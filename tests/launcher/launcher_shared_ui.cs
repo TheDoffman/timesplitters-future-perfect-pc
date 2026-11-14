@@ -64,10 +64,221 @@ public static class LauncherSharedUiChecks
         return Json.Object(Json.Encode(new {tag_name=tag,prerelease=preview,draft=false,body="Notes",assets=new[]{new {
             name=asset,state="uploaded",size=100,digest="sha256:"+new string('a',64),browser_download_url=ReleaseClient.ReleasesPage+"/download/"+tag+"/"+asset}}}));
     }
+    sealed class WorkshopHandler : System.Net.Http.HttpMessageHandler
+    {
+        readonly Func<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage> reply;
+        public WorkshopHandler(Func<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage> reply){this.reply=reply;}
+        protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request,System.Threading.CancellationToken token)
+        {token.ThrowIfCancellationRequested();return System.Threading.Tasks.Task.FromResult(reply(request));}
+    }
+    static string WorkshopCatalog(string sha,long scanned,bool available=true,string download=null)
+    {
+        object release=new {sha256=sha,download=download??"/v1/packages/"+sha,
+            manifest=new {id="community-demo",name="Community Demo",version="1.0.0",author="Map Maker",description="A packaging example",game="tsfp-us-45410066",api="tsfp-mod-v1-draft"},
+            scan=new {engine="TEST ONLY",time=scanned}};
+        return Json.Encode(new {schema=1,releases=available?new[]{release}:new object[0]});
+    }
+    static void WorkshopReject(Action action,string message){bool rejected=false;try{action();}catch{rejected=true;}Need(rejected,message);}
+    static void WorkshopChecks(string root)
+    {
+        WorkshopTrustChecks.Run(root,Test);
+        Test("script source capsules match the native wire and isolated-save identity",()=>{
+            Dictionary<string,object> corpus;
+            using(var input=typeof(LauncherSharedUiChecks).Assembly.GetManifestResourceStream("mod-launch-vectors.json"))
+            using(var memory=new MemoryStream()){input.CopyTo(memory);corpus=ModJson.Read(System.Text.Encoding.UTF8.GetString(memory.ToArray()));}
+            foreach(Dictionary<string,object> vector in (object[])corpus["vectors"]) {
+                var source=Convert.FromBase64String((string)vector["source"]);
+                var dependencies=((object[])vector["dependencies"]).Cast<string>().ToArray();
+                var capsule=ModScriptCapsule.Create((string)vector["package"],dependencies.Reverse(),source);
+                Need(Convert.ToBase64String(capsule.Bytes)==(string)vector["wire"],"Source capsule bytes differ from native contract");
+                Need(capsule.Sha256==(string)vector["sha256"] && capsule.ProfileSha256==(string)vector["profile"],"Capsule/save identity mismatch");
+                WorkshopReject(()=>ModScriptCapsule.Create((string)vector["package"],new[]{(string)vector["package"]},source),"Repeated primary accepted");
+                WorkshopReject(()=>ModScriptCapsule.Create((string)vector["package"],new[]{new string('b',64),new string('b',64)},source),"Duplicate dependency accepted");
+            }
+            foreach(byte[] bad in new[]{new byte[0],new byte[]{0},new byte[]{0xc0,0x80},new byte[]{27,76,117,97},new byte[1024*1024+1]})
+                WorkshopReject(()=>ModScriptCapsule.Create(new string('a',64),new string[0],bad),"Invalid source accepted");
+            WorkshopReject(()=>ModScriptCapsule.Create(new string('A',64),new string[0],new byte[]{32}),"Uppercase digest accepted");
+            WorkshopReject(()=>ModScriptCapsule.Create(new string('a',64),Enumerable.Range(0,32).Select(i=>i.ToString("x64")),new byte[]{32}),"Dependency budget exceeded");
+        });
+        long now=DateTimeOffset.UtcNow.ToUnixTimeSeconds();string sha=new string('a',64);
+        Test("workshop catalog validates identities and freshness",()=>{
+            var entries=ModWorkshopClient.Parse(WorkshopCatalog(sha,now-1),DateTime.UtcNow);
+            Need(entries.Length==1 && entries[0].Author=="Map Maker","Mod metadata lost");
+            Need(ModWorkshopClient.Parse(WorkshopCatalog(sha,now-90000),DateTime.UtcNow).Length==0,"Stale scan appeared");
+            Need(ModWorkshopClient.Parse(WorkshopCatalog(sha,now+3600),DateTime.UtcNow).Length==0,"Future scan appeared");
+            WorkshopReject(()=>ModWorkshopClient.Parse(WorkshopCatalog(sha,now,true,"https://attacker.invalid/payload"),DateTime.UtcNow),"External package URL accepted");
+            WorkshopReject(()=>ModWorkshopClient.Parse(WorkshopCatalog("../escape",now),DateTime.UtcNow),"Invalid digest accepted");
+            WorkshopReject(()=>ModWorkshopClient.Parse(new string('x',ModWorkshopClient.MaxCatalogBytes+1),DateTime.UtcNow),"Oversized catalog accepted");
+        });
+        Test("workshop transport requires HTTPS",()=>{
+            Need(ModWorkshopClient.ServiceUri("https://workshop.example.ts.net").Host=="workshop.example.ts.net","HTTPS service rejected");
+            foreach(var url in new[]{"http://127.0.0.1:8765","http://example.com","https://user:secret@example.com","https://example.com/subpath","https://example.com/?redirect=1","file:///tmp/package"})
+                WorkshopReject(()=>ModWorkshopClient.ServiceUri(url),"Unsafe service URL accepted");
+        });
+        Test("workshop shared page searches creators and previews stay offline",()=>{
+            int requests=0;
+            using(var page=new ModWorkshopPage(root,true,new ModWorkshopClient(new WorkshopHandler(request=>{requests++;throw new Exception("Preview made a request");})))) {
+                page.SetReleases(ModWorkshopClient.Parse(WorkshopCatalog(sha,now-1),DateTime.UtcNow));
+                Need(page.VisibleCount==1,"Mod card missing");page.Search.Text="map maker";Need(page.VisibleCount==1,"Creator search failed");
+                page.Search.Text="no matching mod";Need(page.VisibleCount==0,"Search did not filter");
+                page.Load().GetAwaiter().GetResult();Need(requests==0 && page.StatusText.Contains("Preview"),"Preview attempted network access");
+            }
+        });
+        Test("workshop downloads verify hashes and recheck removal before fetching",()=>{
+            string folder=Path.Combine(root,"workshop-downloads");WorkshopTrustChecks.Pin(folder);byte[] bytes=WorkshopTrustChecks.Bytes("package");string hash;
+            using(var algorithm=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(algorithm.ComputeHash(bytes)).Replace("-","").ToLowerInvariant();
+            bool available=true,corrupt=false;int packageRequests=0;
+            using(var client=new ModWorkshopClient(new WorkshopHandler(request=>{
+                int version=!available?2:corrupt?3:1;
+                if(request.RequestUri.AbsolutePath=="/v1/trust/catalog")return WorkshopTrustChecks.Response("metadata"+version);
+                if(request.RequestUri.AbsolutePath=="/v1/catalog")return WorkshopTrustChecks.Response("catalog"+version);
+                packageRequests++;return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK){Content=new System.Net.Http.ByteArrayContent(corrupt?new byte[]{0}:bytes)};
+            }),folder,()=>WorkshopTrustChecks.Now)) {
+                var release=client.Read("https://workshop.example.ts.net",System.Threading.CancellationToken.None).GetAwaiter().GetResult().Single();
+                string path=client.Download("https://workshop.example.ts.net",release,folder,System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                Need(File.ReadAllBytes(path).SequenceEqual(bytes),"Verified mod bytes changed");
+                Need(!Directory.Exists(Path.Combine(folder,"Mods")),"Download activated or installed a mod");
+                available=false;int before=packageRequests;
+                WorkshopReject(()=>client.Download("https://workshop.example.ts.net",release,folder,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Removed mod downloaded");
+                Need(packageRequests==before,"Removed package was requested");
+                available=true;corrupt=true;
+                WorkshopReject(()=>client.Download("https://workshop.example.ts.net",release,folder,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Corrupt package accepted");
+                Need(File.ReadAllBytes(path).SequenceEqual(bytes),"Failed download damaged the cached package");
+                Need(Directory.GetFiles(Path.GetDirectoryName(path),"*.partial").Length==0,"Failed download left partial files");
+            }
+        });
+        Test("workshop redirects and excessive response lengths fail closed",()=>{
+            string folder=Path.Combine(root,"trust-transport");WorkshopTrustChecks.Pin(folder);
+            using(var client=new ModWorkshopClient(new WorkshopHandler(request=>new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.Redirect)),folder,()=>WorkshopTrustChecks.Now))
+                WorkshopReject(()=>client.Read("https://workshop.example.ts.net",System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Redirect accepted");
+            using(var client=new ModWorkshopClient(new WorkshopHandler(request=>{
+                var content=new System.Net.Http.ByteArrayContent(new byte[0]);content.Headers.ContentLength=ModWorkshopClient.MaxCatalogBytes+1;
+                return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK){Content=content};}),folder,()=>WorkshopTrustChecks.Now))
+                WorkshopReject(()=>client.Read("https://workshop.example.ts.net",System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Excessive catalog length accepted");
+        });
+    }
+    static byte[] WorkshopDds(byte marker)
+    {
+        var bytes=new byte[152];foreach(var pair in new Dictionary<int,uint>{{0,0x20534444},{4,124},{12,4},{16,4},{28,3},{76,32},{80,4},{84,0x31545844}})
+            Array.Copy(BitConverter.GetBytes(pair.Value),0,bytes,pair.Key,4);
+        for(int i=128;i<bytes.Length;i++)bytes[i]=marker;return bytes;
+    }
+    static string LibraryPackage(string root,string id,string version,byte marker,string key="0123456789abcdef",Dictionary<string,string> dependencies=null,bool script=false,string extra=null)
+    {
+        string file=script?"scripts/main.lua":"textures/"+key+".dds";byte[] data=script?System.Text.Encoding.UTF8.GetBytes("return true\n"):WorkshopDds(marker);string hash;
+        using(var sha=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(sha.ComputeHash(data)).Replace("-","").ToLowerInvariant();
+        string json=Json.Encode(new {schema=1,id=id,version=version,name=id,author="Test creator",description="Synthetic original fixture",game="tsfp-us-45410066",api="tsfp-mod-v1-draft",dependencies=dependencies??new Dictionary<string,string>(),files=new Dictionary<string,object>{{file,new {sha256=hash,size=data.Length}}}});
+        string package=Path.Combine(root,Guid.NewGuid().ToString("N")+".zip");
+        using(var archive=System.IO.Compression.ZipFile.Open(package,System.IO.Compression.ZipArchiveMode.Create)) {
+            using(var output=archive.CreateEntry("mod.json").Open()){byte[] text=System.Text.Encoding.UTF8.GetBytes(json);output.Write(text,0,text.Length);}
+            using(var output=archive.CreateEntry(file).Open())output.Write(data,0,data.Length);
+            if(extra!=null)using(var output=archive.CreateEntry(extra).Open())output.Write(data,0,data.Length);
+        }
+        return package;
+    }
+    static void LibraryChecks(string root)
+    {
+        Test("native mod metadata rejects allocation and numeric amplification",()=>{
+            string package=LibraryPackage(root,"metadata-budget","1.0.0",1);byte[] original=File.ReadAllBytes(package);int end=original.Length-22;
+            Need(BitConverter.ToUInt32(original,end)==0x06054b50,"Fixture ZIP end changed");
+            foreach(var change in new[]{new[]{8,65535},new[]{8,3},new[]{4,1}}) {
+                byte[] bad=(byte[])original.Clone();Array.Copy(BitConverter.GetBytes((ushort)change[1]),0,bad,end+change[0],2);
+                if(change[0]==8)Array.Copy(BitConverter.GetBytes((ushort)change[1]),0,bad,end+10,2);
+                string path=Path.Combine(root,Guid.NewGuid().ToString("N")+".zip");File.WriteAllBytes(path,bad);
+                WorkshopReject(()=>ModLibrary.ValidateZipMetadata(path),"Forged ZIP directory passed preflight");
+            }
+            string values=String.Join(",",Enumerable.Repeat("0",4096));
+            string large="{\"items\":["+String.Join(",",Enumerable.Repeat("["+values+"]",16))+"]}";
+            WorkshopReject(()=>ModJson.Read(large,4*1024*1024),"JSON token budget was not enforced");
+            WorkshopReject(()=>ModJson.Read("{\"n\":1e400}"),"JSON numeric overflow accepted");
+            string valid="{\"items\":["+String.Join(",",Enumerable.Repeat("["+values+"]",8))+"]}";
+            Need(ModJson.Read(valid,4*1024*1024).ContainsKey("items"),"Bounded numeric data failed");
+        });
+        Test("native mod installation enables verified texture overlays and preserves official files",()=>{
+            string folder=Path.Combine(root,"mod-install");Directory.CreateDirectory(folder);Directory.CreateDirectory(Path.Combine(folder,"Textures"));File.WriteAllText(Path.Combine(folder,"Textures/official.dds"),"preserve");
+            var library=new ModLibrary(folder,()=>false);string package=LibraryPackage(root,"texture-demo","1.0.0",7);var mod=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);
+            Need(library.List().Single().Key=="texture-demo@1.0.0" && library.Enabled().Length==0,"Install enabled the package automatically");
+            library.Enable(mod.Key,System.Threading.CancellationToken.None);var info=new System.Diagnostics.ProcessStartInfo();library.Configure(info);string overlay=info.EnvironmentVariables["TSFP_MOD_TEXTURE_DIR"];
+            Need(overlay!=null && File.ReadAllBytes(Path.Combine(overlay,"0123456789abcdef.dds"))[128]==7,"Activated DDS was not mounted");
+            Need(File.ReadAllText(Path.Combine(folder,"Textures/official.dds"))=="preserve","Official pack was modified");
+            WorkshopReject(()=>library.Uninstall(mod.Key),"Active mod removed");library.DisableAll(System.Threading.CancellationToken.None);library.Uninstall(mod.Key);
+            Need(library.List().Length==0 && File.ReadAllText(Path.Combine(folder,"Textures/official.dds"))=="preserve","Uninstall damaged unrelated files");
+        });
+        Test("native mod activation rejects conflicts, missing dependencies and cycles",()=>{
+            string folder=Path.Combine(root,"mod-deps");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
+            foreach(var record in new[]{new[]{"base","1.0.0","0123456789abcdef"},new[]{"conflict","1.0.0","0123456789abcdef"}}) {
+                string package=LibraryPackage(root,record[0],record[1],1,record[2]);library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);
+            }
+            library.Enable("base@1.0.0",System.Threading.CancellationToken.None);
+            string original=File.ReadAllText(Path.Combine(folder,"Mods/profile.json"));WorkshopReject(()=>library.Enable("conflict@1.0.0",System.Threading.CancellationToken.None),"Conflicting texture enabled");
+            Need(File.ReadAllText(Path.Combine(folder,"Mods/profile.json"))==original,"Failed activation changed the old profile");
+            string addon=LibraryPackage(root,"addon","1.0.0",3,"aaaaaaaaaaaaaaaa",new Dictionary<string,string>{{"base","2.0.0"}});library.Install(addon,Core.Hash(addon),System.Threading.CancellationToken.None);
+            WorkshopReject(()=>library.Enable("addon@1.0.0",System.Threading.CancellationToken.None),"Missing exact dependency enabled");
+            foreach(var item in new[]{new[]{"cycle-a","cycle-b","bbbbbbbbbbbbbbbb"},new[]{"cycle-b","cycle-a","cccccccccccccccc"}}){string package=LibraryPackage(root,item[0],"1.0.0",4,item[2],new Dictionary<string,string>{{item[1],"1.0.0"}});library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);}
+            WorkshopReject(()=>library.SetEnabled(new[]{"cycle-a@1.0.0","cycle-b@1.0.0"},System.Threading.CancellationToken.None),"Dependency cycle enabled");
+            Need(library.Enabled().SequenceEqual(new[]{"base@1.0.0"}),"Dependency failure changed the active set");
+        });
+        Test("native mod upgrades retain rollback and do not accumulate overlay generations",()=>{
+            string folder=Path.Combine(root,"mod-versions");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
+            foreach(string version in new[]{"1.0.0","2.0.0"}){string package=LibraryPackage(root,"versioned",version,version=="1.0.0"?(byte)1:(byte)2);library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);}
+            foreach(string version in new[]{"1.0.0","2.0.0","1.0.0"}){library.Enable("versioned@"+version,System.Threading.CancellationToken.None);Need(library.Enabled().Single()=="versioned@"+version,"Version switch failed");}
+            Need(library.List().Length==2 && Directory.GetDirectories(Path.Combine(folder,"Mods/Active")).Length==1,"Rollback version lost or active cache copies accumulated");
+        });
+        Test("native mod validation rejects archive traversal and duplicate metadata",()=>{
+            string folder=Path.Combine(root,"mod-hostile");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
+            foreach(string extra in new[]{"../outside.dds","scripts/payload.exe","Textures/0123456789abcdef.dds"}) {
+                string package=LibraryPackage(root,"hostile","1.0.0",1,extra:extra);WorkshopReject(()=>library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None),"Hostile archive installed");
+            }
+            Need(library.List().Length==0 && Directory.GetDirectories(Path.Combine(folder,"Mods"),".install-*").Length==0,"Failed install left a partial library");
+            string mismatched=LibraryPackage(root,"actual-identity","1.0.0",1);
+            WorkshopReject(()=>library.Install(mismatched,Core.Hash(mismatched),System.Threading.CancellationToken.None,"claimed-identity","1.0.0"),"Package identity differed from its catalog listing");
+            WorkshopReject(()=>ModLibrary.Manifest("{\"schema\":1,\"schema\":1}"),"Duplicate manifest fields accepted");
+            byte[] bad=WorkshopDds(1);bad[28]=2;WorkshopReject(()=>ModLibrary.ValidateDds(bad),"Incomplete DDS mip chain accepted");
+            string script=LibraryPackage(root,"script-only","1.0.0",1,script:true);library.Install(script,Core.Hash(script),System.Threading.CancellationToken.None);
+            WorkshopReject(()=>library.Enable("script-only@1.0.0",System.Threading.CancellationToken.None),"A script was enabled without a sandbox");
+        });
+        Test("native mod tampering, cancellation and game-running guards retain the active profile",()=>{
+            string folder=Path.Combine(root,"mod-preservation");Directory.CreateDirectory(folder);bool running=false;var library=new ModLibrary(folder,()=>running);
+            string package=LibraryPackage(root,"preserved","1.0.0",1);var mod=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);library.Enable(mod.Key,System.Threading.CancellationToken.None);
+            string profile=File.ReadAllText(Path.Combine(folder,"Mods/profile.json"));running=true;
+            WorkshopReject(()=>library.DisableAll(System.Threading.CancellationToken.None),"Profile changed while game was running");running=false;
+            using(var cancellation=new System.Threading.CancellationTokenSource()){cancellation.Cancel();WorkshopReject(()=>library.DisableAll(cancellation.Token),"Cancelled activation committed");}
+            Need(File.ReadAllText(Path.Combine(folder,"Mods/profile.json"))==profile,"A rejected operation changed the active profile");
+            var info=new System.Diagnostics.ProcessStartInfo();library.Configure(info);File.WriteAllText(Path.Combine(info.EnvironmentVariables["TSFP_MOD_TEXTURE_DIR"],"0123456789abcdef.dds"),"tampered");
+            WorkshopReject(()=>library.Configure(new System.Diagnostics.ProcessStartInfo()),"Changed active payload passed launch checks");
+            library.Enable(mod.Key,System.Threading.CancellationToken.None);File.WriteAllText(Path.Combine(mod.Directory,"content/mod.json"),"{}");
+            WorkshopReject(()=>library.Configure(new System.Diagnostics.ProcessStartInfo()),"Changed installed manifest passed launch checks");
+            library.DisableAll(System.Threading.CancellationToken.None);Need(library.Enabled().Length==0,"Disable-all could not recover a broken library");
+        });
+        Test("native mod uninstall preserves unexpected personal files",()=>{
+            string folder=Path.Combine(root,"mod-extra-files");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
+            string package=LibraryPackage(root,"personal-guard","1.0.0",1);var mod=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);
+            string personal=Path.Combine(mod.Directory,"my-original.iso");File.WriteAllText(personal,"keep this original");
+            WorkshopReject(()=>library.Uninstall(mod.Key),"Uninstall deleted an unexpected personal file");Need(File.ReadAllText(personal)=="keep this original","Personal bytes were changed");
+        });
+        Test("launch without mods bypasses a broken profile without changing it",()=>{
+            string folder=Path.Combine(root,"mod-launch-recovery");Directory.CreateDirectory(folder);GameSettings.StartInfo(folder,true);
+            Directory.CreateDirectory(Path.Combine(folder,"Mods"));string path=Path.Combine(folder,"Mods/profile.json");File.WriteAllText(path,"broken profile");
+            WorkshopReject(()=>GameSettings.StartInfo(folder),"Broken mod profile was silently ignored");
+            var info=GameSettings.StartInfo(folder,true);Need(!info.EnvironmentVariables.ContainsKey("TSFP_MOD_TEXTURE_DIR") && File.ReadAllText(path)=="broken profile","Recovery changed the profile or inherited a mod overlay");
+        });
+    }
+    public static int RunWorkshop()
+    {
+        Action run=()=>{string root=Path.Combine(TestBase(),"tsfp-workshop-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);try{WorkshopChecks(root);LibraryChecks(root);}finally{Directory.Delete(root,true);}};
+#if MACOS || LINUX
+        run();return 0;
+#else
+        Exception failure=null;var thread=new System.Threading.Thread(()=>{try{run();}catch(Exception e){failure=e;}});
+        thread.SetApartmentState(System.Threading.ApartmentState.STA);thread.Start();Need(thread.Join(60000),"Workshop checks timed out");if(failure!=null)throw failure;return 0;
+#endif
+    }
     static int RunCore()
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            WorkshopChecks(root);
+            LibraryChecks(root);
             Test("main menu update notice follows version and selected channel",()=>{
                 var release=new Release {Tag="v1.2.4",Channel="stable"};
                 Need(GameUpdateNotice.Encode("v1.2.3",release,"stable",123)=="TSFP_GAME_UPDATE_V1 123 v1.2.3 v1.2.4\n","Newer release missing");

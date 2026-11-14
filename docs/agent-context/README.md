@@ -54,6 +54,7 @@ repo or local runtime automatically. Advice is a hypothesis until locally tested
 | Runtime, patches, HLE, guest symbols, renderer, FPS | [Runtime](runtime.md) |
 | Controls, display, audio, networking, textures, crash handling | [Systems](systems.md) |
 | Launcher UI, install/update, versions, platform paths | [Launcher](launcher.md) |
+| Community mods, creator packages, activation, workshop hosting/scanning | [Mod workshop](mod-workshop.md) |
 | Build/generate, test selection, isolation, CI | [Build and test](build-test.md) |
 | Debugging, repeat searches, compaction, Sol handoff | [Investigation](investigation.md) |
 | Sol requests for missing code, revisions, limits | [Evidence retrieval](evidence.md) |

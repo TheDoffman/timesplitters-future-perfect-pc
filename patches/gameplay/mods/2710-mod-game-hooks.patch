@@ -1,0 +1,67 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1036,12 +1036,47 @@
+ #endif
+ }
+ extern void sub_000681C0_gen(void);
++static void pc_mod_stock_frame(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_story_network_frame(sub_000681C0_gen);
++#else
++    sub_000681C0_gen();
++#endif
++}
+ void sub_000681C0(void)
+ {
+-#ifdef TSFP_PC_CONTROLS
+-    pc_story_network_frame(sub_000681C0_gen);
+-#else
+-    sub_000681C0_gen();
++#ifdef TSFP_MOD_GAME
++    pc_mod_game_frame(pc_mod_stock_frame);
++#else
++    pc_mod_stock_frame();
++#endif
++}
++extern void sub_000641C0_gen(void);
++void sub_000641C0(void)
++{
++#ifdef TSFP_MOD_GAME
++    pc_mod_game_score(sub_000641C0_gen);
++#else
++    sub_000641C0_gen();
++#endif
++}
++extern void sub_00064810_gen(void);
++void sub_00064810(void)
++{
++#ifdef TSFP_MOD_GAME
++    pc_mod_game_ranking(sub_00064810_gen);
++#else
++    sub_00064810_gen();
++#endif
++}
++extern void sub_000674C0_gen(void);
++void sub_000674C0(void)
++{
++#ifdef TSFP_MOD_GAME
++    pc_mod_game_limits(sub_000674C0_gen);
++#else
++    sub_000674C0_gen();
+ #endif
+ }
+ extern void sub_000D2FD0_gen(void);
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -247,6 +247,10 @@
+ endif()
+ 
+ # ── Game-specific additions ─────────────────────────────────────
++# Shared native mod parent/guest adapters; bootstrap activation remains gated.
++if(TSFP_SHARED_SOURCE)
++    include("${TSFP_SHARED_SOURCE}/mods/game.cmake")
++endif()
+ #
+ # Add any game-specific libraries, loaders, or custom renderers below.
+ # Examples:

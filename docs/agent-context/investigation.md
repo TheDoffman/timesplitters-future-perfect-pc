@@ -1,3 +1,16 @@
+Mod workshop is now a named context topic with tools/mods, Mod*Page.cs,
+tests/mods and future src/mods/config/mods ownership. Its bounded excerpt
+distinguishes verified texture/library work from unfinished public hosting and
+scripting. No change to disclosure limits, retrieval policy or patch ordering.
+The optional Node reader's explicit topic/file allowlist includes mod-workshop;
+its manifest count is capped by that allowlist's length. Unknown topics/private
+paths, redirected files and byte-limit violations still fail closed. Run
+`node --test tests/repository/repository-context.test.mjs` as well as the Python
+checker when extending context topics; the PR scope job runs both.
+
+Pause glass: index2730/2731 last, after map/MSAA copy extensions; exact-order
+fixture now checks102 tail entries. See [capture evidence](pause-glass.md).
+
 Pause glass: index2730/2731 follows map/MSAA copy extensions; visibility3001
 is last; optional config3000 was removed. Exact-order fixture checks103 tail entries. See [capture evidence](pause-glass.md).
 

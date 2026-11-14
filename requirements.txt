@@ -7,3 +7,6 @@ pytest==9.1.1
 pytest-xdist==3.8.0
 execnet==2.1.2
 Pillow==12.2.0
+cryptography==50.0.2
+cffi==2.1.1
+pycparser==3.12

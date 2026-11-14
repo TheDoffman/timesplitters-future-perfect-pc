@@ -1,57 +1,20 @@
-[Sticks](controller-deadzones.md), [Rollback](control-presets.md), [updates](main-menu-update.md).
-[Tex](texture-preference.md); [pads](video-options.md).
-[Sun/visibility repair](fidelity-comparison.md); optional comparison preset removed,
-normal settings and menus restored.
+Runtime resources/preflight: [contracts](mod-scripting.md).
 
-[Uplink throw tests and policy](native-uplink.md#throw-impulse).
-[Network startup eligibility and atomic dispatch](network-performance.md),
-including missing files and explicit disconnect; fixture:
-`tests/network/network_eligibility.c`.
+Preflight also rejects restored flags on a previously unsupported fresh epoch.
 
-[Developer Tools integration](developer-tools-integration.md).
+[Sun/visibility repair](fidelity-comparison.md).
 
-[Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
-[Input](controls-options.md).
+Native mod bootstrap, isolated saves, cache and preflight: [contracts](mod-scripting.md). Automatic binding remains pending.
 
-[Icons](controls-options.md).
-[Display](video-options.md).
-[Tabs](../development/graphics-options.md).
-[exFAT](host-storage.md)
-# [Aim](hud-sizing.md)
+# Shared systems
 
-[SDL](linux-game.md).
+[Pads](video-options.md); [Aim](hud-sizing.md).
 
-Native input self-tests use click/Escape capture after F1 became the optional
-Developer Tools shortcut. This changes only synthetic test events in
-src/native/input_sdl.c; Linux passes, native Mac execution remains pending.
-
-PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
-
-[Clicks](interaction-input.md#fresh-weapon-clicks-434).
-
-[Story](systems-details.md). [Exit/save](multiplayer-exit.md).
-
-[Mech](mounted-mouse.md).
-
-Minigun: [policy](native-minigun.md).
-
-[Kernel](kernel-objects.md).
-
-Memory: [retired APIs](retired-memory-compatibility.md).
-
-Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads](thread-memory.md), [virtual memory](virtual-memory.md).
-
-Image/state/ABI: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
-
-Wind: [time scopes](native-wind.md).
-
-Aim/animation: [diagnostic limits](native-local-trace.md).
-
-GPU cache fixture/config: [runtime](runtime.md).
-
-Native player contact: [clear-slide policy/trace](native-player-contact.md).
-Registers: [policy/tests](gpr-refs.md).
-Script/audio clocks: [contracts](native-script-clocks.md).
+[Guest adapter notes](guest-adapter-notes.md#host-systems).
+[Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
+The initial non-team adapter reports team0; original actor team identity stays private.
+The match bridge checks compiled game pins before privately staging helpers; see mod-scripting.md.
+POSIX startup retains its original UTF8 boot labels.
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;
@@ -739,7 +702,7 @@ variant filter `sub_001BAA70`, usability `sub_001BA410` and selection
 `sub_001BA130`, then refreshes the weapon HUD with `sub_00142820`. It deduplicates
 weapon groups, checks local input slot zero rather than network player ID, and
 never grants inventory. Empty slots do nothing. Settings expose exactly ten bindable
-slots, defaulting to 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“9/0. The separate 70-entry internal table bound covers
+slots, defaulting to 1ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ9/0. The separate 70-entry internal table bound covers
 weapon IDs and variants; it does not add settings rows.
 
 ## Themed live keyboard and mouse editor
@@ -958,3 +921,24 @@ time on model refresh, reset queued output, then normalize in the new region. Pa
 stay intact until resume; a running seek beyond the loop end resumes at start.
 `audio_buffer_regions.c` checks production-decoded PCM, fractional clocks/refusal,
 tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.
+
+Native mod process adapters/self-sealing and Mac lifetime guardian pass named
+Windows/Mac/Linux checks; see mod-scripting.md. No guest hooks or launcher script
+activation changed. Persistent game bridge and actual mode gameplay remain pending.
+
+Mod Session uses shared asynchronous native supervision and validated typed
+transactions; no title hooks yet. Process background-only readiness waits use
+Windows pending-IO events/POSIX poll. See mod-scripting.md for contracts/evidence.
+
+Session idle CPU uses bounded1s windows so legitimate paused-worker overhead
+does not accumulate forever. Host-only sanitizer checks preserve sealed children;
+see mod-scripting.md for actual host evidence and pending checks.
+
+Renewed idle windows exposed Mac CPU undercounting: proc_pid_rusage CPU totals
+are Mach ticks, not nanoseconds. The adapter now uses checked128-bit Mach timebase
+conversion. Linux404 full checks/3 skips and56 host-ASan/UBSan Session checks pass;
+Windows404 full checks/3 skips pass. Updated Mac rerun remains pending.
+
+Corrected Mac Mach CPU conversion passes full/sanitizer checks. Test-host early
+error paths now drain Session cleanup before exit; production crash-profile
+recovery remains pending. See mod-scripting.md/STATUS for exact host counts.

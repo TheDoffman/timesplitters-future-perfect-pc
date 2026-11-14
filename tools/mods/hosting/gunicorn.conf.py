@@ -1,0 +1,19 @@
+"""Private WSGI backend. Only a separately configured HTTPS proxy may expose routes."""
+bind = '127.0.0.1:8767'
+workers = 2
+worker_class = 'sync'
+threads = 1
+timeout = 180
+graceful_timeout = 15
+max_requests = 200
+max_requests_jitter = 20
+limit_request_line = 2048
+limit_request_fields = 32
+limit_request_field_size = 4096
+forwarded_allow_ips = '127.0.0.1'
+secure_scheme_headers = {'X-FORWARDED-PROTO': 'https'}
+accesslog = None
+errorlog = '-'
+capture_output = False
+umask = 0o077
+preload_app = False

@@ -15,6 +15,7 @@ before reorganizing files.
 | `patches/` | Numbered patches grouped by responsibility; see [folder map, ordering and migration](../../patches/README.md) |
 | `patches/legacy/` | Required inputs for unwinding older builds |
 | `tools/` | Build, packaging, analysis and maintenance commands and their Python helper modules |
+| `examples/mods/` | Original creator starter sources for the inactive workshop prototype; no original game assets |
 | `tools/launcher/` | Shared/Windows launcher source; `macos/` holds the native Mac adapter |
 | `tools/release/` | Scripts and importer source copied into release packages |
 | `tools/router/` | Optional local advisory integration |
@@ -51,6 +52,7 @@ ignored build outputs and local worktrees are outside this source reorganization
 | Other `build/` subfolders | May include packaging output **or Git worktrees**; inspect before cleanup |
 | `logs/` | Diagnostics and investigation notes; retain selected evidence and recovery records |
 | `private/` | Game input, saves, source artwork, test profiles and captures; never treat this whole directory as disposable |
+| `Mods/` | Ignored installed community packages, active overlays and profiles; never include in Git/source or runtime packages |
 | `.venv/` | Host-specific Python environment |
 | `__pycache__/`, `.pytest_cache/` | Regenerable Python/test caches; remove only when their jobs are stopped |
 

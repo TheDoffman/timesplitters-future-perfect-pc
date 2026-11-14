@@ -11,12 +11,15 @@
 #endif
 #endif
 static char storage_default[4096];
+/* One-way startup policy; an environment change cannot reopen the picker. */
+static int storage_locations_locked;
+void pc_storage_lock_locations(void) {storage_locations_locked=1;}
 static int (*storage_profile_router)(const char *);
 void pc_storage_set_profile_router(int (*route)(const char *))
 { storage_profile_router=route; }
 
 static int storage_locked(void)
-{ const char *s=getenv("TSFP_SAVE_LOCATION_LOCK");return s&&strcmp(s,"0"); }
+{ const char *s=getenv("TSFP_SAVE_LOCATION_LOCK");return storage_locations_locked||(s&&strcmp(s,"0")); }
 
 static int storage_preference(char *out,size_t capacity)
 {
@@ -221,7 +224,7 @@ int pc_storage_choose(const PcStorageDrive *drive,char *error,size_t capacity)
 {
     char preference[4096],parent[4096];
     const char *failure="Could not save the drive preference.";
-    if(storage_locked()){failure="Test session: save location is locked.";goto failed;}
+    if(storage_locked()){failure="Save location is locked for this session.";goto failed;}
     if(!drive||!storage_absolute(drive->target)||!storage_preference(preference,sizeof preference))goto failed;
     if(!storage_directory(drive->path,0)){failure="That drive is no longer available.";goto failed;}
     snprintf(parent,sizeof parent,"%s",drive->target);

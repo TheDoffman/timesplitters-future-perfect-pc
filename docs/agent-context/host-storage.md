@@ -1,4 +1,23 @@
+The native mod bootstrap now registers the fence before kernel init, after verifying a source capsule and holding an isolated namespace lease. It checks the actual committed root before exposing source. A permanent pc_storage_lock_locations latch also closes the host picker before folder/preference writes. Ordinary startup remains unfenced; actual scripted matches are still pending.
+
 # Original host storage and retired legacy path module
+
+The optional startup fence is a one-way process-lifetime policy in
+guest_storage.c/.h. tsfp_storage_require must run before storage initialization;
+it fixes one caller-validated namespace, clears any pre-init profile override
+and rejects later nonempty profile overrides. Invalid/late registration closes
+storage; no reset API can recover a personal default. tsfp_storage_required
+returns0 for ordinary sessions,1 for the immutable root and-1 for a closed fence.
+Snapshot reads and commits independently enforce the fence under the state lock.
+
+xbox_require_save_root_utf8 validates an existing absolute directory, then arms
+that policy even on invalid input. xbox_path_init consults it before default
+selection, mkdir or image preparation. It therefore covers explicit/env/default
+and lazy xbox_translate_path initialization, plus later root reinitialization.
+An ordinary unfenced process retains its existing root/profile behavior. The
+future mod bootstrap must supply a held SaveNamespace before any kernel init;
+the fence itself does not authenticate packages or validate namespace ownership.
+No launcher or startup route enables this mod policy yet.
 
 Stage0234 selects guest_storage.c/.h and guest_kernel_storage.c through0234 after
 0233 before2090. KERNEL_SOURCES excludes kernel_path.c entirely. The original host

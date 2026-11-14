@@ -42,6 +42,9 @@ xbox_kernel.log
 # Native launcher state in a development checkout.
 /.launcher/
 
+# Community packages, active overlays and profiles are local player data.
+/Mods/
+
 # Save archives contain personal progress and stay local.
 /Backups/
 *.tsfpsave

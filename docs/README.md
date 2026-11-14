@@ -9,6 +9,7 @@ or [repository layout](development/repository-layout.md) for source and local fi
 | Configure the game | [Windows settings](players/windows-settings.md), [Mac setup and controls](players/macos.md), [high refresh rates](analysis/native-high-refresh.md) |
 | Play online | [Multiplayer](players/multiplayer.md), [Discord presence](players/discord-presence.md) |
 | Use textures | [Textures](textures/textures.md), [alpha handling](textures/texture-alpha.md), [menu textures](textures/main-menu-textures.md) |
+| Build community mod support | [Workshop and creator workflow](development/mod-workshop.md), [Mac mini hosting and launcher connection](development/mac-mod-hosting.md) |
 | Troubleshoot | [Known issues](players/known-issues.md), [Windows crash logger](players/windows-crash-logger.md), [high-refresh regressions](analysis/native-high-refresh-regressions.md) |
 | Build and contribute | [Building](development/building.md), [Linux bring-up](development/linux.md), [contributing](../CONTRIBUTING.md), [shared platform](development/shared-platform.md), [independent runtime](development/independent-runtime.md) |
 | Test and release | [Test profiles](development/testing-profile.md), [CI](development/ci.md), [releasing](release/releasing.md), [launcher releases](release/launcher-releases.md), [launcher compatibility](release/launcher-compatibility.md) |

@@ -17,6 +17,13 @@ test('nested cwd discovers repository; unfamiliar tasks only get compact overvie
   const packet=readRepositoryContext(path.join(root,'tools'),'xyzquux');
   assert.equal(packet.status,'loaded');assert.deepEqual(packet.files,['docs/agent-context/README.md']);
 });
+test('mod workshop topic is explicitly allowed and remains within the packet budget',()=>{
+  const packet=readRepositoryContext(root,'modding workshop creator quarantine');
+  assert.equal(packet.status,'loaded');
+  assert.ok(packet.files.includes('docs/agent-context/mod-workshop.md'));
+  assert.match(packet.text,/ModLibraryPage\.cs/);
+  assert.ok(packet.bytes<=6500);
+});
 
 function fixture(t){
   const parent=fs.realpathSync(os.tmpdir()),root=fs.mkdtempSync(path.join(parent,'repo-context-'));
