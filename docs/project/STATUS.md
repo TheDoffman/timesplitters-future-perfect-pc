@@ -44105,3 +44105,31 @@ Compiled-helper game source1fced3c9: Windows native game build and all build tes
 Sourceca99617d package checks: Mac72 pass/4 skips, including a real relocated production worker. Windows full mods351 pass/7 skips. Linux host-ASan images/match/original37 pass/5 platform skips. Actual native helper-bundle inspection matches compiled headers on Windows/Mac. Windows game SHA ea915c0249384e22a9d247916bafe865b1386f192e15c5b36a0bde1384f9a8f4; Mac edfaaca0c55d75d431c49d5b5476bd6a65f7938680dc1d4eb262a75578ee77a1 (native source1fced3c9). Inspection found Mac helper minOS27 inherited from the host. Builder now explicitly targets macOS11.0 and production staging requires that cached floor; native minimum-version test/rerun and refreshed game pins pending. This preserves older Apple Silicon compatibility without claiming an older-host run.
 
 Mac deployment-floor repair source573c8aad:19 real producer/Mach-O checks pass; Windows18 pass/1 Mac skip. Refreshed Windows/Mac native game builds and build/platform tests pass. Expanded relocated production First to Three protocol test passes on Windows18 checks/1 skip, including real start/three deaths/stop, scores1/2/3, End and cleanup. Mac/Linux expanded protocol checks and Linux native game rebuild remain pending. PR561 remains open/draft/unmerged; its head matches the task source but currently reports merge conflicts, so no pull-request CI runs exist for latest head. Main integration/revalidation is still required before release; no merge/publication occurred.
+
+Verified helper production milestone (source349fbafb, 2026-11-14): Windows and
+Mac refreshed native game/build/platform checks pass (native source573c8aad),
+Linux full native build/MMIO and refreshed four-step incremental build/MMIO pass.
+Mac full mods356 pass/3 skips; Linux full mods plus package/ELF checks408 pass/
+9 skips, including actual relocated production First to Three score/End protocol.
+Windows full mods351 pass/7 skips before the Mac-only minimum-version test;
+latest focused production/relocated checks18 pass/1 Mac skip. Earlier Linux
+host-ASan images/match/original37 pass/5 platform skips. No new runtime binding
+or live Lua gameplay is inferred from these worker/build checks.
+
+Current game SHA256: Windowsf67254ea3db4ebbf7a58e48c455d8843ac6992e0fa91ba7727def3115c42a3bc;
+Mac38cffae0ba9b84e75ba8dbc1d0a4f161fc280bbd2f70bbd399593b32a17180e9;
+Linux44e9832b1a4e312ff81db939d9aada920e1954f8ebd9be27218fd6ce9dbaaeea.
+Actual bundle/header/build inspections pass on all3. Bundle identities: Windows
+98c2e359be91728b17cfc5b21a6c0bba816016f25bfc9f7b73e9da0b70749272;
+Macf2fce736215e8b69c3c960ce839c5f3421e2bd9bf05f4f8b96cfba47321f4364;
+Linux8c72e6f0d1adf8fe44dfeb331aa01d2b92829b959b74c863c0a82d58c6971794.
+All three retain identical multiplayer compatibility identity
+0c78e5ab5f489f99dd8331564303f3cc2437b3fd8f209b1c202000785a09050f.
+Mac actual helper minimum11.0 records pass. Source is pushed/synchronized through
+Git; separate primary checkouts, settings, saves and original game data remain
+preserved. Full task-base repo-context and diff checks pass. Full native release
+package/signature/relocation acceptance, trusted bootstrap and separate save
+policy, launcher Lua activation/custom matches and public workshop/release remain
+required. PR561 stays draft/unmerged; main's two newer UI commits require conflict
+integration/revalidation in this task branch before release. No main merge or
+public deployment has occurred; full completion goal remains active.

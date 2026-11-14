@@ -10754,3 +10754,14 @@ Compiled helper/game packaging: **In progress**. Source1fced3c9 Mac33 producer/m
 Helper package follow-up: **In progress**. Sourceca99617d Mac72 package checks pass/4 skips; Windows full mods351 pass/7 skips; Linux37 host-ASan checks pass/5 skips. Helper minOS inspection found host-default27; shared builder now explicitly requests11.0 and staging checks the cached target. Mac actual Mach-O check and refreshed game pins pending. No older-host execution or full release acceptance is claimed.
 
 Mac helper deployment floor: **Verified for build inspection**, source573c8aad. Actual worker/guardian Mach-O minOS11 records pass with19 producer tests; refreshed arm64 game/platform tests pass. Windows refreshed game/build checks and18 producer checks pass/1 Mac-only skip. Expanded relocated production First to Three score/End protocol check passes on Windows; Mac/Linux expanded protocol and Linux game check pending. Older-host execution and full public acceptance remain open.
+
+Production helper components (source349fbafb): **Verified for named checks**.
+Native game/build/platform checks pass on Windows/Mac/Linux, including refreshed
+compiled pins. Mac full mods356 checks pass/3 skips; Linux full mods/package/ELF
+408 pass/9 skips; Windows full351/7 skips plus latest focused18/1 Mac skip pass.
+Actual helper/header/build inspections pass and all3 multiplayer identities match.
+Mac worker/guardian minOS11.0 is verified by Mach-O inspection on the current Mac;
+no older hardware execution is claimed. Public-package assembly/signing and actual
+bootstrap/save/launcher/custom-match/public-release acceptance remain **In progress**.
+Exact binary/bundle hashes and scope are recorded in STATUS. No platform exception
+or full system completion is claimed.
