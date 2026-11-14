@@ -43742,8 +43742,14 @@ and corrected Git silently skipping fixes in an ignored checkout build path;
 committed post-fix hashes now bind both in/out-of-checkout builds. Never force
 Lua's C89 selection externally: a64-bit integer assertion/test guards Windows.
 
-Mac/Linux execution and sanitizer validation are pending at this checkpoint.
-This is not a complete sandbox or playable game bridge. Independent native
+Source42828ec0 is synchronized to the separate Mac/WSL checkouts. All56 worker
+checks pass natively on Windows/Mac/Linux, plus56 ASan/UBSan checks on each of
+Mac and Linux. Full selected suites: Windows361 pass2 Unix skips (source65d257ed,
+with final worker rechecked at42828ec0), Mac363 pass and WSL362 pass1 non-root
+ceremony skip (source42828ec0). Actual SDK example pack/validate passes; its README
+lives beside the source folder because package roots accept only content files.
+Lua payload source is LF across Git checkouts. This is not a complete sandbox or
+playable game bridge. Independent native
 process/RSS/pipe supervision, Windows/Mac/Linux OS confinement and escape probes,
 verified real guest hooks/commands, multiplayer/save contracts and game packaging
 remain required. Launcher script activation is still refused. No original game

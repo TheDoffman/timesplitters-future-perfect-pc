@@ -25,6 +25,7 @@ Only new verified build copies are patched. Git ceiling avoids silently skipped
 patches inside an ignored repo build path. Reused copies must match committed
 prepared hashes, not self-attested receipts. Never force LUA_USE_C89: it can
 silently select32-bit Windows integers. Worker asserts64-bit Lua integers.
+Lua source uses LF in Git checkouts to keep script payload bytes consistent across OS.
 
 Game event integration is pending. Existing patches1640/pc_native_*script* refer
 to original title timing/projectile behavior, not a Lua mod VM. No guest address,
@@ -37,3 +38,9 @@ test_native_trust_fixtures.py plus shared tests/launcher/workshop_trust.cs verif
 Python-produced signatures on each native launcher; source/vector receipts and
 cache inputs bind the corpus. See [trust](../development/mod-catalog-trust.md).
 Producer/operator API and live scanner evidence are in mod-workshop.md/STATUS.
+
+Source42828ec0:56 real worker checks pass on Windows/Mac/Linux; Mac/Linux each
+pass56 ASan/UBSan worker checks. Selected suites Windows361/Mac363/WSL362 pass
+(platform skips differ). Windows final worker recheck covers the GCC formatting
+follow-up. SDK source packs/validates with README beside its payload tree. These
+are VM/codec tests, not OS confinement or live gameplay acceptance.

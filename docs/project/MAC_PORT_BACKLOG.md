@@ -10587,13 +10587,13 @@ Source/test-vector receipts bind the new trust checks. This proves native model
 mount/revocation/recovery, not actual new game scenes or public HTTPS. Production
 pins and public internet acceptance remain required. See STATUS and the trust guide.
 
-Gameplay script worker (base164c36a0): SHARED IMPLEMENTATION; NATIVE POSIX
-ACCEPTANCE PENDING. src/mods implements real Lua5.5.1 restricted API1 callback
+Gameplay script worker (source42828ec0): VERIFIED FOR NAMED VM CONTRACTS. src/mods implements real Lua5.5.1 restricted API1 callback
 execution, typed score/end/message transactions and bounded snapshots/quotas.
 Only watchdog timing/thread termination has thin Windows/POSIX adapters. Offline
 source/fix hashes and CMake build are shared; Windows56 native worker checks
-pass, including original First to Three mode and64-bit ticks. This does not
-activate scripts in the launcher or change gameplay yet. Mac/Linux compiler/
-execution/sanitizer checks, separate OS-confined worker supervision, real guest
-API hooks, multiplayer/save separation and live custom-mode game acceptance are
-required. See STATUS and mod-gameplay-scripting.md; full goal remains incomplete.
+pass, including original First to Three mode and64-bit ticks. All56 checks also
+pass on Mac/Linux, including ASan/UBSan variants on each. Mac363/WSL362 selected
+checks pass (one WSL non-root ceremony skip). Compiler warning checks stay enabled;
+GCC guard indentation was corrected. This does not activate scripts or change
+gameplay yet. Separate OS-confined worker supervision, real guest API hooks,
+multiplayer/save separation and live custom-mode game acceptance are required. See STATUS and mod-gameplay-scripting.md; full goal remains incomplete.

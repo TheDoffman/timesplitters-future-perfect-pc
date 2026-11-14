@@ -9,6 +9,13 @@ Build the native worker with `python tools/build/build-mod-worker.py`. Run
 `python -m pytest tests/mods/test_script_worker.py` to exercise this exact example
 with synthetic authoritative match events, including the third-kill win condition.
 No game files are needed. Package the example with the ordinary creator `pack`
-command. See `docs/development/mod-gameplay-scripting.md` for API/budgets and the
+command from the repository root:
+
+```sh
+python tools/mods/mod-workshop.py pack examples/mods/first-to-three build/first-to-three.zip
+```
+
+The README lives beside the package source folder. See
+`docs/development/mod-gameplay-scripting.md` for API/budgets and the
 remaining integration gates. Python is developer tooling; players will use the
 native worker bundled with the game once that integration is complete.

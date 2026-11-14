@@ -114,7 +114,8 @@ does not return, including C pattern matching that instruction hooks cannot stop
 The watchdog is a defense inside the worker, **not** the final trusted supervisor.
 An exploited worker might defeat it. The external game parent must independently
 bound wall time, RSS/CPU, pipe reads/writes, stderr/output, process lifetime and
-children, and disable that mod on failure without stalling/crashing the game.
+children, sanitize inherited environment/handles, and disable that mod on failure
+without stalling/crashing the game.
 It must create a confined process (Windows AppContainer/restricted handles/job,
 Mac Seatbelt, Linux no-new-privileges/seccomp/descriptor isolation) before executing
 uploaded source. File/network/child-process escape canaries must pass on each
@@ -158,8 +159,9 @@ rollback, invalid player/score/message values, lifecycle/sequence/tick validatio
 duplicate IDs/nonfinite positions, independent snapshot copies, deterministic RNG,
 64-bit tick fidelity, upstream numeric fixes, binary/NUL source refusal, hostile
 frames/replies, C-function wall timeout, and fixed-source build verification in
-both checkout and standalone output directories. Windows runs pass; actual Mac/
-Linux execution and sanitizer results are recorded in STATUS when verified.
+both checkout and standalone output directories. Windows, Mac and Linux runs
+pass; actual ASan/UBSan runs on Mac and Linux also pass. STATUS records exact
+source and evidence.
 
 Still required: real game hooks/command adapters (use verified source evidence,
 never guessed addresses), independently supervised OS confinement on all three
