@@ -1,3 +1,25 @@
+# Feature test index
+
+[Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
+[0.6.2 rollback](control-presets.md); [Tex](texture-preference.md).
+[Arms](video-options.md).
+[Throw](native-uplink.md); [Beams](native-projectiles.md).
+[Vietnam](network-performance.md).
+[Tools](developer-tools-integration.md).
+Developer warnings: [launcher](launcher.md).
+[Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
+[Icons](controls-options.md).
+[Context](investigation.md)
+
+[Effect depth](native-effect-depth.md).
+[Update tests](main-menu-update.md).
+[Weapon FOV](video-options.md#weapon-aperture).
+[HUD/MSAA tests](../development/graphics-options.md).
+[SDL/input fixtures](linux-game.md).
+[Font/escape tests](audio-options.md).
+`test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
+[Kill feed](../development/arcade-kill-feed.md)
+
 # Story release flag regression
 
 `tests/graphics/test_quit_menu.py::test_story_version_feature_flag` compiles the

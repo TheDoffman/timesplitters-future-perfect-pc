@@ -118,6 +118,8 @@ missing/invalid/aspect fallback, no-pack operation and creator DDS validation.
 `launcher_shared_ui.cs` adds native package/activation/rollback/dependency/cycle/
 conflict/tamper/cancellation/personal-file and recovery tests; 12 focused workshop
 groups run with --workshop and with the ordinary three-host shared UI suite.
+The POSIX C11 reader fixture declares `_POSIX_C_SOURCE=200809L`, matching its
+use of the production trace clock; Linux CI exposed this missing test-build flag.
 Creator texture manifests now require keyed DDS names, a full mip chain, supported
 BC1/2/3/BGRA8 formats, power-of-two dimensions up to 4096 and a 24 MiB payload cap.
 

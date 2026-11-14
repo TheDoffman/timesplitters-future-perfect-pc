@@ -33,7 +33,7 @@ def reader(tmp_path_factory):
         command = [compiler, '/nologo', '/std:c11', '/W4', '/I' + str(ROOT / 'src/textures'),
                    str(source), '/Fe:' + str(executable)]
     else:
-        command = [compiler, '-std=c11', '-Wall', '-Wextra', '-I' + str(ROOT / 'src/textures'),
+        command = [compiler, '-std=c11', '-D_POSIX_C_SOURCE=200809L', '-Wall', '-Wextra', '-I' + str(ROOT / 'src/textures'),
                    str(source), '-o', str(executable)]
     result = subprocess.run(command, cwd=folder, env=environment, capture_output=True,
                             text=True, timeout=60)
