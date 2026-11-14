@@ -10691,3 +10691,10 @@ SIMD-heavy unit; one affected routine compiles alone with unchanged /O2 /Ob2.
 The shared generator now caps each unit's emitted bodies at1MiB as well as count,
 without splitting functions or changing instructions/compiler flags. Windows batch
 and CLI/generation checks pass; weighted game builds and Unix reruns pending.
+
+Native build SDK reuse: **Awaiting validation** on Mac/Linux hosts. Builders now
+accept `--sdk-root`, verify identical pins and existing critical file receipts,
+and keep their own runtime/build outputs. Explicit setup never installs into
+the reused SDK. Windows63 build/dependency contracts pass (three platform skips),
+including Mac/Linux SDK pin mismatch/tamper rejection and no-write assertions.
+Actual read-only reuse and native mod game builds remain pending. See STATUS.

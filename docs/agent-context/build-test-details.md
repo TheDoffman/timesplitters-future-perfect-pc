@@ -10,6 +10,14 @@ The shared default body cap is1MiB. Count-only250 still grouped155k lines/6MB of
 SIMD bodies in one MSVC unit and failed C1002; an individual failing routine
 compiled with unchanged /O2 /Ob2. Full weighted game build validation is pending.
 
+Native game builders accept `--sdk-root` for read-only same-host reuse. The source
+checkout's SDK pin must equal the current pin, then its receipt/required files
+must pass normal verification. `--setup` still installs Python/submodules into
+the task runtime root and never sets up a reused SDK. Runtime and build outputs
+stay local. Mac's broader `--runtime-root` continues to share those outputs, so
+do not use it to borrow dependencies from an independently edited checkout.
+`test_vulkan_sdk.py` covers both hosts' pin mismatch/tamper rejection and no writes.
+
 Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
 n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.
 The versioned cache and dated URL replace the mutable latest asset; checksum

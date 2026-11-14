@@ -43973,3 +43973,12 @@ repair needed for native mod integration, not live mod gameplay acceptance.
 The old full Windows patch suite finished61 passes and one historical-fixture
 failure from its pre-correction collected function. The corrected focused fixture
 passes separately on Windows/Mac/Linux. CI for278e9845 is still pending.
+
+Read-only SDK reuse for isolated native game builds is implemented through
+`--sdk-root` in both builders. Both SDK adapters compare the source checkout pin
+to the current pin and perform normal receipt/file verification, including the
+Mac post-build self-test path. Reuse never invokes SDK installation. Runtime,
+Python setup, submodules and build outputs stay in the task root. Windows SDK,
+Linux foundation and Mac build-tool regressions pass63 with3 platform skips;
+actual host reuse/build checks remain pending. This avoids another SDK copy on
+the disk-constrained Mac/WSL hosts while preserving other checkouts' work.

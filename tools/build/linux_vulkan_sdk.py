@@ -30,7 +30,12 @@ def install_path(root=ROOT):
     return root / 'external/vulkan-sdk/linux' / pin(root)['version']
 
 
-def verify_install(root=ROOT):
+def verify_install(root=ROOT, *, source_root=None):
+    if source_root is not None:
+        source_root=Path(source_root).resolve()
+        if pin(root)!=pin(source_root):
+            raise RuntimeError('Reused SDK source differs from the current shared pin')
+        return verify_install(source_root)
     installed = install_path(root)
     if installed.is_symlink() or installed.parent.is_symlink():
         raise RuntimeError('Refusing symlinked Linux SDK installation')

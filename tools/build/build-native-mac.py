@@ -68,6 +68,7 @@ def main():
     parser.add_argument('--vulkan-driver', choices=tuple(vulkan_sdk.DRIVERS), default=vulkan_sdk.DEFAULT_DRIVER,
                         help='Pinned Vulkan driver recorded in the build manifest (default: MoltenVK)')
     parser.add_argument('--runtime-root', type=Path, default=ROOT, help='Reuse this same-host checkout’s ignored dependencies, game data and single native build')
+    parser.add_argument('--sdk-root', type=Path, help='Read-only SDK reuse from another checkout with the same verified pin; keep runtime/build local')
     args = parser.parse_args()
     runtime_root=args.runtime_root.resolve()
     UPSTREAM=runtime_root/'external/ts3FPrecomp'; PYTHON=runtime_root/'.venv/bin/python'
@@ -93,7 +94,10 @@ def main():
         # back to a different frontend when its SDK fails verification.
         sdk = None
         if renderer == 'vulkan':
-            sdk = vulkan_sdk.setup(runtime_root) if args.setup else vulkan_sdk.verify_install(runtime_root)
+            if args.sdk_root:
+                sdk = vulkan_sdk.verify_install(runtime_root, source_root=args.sdk_root)
+            else:
+                sdk = vulkan_sdk.setup(runtime_root) if args.setup else vulkan_sdk.verify_install(runtime_root)
     except (OSError, ValueError, RuntimeError) as error:
         raise SystemExit(f'Native renderer prerequisite: {error}') from error
     print(f'Native renderer: {renderer} (requested {args.renderer})', flush=True)
@@ -187,7 +191,8 @@ def main():
                        XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
                        XDG_CACHE_HOME=str(test / 'xdg-cache'))
             if renderer=='vulkan':
-                env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(runtime_root),vulkan_sdk.select_driver(manifest))
+                verified_sdk=vulkan_sdk.verify_install(runtime_root,source_root=args.sdk_root) if args.sdk_root else vulkan_sdk.verify_install(runtime_root)
+                env=vulkan_sdk.with_probe_gpu_environment(env,verified_sdk,vulkan_sdk.select_driver(manifest))
                 env['RECOMP_VK_VALIDATION']='1'
             for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test', '--debug-self-test'):
                 if check in ('--settings-self-test', '--debug-self-test'):

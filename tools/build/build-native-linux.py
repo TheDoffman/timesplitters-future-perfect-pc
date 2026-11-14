@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--game-dir',type=Path,required=True,help='Existing supported game folder; no duplicate asset extract')
     parser.add_argument('--jobs',type=int,default=2,help='Compiler workers (default2 limits WSL memory use)')
     parser.add_argument('--setup',action='store_true',help='Initialize pinned submodules and build the symbol scanner')
+    parser.add_argument('--sdk-root',type=Path,help='Read-only SDK reuse from another checkout with the same verified pin; keep runtime/build local')
     parser.add_argument('--generate',action='store_true',help='Generate current guest C from the verified XBE')
     parser.add_argument('--test',action='store_true',help='Run protected-MMIO regression after building')
     parser.add_argument('--release-media',action='store_true',help='Compile/link against the verified decoder-only media build for packaging')
@@ -43,7 +44,7 @@ def main():
     if not xbe.is_file() or sha256(xbe)!=expected:parser.error('Missing/unsupported US Xbox executable')
     if not (game/'pak').is_dir() or not (game/'xmv').is_dir():parser.error('Game folder must contain pak and xmv')
     if shutil.disk_usage(ROOT).free<4*1024**3:parser.error('Build needs at least 4 GiB free')
-    sdk=linux_vulkan_sdk.verify_install(ROOT)
+    sdk=linux_vulkan_sdk.verify_install(ROOT,source_root=args.sdk_root) if args.sdk_root else linux_vulkan_sdk.verify_install(ROOT)
     tools=Path(sys.executable).parent;cmake=tools/'cmake';ninja=tools/'ninja'
     if not cmake.is_file() or not ninja.is_file():parser.error('Install shared requirements.txt in this Linux environment')
     runtime=ROOT/'external/ts3FPrecomp';build=ROOT/'build/linux/game'
