@@ -4,7 +4,7 @@
  * All temporary geometry and guest registers are restored after drawing. */
 #include "pc_prompts.h"
 extern void sub_00147080(void),sub_00042D10(void),sub_0003FA10(void),sub_0003FCF0(void),sub_0003F8D0(void);
-static RECOMP_TLS float tutorial_extra;
+static RECOMP_TLS float tutorial_extra,tutorial_icon_column;
 static RECOMP_TLS int tutorial_normal_row;
 static float tutorial_float(uint32_t address)
 {
@@ -16,7 +16,7 @@ static void tutorial_set_float(uint32_t address,float value)
 static void tutorial_columns(void (*original)(void))
 {
     uint32_t frame=g_esp,index=WORD_AT(frame+4),box,rows,view;
-    float widest=0,old_extra=tutorial_extra,column;
+    float widest=0,old_extra=tutorial_extra,old_column=tutorial_icon_column,column;
     int old_row=tutorial_normal_row;
     if(index>=4 || !pc_prompts_keyboard_active() || guest_call(sub_001CDAE0,0)!=1) {
         original();return;
@@ -44,7 +44,11 @@ static void tutorial_columns(void (*original)(void))
     g_esp=frame;
     column=tutorial_float(0x004C0460u)*40.f;
     tutorial_extra=widest+8.f-column;
-    if(!(tutorial_extra>0.f) || tutorial_extra>512.f) { tutorial_extra=old_extra;original();return; }
+    if(isfinite(widest) && widest>0.f && widest<512.f)
+        tutorial_icon_column=fmaxf(column,widest+8.f)-8.f;
+    if(!(tutorial_extra>0.f) || tutorial_extra>512.f) {
+        tutorial_extra=old_extra;original();tutorial_icon_column=old_column;return;
+    }
     uint32_t old_width=WORD_AT(box+0xECu);
     int right=(int32_t)WORD_AT(view+4u)+1;
     int room=right-16-(int32_t)WORD_AT(box+0xE4u)-(int32_t)old_width;
@@ -55,7 +59,7 @@ static void tutorial_columns(void (*original)(void))
     tutorial_normal_row=0;
     original();
     WORD_AT(box+0xECu)=old_width;
-    tutorial_extra=old_extra;tutorial_normal_row=old_row;
+    tutorial_extra=old_extra;tutorial_normal_row=old_row;tutorial_icon_column=old_column;
 }
 
 void pc_display_tutorial(void (*original)(void))
@@ -118,6 +122,18 @@ void pc_display_tutorial_text(void (*original)(void))
        it. The text ABI packs RGBA with alpha in the low byte. Keep menu fades,
        and restore the argument so other text/shadow passes are unaffected. */
     if(menu_mouse_footer_text()) WORD_AT(frame+16)=0x405a7f00u|(color&0xffu);
+    /* Normal tutorial action icons share a column. Centre their measured PC
+       captions rather than aligning unequal mouse/keycap widths at the left. */
+    if(tutorial_icon_column>0.f && WORD_AT(frame)==0x00147CAEu && frame>=128 &&
+       guest_writable(frame-128,128)) {
+        uint32_t caption=WORD_AT(frame+12);
+        g_esp=frame-128;
+        guest_call(sub_0003FCF0,4,frame-32,frame-28,caption,0u);
+        g_esp=frame;
+        float width=tutorial_float(frame-32);
+        if(isfinite(width) && width>=0.f && width<=tutorial_icon_column)
+            tutorial_set_float(frame+4,tutorial_float(frame+4)+(tutorial_icon_column-width)*.5f);
+    }
     if(tutorial_extra>0.f && tutorial_normal_row && WORD_AT(frame)==0x00147D17u)
         tutorial_set_float(frame+4,tutorial_float(frame+4)+tutorial_extra);
     original();WORD_AT(frame+4)=saved;WORD_AT(frame+16)=color;

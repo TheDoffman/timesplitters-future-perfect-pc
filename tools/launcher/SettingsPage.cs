@@ -47,7 +47,15 @@ namespace TimeSplitters.Launcher
         readonly TextBlock status;
         readonly Button save;
         string savedDraft;
+        Slider PercentSlider(StackPanel section,string label,int minimum,int maximum,int value,string name)
+        {
+            var row=new DockPanel();var caption=Text(value+"%",14);caption.MinWidth=48;caption.TextAlignment=TextAlignment.Right;
+            DockPanel.SetDock(caption,Dock.Right);row.Children.Add(caption);
+            var slider=new Slider {Name=name,Minimum=minimum,Maximum=maximum,Value=value,TickFrequency=5,IsSnapToTickEnabled=true,SmallChange=5,LargeChange=10,MinWidth=140,MaxWidth=360,Margin=new Thickness(0,6,12,6)};
+            AutomationProperties.SetName(slider,label+" in percent");Ui.ValueChanged(slider,()=>caption.Text=((int)Math.Round(slider.Value))+"%");row.Children.Add(slider);Field(section,label,row);return slider;
+        }
         readonly Slider fov;
+        readonly Slider crosshairSize;
         readonly Slider[] audioVolumes=new Slider[6];
         readonly CheckBox dialogueFocus;
         readonly ComboBox impactRange;
@@ -300,6 +308,8 @@ namespace TimeSplitters.Launcher
             PageTheme.Details(quality,"Advanced",advanced).Name="AdvancedGraphics";
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);quality.Children.Add(qualityToggles);
             var hud=PageTheme.Section(viewHud,"HUD","");hud.Children.Add(fps);
+            crosshairSize=PercentSlider(hud,"Crosshair Size",25,150,model.CrosshairSize,"CrosshairSizeSlider");
+            hud.Children.Add(Text("100% keeps the original crosshair size. Scope masks remain unchanged.",12));
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
             performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
             frameRate.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
@@ -383,6 +393,7 @@ namespace TimeSplitters.Launcher
             foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,dialogueFocus,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling,impactRange})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
+            Ui.ValueChanged(crosshairSize,RefreshSaveState);
         }
         readonly ComboBox[] localDevices=new ComboBox[3];
         readonly Slider[] controllerDeadzones=new Slider[8];
@@ -395,7 +406,7 @@ namespace TimeSplitters.Launcher
                 audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
                 dialogueFocus.IsChecked,impactRange.SelectedIndex,
                 controllerDeadzones.Select(x=>(int)Math.Round(x.Value)).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
-                (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
+                (int)Math.Round(fov.Value),(int)Math.Round(crosshairSize.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
         {
@@ -544,6 +555,7 @@ namespace TimeSplitters.Launcher
                 model.Sensitivity=number; model.MouseEnabled=enabled.IsChecked==true; model.InvertY=invert.IsChecked==true;
                 model.SetPlayerDevices(new[]{Devices[device.SelectedIndex]}.Concat(localDevices.Select(x=>Devices[x.SelectedIndex+1])).ToArray());
                 model.VerticalFov=(int)Math.Round(fov.Value);
+                model.CrosshairSize=(int)Math.Round(crosshairSize.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
                 model.Msaa=new[]{1,2,4,8}[msaa.SelectedIndex];model.PostAntiAliasing=edgeSmoothing.SelectedIndex;
                 model.Supersampling=supersampling.SelectedIndex;

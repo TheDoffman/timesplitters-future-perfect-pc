@@ -67,6 +67,8 @@ namespace TimeSplitters.Launcher
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes, DeveloperToolsEnabled;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
+        public int CrosshairSize = 100;
+        public int WeaponFovDegrees; // V5: zero retains exact legacy aperture.
         public int WeaponFov = 100; // Preserve the in-game weapon aperture preference.
         // Zero selects the original clock; 60 is not the experimental native-60 path.
         public int NativeFps;
@@ -215,10 +217,13 @@ namespace TimeSplitters.Launcher
             string display = Text(model.originals[Files[1]]);
             if (display.Length > 0)
             {
-                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[123])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?(?:\s+(?<weapon>\d+))?\s*$");
-                Core.Require(match.Success && (match.Groups["version"].Value != "1") == match.Groups["fov"].Success && (match.Groups["version"].Value == "3") == match.Groups["weapon"].Success, "The display settings file is invalid. No settings were changed.");
+                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[12345])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?(?:\s+(?<weapon>\d+))?(?:\s+(?<extra>\d+))?(?:\s+(?<crosshair>\d+))?\s*$");
+                Core.Require(match.Success && (match.Groups["version"].Value != "1") == match.Groups["fov"].Success && (Int32.Parse(match.Groups["version"].Value)>=3) == match.Groups["weapon"].Success && (Int32.Parse(match.Groups["version"].Value)>=4) == match.Groups["extra"].Success && (match.Groups["version"].Value == "4") == match.Groups["crosshair"].Success, "The display settings file is invalid. No settings were changed.");
                 if(match.Groups["fov"].Success) model.VerticalFov = Int32.Parse(match.Groups["fov"].Value, CultureInfo.InvariantCulture);
-                if(match.Groups["weapon"].Success) model.WeaponFov = Int32.Parse(match.Groups["weapon"].Value, CultureInfo.InvariantCulture);
+                if(match.Groups["weapon"].Success) { int weaponValue=Int32.Parse(match.Groups["weapon"].Value,CultureInfo.InvariantCulture); if(match.Groups["version"].Value=="5")model.WeaponFovDegrees=weaponValue;else model.WeaponFov=weaponValue; }
+                if(match.Groups["version"].Value=="4") { int legacyHud=Int32.Parse(match.Groups["extra"].Value,CultureInfo.InvariantCulture); Core.Require(legacyHud>=50 && legacyHud<=100 && legacyHud%5==0,"The display settings file is invalid."); }
+                if(match.Groups["crosshair"].Success) model.CrosshairSize=Int32.Parse(match.Groups["crosshair"].Value,CultureInfo.InvariantCulture);
+                if(match.Groups["version"].Value=="5") { model.CrosshairSize=Int32.Parse(match.Groups["extra"].Value,CultureInfo.InvariantCulture); Core.Require(model.WeaponFovDegrees>=FovMin && model.WeaponFovDegrees<=FovMax,"Weapon FOV must be between40 and100 degrees."); }
                 model.Width = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 model.Height = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             }
@@ -418,6 +423,8 @@ namespace TimeSplitters.Launcher
                 "Enter the public numeric Discord Application ID (17–20 digits), or turn off Rich Presence and clear the ID.");
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
+            Core.Require(CrosshairSize>=25 && CrosshairSize<=150 && CrosshairSize%5==0,"Crosshair Size must be 25�150 percent in steps of five.");
+            Core.Require(WeaponFovDegrees==0 || (WeaponFovDegrees>=FovMin && WeaponFovDegrees<=FovMax),"Weapon FOV must be between40 and100 degrees.");
             Core.Require(WeaponFov >= 80 && WeaponFov <= 150 && WeaponFov % 5 == 0, "Weapon FOV must be 80–150 percent in steps of five.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
             Core.Require(loading || Width!=1 || Height!=1 || CanAutoResolution, "Auto resolution requires a newer game build. Choose a manual resolution or update the game.");
@@ -521,7 +528,7 @@ namespace TimeSplitters.Launcher
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
-            var payload = new[] { Json.Encode(document) + "\n", (WeaponFov != 100 ? "TSFP_DISPLAY_V3 " + Width + " " + Height + " " + VerticalFov + " " + WeaponFov : VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
+            var payload = new[] { Json.Encode(document) + "\n", (WeaponFovDegrees!=0 ? "TSFP_DISPLAY_V5 "+Width+" "+Height+" "+VerticalFov+" "+WeaponFovDegrees+" "+CrosshairSize : CrosshairSize!=100 ? "TSFP_DISPLAY_V4 "+Width+" "+Height+" "+VerticalFov+" "+WeaponFov+" "+100+" "+CrosshairSize : WeaponFov != 100 ? "TSFP_DISPLAY_V3 " + Width + " " + Height + " " + VerticalFov + " " + WeaponFov : VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
                 "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
                 AudioPreference(),

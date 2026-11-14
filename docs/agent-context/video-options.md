@@ -41,22 +41,25 @@ preferences and restoring SMAA Off at completion. Native validation is separate.
 ## Weapon aperture
 
 Video Options > View & HUD includes Weapon FOV (row12), shared by frontend
-and pause menus. 80–150% in steps of5 scales both first-person projection axes;
-100% is the original aperture. Both FOV rows use the native sensitivity-bar
-painter and pointer capture, with percentage text for Weapon FOV. Mouse drags
-and keyboard/controller adjustments use 5% steps, retaining Apply/Back staging. Only caller US1B7482 in the existing perspective
-wrapper applies it. Character previews, world FOV/culling, scope artwork,
-cinematics, aiming input and projectile simulation retain their prior paths.
-The adjustment preserves each weapon's authored lens/zoom. It is an aperture
-percentage, not an absolute field angle. The value is staged across tabs,
-applies without restart via Apply, is discarded by Back, and rolls back if
-any batch save fails.
+and pause menus. It now displays a reference angle,40-100 in one-degree steps,
+matching Vertical FOV.55 is the original aperture. Projection scale is
+ tan(angle/2)/tan(55/2), preserving each weapon's authored lens/zoom rather than
+replacing it with a fixed absolute projection. Both rows use native slider
+painting and pointer capture; Weapon FOV no longer displays a percentage.
+Only caller US1B7482 applies the aperture adjustment. Character previews,
+world FOV/culling, scopes, cinematics, aiming and projectiles keep their paths.
 
-pc_display.c reads legacy V1/V2 with weapon100 and V3 width height world-fov
-weapon-percent. Saving Original retains V1/V2 compatibility. Shared launcher
-GameSettings reads/preserves V3 when changing other settings on all hosts.
-Tests cover projection isolation/aspect/zoom inputs, persistence, staged menu
-changes, save rollback and launcher round trips. Host visual testing is separate.
+pc_display_weapon_fov_degrees/set_weapon_fov_degrees serve the slider. The
+legacy percentage APIs retain exact V3/V4 aperture values; rounded degree text
+and unrelated Apply/launcher saves do not quantize those existing preferences.
+Changing the value writes V5: width height worldFov weaponDegrees crosshair.
+Returning to55 restores original sizing and legacy V1-V4 serialization. Apply
+still saves without restart; Back discards. The menu snapshots the old percent
+mode for exact failed-save rollback. Arm visibility still uses effective aperture.
+Shared launcher GameSettings preserves V5 angles/crosshair and rejects invalid
+or extra fields. Legacy files keep their original semantics. Tests exercise
+bounds, staged input, V5 round trips, legacy no-op preservation, rollback and
+projection isolation. See [crosshair sizing](hud-sizing.md) for V4 migration.
 
 ## Window mode
 
@@ -108,3 +111,31 @@ Other players' arms are selected through the active viewport context, not P1.
 with captured rig topology, unrelated ownership, retained child/skinned nodes,
 original FOV and invalid pointers/counts. It is registered in runtime-patches CI;
 visual acceptance and native-platform execution are separate checks.
+
+Crosshair Size uses a staged View & HUD slider and V4 preferences; HUD Scale
+removed. See [crosshair sizing](hud-sizing.md) for migration and validation.
+
+Weapon-degree validation: Windows supported game build and full launcher-Test
+pass (52 settings checks); focused graphics21pass2Mac skips, repository context
+21pass. Actual2560x720 main/pause: mouse plus keyboard fine adjustment, Back
+discard, Apply/V5 persistence, live rendering and original55 fallback pass.
+The local build/launcher preview binary matches the final supported game build.
+Mac/Linux visual acceptance remains pending.
+
+View & HUD slider readouts: fov_label keeps names only; fov_value_draw paints
+Vertical FOV, Weapon FOV and Crosshair Size values right-aligned10 logical units
+before the existing bars. Native row font, glyph bearings, selection colour and
+fade are reused; font/alignment restored. Shared main/pause layout; slider hit
+geometry, staging and serialization unchanged. Windows supported build and focused
+callback tests pass (4pass2Mac skips). Actual1280x720 main/pause captures confirm
+labels/readouts, live mouse/keyboard updates, Apply, Back and gameplay. Preview
+binary refreshed; Mac/Linux visual acceptance remains pending.
+
+Tutorial control-hint columns: pc_tutorial_ui.inc measures each native prompt
+caption and centres keyboard/mouse icons in one shared column. Only normal
+US147CAE action-icon draws shift; descriptions, controller/multiplayer layout,
+fonts and vertical positions retain existing behavior. All scratch geometry and
+column scope restore on exit; tutorial_layout covers unequal widths/rebinds.
+Tutorial-column validation:12 layout tests pass, including mixed-width column
+centres, rebinds, controller/split-screen guards and scope/ABI restoration.
+Windows supported build and actual1280x720 Story Scifi Handgun capture pass.

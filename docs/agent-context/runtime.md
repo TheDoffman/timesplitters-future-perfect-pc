@@ -3,7 +3,7 @@
 [Tools](developer-tools-integration.md).
 
 [FOV node filter](video-options.md); [Uplink](native-uplink.md).
-[UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
+[UI/Aim](hud-sizing.md); [Kill feed](../development/arcade-kill-feed.md).
 
 [Effect depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).

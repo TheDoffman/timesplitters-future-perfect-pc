@@ -15,7 +15,7 @@ Developer warnings: [launcher](launcher.md).
 [Font/escape tests](audio-options.md).
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
-# Tests ([Glass](pause-glass.md))
+# Tests ([Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.
 Fixtures:32 combinations, unknown files, speech, ducking, dynamics, queued gains,

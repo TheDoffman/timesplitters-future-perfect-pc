@@ -261,6 +261,33 @@ public static class LauncherSettingsChecks
                     Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
                 }
             });
+            Test("Weapon degree preferences retain V5 and reject invalid angles",()=>{
+                string root=Root("weapon-degrees");Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V5 1920 1080 65 70 50\n");
+                var model=GameSettings.Load(root,null);Require(model.WeaponFovDegrees==70 && model.CrosshairSize==50);
+                model.VerticalFov=66;model.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V5 1920 1080 66 70 50\n");
+                foreach(string invalid in new[]{"TSFP_DISPLAY_V5 1920 1080 55 39 50","TSFP_DISPLAY_V5 1920 1080 55 101 50","TSFP_DISPLAY_V5 1920 1080 55 0 50","TSFP_DISPLAY_V5 1920 1080 55 70","TSFP_DISPLAY_V5 1920 1080 55 70 50 100"}) {
+                    Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
+                }
+            });
+            Test("Crosshair sizing round trip and legacy defaults",()=>{
+                string root=Root("hud-sizing");Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V4 1920 1080 75 130 75 50\n");
+                var model=GameSettings.Load(root,null);Require(model.CrosshairSize==50 && model.WeaponFov==130);
+                model.VerticalFov=65;model.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V4 1920 1080 65 130 100 50\n");
+                foreach(string invalid in new[]{"TSFP_DISPLAY_V4 1920 1080 55 100 75","TSFP_DISPLAY_V4 1920 1080 55 100 49 50","TSFP_DISPLAY_V4 1920 1080 55 100 75 151","TSFP_DISPLAY_V4 1920 1080 55 100 76 50"}) {
+                    Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
+                }
+                Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V1 1280 720\n");model=GameSettings.Load(root,null);Require(model.CrosshairSize==100);
+            });
+            Test("Crosshair sizing sliders enable Save, cancel safely and persist",()=>STA(()=>{
+                string root=Root("hud-size-sliders");var owner=new System.Windows.Window();var editor=new SettingsPage(owner.Resources,root,true);
+                var nodes=Descendants(editor.View).ToList();Require(!nodes.OfType<System.Windows.Controls.Slider>().Any(c=>c.Name=="HudScaleSlider"));
+                var cross=nodes.OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="CrosshairSizeSlider");
+                var save=nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton");
+                Click(save);string baseline=Read(root,"Settings/pc-display.ini");
+                Require(cross.Value==100 && !save.IsEnabled);cross.Value=50;Require(save.IsEnabled);
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsCancelButton"));Require(Read(root,"Settings/pc-display.ini")==baseline);
+                Click(save);var model=GameSettings.Load(root,null);Require(model.CrosshairSize==50 && !save.IsEnabled);owner.Close();
+            }));
             Test("FOV slider number, reset, cancel and save",()=>STA(()=>{
                 string root=Root("fov-slider");var owner=new System.Windows.Window();
                 var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(1);
