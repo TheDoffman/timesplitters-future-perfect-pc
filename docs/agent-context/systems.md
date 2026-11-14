@@ -4,7 +4,7 @@ Preflight also rejects restored flags on a previously unsupported fresh epoch.
 
 [Sun/visibility repair](fidelity-comparison.md).
 
-Native mod bootstrap, isolated saves, cache and preflight: [contracts](mod-scripting.md). Automatic binding remains pending.
+Native mod bootstrap, isolated saves, cache, preflight and automatic binding: [contracts](mod-scripting.md).
 
 # Shared systems
 
@@ -941,3 +941,5 @@ recovery remains pending. See mod-scripting.md/STATUS for exact host counts.
 Script startup now locks native networking offline, binds the title model and
 composes HUD status/messages; lifecycle and checks: mod-scripting.md#production-game-factory.
 POSIX maps WSAENETDOWN to the shared Xbox ABI value10050 for offline refusal.
+The title adapter admits observed US Deathmatch rule3; actual scenes exposed the
+earlier synthetic rule0 mismatch. See mod-scripting.md for acceptance limits.

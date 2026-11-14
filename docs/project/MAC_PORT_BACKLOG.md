@@ -1,3 +1,19 @@
+Production runtime host acceptance (sourcedbd92a98): Mac/Linux focused51 pass/1
+skip EACH; native host ASan/UBSan factory9 pass EACH; all three game/platform builds
+pass (Windowsdf0c4512, Unixdbd92a98; POSIX-only alias follow-up). Native Mac ordinary
+script-selected startup/isolated saves/compiled helpers/SDL quit are exercised.
+Stock-menu Deathmatch reaches visible gameplay with six bots, preserved original
+save canaries and clean quit. Read-only snapshot0x01030930 proves rule3 at7DE456;
+the prior synthetic rule0 guard refuses it. The fixture changed to this observed
+state reproduces failure before correction; corrected Windows factory/title30 pass.
+No actual script effects yet. One earlier Mac run crashed after loading; the next
+run with corrected observer framing reaches gameplay and exits0. Crash evidence
+is retained and root cause remains undetermined. Windows selected startup refuses
+an inherited unknown-SID writer on LocalAppData; global account ACLs are preserved.
+CI43647444643 passes all mod/patch/launcher scopes but Windows runtime1 reports2
+Online companion handshake timeouts (1152 pass/91 skips); local exact companion
+suite4 pass/3 skips. Full new-source CI and scripted scene acceptance remain open.
+
 Production factory sourcedf0c4512: Windows native game build/platform checks pass.
 Mac factory/bootstrap/title49 checks pass/1 platform skip, with2 network compilation
 failures from a missing POSIX WSAENETDOWN alias. Add the shared Xbox ABI value10050

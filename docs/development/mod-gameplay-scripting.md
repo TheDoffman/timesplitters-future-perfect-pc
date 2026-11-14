@@ -354,7 +354,7 @@ event queue and atomic copied command commits. The supported US title adapter in
 `pc_mod_guest.inc` uses fresh epoch/roster checks, accepted-death serials, derived
 score/rank rows and the stock match-end helper. Patch2710 connects the wrappers
 and shared C++ parent build. The first supported path is offline non-team Arcade
-rules-index0. Windows controlled-world fixtures use real isolated Lua with mocked
+Deathmatch rule3. Windows controlled-world fixtures use real isolated Lua with mocked
 stock functions; this is not live gameplay acceptance. Bootstrap verification,
 save namespaces, HUD messages, helper packaging, launcher lifecycle and multiplayer
 remain required. No launcher scripting activation entry point is exposed.

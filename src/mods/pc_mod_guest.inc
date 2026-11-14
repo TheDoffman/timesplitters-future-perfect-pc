@@ -25,9 +25,9 @@ int pc_mod_game_capture(TsfpModWorld *out) {
     if(stage!=7u && stage!=8u){pc_mod_running=0;pc_mod_stage=stage;return 0;}
     if(pc_mod_stage==8u && stage==7u)pc_mod_running=0;
     pc_mod_stage=stage;
-    /* Initial integration is the offline, non-team Arcade rules-index0 path.
+    /* Initial integration is offline, non-team Arcade Deathmatch (rule3).
        Other title modes/network/save bootstrap contracts remain unimplemented. */
-    if(((mode>>8)&255u)!=9u || ((mode>>16)&255u)!=0u ||
+    if(((mode>>8)&255u)!=9u || ((mode>>16)&255u)!=3u ||
        (flags&(1u|0x40u|0x08000000u|0x20000000u)) || WORD_AT(0x76b108u) || WORD_AT(0x7de474u) ||
        !humans || humans>4u || bots>16u-humans || !rate || rate>1000 || scene>=100u ||
        !guest_writable(pool,(humans+bots)*0xea0u))return 0;

@@ -44,7 +44,8 @@ static void pause_short(void) {
 }
 static void initialize(void) {
     memset(memory,0,0x800000);WORD_AT(0x7de30c)=7;WORD_AT(0x79094c)=1;WORD_AT(0x7356d8)=0x10000;
-    WORD_AT(0x7de454)=9u<<8;WORD_AT(0x790950)=1;WORD_AT(0x7a2958)=1;WORD_AT(0x4e8cec)=60;
+    /* Real stock-menu Deathmatch snapshot: scene48, mode9, rule3, local1. */
+    WORD_AT(0x7de454)=0x01030930u;WORD_AT(0x790950)=1;WORD_AT(0x7a2958)=1;WORD_AT(0x4e8cec)=60;
     for(unsigned i=0;i<2;++i){uint32_t actor=0x10000+i*0xea0,body=0x20000+i*0x1000;
         WORD_AT(actor)=body;WORD_AT(actor+8)=i;WORD_AT(actor+0x70)=0x30000+i*0x100;
         WORD_AT(body+0x7c)=actor;float health=100.f;memcpy(memory+body+0x1cc,&health,4);}
@@ -59,7 +60,11 @@ static int run(const char *worker,const char *cache,const char *scenario,const c
         CHECK(pc_mod_game_capture(&world) && world.players[0].team==0);
         WORD_AT(0x76b108)=1;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x76b108)=0;
         WORD_AT(0x7de458)=1;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7de458)=0;
-        WORD_AT(0x7de454)=10u<<8;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7de454)=9u<<8;
+        WORD_AT(0x7de454)=0x01030a30u;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7de454)=0x01030930u;
+        for(unsigned rule=0;rule<5;++rule)if(rule!=3) {
+            WORD_AT(0x7de454)=0x01000930u|(rule<<16);CHECK(!pc_mod_game_capture(&world));
+        }
+        WORD_AT(0x7de454)=0x01030930u;
         WORD_AT(0x7356d8)=0xfffffff0;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7356d8)=0x10000;
         CHECK(pc_mod_game_capture(&world) && world.epoch==epoch);
         WORD_AT(0x7de30c)=8;CHECK(pc_mod_game_capture(&world) && world.epoch==epoch);

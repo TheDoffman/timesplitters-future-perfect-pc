@@ -1,4 +1,4 @@
-Native mod_bootstrap.cpp/.h now joins source validation, save lease, permanent host picker lock and kernel fence before startup; commit checks the actual root before exposing immutable source. It holds the lease until process teardown. No production match manager consumes the source yet. See mod-source-handoff.md for explicit developer handoff and remaining activation gates.
+Native mod_bootstrap.cpp/.h joins source validation, save lease, permanent host picker lock and kernel fence before startup; commit checks the actual root before exposing immutable source. It holds the lease until process teardown. The production factory consumes this source; see below and mod-source-handoff.md for explicit developer handoff and remaining activation gates.
 
 # Mod worker, process boundary and native sessions
 
@@ -10,9 +10,9 @@ Authoritative source: src/mods/mod_script.c/.h (Lua API), mod_worker.c (wire),
 mod_watchdog.c/.h, mod_seal.c/.h, mod_process.hpp + Windows/POSIX adapters,
 mod_guardian_mac.c, mod_session.cpp/.hpp, mod_match.cpp/.h and pc_mod_guest.inc.
 Build the worker with tools/build/build-mod-worker.py. VM C11; parent C++17.
-The shared game build links the match/title bridge with NULL default binding;
-verified source/save startup exists; launcher script activation and automatic
-match binding remain unavailable.
+The shared game build links the match/title bridge with NULL ordinary binding;
+an explicit verified source/save handoff selects the production factory and
+automatic binding. Public launcher script activation remains unavailable.
 
 `mod_saves.cpp/.hpp` provides the native save-namespace lease for that future
 bootstrap. A strict64-hex profile identity chooses a sibling ModSaves/<identity>
@@ -181,7 +181,9 @@ a fresh world. A fault closes the worker and disables the derived score overlay.
 The trusted caller asserts verified images/source, separate saves and offline
 policy before open; these assertions are not proof supplied by a mod manifest.
 
-`pc_mod_guest.inc` initially accepts only offline non-team Arcade rules-index0.
+`pc_mod_guest.inc` initially accepts only offline non-team Arcade Deathmatch,
+rule3 in the supported US title (byte7DE456). Earlier synthetic fixtures used0;
+the actual Mac stock-menu snapshot0x01030930 reproduced refusal before correction.
 It captures the supported US actor pool, preserving actor identity across body
 respawn. The death wrapper calls the original once and requires its accepted
 entity+258 serial increment. Derived actor+a6c/a68 and the sorted slot array use
@@ -337,5 +339,12 @@ test_game_runtime.py relocates a real compile-pinned helper bundle and exercises
 ordinary startup, actual VM scoring, results admission, VM/probe faults, repeat
 startup, missing/changed helpers, cross-thread shutdown and HUD text. Bootstrap
 and network fixtures retain real save leases and verify the one-way offline lock.
-Windows factory/title30 checks pass; bootstrap/network combined31 pass. Native
-Mac/Linux factory checks, all three game builds and actual title scenes pending.
+Windows factory/title30 checks pass; bootstrap/network combined31 pass. Mac/Linux
+factory/bootstrap/title/network51 pass/1 skip EACH; ASan/UBSan factory9 pass EACH.
+All three game builds/platform checks pass. Actual script effects remain pending:
+Mac stock Deathmatch reached playable state but the previous rule0 guard rejected
+it. The new real-state guard fixture reproduces that refusal before correction.
+One prior Mac run crashed after loading; a corrected observer run reaches gameplay
+and quits cleanly. Neither run executed a script. Windows real startup refuses an
+inherited unknown-SID write grant on its LocalAppData cache parent; do not weaken
+policy or silently change account ACLs. Full crash/scene acceptance remains open.
