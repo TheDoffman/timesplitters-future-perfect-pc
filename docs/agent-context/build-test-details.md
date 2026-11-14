@@ -1,3 +1,5 @@
+Native test_mod_resources.py relocates a real driver/bundle and executes a contained worker through a fresh identity-held cache; test_mod_saves.py checks the shared permission adapter default remains unchanged.
+
 Native test_mod_manager.py covers retained configuration, retiring epochs and reap-before-successor with real OS-contained workers; game binding is separate acceptance.
 
 Bootstrap fixtures also execute Unicode capsule/root environment reads, and empty/oversized handoff rejection.

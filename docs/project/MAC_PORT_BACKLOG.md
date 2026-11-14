@@ -1,3 +1,15 @@
+CI43637861713 (source46295f44) finished GREEN:23 success,2 intentional skips.
+
+Native resource/cache milestone (feature/mod-platform, base5cf5b93a):
+RuntimeResources derives the actual executable location, validates generated bundle
+shape/name/pins and retains a verified private helper snapshot. PrivateDirectory
+creates strict native-permission caches independently of save files, holds native
+identity and removes only its own empty directory. Persistent saves retain their
+existing exFAT fallback; executable caches require native permissions. Windows
+resource/save fixtures:59 pass,6 platform skips; revised environment decoy2 pass.
+Read-only OS cache-parent and Mac/Linux/native game builds pending. Production automatic game binding and
+private-cache crash recovery remain unfinished. No public activation claimed.
+
 Match lifetime acceptance (feature/mod-platform, owner679f5687; integrated
 source46295f44): Windows/Mac/Linux owner+title adapter33 pass EACH. Mac/Linux
 host ASan/UBSan33 pass EACH. All three native game builds/platform checks pass,

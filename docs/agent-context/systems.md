@@ -1,4 +1,4 @@
-Bootstrap environment paths use native UTF8.
+Native runtime resources/cache: [contracts](mod-scripting.md).
 
 
 Native mod_bootstrap now verifies a developer source handoff, leases isolated saves and arms the storage fence before kernel init; commit publishes source only after checking the actual root. pc_storage_lock_locations permanently prevents picker writes. Match lifetime owner: mod_manager.cpp; automatic binding remains pending. See mod-scripting.md.

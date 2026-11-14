@@ -256,3 +256,32 @@ Tests: test_mod_manager.py exercises real confined workers for immutable config,
 policy/pin refusal, leave/roster/authority/network/tick invalidation, faults,
 results retention, permanent close and successor creation including cancellation
 while startup is being pumped. test_mod_match.py checks the title adapter.
+
+## Native runtime resources
+
+mod_resources.cpp/.hpp locates ModRuntime/<generated64hex>/<fixed worker name>
+beside the running OS image, ignoring argv0, CWD and helper environment overrides.
+Only generated bundle-shape/name/pins are accepted. RuntimeResources verifies an
+owned helper/guardian snapshot with ImageStage and retains it for later sessions;
+per-session staging still verifies exact bytes independently. native_cache_parent
+reads LocalAppData on Windows or the effective user's OS home/cache directory on
+POSIX; no save path or uploaded field selects this parent. Tests inject their own
+isolated parent and relocate a real native driver/bundle to exercise OS discovery.
+The game bootstrap does not call this resource owner yet.
+
+mod_private.hpp is implemented beside the existing native ownership/ACL adapter
+in mod_saves.cpp. PrivateDirectory creates a fresh random child, holds its native
+directory identity and rechecks ownership/link/permission/volume rules. Unlike
+save namespaces, caches reject exFAT's missing native permissions. Windows creates
+exact protected user/System/admin ACLs and holds a delete-sharing-denied handle;
+POSIX creates0700 and compares held/named inode under an open parent descriptor.
+Cleanup removes only the owned empty directory (Windows by held handle, POSIX
+unlinkat with identity check); unknown children, replacements and moved POSIX
+names survive. It never adopts, recursively erases or repairs an existing tree.
+Persistent save Security defaults retain their previous exFAT policy.
+
+Tests test_mod_resources.py cover relocated real contained execution, Unicode,
+CWD/environment decoys, compiled path shape, missing/changed/pinned/linked helpers,
+unsafe parents, separate concurrent fresh caches, retained unknown files and
+native writer permissions. Physical exFAT, crash orphan recovery and production
+startup/frame/shutdown wiring remain separate required acceptance.

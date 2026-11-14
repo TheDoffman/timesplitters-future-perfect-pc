@@ -1,5 +1,6 @@
 #include "mod_saves.hpp"
 #include "mod_files.hpp"
+#include "mod_private.hpp"
 #include <array>
 #include <filesystem>
 #include <stdexcept>
@@ -7,6 +8,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cerrno>
+#include <cstdlib>
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -17,6 +19,7 @@
 #include <windows.h>
 #include <aclapi.h>
 #include <sddl.h>
+#include <objbase.h>
 #else
 #include <unistd.h>
 #include <fcntl.h>
@@ -38,10 +41,11 @@ void need(bool value){if(!value)throw std::runtime_error(public_error);}
 struct Local {void *p=nullptr;~Local(){if(p)LocalFree(p);}};
 struct File {HANDLE value=INVALID_HANDLE_VALUE;~File(){if(value!=INVALID_HANDLE_VALUE)CloseHandle(value);}};
 struct Security {
+    bool allow_exfat;
     std::vector<unsigned char> user;
     unsigned char system[SECURITY_MAX_SID_SIZE]{},admins[SECURITY_MAX_SID_SIZE]{};
     Local descriptor;SECURITY_ATTRIBUTES attributes{};
-    Security() {
+    explicit Security(bool allow=true):allow_exfat(allow) {
         File token;DWORD size=0;HANDLE raw=nullptr;
         need(OpenProcessToken(GetCurrentProcess(),TOKEN_QUERY,&raw)!=FALSE);token.value=raw;
         GetTokenInformation(token.value,TokenUser,nullptr,0,&size);need(size && size<=65536);user.resize(size);
@@ -59,7 +63,7 @@ struct Security {
         std::array<wchar_t,MAX_PATH> volume{},format{};DWORD flags=0;
         need(GetVolumePathNameW(path.c_str(),volume.data(),(DWORD)volume.size()) &&
             GetVolumeInformationW(volume.data(),nullptr,0,nullptr,nullptr,&flags,format.data(),(DWORD)format.size()));
-        if(!(flags&FILE_PERSISTENT_ACLS)){need(_wcsicmp(format.data(),L"exFAT")==0);return;}
+        if(!(flags&FILE_PERSISTENT_ACLS)){need(allow_exfat && _wcsicmp(format.data(),L"exFAT")==0);return;}
         Local descriptor_read;PSID owner=nullptr;PACL acl=nullptr;
         need(GetNamedSecurityInfoW(const_cast<LPWSTR>(path.c_str()),SE_FILE_OBJECT,
             OWNER_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION,&owner,nullptr,&acl,nullptr,&descriptor_read.p)==ERROR_SUCCESS);
@@ -90,12 +94,14 @@ struct Security {
 #else
 struct File {int value=-1;~File(){if(value>=0)close(value);}};
 struct Security {
+    bool allow_exfat;
+    explicit Security(bool allow=true):allow_exfat(allow){}
     void check(const fs::path &path,bool) {
         struct statfs volume{};need(statfs(path.c_str(),&volume)==0);
 #ifdef __APPLE__
-        if(strcmp(volume.f_fstypename,"exfat")==0)return;
+        if(strcmp(volume.f_fstypename,"exfat")==0){need(allow_exfat);return;}
 #else
-        if(volume.f_type==0x2011BAB0L)return; // Linux EXFAT_SUPER_MAGIC.
+        if(volume.f_type==0x2011BAB0L){need(allow_exfat);return;} // Linux EXFAT_SUPER_MAGIC.
 #endif
         struct stat s{};need(lstat(path.c_str(),&s)==0 && s.st_uid==geteuid() && !(s.st_mode&0022));
     }
@@ -242,4 +248,81 @@ bool SaveNamespace::recheck(std::string &error)const {
     }catch(...){error=public_error;return false;}
 }
 SaveNamespace::~SaveNamespace(){delete static_cast<Lease *>(lock_);}
+
+namespace {
+struct PrivateOwner {
+    File directory;
+#ifndef _WIN32
+    File parent;
+#endif
+};
+}
+std::unique_ptr<PrivateDirectory> PrivateDirectory::create(const std::string &parent_name,std::string &error) {
+    error.clear();
+    try {
+        auto parent=checked_path(parent_name,true);Security security(false);security.check(parent,false);
+        auto result=std::unique_ptr<PrivateDirectory>(new PrivateDirectory);
+        result->parent_=parent.u8string();result->owner_=new PrivateOwner;
+        auto &owner=*static_cast<PrivateOwner *>(result->owner_);
+#ifdef _WIN32
+        GUID id;need(SUCCEEDED(CoCreateGuid(&id)));wchar_t text[40];need(StringFromGUID2(id,text,40)>0);
+        auto path=parent/(std::wstring(L".tsfp-runtime-")+text);result->root_=path.u8string();
+        if(!CreateDirectoryW(path.c_str(),&security.attributes)){result->root_.clear();throw std::runtime_error("Fresh cache creation failed");}
+        // Keep delete sharing closed so a different object cannot replace the
+        // owned directory while worker children use names underneath it.
+        owner.directory.value=CreateFileW(path.c_str(),DELETE|FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,
+            OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+        need(owner.directory.value!=INVALID_HANDLE_VALUE);
+#else
+        owner.parent.value=open(parent.c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);need(owner.parent.value>=0);
+        result->root_=(parent/".tsfp-runtime-XXXXXX").string();
+        std::vector<char> text(result->root_.begin(),result->root_.end());text.push_back(0);
+        if(!mkdtemp(text.data())){result->root_.clear();throw std::runtime_error("Fresh cache creation failed");}
+        memcpy(result->root_.data(),text.data(),result->root_.size());
+        owner.directory.value=open(result->root_.c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);need(owner.directory.value>=0);
+#endif
+        need(result->recheck(error));return result;
+    }catch(...){error="A private native helper cache could not be created";return nullptr;}
+}
+bool PrivateDirectory::recheck(std::string &error)const {
+    error.clear();
+    try {
+        need(owner_ && !root_.empty());auto path=checked_path(root_,true);
+        checked_path(parent_,true);Security security(false);security.check(fs::u8path(parent_),false);security.check(path,true);
+        auto &owner=*static_cast<PrivateOwner *>(owner_);
+#ifdef _WIN32
+        BY_HANDLE_FILE_INFORMATION held{};
+        need(owner.directory.value!=INVALID_HANDLE_VALUE && GetFileType(owner.directory.value)==FILE_TYPE_DISK &&
+            GetFileInformationByHandle(owner.directory.value,&held) && (held.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) && !(held.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT));
+#else
+        struct stat held{},named{};
+        need(owner.directory.value>=0 && owner.parent.value>=0 && fstat(owner.directory.value,&held)==0 &&
+            fstatat(owner.parent.value,path.filename().c_str(),&named,AT_SYMLINK_NOFOLLOW)==0 &&
+            S_ISDIR(held.st_mode) && S_ISDIR(named.st_mode) && held.st_dev==named.st_dev && held.st_ino==named.st_ino);
+#endif
+        return true;
+    }catch(...){error="Private native helper cache changed";return false;}
+}
+PrivateDirectory::~PrivateDirectory() {
+    auto *owner=static_cast<PrivateOwner *>(owner_);if(!owner)return;
+    try {
+        if(!root_.empty()) {
+#ifdef _WIN32
+            if(owner->directory.value!=INVALID_HANDLE_VALUE) {
+                // The kernel refuses nonempty directories; never enumerate or
+                // recursively erase an unexpected file left in this cache.
+                FILE_DISPOSITION_INFO disposition{};disposition.DeleteFile=TRUE;
+                (void)SetFileInformationByHandle(owner->directory.value,FileDispositionInfo,&disposition,sizeof(disposition));
+            }
+#else
+            struct stat held{},named{};auto leaf=fs::u8path(root_).filename();
+            if(owner->directory.value>=0 && owner->parent.value>=0 && fstat(owner->directory.value,&held)==0 &&
+                fstatat(owner->parent.value,leaf.c_str(),&named,AT_SYMLINK_NOFOLLOW)==0 &&
+                S_ISDIR(named.st_mode) && held.st_dev==named.st_dev && held.st_ino==named.st_ino)
+                (void)unlinkat(owner->parent.value,leaf.c_str(),AT_REMOVEDIR);
+#endif
+        }
+    }catch(...){} // Preserve uncertain/unknown state; no cleanup retry.
+    delete owner;
+}
 }}
