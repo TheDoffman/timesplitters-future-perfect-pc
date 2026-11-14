@@ -4,8 +4,9 @@
  * All temporary geometry and guest registers are restored after drawing. */
 #include "pc_prompts.h"
 extern void sub_00147080(void),sub_00042D10(void),sub_0003FA10(void),sub_0003FCF0(void),sub_0003F8D0(void);
-static RECOMP_TLS float tutorial_extra;
-static RECOMP_TLS int tutorial_normal_row;
+static RECOMP_TLS float tutorial_extra,tutorial_icon_column;
+static RECOMP_TLS int tutorial_normal_row,tutorial_row_index;
+static RECOMP_TLS float tutorial_row_gap;
 static float tutorial_float(uint32_t address)
 {
     uint32_t value=WORD_AT(address);float f;memcpy(&f,&value,4);return f;
@@ -13,12 +14,24 @@ static float tutorial_float(uint32_t address)
 static void tutorial_set_float(uint32_t address,float value)
 { memcpy(&WORD_AT(address),&value,4); }
 
+/* The native painter uses cached height for the panel, then recomputes that
+ * unpadded cache at its end. Add row gaps to the painted panel each time; never
+ * feed the expanded height into the next frame's cache. */
+static void tutorial_rows(void (*original)(void),uint32_t box,unsigned controls)
+{
+    float old_gap=tutorial_row_gap;int old_index=tutorial_row_index;
+    tutorial_row_gap=controls>1?6.f:0.f;tutorial_row_index=0;
+    if(controls>1)WORD_AT(box+0xf0u)+=(controls-1)*6u;
+    original();
+    tutorial_row_gap=old_gap;tutorial_row_index=old_index;
+}
+
 static void tutorial_columns(void (*original)(void))
 {
-    uint32_t frame=g_esp,index=WORD_AT(frame+4),box,rows,view;
-    float widest=0,old_extra=tutorial_extra,column;
+    uint32_t frame=g_esp,index=WORD_AT(frame+4),box,rows,view;unsigned controls=0;
+    float widest=0,old_extra=tutorial_extra,old_column=tutorial_icon_column,column;
     int old_row=tutorial_normal_row;
-    if(index>=4 || !pc_prompts_keyboard_active() || guest_call(sub_001CDAE0,0)!=1) {
+    if(index>=4 || guest_call(sub_001CDAE0,0)!=1) {
         original();return;
     }
     box=0x007A5940u+index*0x114u;rows=WORD_AT(box+0xE0u);
@@ -30,6 +43,7 @@ static void tutorial_columns(void (*original)(void))
     for(uint32_t i=0;i<rows;i++) {
         uint32_t row=box+i*28,action=WORD_AT(row+12);
         if((int32_t)WORD_AT(row+24)!=-1 || action>=28)continue;
+        controls++;
         uint32_t button=guest_call(sub_00147080,2,action,index);
         /* Stick explanation rows already measure their composite captions. */
         if(button==0x1000u || button==0x2000u)continue;
@@ -44,7 +58,11 @@ static void tutorial_columns(void (*original)(void))
     g_esp=frame;
     column=tutorial_float(0x004C0460u)*40.f;
     tutorial_extra=widest+8.f-column;
-    if(!(tutorial_extra>0.f) || tutorial_extra>512.f) { tutorial_extra=old_extra;original();return; }
+    if(isfinite(widest) && widest>0.f && widest<512.f)
+        tutorial_icon_column=fmaxf(column,widest+8.f)-8.f;
+    if(!(tutorial_extra>0.f) || tutorial_extra>512.f) {
+        tutorial_extra=old_extra;tutorial_rows(original,box,controls);tutorial_icon_column=old_column;return;
+    }
     uint32_t old_width=WORD_AT(box+0xECu);
     int right=(int32_t)WORD_AT(view+4u)+1;
     int room=right-16-(int32_t)WORD_AT(box+0xE4u)-(int32_t)old_width;
@@ -53,9 +71,9 @@ static void tutorial_columns(void (*original)(void))
     if(growth<0)growth=0;
     WORD_AT(box+0xECu)=old_width+(uint32_t)growth;
     tutorial_normal_row=0;
-    original();
+    tutorial_rows(original,box,controls);
     WORD_AT(box+0xECu)=old_width;
-    tutorial_extra=old_extra;tutorial_normal_row=old_row;
+    tutorial_extra=old_extra;tutorial_normal_row=old_row;tutorial_icon_column=old_column;
 }
 
 void pc_display_tutorial(void (*original)(void))
@@ -100,7 +118,8 @@ void pc_display_tutorial_text(void (*original)(void))
 {
     if(pc_story_lobby_title(original)) return;
     if(menu_mouse_profile_text(original)) return;
-    uint32_t frame=g_esp,saved=WORD_AT(frame+4),color=WORD_AT(frame+16);
+    uint32_t frame=g_esp,saved=WORD_AT(frame+4),saved_y=WORD_AT(frame+8),color=WORD_AT(frame+16);
+    uint32_t icon_x=WORD_AT(0x7e7270),icon_y=WORD_AT(0x7e7280);int icon_scaled=0;
     /* The loading-picture label uses this shared font entry, independently of
        tutorial cards. Fit its glyphs with the normal UI scale, but anchor its
        authored inset to the output's left edge rather than the central 4:3 box.
@@ -118,7 +137,38 @@ void pc_display_tutorial_text(void (*original)(void))
        it. The text ABI packs RGBA with alpha in the low byte. Keep menu fades,
        and restore the argument so other text/shadow passes are unaffected. */
     if(menu_mouse_footer_text()) WORD_AT(frame+16)=0x405a7f00u|(color&0xffu);
+    /* Normal tutorial action icons share a column. Centre their measured PC
+       captions rather than aligning unequal button/trigger/keycap widths at the left. */
+    if(tutorial_icon_column>0.f && WORD_AT(frame)==0x00147CAEu && frame>=128 &&
+       guest_writable(frame-128,128)) {
+        uint32_t caption=WORD_AT(frame+12);
+        g_esp=frame-128;
+        guest_call(sub_0003FCF0,4,frame-32,frame-28,caption,0u);
+        float old_height=tutorial_float(frame-28);
+        /* Keycap artwork extends beyond the text's measured line. Reduce only
+           keyboard captions; controller glyphs retain their native size. */
+        float caption_scale=pc_prompts_keyboard_active()?.8f:1.f;
+        tutorial_set_float(0x7e7270,tutorial_float(0x7e7270)*caption_scale);
+        tutorial_set_float(0x7e7280,tutorial_float(0x7e7280)*caption_scale);
+        guest_call(sub_0003F8D0,0);icon_scaled=1;
+        guest_call(sub_0003FCF0,4,frame-32,frame-28,caption,0u);
+        g_esp=frame;
+        float width=tutorial_float(frame-32),height=tutorial_float(frame-28);
+        if(isfinite(width) && width>=0.f && width<=tutorial_icon_column)
+            tutorial_set_float(frame+4,tutorial_float(frame+4)+(tutorial_icon_column-width)*.5f);
+        if(isfinite(old_height) && isfinite(height) && old_height>=height && height>0.f)
+            tutorial_set_float(frame+8,tutorial_float(frame+8)+(old_height-height)*.5f);
+    }
     if(tutorial_extra>0.f && tutorial_normal_row && WORD_AT(frame)==0x00147D17u)
         tutorial_set_float(frame+4,tutorial_float(frame+4)+tutorial_extra);
-    original();WORD_AT(frame+4)=saved;WORD_AT(frame+16)=color;
+    uint32_t caller=WORD_AT(frame);
+    if(tutorial_row_gap>0.f && (caller==0x00147CAEu || caller==0x00147B0Bu ||
+       caller==0x00147BDBu || caller==0x00147D17u))
+        tutorial_set_float(frame+8,tutorial_float(frame+8)+tutorial_row_gap*tutorial_row_index);
+    original();WORD_AT(frame+4)=saved;WORD_AT(frame+8)=saved_y;WORD_AT(frame+16)=color;
+    if(tutorial_row_gap>0.f && caller==0x00147D17u)tutorial_row_index++;
+    if(icon_scaled) {
+        WORD_AT(0x7e7270)=icon_x;WORD_AT(0x7e7280)=icon_y;
+        guest_call(sub_0003F8D0,0);
+    }
 }

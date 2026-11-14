@@ -178,7 +178,7 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
     put(executable)
     native = dict(executable_sha256=package.digest(executable), renderer='vulkan',
                   vulkan_driver='moltenvk', source_revision='revision', runtime_revision='revision',
-                  source_sha256={}, auto_display_resolution=True)
+                  source_sha256={}, auto_display_resolution=True, display_settings_version=5)
     if supported is not None:
         native['language_packs'] = supported
     put(native_dir/'BUILD.json', json.dumps(native).encode())
@@ -216,6 +216,7 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
     manifest = json.loads((stage/'BUILD.json').read_text())
     assert manifest['language_packs'] is (supported is True)
     assert manifest['auto_display_resolution'] is True
+    assert manifest['display_settings_version'] == 5
     assert manifest['native_build'] == native
     assert 'Licenses/SMAA.txt' in manifest['files']
     assert 'Licenses/Keyboard-mouse-icons.txt' in manifest['files']

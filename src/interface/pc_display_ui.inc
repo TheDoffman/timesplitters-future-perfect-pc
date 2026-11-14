@@ -421,7 +421,7 @@ void pc_display_scope(void (*original)(void),uint32_t tag)
 static int aim_full_view(void)
 {
     uint32_t view=WORD_AT(0x007E71C8u);
-    return pc_display_wide_now() && pc_display_hud_scale()>0.f &&
+    return (pc_display_wide_now() || pc_display_crosshair_size()!=100) && pc_display_hud_scale()>0.f &&
         guest_call(sub_001CDAE0,0)==1 && guest_writable(view,0x24) &&
         WORD_AT(view)==0 && (WORD_AT(view+4u)==639 || WORD_AT(view+4u)==640) &&
         WORD_AT(view+0x14u)==0 && (WORD_AT(view+0x18u)==479 || WORD_AT(view+0x18u)==480);
@@ -450,6 +450,7 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
     memcpy(xy,saved,points*2*sizeof(float));
     if(kind!=2) {
         pc_ui_aim_shape(xy,points,pc_display_hud_scale());
+        pc_ui_aim_size(xy,points,pc_display_crosshair_size()*.01f);
         for(unsigned i=0;i<points*2;i++)memcpy(&WORD_AT(frame+offset+i*4),&xy[i],4);
     }
     ui_place(anchor,caller);original();ui_place(old,old_tag);

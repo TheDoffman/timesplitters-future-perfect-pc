@@ -1,5 +1,5 @@
 [Sticks](controller-deadzones.md), [Rollback](control-presets.md), [updates](main-menu-update.md).
-[Tex](texture-preference.md); [arms](video-options.md).
+[Tex](texture-preference.md); [pads](video-options.md).
 [Sun/visibility repair](fidelity-comparison.md); optional comparison preset removed,
 normal settings and menus restored.
 
@@ -17,7 +17,7 @@ including missing files and explicit disconnect; fixture:
 [Display](video-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
-# [Bindings](pause-settings.md)
+# [Aim](hud-sizing.md)
 
 [SDL](linux-game.md).
 

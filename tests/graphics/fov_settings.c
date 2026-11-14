@@ -137,7 +137,8 @@ void sub_0003FA10(void) {
     CHECK(row_alignment_test);g_eax=WORD_AT(0x6b93b4);WORD_AT(0x6b93b4)=WORD_AT(g_esp+4);g_esp+=4;
 }
 void sub_0003FCF0(void) {
-    CHECK(row_alignment_test || update_notice_test);FLOAT_AT(WORD_AT(g_esp+4))=80.f;
+    const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
+    CHECK(row_alignment_test || update_notice_test || (caption[0]>='0' && caption[0]<='9'));FLOAT_AT(WORD_AT(g_esp+4))=80.f;
     FLOAT_AT(WORD_AT(g_esp+8))=WORD_AT(0x6b93b4)==2?14.f:10.f;g_esp+=4;
 }
 void sub_000718E0(void) {CHECK(row_alignment_test);g_eax=0x600400;g_esp+=4;}
@@ -427,6 +428,8 @@ void sub_00079D60_gen(void) {
     g_eax=0x200000+id*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
 }
 void sub_00041DC0(void) {
+    const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
+    if(caption[0]>='0' && caption[0]<='9') {g_esp+=4;return;}
     CHECK(update_notice_test);
     CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+12)),"UPDATE AVAILABLE - OPEN THE LAUNCHER"));
     CHECK(FLOAT_AT(g_esp+4)==280.f && FLOAT_AT(g_esp+8)==398.f);
@@ -454,7 +457,7 @@ static void button_probe(void)
 static void reload(const char *text)
 {
     FILE *f=fopen(path,"wb");CHECK(f);CHECK(fputs(text,f)>=0);CHECK(!fclose(f));
-    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;weapon_fov=PC_WEAPON_FOV_DEFAULT;
+    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;weapon_fov=PC_WEAPON_FOV_DEFAULT;weapon_angle=0;crosshair_size=100;
     pc_display_current();
 }
 static void content(const char *expected)
@@ -844,8 +847,8 @@ int main(int argc,char **argv)
     content("TSFP_DISPLAY_V2 1280 720 70\n");
     /* Weapon aperture is staged across tabs, applies live, and persists separately from world FOV. */
     refresh(DISPLAY_VIEW,0);
-    for(int i=0;i<50;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==150);
-    for(int i=0;i<50;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==80);
+    for(int i=0;i<100;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==100);
+    for(int i=0;i<100;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==40);
     slider_capture_enabled=1;
     memset(menu_slider_tracks,0,sizeof menu_slider_tracks);
     WORD_AT(0x700008)=weapon_fov_row;
@@ -854,21 +857,21 @@ int main(int argc,char **argv)
     WORD_AT(0x300198)=weapon_fov_row;
     pointer.left=1;
     CHECK(menu_slider_pointer(0x300000,pointer,2,348,8,1920,1080));
-    CHECK(staged_weapon_fov==115 && staged_fov==70 && pc_display_weapon_fov()==100);
+    CHECK(staged_weapon_fov==70 && staged_fov==70 && pc_display_weapon_fov()==100);
     pointer.left=0;CHECK(!menu_slider_pointer(0x300000,pointer,0,348,8,1920,1080));
     slider_capture_enabled=0;
-    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==150);
+    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==100);
     for(int i=0;i<4;i++)call(TICK_CB,12,0x40000);
-    CHECK(staged_weapon_fov==130 && pc_display_weapon_fov()==100 && display_dirty());
+    CHECK(staged_weapon_fov==96 && pc_display_weapon_fov()==100 && display_dirty());
     refresh(DISPLAY_HOME,0);refresh(DISPLAY_VIEW,0);
-    CHECK(staged_weapon_fov==130);
-    call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==130 && pc_display_fov()==70 && !display_dirty());
-    content("TSFP_DISPLAY_V3 1280 720 70 130\n");
-    for(int i=0;i<6;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
+    CHECK(staged_weapon_fov==96);
+    call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov_degrees()==96 && pc_display_fov()==70 && !display_dirty());
+    content("TSFP_DISPLAY_V5 1280 720 70 96 100\n");
+    for(int i=0;i<41;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
     /* A failed SMAA save also rolls back every Apply-only graphics field. */
     TsfpGraphicsOptions before_failed_batch=pc_graphics_get();
     staged_anisotropy=4;staged_ao=!before_failed_batch.ambient_occlusion;staged_cache=!before_failed_batch.shader_cache;
-    staged_msaa=4;staged_weapon_fov=150;
+    staged_msaa=4;staged_weapon_fov=100;
     refresh(DISPLAY_HOME,0);staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
     refresh(DISPLAY_GRAPHICS,0);WORD_AT(post_aa_row+0xc8)=2;smaa_save_ok=0;
     call(SELECT_CB,3,0);
@@ -878,7 +881,7 @@ int main(int argc,char **argv)
     CHECK(graphics_options.anisotropy==before_failed_batch.anisotropy &&
           graphics_options.ambient_occlusion==before_failed_batch.ambient_occlusion &&
           graphics_options.shader_cache==before_failed_batch.shader_cache);
-    smaa_save_ok=1;staged_weapon_fov=100;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
+    smaa_save_ok=1;staged_weapon_fov=55;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
     staged_anisotropy=graphics_options.anisotropy;staged_ao=graphics_options.ambient_occlusion;staged_cache=graphics_options.shader_cache;
     refresh(DISPLAY_GRAPHICS,0);call(TICK_CB,11,0);CHECK(!display_dirty());
     WORD_AT(post_aa_row+0xc8)=2;read_choices();refresh(DISPLAY_VIEW,0);
@@ -1503,6 +1506,27 @@ int main(int argc,char **argv)
     sidebar_video_queued=(PcVideoRequest){9,VIDEO_CLEAR_CACHE,edit};int old_clears=cache_clear_calls;video_sidebar_tick();CHECK(cache_clear_calls==old_clears+1);
     visibility_guest_checks();
     VirtualFree(mem,0,MEM_RELEASE);
+    reload("TSFP_DISPLAY_V4 1280 720 65 120 75 50\n");
+    CHECK(pc_display_crosshair_size()==50 && pc_display_weapon_fov()==120);
+    CHECK(!pc_display_set_crosshair_size(26) && !pc_display_set_crosshair_size(151));
+    CHECK(pc_display_set_crosshair_size(45) && pc_display_save());
+    content("TSFP_DISPLAY_V4 1280 720 65 120 100 45\n");
+    CHECK(pc_display_set_crosshair_size(100) && pc_display_save());
+    content("TSFP_DISPLAY_V3 1280 720 65 120\n");
+    reload("TSFP_DISPLAY_V3 1280 720 65 130\n");
+    CHECK(pc_display_weapon_fov_legacy_percent()==130 && pc_display_weapon_fov_degrees()==68);
+    CHECK(pc_display_set_weapon_fov_degrees(68) && pc_display_save());
+    content("TSFP_DISPLAY_V3 1280 720 65 130\n"); /* No-op keeps exact legacy aperture. */
+    CHECK(!pc_display_set_weapon_fov_degrees(39) && !pc_display_set_weapon_fov_degrees(101));
+    CHECK(pc_display_set_weapon_fov_degrees(70) && pc_display_save());
+    content("TSFP_DISPLAY_V5 1280 720 65 70 100\n");
+    reload("TSFP_DISPLAY_V5 1280 720 65 70 50\n");
+    CHECK(pc_display_weapon_fov_degrees()==70 && pc_display_weapon_fov_legacy_percent()==0 && pc_display_crosshair_size()==50);
+    CHECK(fabsf(pc_display_weapon_fov_scale()-tanf(70*.00872664626f)/tanf(55*.00872664626f))<.00001f);
+    CHECK(pc_display_set_weapon_fov_degrees(55) && pc_display_set_crosshair_size(100) && pc_display_save());
+    content("TSFP_DISPLAY_V2 1280 720 65\n");
+    reload("TSFP_DISPLAY_V5 1280 720 65 101 50\n");CHECK(pc_display_weapon_fov_degrees()==55 && pc_display_crosshair_size()==100);
+    reload("TSFP_DISPLAY_V5 1280 720 65 70 50 trailing\n");CHECK(pc_display_weapon_fov_degrees()==55);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
 }

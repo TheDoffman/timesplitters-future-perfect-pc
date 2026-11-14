@@ -1,4 +1,4 @@
-Sun/visibility repair (Awaiting validation on Mac, uncommitted, base1375e144):
+Sun/visibility repair (Awaiting validation on Mac, commit e7de0247):
 the user-requested removal of the optional comparison preset applies to shared
 settings and both guest/native menus; no Mac-specific preset remains. Normal
 saved options remain authoritative; obsolete sidecars are ignored.
@@ -6,6 +6,21 @@ Shared visibility cache, original SDK wrappers, allocator repair and D3D11,
 Vulkan/legacyGL adapters remain. Prior Windows mission sun/roof checks pass;
 native Mac/Linux/GL GPU counts, occlusion and cleanup still await validation.
 No assets, colours or gameplay policy are changed. See fidelity-comparison.md.
+
+Weapon FOV now uses a40-100 degree reference angle in one-degree steps,55
+original, like Vertical FOV. Exact legacy percentages retained until edited;
+V5 persists degrees and crosshair. Shared launcher preserves both formats.
+Windows game/launcher builds, focused tests and actual32:9 main/pause/gameplay
+checks pass; native Mac/Linux visual acceptance pending.
+See docs/agent-context/video-options.md.
+
+Crosshair sizing (local feature/hud-crosshair-size, base1375e144): staged
+View & HUD and launcher slider25-150%, default100%. HUD Scale removed from
+menus and rendering; original automatic HUD fitting retained. V4 legacy HUD
+field loads but is ignored and normalized to100 on save. Windows game/launcher
+builds, focused tests and actual32:9 main/pause checks pass. Mac/Linux visual
+acceptance pending. See
+docs/agent-context/hud-sizing.md.
 
 Keyboard binding right-edge inset (base64eb0399): shared native builder
 endpoints; no host adapter. Windows build passes; Mac/Linux actual visual

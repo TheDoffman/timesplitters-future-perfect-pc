@@ -84,3 +84,7 @@ Its isolated140s packaged mission run retains seven preference files and uses
 1280x720/FOV73 despite an obsolete comparison flag. Wider-FOV roof-edge geometry
 keeps the sun visible here; do not claim this run repeats full-roof occlusion.
 The package has no game data; the local playable stage links the existing copy.
+
+Main integration with5426485f preserves the newer crosshair, weapon-FOV and
+tutorial-layout work. Integrated Windows Release/debug build passes;42 targeted
+visibility/FOV/RHI/repository/compiler checks pass with2 native-Mac skips.

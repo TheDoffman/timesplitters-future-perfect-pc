@@ -2,7 +2,7 @@
 [tools](developer-tools-integration.md).
 
 [Video](video-options.md); [Uplink](native-uplink.md).
-[UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
+[UI/Aim](hud-sizing.md); [feed](../development/arcade-kill-feed.md).
 
 [Depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).

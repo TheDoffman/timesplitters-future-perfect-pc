@@ -1,3 +1,7 @@
+Sun repair main integration with5426485f: Windows Release/debug build passes;
+42 targeted checks pass with2Mac skips. Newer crosshair/FOV/tutorial changes
+remain intact. Published preview package remains the earlier tested snapshot.
+
 Local preview0.6.3-sun-fix.1 is packaged under build/releases, with normal
 launcher1.6.2 and matching symbols/source/licenses. All1529 package hashes pass;
 the packaged EXE completes140s in mission1 at1280x720/FOV73 with all7 isolated
@@ -7,7 +11,7 @@ occlusion acceptance. No publish/merge; Desktop Sun Fix Preview shortcut uses
 the local stage and a junction to the single existing game-data copy. Separate
 preview saves/settings leave the existing installation untouched.
 
-Sun/visibility repair (uncommitted, fix/fidelity-preset-sun, base1375e144):
+Sun/visibility repair (commit e7de0247, base1375e144):
 the optional Fidelity Comparison preset has been removed at the user's request,
 including menus, startup config patch, settings overrides and preset-only tests.
 Normal saved settings apply directly; obsolete pc-fidelity.ini files are ignored.
@@ -17,6 +21,21 @@ sun/glow with50 visible samples and0 behind the cave roof. Original tutorial
 shadows, assets and gameplay remain intact. Native Mac/Linux/GL GPU acceptance
 is pending. Removal validation is recorded in the canonical guide:
 docs/agent-context/fidelity-comparison.md.
+
+Weapon FOV now uses a40-100 degree reference angle in one-degree steps,55
+original, like Vertical FOV. Exact legacy percentages retained until edited;
+V5 persists degrees and crosshair. Shared launcher preserves both formats.
+Windows game/launcher builds, focused tests and actual32:9 main/pause/gameplay
+checks pass; native Mac/Linux visual acceptance pending.
+See docs/agent-context/video-options.md.
+
+Crosshair sizing (local feature/hud-crosshair-size, base1375e144): staged
+View & HUD and launcher slider25-150%, default100%. HUD Scale removed from
+menus and rendering; original automatic HUD fitting retained. V4 legacy HUD
+field loads but is ignored and normalized to100 on save. Windows game/launcher
+builds, focused tests and actual32:9 main/pause checks pass. Mac/Linux visual
+acceptance pending. See
+docs/agent-context/hud-sizing.md.
 
 Keyboard binding right-edge inset (base64eb0399): native list/paging row bounds
 now stop1% inside the panel, keeping selection highlights and Alternate
