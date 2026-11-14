@@ -14,6 +14,23 @@ static void ui_place(int placement,uint32_t tag)
     host_SetTwoDPlacement(placement,tag);
     ui_placement=placement;ui_tag=tag;
 }
+/* Pause capture/filter taps and its animated backdrop are texture pixels,
+ * including quarter-size rectangles that must not inherit centered HUD
+ * placement. Preserve the native viewport/UVs and restore the menu scope. */
+static RECOMP_TLS unsigned pause_glass_depth;
+void pc_display_pause_glass(void (*original)(void),uint32_t tag)
+{
+    if(tag==0x002F3460u) {
+        /* The backdrop also draws the native header. Only its picture blit
+         * below is a texture-space pass; retain the enclosing text scope. */
+        pause_glass_depth++;original();pause_glass_depth--;return;
+    }
+    int old=ui_placement;uint32_t old_tag=ui_tag;
+    ui_place(1,tag);
+    original();
+    ui_place(old,old_tag);
+}
+
 /* US sub_000C8120 composes a camera before its optional texture copy.
  * Camera flag 8 identifies a texture feed; flag 0x400000 renders it into a
  * corner of the back buffer and copies that corner instead of binding an RT.
@@ -463,6 +480,10 @@ void pc_display_weapon_effect(void (*original)(void),unsigned kind)
 {
     uint32_t frame=g_esp,caller=WORD_AT(frame),addresses[8],saved[8];
     unsigned points=2;int lock=0,gradient=0,composite=0;
+    if(kind==0 && pause_glass_depth && caller==0x002F3592u) {
+        int old=ui_placement;uint32_t old_tag=ui_tag;
+        ui_place(1,caller);original();ui_place(old,old_tag);return;
+    }
     if(kind==0) {
         lock=caller==0x0013871Bu || caller==0x0013874Au;
         /* Ghost Gun living-actor reveal (US sub_00122F10): this rectangle

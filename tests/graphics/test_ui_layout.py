@@ -8,7 +8,7 @@ import subprocess
 import pytest
 from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[2]
-@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects", "transition_overlay", "title_matte", "flash_overlay", "crane_overlay"])
+@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects", "transition_overlay", "title_matte", "flash_overlay", "crane_overlay", "settings_panel"])
 def test_ui_layout(tmp_path,fixture):
     compiler,environment=native_compiler(tmp_path)
     exe=tmp_path/('ui.exe' if os.name=='nt' else 'ui')

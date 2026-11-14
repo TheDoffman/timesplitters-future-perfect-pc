@@ -13,6 +13,14 @@ static float pc_ui_caption_fit(float width,float height,float text_width,float t
        !isfinite(width) || !isfinite(height) || !isfinite(text_width) || !isfinite(text_height))return 1.f;
     return fminf(1.f,fminf(width/text_width,height/text_height));
 }
+/* Caption measurements give the glyph bottom and top bearing from y=0.
+ * Place their visual midpoint in the cell after width/height fitting. */
+static float pc_ui_caption_y(float y,float height,float bottom,float top)
+{
+    if(!isfinite(y) || !isfinite(height) || height<=0.f ||
+       !isfinite(bottom) || !isfinite(top) || bottom<=top)return y;
+    return y+(height-bottom-top)*.5f;
+}
 /* One projected marker consists of an outline followed by separate labels.
  * Its first draw contains the complete outline. Fit every subsequent draw
  * around that same world-screen centre, never each label's own centre. */

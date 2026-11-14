@@ -165,9 +165,9 @@ static int controls_native_button(void (*original)(void))
     uint32_t frame=g_esp,id=WORD_AT(frame+8),flags=WORD_AT(frame+12);
     int controller=id==0 || id==3 || id==8 || id==9;
     if(id<10 && controller!=(controls_tab==1))WORD_AT(frame+12)=flags|0x21u;
-    /* Spread the shorter section evenly over the General section's height;
-     * retain the compact footer instead of inserting empty rows above it. */
-    guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
+    /* Native leading leaves room for the shared top inset and footer without
+     * resizing cached rows, custom sliders or profile records after layout. */
+    guest_call(sub_00071B10,4,1u,bits(.9f),1u,1u);
     if(id==9 && controls_tab==1)controls_deadzone_build();
     if(id==10 && controls_tab==0)
         guest_call(sub_00079D60_gen,6,controls_text(5,"Local multiplayer"),250u,0u,0u,KB_SELECT,0u);
@@ -233,11 +233,12 @@ static void controls_controller_build(void)
 static void controls_anchor(void)
 {
     if(!controls_tabs_visible())return;
+    int panel_aligned=settings_panel_anchor(controls_menu);
     float y=FLOAT_AT(controls_menu+0x64);
     if(!isfinite(y))return;
     if(!controls_anchor_ready) {controls_anchor_y=y;controls_anchor_ready=1;}
     /* 77320 writes this field but also remeasures pending builder rows. */
-    WORD_AT(controls_menu+0x64)=bits(controls_anchor_y);
+    WORD_AT(controls_menu+0x64)=bits(panel_aligned?fminf(controls_anchor_y,FLOAT_AT(controls_menu+0x64)):controls_anchor_y);
 }
 static void controls_build(void)
 {

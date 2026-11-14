@@ -1,0 +1,30 @@
+diff --git a/titles/futureperfect/src/recomp_manual.c b/titles/futureperfect/src/recomp_manual.c
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -2649,6 +2649,26 @@
+ #endif
+ }
+ 
++/* Native pause picture/filter passes stay in viewport coordinates. */
++extern void sub_002E55F0_gen(void);
++void sub_002E55F0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_pause_glass(sub_002E55F0_gen,0x002E55F0u);
++#else
++    sub_002E55F0_gen();
++#endif
++}
++extern void sub_002F3460_gen(void);
++void sub_002F3460(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_pause_glass(sub_002F3460_gen,0x002F3460u);
++#else
++    sub_002F3460_gen();
++#endif
++}
++
+ /* Capture the slot belonging to a native lobby username. */
+ extern void sub_00353760_gen(void);
+ void sub_00353760(void)

@@ -1,3 +1,41 @@
+Keyboard binding right-edge inset (base64eb0399): native list/paging row bounds
+now stop1% inside the panel, keeping selection highlights and Alternate
+bindings clear of the border. Windows build passes. Both frontend and pause
+use the shared builder; see docs/agent-context/pause-settings.md.
+
+Settings panel alignment (branch follow-up, base6239ce95): Audio and Controls
+now share Video's top inset in frontend and pause menus. Native body leading
+leaves footer space; cached slider geometry and font sizes are preserved.
+Keyboard action labels and both binding columns are vertically centered in
+selection rows. Windows build and16 focused checks pass (two Mac-only checks
+skipped); frontend/pause roots, Controller slider and binding pages1/2 checked
+at1280x720. Native Mac/Linux visual checks remain pending.
+See docs/agent-context/pause-settings.md. Existing local preview updated.
+
+Pause Settings consolidation (branch follow-up on fix/pause-menu-glass-backdrop,
+base20d0f5ef): native pause Controls row becomes Settings; Audio row is hidden
+without layout height. The hub uses the main Settings order Audio/Video/Controls,
+retaining child native save/cancel/confirmation behavior and returning to the hub.
+The injected Quit to Desktop rows and confirmation callbacks are removed from
+all menus. Original Quit/Restart and update/Story layout hooks remain. Windows
+build and58 menu checks pass. Actual first-mission root/hub/three-child Back
+navigation, fresh-pause root reset and main Desktop-row removal passed. Shared
+source/native-display contracts are implemented; Mac/Linux visual checks pending.
+
+Pause glass scaling follow-up (local, uncommitted):2731 scopes native capture
+and backdrop to full-canvas placement. Seven aspect-ratio scope tests pass;
+final Windows build,11 UI placement checks,21 context and2 patch-stack checks
+pass. Actual640x480,3440x1440 and3840x2160 gameplay/pause/resume/reopen captures
+show full glass and intact heading. Existing preview shortcut updated; personal
+saves/settings retained. Native Mac/Linux and split-screen acceptance pending.
+
+Pause-menu glass restoration (local, uncommitted; base c1e67e42): shared
+patch2730 mirrors level-zero offscreen GPU CopyRects, preserving the native
+filtered picture, animation and menu layout. No artwork/settings/save changes.
+Windows build,12 rendering/HLE checks,21 context and3 patch-stack checks pass.
+Actual1280x720 Story pause/resume/reopen captures show moving glass with scene.
+Other hosts/split-screen pending; see docs/agent-context/pause-glass.md.
+
 Control-preset rollback and high-FPS interaction repairs (2026-11-12,
 branch revert/control-presets; original base e7cb1016, reference c511f1e9 before
 PR528): removes Modern presets, profile button/axis seeding and repair,
