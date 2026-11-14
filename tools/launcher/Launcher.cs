@@ -30,11 +30,12 @@ namespace TimeSplitters.Launcher
                 bool diagnosticsPreview = args.Length == 2 && args[0] == "--render-diagnostics-preview";
                 bool newsPreview = args.Length == 2 && args[0] == "--render-news-preview";
                 bool versionsPreview = args.Length == 2 && args[0] == "--render-versions-preview";
+                bool modsPreview = args.Length == 2 && args[0] == "--render-mods-preview";
                 bool graphicsPreview = args.Length == 2 && args[0] == "--render-settings-graphics";
                 bool discordPreview = args.Length == 2 && args[0] == "--render-settings-discord";
                 bool audioPreview = args.Length == 2 && args[0] == "--render-settings-audio";
                 bool settingsPreview = audioPreview || discordPreview || graphicsPreview || (args.Length == 2 && args[0] == "--render-settings-preview");
-                bool preview = versionsPreview || newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
+                bool preview = modsPreview || versionsPreview || newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
                 bool fromBootstrap = args.Length == 2 && args[0] == "--from-bootstrap";
                 if (args.Length == 0)
                 {
@@ -60,6 +61,7 @@ namespace TimeSplitters.Launcher
                             if (repairPreview || diagnosticsPreview) ui.ShowMaintenance(diagnosticsPreview);
                             if (newsPreview) ui.ShowNews();
                             if (versionsPreview) ui.ShowGameVersions();
+                            if (modsPreview) ui.ShowMods();
                             var window = ui.Window;
                             var visual = (Panel)window.Content;
                             visual.Background = window.Background;
@@ -112,6 +114,7 @@ namespace TimeSplitters.Launcher
         MaintenancePage repairPage, diagnosticsPage;
         MaintenanceArea maintenanceArea;
         WhatsNewPage newsPage;
+        ModWorkshopPage modsPage;
         GameVersionsPage versionsPage;
         CancellationTokenSource versionsStop;
         int nextVersionsPage = 1;
@@ -211,6 +214,7 @@ namespace TimeSplitters.Launcher
             Button("HomeNav").Click += (s,e)=>ShowHome();
             Button("RepairNav").Click += (s,e)=>ShowMaintenance(false);
             Button("NewsNav").Click += (s,e)=>ShowNews();
+            Button("ModsNav").Click += (s,e)=>ShowMods();
             Button("ReleaseNotesButton").Content="What's new";
             Button("ReleaseNotesButton").Click += (s,e)=>ShowNews();
             Button("GameVersionsButton").Click += (s,e)=>ShowGameVersions();
@@ -219,7 +223,7 @@ namespace TimeSplitters.Launcher
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
             Button("OpenDataButton").Click+=(s,e)=> {if(!previewMode)OpenFolder("Data");};
-            Window.Closed += (s,e)=> { if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
+            Window.Closed += (s,e)=> { if(modsPage!=null)modsPage.Dispose();if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
             Window.Activated+=async(s,e)=>{if(KnownIssuesVisible())await RefreshKnownIssues(false);};
             if (previewMode)
             {
@@ -385,11 +389,22 @@ namespace TimeSplitters.Launcher
         }
         void SelectNavigation(string active)
         {
-            foreach(string name in new[]{"HomeNav","NewsNav","SettingsNav","RepairNav","SavesNav"}) {
+            if(active!="ModsNav")Find<ContentControl>("ModsHost").Visibility=Visibility.Collapsed;
+            foreach(string name in new[]{"HomeNav","NewsNav","ModsNav","SettingsNav","RepairNav","SavesNav"}) {
                 bool selected=name==active;
                 Button(name).Background=selected?new SolidColorBrush(Color.FromRgb(29,58,85)):Brushes.Transparent;
                 Button(name).Foreground=new SolidColorBrush(selected?Color.FromRgb(134,205,255):Color.FromRgb(223,233,242));
             }
+        }
+        public async void ShowMods()
+        {
+            if(busy)return;
+            if(settings!=null)settings.DismissPrompt();
+            if(modsPage==null){modsPage=new ModWorkshopPage(root,previewMode);modsPage.FileBusyChanged+=value=>{busy=value;Refresh();};modsPage.PlayWithoutModsRequested+=async()=>{ShowHome();await Play(true);};Find<ContentControl>("ModsHost").Content=modsPage.View;}
+            Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+            foreach(string host in new[]{"SettingsHost","MaintenanceHost","NewsHost","VersionsHost","SavesHost"})Find<ContentControl>(host).Visibility=Visibility.Collapsed;
+            Find<ContentControl>("ModsHost").Visibility=Visibility.Visible;SelectNavigation("ModsNav");
+            await modsPage.Load();
         }
         public async void ShowNews()
         {
@@ -718,7 +733,7 @@ namespace TimeSplitters.Launcher
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
-            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
+            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("ModsNav").IsEnabled = Button("RepairNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
             if(maintenanceArea!=null)maintenanceArea.SetBusy(busy && !gameMonitoring);
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy((busy && !gameMonitoring) || checking,Core.GameRunning());
@@ -944,7 +959,7 @@ namespace TimeSplitters.Launcher
             }
             await Task.Run(() => Core.FinishGameSession(root, observedBuild, gameWindowShown, process.ExitCode));
         }
-        internal async Task LaunchGame(string crashTestMode = null)
+        internal async Task LaunchGame(string crashTestMode = null,bool withoutMods=false)
         {
             using (var process = new Process())
             {
@@ -952,7 +967,7 @@ namespace TimeSplitters.Launcher
                 // ones. A PowerShell fallback fails under ConstrainedLanguage.
                 try {GameSessions.Recover(root);}catch(Exception ex){Program.Log(root,"Session recovery deferred: "+ex.GetType().Name);}
                 string previousCrash = CrashReports.Latest(root);
-                process.StartInfo = GameSettings.StartInfo(root);
+                process.StartInfo = GameSettings.StartInfo(root,withoutMods);
                 if(crashTestMode!=null) {
                     Core.Require(crashTestMode=="main" || crashTestMode=="worker" || crashTestMode=="normal" || crashTestMode=="handled" || crashTestMode=="hang-recover" || crashTestMode=="hang-unarmed", "Unknown crash test mode.");
                     process.StartInfo.Arguments=crashTestMode=="hang-recover"?"--tsfp-hang-test=recover":crashTestMode=="hang-unarmed"?"--tsfp-hang-test=unarmed":"--tsfp-crash-test="+crashTestMode;
@@ -1002,6 +1017,8 @@ namespace TimeSplitters.Launcher
             } catch(Exception ex) {Program.Log(root,"Session recovery deferred: "+ex.GetType().Name);}
         }
         async Task Play()
+        {await Play(false);}
+        async Task Play(bool withoutMods)
         {
             if (busy) return;
             busy = true; Refresh();
@@ -1009,7 +1026,7 @@ namespace TimeSplitters.Launcher
             {
                 Core.Require(validData && gameInstalled, "Install the release and import the supported US Xbox data first.");
                 Core.Require(!Core.GameRunning(), "The game is already running.");
-                await LaunchGame();
+                await LaunchGame(null,withoutMods);
             }
             catch (Exception ex) { Fail(ex); }
             finally { busy = false; Refresh(); if(pendingCrash){pendingCrash=false;ShowMaintenance(true);} }

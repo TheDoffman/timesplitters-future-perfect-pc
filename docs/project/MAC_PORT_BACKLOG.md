@@ -1,3 +1,14 @@
+Mod workshop (local/uncommitted, base1375e144): shared Python3.12 operator tools
+plus shared WPF/Avalonia Mods page and HTTP client. Mac/Linux NativeWindow has
+Mods navigation and offline preview; no separate policy implementation. Windows
+build,52 shared UI groups (including5 workshop groups),169 Python checks and63
+launcher/source checks pass; native Mac/Linux execution and live ClamAV remain
+unverified. The full Windows test command reaches crash-report checks but stops
+at the existing global game-running guard. Mac static snapshot/Caddy/Funnel
+setup is prepared but not deployed; game loader, Lua sandbox, active mod manager
+and authenticated uploads remain pending on every host. See
+docs/development/mac-mod-hosting.md and docs/agent-context/mod-workshop.md.
+
 Keyboard binding right-edge inset (base64eb0399): shared native builder
 endpoints; no host adapter. Windows build passes; Mac/Linux actual visual
 acceptance pending. See docs/agent-context/pause-settings.md.
@@ -10502,3 +10513,14 @@ See [evidence](STATUS.md#2026-11-07---issue521-portal-seams).
   Original-XBE Windows CPU fixtures cover60-240/slow/pause; native Mac/Linux
   builds and live boss/U-Genix acceptance remain unverified. See STATUS and
   native-projectiles/native-script-clocks guides for scope and test boundaries.
+Mod native library/texture overlay (local checkpoint, base1375e144): IMPLEMENTED /
+VALIDATION PENDING on Mac/Linux. Shared ModLibraryPage.cs validates native
+packages and profiles, enables texture-only overlays, checks dependencies/cycles/
+conflicts, retains old versions and protects unknown personal files on uninstall.
+Both host adapters wire Installed controls and Play without mods. The shared
+texture worker reads overlays before the official pack and retains Classic
+admission. Windows full launcher suite passes (59 UI groups,12 workshop groups);
+33 initial texture checks and expanded workshop checks pass. Mac SSH/AGENTS
+agreement verified; Caddy/Python present, ClamAV absent and Tailscale is a broken
+missing-app wrapper. Existing Mac work is preserved. Native execution, actual
+modded gameplay and public hosting remain pending; use a separate task worktree.

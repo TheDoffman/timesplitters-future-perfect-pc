@@ -61,6 +61,11 @@ RELEASE_INPUTS = {
 # Unknown runtime inputs still select GPU validation. New files must not
 # silently lose coverage; only known offline scripts are exempted.
 CPU_TOOLS = {
+    'tools/mods/mod_package.py', 'tools/mods/mod_repository.py',
+    'tools/mods/mod_server.py', 'tools/mods/mod-workshop.py',
+    'tools/mods/mod_publication.py', 'tools/mods/hosting/host-mac.py',
+    'tools/mods/hosting/run-mac-mod-host.sh', 'tools/mods/hosting/Caddyfile',
+    'tests/mods/test_mod_workshop.py',
     'tests/compiler/test_guest_abi.py',
     'tests/compiler/test_guest_call_frames.py',
     'tests/compiler/test_guest_dispatch.py',

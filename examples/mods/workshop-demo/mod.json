@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "workshop-demo",
+  "version": "1.0.0",
+  "name": "Workshop Creator Example",
+  "author": "TimeSplitters community",
+  "description": "A packaging example. It installs inactive and does not change the game.",
+  "game": "tsfp-us-45410066",
+  "api": "tsfp-mod-v1-draft",
+  "dependencies": {},
+  "files": {}
+}

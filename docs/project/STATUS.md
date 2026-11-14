@@ -43431,3 +43431,104 @@ PR546 first integrated CI exposed a duplicate POSIX SRWLOCK fixture declaration
 and native .NET JSON Unicode-escaping '+' in inherited pad axis tokens. Removed
 the redundant typedef and matched native JSON data encoding to Framework literal
 axis tokens; retain the failing shared UI regression. Host rerun pending.
+# Mod workshop foundation (2026-11-14)
+
+Local `feature/mod-platform` worktree based on main1375e144; uncommitted.
+Added deterministic creator packages, portable path/hash/type/size validation,
+ClamAV fail-closed adapter, private SQLite/blob quarantine with explicit review,
+scan expiry, immutable versions, revocation, loopback search/browser/download,
+and atomic inactive staging with exact dependency checks. No original game data
+is bundled. See [scope and usage](../development/mod-workshop.md).
+
+Windows x64 using the existing host-local Python environment:178 tests passed
+across `tests/mods/test_mod_workshop.py`, `test_ci_runtime_scope.py` and
+`test_runtime_checks.py`, plus21 repository-context tests (51 workshop cases).
+Context/index checks against1375e144 and whitespace validation passed.
+The HTTP fixture performs real
+loopback search/download/staging/revocation. Example CLI pack/validate passed.
+Scanner fixtures cover missing executable, clean/detected/error exit codes,
+limit-alert flags and timeout; **live ClamAV detection is unverified**, because
+the engine is not installed locally. Shared source is registered for Windows,
+macOS and Linux CI, but actual native Mac/Linux execution remains unverified.
+
+This is a developer prototype. Installed mods remain inactive; no game asset
+loader, Lua runtime/sandbox, launcher browser, authenticated public uploader,
+production hosting, signed catalog or multiplayer mod compatibility exists yet.
+No game rebuild or gameplay claim is made. Existing launchers, game files,
+texture installation, personal settings and saves were not changed. Source is
+local only; other devices are not synchronized.
+# Launcher workshop and Mac hosting follow-up (2026-11-14)
+
+Same local/uncommitted feature/mod-platform branch, base1375e144. The selected
+public host is the owner's Mac mini, with no purchased domain. Added the shared
+Mods page, Windows and native Mac/Linux navigation, offline sample preview,
+bounded HTTPS catalog/download client, source/scan-date checks, pre-download
+removal recheck, SHA-256 verification and partial-download cleanup. Packages
+remain inactive; no game/mod execution or asset loading was added. Blank service
+configuration shows the workshop as unavailable while normal play remains usable.
+
+Added approved static snapshot export/preflight, read-only loopback Caddy config
+and Mac host supervisor that stops at snapshot expiry. Public routing is a
+documented Tailscale Funnel trial; no remote account changes, tunnel, host
+installation or deployment were performed. SSH/Mac access is not available in
+this Windows task. Private quarantine and SQLite never enter the public snapshot.
+See [Mac hosting and launcher connection](../development/mac-mod-hosting.md).
+
+Windows build passes. Five focused workshop groups and all52 shared launcher UI
+groups passed. The full -Test run also passed116 updater regressions,28 download/
+recovery,13 game-version,15 startup,30 news and49 settings checks; it then stopped
+at crash-report export's existing global game-running guard. It is **not** a full
+launcher-suite pass. No running game process was stopped. Log:
+logs/mod-launcher-validation.txt. The offscreen Mods preview was rendered and
+inspected in build/mod-workshop-preview.png; it contains explicitly labeled
+interface examples and makes no network requests.
+
+169 Python checks passed for workshop/publication, layout translation and CI
+selection/suite manifests. A separate launcher/source run passed63 tests with
+1 host-specific skip and31 subtests. Actual native Mac/Linux launcher execution,
+live ClamAV detection, Caddy runtime validation on the Mac and public internet
+connectivity remain unverified. No signed catalog, public uploader/authentication,
+script sandbox or active mod manager exists yet. All source is local/uncommitted;
+other devices and published launcher releases do not contain this change yet.
+# Native mod library and texture overlay (2026-11-14)
+
+Active full-completion goal continues on feature/mod-platform, base1375e144.
+Added the shared native package model in ModLibraryPage.cs: bounded strict JSON,
+portable ZIP/path/type/hash/format checks, snapshot-before-install, immutable
+version directories, hash-bound active profiles, dependency/cycle/conflict guards,
+texture-only enable/disable, retained-version rollback, safe uninstall and owned
+cache cleanup. Unknown personal files are preserved. Installed controls, install
+actions and Play without mods are wired into both launcher adapters. Recovery
+bypasses a broken profile without rewriting it. Lua/maps/audio cannot be enabled.
+
+The shared texture worker now reads TSFP_MOD_TEXTURE_DIR first for valid keyed
+DDS files and falls back to the ordinary pack on reader rejection/missing files.
+Originals/official texture files are not modified or duplicated. Existing
+Classic/Enhanced admission and renderer resource/alpha guards remain. Creator
+validation now matches the bounded DDS header/mip/format contract. No actual
+modded game build or scene acceptance is claimed yet.
+
+Windows x64: full build-launcher.ps1 -Test passes;59 shared UI groups including
+12 workshop groups. Targeted --workshop also passes independently. Logs:
+logs/mod-library-validation.txt. Runtime snapshot was reconstructed at the pinned
+d90c9298 revision and the full patch stack verified (170 runtime files updated).
+33 initial texture/parser/stream/Classic/preference/overlay checks passed.
+235 final Python workshop/overlay/launcher/texture/CI/context checks passed,
+including UTF-8/BOM validation and schema updates. The final focused12 workshop
+groups pass after catalog/package identity binding. A later complete -Test run
+stopped in an unrelated save-folder test because another game process became
+active; no process was stopped and that interrupted rerun is not called a pass.
+The earlier full suite pass remains scoped to its recorded source state.
+The updated Mods preview was rendered and visually inspected.
+
+Mac SSH is verified (Darwin arm64, macOS27.0.1); root AGENTS hashes match. Its
+existing checkout is on an unrelated pause-menu branch with STATUS changes and
+untracked cloud-conflict duplicates, all preserved. Python3.14.3 and Caddy2.11.2
+are available via Homebrew paths. ClamAV is absent; the existing Tailscale wrapper
+points to a missing application. No public tunnel or service was started. A
+separate task worktree/source synchronization and native host checks are next.
+
+Full goal remains incomplete. Track all original requirements in
+[the acceptance matrix](mod-workshop-acceptance.md), including real game asset
+types, scripting isolation/API, accounts/uploads/moderation, signed trust,
+production scanning/operations, multiplayer, three-host and public release checks.

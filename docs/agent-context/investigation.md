@@ -1,3 +1,8 @@
+Mod workshop is now a named context topic with tools/mods, Mod*Page.cs,
+tests/mods and future src/mods/config/mods ownership. Its bounded excerpt
+distinguishes verified texture/library work from unfinished public hosting and
+scripting. No change to disclosure limits, retrieval policy or patch ordering.
+
 Pause glass: index2730/2731 last, after map/MSAA copy extensions; exact-order
 fixture now checks102 tail entries. See [capture evidence](pause-glass.md).
 

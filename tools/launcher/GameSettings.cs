@@ -541,6 +541,8 @@ namespace TimeSplitters.Launcher
             runtime = payload[2];
         }
         public static ProcessStartInfo StartInfo(string root)
+        {return StartInfo(root,false);}
+        public static ProcessStartInfo StartInfo(string root,bool withoutMods)
         {
             var model = Load(root, null); model.Validate();
             SaveLocations.Resolve(root); // Fail visibly before launching if the chosen drive is missing.
@@ -582,6 +584,7 @@ namespace TimeSplitters.Launcher
             #if MACOS || LINUX
             NativeHost.Configure(info,root);
 #endif
+            if(!withoutMods)new ModLibrary(root).Configure(info);
             return info;
         }
     }

@@ -6,9 +6,11 @@
     {"id": "launcher", "file": "docs/agent-context/launcher.md", "keywords": ["launcher", "install", "update", "release", "download", "github", "issue format", "labels", "issue creation", "wpf", "avalonia"]},
     {"id": "systems", "file": "docs/agent-context/systems.md", "keywords": ["input", "controls", "settings", "display", "audio", "texture", "network", "online", "crash", "camera", "menu", "save", "discord"]},
     {"id": "build-test", "file": "docs/agent-context/build-test.md", "keywords": ["build", "compile", "compiler", "linker", "cmake", "msvc", "test", "generate", "setup", "ci", "sdk", "provenance"]},
+    {"id": "mod-workshop", "file": "docs/agent-context/mod-workshop.md", "keywords": ["mods", "modding", "workshop", "sandbox", "quarantine", "creator"]},
     {"id": "investigation", "file": "docs/agent-context/investigation.md", "keywords": ["investigate", "investigation", "debug", "performance", "stuck", "slow", "sol", "context", "compaction", "hypothesis"]}
   ],
   "owners": [
+    {"patterns": ["tools/mods/**", "tools/launcher/Mod*Page.cs", "tests/mods/**", "src/mods/**", "config/mods/**"], "guide": "docs/agent-context/mod-workshop.md"},
     {"patterns": ["patches/**", "vendor/**", "tools/build/apply-patches.py", "tools/build/recomp-generation.py"], "guide": "docs/agent-context/runtime.md"},
     {"patterns": ["src/**", "config/*.default.*", "assets/textures/**", "config/textures/texture-pack.json"], "guide": "docs/agent-context/systems.md"},
     {"patterns": ["tools/launcher/**", "tools/build/build-launcher.ps1", "tools/build/build-mac-launcher.py", "tools/ci/launcher-*.py", "tools/release/launcher-*.py", "tools/ci/issue-*.py", "tools/ci/known-issues*.py", ".github/ISSUE_TEMPLATE/**", ".github/workflows/issue*.yml", ".github/workflows/launcher*.yml"], "guide": "docs/agent-context/launcher.md"},

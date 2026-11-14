@@ -5,6 +5,8 @@
     "tests/repository/test_patch_updates.py"
   ],
   "native": [
+    "tests/mods/test_mod_workshop.py",
+    "tests/mods/test_texture_mod_mount.py",
     "tests/textures/test_texture_preference.py",
     "tests/textures/test_texture_runtime.py",
     "tests/textures/texture_pack_tools.py",

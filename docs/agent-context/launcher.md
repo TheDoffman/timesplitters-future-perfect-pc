@@ -859,3 +859,15 @@ sliders share a named PageTheme.Details Expander. Only Player1 starts expanded;
 expansion is excluded from Draft() and keeps pending values. The tab is Controls.
 Shared UI checks cover defaults, presentation-only toggling, readouts and per-player
 persistence. Save/conflict handling and game-side deadzone behavior are unchanged.
+Community workshop: [source, client, native library and host contracts](mod-workshop.md).
+Shared ModWorkshopPage adds ModsNav/ModsHost browsing/search, verified download
+and native installation. Installed view enables texture-only overlays, disables,
+switches retained versions and uninstalls with dependency/conflict and personal-
+file preservation guards. ModLibraryPage.cs owns the shared package/profile model.
+GameSettings.StartInfo gains a two-argument bypass for Play without mods while
+retaining the existing one-argument contract. Its normal path verifies the active
+overlay before passing TSFP_MOD_TEXTURE_DIR. Maps/audio/scripts cannot be enabled.
+Internet origins require HTTPS; redirects/external URLs fail closed; downloads
+recheck fresh scans. 12 workshop groups run with --workshop and shared UI suites.
+Windows full checks pass; native Mac/Linux acceptance, live modded gameplay and
+public Mac deployment remain pending. See [Mac setup](../development/mac-mod-hosting.md).

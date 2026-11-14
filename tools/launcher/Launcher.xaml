@@ -81,6 +81,13 @@
               <TextBlock Grid.Column="1" Text="What's new" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
+          <Button x:Name="ModsNav" Style="{StaticResource Nav}" ToolTip="Browse community mods" AutomationProperties.Name="Mods">
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+              <Viewbox Width="18" Height="18" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M3,6 L12,2 L21,6 L21,18 L12,22 L3,18 Z M3,6 L12,10 L21,6 M12,10 L12,22"/></Canvas></Viewbox>
+              <TextBlock Grid.Column="1" Text="Mods" Margin="10,0,0,0" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
           <Button x:Name="SettingsNav" Style="{StaticResource Nav}" ToolTip="Keybinds, mouse, graphics and resolution" AutomationProperties.Name="Game settings">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -281,6 +288,7 @@
         <ProgressBar x:Name="OperationProgress" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Background="#253D54" Foreground="#86CDFF" BorderThickness="0" Height="3"/>
       </Grid>
     </Grid>
+    <ContentControl x:Name="ModsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="NewsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="VersionsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="MaintenanceHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>

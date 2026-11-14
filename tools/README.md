@@ -10,6 +10,7 @@
 | `release/` | Packaging, release publication and scripts shipped with releases. |
 | `testing/` | Isolated test profiles, host smoke tests and validation runners. |
 | `textures/` | Texture inventory, encoding, auditing and optional-pack preparation. |
+| `mods/` | Local mod workshop prototype: packaging, validation, quarantine/scanning, catalog, downloads and inactive installation. |
 | `launcher/` | Shared launcher implementation and native Mac UI adapter. |
 | `router/` | Optional local advisory integration. |
 
