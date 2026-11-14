@@ -1,5 +1,10 @@
 Main visibility integration retains positive explicit max_chunk_bytes validation and UTF8-plus-LF body accounting; defaults now use main's512KiB budget through the same shared chunk iterator. Both helper and full publisher budget tests pass.
 
+test_mod_runtime.py includes network-fresh/authority-fresh; both reproduce the
+old admission bug. The fix consumes unsupported incoming identities before
+restoring flags. The imported visibility_queue.c separates its conditional copy
+from the unconditional increment so GCC's indentation check stays enabled.
+
 ## Native scanner and build fixtures
 
 [Native preflight/CI tests](build-test-details.md), [context](investigation.md),

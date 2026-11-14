@@ -2,6 +2,9 @@ ScriptRuntime adds one bounded background preflight/result and epoch-specific ap
 
 Native RuntimeResources now discovers OS-adjacent generated helper bundles and verifies private snapshots; PrivateDirectory creates strict-permission caches independently of saves. Bootstrap binding remains pending; see mod-scripting.md.
 
+Preflight also consumes unsupported fresh identities before any worker admission;
+restoring their flags cannot start a mid-round script. See mod-scripting.md.
+
 MatchManager now owns one active/retiring native match with reap-before-successor and no stale epoch reopen. Game auto-binding/resource discovery is still pending; see mod-scripting.md.
 
 Bootstrap reads Windows handoff/root environment through the wide CRT and strict UTF8 conversion; empty/oversized pairs fail closed. Native fixtures cover Unicode capsule and save paths. See mod-source-handoff.md.

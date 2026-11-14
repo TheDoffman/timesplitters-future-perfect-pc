@@ -309,3 +309,7 @@ and execute successors using the real contained worker.
 The production startup factory still must supply compiled RuntimeResources and a
 read-only bootstrap lease probe, wire title binding/fault/messages and shutdown.
 These components alone do not enable launcher or normal game script activation.
+
+An unsupported newly observed epoch is consumed too: restoring offline/authority
+flags cannot admit that same match. The network-fresh/authority-fresh cases fail
+before the fix and require exactly one probe for the next genuinely new match.

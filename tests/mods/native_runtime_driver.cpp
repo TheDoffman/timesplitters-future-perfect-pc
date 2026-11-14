@@ -76,15 +76,18 @@ static int run(const std::string &image,const std::string &cache,const std::stri
     }else {
         CHECK(wait()==1);int32_t score=0;CHECK(tsfp_mod_match_score(match,&world,1,&score) && score==4);
         auto initial=world;
+        bool unsupported_fresh=mode=="network-fresh" || mode=="authority-fresh";
+        if(unsupported_fresh){++world.epoch;initial=world;}
         if(mode=="roster")++world.identities[0];
-        else if(mode=="network")world.offline=0;
-        else if(mode=="authority")world.authoritative=0;
+        else if(mode=="network" || mode=="network-fresh")world.offline=0;
+        else if(mode=="authority" || mode=="authority-fresh")world.authoritative=0;
         else CHECK(!update(nullptr));
         CHECK(!update(&world));world=initial;
         for(unsigned i=0;i<10;++i){CHECK(!update(&world));pause_short();}
         CHECK(!runtime->faulted());++world.epoch;match=nullptr;end=Clock::now()+std::chrono::seconds(3);
         while(!match && Clock::now()<end){match=update(&world);if(!match)pause_short();}
         CHECK(match && wait()==1 && calls.load()>=2);
+        if(unsupported_fresh)CHECK(calls.load()==2);
     }
     CHECK(!on_main.load() && maximum<100000);
     std::printf("PASS runtime max_api_us=%lld\n",maximum);return 0;

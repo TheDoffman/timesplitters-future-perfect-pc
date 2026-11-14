@@ -1,5 +1,7 @@
 Runtime resources/preflight: [contracts](mod-scripting.md).
 
+Preflight also rejects restored flags on a previously unsupported fresh epoch.
+
 [Sun/visibility repair](fidelity-comparison.md).
 
 Native mod bootstrap, isolated saves, cache and preflight: [contracts](mod-scripting.md). Automatic binding remains pending.

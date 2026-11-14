@@ -46,7 +46,12 @@ native Mac launcher build/sign/package/tests passed at f6770b2b, as did package/
 reader checks and a real Caddy loopback/expiry test. These results do not establish
 public HTTPS access or live modded gameplay. ClamAV1.5.4 is now installed with
 official FreshClam databases in the private workshop scanner directory. No
-scanner daemon was started. The Tailscale wrapper still points to a missing app.
+scanner daemon was started. Tailscale1.104.7 is installed in /Applications; its
+official ZIP checksum, strict/deep Developer ID signature and Apple notarization
+were verified (Tailscale Inc., team W5364U7YZB). The app was opened in the
+background, but the CLI reports Failed to save preferences. An older1.94.1
+network extension is activated/enabled. Working sign-in/public access is still
+unverified; complete the [official setup](https://tailscale.com/docs/install/mac).
 
 On this FileProvider-managed Desktop, the generated app acquired FinderInfo and
 code signing failed despite the builder's existing metadata cleanup. The same

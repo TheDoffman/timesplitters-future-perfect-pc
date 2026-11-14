@@ -45,6 +45,7 @@ TsfpModMatch *ScriptRuntime::update(const TsfpModWorld *world) {
         manager_->close();retire();return nullptr;
     }
     if(!world || !world->epoch || world->epoch<seen_ || !world->authoritative || !world->offline) {
+        if(world)seen_=std::max(seen_,world->epoch);
         floor_=std::max(floor_,seen_);approved_=0;retire();world=nullptr;
     }else seen_=std::max(seen_,world->epoch);
     bool wake=false;

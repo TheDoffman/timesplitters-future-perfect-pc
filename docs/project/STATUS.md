@@ -1,3 +1,19 @@
+Fresh-epoch follow-up (base1989b18d): both new network-fresh/authority-fresh
+cases reproduce admission after unsupported flags were restored. The runtime
+now consumes that identity; Windows12 runtime plus4 visibility checks pass.
+The imported queue fixture's conditional copy and unconditional increment are
+separate statements, preserving behavior with GCC indentation warnings enabled.
+Cross-host follow-up for this fix is pending. Integrated1989b18d game regeneration,
+builds and platform checks pass on all three hosts. Mac focused merge71 pass/4
+skips; Linux68 pass/6 skips plus the queue warning now fixed. CI43640843210 is
+green:23 success,2 intentional skips. Production game binding remains unfinished.
+
+Mac hosting preparation: official Tailscale1.104.7 checksum, strict/deep Developer
+ID signature and Apple notarization verified; installed in /Applications and
+opened in the background. Its CLI still reports Failed to save preferences.
+An older1.94.1 extension is activated/enabled; working sign-in is not verified.
+Account question pending; no Funnel/public service was enabled.
+
 Runtime resource/preflight integration with mainb00de49e (feature/mod-platform):
 resource118be4e3 verified Windows60 pass/6 skips, Mac/Linux59 pass/7 skips EACH;
 Mac/Linux ASan/UBSan resource/save suite also59 pass/7 skips EACH. All three
