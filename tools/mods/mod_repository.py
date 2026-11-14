@@ -9,6 +9,7 @@ import tempfile
 import time
 
 from mod_package import MAX_ARCHIVE, ModError, SHA, digest, inspect_package, require
+from mod_scan_sandbox import ISOLATION_POLICY, ScanSandbox
 
 SCAN_TTL = 24 * 60 * 60
 DATABASE_MAX_AGE_DAYS = 2
@@ -30,22 +31,24 @@ class ClamScanner:
                 require(self.database.is_dir() and not self.database.is_symlink(),
                         'Scanner database directory is missing or linked')
                 database_args = ['--database=' + str(self.database)]
-            version = subprocess.run([self.executable, *database_args, '--version'], capture_output=True,
+            with ScanSandbox(self.executable, folder, self.database) as worker:
+                report['isolation'] = ISOLATION_POLICY
+                version = worker.run([*database_args, '--version'], capture_output=True,
                                      timeout=10, check=True)
-            report['version'] = version.stdout.decode('utf-8', errors='replace')[:512].strip()
-            require(report['version'].startswith('ClamAV '), 'Unexpected scanner identity')
-            # Scan normalized extracted files. Every limit alert blocks approval.
-            with tempfile.TemporaryFile() as log:
-                result = subprocess.run(
-                    [self.executable, *database_args, '--recursive', '--infected', '--no-summary',
-                     '--official-db-only=yes',
-                     '--fail-if-cvd-older-than=' + str(DATABASE_MAX_AGE_DAYS),
-                     '--follow-dir-symlinks=0', '--follow-file-symlinks=0',
-                     '--alert-exceeds-max=yes', '--max-filesize=65M', '--max-scansize=512M',
-                     '--max-files=4096', '--max-recursion=8', str(Path(folder).resolve())],
-                    stdout=log, stderr=subprocess.STDOUT, timeout=180)
-                log.seek(0)
-                report['detail'] = log.read(65536).decode('utf-8', errors='replace')
+                report['version'] = version.stdout.decode('utf-8', errors='replace')[:512].strip()
+                require(report['version'].startswith('ClamAV '), 'Unexpected scanner identity')
+                # Scan normalized extracted files. Every limit alert blocks approval.
+                with tempfile.TemporaryFile() as log:
+                    result = worker.run(
+                        [*database_args, '--recursive', '--infected', '--no-summary',
+                         '--official-db-only=yes', '--tempdir=' + str(worker.scratch),
+                         '--fail-if-cvd-older-than=' + str(DATABASE_MAX_AGE_DAYS),
+                         '--follow-dir-symlinks=0', '--follow-file-symlinks=0',
+                         '--alert-exceeds-max=yes', '--max-filesize=65M', '--max-scansize=512M',
+                         '--max-files=4096', '--max-recursion=8', str(Path(folder).resolve())],
+                        stdout=log, stderr=subprocess.STDOUT, timeout=180)
+                    log.seek(0)
+                    report['detail'] = log.read(65536).decode('utf-8', errors='replace')
             report['status'] = {0: 'clean', 1: 'blocked'}.get(result.returncode, 'error')
         except (OSError, subprocess.SubprocessError, ModError) as exc:
             report['detail'] = str(exc)[:2048]
@@ -134,7 +137,8 @@ class Repository:
     def fresh(report):
         age = time.time() - report.get('time', 0)
         return (report.get('status') == 'clean' and 0 <= age < SCAN_TTL
-                and report.get('database_max_age_days') == DATABASE_MAX_AGE_DAYS)
+                and report.get('database_max_age_days') == DATABASE_MAX_AGE_DAYS
+                and report.get('isolation') == ISOLATION_POLICY)
 
     def approve(self, sha, reviewer_note):
         require(isinstance(reviewer_note, str) and 0 < len(reviewer_note.strip()) <= 2000,

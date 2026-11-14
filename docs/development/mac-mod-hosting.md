@@ -75,8 +75,8 @@ Follow the official installer instructions for the chosen packages. Do not copy
 the Windows virtual environment to the Mac. Set up ClamAV's normal
 [FreshClam database updates](https://docs.clamav.net/manual/Usage/SignatureManagement.html)
 and verify a live scan before accepting community submissions. The project
-adapter enforces official signatures and a maximum2-day database age; it does
-not yet OS-isolate the scanner. Pass `--clamav-database` explicitly for private
+adapter enforces official signatures, a maximum2-day database age and a Mac
+deny-default scanner sandbox. Pass `--clamav-database` explicitly for private
 host databases and run `tests/mods/live_clamav.py` for real engine acceptance.
 
 Get this branch onto the Mac through Git after it is committed/pushed. A shared
@@ -222,7 +222,7 @@ alternate public paths. Backup the private repository and event history without
 making them public.
 
 Before opening public creator submissions, implement ownership/authentication,
-upload quotas, isolated scan workers, scheduled database updates/rescans, moderation
+upload quotas, memory/concurrency limits for scan workers, scheduled database updates/rescans, moderation
 and report handling. The download-only server supplies none of those endpoints.
 The full [workshop implementation plan](mod-workshop.md#full-product-implementation-plan)
 tracks these remaining milestones.

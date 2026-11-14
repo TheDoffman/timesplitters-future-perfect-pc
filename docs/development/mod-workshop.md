@@ -61,12 +61,13 @@ readability. The example contains original source only, with no game assets.
 ```console
 python tools/mods/mod-workshop.py pack examples/mods/workshop-demo build/workshop-demo.zip
 python tools/mods/mod-workshop.py validate build/workshop-demo.zip
-python tools/mods/mod-workshop.py submit build/workshop-demo.zip --repository private/mod-workshop
+python tools/mods/mod-workshop.py submit build/workshop-demo.zip --repository private/mod-workshop --clamav-database /path/to/official/databases
 ```
 
 Submission requires a trusted `clamscan` executable and working virus databases.
 Use `--clamscan PATH` if it is not on PATH. There is **no skip-scan option**.
-Use `--clamav-database PATH` to select the operator-owned database directory for
+The isolated scanner currently runs on the Mac host. Use `--clamav-database PATH`
+to select the required operator-owned database directory for
 both version identity and scanning. Official signatures are required; databases
 older than2 days cause an error. Directory/file symlinks are never followed.
 Maintain definitions with the scanner's normal updater. The CLI returns exit 2
@@ -124,7 +125,7 @@ non-revoked release returns it to review, even when clean. Approvals, search
 results and downloads require a clean scan less than 24 hours old; expired
 releases disappear until rescanned and reviewed. The report records the scanner
 version/database identity and enforced2-day definition-age policy. Legacy
-reports without that policy require rescan and review. Automated database
+reports without that policy and the current isolation marker require rescan and review. Automated database
 updates and rescan scheduling remain production prerequisites.
 Search matches ID, name, author and description, including older approved
 versions. Ranking, pagination and version-channel selection are future work.
@@ -178,7 +179,16 @@ block. It explicitly enables scan-limit alerts; otherwise large files can be
 skipped. A 180-second scan timeout blocks publication. SQLite keeps release
 state and an append-only operator event history; blobs are content-addressed.
 The repository directory, database and scanner configuration are trusted.
-The scanner currently runs as the invoking user; **OS isolation is not supplied**.
+The Mac scanner runs in a deny-default Seatbelt profile. Its readable inputs are
+the extracted upload, official database/certificates and public runtime libraries.
+Only a private temporary directory is writable. Network and child execution are
+denied; inherited environment variables and file descriptors are removed. Hard
+CPU150s, output-file1MiB, descriptor128 and core0 limits apply before exec; the
+parent kills the engine after180s. Each scan uses a fresh process. Unsupported
+hosts or broken sandbox startup fail closed, with no unsandboxed CLI fallback.
+Memory supervision, queue/global concurrency limits and a dedicated production
+service identity still need integration. A parser sandbox does not prove that
+the contents of a clean package are safe to execute.
 Only local trusted operators should use this prototype. Production uploads must
 run in a disposable worker with bounded memory/CPU/disk and no credentials or
 network access to internal services.
@@ -286,8 +296,9 @@ protection; plan key rotation/recovery before release. Hashes alone do not
 authenticate a catalog. Rescan on fresh signature updates and schedule periodic
 rescans. Enforce scanner database freshness; an engine outage must stop new
 approvals. Revoke compromised releases and tell installed clients what changed.
-The adapter now enforces definition age; scheduled updates/rescans and isolated
-workers still need production integration.
+The adapter now enforces definition age and Mac process isolation; scheduled
+updates/rescans, queue policy, memory limits and service identity still need
+production integration.
 
 The first public version can use one scanner plus structural/content validation
 and manual review; additional engines or isolated behavioral analysis can be
@@ -331,3 +342,6 @@ clean content stays private until review, EICAR is rejected, empty databases and
 missing engines fail closed, and revocation removes availability. EICAR is the
 harmless standard antivirus test file, never executed. This test does not prove
 scanner OS isolation or detection of all malicious content.
+Run `python tests/mods/live_scan_isolation.py --database PATH` on the Mac for
+explicit filesystem/symlink/network/child-execution canaries and inherited hard
+limit checks. It creates disposable canaries and never probes personal files.

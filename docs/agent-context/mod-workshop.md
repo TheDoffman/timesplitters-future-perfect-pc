@@ -7,7 +7,7 @@ Authoritative product scope, usage, trust boundaries and follow-up milestones:
 Mod operator tools live in tools/mods/: bounded package validation, ClamAV
 quarantine/review, immutable releases, scan expiry/revocation, loopback preview
 and approved static exports. Public uploads/authentication, signed metadata,
-scan isolation and scripting are still incomplete. ClamAV enforces official-only
+production queues and scripting are still incomplete. ClamAV enforces official-only
 databases at most2 days old; legacy scan reports require a rescan/review.
 The selected public host is the user's Mac mini; no domain purchase is required
 for the planned Funnel trial. SSH works, but no public service has been deployed.
@@ -52,9 +52,15 @@ limits/timeouts/stale databases fail closed. No CLI scan bypass exists. The
 scanner uses official signatures, a2-day maximum database age and no symlink
 following. --clamav-database selects the same directory for identity and scan.
 Reports without that age-policy marker require rescanning before publication.
-The scanner still runs as the operator; production requires isolated workers.
+mod_scan_sandbox.py uses a Mac deny-default Seatbelt process: only this content,
+definitions, public runtime/certs and private temp are readable; only temp is
+writable. No network or child exec. scan_child.py sets hard CPU150s, output1MiB,
+fd128/core0 limits; parent enforces180s. Unsupported hosts fail closed, no bypass.
+RAM supervision, service identity and production job queues remain incomplete.
 Synthetic scanners exist only in tests; tests/mods/live_clamav.py explicitly
 exercises real clean/EICAR/error/quarantine/review/revocation behavior.
+tests/mods/live_scan_isolation.py checks disposable read/write/symlink/exec/
+network canaries and inherited limits on the actual Mac host.
 
 Installations are separate immutable version directories. Texture-only mods can
 be enabled in the native library; Lua, maps and audio remain unavailable for

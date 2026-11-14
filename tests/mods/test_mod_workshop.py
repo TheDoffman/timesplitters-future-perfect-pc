@@ -16,6 +16,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/mods'))
 import mod_package as packages
+import mod_repository
 from mod_package import ModError, build_package, digest, inspect_package
 from mod_repository import ClamScanner, Repository, SCAN_TTL, stage_install
 from mod_server import fetch_install, make_server
@@ -31,7 +32,23 @@ class Scanner:
         assert (Path(directory) / 'mod.json').is_file()
         return {'engine': 'TEST ONLY', 'version': 'fixture', 'time': int(time.time()),
                 'status': self.status, 'detail': 'Synthetic test result',
-                'database_max_age_days': 2}
+                'database_max_age_days': 2, 'isolation': 'macos-seatbelt-v1'}
+
+
+@pytest.fixture
+def scanner_process_stub(tmp_path, monkeypatch):
+    """Unit-only process seam; production has no unsandboxed scanner option."""
+    class Worker:
+        scratch = tmp_path
+        def __init__(self, executable, content, database):
+            self.executable = executable
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def run(self, arguments, **kwargs):
+            return subprocess.run([self.executable, *arguments], **kwargs)
+    monkeypatch.setattr(mod_repository, 'ScanSandbox', Worker)
 
 
 def create_package(tmp_path, mod_id='test-map', version='1.0.0', dependencies=None):
@@ -276,7 +293,7 @@ def test_scanner_absence_fails_closed(tmp_path):
 
 
 @pytest.mark.parametrize('code,status', [(0, 'clean'), (1, 'blocked'), (2, 'error'), (99, 'error')])
-def test_clamav_exit_codes_and_limit_flags(tmp_path, monkeypatch, code, status):
+def test_clamav_exit_codes_and_limit_flags(tmp_path, monkeypatch, scanner_process_stub, code, status):
     def run(command, **kwargs):
         assert kwargs.get('shell', False) is False
         if '--version' in command:
@@ -293,7 +310,7 @@ def test_clamav_exit_codes_and_limit_flags(tmp_path, monkeypatch, code, status):
     assert ClamScanner().scan(tmp_path)['status'] == status
 
 
-def test_scanner_explicit_database_is_used_for_version_and_scan(tmp_path, monkeypatch):
+def test_scanner_explicit_database_is_used_for_version_and_scan(tmp_path, monkeypatch, scanner_process_stub):
     commands = []
     def run(command, **kwargs):
         commands.append(command)
@@ -303,6 +320,7 @@ def test_scanner_explicit_database_is_used_for_version_and_scan(tmp_path, monkey
     report = ClamScanner(database=tmp_path).scan(tmp_path)
     assert report['status'] == 'clean'
     assert report['database_max_age_days'] == 2
+    assert report['isolation'] == 'macos-seatbelt-v1'
     assert len(commands) == 2
 
 
@@ -311,12 +329,13 @@ def test_scanner_missing_explicit_database_fails_before_execution(tmp_path, monk
     assert ClamScanner(database=tmp_path / 'missing').scan(tmp_path)['status'] == 'error'
 
 
-def test_legacy_clean_scan_requires_rescan_before_approval_or_publication(tmp_path):
+@pytest.mark.parametrize('policy', ['database_max_age_days', 'isolation'])
+def test_legacy_clean_scan_requires_rescan_before_approval_or_publication(tmp_path, policy):
     repo, _, sha = approved(tmp_path)
     with repo.db() as db:
         row = db.execute('SELECT scan FROM releases WHERE sha256=?', (sha,)).fetchone()
         scan = json.loads(row['scan'])
-        del scan['database_max_age_days']
+        del scan[policy]
         db.execute('UPDATE releases SET scan=? WHERE sha256=?', (json.dumps(scan), sha))
     assert repo.catalog() == []
     with pytest.raises(ModError):
@@ -326,11 +345,20 @@ def test_legacy_clean_scan_requires_rescan_before_approval_or_publication(tmp_pa
     assert len(repo.catalog()) == 1
 
 
-def test_scanner_timeout_blocks(tmp_path, monkeypatch):
+def test_scanner_timeout_blocks(tmp_path, monkeypatch, scanner_process_stub):
     def run(command, **kwargs):
         raise subprocess.TimeoutExpired(command, 180)
     monkeypatch.setattr(subprocess, 'run', run)
     assert ClamScanner().scan(tmp_path)['status'] == 'error'
+
+
+def test_unsupported_scanner_host_never_runs_unsandboxed(tmp_path, monkeypatch):
+    import mod_scan_sandbox
+    monkeypatch.setattr(mod_scan_sandbox.sys, 'platform', 'unsupported-test-host')
+    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw: pytest.fail('Unsafe fallback'))
+    report = ClamScanner(database=tmp_path).scan(tmp_path)
+    assert report['status'] == 'error'
+    assert 'isolation' not in report
 
 
 def test_loopback_search_download_install_and_revoke(tmp_path):
