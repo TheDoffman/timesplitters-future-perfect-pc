@@ -10698,3 +10698,10 @@ and keep their own runtime/build outputs. Explicit setup never installs into
 the reused SDK. Windows63 build/dependency contracts pass (three platform skips),
 including Mac/Linux SDK pin mismatch/tamper rejection and no-write assertions.
 Actual read-only reuse and native mod game builds remain pending. See STATUS.
+
+Read-only SDK reuse: **Verified for named dependency contracts** on Mac/Linux.
+Mac65/one skip, Linux66/no skips and Windows63/three skips pass; real existing
+SDK receipts/pins verify. Fresh Mac Vulkan setup lacked pinned backend submodules;
+setup now initializes Vulkan-Headers/volk/VMA before configure. Linux generation
+also stages its executable locally to keep metadata beside owned input. Windows
+64/three skips updated checks pass; actual native build/staging reruns pending.

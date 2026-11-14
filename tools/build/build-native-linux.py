@@ -21,6 +21,23 @@ from vulkan_sdk import sha256
 def run(*args,cwd=ROOT,env=None):
     subprocess.run([str(a) for a in args],cwd=cwd,env=dict(os.environ if env is None else env,TSFP_PROJECT_ROOT=str(ROOT)),check=True)
 
+def stage_generation_input(root,xbe,expected):
+    """Keep symbol/analysis outputs beside an owned executable, not shared assets."""
+    root=Path(root).resolve();directory=root/'private/pipeline/input'
+    for parent in (root/'private',root/'private/pipeline',directory):
+        if parent.is_symlink():raise ValueError('Refusing linked generation input directory')
+    directory.mkdir(parents=True,exist_ok=True)
+    target=directory/'default.xbe'
+    if target.is_symlink():raise ValueError('Refusing linked generation executable')
+    if target.exists():
+        if sha256(target)!=expected:raise ValueError('Existing generation executable differs; preserve and inspect it')
+    else:
+        data=Path(xbe).read_bytes()
+        if hashlib.sha256(data).hexdigest()!=expected:raise ValueError('Generation executable changed before staging')
+        with target.open('xb') as output:output.write(data)
+    return target
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--game-dir',type=Path,required=True,help='Existing supported game folder; no duplicate asset extract')
@@ -60,8 +77,9 @@ def main():
             '-DCMAKE_MAKE_PROGRAM='+str(ninja),'-DXBSDB_BUILD_UNITTEST=OFF')
         run(cmake,'--build',db/'build','--target','XbSymbolDatabaseCLI','--parallel','4')
     if args.generate:
-        run(sys.executable,'-m','tools.xdk_symbols',xbe,cwd=runtime)
-        run(sys.executable,'scripts/recompile.py',xbe,'--work-dir',ROOT/'private/pipeline',
+        generation_xbe=stage_generation_input(ROOT,xbe,expected)
+        run(sys.executable,'-m','tools.xdk_symbols',generation_xbe,cwd=runtime)
+        run(sys.executable,'scripts/recompile.py',generation_xbe,'--work-dir',ROOT/'private/pipeline',
             '--project','titles/futureperfect','--game-name','TimeSplitters: Future Perfect','--trace-all-entries',cwd=runtime)
         run(sys.executable,ROOT/'tools/build/recomp-generation.py',runtime,'--record')
     run(sys.executable,ROOT/'tools/build/recomp-generation.py',runtime)

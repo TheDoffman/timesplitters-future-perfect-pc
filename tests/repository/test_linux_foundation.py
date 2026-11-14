@@ -154,6 +154,29 @@ def test_linux_host_guard_exits_before_sdk_or_runtime_changes(monkeypatch):
     assert error.value.code == 2
 
 
+def test_linux_generation_stages_only_executable_and_preserves_shared_assets(tmp_path):
+    path=ROOT/'tools/build/build-native-linux.py'
+    spec=importlib.util.spec_from_file_location('isolated_linux_builder',path)
+    builder=importlib.util.module_from_spec(spec);spec.loader.exec_module(builder)
+    shared=tmp_path/'shared';shared.mkdir();xbe=shared/'default.xbe';xbe.write_bytes(b'verified executable')
+    symbols=shared/'default_xdk_symbols.json';symbols.write_bytes(b'preserve shared cache')
+    expected=builder.sha256(xbe);root=tmp_path/'task';root.mkdir()
+    before={p.name:(p.read_bytes(),p.stat().st_mtime_ns) for p in shared.iterdir()}
+    staged=builder.stage_generation_input(root,xbe,expected)
+    assert staged==root/'private/pipeline/input/default.xbe' and staged.read_bytes()==xbe.read_bytes()
+    assert before=={p.name:(p.read_bytes(),p.stat().st_mtime_ns) for p in shared.iterdir()}
+    stamp=staged.stat().st_mtime_ns
+    assert builder.stage_generation_input(root,xbe,expected)==staged and staged.stat().st_mtime_ns==stamp
+    staged.write_bytes(b'unknown existing data')
+    with pytest.raises(ValueError,match='preserve and inspect'):
+        builder.stage_generation_input(root,xbe,expected)
+    assert staged.read_bytes()==b'unknown existing data'
+    other=tmp_path/'other-task';other.mkdir()
+    with pytest.raises(ValueError,match='changed before staging'):
+        builder.stage_generation_input(other,xbe,'0'*64)
+    assert not list((other/'private/pipeline/input').iterdir())
+
+
 def test_sdk_versions_match_and_linux_archive_has_integrity_pin():
     spec = sdk.pin(ROOT)
     assert spec['platform'] == 'Linux-x86_64'

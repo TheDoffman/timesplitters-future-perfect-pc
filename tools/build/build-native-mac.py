@@ -116,8 +116,11 @@ def main():
         _, _, textures = ensure_pack(ROOT)
     run(PYTHON, ROOT / 'tools/build/apply-patches.py', UPSTREAM, ROOT / 'patches')
     if args.setup:
+        submodules=['third_party/SDL','third_party/XbSymbolDatabase']
+        if renderer=='vulkan':
+            submodules+=['third_party/Vulkan-Headers','third_party/volk','third_party/VulkanMemoryAllocator']
         run('git', '-C', UPSTREAM, 'submodule', 'update', '--init', '--depth', '1',
-            'third_party/SDL', 'third_party/XbSymbolDatabase')
+            *submodules)
         db = UPSTREAM / 'third_party/XbSymbolDatabase'
         run(CMAKE, '-S', db, '-B', db / 'build', '-G', 'Ninja',
             f'-DCMAKE_MAKE_PROGRAM={NINJA}', '-DCMAKE_BUILD_TYPE=Release', '-DXBSDB_BUILD_UNITTEST=OFF')

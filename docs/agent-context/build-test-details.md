@@ -17,6 +17,13 @@ the task runtime root and never sets up a reused SDK. Runtime and build outputs
 stay local. Mac's broader `--runtime-root` continues to share those outputs, so
 do not use it to borrow dependencies from an independently edited checkout.
 `test_vulkan_sdk.py` covers both hosts' pin mismatch/tamper rejection and no writes.
+Linux generation stages only the hash-verified executable under its owned
+private/pipeline/input. Symbol/analysis tools otherwise write beside the input;
+they must not receive the shared asset executable. Network identity still hashes
+the selected original game directory. Existing differing staged inputs are
+preserved and refused. The Linux foundation test checks source/cache preservation.
+Fresh Mac Vulkan setup also initializes pinned Vulkan-Headers/volk/VMA submodules,
+matching the backend's existing prerequisite checks. GL keeps its smaller setup.
 
 Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
 n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.

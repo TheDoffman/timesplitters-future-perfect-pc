@@ -43982,3 +43982,18 @@ Python setup, submodules and build outputs stay in the task root. Windows SDK,
 Linux foundation and Mac build-tool regressions pass63 with3 platform skips;
 actual host reuse/build checks remain pending. This avoids another SDK copy on
 the disk-constrained Mac/WSL hosts while preserving other checkouts' work.
+
+Read-only SDK reuse contracts pass Windows63/three skips, native Mac65/one skip
+and Linux66/no skips; actual SDK receipts/pins verify on both native hosts. Their
+full game builds now run in owned task roots. Fresh Mac setup exposed missing
+Vulkan-Headers/volk/VMA initialization; Vulkan setup now includes those pinned
+submodules (GL keeps its smaller dependency list). Mac configure rerun pending.
+
+The first Linux generation resolved the shared game-data symlink and wrote its
+analysis/symbol caches beside that executable. The supported executable hash
+remains intact; saves/settings/assets were not changed. Generation now stages
+only the verified executable under the task's private/pipeline/input before
+calling tools that write beside their input. Existing differing staged content
+is refused and preserved. Windows updated build/dependency checks pass64/three
+skips, including source/cache preservation and mismatch refusal. Native reruns
+and staged-generation output checks remain pending.
