@@ -83,6 +83,9 @@ void pc_debug_sample(double fps, double shown_fps);
 void pc_debug_latency(int mode, double milliseconds, unsigned peers);
 const char *pc_debug_watermark(void);
 int pc_debug_overlay(char *text, size_t bytes, const char *cap);
+/* Trusted native host extension, called outside the diagnostics lock. NULL clears.
+ * The callback must remain valid and nonblocking through process teardown. */
+void pc_debug_set_overlay_extension(int (*extension)(char *, size_t));
 void pc_debug_snapshot(PcDebugSnapshot *snapshot);
 /* Log polling and clearing run on the window thread, never the render thread. */
 void pc_debug_poll(void);

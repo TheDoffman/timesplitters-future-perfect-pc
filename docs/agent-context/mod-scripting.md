@@ -372,3 +372,20 @@ PrivateDirectory ownership/ACL/link/volume check. This allows an already protect
 local test folder without changing account-wide ACLs. Public launcher emits no
 script handoff or cache override yet. Unicode/missing/empty native cases exercise
 this selection; Windows empty setter semantics remove the variable (host skip).
+
+Actual First-to-Three now completes on Windows (build eb6047e8), Mac (0aef1cdb)
+and Linux software Vulkan (710337a9): accepted bot kills advance to3, derived
+rank1 ends the match, results persist and ordinary save hashes survive quit0.
+Windows uses the explicit protected local cache; no account ACL is modified.
+Its window-thread quit leaves private staging caches although owned child
+processes have exited. Correct-thread quit cleanup and stale-cache/profile
+recovery remain required before release. Mac has one prior-crash cache retained.
+
+The first real Windows window capture showed missing mod text: pc_debug.c lives
+in xbox_input, which does not inherit the game's TSFP_MOD_GAME definition. The
+factory now explicitly registers pc_debug_set_overlay_extension; diagnostics
+calls this trusted native callback outside its lock even with debug stats off.
+There is no Lua callback on the renderer. A separate try-locked HUD state and
+atomic active-match flag keep rendering off the simulation facade mutex. Tests
+check registration, ordinary startup and extension visibility/removal with stats
+off. Windows factory/diagnostic51 pass/2 skips; rendered follow-up pending.

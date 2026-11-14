@@ -21,6 +21,8 @@ static std::string source;
 static std::atomic<bool> verified{true};
 static std::atomic<unsigned> probes{0};
 static bool requested=true,network_locked=false;
+static int (*overlay_extension)(char *,size_t);
+extern "C" void pc_debug_set_overlay_extension(int (*extension)(char *,size_t)){overlay_extension=extension;}
 static bool local_cache(const std::string &value) {
 #ifdef _WIN32
     int count=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,value.c_str(),-1,nullptr,0);
@@ -51,7 +53,7 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
     source="return {api=1,on_start=function() game.set_score(1,4) end}";
     if(mode=="fault")source="return {api=1,on_start=function() error('fixture mode stopped') end}";
     if(mode=="ordinary") {
-        requested=false;CHECK(pc_mod_runtime_prepare(cache.c_str()));CHECK(!pc_mod_runtime_selected() && !network_locked);
+        requested=false;CHECK(pc_mod_runtime_prepare(cache.c_str()));CHECK(!pc_mod_runtime_selected() && !network_locked && !overlay_extension);
         CHECK(pc_mod_runtime_shutdown());std::puts("PASS ordinary");return 0;
     }
     std::string error;lease=tsfp::mods::SaveNamespace::open(original,std::string(64,'a'),error);CHECK(lease);
@@ -59,9 +61,10 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
     if(from_environment)CHECK(local_cache(mode=="cache-missing"?cache+"/absent":mode=="cache-empty"?"":cache));
     int prepared=pc_mod_runtime_prepare(from_environment?nullptr:cache.c_str());Shutdown shutdown;
     CHECK(pc_mod_runtime_selected() && network_locked);
+    CHECK(overlay_extension==pc_mod_runtime_overlay);
     if(mode=="refused" || mode=="cache-missing" || mode=="cache-empty"){CHECK(!prepared && pc_mod_runtime_faulted() && !verified.load());std::puts("PASS refused");return 0;}
     CHECK(prepared && !pc_mod_runtime_faulted());
-    char overlay[192];CHECK(pc_mod_runtime_overlay(overlay,sizeof overlay) && std::strstr(overlay,"Offline Arcade"));
+    char overlay[192];CHECK(overlay_extension(overlay,sizeof overlay) && std::strstr(overlay,"Offline Arcade"));
     const char label[]="100% ready \xce\xa9";
     pc_mod_runtime_message(label,sizeof(label)-1);CHECK(pc_mod_runtime_overlay(overlay,sizeof overlay) && std::strstr(overlay,label));
     pc_mod_runtime_message("bad\nmessage",11);CHECK(pc_mod_runtime_overlay(overlay,sizeof overlay) && std::strstr(overlay,label));

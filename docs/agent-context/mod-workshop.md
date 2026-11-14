@@ -305,3 +305,4 @@ public launcher script activation and deployment remain unfinished.
 
 Actual native Mac tick/First-to-Three and Linux tick matches now exercise the
 production bridge. Explicit local cache selection and exec metering: mod-scripting.md.
+Windows also completes First-to-Three; HUD registration/quit gaps: mod-scripting.md.

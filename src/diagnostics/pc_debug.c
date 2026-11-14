@@ -23,6 +23,7 @@
 #include "pc_build_version.inc"
 
 static SRWLOCK debug_lock = SRWLOCK_INIT;
+static int (*overlay_extension)(char *,size_t);
 static PcDebugOptions options;
 static PcDebugSnapshot stats;
 static char history[12][384];
@@ -206,20 +207,24 @@ static int debug_overlay_stats(char *text, size_t bytes, const char *cap)
     return shown;
 }
 
-#ifdef TSFP_MOD_GAME
-#include "../mods/mod_game_runtime.h"
-#endif
+void pc_debug_set_overlay_extension(int (*extension)(char *,size_t))
+{
+    AcquireSRWLockExclusive(&debug_lock);
+    overlay_extension=extension;
+    ReleaseSRWLockExclusive(&debug_lock);
+}
 int pc_debug_overlay(char *text,size_t bytes,const char *cap)
 {
     if(!text || !bytes)return 0;
     int shown=debug_overlay_stats(text,bytes,cap);
-#ifdef TSFP_MOD_GAME
-    char mod[128];
-    if(pc_mod_runtime_overlay(mod,sizeof mod)) {
+    int (*extension)(char *,size_t);
+    AcquireSRWLockShared(&debug_lock);extension=overlay_extension;ReleaseSRWLockShared(&debug_lock);
+    char mod[128]={0};
+    if(extension && extension(mod,sizeof mod)) {
+        mod[sizeof(mod)-1]=0;
         char previous[320];snprintf(previous,sizeof previous,"%s",shown?text:"");
         snprintf(text,bytes,"%s%s%s",mod,shown?" | ":"",previous);return 1;
     }
-#endif
     return shown;
 }
 

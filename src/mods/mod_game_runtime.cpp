@@ -22,6 +22,7 @@
 #include <windows.h>
 #endif
 extern "C" void pc_network_lock_offline(void);
+extern "C" void pc_debug_set_overlay_extension(int (*)(char *,size_t));
 namespace {
 struct Context {
     std::unique_ptr<tsfp::mods::RuntimeResources> resources;
@@ -31,9 +32,10 @@ struct Context {
 };
 // Never let static destruction release resources beneath a live guest/probe.
 Context *context=nullptr;
-std::mutex facade;
+std::mutex facade,hud;
 bool attempted=false;
 std::atomic<bool> selected{false},failed{false},closing{false};
+std::atomic<bool> active_match{false};
 char diagnostic[256];
 std::string hud_message;
 std::chrono::steady_clock::time_point message_until;
@@ -77,6 +79,7 @@ extern "C" int pc_mod_runtime_prepare(const char *parent) {
     size_t length=0;const char *source=pc_mod_bootstrap_source(&length);
     if(!source)return 1;
     selected.store(true);
+    pc_debug_set_overlay_extension(pc_mod_runtime_overlay);
     pc_network_lock_offline();
     try {
         context=new Context;
@@ -105,11 +108,11 @@ extern "C" TsfpModMatch *pc_mod_runtime_update(const TsfpModWorld *world,int can
     if(context->owner==std::thread::id{})context->owner=std::this_thread::get_id();
     if(context->owner!=std::this_thread::get_id()) {closing.store(true);return nullptr;}
     try {
-        if(failed.load() || closing.load()){context->runtime->close();context->bound=0;return nullptr;}
+        if(failed.load() || closing.load()){context->runtime->close();context->bound=0;active_match.store(false);return nullptr;}
         if(!can_start && (!world || context->bound!=world->epoch))world=nullptr;
         auto *match=context->runtime->update(world);
         if(context->runtime->faulted()){fail(context->runtime->error().c_str());match=nullptr;}
-        context->bound=match && world?world->epoch:0;return match;
+        context->bound=match && world?world->epoch:0;active_match.store(context->bound!=0);return match;
     }catch(...){fail("Script frame admission failed");return nullptr;}
 }
 extern "C" int pc_mod_runtime_faulted(void){return failed.load()?1:0;}
@@ -117,12 +120,12 @@ extern "C" const char *pc_mod_runtime_error(void){return failed.load()?diagnosti
 extern "C" void pc_mod_runtime_message(const char *text,size_t size) {
     if(!selected.load() || !text || !size || size>TSFP_SCRIPT_TEXT_MAX)return;
     for(size_t i=0;i<size;++i)if((unsigned char)text[i]<32 || text[i]==127)return;
-    std::unique_lock<std::mutex> lock(facade,std::try_to_lock);if(!lock.owns_lock())return;
+    std::unique_lock<std::mutex> lock(hud,std::try_to_lock);if(!lock.owns_lock())return;
     try {hud_message.assign(text,size);message_until=std::chrono::steady_clock::now()+std::chrono::seconds(8);}catch(...){}
 }
 extern "C" int pc_mod_runtime_overlay(char *text,size_t bytes) {
     if(!text || !bytes || !selected.load())return 0;
-    std::unique_lock<std::mutex> lock(facade,std::try_to_lock);if(!lock.owns_lock())return 0;
+    std::unique_lock<std::mutex> lock(hud,std::try_to_lock);if(!lock.owns_lock())return 0;
     try {
         std::string shown;
         if(failed.load())shown="Mod stopped: launch again or play without mods";
@@ -130,7 +133,7 @@ extern "C" int pc_mod_runtime_overlay(char *text,size_t bytes) {
             size_t n=std::min(hud_message.size(),size_t(96));
             while(n<hud_message.size() && n && ((unsigned char)hud_message[n]&0xc0)==0x80)--n;
             shown="Custom mode | "+hud_message.substr(0,n)+(n<hud_message.size()?"...":"");
-        }else shown=context && context->bound?"Custom mode | Offline":"Script mode | Offline Arcade only";
+        }else shown=active_match.load()?"Custom mode | Offline":"Script mode | Offline Arcade only";
         size_t n=std::min(shown.size(),bytes-1);
         while(n<shown.size() && n && ((unsigned char)shown[n]&0xc0)==0x80)--n;
         std::memcpy(text,shown.data(),n);text[n]=0;return n?1:0;
@@ -139,6 +142,7 @@ extern "C" int pc_mod_runtime_overlay(char *text,size_t bytes) {
 extern "C" void pc_mod_runtime_request_shutdown(void){closing.store(true);}
 extern "C" int pc_mod_runtime_shutdown(void) {
     closing.store(true);
+    active_match.store(false);
     std::lock_guard<std::mutex> lock(facade);
     if(!context)return 1;
     if(context->owner!=std::thread::id{} && context->owner!=std::this_thread::get_id())return 0;

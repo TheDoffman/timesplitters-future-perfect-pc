@@ -14,6 +14,10 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while (0)
 static int save_dialog, driven, timed_out, expected_save_error;
 static ULONGLONG deadline;
+static int overlay_fixture(char *text,size_t bytes)
+{
+    snprintf(text,bytes,"Fixture mode 100%%");return 1;
+}
 
 static BOOL CALLBACK drive_dialog(HWND window, LPARAM unused)
 {
@@ -225,6 +229,10 @@ int main(int argc, char **argv)
     CHECK(driven && !timed_out);
     pc_debug_get(&readback); CHECK(!readback.show_fps && !readback.show_frame_time && !readback.show_issues && !readback.log_performance);
     CHECK(!readback.show_latency && !pc_debug_overlay(overlay,sizeof overlay,"auto"));
+    pc_debug_set_overlay_extension(overlay_fixture);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && !strcmp(overlay,"Fixture mode 100%"));
+    pc_debug_set_overlay_extension(NULL);
+    CHECK(!pc_debug_overlay(overlay,sizeof overlay,"auto") && !overlay[0]);
     /* A nested save-error dialog must fail or finish the test, not keep the
        build waiting indefinitely or queue more Save commands behind it. */
     before=load(config); CHECK(before);

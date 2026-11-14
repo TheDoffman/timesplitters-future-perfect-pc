@@ -1,3 +1,22 @@
+Three-host actual gameplay (feature/mod-platform): Windows build eb6047e8 now
+runs tick score4/End/results and the unchanged First-to-Three script. WinnerID3
+score3/rank1 matches three raw accepted kills;45 results samples, exit0, protected
+ordinary save canaries unchanged. GameSHA97b0ee240a727e5538239b0adcb94016926eedea858fd54b7b6b8574652ab3d1;
+evidenceSHA536d9f344ddf1fac32a353c9d4af637c146188fde065b386fa27d720e1cb98de.
+The explicit protected test-cache option avoids the unsafe inherited account
+folder; global ACLs are unchanged. Mac cache-option12 checks/1 skip and Linux13
+checks pass; all three eb6047e8 game/build/platform checks pass. Mac/Linux previous
+First-to-Three acceptance is recorded below. Native Mac VM-error scene ends in
+results/quit0 without changing originals (game0aef, checkout710).
+Windows actual captured window lacks mod status because the diagnostics library
+does not receive the game compile definition. Replace that compiled-out branch
+with explicit native extension registration; renderer HUD state is separately
+try-locked from simulation. Windows factory/diagnostics51 pass/2 skips. Native
+builds/rendered follow-up pending. Normal Windows window-thread quit also leaves
+private staging folders; no owned process remains. Correct-thread drain and
+safe crash-cache/profile recovery remain unfinished. Public activation/deployment
+and the full goal remain open.
+
 Native script acceptance (feature/mod-platform,2026-11-14): source0aef1cdb CI
 43648827557 and source710337a9 CI43649810415 both finish GREEN23 success/2 intentional
 skips. Factory/process/session74 pass/2 skips EACH Windows/Mac/Linux; Linux factory
