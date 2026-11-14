@@ -139,3 +139,7 @@ column scope restore on exit; tutorial_layout covers unequal widths/rebinds.
 Tutorial-column validation:12 layout tests pass, including mixed-width column
 centres, rebinds, controller/split-screen guards and scope/ABI restoration.
 Windows supported build and actual1280x720 Story Scifi Handgun capture pass.
+
+The standalone tests/input/menu_mouse.c fixture supplies the Crosshair Size
+callback beside Weapon FOV; all five mouse hover/drag mutation cases compile
+without depending on the complete display-menu translation unit.
