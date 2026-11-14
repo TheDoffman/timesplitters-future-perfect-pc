@@ -108,14 +108,25 @@ class LauncherPackaging(unittest.TestCase):
                              'third_party/ffmpeg/bin/swresample-6.dll']:
                 put(upstream / relative)
             put(root / 'ProgramFiles/Microsoft Visual Studio/2022/Test/VC/Redist/MSVC/1/x64/Microsoft.VC143.CRT/vcruntime140.dll')
+            # This package-layout fixture mocks every native binary producer.
+            # Real helper provenance/refusal/execution is in test_runtime_images.py.
+            runtime_relative = 'Bin/ModRuntime/'+'a'*64
+            def helpers(source, native_build, stage):
+                self.assertEqual(source, root)
+                self.assertEqual(native_build, root/'build/windows')
+                for name in ('tsfp-mod-worker.exe', 'Lua.txt', 'runtime.json'):
+                    put(stage/runtime_relative/name)
+                return {'test_fixture': True, 'identity': 'a'*64}
             with mock.patch.object(package, 'ROOT', root), \
                     mock.patch.object(sys, 'argv', ['package-release.py', '--version', 'v1.2.3']), \
                     mock.patch.dict(os.environ, {'ProgramFiles': str(root / 'ProgramFiles')}), \
                     mock.patch.object(package.subprocess, 'run') as build, \
                     mock.patch.object(package.subprocess, 'check_output', side_effect=lambda args,**kw: b'' if 'ls-files' in args or 'diff' in args else 'test-source\n'), \
                     mock.patch.object(package, 'bundle', return_value={'test':True}), \
+                    mock.patch.object(package, 'copy_mod_runtime', side_effect=helpers) as mod_helpers, \
                     contextlib.redirect_stdout(io.StringIO()):
                 package.main()
+                mod_helpers.assert_called_once()
                 self.assertEqual(build.call_count, 2)
                 self.assertIn(str(root / 'tools/build/build-launcher.ps1'), build.call_args.args[0])
                 self.assertIn('-RequireArtwork', build.call_args.args[0])
@@ -126,6 +137,8 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertIn(prefix + 'TimeSplitters Launcher.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/TimeSplitters.App.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/tsfp_crash_helper.exe', archive.namelist())
+                self.assertIn(prefix + runtime_relative + '/tsfp-mod-worker.exe', archive.namelist())
+                self.assertIn(prefix + runtime_relative + '/Lua.txt', archive.namelist())
                 self.assertIn(prefix + 'Support/Discord/README.txt', archive.namelist())
                 self.assertEqual(archive.read(prefix + 'Support/Discord/pc-discord.default.ini'), discord_default)
                 self.assertNotIn(prefix + 'Discord-setup.txt', archive.namelist())
@@ -142,6 +155,7 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))
                 manifest = json.loads(archive.read(prefix + 'BUILD.json'))
                 self.assertEqual(manifest['version'], 'v1.2.3')
+                self.assertEqual(manifest['mod_runtime']['identity'], 'a'*64)
                 self.assertIsNone(manifest['textures'])
                 self.assertFalse(any('/Textures/' in name for name in archive.namelist()))
                 self.assertEqual(manifest['launcher_version'], '1.1.0')

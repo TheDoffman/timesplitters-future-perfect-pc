@@ -41,6 +41,9 @@ def sign_bundle(app):
  # command-line host alone is not a signed application bundle.
  for library in sorted((app/'Contents/MacOS').glob('*.dylib')):
   subprocess.run(['/usr/bin/codesign','--force','--sign','-','--timestamp=none',str(library)],check=True)
+ # Finder can attach bundle metadata while nested images are being signed.
+ # Clear it again immediately before the final seal; Mach-O signatures survive.
+ subprocess.run(['/usr/bin/xattr','-cr',str(app)],check=True)
  subprocess.run(['/usr/bin/codesign','--force','--sign','-','--timestamp=none',str(app)],check=True)
  subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict','--verbose=2',str(app)],check=True)
 def ico_to_icns(source,destination):

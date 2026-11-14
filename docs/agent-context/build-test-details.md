@@ -1,5 +1,14 @@
 # Feature test index
 
+The synthetic Windows package_launcher.py fixture supplies the mandatory native
+helper producer alongside its other mocked binary builders. It checks helper/
+Lua notice inclusion and manifest hashes; test_runtime_images.py independently
+tests the real producer, rejection policy and OS-confined execution.
+Mac launcher sign_bundle performs its final generated-output xattr clear after
+nested Mach-O signing, then seals/verifies the app. Real-host inspection found
+root FinderInfo reappeared during that interval; immediate clear/reseal and deep
+strict verification pass. Bundled native signatures remain embedded in images.
+
 `tests/mods/test_mod_saves.py` uses native leases and disposable save canaries:
 persistence without copying originals, absent roots, independent profiles,
 exclusive concurrent processes, abrupt-exit release, marker/collision refusal,

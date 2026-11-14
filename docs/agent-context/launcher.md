@@ -908,3 +908,10 @@ Public game packages now preserve verified mod helper bundles; see the
 [bundle checks](build-test-details.md). The portable Mac language-capability
 fixture supplies its unrelated helper collaborator explicitly. Script activation
 and native release-package acceptance remain pending.
+The Windows synthetic package-layout fixture likewise supplies that producer;
+it asserts helper/Lua-notice inclusion and manifest metadata. Native provenance,
+tamper refusal and relocated execution remain in the real helper tests.
+Mac launcher signing clears generated-bundle metadata again after nested signing,
+immediately before sealing the app. Finder reattached root FinderInfo during the
+first clear/sign interval on the actual Mac; clear/reseal/deep strict verification
+passed. No source, personal data or packaged worker images are altered by that step.
