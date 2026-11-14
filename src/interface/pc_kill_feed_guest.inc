@@ -86,7 +86,12 @@ void pc_kill_feed_death(void (*original)(void)) {
             memcpy(&before,(void *)((uintptr_t)(pool+killer*0xea0u+0xa10u+victim*2u)+g_xbox_mem_offset),2);
         }
     }
-    original(); /* Keep original authorization, scoring and Story departure rules. */
+    /* Keep original authorization, scoring and Story departure rules. */
+#ifdef TSFP_MOD_GAME
+    pc_mod_game_death(original);
+#else
+    original();
+#endif
     if(killer<16u && victim<16u && pool==WORD_AT(0x7356d8u)) {
         uint16_t after;memcpy(&after,(void *)((uintptr_t)(pool+killer*0xea0u+0xa10u+victim*2u)+g_xbox_mem_offset),2);
         if((uint16_t)(after-before)==1u) {

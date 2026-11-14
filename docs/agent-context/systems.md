@@ -1,7 +1,7 @@
 # Shared systems
 
 [Guest adapter notes](guest-adapter-notes.md#host-systems).
-[Mod scripting worker](mod-scripting.md): restricted API; real game adapters remain pending.
+[Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;

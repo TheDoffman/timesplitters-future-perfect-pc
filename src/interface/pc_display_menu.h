@@ -1,6 +1,9 @@
 #ifndef TSFP_PC_DISPLAY_MENU_H
 #define TSFP_PC_DISPLAY_MENU_H
 #include <stdint.h>
+#ifdef TSFP_MOD_GAME
+#include "pc_mod_game.h"
+#endif
 #define PC_DISPLAY_MENU_CALLBACK 0x00012008u
 void pc_display_menu_finish(void (*original)(void));
 void pc_display_menu_button(void (*original)(void));

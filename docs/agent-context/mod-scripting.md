@@ -116,10 +116,31 @@ Ownership evidence stays ignored; manual test cleanup is not production crash re
 
 ## Remaining game/public integration
 
-Actual guest event/command hooks, live match epoch/roster revalidation and atomic
-application, bounded title-event queue/coalescing, multiplayer authority/hash
-agreement, mod save namespaces, launcher script lifecycle, verified signed helper
-packaging/crash recovery and actual custom-mode gameplay remain required. The host
+`mod_match.h/.cpp` supplies a C ABI over Session: a64-event queue coalesces only
+consecutive ticks, preserves death barriers and assigns sequence numbers only on
+accepted dispatch. It revalidates epoch/offline authority/stable actor identity
+before committing copied score/end/message commands. Score/rank reads also need
+a fresh world. A fault closes the worker and disables the derived score overlay.
+The trusted caller asserts verified images/source, separate saves and offline
+policy before open; these assertions are not proof supplied by a mod manifest.
+
+`pc_mod_guest.inc` initially accepts only offline non-team Arcade rules-index0.
+It captures the supported US actor pool, preserving actor identity across body
+respawn. The death wrapper calls the original once and requires its accepted
+entity+258 serial increment. Derived actor+a6c/a68 and the sorted slot array use
+committed scores; raw kills/deaths remain original. Patch2710 wraps641C0/64810,
+674C0 and the existing681C0 Story frame adapter. End calls the stock67450 helper.
+`mods/game.cmake` links only the C++ parent/OS adapter into the game, never Lua.
+NULL binding preserves stock behavior. There is no file/environment activation
+entry point; the future trusted bootstrap must own binding and worker lifetime.
+The18 Windows controlled-world/native bridge fixtures use real isolated Lua but
+mock original title functions. They do not establish actual gameplay or final
+fault UX; messages still need a shared HUD adapter. Registered native route:
+`tests/mods/test_mod_match.py`. Cross-host integration checks remain pending.
+
+Multiplayer authority/hash agreement, mod save namespaces, launcher script
+lifecycle, verified signed helper packaging/crash recovery, message rendering
+and actual custom-mode gameplay remain required. The host
 must establish image/package/authority/save policy before opening a session. Existing
 original-title script timing patches are not Lua hooks; verify native source/callers
 before adding wrappers. Full public workshop acceptance remains mandatory. These

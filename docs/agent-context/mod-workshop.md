@@ -36,8 +36,9 @@ Public connectivity, full asset formats and scripting remain acceptance work.
 
 Standalone native scripting now executes real Lua and an original custom score
 mode, with memory/instruction/host-call/transaction limits and a wall watchdog.
-Launcher activation remains refused until OS process confinement, independent
-supervision and actual game hooks are verified. See [worker](mod-scripting.md).
+OS confinement and independent supervision have native host checks. Shared title
+hooks and a queued match bridge now have controlled-world Windows fixtures;
+launcher activation and actual custom-mode gameplay remain pending. See [worker](mod-scripting.md).
 <!-- packet:end -->
 
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,

@@ -347,3 +347,13 @@ on native Mac and Linux. Combined Session/Process counts: Windows65/one Mac-only
 skip; Mac65/one Windows-only skip; Linux64/two skips. Windows with CI selection/
 runtime-check cases passes175/one skip. These later tests do not change the already
 verified production VM/session behavior; full-suite source/counts remain in STATUS.
+
+The shared game-thread bridge is now in `src/mods/mod_match.h/.cpp`, with a bounded
+event queue and atomic copied command commits. The supported US title adapter in
+`pc_mod_guest.inc` uses fresh epoch/roster checks, accepted-death serials, derived
+score/rank rows and the stock match-end helper. Patch2710 connects the wrappers
+and shared C++ parent build. The first supported path is offline non-team Arcade
+rules-index0. Windows controlled-world fixtures use real isolated Lua with mocked
+stock functions; this is not live gameplay acceptance. Bootstrap verification,
+save namespaces, HUD messages, helper packaging, launcher lifecycle and multiplayer
+remain required. No launcher scripting activation entry point is exposed.

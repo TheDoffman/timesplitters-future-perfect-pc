@@ -10658,3 +10658,13 @@ trusted-parent ASan/UBSan Session checks pass. Linux57 plus7 Process cases pass
 host-error teardown and corrected Mach CPU accounting. Real title adapters,
 mod saves/multiplayer, signed helper packaging/recovery and playable public mod
 release remain required. See STATUS/mod-scripting.md for exact acceptance bounds.
+
+Native game-thread mod bridge (task base e7c1ca82): **Awaiting validation**.
+Shared C ABI queue/transaction model and supported-US title event/score/rank/end
+hooks live in src/mods; patch2710 and game.cmake link the parent on all hosts.
+Windows83 bridge/Session/Process checks pass with one Mac-only skip, including18
+controlled-world cases using real isolated Lua and mocked stock title functions.
+Mac/Linux ordinary/sanitized checks and game builds remain pending. No launcher
+script activation/bootstrap exists. Separate saves, verified helper packaging,
+HUD messages, multiplayer and actual custom-mode gameplay remain required.
+See STATUS and mod-scripting.md; the full goal remains incomplete.

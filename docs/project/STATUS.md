@@ -43913,3 +43913,19 @@ synthetic. No originals/settings/saves were changed. Scripts remain inactive in
 the launcher; public service/production pins, verified helper game packaging,
 stale crash-profile recovery, save/multiplayer agreements and full public release
 acceptance remain required. Full goal remains active; no main merge performed.
+
+# Native match bridge (2026-11-14, task base e7c1ca82)
+
+Shared mod_match C ABI and supported-US guest hooks are implemented, with no
+launcher activation/bootstrap entry. Windows83 match/Session/Process checks pass
+(one Mac-only skip), including18 match/controlled-world fixtures with real
+isolated Lua. Original title functions in the guest fixture are mocks. The
+full game build is pending; these tests do not establish actual custom-mode play.
+Patch2710 applies successfully with the full patch stack and preserves existing
+Story frame routing; stock behavior remains the default while unbound. Native
+Mac/Linux new bridge checks and trusted-parent sanitizer checks are pending.
+
+Initial title support is offline, non-team Arcade rules-index0. Verified helper
+packaging, trusted bootstrap/save namespaces, HUD messages, fault UX, launcher
+lifecycle, multiplayer agreements and full public workshop acceptance remain
+required. No public deployment, main merge or private asset publication occurred.

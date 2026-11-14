@@ -2133,6 +2133,15 @@
       ]
     },
     {
+      "name": "2710-mod-game-hooks.patch",
+      "path": "patches/gameplay/mods/2710-mod-game-hooks.patch",
+      "sha256": "8967a67854fd6dadfd81ef1751cbf771b64092aeefd2f73c579ed33ebd8eccb7",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "2720-viewmodel-shoulder-visibility.patch",
       "path": "patches/graphics/rendering/2720-viewmodel-shoulder-visibility.patch",
       "sha256": "3fa1241997be6bdc22fbed01c638376fcd1b68a4b065224633196595c897cf46",

@@ -1,7 +1,8 @@
 # Runtime
 
 [Guest adapter notes](guest-adapter-notes.md#runtime-routing).
-[Mod scripting worker](mod-scripting.md): separately built, not yet connected to guest code.
+[Mod scripting game bridge](mod-scripting.md): patch2710 links the separate parent to title hooks;
+activation and actual custom-mode gameplay remain pending.
 
 <!-- packet:start -->
 Runtime layers: generated Xbox guest calls title hooks in
