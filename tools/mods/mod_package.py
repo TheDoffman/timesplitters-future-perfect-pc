@@ -343,6 +343,8 @@ def build_package(source, output):
         with zipfile.ZipFile(stream, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
             for name, data in [('mod.json', manifest), *entries.items()]:
                 info = zipfile.ZipInfo(name, (2020, 1, 1, 0, 0, 0))
+                # Canonical creator platform for identical inputs on all hosts.
+                info.create_system = 3
                 info.compress_type = zipfile.ZIP_DEFLATED
                 info.external_attr = (stat.S_IFREG | 0o644) << 16
                 archive.writestr(info, data)

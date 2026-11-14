@@ -238,3 +238,8 @@ package repair/restart/render preservation pass. Mac288/WSL287 selected Python
 checks pass (one WSL non-root ceremony skip). Native source/vector receipts and
 Windows build-cache inputs bind the golden data. Production pins/HTTPS identity
 and public client acceptance remain unprovisioned.
+
+Creator ZIPs use explicit Unix creator-platform metadata on every host. The SDK
+round trip exposed different Windows/Unix archive hashes from ZipInfo defaults
+despite identical payloads. Existing packages remain valid; new packs canonicalize
+this header along with the existing fixed timestamp/file mode.
