@@ -10623,3 +10623,10 @@ and Windows8 also pass. Full component/sanitizer evidence and host/tool versions
 are in STATUS. Game event adapters/async bridge, helper packaging/recovery and
 real scripted custom-mode gameplay remain unimplemented/unverified; the launcher
 still refuses script activation. This does not close the full public mod-system goal.
+
+Persistent native mod Session (base e183dbc5): **Awaiting validation** on Mac/Linux.
+Shared C++ asynchronous API/transaction validation and thin OS pipe readiness
+waits are implemented; Windows55 Session plus8 Process checks pass, one Mac-only
+skip. No guest hooks/activation yet. Mac/Linux exact helper/process/session tests,
+verified game adapters, multiplayer/saves and actual scripted gameplay remain
+required. See mod-scripting.md/mod-gameplay-scripting.md/STATUS for contracts.

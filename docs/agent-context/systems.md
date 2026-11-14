@@ -912,3 +912,7 @@ tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.
 Native mod process adapters/self-sealing and Mac lifetime guardian pass named
 Windows/Mac/Linux checks; see mod-scripting.md. No guest hooks or launcher script
 activation changed. Persistent game bridge and actual mode gameplay remain pending.
+
+Mod Session uses shared asynchronous native supervision and validated typed
+transactions; no title hooks yet. Process background-only readiness waits use
+Windows pending-IO events/POSIX poll. See mod-scripting.md for contracts/evidence.

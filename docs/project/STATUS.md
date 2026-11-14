@@ -43836,3 +43836,25 @@ Mac final source c12b8541:8 production-process checks pass, one Windows-only ski
 The additional missing-guardian test refuses before worker input and preserves
 its copied worker bytes; no direct-spawn fallback exists. CI source6457f1fe run
 43603840993 was in progress at last inspection, not established passing.
+
+# Persistent native mod sessions (base e183dbc5; 2026-11-14)
+
+Implemented shared C++ Session background-owned process supervision and strict
+native transaction decoding. Game-side API uses try-lock/backpressure and never
+waits for child IO; cancellation is asynchronous and stopped() confirms cleanup.
+Independent load/event wall, request/idle/session CPU and RSS budgets, unsolicited
+output/diagnostic rejection and lifecycle/roster/numeric checks are enforced.
+Windows pending-IO events/POSIX poll replace timer-rounded background pipe polling;
+submit/close wake the idle condition variable. No system timer policy changed.
+
+Windows63 session/process checks pass with one Mac-only skip;55 are new Session
+cases covering actual original mode beyond2s,100 stateful ticks and Stop, malformed
+native replies/partial transactions, native hangs/crash/stderr/idle abuse, full1MiB
+source, backpressure and asynchronous close. The driver retries Busy on a later
+iteration: try-lock contention is not rejection or event consumption. Oversized
+source cases use bounded explicit pytest IDs to avoid overflowing Windows'
+PYTEST_CURRENT_TEST environment value. Test-only hostile workers remain OS-sealed
+and have no VM watchdog. Actual Mac/Linux Session validation is pending. This does
+not add guest hooks, activate scripts, apply game commands or provision public
+hosting. Installed helper verification, live match epoch/authority/save contracts
+and real title integration/public acceptance remain required.

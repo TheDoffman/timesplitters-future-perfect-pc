@@ -253,3 +253,54 @@ The Windows test waits on the exact worker process handle before deleting only
 its owned GUID profile/cache via the profile API. Crash-time automatic stale-cache
 and profile recovery is not implemented yet; successful abrupt process termination
 does not mean the dead broker ran its ordinary cleanup destructor.
+
+## Persistent asynchronous host API (in progress)
+
+`mod_session.hpp/.cpp` now provides Session::open/dispatch/poll/close/stopped.
+It links the OS Process adapter, not the Lua VM. A self-owned background thread
+per session performs creation, pipe IO, process metering and cleanup. Public API
+calls do no process IO or child waits. Dispatch/poll use try-lock: Busy/Contended
+means the host must retry on a later host iteration, preserving the same immutable
+event. One pending event and one unconsumed result bound memory/backpressure.
+Do not convert Busy into an accepted or dropped death/tick event. The future title
+adapter needs a bounded event queue/coalescing policy and must fault the mod if
+it cannot preserve required event order; never stall simulation/rendering.
+
+The parent independently validates event lifecycle, sequence/ticks, unique roster,
+finite bounded coordinates, player/team/health/score and actor/target IDs. Replies
+must match request sequence, protocol/status/heap/count/length budgets, complete
+command structures, known player IDs, score bounds, end ordering, printable UTF8
+and exact bounded ASCII diagnostics. Load ACKs have zero commands; Stop cannot
+change score/end. A full private transaction is published only after validation.
+Faults clear unconsumed commands and terminate/reap the worker. Close is an atomic
+cancellation plus wake notification, not a game-thread join; stopped() becomes true
+only after owned process cleanup. A detached execution thread holds shared state,
+not a Session pointer, until cleanup ends. The game must keep its executable/module
+alive through shutdown; this is not a dynamically unloadable plugin ABI.
+
+Per-request independent wall budget: load2s, event500ms. CPU budget250ms/request,
+50ms while idle,1s per10s session window; RSS128MiB. The session rejects unsolicited
+stdout or any stderr, including while a prior result awaits consumption. Source
+stays1MiB. Process::wait_for_activity is background-only and waits at most2ms on
+pending Windows IO events or POSIX poll; submission/close wake the idle condition
+variable. This avoids repeated Windows Sleep rounding without changing global
+system timer settings. No response or resource fault blocks the host API.
+
+The session does **not** apply guest memory or commands. Before creating it, a
+trusted game adapter must verify installed helper images and package provenance,
+select separated saves, and enforce host/multiplayer authority/hash agreement.
+Before applying a returned transaction it must revalidate the live match epoch and
+current roster, then apply all commands together or reject all. Those adapters,
+real title hooks, script profile activation and signed helper packaging are still
+required; source-level Session tests do not establish playable game scripting.
+
+`tests/mods/test_script_session.py` compiles actual Session/Process workers and a
+separately sealed hostile native fixture (no VM watchdog). Windows55 new checks
+pass, alongside8 process checks (one Mac-only skip). Coverage includes the original
+mode beyond the diagnostic runner's2s whole-batch limit,100 stateful callbacks,
+Stop delivery, unconsumed-result backpressure, maximum-source chunked pipe writes,
+invalid source/events, strict malformed/truncated/status/command/text/sequence
+corpus, native hangs/crashes/stderr, idle CPU/output and nonblocking close. Valid
+native score/draw/end/UTF8 transactions provide positive controls. Test helper
+executables are compiled only in TSFP_MOD_TESTING and must never ship. Actual
+Mac/Linux Session checks are pending at this checkpoint.

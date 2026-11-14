@@ -20,8 +20,8 @@ before loading, preserving deterministic game RNG.
 Process supplies private nonblocking pipes, resource accounting and owned-child
 termination. The batch runner independently limits2s wall/1.5s CPU/128MiB resident,
 4MiB input/1MiB output/4096 diagnostic bytes; output is withheld until exit.
-It never interprets or applies gameplay commands. Per-request persistent game
-supervision and native typed-reply validation remain required before activation.
+It never interprets or applies gameplay commands. The new mod_session.cpp/.hpp implements persistent asynchronous supervision and
+native transaction validation; actual title adapters/activation remain pending.
 
 Windows uses a new capability-free low-privilege AppContainer, explicit inherited
 stdio allowlist, synthetic environment, dynamic-code/Win32k mitigations and a
@@ -87,10 +87,39 @@ Windows final process/CI recheck118 passes. Host details/logs are in STATUS.
 
 No game event/command hooks exist yet. Original title script timing patches are
 not a Lua mod VM; verify shared native interfaces/source/callers before wrappers.
-Still required: persistent asynchronous native bridge and reply validation,
-verified asset/game event adapters, multiplayer authority/hash agreement, mod save
+Still required: verified asset/game event adapters and live match-epoch validation, multiplayer authority/hash agreement, mod save
 namespaces, launcher script lifecycle, verified signed helper packaging/crash
 recovery and actual custom-mode gameplay on all hosts. Full public workshop
 acceptance remains mandatory. VM/process checks do not prove those requirements.
 Unchanged Python/native trust vectors and live scanner/operator evidence remain
 in mod-workshop.md and the catalog trust guide.
+
+## Persistent native sessions (base e183dbc5; Mac/Linux checks pending)
+
+mod_session.cpp/.hpp links only the native Process adapter and shared POD types,
+never Lua. A background-owned thread creates/meters/communicates/reaps the worker;
+open/dispatch/poll/close do no process IO or waits. Dispatch/poll use try-lock and
+report Busy/Contended; the caller retains and retries the same event. There is one
+pending event and one unconsumed result, no unbounded queues. Close signals the
+thread without joining on the game thread; stopped() means child cleanup finished.
+
+The session checks authoritative event lifecycle/sequence/ticks/roster/numbers;
+validates every reply header/length/status/sequence/heap/count, command/target/score/
+end order, printable UTF8 message and bounded ASCII diagnostic. Load ACK has no
+commands; Stop has no score/end commands. Parsing completes into a private result
+before any transaction is published. Faults clear pending commands and kill/reap.
+Callbacks have500ms independent wall/250ms CPU budgets; load2s/250ms CPU;
+RSS128MiB, idle CPU50ms, session CPU1s per10s window. Unsolicited stdout/stderr
+faults even while waiting for host consumption. Source remains capped1MiB.
+Background pipe readiness waits avoid Windows timer-rounded polling; idle wakeup
+uses a condition variable notified by submit/close. No global timer policy changes.
+
+Windows63 session/process checks pass, one Mac-only skip, including55 new session
+checks: original mode past2s,100 stateful ticks/Stop, backpressure, invalid source/
+host events, malformed native reply corpus, native hangs/crash/partial pipes/stderr,
+idle CPU/output, asynchronous close and full1MiB source transfer. The test-only
+hostile worker uses production OS sealing and has no VM watchdog. Test binaries
+never ship. Mac/Linux checks and real game event adapters remain pending. The
+host adapter must verify images/package/authority/save namespace and recheck the
+live match epoch/roster before applying a result atomically. Session checks alone
+are not actual game integration or multiplayer/save agreement.

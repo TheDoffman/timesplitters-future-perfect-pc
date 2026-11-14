@@ -17,6 +17,9 @@ public:
     virtual int write(const void *,size_t)=0;
     virtual int read(void *,size_t,bool diagnostic=false)=0;
     virtual bool usage(ProcessUsage &)=0;
+    // Background supervisors only: bounded wait for pipe readiness (at most2ms).
+    // Avoids periodic Windows timer rounding on latency-sensitive callbacks.
+    virtual void wait_for_activity(bool writing)=0;
     virtual void close_input()=0;
     // Kill/reap only this owned process/job; never a name-based process search.
     virtual void terminate()=0;

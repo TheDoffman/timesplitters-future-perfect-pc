@@ -129,6 +129,12 @@ public:
     int write(const void *bytes,size_t length)override{return input.transfer(const_cast<void *>(bytes),length);}
     int read(void *bytes,size_t length,bool error)override{return (error?diagnostic:output).transfer(bytes,length);}
     void close_input()override{input.disconnect();}
+    void wait_for_activity(bool)override {
+        HANDLE events[3];DWORD count=0;
+        for(Pipe *pipe:{&input,&output,&diagnostic})if(pipe->active)events[count++]=pipe->event;
+        if(count)WaitForMultipleObjects(count,events,FALSE,2);
+        else Sleep(1);
+    }
     bool usage(ProcessUsage &result)override {
         if(!process)return false;DWORD code;if(!GetExitCodeProcess(process,&code))return false;
         result.exited=code!=STILL_ACTIVE;result.exit_code=(int)code;

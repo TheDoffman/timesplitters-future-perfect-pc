@@ -248,3 +248,7 @@ Native script process boundaries are implemented and checked on Windows/Mac/Linu
 see mod-scripting.md for exact scope, host evidence and remaining game integration.
 The diagnostic runner is not a playable asynchronous game bridge. Script activation
 stays unavailable; public release acceptance and helper crash recovery are pending.
+
+Persistent native Session supervision/transaction validation is implemented;
+see mod-scripting.md for bounded async API and current host evidence. Actual
+game event/command adapters and script activation remain pending.

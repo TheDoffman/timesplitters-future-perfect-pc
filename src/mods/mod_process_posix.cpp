@@ -17,6 +17,7 @@
 #include <chrono>
 #include <thread>
 #include <pthread.h>
+#include <poll.h>
 #ifdef __linux__
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -48,6 +49,10 @@ public:
         return (int)count;
     }
     void close_input()override{close_fd(input);}
+    void wait_for_activity(bool writing)override {
+        struct pollfd descriptors[3]={{output,POLLIN,0},{diagnostic,POLLIN,0},{writing?input:-1,POLLOUT,0}};
+        (void)::poll(descriptors,3,2);
+    }
     bool usage(ProcessUsage &result)override {
         if(pid<=0)return false;
         int status=0;if(!reaped) {
