@@ -3,6 +3,7 @@
    until the game supervisor and all platform confinement adapters are verified. */
 #include "mod_script.h"
 #include "mod_watchdog.h"
+#include "mod_seal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,12 +50,19 @@ static int decode_event(reader *r,tsfp_script_event *event) {
     return r->valid && r->at==r->size;
 }
 int main(int argc,char **argv) {
-    tsfp_script_vm *vm=NULL;tsfp_script_result result;int exit_code=0;(void)argv;
+    tsfp_script_vm *vm=NULL;tsfp_script_result result;int exit_code=0,loaded=0;(void)argv;
     if(argc!=1)return 2;
 #ifdef _WIN32
     if(_setmode(_fileno(stdin),_O_BINARY)<0 || _setmode(_fileno(stdout),_O_BINARY)<0)return 2;
 #endif
     if(!tsfp_mod_watchdog_start())return 2;
+    /* Trusted initialization before self-sealing; no input has been read. */
+    tsfp_mod_watchdog_arm();vm=tsfp_script_create(1);tsfp_mod_watchdog_disarm();
+    if(!vm)return 2;
+    setvbuf(stdin,NULL,_IONBF,0);setvbuf(stdout,NULL,_IONBF,0);setvbuf(stderr,NULL,_IONBF,0);
+#ifndef TSFP_MOD_VM_TEST_ONLY
+    if(!tsfp_mod_seal()){fputs("Worker isolation policy unavailable\n",stderr);tsfp_script_destroy(vm);return 126;}
+#endif
     for(;;) {
         unsigned char header[4];size_t got=fread(header,1,4,stdin);uint32_t size,type;reader r;uint64_t sequence=0;int success=0;
         if(!got)break;
@@ -64,13 +72,13 @@ int main(int argc,char **argv) {
         if(fread(input,1,size,stdin)!=size){exit_code=2;break;}
         r.data=input;r.size=size;r.at=0;r.valid=1;type=read32(&r);result.count=0;
         tsfp_mod_watchdog_arm();
-        if(type==1 && !vm && r.size-r.at>4) {
-            uint32_t seed=read32(&r);vm=tsfp_script_create(seed);
-            success=vm && tsfp_script_load(vm,(const char *)r.data+r.at,r.size-r.at);
-        }else if(type==2 && vm) {
+        if(type==1 && !loaded && r.size-r.at>4) {
+            uint32_t seed=read32(&r);
+            success=tsfp_script_set_seed(vm,seed) && tsfp_script_load(vm,(const char *)r.data+r.at,r.size-r.at);loaded=success;
+        }else if(type==2 && loaded) {
             tsfp_script_event event;
             if(decode_event(&r,&event)){sequence=event.sequence;success=tsfp_script_dispatch(vm,&event,&result);}
-        }else if(type==3 && r.at==r.size && vm) {
+        }else if(type==3 && r.at==r.size && loaded) {
             tsfp_script_destroy(vm);vm=NULL;tsfp_mod_watchdog_disarm();return 0;
         }
         tsfp_mod_watchdog_disarm();

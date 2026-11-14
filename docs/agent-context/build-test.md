@@ -1038,3 +1038,5 @@ Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production
 [Mod worker and trust checks](mod-scripting.md).
 
 [PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).
+
+Native isolation: tests/mods/test_script_process.py (mod-scripting.md).

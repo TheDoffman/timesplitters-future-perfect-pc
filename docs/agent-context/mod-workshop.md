@@ -243,3 +243,6 @@ Creator ZIPs use explicit Unix creator-platform metadata on every host. The SDK
 round trip exposed different Windows/Unix archive hashes from ZipInfo defaults
 despite identical payloads. Existing packages remain valid; new packs canonicalize
 this header along with the existing fixed timestamp/file mode.
+
+Native script process isolation is under construction; mod-scripting.md records
+its separate VM, production-process and game-integration acceptance boundaries.

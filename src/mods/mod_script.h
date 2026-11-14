@@ -23,6 +23,7 @@ typedef struct tsfp_script_command {
 typedef struct tsfp_script_result { uint32_t count; tsfp_script_command commands[TSFP_SCRIPT_COMMAND_MAX]; } tsfp_script_result;
 typedef struct tsfp_script_vm tsfp_script_vm;
 tsfp_script_vm *tsfp_script_create(uint32_t seed);
+int tsfp_script_set_seed(tsfp_script_vm *,uint32_t seed);
 int tsfp_script_load(tsfp_script_vm *,const char *,size_t);
 int tsfp_script_dispatch(tsfp_script_vm *,const tsfp_script_event *,tsfp_script_result *);
 const char *tsfp_script_error(const tsfp_script_vm *);

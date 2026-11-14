@@ -157,6 +157,10 @@ static int load_module(lua_State *L) {
     }
     vm->module=luaL_ref(L,LUA_REGISTRYINDEX);return 0;
 }
+int tsfp_script_set_seed(tsfp_script_vm *vm,uint32_t seed) {
+    if(!vm || vm->failed || vm->loaded)return 0;
+    vm->random=seed?seed:UINT32_C(0x6D2B79F5);return 1;
+}
 static int protected_call(tsfp_script_vm *vm,lua_CFunction function,uint32_t instructions_left) {
     int status;vm->remaining=instructions_left;vm->calls=0;lua_pushcfunction(vm->lua,function);status=lua_pcall(vm->lua,0,0,0);
     if(status!=LUA_OK){const char *error=lua_tostring(vm->lua,-1);fail(vm,error?error:"script failed");lua_settop(vm->lua,0);}

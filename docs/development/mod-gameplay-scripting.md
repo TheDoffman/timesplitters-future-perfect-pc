@@ -2,8 +2,8 @@
 
 The native worker now executes real Lua and an original First to Three mode with
 synthetic authoritative game events. This is not yet a playable mod release.
-The launcher still refuses Lua activation. OS confinement, an independent native
-game supervisor, verified game event/command adapters, multiplayer agreement,
+The launcher still refuses Lua activation. An asynchronous native game supervisor,
+verified game event/command adapters, multiplayer agreement,
 mod save namespaces and live game acceptance remain mandatory before activation.
 VM library restrictions alone are not a security boundary against a native engine
 bug. There is no public upload-to-game scripting claim from the tests below.
@@ -26,8 +26,9 @@ python tools/build/build-mod-worker.py --output build/mod-worker
 python -m pytest tests/mods/test_script_worker.py
 ```
 
-The standalone CMake target uses ISO C11 on Windows, macOS and Linux. All feature
-logic is shared; only the worker watchdog uses thin Windows/POSIX adapters.
+The standalone CMake targets use ISO C11 for the worker and C++17 for the trusted
+process adapter/diagnostic runner on Windows, macOS and Linux. Feature policy is
+shared; OS process creation, isolation, resource queries and pipes use thin adapters.
 Build concurrency is2. `--cmake` selects the repository-pinned CMake executable;
 `--sanitize` enables AddressSanitizer/UndefinedBehaviorSanitizer on Clang/GCC.
 Native CI installs the shared CMake pin before testing. No online source fetch
@@ -119,8 +120,9 @@ without stalling/crashing the game.
 It must create a confined process (Windows AppContainer/restricted handles/job,
 Mac Seatbelt, Linux no-new-privileges/seccomp/descriptor isolation) before executing
 uploaded source. File/network/child-process escape canaries must pass on each
-actual host. Those adapters/supervisor are pending; there is no unsandboxed public
-activation option in the launcher.
+actual host. Production OS adapters and a batch diagnostic supervisor are implemented below;
+actual Mac/Linux validation and the asynchronous game bridge remain pending.
+There is no unsandboxed public activation option in the launcher.
 
 ## Binary protocol1
 
@@ -164,7 +166,65 @@ pass; actual ASan/UBSan runs on Mac and Linux also pass. STATUS records exact
 source and evidence.
 
 Still required: real game hooks/command adapters (use verified source evidence,
-never guessed addresses), independently supervised OS confinement on all three
-hosts, game packaging, script profiles/launcher lifecycle, mod saves, multiplayer
+never guessed addresses), production process acceptance on Mac/Linux, asynchronous game supervision,
+Mac parent-death handling, native reply validation, game packaging, script profiles/launcher lifecycle, mod saves, multiplayer
 authority/hash checks, richer creator tools and actual custom-mode gameplay on
 Windows/Mac/Linux. The full mod-system acceptance matrix remains authoritative.
+
+## Native process boundary (in progress)
+
+`mod_process.hpp` supplies trusted-parent nonblocking pipes, process usage and
+owned-process termination. Windows uses a new capability-free LPAC identity and
+read-only staged executable/profile, no ordinary AppContainer package-group access,
+a one-process128MiB job attached while suspended, kill-on-job-close, dynamic-code
+and Win32k restrictions, private inherited stdio handles and a synthetic environment.
+The broker requires absolute local paths. Only owned temporary cache/profile objects
+are modified. The production worker verifies its token/job/mitigation before input;
+it refuses direct unconfined launch. LPAC is established by the documented creation
+attribute: TokenIsLessPrivilegedAppContainer is not a supported user-mode query on
+the tested Windows build. The positive package-group file canary checks the practical
+difference. A fixed installed worker image must be verified by the future game
+bridge; uploaded manifests must never choose an executable path.
+
+POSIX forks with empty sensitive environment, closes inherited descriptors and uses
+private nonblocking pipes/process groups. Linux sets parent-death SIGKILL before
+exec. The trusted worker precreates its VM/watchdog, then sets no-new-privileges,
+non-dumpability,128MiB address-space/core/descriptor limits and a seccomp filter
+synchronized over all threads. Only stdin reads/stdout-stderr writes and bounded
+memory/timing/thread-wait/exit primitives remain; executable mappings, files,
+network, child creation, exec and tracing are denied. The initial adapter supports
+Linux x86_64 only; other architectures fail closed. Mac applies a deny-default
+Seatbelt policy before untrusted source, with metadata reads but no file contents,
+network or child creation. Mac still needs robust parent-death supervision.
+Actual Mac/Linux process tests are pending at this checkpoint.
+
+`tsfp-mod-runner <trusted-worker-image> <owned-cache-root>` is a developer batch
+supervisor, **not** the final game session bridge. It accepts at most4MiB stdin,
+independently caps wall2s/CPU1.5s/resident128MiB/stdout1MiB/stderr4096, kills/reaps on
+failure, and withholds output until the child exits. It never interprets or applies
+game commands. These whole-batch limits cannot be used for a long-running match;
+the future asynchronous game bridge must budget each request and validate entire
+replies before applying transactions without blocking the render/simulation thread.
+Mac normal shutdown kills/reaps its process group; abrupt parent-death behavior
+remains an explicit gap. Release packaging and worker-image verification remain
+unwired. `BUILD-worker.json` schema2 binds both production worker and runner hashes
+and records test/sanitizer build modes.
+
+`tests/mods/test_script_process.py` builds production binaries and a separate
+native escape/resource canary. Its unconfined controls prove the same operations
+work before checking that confinement denies them. Windows7 checks pass: file
+read/write (including an ALL_APPLICATION_PACKAGES read grant), loopback connection,
+child spawn, parent process access, inherited file handle/environment secret,
+private registry read, executable ACL rewrite, native infinite loop, output floods,
+allocation bound, and real First to Three protocol round trip. Cache sentinels
+survive and owned temporary files are removed. The native hang has no VM watchdog,
+so it tests the independent parent. Windows strict handle policy can raise an
+invalid-handle exception; the test canary catches only STATUS_INVALID_HANDLE.
+
+`TSFP_MOD_TESTING=ON` additionally builds `tsfp-mod-vm-test`, which skips OS sealing
+at compile time for focused VM/fuzzer/ASan checks, and `tsfp-mod-process-probe`,
+which includes a baseline-control mode. Neither test executable may be shipped.
+Production has no bypass argument, environment variable or protocol message.
+The normal builder leaves testing OFF. Existing56 VM checks execute the test VM;
+production-process checks are separate and never run a sanitized binary whose
+instrumentation requires incompatible executable mappings/address-space limits.

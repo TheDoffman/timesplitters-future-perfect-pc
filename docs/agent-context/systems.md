@@ -908,3 +908,6 @@ time on model refresh, reset queued output, then normalize in the new region. Pa
 stay intact until resume; a running seek beyond the loop end resumes at start.
 `audio_buffer_regions.c` checks production-decoded PCM, fractional clocks/refusal,
 tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.
+
+Mod process adapters/worker self-sealing are standalone; see mod-scripting.md.
+No guest hooks or launcher script activation changed.

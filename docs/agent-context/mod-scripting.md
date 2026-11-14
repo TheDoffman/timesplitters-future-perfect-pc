@@ -15,8 +15,12 @@ score/end/message commands and returns copied player snapshots, no guest memory.
 Module/callback limits200000/100000 instructions,16MiB charged Lua heap,64 calls/
 commands,32 players,512-byte messages. Protected calls and terminal transactional
 faults discard partial commands. A500ms worker watchdog also bounds C functions.
-OS confinement and independent game-parent deadlines/RSS/pipe/lifetime supervision
-are still missing; do not describe library restrictions as a complete sandbox.
+Native Process adapters and a bounded batch diagnostic supervisor now exist;
+Windows7 production-process tests pass, including positive controls and denied
+file/network/spawn/parent/registry/handle/ACL/environment canaries, native hangs,
+output/diagnostic floods, allocation bounds and the real original mode. Mac/Linux
+validation is pending. See the development guide for OS policy/limits. This is
+not yet an asynchronous game-parent bridge or a complete playable sandbox.
 
 Pristine Lua5.5.1 is under vendor/lua-5.5.1 with MIT notice LICENSES/Lua.txt.
 config/mods/lua-source.json pins official archive/original source/four upstream

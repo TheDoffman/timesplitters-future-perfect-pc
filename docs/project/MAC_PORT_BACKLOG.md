@@ -10597,3 +10597,10 @@ checks pass (one WSL non-root ceremony skip). Compiler warning checks stay enabl
 GCC guard indentation was corrected. This does not activate scripts or change
 gameplay yet. Separate OS-confined worker supervision, real guest API hooks,
 multiplayer/save separation and live custom-mode game acceptance are required. See STATUS and mod-gameplay-scripting.md; full goal remains incomplete.
+
+Native script process isolation (base b4043614): **Awaiting validation** on Mac/Linux.
+Shared Process interface, bounded batch diagnostic runner and worker self-sealing
+are implemented with Windows AppContainer/job, Mac Seatbelt and Linux seccomp
+adapters. Windows7 native process checks/56 VM checks pass. Mac/Linux production
+escape/resource tests still required; Mac parent-death handling remains pending.
+No game script activation is enabled. See STATUS/mod-gameplay-scripting.md.

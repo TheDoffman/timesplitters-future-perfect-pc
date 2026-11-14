@@ -25,8 +25,9 @@ def worker(tmp_path_factory):
     local = Path(sys.executable).with_name('cmake.exe' if os.name == 'nt' else 'cmake')
     cmake = str(local) if local.is_file() else shutil.which('cmake')
     assert cmake, 'Install the repository-pinned CMake to validate the native mod worker'
-    return builder.build(tmp_path_factory.mktemp('mod-worker'), cmake,
-                         sanitize=os.environ.get('TSFP_MOD_SANITIZE') == '1')
+    production = builder.build(tmp_path_factory.mktemp('mod-worker'), cmake,
+                               sanitize=os.environ.get('TSFP_MOD_SANITIZE') == '1',testing=True)
+    return production.with_name('tsfp-mod-vm-test.exe' if os.name == 'nt' else 'tsfp-mod-vm-test')
 
 
 def run(worker, source, events=(), timeout=3):

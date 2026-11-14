@@ -43754,3 +43754,32 @@ process/RSS/pipe supervision, Windows/Mac/Linux OS confinement and escape probes
 verified real guest hooks/commands, multiplayer/save contracts and game packaging
 remain required. Launcher script activation is still refused. No original game
 code/generated output or personal data was modified. See mod-gameplay-scripting.md.
+
+# Native script process confinement (base b4043614; in progress)
+
+A C++17 Process interface supplies nonblocking private pipes and resource usage;
+a separate batch tsfp-mod-runner bounds2s wall/1.5s CPU/128MiB resident memory,
+4MiB input/1MiB output/4096 diagnostic bytes. It kills/reaps its owned worker on
+failure and never applies game commands. Windows stages the trusted worker in
+an owned GUID cache, with a temporary capability-free low-privilege AppContainer,
+explicit read-only package ACLs, restricted inherited handles, synthetic environment,
+dynamic-code/Win32k mitigations and a kill-on-close one-process128MiB job assigned
+before resume. The production worker checks its token/job/mitigation before any
+protocol input. The documented LPAC creation attribute is required; unsupported
+GetTokenInformation class46 is not a detection API. Linux no-new-privileges/TSYNC
+seccomp and Mac deny-default Seatbelt adapters await actual host checks.
+
+Windows7 production-process tests and56 VM tests pass. Native escape canaries
+have successful unconfined controls, including an explicit ALL_APPLICATION_PACKAGES
+file grant denied by LPAC. Files, loopback network, process spawning, parent access,
+inherited secret handles/environment, private registry and own executable ACL
+writes are denied. Native hangs without the Lua watchdog and stdout/stderr floods
+are stopped by the parent; native allocation is capped. The original First to Three
+mode executes through the confined production worker. Invalid-handle denial can
+raise STATUS_INVALID_HANDLE on this host; the test canary catches only that code.
+No other exceptions are hidden. Temporary cache profiles are removed and existing
+cache sentinel bytes preserved. VM tests use an explicitly separate test executable;
+production has no runtime isolation-bypass switch. These are Windows component
+checks, not live game integration or cross-host/public acceptance. Mac/Linux checks,
+asynchronous persistent game supervision, native reply validation, Mac parent-death
+handling, verified guest adapters and full public-system acceptance remain pending.

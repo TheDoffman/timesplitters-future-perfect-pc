@@ -14,6 +14,7 @@
     "tests/mods/test_catalog_trust.py",
     "tests/mods/test_native_trust_fixtures.py",
     "tests/mods/test_script_worker.py",
+    "tests/mods/test_script_process.py",
     "tests/textures/test_texture_preference.py",
     "tests/textures/test_texture_runtime.py",
     "tests/textures/texture_pack_tools.py",
