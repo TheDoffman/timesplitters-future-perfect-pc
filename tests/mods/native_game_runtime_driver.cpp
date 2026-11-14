@@ -68,6 +68,8 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
     const char label[]="100% ready \xce\xa9";
     pc_mod_runtime_message(label,sizeof(label)-1);CHECK(pc_mod_runtime_overlay(overlay,sizeof overlay) && std::strstr(overlay,label));
     pc_mod_runtime_message("bad\nmessage",11);CHECK(pc_mod_runtime_overlay(overlay,sizeof overlay) && std::strstr(overlay,label));
+    std::string long_text(100,'x');pc_mod_runtime_message(long_text.data(),long_text.size());
+    CHECK(pc_mod_runtime_overlay(overlay,sizeof overlay) && std::strlen(overlay)<64 && std::strstr(overlay,"..."));
     if(mode=="repeat"){CHECK(!pc_mod_runtime_prepare(cache.c_str()) && pc_mod_runtime_faulted());std::puts("PASS repeat");return 0;}
     if(mode=="tamper")std::ofstream(std::filesystem::u8path(lease->root())/".tsfp-mod-saves")<<"changed marker";
     TsfpModWorld world{};world.epoch=1;world.authoritative=world.offline=1;world.tick_rate=60;world.player_count=1;

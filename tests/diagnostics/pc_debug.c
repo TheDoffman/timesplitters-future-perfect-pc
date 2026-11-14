@@ -18,6 +18,10 @@ static int overlay_fixture(char *text,size_t bytes)
 {
     snprintf(text,bytes,"Fixture mode 100%%");return 1;
 }
+static int long_overlay_fixture(char *text,size_t bytes)
+{
+    snprintf(text,bytes,"Fixture mode message requiring the complete line");return 1;
+}
 
 static BOOL CALLBACK drive_dialog(HWND window, LPARAM unused)
 {
@@ -231,6 +235,10 @@ int main(int argc, char **argv)
     CHECK(!readback.show_latency && !pc_debug_overlay(overlay,sizeof overlay,"auto"));
     pc_debug_set_overlay_extension(overlay_fixture);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && !strcmp(overlay,"Fixture mode 100%"));
+    {PcDebugOptions active=readback;active.show_fps=1;pc_debug_set(&active);}
+    pc_debug_set_overlay_extension(long_overlay_fixture);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && !strcmp(overlay,"Fixture mode message requiring the complete line"));
+    pc_debug_set(&readback);
     pc_debug_set_overlay_extension(NULL);
     CHECK(!pc_debug_overlay(overlay,sizeof overlay,"auto") && !overlay[0]);
     /* A nested save-error dialog must fail or finish the test, not keep the

@@ -222,8 +222,11 @@ int pc_debug_overlay(char *text,size_t bytes,const char *cap)
     char mod[128]={0};
     if(extension && extension(mod,sizeof mod)) {
         mod[sizeof(mod)-1]=0;
-        char previous[320];snprintf(previous,sizeof previous,"%s",shown?text:"");
-        snprintf(text,bytes,"%s%s%s",mod,shown?" | ":"",previous);return 1;
+        /* Keep status/recovery text readable in the supported640px window.
+           Longer extension text owns the line instead of crowding statistics. */
+        int combine=shown && strlen(mod)<=24;
+        char previous[320];snprintf(previous,sizeof previous,"%s",combine?text:"");
+        snprintf(text,bytes,"%s%s%s",mod,combine?" | ":"",previous);return 1;
     }
     return shown;
 }

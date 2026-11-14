@@ -936,6 +936,7 @@ recovery remains pending. See mod-scripting.md/STATUS for exact host counts.
 
 Script startup locks networking offline, binds the title model and registers a
 native HUD extension; contracts: mod-scripting.md#production-game-factory.
+Long extension text owns the line; mod previews fit32 UTF8 bytes plus ellipsis.
 POSIX maps WSAENETDOWN to the shared Xbox ABI value10050 for offline refusal.
 The title adapter admits observed US Deathmatch rule3; actual scenes exposed the
 earlier synthetic rule0 mismatch. See mod-scripting.md for acceptance limits.

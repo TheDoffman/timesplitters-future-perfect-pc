@@ -130,7 +130,7 @@ extern "C" int pc_mod_runtime_overlay(char *text,size_t bytes) {
         std::string shown;
         if(failed.load())shown="Mod stopped: launch again or play without mods";
         else if(!hud_message.empty() && std::chrono::steady_clock::now()<message_until) {
-            size_t n=std::min(hud_message.size(),size_t(96));
+            size_t n=std::min(hud_message.size(),size_t(32));
             while(n<hud_message.size() && n && ((unsigned char)hud_message[n]&0xc0)==0x80)--n;
             shown="Custom mode | "+hud_message.substr(0,n)+(n<hud_message.size()?"...":"");
         }else shown=active_match.load()?"Custom mode | Offline":"Script mode | Offline Arcade only";

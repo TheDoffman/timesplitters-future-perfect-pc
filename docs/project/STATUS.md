@@ -1,3 +1,15 @@
+Native HUD registration source980e90b1: all three native game/build/platform checks
+pass. Windows factory/diagnostic51 pass/2 skips; Mac factory12 pass/1 skip; Linux13
+pass. The actual Windows window capture now shows Offline Arcade status and the
+script's match-finished message; score4/rank1, stage8 results, quit0 and ordinary
+save hashes pass again. GameSHAb4420d5f56a2721bd3baae00954b33fd9debbb2816fd60a06fe1bd39502544de.
+A long combined status/statistics line crowds640px output. Native extension text
+longer than24 bytes now owns the line; script previews use32 UTF8 bytes plus
+ellipsis. Windows factory/diagnostic51 pass/2 skips after this layout adjustment;
+new native build/render checks pending. Window-thread quit cache cleanup, broader
+native visual/fault checks, public launcher activation/hosting/trust and full
+release acceptance remain required. Goal remains active.
+
 Three-host actual gameplay (feature/mod-platform): Windows build eb6047e8 now
 runs tick score4/End/results and the unchanged First-to-Three script. WinnerID3
 score3/rank1 matches three raw accepted kills;45 results samples, exit0, protected

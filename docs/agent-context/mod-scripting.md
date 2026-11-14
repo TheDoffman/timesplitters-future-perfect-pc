@@ -389,3 +389,7 @@ There is no Lua callback on the renderer. A separate try-locked HUD state and
 atomic active-match flag keep rendering off the simulation facade mutex. Tests
 check registration, ordinary startup and extension visibility/removal with stats
 off. Windows factory/diagnostic51 pass/2 skips; rendered follow-up pending.
+The actual Windows capture now shows offline status and script messages, plus
+scripted score4/End/results/quit0. To fit the supported640px window, longer native
+extension text owns the line and mod-message previews use32 UTF8 bytes with an
+ellipsis. Short status still combines with user statistics. Native follow-up pending.
