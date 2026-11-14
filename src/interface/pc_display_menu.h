@@ -1,6 +1,9 @@
 #ifndef TSFP_PC_DISPLAY_MENU_H
 #define TSFP_PC_DISPLAY_MENU_H
 #include <stdint.h>
+void pc_visibility_begin(void (*original)(void));
+void pc_visibility_end(void (*original)(void));
+int pc_visibility_result(uint32_t index,uint32_t result_va,uint32_t stamp_va);
 #define PC_DISPLAY_MENU_CALLBACK 0x00012008u
 void pc_display_menu_finish(void (*original)(void));
 void pc_display_menu_button(void (*original)(void));

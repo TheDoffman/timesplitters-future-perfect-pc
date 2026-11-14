@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "7600fa8e0bbf07add69426857ba5896278fb63c84ed58896d724eb3a1fd6d477",
+  "loaderSha256": "28ed57b7324ae8084e0113e80a0bd54c51da7b87b1cfae7ae2a12c44075bd595",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3871,6 +3871,23 @@
       "path": "patches/graphics/interface/2731-pause-glass-placement.patch",
       "sha256": "399b3d9b76c017d2f0f5465f62562b076c5a127fecb030e1fe7d6acab232a953",
       "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "3001-host-visibility-queries.patch",
+      "path": "patches/graphics/rendering/3001-host-visibility-queries.patch",
+      "sha256": "2c9cdabd041089fca7dafd68840c9487f7212544a5a34261cb9c14fce69a6427",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_xbox.h",
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_backend.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c",
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_record.c",
         "titles/futureperfect/src/recomp_manual.c"
       ]
     }

@@ -125,6 +125,8 @@ static int guest_writable(uint32_t address,size_t bytes)
     return pc_display_writable(&region,g_xbox_mem_offset,address,bytes);
 }
 
+#include "graphics/visibility_guest.inc"
+
 /* Context +0 is the global/network slot; +4 is local ownership (-1 remote). */
 static unsigned controls_context_port(uint32_t player)
 {

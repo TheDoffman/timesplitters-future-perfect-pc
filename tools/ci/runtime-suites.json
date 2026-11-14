@@ -242,6 +242,7 @@
     "tests/graphics/test_upload_rows.py",
     "tests/gameplay/test_frame_replay.py",
     "tests/graphics/test_graphics_options.py",
+    "tests/graphics/test_visibility_queries.py",
     "tests/graphics/test_graphics_resolve.py",
     "tests/graphics/test_graphics_spirv.py",
     "tests/graphics/test_native_hud.py",

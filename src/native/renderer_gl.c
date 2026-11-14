@@ -661,7 +661,8 @@ static IDirect3DDevice8 g_device;   /* singleton, vtable set at init */
 static HRESULT __stdcall dev_QueryInterface(IDirect3DDevice8 *s, const IID *iid, void **pp)
 { NATIVE_GL_SCOPE; (void)s;(void)iid;(void)pp; return D3DERR_INVALIDCALL; }
 static ULONG __stdcall dev_AddRef(IDirect3DDevice8 *s) { NATIVE_GL_SCOPE; (void)s; return 1; }
-static ULONG __stdcall dev_Release(IDirect3DDevice8 *s) { NATIVE_GL_SCOPE; (void)s; return 0; }
+#include "gl_visibility.inc"
+static ULONG __stdcall dev_Release(IDirect3DDevice8 *s) { NATIVE_GL_SCOPE; (void)s; native_visibility_reset(); return 0; }
 
 static HRESULT __stdcall dev_GetDirect3D(IDirect3DDevice8 *s, IDirect3D8 **pp)
 { NATIVE_GL_SCOPE; (void)s; (void)pp; return D3D_OK; }

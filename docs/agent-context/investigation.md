@@ -1,5 +1,5 @@
-Pause glass: index2730/2731 last, after map/MSAA copy extensions; exact-order
-fixture now checks102 tail entries. See [capture evidence](pause-glass.md).
+Pause glass: index2730/2731 follows map/MSAA copy extensions; visibility3001
+is last; optional config3000 was removed. Exact-order fixture checks103 tail entries. See [capture evidence](pause-glass.md).
 
 Controller response investigations: [raw-input and original-decoder tests](controller-deadzones.md); distinguish host deadzone from the guest threshold. Patch2950 follows2940 in the maintained map.
 
