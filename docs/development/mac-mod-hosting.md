@@ -41,6 +41,27 @@ workshop while the installed game remains available.
 
 ## Prepare the Mac
 
+Source is synchronized through Git into a separate `.nosync` task worktree. The
+native Mac launcher build/sign/package/tests passed at f6770b2b, as did package/
+reader checks and a real Caddy loopback/expiry test. These results do not establish
+public HTTPS access or live modded gameplay. ClamAV is still absent and the
+existing Tailscale wrapper points to a missing application.
+
+On this FileProvider-managed Desktop, the generated app acquired FinderInfo and
+code signing failed despite the builder's existing metadata cleanup. The same
+source passed with generated outputs under Library/Caches:
+
+```sh
+python3 tools/build/build-mac-launcher.py \
+  --dotnet /path/to/the/pinned/dotnet \
+  --output "$HOME/Library/Caches/tsfp-mod-platform/launcher" --test --package
+```
+
+Use the SDK version pinned in `config/build/mac-launcher-sdk.json`. Keep source
+on its task branch and generated app/package output outside cloud-managed paths.
+Apple documents the
+[FinderInfo/resource-fork signing restriction](https://developer.apple.com/library/archive/qa/qa1940/_index.html).
+
 Use a dedicated non-administrator service account and an explicit workshop
 storage location. Keep personal files, game assets, credentials, saves and
 quarantine outside the public directory. Do not expose the source checkout or

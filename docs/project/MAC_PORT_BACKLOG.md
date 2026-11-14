@@ -10524,3 +10524,12 @@ admission. Windows full launcher suite passes (59 UI groups,12 workshop groups);
 agreement verified; Caddy/Python present, ClamAV absent and Tailscale is a broken
 missing-app wrapper. Existing Mac work is preserved. Native execution, actual
 modded gameplay and public hosting remain pending; use a separate task worktree.
+Mod workshop native launcher validation (source f6770b2b): VERIFIED FOR THESE
+CONTRACTS on Apple Silicon macOS27.0.1. Separate .nosync source worktree preserves
+the primary branch and cloud-conflict files. Native build/sign/package/tests pass
+(60 shared UI groups including12 workshop groups);186 Python/C checks pass.
+Actual Caddy loopback catalog, private/write-route rejection, expiry and listener
+shutdown pass. Generated app output must use Library/Caches here: Desktop output
+acquired FinderInfo/FileProvider attributes and codesign refused it despite the
+existing cleanup. Existing pinned dotnet8.0.426 reused. This does not verify
+actual game mods, Lua, public uploads/TLS hosting, Linux, or live antivirus.

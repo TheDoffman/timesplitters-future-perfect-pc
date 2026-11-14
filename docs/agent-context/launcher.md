@@ -869,5 +869,7 @@ retaining the existing one-argument contract. Its normal path verifies the activ
 overlay before passing TSFP_MOD_TEXTURE_DIR. Maps/audio/scripts cannot be enabled.
 Internet origins require HTTPS; redirects/external URLs fail closed; downloads
 recheck fresh scans. 12 workshop groups run with --workshop and shared UI suites.
-Windows full checks pass; native Mac/Linux acceptance, live modded gameplay and
-public Mac deployment remain pending. See [Mac setup](../development/mac-mod-hosting.md).
+A Windows full run passed; the final focused checks pass while a later full run
+hit the existing running-game guard. Native Mac build/sign/package and60 UI
+groups pass. Linux, live modded gameplay and public Mac deployment remain pending.
+See [Mac setup](../development/mac-mod-hosting.md).

@@ -27,8 +27,8 @@ legacy GL share it. Enhanced/Classic gating, originals and saves stay intact.
 Actual modded gameplay requires a new game build and scene verification.
 
 Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
-launcher-tests.exe --workshop (12 groups). Windows checks pass. Native Mac/Linux
-execution, live ClamAV, public connectivity, full asset formats and gameplay
+launcher-tests.exe --workshop (12 groups). Windows and native Mac checks pass.
+Linux execution, live ClamAV, public connectivity, full asset formats and gameplay
 scripting remain acceptance work, not capabilities implied by these tests.
 <!-- packet:end -->
 
@@ -54,7 +54,7 @@ Installations are separate immutable version directories. Texture-only mods can
 be enabled in the native library; Lua, maps and audio remain unavailable for
 activation. Public authenticated uploads, signed catalogs and distributed
 revocation enforcement are incomplete. Shared Python has no OS adapter; native
-Mac/Linux execution still requires actual host validation.
+Mac shared UI/install contracts now pass; Linux execution still needs validation.
 
 `mod_publication.py` exports approved/fresh content to a new separate static
 snapshot (4MiB catalog, 1,000 releases, 512MiB package cap). Preflight rejects
@@ -79,7 +79,7 @@ latest full Windows launcher command passes.
 network or gameplay. WPF/Avalonia navigation uses ModsNav/ModsHost. Setup and
 the no-purchased-domain Funnel trial: [Mac hosting](../development/mac-mod-hosting.md).
 Mac SSH is now verified; its existing working files were preserved. Public
-deployment, Tailscale bandwidth, native host acceptance and live ClamAV remain
+deployment, Tailscale bandwidth, game host acceptance and live ClamAV remain
 unverified.
 
 ## Texture library and runtime overlay
@@ -126,3 +126,18 @@ match Windows. Its active checkout has unrelated STATUS edits and many untracked
 cloud-conflict copies: preserve them and use a separate .nosync worktree. Caddy
 and Python are present; Tailscale's command is a stale missing-app wrapper and
 ClamAV is absent. No public hosting has been enabled.
+
+## Mac validation checkpoint f6770b2b
+
+Source was pushed and checked out through Git in a separate .nosync worktree;
+the primary Mac branch/edits were left intact. Native launcher build/sign/package/
+tests passed using its existing pinned dotnet8.0.426 SDK, with60 shared UI groups
+including the12 workshop groups.186 Python/C workshop/layout/CI checks passed
+under the host's Python3.12.12 environment. Real Caddy2.11.2 loopback serving,
+private/write-route rejection, expiry and listener shutdown were exercised.
+
+Desktop output acquired FinderInfo/FileProvider metadata and failed signing
+despite the builder's existing xattr cleanup. The same code passed with output
+under ~/Library/Caches/tsfp-mod-platform/launcher. Keep generated Mac bundles out
+of cloud-managed folders; no change to signing policy/keys was needed. This
+verifies native launcher/service components, not actual game mods or public TLS.

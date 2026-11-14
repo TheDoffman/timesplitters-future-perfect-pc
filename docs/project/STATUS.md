@@ -43532,3 +43532,29 @@ Full goal remains incomplete. Track all original requirements in
 [the acceptance matrix](mod-workshop-acceptance.md), including real game asset
 types, scripting isolation/API, accounts/uploads/moderation, signed trust,
 production scanning/operations, multiplayer, three-host and public release checks.
+# Native Mac workshop validation (2026-11-14)
+
+Source checkpoint f6770b2b is committed/pushed on feature/mod-platform and was
+checked out on the Mac through Git in a separate .nosync worktree. Primary Mac
+branch and unrelated edits/cloud-conflict files were preserved. AGENTS hashes
+match. No merge or public release was performed.
+
+Apple Silicon/macOS27.0.1: the native launcher build/sign/package/test command
+passed using the existing pinned dotnet8.0.426 SDK and locked Avalonia11.3.22
+dependencies;60 shared UI groups passed, including12 workshop groups.186 Python/C
+workshop/layout/CI tests passed under host-local Python3.12.12. Actual GUI/native
+client and package contracts are verified; actual modded gameplay remains unrun.
+
+Generated output under the FileProvider-managed Desktop acquired FinderInfo and
+code signing failed despite the builder's existing xattr cleanup. Moving only
+generated output to ~/Library/Caches/tsfp-mod-platform/launcher allowed the same
+source to build, seal and pass checks. No signing keys/policy were changed.
+Native log copied into ignored logs/mac-mod-native-validation.txt.
+
+Real Caddy2.11.2 was exercised on Mac loopback against a temporary empty approved
+snapshot: catalog200/JSON/nosniff, POST405, private/invalid package paths404,
+snapshot expiry exit2 and closed listener all passed. The test completed and
+left no serving process. Log copied to logs/mac-mod-caddy-live-validation.txt.
+No internet tunnel/public endpoint exists yet. ClamAV remains absent; Tailscale
+still points to a missing app. The full goal and remaining requirements stay
+open in [the acceptance matrix](mod-workshop-acceptance.md).
