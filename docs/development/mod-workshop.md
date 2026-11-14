@@ -31,8 +31,9 @@ with reader fallback and the existing Enhanced/Classic switch. Windows profile-
 menu visual loading/update/rollback/removal is verified; Story gameplay and
 other game hosts remain unverified. Maps, audio and Lua can be installed but cannot be enabled
 yet. Their formats/APIs remain drafts. This is not a general game-content loader.
-No public infrastructure, accounts, signing keys, game hooks or production
-sandbox have been deployed by this work. The selected host is the owner's Mac
+Shared game script hooks and an OS-sealed supervisor now have native component
+checks, with bootstrap/save/helper policy still unwired. No public infrastructure,
+production signing keys or usable scripting release has been deployed. The selected host is the owner's Mac
 mini, over the internet without a purchased domain. See the
 [Mac hosting setup](mac-mod-hosting.md) for the approved static-download alpha,
 public address and launcher connection. The local Python preview remains local.

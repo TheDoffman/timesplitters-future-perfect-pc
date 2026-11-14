@@ -1,10 +1,11 @@
 # Experimental gameplay script worker
 
-The native worker now executes real Lua and an original First to Three mode with
-synthetic authoritative game events. This is not yet a playable mod release.
-The launcher still refuses Lua activation. An asynchronous native game supervisor,
-verified game event/command adapters, multiplayer agreement,
-mod save namespaces and live game acceptance remain mandatory before activation.
+The native worker executes real Lua and an original First to Three mode through
+synthetic matches and a local fixture that lifts original score/rank/end routines.
+The shared game now links the asynchronous parent and title adapter, with NULL
+default binding. This is not yet a playable mod release; launcher Lua activation
+remains unavailable. Verified bootstrap/helper packaging, save namespaces,
+multiplayer agreement and live custom-mode acceptance remain mandatory.
 VM library restrictions alone are not a security boundary against a native engine
 bug. There is no public upload-to-game scripting claim from the tests below.
 

@@ -42,6 +42,9 @@ launcher activation and actual custom-mode gameplay remain pending. See [worker]
 The local-only original score/rank/end fixture now passes on Windows alongside
 the18 bridge checks; updated Unix sanitizer checks remain pending. Non-team
 snapshots report API team0. This does not enable gameplay scripts in the launcher.
+The shared game parent now builds on Windows and native Mac. Mac platform tests,
+an isolated player-menu boot and a rendered Story intro pass their named checks;
+custom-mode play remains unverified. Linux native build is still in progress.
 <!-- packet:end -->
 
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,

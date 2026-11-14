@@ -10717,3 +10717,11 @@ sparse-disk cleanup pass with verified read-only SDK reuse. Live vanilla scenes
 and custom-mode activation remain unverified. Source runners now take --sdk-root
 for bounded scene checks; Linux package acceptance rejects reusing a checkout SDK.
 Windows97/9 skips runner/build/dependency checks pass; native reruns pending.
+
+Native mod-parent build/boot: **Verified for named Windows/Mac checks**. Windows
+full weighted build/regressions pass; asset-complete content-identity rebuild
+also passes. Earlier scene failure was missing task assets, now reused through
+owned junctions; updated scene check pending. Mac platform self-tests pass, with
+reviewed1-player menu and Story intro captures at1500/6900 guest presents and no
+shader/native/Vulkan validation failures. Active Story/custom-mode play is not
+established. Linux Clang build/local input staging remain under validation.

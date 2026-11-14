@@ -2,9 +2,10 @@
 
 Authoritative source: src/mods/mod_script.c/.h (Lua API), mod_worker.c (wire),
 mod_watchdog.c/.h, mod_seal.c/.h, mod_process.hpp + Windows/POSIX adapters,
-mod_guardian_mac.c and mod_session.cpp/.hpp. Build with the shared pinned-CMake
-builder tools/build/build-mod-worker.py. VM C11; native parent C++17. The game
-is not connected and launcher script activation remains refused.
+mod_guardian_mac.c, mod_session.cpp/.hpp, mod_match.cpp/.h and pc_mod_guest.inc.
+Build the worker with tools/build/build-mod-worker.py. VM C11; parent C++17.
+The shared game build links the match/title bridge with NULL default binding;
+verified bootstrap, save separation and launcher script activation remain unavailable.
 
 [Full contracts and evidence](../development/mod-gameplay-scripting.md).
 API1 provides on_start/on_tick/on_player_death/on_stop, copied32-player snapshots,
@@ -133,15 +134,16 @@ committed scores; raw kills/deaths remain original. Patch2710 wraps641C0/64810,
 `mods/game.cmake` links only the C++ parent/OS adapter into the game, never Lua.
 NULL binding preserves stock behavior. There is no file/environment activation
 entry point; the future trusted bootstrap must own binding and worker lifetime.
-The18 Windows controlled-world/native bridge fixtures use real isolated Lua but
-mock original title functions. They do not establish actual gameplay or final
+The18 controlled-world/native bridge fixtures use real isolated Lua but
+mock original title functions. They pass Windows/Mac/Linux, including Unix host
+sanitizers. They do not establish actual gameplay or final
 fault UX; messages still need a shared HUD adapter. Registered native route:
-`tests/mods/test_mod_match.py`. Cross-host integration checks remain pending.
+`tests/mods/test_mod_match.py`. Full game/play acceptance remains separate.
 
 Sourceb8504672 ordinary bridge/Session/Process checks pass Windows83/one skip,
 Mac83/one skip and Linux82/two skips. Host sanitizers caught an unaligned32-bit
 read in the fixture's16-bit raw-stat assertion; the assertion now reads its two
-bytes. The first updated sanitizer reruns remain pending. Production was unchanged.
+bytes; corrected sanitizer checks pass as recorded below. Production was unchanged.
 `test_original_mod_scores.py` locally lifts only pinned US score/rank/end routines
 into a disposable fixture linked to the real isolated parent. Generated/private
 instructions remain local. Missing private XBE skips; a wrong hash fails. Stock

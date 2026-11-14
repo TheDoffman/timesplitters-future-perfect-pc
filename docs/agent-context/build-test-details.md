@@ -30,6 +30,12 @@ or inherited CC/CXX. Its symbol-scanner setup remains independent.
 Bounded Mac/Linux source runners also accept `--sdk-root` with the same receipt
 verification. Linux package relocation rejects combining it with `--package-root`;
 package acceptance must continue to find all libraries without a checkout SDK.
+The Windows native scene observer snapshots each capture's lstat once and
+ignores only FileNotFound during enumeration/deletion: the runtime rotates those
+owned files concurrently. Links/nonregular files and other errors still fail;
+other tags remain untouched. The native timing test simulates both race windows.
+The Windows scene observer also refuses executable-only inputs without pak/xmv
+directories; a compiled game is not proof that playable data was provisioned.
 
 Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
 n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.

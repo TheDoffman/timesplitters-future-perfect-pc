@@ -553,6 +553,27 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     assert target.read_bytes()==b'keep'
 
 
+def test_capture_cleanup_tolerates_runtime_rotation(tmp_path,monkeypatch):
+    from native_refresh_game import recycle_captures
+    files=[tmp_path/f'native-60-frame_s{i:08}.bmp' for i in range(6)]
+    for i,path in enumerate(files):
+        path.write_bytes(b'owned capture');os.utime(path,ns=(1000000000+i,1000000000+i))
+    other=tmp_path/'other-frame000.bmp';other.write_bytes(b'preserve')
+    original_stat=Path.lstat;original_unlink=Path.unlink
+    def rotated_stat(path,*args,**kwargs):
+        if path==files[0]:
+            original_unlink(path);raise FileNotFoundError('Runtime already rotated capture')
+        return original_stat(path,*args,**kwargs)
+    def rotated_unlink(path,*args,**kwargs):
+        if path==files[1]:
+            original_unlink(path);raise FileNotFoundError('Runtime already rotated capture')
+        return original_unlink(path,*args,**kwargs)
+    monkeypatch.setattr(Path,'lstat',rotated_stat);monkeypatch.setattr(Path,'unlink',rotated_unlink)
+    recycle_captures(tmp_path,'native-60')
+    assert sorted(p.name for p in tmp_path.glob('native-60-*'))==[p.name for p in files[3:]]
+    assert other.read_bytes()==b'preserve'
+
+
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_analog_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d)]),
     ('native_interaction_hints.c', [(0x1405b0,0x14062c),(0x140630,0x1409be)]),

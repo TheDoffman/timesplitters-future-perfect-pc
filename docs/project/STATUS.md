@@ -44013,3 +44013,27 @@ scene acceptance is next. Bounded Mac/Linux source runners now accept the same
 verified --sdk-root; Linux package relocation explicitly refuses SDK reuse so
 packaged dependency acceptance stays independent. Windows runner/build/SDK checks
 pass97 with9 platform skips; native runner checks remain pending.
+
+Windows full game build with weighted source424d0db9 succeeds, including native
+parent C++ link, all scripted build regressions and crash-symbol matching. The
+ordinary units now number254 with at most1MiB emitted bodies (a single larger
+function remains indivisible). No optimization flags changed. The first isolated
+Windows scene attempt exposed a runtime capture-rotation race in the observer;
+its lstat/unlink handling now tolerates only missing owned captures and retains
+link/regular-file/containment checks. Two race/preservation tests pass.
+
+The completed Windows scene rerun rendered the original disc-error screen:
+this task had only the executable, not pak/xmv. Scene preflight now refuses that
+incomplete data. Owned junctions reuse the existing primary pak/xmv folders,
+and the subsequent full build/content identity/tests pass. Updated scene check
+is in progress; the failed run does not establish Story gameplay. Other checkout
+processes were preserved, including a separately running Launcher Controls game.
+
+Mac's30-second isolated boot shows the1-player menu and records1500 guest/host
+presents, zero native/shader/Vulkan validation failures, normal time-limit exit.
+A120-second synthetic Test Lab run reaches a rendered Story intro (reviewed
+Cortez capture), records6900 guest/host presents and zero such failures, and exits
+normally. It does not prove active Story movement or custom-mode play. The helper
+uses isolated configs/saves and recycles only owned sparse disks. Selected images
+and receipts stay ignored. Linux Clang rebuild is still compiling after successful
+local-staged generation; shared input/cache preservation check remains pending.

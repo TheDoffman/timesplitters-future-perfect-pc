@@ -24,6 +24,7 @@ import ctypes
 import hashlib
 import os
 import re
+import stat
 from pathlib import Path
 import subprocess
 import sys
@@ -62,12 +63,17 @@ def recycle_captures(run, tag):
     root=run.resolve(strict=True)
     pattern=re.compile(re.escape(tag)+r'-frame(?:[0-9]{3}|_s[0-9]{8,})\.bmp')
     files=[path for path in run.glob(tag+'-frame*.bmp') if pattern.fullmatch(path.name)]
+    entries=[]
     for path in files:
-        if path.is_symlink() or path.resolve().parent!=root:
+        try:metadata=path.lstat()
+        except FileNotFoundError:continue  # The runtime rotates these while running.
+        if stat.S_ISLNK(metadata.st_mode) or path.resolve().parent!=root:
             raise ValueError('Capture path escaped test root or is a link')
-    files.sort(key=lambda path:(path.stat().st_mtime_ns,path.name))
-    for path in files[:-3]:
-        path.unlink()
+        if not stat.S_ISREG(metadata.st_mode):raise ValueError('Capture is not a regular file')
+        entries.append((metadata.st_mtime_ns,path.name,path))
+    for _,_,path in sorted(entries)[:-3]:
+        try:path.unlink()
+        except FileNotFoundError:pass
 
 
 def native_present_checks(text):
@@ -188,6 +194,8 @@ def main():
         (ROOT/'tools/analysis/native_effect_trace.py').read_bytes()).hexdigest()
     if os.name != 'nt': parser.error('Windows only')
     assert hashlib.sha256((ROOT / 'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
+    if any(not (ROOT/'private/game'/name).is_dir() for name in ('pak','xmv')):
+        parser.error('Scene checks require complete game data (pak and xmv), not only the executable')
     run = ROOT / 'private/test-saves/high-refresh'
     env = prepare_run(ROOT, run)
     tag = ('native-' if args.native else '') + str(args.fps)
