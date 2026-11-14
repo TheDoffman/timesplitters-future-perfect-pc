@@ -10725,3 +10725,15 @@ owned junctions; updated scene check pending. Mac platform self-tests pass, with
 reviewed1-player menu and Story intro captures at1500/6900 guest presents and no
 shader/native/Vulkan validation failures. Active Story/custom-mode play is not
 established. Linux Clang build/local input staging remain under validation.
+
+Native mod-parent stock scenes: **Verified for named Windows/Mac/Linux checks**.
+Windows full build and120-second Story observer pass with equipped pistol/HUD.
+Mac arm64 build/platform checks and120-second post-skip Story visual capture
+pass with at least6900 guest/host presents and no native/shader/Vulkan errors.
+Linux Clang build/MMIO checks and120-second state-verified Story window pass
+on software Vulkan, at least5100 guest/host presents and no Vulkan errors;
+39.67 gameplay presents/s is a software/validation measurement, not hardware
+performance acceptance. Shared game inputs/caches are unchanged after staged
+generation. Sourcec5ed602d CI1399 aggregate passes. Workers remain unbound by
+default; helper/bootstrap/save/launcher/scripted-match/public release acceptance
+is still required. Exact hashes, receipts and limits are in STATUS.

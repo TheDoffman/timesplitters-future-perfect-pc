@@ -167,3 +167,10 @@ fixture checks unbound original raw-score/ranking before isolated custom-mode
 score/rank/End; final finish side effects, death and frame functions stay mocked.
 The title snapshot/runtime/Capstone5.0.9 are required for this local-only test.
 Full native builds and live gameplay are still separate pending acceptance.
+
+Game parent build/stock-scene milestone: Windows full build/120-second native60
+Story observer pass, Mac arm64 build/platform checks and reviewed post-skip
+Story gameplay capture pass, Linux Clang build/MMIO and software-Vulkan state-
+verified Story window pass. Sourcec5ed602d CI1399 aggregate passes. NULL mod binding
+is used throughout; these checks do not activate scripts or replace full custom-
+mode/save/helper/public acceptance. Exact hashes and limits are in STATUS.

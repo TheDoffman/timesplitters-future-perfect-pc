@@ -44037,3 +44037,41 @@ normally. It does not prove active Story movement or custom-mode play. The helpe
 uses isolated configs/saves and recycles only owned sparse disks. Selected images
 and receipts stay ignored. Linux Clang rebuild is still compiling after successful
 local-staged generation; shared input/cache preservation check remains pending.
+
+# Native mod-parent build and stock-scene acceptance (2026-11-14)
+
+Shared mod parent/title adapter now builds on Windows, native Mac arm64 and
+Linux/WSL x64. Windows full build and build regressions pass with weighted
+translation; final asset-complete binary SHA256806c4d07d2f520f9df183b3a8e429628bf65cda79fb95b42b7186e3aacfccd9d.
+The120-second isolated native60 observer passes Story/weapon/presentation checks,
+records139 gameplay samples and a reviewed pistol/HUD capture. Exit1 in its
+receipt is the runner's intentional termination, not an unexpected game crash.
+Earlier disc-error evidence came from executable-only task data and is superseded
+by the complete-data rerun; assets are reused through owned pak/xmv junctions.
+
+Mac build/platform self-tests pass (build sourcea3ecd7e1, unchanged game source
+throughc5ed602d). Binary SHA256c670dc7cb9960178cc877958fb646683ba73c1f834136e2a291b5662c95d5564.
+After synthetic Escape skips the intro, a120-second isolated run shows active
+Story pistol/HUD in the reviewed capture, records at least6900 guest/host
+presents, zero native/shader/Vulkan validation failures and normal bounded exit.
+This is visual scene acceptance, not a state/movement benchmark or full campaign.
+
+Linux Clang build and protected-MMIO test pass (receipt sourcec5ed602d). Binary
+SHA256410808ca16431698e5f34c9fe5ebaa172c7431a5ee1ed799c311901f44c6087d.
+The120-second isolated Test Lab run on software Vulkan/llvmpipe passes: scene2
+active from51.113s, at least5100 guest/host presents, no failed/interpolated
+presents or Vulkan validation errors, reviewed pistol/HUD capture and a
+state-verified2531-frame gameplay window. That software/validation window averages
+39.67 host presents/s; this does not establish physical Linux/Steam Deck performance.
+Shared executable and analysis/symbol-cache hashes AND mtimes match before/after
+local-staged generation/build. Owned sparse disks are cleaned after each run.
+
+Capture-rotation regression cases pass2 each on Windows/Mac/Linux. CI source
+c5ed602d run43618218415/1399 completes successfully, including aggregate PR
+validation and every selected runtime/launcher check. Sources are pushed and
+synchronized through Git; no main merge/public deployment occurred. All these
+game checks have NULL mod binding: they do not establish actual Lua custom-mode
+play. Verified helper packaging/bootstrap/save namespace/launcher lifecycle and
+full public workshop acceptance remain required. Real Tailscale application is
+still absent on the Mac at its standard path; only a wrapper is present. No
+public endpoint, production pins or signing-key ceremony has been provisioned.
