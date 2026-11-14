@@ -73,7 +73,8 @@ production-process checks requiring ordinary memory layouts.
 
 Source ac772502 full mod/CI suites pass Windows347/2 skips, Mac348/1 skip,
 Linux347/2 skips. Mac/Linux56 ASan/UBSan VM checks each pass. Source6457f1fe expanded
-production process tests pass Windows8, Mac7/1 Windows-only skip, Linux7/1 skip.
+production process tests pass Windows8, Mac7/1 Windows-only skip, Linux7/1 skip. Mac at c12b8541 adds a required
+missing-guardian refusal test:8 pass/1 skip, with no direct-spawn fallback.
 Actual denied native canaries include private file read/write, loopback connect,
 child spawning, parent access/signalling permission, inherited descriptor and
 secret environment; Windows also checks registry/executable ACL/profile writes.

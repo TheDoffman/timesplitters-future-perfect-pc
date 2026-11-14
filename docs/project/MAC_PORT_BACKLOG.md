@@ -10621,5 +10621,5 @@ Mac7 process checks pass with one Windows-only skip, including actual abrupt
 broker death terminating/reaping the no-watchdog native worker. Linux7/one skip
 and Windows8 also pass. Full component/sanitizer evidence and host/tool versions
 are in STATUS. Game event adapters/async bridge, helper packaging/recovery and
-real scripted custom-mode gameplay remain unimplemented/unverified; activation
-the launcher still refuses. This does not close the full public mod-system goal.
+real scripted custom-mode gameplay remain unimplemented/unverified; the launcher
+still refuses script activation. This does not close the full public mod-system goal.

@@ -43831,3 +43831,8 @@ per-event game supervision/native reply validation, verified game hooks/commands
 mod saves/multiplayer agreement, verified signed helper packaging/recovery, native
 creator/moderation flows, public HTTPS hosting/backups and end-to-end public/game
 acceptance remain required. The full goal remains active; no main merge performed.
+
+Mac final source c12b8541:8 production-process checks pass, one Windows-only skip.
+The additional missing-guardian test refuses before worker input and preserves
+its copied worker bytes; no direct-spawn fallback exists. CI source6457f1fe run
+43603840993 was in progress at last inspection, not established passing.
