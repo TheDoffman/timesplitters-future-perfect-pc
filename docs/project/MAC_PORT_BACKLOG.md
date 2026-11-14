@@ -10636,3 +10636,9 @@ pass (two skips). Shared asynchronous sessions are verified for those named nati
 component contracts, not actual game adapters. New renewing idle CPU accounting
 and host-parent ASan/UBSan coverage are **Awaiting validation** on Mac/Linux;
 Windows idle positive control passes. See STATUS/mod-scripting.md.
+
+Mac renewed-idle validation atb2afea90 exposed CPU undercounting: rusage values
+are Mach ticks and need mach_timebase_info scaling. Checked128-bit conversion is
+implemented; updated Mac full/sanitizer rerun **Awaiting validation**. Prior wall
+and OS escape successes do not establish CPU-unit correctness. Linux404/3 skips
+and56 host-ASan/UBSan Session checks pass; Windows404/3 skips pass. See STATUS.

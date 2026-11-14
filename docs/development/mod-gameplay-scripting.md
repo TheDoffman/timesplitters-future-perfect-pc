@@ -320,3 +320,11 @@ parent parser still must receive sanitizer coverage. `--sanitize-host` exposes t
 same builder option; BUILD-worker.json records host_sanitize separately from the
 VM sanitizer mode. The normal release build defaults both options off. This test
 mode never relaxes child isolation or provides a production runtime bypass.
+
+Darwin CPU accounting converts proc_pid_rusage totals through mach_timebase_info
+using128-bit intermediates and fails closed on unavailable/overflowed conversion.
+Apple's [rusage collector](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/kern/bsd_kern.c)
+copies power-info totals, and the [task power collector](https://github.com/apple-oss-distributions/xnu/blob/main/osfmk/kern/task.c)
+uses Mach time units. Assuming nanoseconds undercounted Apple Silicon CPU and was
+exposed by the renewed idle busy-spin test. Mac rerun is pending; Linux passes404
+full checks/3 skips plus56 host-ASan/UBSan Session checks, Windows404/3 skips.

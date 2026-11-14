@@ -132,3 +132,8 @@ TSFP_MOD_HOST_SANITIZE=1 instruments trusted Session/Process/driver with ASan/
 UBSan on Clang/GCC while keeping sealed children ordinary. The builder records
 host_sanitize separately and offers --sanitize-host; this is distinct from VM
 sanitizers. Actual host-sanitized validation is pending at this checkpoint.
+
+Renewed idle windows exposed Mac CPU undercounting: proc_pid_rusage CPU totals
+are Mach ticks, not nanoseconds. The adapter now uses checked128-bit Mach timebase
+conversion. Linux404 full checks/3 skips and56 host-ASan/UBSan Session checks pass;
+Windows404 full checks/3 skips pass. Updated Mac rerun remains pending.

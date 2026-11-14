@@ -24,6 +24,7 @@
 #else
 #include <libproc.h>
 #include <spawn.h>
+#include <mach/mach_time.h>
 #endif
 namespace tsfp { namespace mods {
 namespace {
@@ -75,7 +76,14 @@ public:
 #else
         rusage_info_v4 info{};
         if(proc_pid_rusage(worker_pid,RUSAGE_INFO_V4,(rusage_info_t *)&info)!=0)return errno==ESRCH;
-        result.resident_bytes=info.ri_phys_footprint;result.cpu_microseconds=(info.ri_user_time+info.ri_system_time)/1000;
+        // Darwin rusage CPU totals are Mach absolute ticks, not nanoseconds.
+        // On Apple Silicon the timebase ratio need not be1:1.
+        mach_timebase_info_data_t timebase{};
+        if(mach_timebase_info(&timebase)!=KERN_SUCCESS || !timebase.numer || !timebase.denom)return false;
+        __uint128_t ticks=(__uint128_t)info.ri_user_time+info.ri_system_time;
+        __uint128_t microseconds=ticks*timebase.numer/((uint64_t)timebase.denom*1000);
+        if(microseconds>UINT64_MAX)return false;
+        result.resident_bytes=info.ri_phys_footprint;result.cpu_microseconds=(uint64_t)microseconds;
 #endif
         return true;
     }

@@ -256,3 +256,8 @@ game event/command adapters and script activation remain pending.
 Session idle CPU uses bounded1s windows so legitimate paused-worker overhead
 does not accumulate forever. Host-only sanitizer checks preserve sealed children;
 see mod-scripting.md for actual host evidence and pending checks.
+
+Renewed idle windows exposed Mac CPU undercounting: proc_pid_rusage CPU totals
+are Mach ticks, not nanoseconds. The adapter now uses checked128-bit Mach timebase
+conversion. Linux404 full checks/3 skips and56 host-ASan/UBSan Session checks pass;
+Windows404 full checks/3 skips pass. Updated Mac rerun remains pending.

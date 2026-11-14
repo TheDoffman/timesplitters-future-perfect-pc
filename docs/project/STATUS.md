@@ -43867,3 +43867,14 @@ pauses from eventually exhausting a cumulative idle allowance. Windows passes a
 native four-window25ms-CPU/window positive control. The trusted-parent ASan/UBSan
 build mode is implemented separately from VM sanitizer mode; sealed child binaries
 remain ordinary. Actual host-sanitizer/updated Unix checks are still pending.
+
+Windows full mod/CI suite passes404 with3 platform skips. Atb2afea90 Linux full
+suite also passes404/3 skips; all56 trusted-parent ASan/UBSan Session checks pass.
+Mac full suite passed405/one skip but failed renewed idle busy-spin metering.
+Investigation confirmed proc_pid_rusage user/system totals use Mach ticks, not
+nanoseconds (Apple XNU fill_task_rusage/task_power_info_locked); the previous
+/1000 undercounted Apple Silicon CPU. Corrected with mach_timebase_info scaling,
+128-bit intermediates and fail-closed unavailable/overflow guards. Updated Mac
+full/sanitizer checks are pending; do not count earlier wall-deadline success as
+proof that the old Mac CPU accounting was correct. CI e183dbc5 run43604433695
+completed successfully; newer Session revisions have separate CI acceptance.
