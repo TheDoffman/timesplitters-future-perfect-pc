@@ -42,6 +42,8 @@ manifests. Production helper packaging, bootstrap/save policy and actual custom-
 mode play remain required. See [worker and game bridge](mod-scripting.md).
 <!-- packet:end -->
 
+Production native helper staging lives in `tools/build/mod_runtime_images.py`;
+see [image contracts](mod-scripting.md). Game-builder integration is pending.
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,
 `mod-workshop.py`. The CLI is directly executable; peer imports resolve from its
 directory. Tests add `tools/mods` explicitly and use no private game files.

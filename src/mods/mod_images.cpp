@@ -44,6 +44,10 @@ fs::path plain_path(const std::string &text,bool directory) {
 #ifdef _WIN32
     auto drive=path.root_name().wstring();
     require(drive.size()==2 && ((drive[0]>=L'A' && drive[0]<=L'Z') || (drive[0]>=L'a' && drive[0]<=L'z')) && drive[1]==L':',"Helper paths must be local");
+    for(const auto &part:path)if(part!=path.root_name()) {
+        auto name=part.wstring();
+        require(name.find(L':')==std::wstring::npos && (name.empty() || (name.back()!=L'.' && name.back()!=L' ')),"Ambiguous Windows helper path");
+    }
 #endif
     bool first=true;
     for(auto cursor=path;;) {
@@ -153,7 +157,8 @@ void copy_pinned(const fs::path &source,const fs::path &target,const std::string
 #else
         ssize_t got=read(input.handle,bytes.data(),bytes.size());if(got<0 && errno==EINTR)continue;require(got>=0,"Cannot read helper image");count=(size_t)got;
 #endif
-        if(!count)break;require(total+count<=length,"Helper image changed while reading");hash.update(bytes.data(),count);
+        if(!count)break;
+        require(total+count<=length,"Helper image changed while reading");hash.update(bytes.data(),count);
         size_t written=0;
         while(written<count) {
 #ifdef _WIN32

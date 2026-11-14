@@ -16,6 +16,12 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def source_hashes():
+    return {p.relative_to(ROOT).as_posix(): sha(p) for p in [
+        ROOT / 'tools/build/build-mod-worker.py', ROOT / 'config/mods/lua-source.json',
+        *sorted((ROOT / 'src/mods').rglob('*'))] if p.is_file()}
+
+
 def prepare_lua(output):
     pin = json.loads((ROOT / 'config/mods/lua-source.json').read_text())
     source = ROOT / ('vendor/lua-' + pin['version'])
@@ -61,6 +67,7 @@ def prepare_lua(output):
 def build(output, cmake='cmake', sanitize=False, testing=False, host_sanitize=False):
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
+    sources = source_hashes()
     lua = prepare_lua(output)
     subprocess.run([cmake, '-S', str(ROOT / 'src/mods'), '-B', str(output / 'cmake'),
                     '-DTSFP_LUA_SOURCE=' + str(lua), '-DCMAKE_BUILD_TYPE=Release',
@@ -72,6 +79,8 @@ def build(output, cmake='cmake', sanitize=False, testing=False, host_sanitize=Fa
     binary = output / 'cmake' / ('Release' if os.name == 'nt' else '') / name
     if not binary.is_file():
         raise ValueError('Mod worker build did not produce its native executable')
+    if source_hashes() != sources:
+        raise ValueError('Mod worker sources changed during compilation; rebuild before packaging')
     (output / 'Licenses').mkdir(exist_ok=True)
     shutil.copyfile(ROOT / 'LICENSES/Lua.txt', output / 'Licenses/Lua.txt')
     (output / 'BUILD-worker.json').write_text(json.dumps({
@@ -80,9 +89,7 @@ def build(output, cmake='cmake', sanitize=False, testing=False, host_sanitize=Fa
         'guardian_sha256': sha(binary.with_name('tsfp-mod-guardian')) if sys.platform == 'darwin' else None,
         'testing': testing, 'sanitize': sanitize, 'host_sanitize': host_sanitize,
         'revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-        'sources': {p.relative_to(ROOT).as_posix(): sha(p) for p in [
-            ROOT / 'tools/build/build-mod-worker.py', ROOT / 'config/mods/lua-source.json',
-            *sorted((ROOT / 'src/mods').rglob('*'))] if p.is_file()}}, indent=2) + '\n')
+        'sources': sources}, indent=2) + '\n')
     return binary
 
 

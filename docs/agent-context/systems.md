@@ -3,7 +3,7 @@
 [Guest adapter notes](guest-adapter-notes.md#host-systems).
 [Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
 The initial non-team adapter reports team0; original actor team identity stays private.
-The match bridge now opens only verified, privately staged helper images; see mod-scripting.md.
+The match bridge opens verified, privately staged helpers and rejects ambiguous Windows paths; see mod-scripting.md.
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;

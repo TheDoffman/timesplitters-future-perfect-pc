@@ -11,12 +11,17 @@ verified bootstrap, save separation and launcher script activation remain unavai
 pins supplied by the trusted caller. Windows uses CNG, Darwin CommonCrypto and
 Linux OpenSSL EVP. Local absolute paths reject linked ancestors; cache staging is
 exclusive, bounded32MiB/image, cancellable between chunks and read-only afterward.
+Windows also rejects trailing-dot/space and alternate-stream path aliases.
 The digest covers the copied stream, not a path later reopened for copying.
 Only owned files/empty directories are removed; unknown contents survive cleanup.
 Session::open_verified runs staging on its existing background thread and keeps
 the images until child cleanup ends. Match now requires image pins as well as
 policy assertions and always uses that verified entry. No production compiled
 pins/helper package/bootstrap is wired yet; launcher scripting remains unavailable.
+tools/build/mod_runtime_images.py now builds production-only helpers, verifies
+source/configuration/image receipts, stages immutable content-addressed bundles
+and emits a generated pin header. Normal game builders do not consume it yet.
+No diagnostic runner, test image or VM library is distributed in those bundles.
 
 [Full contracts and evidence](../development/mod-gameplay-scripting.md).
 API1 provides on_start/on_tick/on_player_death/on_stop, copied32-player snapshots,

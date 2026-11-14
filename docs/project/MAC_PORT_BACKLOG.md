@@ -10744,3 +10744,5 @@ helper copies before game match startup. Session keeps staging through child
 cleanup; missing/bad pins fail before commands. Windows100 checks pass/5 skips.
 Mac/Linux ordinary and host-sanitizer runs plus updated game linking pending.
 Compiled production pins, helper package and bootstrap/activation remain required.
+
+Native helper production staging follow-up: **In progress**. Shared production producer emits content-addressed helper-only bundles and generated digest headers, refusing stale/instrumented builds. Windows12 producer checks pass; Mac/Linux producer and updated game linking pending. Mac native verification104 checks/1 skip and host-ASan39 checks pass. Linux shared strict-warning repair awaits rerun. Bootstrap/save/launcher/public acceptance remains open; no new platform exception.

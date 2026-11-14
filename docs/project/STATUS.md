@@ -44095,3 +44095,5 @@ Production compiled pins/helper packaging/bootstrap are not wired, so no new
 launcher activation exists. Windows100 native image/match/original-title/Session/
 Process checks pass with5 platform skips. Native Mac/Linux and sanitizer checks
 for this change remain pending. Existing game build evidence is for prior source.
+
+Native-image follow-up: Windows16 image checks pass/4 platform skips; macOS104 combined native checks pass/1 skip and39 host-ASan image/match/original-title checks pass. Linux strict GCC compilation found misleading indentation; the shared source now separates the statements, with rerun pending. Windows paths additionally reject trailing-dot/space and ADS aliases. Production helper producer now verifies current build sources, production flags, native image hashes and Lua license, emits immutable helper-only bundles plus generated pins;12 real-build producer tests pass on Windows. Normal game-builder/package integration and updated game links remain pending.

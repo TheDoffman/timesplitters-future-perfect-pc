@@ -91,3 +91,11 @@ def test_writable_by_other_users_cache_is_refused(process_tools,images):
     image,_,cache,pins=images
     cache.chmod(0o777)
     assert not call(process_tools,image,cache,*pins)['accepted'] and not list(cache.iterdir())
+
+
+@pytest.mark.skipif(os.name!='nt',reason='Windows namespace aliases')
+@pytest.mark.parametrize('suffix',['.',' '])
+def test_windows_ambiguous_directory_alias_is_refused(process_tools,images,suffix):
+    image,_,cache,pins=images
+    alias=image.parent.with_name(image.parent.name+suffix)/image.name
+    assert not call(process_tools,alias,cache,*pins)['accepted'] and not list(cache.iterdir())
