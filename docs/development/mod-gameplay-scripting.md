@@ -328,3 +328,16 @@ copies power-info totals, and the [task power collector](https://github.com/appl
 uses Mach time units. Assuming nanoseconds undercounted Apple Silicon CPU and was
 exposed by the renewed idle busy-spin test. Mac rerun is pending; Linux passes404
 full checks/3 skips plus56 host-ASan/UBSan Session checks, Windows404/3 skips.
+
+Corrected CPU accounting passes actual Mac full mod/CI checks406/one skip and all
+56 trusted-parent ASan/UBSan Session checks atf37ee9ba. Linux passes404 full checks/
+three skips and56 trusted-parent sanitizer checks; Windows404/three skips. These
+are named component checks, not gameplay/public service acceptance.
+
+The native test host now drains Session cleanup on every early return before its
+executable exits, matching the host-lifetime contract. An explicit forced-failure
+case checks that the worker cache is removed after error teardown (Windows passes,
+Unix rerun pending). Three empty profiles from prior failed test-host exits were
+individually ownership-verified and removed through the Windows profile API; this
+does not implement production stale crash-profile recovery. Real game shutdown
+must keep its executable/module alive until Session::stopped, even on errors.

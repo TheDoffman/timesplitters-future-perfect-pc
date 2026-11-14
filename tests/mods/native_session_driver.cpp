@@ -26,6 +26,13 @@ static int run(const std::string &image,const std::string &cache,const std::stri
     while((count=fread(buffer,1,sizeof(buffer),stdin))!=0){source.append(buffer,count);if(source.size()>2u*1024*1024)return 2;}
     auto session=timed([&]{return Session::open(image,cache,std::move(source),123,error);});
     if(!session){puts("{\"refused\":true}");return 0;}
+    // Keep the test executable alive through asynchronous cleanup on *all*
+    // assertion/error returns, just as the future game shutdown contract requires.
+    struct Drain {
+        Session *session;
+        ~Drain(){session->close();auto end=Clock::now()+std::chrono::seconds(3);
+            while(!session->stopped() && Clock::now()<end)std::this_thread::sleep_for(std::chrono::milliseconds(1));}
+    } drain{session.get()};
     tsfp_script_result result{};uint64_t sequence=0;bool fault=false;size_t polls=0;bool busy=false;
     auto poll=[&]{++polls;return timed([&]{return session->poll(result,sequence,error);});};
     auto deadline=Clock::now()+std::chrono::seconds(30);
@@ -46,6 +53,7 @@ static int run(const std::string &image,const std::string &cache,const std::stri
         return status;
     };
     if(wait(SessionStatus::Ready)) {
+        if(scenario=="forced-failure")return 12;
         if(scenario=="idle") {
             if(!wait(SessionStatus::Faulted))return 10;
             fault=true;

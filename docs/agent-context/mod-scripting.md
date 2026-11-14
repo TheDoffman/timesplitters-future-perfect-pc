@@ -94,7 +94,7 @@ acceptance remains mandatory. VM/process checks do not prove those requirements.
 Unchanged Python/native trust vectors and live scanner/operator evidence remain
 in mod-workshop.md and the catalog trust guide.
 
-## Persistent native sessions (base e183dbc5; Mac/Linux checks pending)
+## Persistent native sessions
 
 mod_session.cpp/.hpp links only the native Process adapter and shared POD types,
 never Lua. A background-owned thread creates/meters/communicates/reaps the worker;
@@ -119,7 +119,7 @@ checks: original mode past2s,100 stateful ticks/Stop, backpressure, invalid sour
 host events, malformed native reply corpus, native hangs/crash/partial pipes/stderr,
 idle CPU/output, asynchronous close and full1MiB source transfer. The test-only
 hostile worker uses production OS sealing and has no VM watchdog. Test binaries
-never ship. Mac/Linux checks and real game event adapters remain pending. The
+never ship. Cross-host component checks now pass; real game event adapters remain pending. The
 host adapter must verify images/package/authority/save namespace and recheck the
 live match epoch/roster before applying a result atomically. Session checks alone
 are not actual game integration or multiplayer/save agreement.
@@ -131,9 +131,21 @@ idle windows and remains accepted (Windows check passes; other hosts pending).
 TSFP_MOD_HOST_SANITIZE=1 instruments trusted Session/Process/driver with ASan/
 UBSan on Clang/GCC while keeping sealed children ordinary. The builder records
 host_sanitize separately and offers --sanitize-host; this is distinct from VM
-sanitizers. Actual host-sanitized validation is pending at this checkpoint.
+sanitizers. At b2afea90 Linux56 host-ASan/UBSan Session checks pass; at f37ee9ba Mac56
+also pass, after the Mach CPU conversion correction.
 
 Renewed idle windows exposed Mac CPU undercounting: proc_pid_rusage CPU totals
 are Mach ticks, not nanoseconds. The adapter now uses checked128-bit Mach timebase
 conversion. Linux404 full checks/3 skips and56 host-ASan/UBSan Session checks pass;
 Windows404 full checks/3 skips pass. Updated Mac rerun remains pending.
+
+Final process/session source f37ee9ba: Mac full mod/CI suite406 pass/1 skip and56
+host-ASan/UBSan Session checks pass. Linux/Windows full suites404 pass/3 skips;
+Linux56 host-ASan/UBSan Session checks pass. A follow-up test-host Drain guard keeps
+the executable alive through asynchronous Session cleanup on early error returns;
+its explicit forced-failure test passes on Windows, Unix final rerun pending.
+Three empty GUID profiles from earlier failed test-host exits were individually
+verified against their known creation times, exact protected4-rule ACLs/current
+broker owner/derived package SID, then removed through DeleteAppContainerProfile.
+No broad package-folder deletion; ownership evidence stays in ignored logs. This
+manual test cleanup is not production stale crash-profile recovery.

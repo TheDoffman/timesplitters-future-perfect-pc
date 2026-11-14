@@ -43878,3 +43878,19 @@ nanoseconds (Apple XNU fill_task_rusage/task_power_info_locked); the previous
 full/sanitizer checks are pending; do not count earlier wall-deadline success as
 proof that the old Mac CPU accounting was correct. CI e183dbc5 run43604433695
 completed successfully; newer Session revisions have separate CI acceptance.
+
+Atf37ee9ba corrected Mac full mod/CI suite passes406 with one platform skip;
+all56 trusted-parent ASan/UBSan Session checks pass, including idle busy-spin and
+allowed renewing idle CPU windows. Linux404/three skips and56 host-sanitizer checks
+pass atb2afea90; Windows404/three skips pass for matching source bytes. Mac CPU
+units are now verified by adversarial idle behavior, not inferred from wall limits.
+
+A test-host error-path drain guard and explicit forced-failure case now pass on
+Windows. Earlier failed driver exits had left three empty temporary GUID profiles;
+those exact identities were verified against creation times matching these tests,
+protected4-rule ACLs/current broker ownership/derived package SID, then removed via
+DeleteAppContainerProfile. Ignored ownership evidence is in
+logs/mod-session-owned-orphan-profiles.json. Unknown profiles/files were not deleted.
+This is manual test cleanup; automatic production crash-profile recovery remains
+pending. The final extra teardown case still needs Mac/Linux ordinary/sanitizer
+reruns. No script activation, guest mutation, main merge or public deployment.

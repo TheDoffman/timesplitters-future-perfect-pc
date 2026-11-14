@@ -79,6 +79,14 @@ def test_maximum_source_is_written_in_bounded_pipe_chunks(process_tools, tmp_pat
     assert records[0] == dict(sequence=1, commands=[])
 
 
+def test_host_teardown_drains_async_cleanup_on_early_failure(process_tools, tmp_path):
+    driver = process_tools['worker'].with_name('tsfp-mod-session-driver' + process_tools['worker'].suffix)
+    result = subprocess.run([str(driver), str(process_tools['worker']), str(tmp_path), 'forced-failure'],
+                            input=b'return {api=1}', capture_output=True, timeout=8)
+    assert result.returncode == 12 and result.stdout == result.stderr == b''
+    assert not list(tmp_path.iterdir()), 'Host must remain alive until Session.stopped() on error teardown'
+
+
 @pytest.mark.parametrize('scenario', ['invalid-sequence', 'invalid-roster', 'invalid-position', 'invalid-phase'])
 def test_host_lifecycle_roster_and_numeric_errors_fault_closed(process_tools, tmp_path, scenario):
     assert 'authoritative' in fault(run(process_tools, tmp_path, 'return {api=1}', scenario))

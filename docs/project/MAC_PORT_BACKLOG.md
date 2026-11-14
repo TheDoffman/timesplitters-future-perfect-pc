@@ -10642,3 +10642,10 @@ are Mach ticks and need mach_timebase_info scaling. Checked128-bit conversion is
 implemented; updated Mac full/sanitizer rerun **Awaiting validation**. Prior wall
 and OS escape successes do not establish CPU-unit correctness. Linux404/3 skips
 and56 host-ASan/UBSan Session checks pass; Windows404/3 skips pass. See STATUS.
+
+Mac native Session CPU/resource contracts atf37ee9ba: **Verified for named checks**.
+Full mod/CI suite406/one skip and56 trusted-parent ASan/UBSan Session checks pass.
+Linux404/three skips plus56 host-sanitizer checks pass; Windows404/three skips pass.
+The test-host early-error drain guard is implemented and Windows-verified; final
+Unix teardown/sanitizer reruns pending. Actual game integration/public acceptance
+and production stale-profile recovery remain required. See STATUS/mod-scripting.md.
