@@ -1,5 +1,5 @@
 [Sticks](controller-deadzones.md), [Rollback](control-presets.md), [updates](main-menu-update.md).
-[Tex](texture-preference.md); [hints](video-options.md).
+[Tex](texture-preference.md); [pads](video-options.md).
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).
 Networking: `pc_network_enabled()` reads startup config once,
