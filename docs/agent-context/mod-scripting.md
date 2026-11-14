@@ -53,3 +53,5 @@ Mac SDK has no closefrom: parent uses posix_spawn CLOEXEC_DEFAULT plus explicit
 stdio dup actions/process group; worker closes startup FDs before lowering NOFILE.
 Linux a668698f passes62 process/VM checks (one Windows-only skip); Mac initial
 compile failure is being corrected and its validation remains pending.
+
+Seatbelt deprecation suppression covers its paired error-free API only.

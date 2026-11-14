@@ -83,8 +83,8 @@ int tsfp_mod_seal(void) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     status=sandbox_init(profile,0,&error);
-#pragma clang diagnostic pop
     if(error)sandbox_free_error(error);
+#pragma clang diagnostic pop
     return status==0;
 }
 #else

@@ -913,3 +913,5 @@ Mod process adapters/worker self-sealing are standalone; see mod-scripting.md.
 No guest hooks or launcher script activation changed.
 
 Darwin mod process creation uses CLOEXEC_DEFAULT; see mod-scripting.md.
+
+Seatbelt deprecation suppression covers its paired error-free API only.
