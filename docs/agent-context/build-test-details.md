@@ -1,5 +1,9 @@
 # Feature test index
 
+The historical Mac-only upgrade fixture omits2710 from its old subset because
+that subset intentionally excludes the Story frame/network wrapper. It then
+asserts all four mod hooks after the complete upgrade. Production order is unchanged.
+
 Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
 n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.
 The versioned cache and dated URL replace the mutable latest asset; checksum

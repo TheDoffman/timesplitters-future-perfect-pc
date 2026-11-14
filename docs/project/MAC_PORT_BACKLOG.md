@@ -10676,3 +10676,11 @@ its byte-read correction and original-title fixture still need Mac/Linux reruns.
 Windows19 match/original-title checks pass; stock death/frame/final finish remain
 mocks. Game builds/play and activation/bootstrap/save/multiplayer remain required.
 Windows full-build MSVC backend heap exhaustion is under investigation. See STATUS.
+
+Native bridge/original-title source186c62ac: **Verified for named component checks**.
+Windows19, Mac19 and Linux19 checks pass. Each Unix host additionally passes18
+bridge fixtures and the original-title fixture under trusted-parent ASan/UBSan
+with no skips. The original supported executable/runtime/dependency were prepared
+in owned ignored task directories; no main checkout changed. Real gameplay,
+full native game builds and the existing public integration requirements remain
+pending. Historical Mac-only patch fixture dependency correction is under test.

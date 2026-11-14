@@ -43943,3 +43943,19 @@ Windows full build regenerates/compiles new wrappers but MSVC C1002 exhausts
 backend heap in recomp_0011.c, including with one job and /MP1. A local smaller
 generation split is being tested. This is not a successful game build or a reason
 to enable scripting. Mac/Linux updated sanitizer/original-title checks pending.
+
+At source186c62ac (later da938bbf changes context only), all19 bridge/original-title
+checks pass on Windows, Mac and Linux. On each native Mac/Linux host the18 bridge
+checks and separate original-title check also pass under trusted-parent ASan/UBSan,
+without skips. The supported XBE was hash-verified and copied only to ignored
+owned task directories; runtime snapshots/pins and Capstone5.0.9 were prepared
+there. No private instructions/assets were committed or uploaded. Logs:
+mod-match-original-{win,mac,linux}.txt and mod-original-score[-asan]-{mac,linux}.txt.
+
+Earlier e7c1ca82 CI run43608212712 completed successfully, including aggregate PR
+validation. New run43613354821 exposed one historical Mac-only upgrade fixture:
+it included2710 before the intentionally excluded Story frame/network wrapper.
+The fixture now omits2710 only in its old subset, then verifies all four mod hooks
+after the complete upgrade. Production patch ordering is unchanged. The focused Windows upgrade fixture
+passes; updated CI is pending. Local split250 Windows compilation has progressed
+beyond its first20 units; full game build remains pending.

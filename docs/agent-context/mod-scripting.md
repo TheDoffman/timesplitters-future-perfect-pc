@@ -157,3 +157,11 @@ original-title script timing patches are not Lua hooks; verify native source/cal
 before adding wrappers. Full public workshop acceptance remains mandatory. These
 component tests do not prove gameplay, public HTTPS, backups or a usable release.
 Unchanged trust vectors and scanner/operator evidence are in mod-workshop.md.
+
+Original-title follow-up source186c62ac: Windows19, Mac19 and Linux19 bridge plus
+local original-routine checks pass. Mac/Linux also pass all19 under trusted-parent
+ASan/UBSan (18 bridge and one original test run separately), without skips. The
+fixture checks unbound original raw-score/ranking before isolated custom-mode
+score/rank/End; final finish side effects, death and frame functions stay mocked.
+The title snapshot/runtime/Capstone5.0.9 are required for this local-only test.
+Full native builds and live gameplay are still separate pending acceptance.
