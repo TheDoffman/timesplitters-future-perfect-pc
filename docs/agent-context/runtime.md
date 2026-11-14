@@ -1,5 +1,7 @@
 # Runtime
 
+[UI/Aim](hud-sizing.md).
+
 [Guest adapter notes](guest-adapter-notes.md#runtime-routing).
 [Mod scripting game bridge](mod-scripting.md): patch2710 links the separate parent to title hooks;
 activation and actual custom-mode gameplay remain pending.

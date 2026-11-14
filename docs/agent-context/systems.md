@@ -1,5 +1,7 @@
 # Shared systems
 
+[Hints](video-options.md); [Aim](hud-sizing.md).
+
 [Guest adapter notes](guest-adapter-notes.md#host-systems).
 [Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
 The initial non-team adapter reports team0; original actor team identity stays private.

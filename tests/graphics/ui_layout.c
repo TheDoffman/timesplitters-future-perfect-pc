@@ -42,6 +42,7 @@ static int wide=1,players=1,placement,pending=-1,draw_count;
 static int drawn[1024],selected[1024],selection_count;
 static uint32_t tag;
 #define CHECK(x) do { if(!(x)){fprintf(stderr,"FAIL: %s line %d\n",#x,__LINE__);exit(1);} } while(0)
+int pc_display_crosshair_size(void){return 100;}
 float pc_display_hud_scale(void) { return hud_scale; }
 static int owned_video,owned_controls,owned_audio;
 static int controls_font_menu(uint32_t menu) {return owned_controls && menu==0x1000;}
@@ -233,6 +234,8 @@ int main(void)
         CHECK(fabsf((y+top+y+bottom)*.5f-(10.f+cell*.5f))<.0001f);
     }
     CHECK(pc_ui_caption_y(10,30,NAN,0)==10 && pc_ui_caption_y(10,0,14,2)==10);
+    {float box[]={301,210,341,230};pc_ui_aim_size(box,2,.5f);
+     CHECK(box[0]==311 && box[1]==215 && box[2]==331 && box[3]==225);}
     /* Measurement and glyph rendering must see the same two-axis scale.
        Other menu rows, descriptions and gameplay retain their original size. */
     for(unsigned mode=0;mode<8;mode++) {

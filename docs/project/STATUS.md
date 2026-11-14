@@ -1,3 +1,18 @@
+Weapon FOV now uses a40-100 degree reference angle in one-degree steps,55
+original, like Vertical FOV. Exact legacy percentages retained until edited;
+V5 persists degrees and crosshair. Shared launcher preserves both formats.
+Windows game/launcher builds, focused tests and actual32:9 main/pause/gameplay
+checks pass; native Mac/Linux visual acceptance pending.
+See docs/agent-context/video-options.md.
+
+Crosshair sizing (local feature/hud-crosshair-size, base1375e144): staged
+View & HUD and launcher slider25-150%, default100%. HUD Scale removed from
+menus and rendering; original automatic HUD fitting retained. V4 legacy HUD
+field loads but is ignored and normalized to100 on save. Windows game/launcher
+builds, focused tests and actual32:9 main/pause checks pass. Mac/Linux visual
+acceptance pending. See
+docs/agent-context/hud-sizing.md.
+
 Keyboard binding right-edge inset (base64eb0399): native list/paging row bounds
 now stop1% inside the panel, keeping selection highlights and Alternate
 bindings clear of the border. Windows build passes. Both frontend and pause
@@ -44137,3 +44152,5 @@ public deployment has occurred; full completion goal remains active.
 Native mod save lease (task base8a6dc507, 2026-11-14): shared mod_saves.cpp/.hpp creates persistent sibling ModSaves/profile-SHA namespaces with versioned ownership markers and an exclusive lifetime lease. It neither copies nor writes normal saves; incomplete/unknown trees remain untouched on refusal. Rechecks reject symlink/reparse/hard-link redirects, changed markers, special files, excessive depth/count and unsafe filesystem writers. Windows uses protected current-user/System/admin ACLs and recognizes OWNER RIGHTS only after owner verification; POSIX checks uid/modes, with recognized exFAT structural fallback. Actual exFAT/storage/sandbox acceptance remains pending. Windows39 native save cases pass/5 POSIX skips; earlier combined save/image53 pass/9 skips. Strict native game build found duplicate Windows macro definitions; guarded defines repair it, rerun pending. Mac/Linux native and sanitizer checks pending. No bootstrap or guest storage selects the lease yet, so scripts remain unavailable in launcher.
 
 Native save lease sourced5bbc9e9: Windows39 save tests pass/5 POSIX skips (including real OWNER RIGHTS/broad-write ACL checks, Unicode paths, explicit same-filesystem relocation and crash/concurrency preservation). Mac77 combined save/image/match checks pass/8 platform skips; Linux74 pass/11 skips. Mac/Linux native save-lease host-ASan/UBSan38 each pass/6 Windows skips. All three updated native game links/build/platform checks pass; guarded Windows defines repair the standalone-vs-game macro collision. No test used personal saves. The system-drive space shortage was transient; disposable Windows checks used an owned F: scratch directory and the later native build had space again. Real exFAT device/sandbox and cross-filesystem relocation remain unverified, and bootstrap/storage/launcher scripting integration is still required.
+
+Task-branch integration (baseafd3e4a6): incorporates origin/mained38b639 and42ff0f11 into feature/mod-platform. All documentation conflicts preserve mod contracts and current UI/FOV/crosshair references; extracted guide bodies stay in subguides to retain root-size limits. Source auto-merges preserve helper staging, package receipts and launcher mod configuration alongside display_settings_version5. Main itself is unchanged. Focused integration/native checks are pending.

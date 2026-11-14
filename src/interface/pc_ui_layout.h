@@ -125,6 +125,14 @@ static void pc_ui_scope_mask(int32_t rect[4],unsigned side,float ratio)
 }
 /* Apply the canvas fit around the aim point, not the screen centre. This
  * also preserves rotated quads and keeps the original texture UVs intact. */
+static void pc_ui_aim_size(float *xy,unsigned points,float scale)
+{
+    if(!points || !isfinite(scale) || scale<=0.f || scale==1.f)return;
+    float cx=0,cy=0;
+    for(unsigned i=0;i<points;i++){cx+=xy[i*2];cy+=xy[i*2+1];}
+    cx/=points;cy/=points;
+    for(unsigned i=0;i<points;i++){xy[i*2]=cx+(xy[i*2]-cx)*scale;xy[i*2+1]=cy+(xy[i*2+1]-cy)*scale;}
+}
 static void pc_ui_aim_shape(float *xy,unsigned points,float ratio)
 {
     float cx=0,cy=0,sx=pc_ui_scale_x(ratio),sy=pc_ui_scale_y(ratio);

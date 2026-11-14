@@ -449,8 +449,9 @@ static PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY], all_modes[PC_DISPLAY_MODE_
 static int all_mode_count, selected_aspect;
 enum { DISPLAY_HOME, DISPLAY_CONFIRM, DISPLAY_GRAPHICS, DISPLAY_VIEW, DISPLAY_RESTART, DISPLAY_ADVANCED };
 static int mode_count, selected_mode, page, staged_fov, previous_fov;
-static int staged_weapon_fov=PC_WEAPON_FOV_DEFAULT,previous_weapon_fov=PC_WEAPON_FOV_DEFAULT;
+static int staged_weapon_fov=PC_FOV_DEFAULT,previous_weapon_fov=PC_FOV_DEFAULT,previous_weapon_percent=PC_WEAPON_FOV_DEFAULT;
 static uint32_t weapon_fov_row,window_mode_row;
+static int staged_crosshair=100,previous_crosshair=100;
 static int staged_fullscreen,previous_fullscreen;
 static int apply_page=DISPLAY_HOME;
 static int staged_rate, applied_rate;
@@ -1064,12 +1065,21 @@ static void row(int id,const char *label)
 {
     guest_call(sub_00079D60_gen,6,text_at(id+1,"%s",label),(uint32_t)id,0u,0u,SELECT_CB,0u);
 }
-static void fov_label(void) { text_at(8,"Vertical FOV: %d",staged_fov); text_at(85,"Weapon FOV: %d%%",staged_weapon_fov); }
+static void fov_label(void) { text_at(8,"Vertical FOV"); text_at(85,"Weapon FOV"); text_at(87,"Crosshair Size"); }
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
+static void menu_slider_crosshair_pointer(float x,float left,float width)
+{
+    if(page!=DISPLAY_VIEW)return;
+    int minimum=PC_CROSSHAIR_SIZE_MIN;
+    int maximum=PC_CROSSHAIR_SIZE_MAX;
+    int value=minimum+5*(int)pc_menu_slider_value(x,left,width,(maximum-minimum)/5);
+    staged_crosshair=value;
+    fov_label();
+}
 static void menu_slider_weapon_fov_pointer(float x,float left,float width)
 {
     if(page==DISPLAY_VIEW) {
-        staged_weapon_fov=PC_WEAPON_FOV_MIN+5*(int)pc_menu_slider_value(x,left,width,(PC_WEAPON_FOV_MAX-PC_WEAPON_FOV_MIN)/5);
+        staged_weapon_fov=PC_FOV_MIN+(int)pc_menu_slider_value(x,left,width,PC_FOV_MAX-PC_FOV_MIN);
         fov_label();
     }
 }
@@ -1082,12 +1092,37 @@ static void menu_slider_fov_pointer(float x,float left,float width)
     }
 }
 #endif
+/* Values share the row font and visible glyph centre, with a fixed gap before
+ * the slider. Keep the existing bar and pointer geometry unchanged. */
+static uint32_t fov_value_measure;
+static void fov_value_draw(uint32_t menu,uint32_t item,int id,const float bounds[4])
+{
+    extern void sub_00041DC0(void);
+    if(!guest_writable(item,0x20))return;
+    if(!fov_value_measure)fov_value_measure=xbox_HeapAlloc(8,4);
+    if(!fov_value_measure)return;
+    uint32_t caption=id==15?text_at(89,"%d%%",staged_crosshair):
+        id==12?text_at(88,"%d",staged_weapon_fov):text_at(86,"%d",staged_fov);
+    uint32_t saved_font=WORD_AT(0x6b93b4),font=WORD_AT(item+0x1c);
+    if(font!=saved_font){guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,font);}
+    uint32_t align=WORD_AT(0x7e7260);WORD_AT(0x7e7260)=0;
+    guest_call(sub_0003FCF0,4,fov_value_measure,fov_value_measure+4,caption,0u);
+    float width=FLOAT_AT(fov_value_measure),height=FLOAT_AT(fov_value_measure+4);
+    if(isfinite(width) && width>0.f && isfinite(height) && height>0.f) {
+        float y=pc_ui_caption_y(bounds[1],bounds[3]-bounds[1],height,settings_row_text_top(caption));
+        uint32_t color=guest_call(sub_00154FE0,2,WORD_AT(menu+0x18c)==(uint32_t)id?0x405a7f7fu:0x7f7f7f7fu,WORD_AT(menu+0xf4));
+        guest_call(sub_00041DC0,4,bits((float)(int)(bounds[2]-102.f)-10.f-width),bits(y),caption,color);
+    }
+    WORD_AT(0x7e7260)=align;
+    if(font!=saved_font){guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,saved_font);}
+}
 static void fov_draw(void)
 {
     GuestRegisters r;
     uint32_t menu=WORD_AT(g_esp+4), rect=WORD_AT(g_esp+12);
     uint32_t item=WORD_AT(g_esp+8);
     int weapon=guest_writable(item,0x18) && WORD_AT(item+0x14)==12;
+    int id=guest_writable(item,0x18)?(int)WORD_AT(item+0x14):-1;
     save_registers(&r);
     if(guest_writable(menu,0xf8) && guest_writable(rect,16)) {
         float bounds[4]; uint32_t dark,light;
@@ -1096,13 +1131,14 @@ static void fov_draw(void)
         light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
         if(page==DISPLAY_VIEW)
-            menu_slider_capture(weapon?MENU_WEAPON_FOV:MENU_FOV,menu,item,
+            menu_slider_capture(id==15?MENU_CROSSHAIR_SIZE:weapon?MENU_WEAPON_FOV:MENU_FOV,menu,item,
                 (float)(int)(bounds[2]-102.f),(float)(int)((bounds[1]+bounds[3]-8.f)*.5f),100.f,8.f);
 #endif
         /* Original sensitivity-slider painter, in the menu's logical units. */
-        guest_call(sub_000814B0,9,bits(weapon?(float)(staged_weapon_fov-PC_WEAPON_FOV_MIN)/(PC_WEAPON_FOV_MAX-PC_WEAPON_FOV_MIN):(float)(staged_fov-PC_FOV_MIN)/(PC_FOV_MAX-PC_FOV_MIN)),
+        guest_call(sub_000814B0,9,bits(id==15?(float)(staged_crosshair-PC_CROSSHAIR_SIZE_MIN)/(PC_CROSSHAIR_SIZE_MAX-PC_CROSSHAIR_SIZE_MIN):weapon?(float)(staged_weapon_fov-PC_FOV_MIN)/(PC_FOV_MAX-PC_FOV_MIN):(float)(staged_fov-PC_FOV_MIN)/(PC_FOV_MAX-PC_FOV_MIN)),
             (uint32_t)(int)(bounds[2]-102.f),(uint32_t)(int)((bounds[1]+bounds[3]-8.f)*.5f),
             100u,8u,dark,dark,light,0u);
+        fov_value_draw(menu,item,id,bounds);
     }
     restore_registers(&r); g_esp+=4;
 }
@@ -1134,7 +1170,7 @@ static int mode_equal(PcDisplayMode a,PcDisplayMode b)
 { return a.width==b.width && a.height==b.height; }
 static int display_dirty(void)
 {
-    return staged_fullscreen!=previous_fullscreen || !mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov ||
+    return staged_fullscreen!=previous_fullscreen || !mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov || staged_crosshair!=previous_crosshair ||
         staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa || graphics_dirty();
 }
 static void update_apply(void)
@@ -1199,9 +1235,11 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(84,"SMAA"));
         guest_call(sub_00075430,2,post_aa_row,staged_aa);
     } else if(page==DISPLAY_VIEW) {
+        guest_call(sub_00071B10,4,1u,bits(.9f),1u,1u);
         fov_label();
         guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
         weapon_fov_row=guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(85),12u,0x400u,0u,0u,FOV_DRAW_CB);
+        guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(87),15u,0x400u,0u,0u,FOV_DRAW_CB);
         subtitle_row=guest_call(sub_00079D60_gen,6,text_at(12,"Subtitles"),9u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
         guest_call(sub_000717D0,1,text_at(13,"Off"));
@@ -1324,7 +1362,7 @@ static void back_callback(void)
 static void apply_changes(void)
 {
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART)apply_page=page;
-    int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov;
+    int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov || staged_crosshair!=previous_crosshair;
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
     int restart_changed=graphics_restart_dirty(),graphics_saved=0,aa_saved=0;
     int window_changed=staged_fullscreen!=previous_fullscreen,window_saved=0;
@@ -1332,7 +1370,8 @@ static void apply_changes(void)
     /* Resolution is already previewed/confirmed. Persist before publishing
      * FPS/texture changes so a failed save leaves those running values alone. */
     pc_display_set_fov(staged_fov);
-    pc_display_set_weapon_fov(staged_weapon_fov);
+    if(staged_weapon_fov!=previous_weapon_fov)pc_display_set_weapon_fov_degrees(staged_weapon_fov);
+    pc_display_set_crosshair_size(staged_crosshair);
     if(display_changed) {
         if(!pc_display_save())goto failed;
         display_saved=1;
@@ -1365,14 +1404,16 @@ static void apply_changes(void)
         applied_subtitles=staged_subtitles;
     }
     previous_fullscreen=staged_fullscreen;
-    previous=staged;previous_fov=staged_fov;previous_weapon_fov=staged_weapon_fov;applied_rate=staged_rate;applied_texture=texture_choice;
+    previous=staged;previous_fov=staged_fov;previous_weapon_fov=staged_weapon_fov;previous_weapon_percent=pc_display_weapon_fov_legacy_percent();previous_crosshair=staged_crosshair;applied_rate=staged_rate;applied_texture=texture_choice;
     applied_aa=staged_aa;
     deadline=0;*status=0;filter_modes();
     refresh(restart_changed?DISPLAY_RESTART:apply_page,restart_changed?2:0);
     return;
 failed:
     pc_display_set_fov(previous_fov);
-    pc_display_set_weapon_fov(previous_weapon_fov);
+    if(previous_weapon_percent)pc_display_set_weapon_fov(previous_weapon_percent);
+    else pc_display_set_weapon_fov_degrees(previous_weapon_fov);
+    pc_display_set_crosshair_size(previous_crosshair);
     int restored=mode_equal(pc_display_current(),previous) || pc_display_apply(previous);
     int rate_restored=!rate_saved || pc_frame_rate_save(pc_frame_rate_value(applied_rate));
     int graphics_restored=1;
@@ -1455,11 +1496,19 @@ static void tick_menu(void)
                 selected_aspect=(int)aspect;filter_modes();refresh(DISPLAY_HOME,0);
             }
         }
+        if(page==DISPLAY_VIEW && WORD_AT(menu+0x18c)==15) {
+            int *value=&staged_crosshair;
+            int minimum=PC_CROSSHAIR_SIZE_MIN,maximum=PC_CROSSHAIR_SIZE_MAX;
+            uint32_t buttons=WORD_AT(menu+0xc4);guest_call(sub_00074910,3,menu,0u,1u);
+            if((buttons&0x40000u) && *value>minimum)*value-=5;
+            else if((buttons&0x80000u) && *value<maximum)*value+=5;
+            fov_label();
+        }
         if(page==DISPLAY_VIEW && WORD_AT(menu+0x18c)==12) {
             uint32_t buttons=WORD_AT(menu+0xc4);
             guest_call(sub_00074910,3,menu,0u,1u);
-            if((buttons&0x40000u) && staged_weapon_fov>PC_WEAPON_FOV_MIN)staged_weapon_fov-=5;
-            else if((buttons&0x80000u) && staged_weapon_fov<PC_WEAPON_FOV_MAX)staged_weapon_fov+=5;
+            if((buttons&0x40000u) && staged_weapon_fov>PC_FOV_MIN)staged_weapon_fov--;
+            else if((buttons&0x80000u) && staged_weapon_fov<PC_FOV_MAX)staged_weapon_fov++;
             fov_label();
         }
         if(page==DISPLAY_VIEW && WORD_AT(menu+0x18c)==2) {
@@ -1500,7 +1549,8 @@ static void activate(void)
     if(storage) {
         staged_fullscreen=previous_fullscreen=pc_display_fullscreen();
         staged=previous=pc_display_current();staged_fov=previous_fov=pc_display_fov();
-        staged_weapon_fov=previous_weapon_fov=pc_display_weapon_fov();
+        staged_weapon_fov=previous_weapon_fov=pc_display_weapon_fov_degrees();previous_weapon_percent=pc_display_weapon_fov_legacy_percent();
+        staged_crosshair=previous_crosshair=pc_display_crosshair_size();
         staged_rate=applied_rate=pc_frame_rate_choice(pc_native_rate());
         texture_choice=applied_texture=(unsigned)tsfp_texture_is_4k();*status=0;
         staged_aa=applied_aa=pc_post_aa_get();

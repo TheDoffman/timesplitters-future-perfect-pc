@@ -1,3 +1,20 @@
+Installed display-reader capability: BUILD.json display_settings_version gates
+Crosshair Size (>=4) and Weapon FOV degrees (>=5). Missing/invalid metadata
+retains V1-V3 compatibility; unpackaged development builds support5. Older
+games get a disabled crosshair slider and validation rejects unsupported writes
+before any transaction. Windows packages emit5; native Mac/Linux build receipts
+emit5 and their packagers preserve the actual binary receipt value.
+
+Weapon FOV reference angles: GameSettings preserves V5 width/height/worldFov/
+weaponDegrees/crosshair,40-100 degrees. V3/V4 remain exact legacy percentages.
+New regression covers V5 persistence, bounds and malformed records; see
+[weapon aperture](video-options.md). No new launcher Weapon FOV control added.
+
+[Crosshair sizing](hud-sizing.md): one shared percentage slider and V4
+display preferences;100% preserves legacy files. HUD Scale removed, including
+its model field; valid older preview values load and normalize to100.
+Save/Cancel and dirty tracking cover Crosshair Size. Native visuals pending.
+
 Launcher1.6.2 packages restored editable controls and per-player deadzone sliders;
 game0.6.2 adds the high-FPS turret/prompt fixes. Three-host release verification
 remains required; see docs/release/launcher-releases.md.

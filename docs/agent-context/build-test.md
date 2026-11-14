@@ -7,7 +7,7 @@ on POSIX hosts so the real trace clock declarations remain available. Run
 `pytest tests/mods/test_texture_mod_mount.py` under Linux as well as Windows/Mac.
 Scanner/creator/API/parser tests run in Windows/Mac native suites and all mods
 tests under Linux CI, including audit name collisions; live checks use the Mac.
-# Tests ([Glass](pause-glass.md))
+# Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.
 Fixtures:32 combinations, unknown files, speech, ducking, dynamics, queued gains,
