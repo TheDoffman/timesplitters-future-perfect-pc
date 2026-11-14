@@ -415,3 +415,11 @@ still readable, cancellation concurrent with real transaction pumping, and a
 deliberately blocked probe retaining its resources until released. Windows
 factory/runtime/manager37 pass/2 skips. Native other-host/sanitizer checks and
 real window-close cleanup remain pending; old crash caches are not adopted/deleted.
+
+Source4d76dbb8 acceptance: Windows37 pass/2 skips, Mac38 pass/1 skip, Linux39 pass
+for factory/runtime/manager; Mac host ASan/UBSan factory14 pass/1 skip and Linux15
+pass. All three native game builds/platform checks pass. Real Windows WM_CLOSE
+during a live script and from script-ended results both exit0, preserve ordinary
+save hashes, leave no owned worker and create no additional private cache folder.
+The four earlier unmarked test caches stay untouched. CI43654874944 completes
+23 successful jobs/2 intentional skips. Abrupt-crash recovery remains separate.

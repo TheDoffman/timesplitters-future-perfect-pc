@@ -76,7 +76,9 @@ withholds source for the rest of the process. These storage calls do not start a
 VM. The following production runtime factory selects compiled helpers, locks
 networking offline and binds validated Deathmatch worlds through background
 preflight. Actual custom matches pass on all three hosts. Public launcher
-activation and Windows window-thread shutdown/crash cleanup remain unfinished.
+activation and abrupt-crash cleanup remain unfinished. Windows window-thread
+shutdown now drains background work before releasing staging resources while
+retaining any simulation-owned model until owner cleanup or process exit.
 
 A NULL original-root argument reads the explicit RECOMP_SAVE_DIR through the
 bootstrap environment adapter. Windows uses wide CRT environment strings and

@@ -1,3 +1,16 @@
+Window-thread shutdown acceptance (source4d76dbb8,2026-11-14): Windows factory/
+runtime/manager37 pass/2 skips; Mac38 pass/1 skip; Linux39 pass. Native host ASan/
+UBSan factory Mac14 pass/1 skip, Linux15 pass. All three native game builds and
+platform checks pass. Actual Windows WM_CLOSE during a live score4 script and
+from script-ended stage8 results both exit0, preserve ordinary save hashes and
+leave no new private cache directory or owned worker. Earlier four unmarked
+folders are preserved. GameSHA21694c4779d9c3e56c886e13ef088ce014acf71121ecdf85c32cd14f7dac4586.
+Live-exit evidenceSHA4027c816f6eed94e84196c6f115ace8b4cb7b06e39470437440976f754208b5d.
+CI43654874944 finishes GREEN23 success/2 intentional skips. Main is untouched.
+Abrupt-crash staging/profile recovery, launcher activation, public Mac mini
+hosting/trust/creator-to-player acceptance and the full release remain unfinished.
+The active full-completion goal retains its original scope.
+
 Window-thread mod shutdown (feature/mod-platform, base273716fd): factory now
 cancels only background Session/probe state under its facade lock, drains both,
 joins/releases the probe callback, then releases verified resources while keeping

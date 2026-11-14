@@ -7,8 +7,9 @@ capsule selects the integrated bootstrap, compiled helpers, isolated saves and
 asynchronous title adapter; ordinary startup keeps NULL binding. See
 [source handoff](mod-source-handoff.md) for this developer interface.
 Public launcher Lua activation remains unavailable. Windows window-thread quit
-still leaves private staging folders; shutdown/crash recovery, public package/
-launcher/workshop acceptance and multiplayer agreement remain release requirements.
+now drains the helper and releases staging resources, with live-match and results
+checks. Abrupt-crash recovery, public package/launcher/workshop acceptance and
+multiplayer agreement remain release requirements.
 VM library restrictions alone are not a security boundary against a native engine
 bug. There is no public upload-to-game scripting claim from the tests below.
 
