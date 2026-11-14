@@ -43558,3 +43558,18 @@ left no serving process. Log copied to logs/mac-mod-caddy-live-validation.txt.
 No internet tunnel/public endpoint exists yet. ClamAV remains absent; Tailscale
 still points to a missing app. The full goal and remaining requirements stay
 open in [the acceptance matrix](mod-workshop-acceptance.md).
+
+# Linux workshop validation (2026-11-14)
+
+At source ff580de3, a separate native-filesystem WSL Ubuntu24.04 checkout passes
+all77 workshop Python/C checks. The native Linux launcher build/test/package
+command passes61 shared UI groups plus package install, corruption rejection,
+repair through its copied helper and restart/render, preserving saves and game
+metadata. Existing unrelated Linux source and SDK were preserved. Linux gameplay
+and public internet acceptance remain unrun; the full completion goal stays open.
+
+The standalone C11 texture-reader fixture now requests POSIX2008 clock
+declarations on POSIX hosts. Actual WSL execution verifies the earlier Linux CI
+compile failure is resolved. The ff580de3 CI Linux Vulkan and all three native
+launcher jobs also pass; the overall runtime workflow was still running when
+checked. These checks do not imply a public release or in-game mod acceptance.

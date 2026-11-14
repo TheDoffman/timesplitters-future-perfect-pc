@@ -9,8 +9,8 @@ their named components; none substitute for actual host/game/public acceptance.
 | Creator packaging and SDK | `tools/mods/mod-workshop.py pack/validate`, original example, bounded package validator and keyed DDS contract | Stable documented asset/gameplay API, importers, richer original starter projects and complete creator documentation |
 | Real asset additions | Shared DDS worker resolves enabled overlays; compiled reader tests cover precedence, fallback and bounds | Updated game builds and live visual tests on Windows/Mac/Linux; audio, map and other content loading/import workflows |
 | Sandboxed gameplay scripting and custom modes | Lua source can be packaged/installed; activation is refused | Pinned engine, restricted game API, OS isolation, enforced instruction/memory/event/entity/host-call quotas, crash containment and hostile-script tests |
-| Launcher browsing/search | Shared Mods page, scan/creator information, bounded HTTPS catalog and verified download; Windows and native Mac shared UI checks pass | Native Linux execution, categories/filters/pagination, production endpoint and richer release/permission/report information |
-| Native installation and lifecycle | `ModLibraryPage.cs`: immutable versions, strict JSON/ZIP/DDS validation, dependency/cycle/conflict guards, enable/disable, version switch/rollback, uninstall and unknown-file preservation; Windows/native Mac contracts pass | Complete all content types, native Linux and cross-filesystem acceptance, interrupted-work/recovery UX, storage and profile management at production scale |
+| Launcher browsing/search | Shared Mods page, scan/creator information, bounded HTTPS catalog and verified download; Windows, native Mac and WSL Linux shared UI checks pass | Categories/filters/pagination, production endpoint and richer release/permission/report information |
+| Native installation and lifecycle | `ModLibraryPage.cs`: immutable versions, strict JSON/ZIP/DDS validation, dependency/cycle/conflict guards, enable/disable, version switch/rollback, uninstall and unknown-file preservation; Windows/Mac/WSL Linux contracts pass | Complete all content types, additional cross-filesystem acceptance, interrupted-work/recovery UX, storage and profile management at production scale |
 | Normal/recovery launch | Shared `GameSettings.StartInfo` configures verified texture overlay; Play without mods bypasses corrupt profiles without rewriting them | Actual game sessions, activation compatibility negotiation and end-to-end preservation across update/rollback/removal |
 | Multiplayer and saves | Cosmetic texture path leaves guest data unchanged; originals/settings/saves are not modified by library code | Server authority, ordered gameplay-mod/hash negotiation, mismatch behavior, modded save namespaces and real multiplayer acceptance |
 | Public Mac mini hosting without a purchased domain | Separate Git worktree at f6770b2b; native Mac tests pass; actual Caddy loopback catalog/write/private-path/expiry/shutdown checks pass | Persistent service setup, working HTTPS/tunnel identity, external connectivity and availability/reboot acceptance |
@@ -27,8 +27,11 @@ Classic/streaming tests and adversarial Python workshop cases pass. Logs and
 exact counts are in [STATUS](STATUS.md) and ignored task logs. Subsequent focused
 checks pass; the last full rerun hit an unrelated running-game guard. Native Mac
 build/sign/package/tests pass with 60 UI groups; 186 Mac Python/C checks pass.
-Live Caddy loopback and expiry shutdown pass. Linux, gameplay and public internet
-results must be added only after they are run.
+Live Caddy loopback and expiry shutdown pass. At ff580de3, WSL Ubuntu24.04
+passes all77 workshop Python/C checks and the native Linux launcher build/test/
+package command:61 shared UI groups plus package install, corruption rejection,
+repair and restart/render checks. This is configured-host launcher evidence;
+Linux gameplay and public internet acceptance remain unrun.
 
 The current Mac checkout contains unrelated edits and untracked cloud-conflict
 copies. Preserve it. Use a separate task worktree, skip LFS artwork hydration,

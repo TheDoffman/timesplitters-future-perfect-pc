@@ -28,8 +28,9 @@ Actual modded gameplay requires a new game build and scene verification.
 
 Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
 launcher-tests.exe --workshop (12 groups). Windows and native Mac checks pass.
-Linux execution, live ClamAV, public connectivity, full asset formats and gameplay
-scripting remain acceptance work, not capabilities implied by these tests.
+WSL Linux checks also pass:77 Python/C workshop checks,61 native shared UI groups
+and launcher package install/repair/restart. Live ClamAV, public connectivity,
+full asset formats and scripting remain acceptance work.
 <!-- packet:end -->
 
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,
@@ -54,7 +55,8 @@ Installations are separate immutable version directories. Texture-only mods can
 be enabled in the native library; Lua, maps and audio remain unavailable for
 activation. Public authenticated uploads, signed catalogs and distributed
 revocation enforcement are incomplete. Shared Python has no OS adapter; native
-Mac shared UI/install contracts now pass; Linux execution still needs validation.
+Mac and WSL Linux shared UI/install contracts now pass; game sessions still need
+validation on all three hosts.
 
 `mod_publication.py` exports approved/fresh content to a new separate static
 snapshot (4MiB catalog, 1,000 releases, 512MiB package cap). Preflight rejects
