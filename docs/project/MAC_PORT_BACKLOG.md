@@ -1,3 +1,14 @@
+Window-thread mod shutdown (feature/mod-platform, base273716fd): factory now
+cancels only background Session/probe state under its facade lock, drains both,
+joins/releases the probe callback, then releases verified resources while keeping
+the simulation-owned score model alive. Owner cleanup alone destroys that model;
+timeouts preserve resources. This addresses the real Windows window-thread CRT
+exit without freeing a pointer still used by title callbacks. New real-worker
+cases check readable retained scores, concurrent pumping and blocked-probe resource
+retention. Windows factory/runtime/manager37 pass/2 host skips. Cross-host,
+sanitizer and actual window-close verification pending. Safe recovery of previous
+crash caches/profiles, public activation/hosting and the full release remain open.
+
 Native mod HUD/layout acceptance source9410d805 (2026-11-14): Windows native
 build/platform checks and51 factory/diagnostic checks pass/2 skips; Mac build/
 platform plus12 factory checks pass/1 skip; Linux build/platform plus13 factory

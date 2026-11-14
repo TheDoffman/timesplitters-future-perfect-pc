@@ -4,7 +4,7 @@ Preflight also rejects restored flags on a previously unsupported fresh epoch.
 
 [Sun/visibility repair](fidelity-comparison.md).
 
-Native mod bootstrap, isolated saves, cache, preflight and automatic binding: [contracts](mod-scripting.md).
+Native mod startup, isolated storage, binding and window-thread drain: [contracts](mod-scripting.md).
 
 # Shared systems
 

@@ -174,5 +174,6 @@ extern "C" int tsfp_mod_match_ended(const TsfpModMatch *match,const TsfpModWorld
 extern "C" int tsfp_mod_match_faulted(const TsfpModMatch *match){return !match || match->fault;}
 extern "C" const char *tsfp_mod_match_error(const TsfpModMatch *match){return match?match->error:"No game script match";}
 extern "C" void tsfp_mod_match_close(TsfpModMatch *match){if(match){match->closing=true;match->count=0;match->session->close();}}
+extern "C" void tsfp_mod_match_cancel_worker(TsfpModMatch *match){if(match)match->session->close();}
 extern "C" int tsfp_mod_match_stopped(const TsfpModMatch *match){return !match || match->session->stopped();}
 extern "C" void tsfp_mod_match_destroy(TsfpModMatch *match){if(match){match->session->close();delete match;}}

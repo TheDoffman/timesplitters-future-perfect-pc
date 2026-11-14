@@ -13,6 +13,9 @@ public:
     ~MatchManager();
     TsfpModMatch *update(const TsfpModWorld *);
     void close() noexcept;
+    // Exit-only: caller excludes manager update/destruction and retains models.
+    // Cancels only the thread-safe worker, preserving simulation-owned data.
+    void cancel_worker() noexcept;
     bool stopped() const noexcept;
     const std::string &error()const noexcept{return error_;}
     MatchManager(const MatchManager &)=delete;

@@ -46,6 +46,9 @@ int tsfp_mod_match_ended(const TsfpModMatch *,const TsfpModWorld *,uint32_t *win
 int tsfp_mod_match_faulted(const TsfpModMatch *);
 const char *tsfp_mod_match_error(const TsfpModMatch *);
 void tsfp_mod_match_close(TsfpModMatch *);
+/* Exit-only cancellation may run on another thread while the caller retains
+   this match and excludes destruction. Does not change simulation-owned data. */
+void tsfp_mod_match_cancel_worker(TsfpModMatch *);
 int tsfp_mod_match_stopped(const TsfpModMatch *);
 void tsfp_mod_match_destroy(TsfpModMatch *);
 #ifdef __cplusplus

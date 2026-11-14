@@ -22,8 +22,9 @@ const char *pc_mod_runtime_error(void);
 void pc_mod_runtime_message(const char *,size_t);
 int pc_mod_runtime_overlay(char *,size_t);
 /* Signal-only across threads. Shutdown from the simulation thread (or before
- * any frame) drains up to5s. A different-thread/timeout exit retains resources
- * until OS teardown, with child Job/guardian lifetime containment still active. */
+ * any frame) drains up to5s. A different-thread exit cancels/drains background
+ * work and releases resources while retaining the simulation-owned model until
+ * owner cleanup/OS teardown. Timeout retains resources and lifetime containment. */
 void pc_mod_runtime_request_shutdown(void);
 int pc_mod_runtime_shutdown(void);
 #ifdef __cplusplus

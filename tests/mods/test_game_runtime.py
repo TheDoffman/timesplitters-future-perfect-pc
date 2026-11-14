@@ -8,7 +8,7 @@ import pytest
 from test_script_process import process_tools
 
 
-@pytest.mark.parametrize('mode',['ordinary','run','results','fault','repeat','tamper','other-thread','missing','changed','cache-env','cache-missing',
+@pytest.mark.parametrize('mode',['ordinary','run','results','fault','repeat','tamper','other-thread','other-thread-live','other-thread-probe','missing','changed','cache-env','cache-missing',
     pytest.param('cache-empty',marks=pytest.mark.skipif(sys.platform=='win32',reason='Win32 empty environment values remove the variable')),
     pytest.param('large-parent',marks=pytest.mark.skipif(sys.platform!='linux',reason='Linux fork/exec RSS boundary'))])
 def test_compiled_factory_only_admits_verified_offline_play_and_drains(process_tools,tmp_path,mode):

@@ -145,13 +145,15 @@ extern "C" int pc_mod_runtime_shutdown(void) {
     active_match.store(false);
     std::lock_guard<std::mutex> lock(facade);
     if(!context)return 1;
-    if(context->owner!=std::thread::id{} && context->owner!=std::this_thread::get_id())return 0;
+    bool owner=context->owner==std::thread::id{} || context->owner==std::this_thread::get_id();
     if(context->runtime) {
-        context->runtime->close();auto end=std::chrono::steady_clock::now()+std::chrono::seconds(5);
+        if(owner)context->runtime->close();else context->runtime->cancel_background();
+        auto end=std::chrono::steady_clock::now()+std::chrono::seconds(5);
         while(!context->runtime->stopped() && std::chrono::steady_clock::now()<end)
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         if(!context->runtime->stopped())return 0;
-        context->runtime.reset();
+        if(owner)context->runtime.reset();
+        else {try{if(!context->runtime->detach_background())return 0;}catch(...){return 0;}}
     }
     context->resources.reset();context->bound=0;return 1;
 }

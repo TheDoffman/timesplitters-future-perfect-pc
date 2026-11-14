@@ -397,3 +397,21 @@ build/platform checks pass on all three hosts; Windows factory/diagnostic51 pass
 2 skips, Mac12 pass/1 skip, Linux13 pass. Actual Windows message fits640px, score4
 and End/results/quit0 pass with ordinary saves preserved. CI43652459059 is green:
 23 successful jobs/2 intentional skips. Public activation and quit cleanup remain open.
+
+## Window-thread shutdown drain
+
+The production facade now distinguishes worker/probe cancellation from model
+destruction. While holding its facade lock it excludes manager update/destruction;
+cancel_background signals only the thread-safe Session cancellation and probe
+closing flag. It does not change match queues, scores or ownership. Shutdown waits
+up to5s for both to stop. detach_background joins the finished probe and destroys
+its callback while resources still exist; resources may then be released with
+the model retained for simulation callbacks. Only owner shutdown destroys that
+model; the OS releases it on a foreign-thread process exit. A timeout retains
+resources and lifetime containment. Future frame admission remains permanently off.
+
+The factory fixtures check foreign-thread cache removal with the score model
+still readable, cancellation concurrent with real transaction pumping, and a
+deliberately blocked probe retaining its resources until released. Windows
+factory/runtime/manager37 pass/2 skips. Native other-host/sanitizer checks and
+real window-close cleanup remain pending; old crash caches are not adopted/deleted.

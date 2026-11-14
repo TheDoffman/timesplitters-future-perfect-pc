@@ -81,6 +81,16 @@ void ScriptRuntime::close() noexcept {
 bool ScriptRuntime::stopped()const noexcept {
     return (!state_ || state_->done.load()) && (!manager_ || manager_->stopped());
 }
+void ScriptRuntime::cancel_background() noexcept {
+    if(state_){state_->closing.store(true);state_->wake.notify_one();}
+    if(manager_)manager_->cancel_worker();
+}
+bool ScriptRuntime::detach_background() {
+    if(!stopped())return false;
+    if(thread_.joinable())thread_.join();
+    if(state_)state_->probe={};
+    return true;
+}
 ScriptRuntime::~ScriptRuntime() {
     close();if(thread_.joinable())thread_.join();
 }

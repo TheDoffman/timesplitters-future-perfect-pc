@@ -20,6 +20,7 @@ static std::unique_ptr<tsfp::mods::SaveNamespace> lease;
 static std::string source;
 static std::atomic<bool> verified{true};
 static std::atomic<unsigned> probes{0};
+static std::atomic<bool> probe_gate{true},probe_inside{false};
 static bool requested=true,network_locked=false;
 static int (*overlay_extension)(char *,size_t);
 extern "C" void pc_debug_set_overlay_extension(int (*extension)(char *,size_t)){overlay_extension=extension;}
@@ -38,7 +39,9 @@ extern "C" const char *pc_mod_bootstrap_source(size_t *length) {
     bool ready=requested && verified.load();if(length)*length=ready?source.size():0;return ready?source.data():nullptr;
 }
 extern "C" int pc_mod_bootstrap_probe(void) {
-    ++probes;std::string error;return verified.load() && lease && lease->recheck(error);
+    ++probes;probe_inside.store(true);
+    while(!probe_gate.load())std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    std::string error;return verified.load() && lease && lease->recheck(error);
 }
 extern "C" void pc_mod_bootstrap_invalidate(void){verified.store(false);}
 extern "C" void pc_network_lock_offline(void){network_locked=true;}
@@ -74,6 +77,21 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
     if(mode=="tamper")std::ofstream(std::filesystem::u8path(lease->root())/".tsfp-mod-saves")<<"changed marker";
     TsfpModWorld world{};world.epoch=1;world.authoritative=world.offline=1;world.tick_rate=60;world.player_count=1;
     world.players[0]={1,0,0,100,0,0,0};world.identities[0]=7;
+    if(mode=="other-thread-probe") {
+        probe_gate.store(false);
+        struct ReleaseGate {~ReleaseGate(){probe_gate.store(true);}} release;
+        auto deadline=Clock::now()+std::chrono::seconds(3);
+        while(!probe_inside.load() && Clock::now()<deadline) {
+            CHECK(!pc_mod_runtime_update(&world,1));std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        CHECK(probe_inside.load());std::atomic<bool> done{false};int cleaned=0;
+        std::thread other([&]{cleaned=pc_mod_runtime_shutdown();done.store(true);});
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        bool retained=!done.load() && !std::filesystem::is_empty(std::filesystem::u8path(cache));
+        probe_gate.store(true);other.join();
+        CHECK(retained && cleaned && std::filesystem::is_empty(std::filesystem::u8path(cache)));
+        CHECK(!pc_mod_runtime_update(&world,1));std::puts("PASS blocked probe drain");return 0;
+    }
     if(mode=="results") {
         for(unsigned i=0;i<20;++i){CHECK(!pc_mod_runtime_update(&world,0));std::this_thread::sleep_for(std::chrono::milliseconds(1));}
         CHECK(!probes.load());++world.epoch;
@@ -96,7 +114,18 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
     CHECK(status==1);int32_t score=0;CHECK(tsfp_mod_match_score(match,&world,1,&score) && score==4);
     CHECK(pc_mod_runtime_update(&world,0)==match); // Existing result model retained.
     if(mode=="other-thread") {
-        int cleaned=1;std::thread other([&]{cleaned=pc_mod_runtime_shutdown();});other.join();CHECK(!cleaned);
+        int cleaned=0;std::thread other([&]{cleaned=pc_mod_runtime_shutdown();});other.join();CHECK(cleaned);
+        CHECK(tsfp_mod_match_score(match,&world,1,&score) && score==4); // Retained result model, never freed by UI thread.
+        CHECK(std::filesystem::is_empty(std::filesystem::u8path(cache)));
+        CHECK(!pc_mod_runtime_update(&world,1));
+    }
+    if(mode=="other-thread-live") {
+        world.tick=1;CHECK(tsfp_mod_match_enqueue(match,&world,TSFP_SCRIPT_TICK,0,0)==1);
+        std::atomic<bool> done{false};int cleaned=0;
+        std::thread other([&]{cleaned=pc_mod_runtime_shutdown();done.store(true);});
+        while(!done.load()) {TsfpModCommit commit{};(void)tsfp_mod_match_pump(match,&world,&commit);std::this_thread::yield();}
+        other.join();CHECK(cleaned && tsfp_mod_match_stopped(match));
+        CHECK(std::filesystem::is_empty(std::filesystem::u8path(cache)));
         CHECK(!pc_mod_runtime_update(&world,1));
     }
     std::puts("PASS factory");return 0;

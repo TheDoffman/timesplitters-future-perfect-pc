@@ -53,6 +53,7 @@ TsfpModMatch *MatchManager::update(const TsfpModWorld *world) {
     return match_;
 }
 void MatchManager::close() noexcept {closed_=true;retire();}
+void MatchManager::cancel_worker() noexcept {tsfp_mod_match_cancel_worker(match_);}
 bool MatchManager::stopped()const noexcept {return !match_ || tsfp_mod_match_stopped(match_);}
 MatchManager::~MatchManager() {
     // Match/session destruction signals cancellation; production shutdown must
