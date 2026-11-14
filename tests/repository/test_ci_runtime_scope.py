@@ -117,6 +117,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/mods/mod_scan_sandbox.py', 'tools/mods/scan_child.py', 'tests/mods/test_scanner_process.py'], {'native'}),
     (['tools/mods/mod_accounts.py', 'tools/mods/mod_uploads.py', 'tools/mods/mod_api.py', 'tools/mods/mod_operator.py', 'tests/mods/test_creator_api.py'], {'native'}),
     (['tools/mods/mod_trust.py', 'tools/mods/mod_signing.py', 'tests/mods/test_catalog_trust.py', 'tools/mods/hosting/requirements-signing.txt'], {'native'}),
+    (['src/mods/mod_script.c', 'src/mods/mod_worker.c', 'tools/build/build-mod-worker.py', 'tests/mods/test_script_worker.py'], {'native'}),
     (['tools/textures/texture-pack.py', 'src/textures/texture_pack.c'], {'native', 'gpu'}),
     (['tests/textures/texture_toggle.c'], {'native', 'gpu'}),
     (['tools/textures/texture-pack.py', 'patches/texture-mode.patch'], {'transitions', 'native', 'gpu'}),

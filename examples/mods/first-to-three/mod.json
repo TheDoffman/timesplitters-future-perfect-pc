@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "first-to-three",
+  "version": "0.1.0",
+  "name": "First to Three",
+  "author": "SDK Example",
+  "description": "Original experimental API1 custom mode. Runs in the developer worker; game activation is not yet available.",
+  "game": "tsfp-us-45410066",
+  "api": "tsfp-mod-v1-draft",
+  "dependencies": {},
+  "files": {}
+}

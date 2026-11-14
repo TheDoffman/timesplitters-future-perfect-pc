@@ -1,0 +1,26 @@
+diff --git a/lgc.c b/lgc.c
+index a463e41e6..cf4160c1d 100644
+--- a/lgc.c
++++ b/lgc.c
+@@ -1472,7 +1472,8 @@ static int checkmajorminor (lua_State *L, global_State *g) {
+   if (g->gckind == KGC_GENMAJOR) {  /* generational mode? */
+     l_mem numbytes = gettotalbytes(g);
+     l_mem addedbytes = numbytes - g->GCmajorminor;
+-    l_mem limit = applygcparam(g, MAJORMINOR, addedbytes);
++    l_mem limit = (addedbytes < 0) ? 0
++                                   : applygcparam(g, MAJORMINOR, addedbytes);
+     l_mem tobecollected = numbytes - g->GCmarked;
+     if (tobecollected > limit) {
+       atomic2gen(L, g);  /* return to generational mode */
+diff --git a/lobject.c b/lobject.c
+index 763b48460..6997cfd02 100644
+--- a/lobject.c
++++ b/lobject.c
+@@ -89,6 +89,7 @@ lu_byte luaO_codeparam (unsigned int p) {
+ l_mem luaO_applyparam (lu_byte p, l_mem x) {
+   int m = p & 0xF;  /* mantissa */
+   int e = (p >> 4);  /* exponent */
++  lua_assert(x >= 0);
+   if (e > 0) {  /* normalized? */
+     e--;  /* correct exponent */
+     m += 0x10;  /* correct mantissa; maximum value is 0x1F */

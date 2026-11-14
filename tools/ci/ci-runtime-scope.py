@@ -76,6 +76,9 @@ CPU_TOOLS = {
     'tools/mods/mod_trust.py', 'tools/mods/mod_signing.py',
     'tools/mods/hosting/requirements-signing.txt', 'tests/mods/conftest.py', 'tests/mods/test_catalog_trust.py',
     'tests/mods/test_native_trust_fixtures.py',
+    'tools/build/build-mod-worker.py', 'tools/mods/mod_script_protocol.py', 'tests/mods/test_script_worker.py',
+    'config/mods/lua-source.json', 'src/mods/CMakeLists.txt', 'src/mods/mod_script.c', 'src/mods/mod_script.h',
+    'src/mods/mod_worker.c', 'src/mods/mod_watchdog.c', 'src/mods/mod_watchdog.h',
     'tests/compiler/test_guest_abi.py',
     'tests/compiler/test_guest_call_frames.py',
     'tests/compiler/test_guest_dispatch.py',
@@ -201,7 +204,7 @@ def affected(paths, *, full=False):
             selected.add('native')  # Online HTTPS tests use the packaged certificate provider.
         elif path in RELEASE_INPUTS:
             selected.add('release')
-        elif path in CPU_TOOLS or (
+        elif path in CPU_TOOLS or path.startswith('src/mods/lua-fixes/') or (
             path.endswith('.py') and path.startswith(
                 ('tools/textures/', 'tests/textures/'))
         ):

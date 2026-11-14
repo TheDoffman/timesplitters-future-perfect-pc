@@ -43725,3 +43725,26 @@ preservation checks pass. Mac288 selected Python checks pass; WSL287 pass with
 one non-root ceremony skip. New trust test sources/public vectors are bound in
 Mac/Linux build receipts and Windows build-cache inputs. Public pin provisioning,
 live HTTPS and the rest of the full mod acceptance matrix remain incomplete.
+
+# Experimental native gameplay script worker (2026-11-14; base164c36a0)
+
+Added a separately built native Lua5.5.1 worker, exact pristine/fixed-source
+hash pins and four attributed upstream fixes applied only to build copies.
+A restricted API1 executes original custom-mode callbacks and queues score/end/
+message commands from copied roster snapshots. Lua heap16MiB, instruction and
+host-call limits, terminal all-or-nothing faults, strict binary frames and a
+500ms worker wall watchdog are implemented. The original First to Three SDK
+example is tested through actual native execution, including its winning kill.
+Windows361 selected mod/CI/context checks pass,2 Unix skips;56 worker checks cover
+real quotas, unavailable libraries, transactions, events, 64-bit ticks, numeric
+fixes, protocol attacks and expensive-C-function termination. Verification found
+and corrected Git silently skipping fixes in an ignored checkout build path;
+committed post-fix hashes now bind both in/out-of-checkout builds. Never force
+Lua's C89 selection externally: a64-bit integer assertion/test guards Windows.
+
+Mac/Linux execution and sanitizer validation are pending at this checkpoint.
+This is not a complete sandbox or playable game bridge. Independent native
+process/RSS/pipe supervision, Windows/Mac/Linux OS confinement and escape probes,
+verified real guest hooks/commands, multiplayer/save contracts and game packaging
+remain required. Launcher script activation is still refused. No original game
+code/generated output or personal data was modified. See mod-gameplay-scripting.md.

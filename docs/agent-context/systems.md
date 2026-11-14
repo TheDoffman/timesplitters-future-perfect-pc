@@ -1,58 +1,7 @@
-[Sticks](controller-deadzones.md), [Rollback](control-presets.md), [updates](main-menu-update.md).
-[Tex](texture-preference.md); [mods](mod-workshop.md).
+# Shared systems
 
-[Uplink throw tests and policy](native-uplink.md#throw-impulse).
-Networking: `pc_network_enabled()` reads startup config once,
-then uses shared atomic flags in the indirect-dispatch hot path. The System Link
-menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
-its own flag. Missing launch files are not retried on every guest call, and an
-explicit disconnect does not re-import stale startup credentials. Windows, Mac
-and Linux share this policy. See `tests/network/network_eligibility.c`.
-
-[Developer Tools integration](developer-tools-integration.md).
-
-[Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
-[Input](controls-options.md).
-
-[Icons](controls-options.md).
-[Display](video-options.md).
-[Tabs](../development/graphics-options.md).
-[exFAT](host-storage.md)
-# [Bindings](pause-settings.md)
-
-[SDL](linux-game.md).
-
-Native input self-tests use click/Escape capture after F1 became the optional
-Developer Tools shortcut. This changes only synthetic test events in
-src/native/input_sdl.c; Linux passes, native Mac execution remains pending.
-
-PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
-
-[Clicks](interaction-input.md#fresh-weapon-clicks-434).
-
-[Story](systems-details.md). [Exit/save](multiplayer-exit.md).
-
-[Mech](mounted-mouse.md).
-
-Minigun: [policy](native-minigun.md).
-
-[Kernel](kernel-objects.md).
-
-Memory: [retired APIs](retired-memory-compatibility.md).
-
-Guest storage: [allocation](independent.md#guest-allocation-ownership), [threads](thread-memory.md), [virtual memory](virtual-memory.md).
-
-Image/state/ABI: [image](independent.md#native-image-loading), [execution](independent.md#guest-state-and-abi-reports).
-
-Wind: [time scopes](native-wind.md).
-
-Aim/animation: [diagnostic limits](native-local-trace.md).
-
-GPU cache fixture/config: [runtime](runtime.md).
-
-Native player contact: [clear-slide policy/trace](native-player-contact.md).
-Registers: [policy/tests](gpr-refs.md).
-Script/audio clocks: [contracts](native-script-clocks.md).
+[Guest adapter notes](guest-adapter-notes.md#host-systems).
+[Mod scripting worker](mod-scripting.md): restricted API; real game adapters remain pending.
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;

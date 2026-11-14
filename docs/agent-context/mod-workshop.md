@@ -33,6 +33,11 @@ Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
 launcher-tests.exe --workshop (19 groups). Current Windows/Mac/Linux launcher
 checks pass; actual Mac Gunicorn-to-ClamAV/review and real signing/key-ceremony tests pass.
 Public connectivity, full asset formats and scripting remain acceptance work.
+
+Standalone native scripting now executes real Lua and an original custom score
+mode, with memory/instruction/host-call/transaction limits and a wall watchdog.
+Launcher activation remains refused until OS process confinement, independent
+supervision and actual game hooks are verified. See [worker](mod-scripting.md).
 <!-- packet:end -->
 
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,

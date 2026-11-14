@@ -1035,6 +1035,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 Players: controls-options.md.
 
 Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
-Catalog trust: test_catalog_trust.py + test_native_trust_fixtures.py; native C# verifies Python vectors; build receipts/cache bind them.
+[Mod worker and trust checks](mod-scripting.md).
 
 [PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).
