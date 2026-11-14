@@ -157,6 +157,22 @@ public static class LauncherSharedUiChecks
     }
     static void LibraryChecks(string root)
     {
+        Test("native mod metadata rejects allocation and numeric amplification",()=>{
+            string package=LibraryPackage(root,"metadata-budget","1.0.0",1);byte[] original=File.ReadAllBytes(package);int end=original.Length-22;
+            Need(BitConverter.ToUInt32(original,end)==0x06054b50,"Fixture ZIP end changed");
+            foreach(var change in new[]{new[]{8,65535},new[]{8,3},new[]{4,1}}) {
+                byte[] bad=(byte[])original.Clone();Array.Copy(BitConverter.GetBytes((ushort)change[1]),0,bad,end+change[0],2);
+                if(change[0]==8)Array.Copy(BitConverter.GetBytes((ushort)change[1]),0,bad,end+10,2);
+                string path=Path.Combine(root,Guid.NewGuid().ToString("N")+".zip");File.WriteAllBytes(path,bad);
+                WorkshopReject(()=>ModLibrary.ValidateZipMetadata(path),"Forged ZIP directory passed preflight");
+            }
+            string values=String.Join(",",Enumerable.Repeat("0",4096));
+            string large="{\"items\":["+String.Join(",",Enumerable.Repeat("["+values+"]",16))+"]}";
+            WorkshopReject(()=>ModJson.Read(large,4*1024*1024),"JSON token budget was not enforced");
+            WorkshopReject(()=>ModJson.Read("{\"n\":1e400}"),"JSON numeric overflow accepted");
+            string valid="{\"items\":["+String.Join(",",Enumerable.Repeat("["+values+"]",8))+"]}";
+            Need(ModJson.Read(valid,4*1024*1024).ContainsKey("items"),"Bounded numeric data failed");
+        });
         Test("native mod installation enables verified texture overlays and preserves official files",()=>{
             string folder=Path.Combine(root,"mod-install");Directory.CreateDirectory(folder);Directory.CreateDirectory(Path.Combine(folder,"Textures"));File.WriteAllText(Path.Combine(folder,"Textures/official.dds"),"preserve");
             var library=new ModLibrary(folder,()=>false);string package=LibraryPackage(root,"texture-demo","1.0.0",7);var mod=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);

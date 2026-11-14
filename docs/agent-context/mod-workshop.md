@@ -6,8 +6,9 @@ Authoritative product scope, usage, trust boundaries and follow-up milestones:
 <!-- packet:start -->
 Mod operator tools live in tools/mods/: bounded package validation, ClamAV
 quarantine/review, immutable releases, scan expiry/revocation, loopback preview
-and approved static exports. Public uploads/authentication, signed metadata,
-production queues and scripting are still incomplete. ClamAV enforces official-only
+and approved static exports. Private WSGI accounts/owned quota uploads/serial
+scan queue/moderator review are implemented. Public deployment, native creator UI,
+signed metadata, persistent supervision and scripting remain incomplete. ClamAV enforces official-only
 databases at most2 days old; legacy scan reports require a rescan/review.
 The selected public host is the user's Mac mini; no domain purchase is required
 for the planned Funnel trial. SSH works, but no public service has been deployed.
@@ -29,10 +30,9 @@ Windows native install/version rollback/removal-to-profile-scene texture loading
 and visual restoration pass. Story gameplay and Mac/Linux game scenes remain unverified.
 
 Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
-launcher-tests.exe --workshop (12 groups). Windows and native Mac checks pass.
-WSL Linux checks also pass:77 Python/C workshop checks,61 native shared UI groups
-and launcher package install/repair/restart. Public connectivity,
-full asset formats and scripting remain acceptance work.
+launcher-tests.exe --workshop (13 groups). Current Windows native checks pass;
+Mac/Linux must rerun the changed parsing guards. Prior host evidence is below.
+Public connectivity, full asset formats and scripting remain acceptance work.
 <!-- packet:end -->
 
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,
@@ -77,6 +77,32 @@ activation. Public authenticated uploads, signed catalogs and distributed
 revocation enforcement are incomplete. Shared Python has no OS adapter; native
 Mac and WSL Linux shared UI/install contracts now pass; game sessions still need
 validation on all three hosts.
+
+## Creator service and parsing budgets
+
+[Service contracts and operator commands](../development/mod-creator-service.md).
+mod_accounts.py owns scrypt/invitations/revocable sessions/recovery/suspension and
+rate/audit bounds. mod_uploads.py reserves quotas, checks ownership again on
+finalization, streams private uploads and serializes idempotent scanning/retries.
+Moderation authorization, release approval/revocation and audit share a SQLite
+transaction via Repository.approve_in_transaction/revoke_in_transaction. Failed
+audit cannot publish. Existing operator releases require explicit owner adoption.
+mod_api.py is a strict origin/scheme/Host/bearer WSGI API, with no quarantine file
+route. mod_operator.py writes one-time invitations only to new private0600 files.
+Gunicorn27.0.1 is hash-pinned separately; its profile binds127.0.0.1:8767 only.
+It is not wired to public Caddy and no API service has been deployed.
+
+Python/native preflight ZIP EOCD/actual central records before eager library
+allocation; maximum2049 entries,180-byte names,4096-byte extras,1024-byte comments,
+single disk, no SFX/global ZIP64. JSON is4MiB maximum,32 levels,4096 members per
+collection and65536 value/key tokens; preflight precedes Python object creation.
+Lua source is1MiB/file and map descriptors4MiB. Native ModJson numeric matching
+uses the original string/start position instead of quadratic suffix copies.
+New creator/API/parser tests run in Windows/Mac native suites and all tests/mods
+under Linux CI. live_creator_service.py checks real Gunicorn+ClamAV on Mac;
+live_scan_isolation.py compiles a C probe to verify hard limits/alarm across exec.
+Public scheduling, worker RSS supervision, native credentials/UI, signed trust,
+backups and public internet acceptance remain pending.
 
 `mod_publication.py` exports approved/fresh content to a new separate static
 snapshot (4MiB catalog, 1,000 releases, 512MiB package cap). Preflight rejects

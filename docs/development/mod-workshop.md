@@ -15,12 +15,16 @@ Installed view with texture enable/disable, version switching and uninstall.
 Players use its
 existing .NET runtime and do not need Python. Operator tooling uses the Python
 standard library and requires Python 3.12 or newer; it has no paid API.
+The private creator/moderator API additionally uses a separately pinned Gunicorn
+host runtime. Accounts, ownership, quota-reserved uploads, a serial scan queue
+and authenticated review are now implemented; native creator screens and public
+deployment are still incomplete. See [creator service](mod-creator-service.md).
 
 Texture-only packages can now be enabled in a separate active overlay. The
 shared runtime reader loads those DDS replacements before the existing pack,
-with reader fallback and the existing Enhanced/Classic switch. **Actual modded
-gameplay is not yet verified**: this requires building the updated game, not
-just the launcher. Maps, audio and Lua can be installed but cannot be enabled
+with reader fallback and the existing Enhanced/Classic switch. Windows profile-
+menu visual loading/update/rollback/removal is verified; Story gameplay and
+other game hosts remain unverified. Maps, audio and Lua can be installed but cannot be enabled
 yet. Their formats/APIs remain drafts. This is not a general game-content loader.
 No public infrastructure, accounts, signing keys, game hooks or production
 sandbox have been deployed by this work. The selected host is the owner's Mac
@@ -155,8 +159,10 @@ encrypted ZIPs, unsupported compression and compiled Lua are rejected. Native
 executables are excluded by extension policy and common executable-header checks.
 Type sanity is intentionally separate from full decoder/game-format validation.
 
-Limits: 2,048 payload files, 64 MiB per payload, 256 KiB manifest, 256 MiB total
-expanded payload, 256 MiB archive. Actual decompressed sizes, CRCs and hashes
+Limits: 2,048 payload files, 64 MiB per payload (Lua1MiB, map JSON4MiB), 256 KiB
+manifest, 256 MiB expanded payload/archive. ZIP central-directory and JSON
+allocation budgets apply before general decoders; see the
+[bounded parsing contract](mod-creator-service.md#bounded-parsing). Actual decompressed sizes, CRCs and hashes
 are checked. Native EXE/DLLs, shell scripts, Python, installers and nested ZIP
 payloads have no accepted role. No package path can name a game/save/config file.
 

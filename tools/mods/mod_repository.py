@@ -77,6 +77,7 @@ class Repository:
     @contextmanager
     def db(self):
         db = sqlite3.connect(self.root / 'catalog.sqlite', timeout=10)
+        db.execute('PRAGMA foreign_keys=ON')
         db.row_factory = sqlite3.Row
         try:
             with db:
@@ -93,7 +94,9 @@ class Repository:
         db.execute('INSERT INTO events(sha256,time,action,note) VALUES(?,?,?,?)',
                    (sha, datetime.now(timezone.utc).isoformat(), action, note))
 
-    def submit(self, source, scanner):
+    def submit(self, source, scanner, expected_sha=None):
+        if expected_sha is not None:
+            self.blob(expected_sha)
         source = Path(source)
         require(source.stat().st_size <= MAX_ARCHIVE, 'Archive too large')
         # A private snapshot binds validation, scan and moderation to identical bytes.
@@ -103,6 +106,7 @@ class Repository:
                 data = stream.read(MAX_ARCHIVE + 1)
             require(len(data) <= MAX_ARCHIVE, 'Archive too large')
             sha = digest(data)
+            require(expected_sha is None or sha == expected_sha, 'Submitted package digest changed')
             snapshot.write_bytes(data)
             content = Path(temporary) / 'content'
             content.mkdir()
@@ -143,27 +147,34 @@ class Repository:
                 and report.get('isolation') == ISOLATION_POLICY)
 
     def approve(self, sha, reviewer_note):
+        with self.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            self.approve_in_transaction(db, sha, reviewer_note)
+
+    def approve_in_transaction(self, db, sha, reviewer_note):
+        require(db.in_transaction, 'Approval requires an active transaction')
         require(isinstance(reviewer_note, str) and 0 < len(reviewer_note.strip()) <= 2000,
                 'Record a reviewer and review note')
-        with self.db() as db:
-            db.execute('BEGIN IMMEDIATE')
-            row = db.execute('SELECT * FROM releases WHERE sha256=?', (sha,)).fetchone()
-            require(row is not None and row['state'] == 'pending-review', 'Release is not awaiting review')
-            require(self.fresh(json.loads(row['scan'])), 'A recent clean scan is required')
-            data = self.blob(sha).read_bytes()
-            require(digest(data) == sha, 'Stored blob was modified')
-            inspect_package(self.blob(sha))
-            db.execute("UPDATE releases SET state='approved' WHERE sha256=?", (sha,))
-            self.event(db, sha, 'approved', reviewer_note.strip())
+        row = db.execute('SELECT * FROM releases WHERE sha256=?', (sha,)).fetchone()
+        require(row is not None and row['state'] == 'pending-review', 'Release is not awaiting review')
+        require(self.fresh(json.loads(row['scan'])), 'A recent clean scan is required')
+        data = self.blob(sha).read_bytes()
+        require(digest(data) == sha, 'Stored blob was modified')
+        inspect_package(self.blob(sha))
+        db.execute("UPDATE releases SET state='approved' WHERE sha256=?", (sha,))
+        self.event(db, sha, 'approved', reviewer_note.strip())
 
     def revoke(self, sha, reason):
-        require(isinstance(reason, str) and 0 < len(reason.strip()) <= 2000, 'Revocation needs a reason')
         with self.db() as db:
             db.execute('BEGIN IMMEDIATE')
-            require(db.execute('SELECT 1 FROM releases WHERE sha256=?', (sha,)).fetchone(),
-                    'Unknown release')
-            db.execute("UPDATE releases SET state='revoked' WHERE sha256=?", (sha,))
-            self.event(db, sha, 'revoked', reason.strip())
+            self.revoke_in_transaction(db, sha, reason)
+
+    def revoke_in_transaction(self, db, sha, reason):
+        require(db.in_transaction, 'Revocation requires an active transaction')
+        require(isinstance(reason, str) and 0 < len(reason.strip()) <= 2000, 'Revocation needs a reason')
+        require(db.execute('SELECT 1 FROM releases WHERE sha256=?', (sha,)).fetchone(), 'Unknown release')
+        db.execute("UPDATE releases SET state='revoked' WHERE sha256=?", (sha,))
+        self.event(db, sha, 'revoked', reason.strip())
 
     def rescan(self, sha, scanner):
         with self.db() as db:

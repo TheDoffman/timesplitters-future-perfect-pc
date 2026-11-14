@@ -15,7 +15,8 @@ namespace TimeSplitters.Launcher
     // Limits are independent of any antivirus result or repository trust claim.
     internal sealed class ModJson
     {
-        readonly string text;int at;
+        readonly string text;int at,nodes;
+        static readonly Regex NumberPattern=new Regex(@"\G-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?",RegexOptions.CultureInvariant,TimeSpan.FromSeconds(1));
         ModJson(string text){this.text=text;}
         void Space(){while(at<text.Length && " \t\r\n".IndexOf(text[at])>=0)at++;}
         void Need(bool value){Core.Require(value,"Invalid or ambiguous mod JSON.");}
@@ -27,19 +28,21 @@ namespace TimeSplitters.Launcher
         }
         object Value(int depth)
         {
-            Need(depth<=32);Space();Need(at<text.Length);char c=text[at];
+            Need(depth<=32 && ++nodes<=65536);Space();Need(at<text.Length);char c=text[at];
             if(c=='"')return String();
             if(c=='{') {
+                Need(depth<32);
                 at++;var result=new Dictionary<string,object>(StringComparer.Ordinal);Space();
                 if(at<text.Length && text[at]=='}'){at++;return result;}
-                while(true){Space();Need(at<text.Length && text[at]=='"');string key=String();Need(!result.ContainsKey(key));Space();Need(at<text.Length && text[at++]==':');result.Add(key,Value(depth+1));Need(result.Count<=4096);Space();Need(at<text.Length);char end=text[at++];if(end=='}')return result;Need(end==',');}
+                while(true){Space();Need(at<text.Length && text[at]=='"' && ++nodes<=65536);string key=String();Need(!result.ContainsKey(key));Space();Need(at<text.Length && text[at++]==':');result.Add(key,Value(depth+1));Need(result.Count<=4096);Space();Need(at<text.Length);char end=text[at++];if(end=='}')return result;Need(end==',');}
             }
             if(c=='[') {
+                Need(depth<32);
                 at++;var result=new List<object>();Space();if(at<text.Length && text[at]==']'){at++;return result.ToArray();}
                 while(true){result.Add(Value(depth+1));Need(result.Count<=4096);Space();Need(at<text.Length);char end=text[at++];if(end==']')return result.ToArray();Need(end==',');}
             }
             foreach(string token in new[]{"true","false","null"})if(text.Length-at>=token.Length && System.String.CompareOrdinal(text,at,token,0,token.Length)==0){at+=token.Length;return token=="null"?null:(object)(token=="true");}
-            var number=Regex.Match(text.Substring(at),@"\A-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?");Need(number.Success);at+=number.Length;
+            var number=NumberPattern.Match(text,at);Need(number.Success && number.Index==at && number.Length<=128);at+=number.Length;
             long integer;if(Int64.TryParse(number.Value,NumberStyles.AllowLeadingSign,CultureInfo.InvariantCulture,out integer))return integer;
             decimal fraction;Need(Decimal.TryParse(number.Value,NumberStyles.Float,CultureInfo.InvariantCulture,out fraction));return fraction;
         }
@@ -115,6 +118,29 @@ namespace TimeSplitters.Launcher
             using(var output=new MemoryStream()) {byte[] buffer=new byte[65536];int count;while((count=input.Read(buffer,0,buffer.Length))>0){token.ThrowIfCancellationRequested();Core.Require(output.Length+count<=expected,"Mod decompression exceeds declared size.");output.Write(buffer,0,count);}Core.Require(output.Length==expected,"Truncated mod payload.");return output.ToArray();}
         }
         static uint U32(byte[] bytes,int at){return BitConverter.ToUInt32(bytes,at);}
+        static int U16(byte[] bytes,int at){return BitConverter.ToUInt16(bytes,at);}
+        internal static void ValidateZipMetadata(string path)
+        {
+            using(var input=File.OpenRead(path))using(var reader=new BinaryReader(input)) {
+                long length=input.Length;Core.Require(length>=22 && length<=ModWorkshopClient.MaxPackageBytes,"Invalid mod archive size.");
+                Core.Require(reader.ReadUInt32()==0x04034b50,"ZIP prefixes and self-extracting archives are forbidden.");
+                int tailSize=(int)Math.Min(length,1046);input.Position=length-tailSize;byte[] tail=reader.ReadBytes(tailSize);int end=-1;
+                for(int at=tail.Length-22;at>=0;at--)if(U32(tail,at)==0x06054b50 && at+22+U16(tail,at+20)==tail.Length){end=at;break;}
+                Core.Require(end>=0,"Bounded single-disk ZIP end record required.");int count=U16(tail,end+10);
+                Core.Require(U16(tail,end+4)==0 && U16(tail,end+6)==0 && U16(tail,end+8)==count && count>=2 && count<=MaxFiles+1,"Invalid mod archive entry count or disk layout.");
+                long size=U32(tail,end+12),offset=U32(tail,end+16),directoryEnd=length-tailSize+end;
+                Core.Require(offset>=4 && size>0 && size<=(MaxFiles+1L)*(46+180+4096+1024) && offset+size==directoryEnd,"Invalid or excessive ZIP directory.");
+                input.Position=offset;
+                for(int i=0;i<count;i++) {
+                    Core.Require(input.Position+46<=directoryEnd,"Truncated ZIP directory.");byte[] entry=reader.ReadBytes(46);
+                    Core.Require(entry.Length==46 && U32(entry,0)==0x02014b50,"Invalid ZIP directory entry.");
+                    int name=U16(entry,28),extra=U16(entry,30),comment=U16(entry,32);
+                    Core.Require(name>0 && name<=180 && extra<=4096 && comment<=1024 && U16(entry,34)==0,"ZIP entry metadata exceeds limits.");
+                    int skip=name+extra+comment;Core.Require(input.Position+skip<=directoryEnd,"Truncated ZIP entry metadata.");input.Position+=skip;
+                }
+                Core.Require(input.Position==directoryEnd,"ZIP directory entry count mismatch.");
+            }
+        }
         public static void ValidateDds(byte[] data)
         {
             Core.Require(data.Length>=128 && data.Length<=24*1024*1024 && U32(data,0)==0x20534444 && U32(data,4)==124 && U32(data,76)==32 && U32(data,112)==0 && U32(data,24)==0,"Invalid DDS header or size.");
@@ -134,14 +160,15 @@ namespace TimeSplitters.Launcher
         {
             Core.Require(!(bytes.Length>=2 && bytes[0]=='M' && bytes[1]=='Z') && !(bytes.Length>=4 && bytes[0]==0x7f && bytes[1]=='E' && bytes[2]=='L' && bytes[3]=='F'),"Native executable payload forbidden.");
             if(name.StartsWith("textures/",StringComparison.Ordinal))ValidateDds(bytes);
-            else if(name.StartsWith("scripts/",StringComparison.Ordinal)) {string source=new UTF8Encoding(false,true).GetString(bytes);Core.Require(!source.Contains('\0') && !source.StartsWith("\u001bLua",StringComparison.Ordinal),"Scripts must be UTF-8 Lua source.");}
-            else if(name.StartsWith("maps/",StringComparison.Ordinal))ModJson.Read(new UTF8Encoding(false,true).GetString(bytes),64*1024*1024);
+            else if(name.StartsWith("scripts/",StringComparison.Ordinal)) {Core.Require(bytes.Length<=1024*1024,"Script source exceeds1MiB.");string source=new UTF8Encoding(false,true).GetString(bytes);Core.Require(!source.Contains('\0') && !source.StartsWith("\u001bLua",StringComparison.Ordinal),"Scripts must be UTF-8 Lua source.");}
+            else if(name.StartsWith("maps/",StringComparison.Ordinal))ModJson.Read(new UTF8Encoding(false,true).GetString(bytes),4*1024*1024);
             else if(name.EndsWith(".wav",StringComparison.OrdinalIgnoreCase))Core.Require(bytes.Length>=12 && Encoding.ASCII.GetString(bytes,0,4)=="RIFF" && Encoding.ASCII.GetString(bytes,8,4)=="WAVE","Invalid WAV payload.");
             else Core.Require(bytes.Length>=4 && Encoding.ASCII.GetString(bytes,0,4)=="OggS","Invalid Ogg payload.");
         }
         InstalledMod Extract(string package,string destination,string expected,CancellationToken token)
         {
             Core.Require(HashPattern.IsMatch(expected??"") && new FileInfo(package).Length<=ModWorkshopClient.MaxPackageBytes && Core.Hash(package)==expected,"Mod archive integrity failure.");
+            ValidateZipMetadata(package);
             using(var archive=ZipFile.OpenRead(package)) {
                 Core.Require(archive.Entries.Count>1 && archive.Entries.Count<=MaxFiles+1,"Invalid mod archive entry count.");var names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach(var entry in archive.Entries) {

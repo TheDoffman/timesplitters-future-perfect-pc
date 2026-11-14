@@ -8,6 +8,9 @@ from mod_package import ModError, build_package, inspect_package
 from mod_repository import ClamScanner, Repository, stage_install
 from mod_server import fetch_install, make_server
 from mod_publication import export_snapshot, validate_snapshot
+from mod_accounts import Accounts, ServiceError
+from mod_uploads import Uploads
+from mod_operator import issue_invitation
 
 
 def main(argv=None):
@@ -31,6 +34,20 @@ def main(argv=None):
     export.add_argument('--output', required=True)
     check_public = commands.add_parser('check-public', help='Preflight a static public snapshot')
     check_public.add_argument('snapshot')
+    for name in ('invite','recover-account','suspend-account','assign-owner','scan-next'):
+        command = commands.add_parser(name)
+        command.add_argument('--repository', required=True)
+        if name != 'scan-next':
+            command.add_argument('username')
+        if name == 'invite':
+            command.add_argument('--role', choices=('creator','moderator','admin'), default='creator')
+        if name in ('recover-account','suspend-account','assign-owner'):
+            command.add_argument('--note', required=True)
+        if name == 'assign-owner':
+            command.add_argument('--mod-id', required=True)
+        if name == 'scan-next':
+            command.add_argument('--clamscan', default='clamscan')
+            command.add_argument('--clamav-database', required=True)
     for name in ('submit', 'approve', 'revoke', 'rescan', 'search', 'serve', 'inspect'):
         command = commands.add_parser(name)
         command.add_argument('--repository', required=True)
@@ -61,6 +78,20 @@ def main(argv=None):
             result = export_snapshot(Repository(args.repository), args.output)
         elif args.command == 'check-public':
             result = validate_snapshot(args.snapshot)
+        elif args.command in ('invite','recover-account','suspend-account','assign-owner','scan-next'):
+            accounts = Accounts(Repository(args.repository))
+            if args.command == 'invite':
+                result = issue_invitation(accounts, args.username, args.role)
+            elif args.command == 'recover-account':
+                result = issue_invitation(accounts, args.username, recovery_note=args.note)
+            elif args.command == 'suspend-account':
+                accounts.suspend(args.username, args.note)
+                result = {'username': args.username, 'state': 'suspended'}
+            elif args.command == 'assign-owner':
+                Uploads(accounts).assign_owner(args.mod_id, args.username, args.note)
+                result = {'id': args.mod_id, 'username': args.username}
+            else:
+                result = Uploads(accounts).process_next(ClamScanner(args.clamscan, args.clamav_database))
         else:
             repo = Repository(args.repository)
             if args.command == 'submit':
@@ -89,7 +120,7 @@ def main(argv=None):
         if args.command in ('submit', 'rescan') and result['state'] in ('scan-error', 'rejected'):
             return 2
         return 0
-    except (ModError, OSError, sqlite3.Error) as exc:
+    except (ModError, ServiceError, OSError, sqlite3.Error) as exc:
         print('Mod workshop: ' + str(exc), file=sys.stderr)
         return 2
     except KeyboardInterrupt:

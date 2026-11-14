@@ -1,7 +1,9 @@
 """Mac scanner sandbox acceptance against disposable canaries, never personal files."""
 import argparse
+import json
 from pathlib import Path
 import socket
+import subprocess
 import sys
 import tempfile
 import threading
@@ -23,6 +25,15 @@ def main():
         allowed.write_text('return {}\n')
         secret = root / 'private-canary'
         secret.write_text('Disposable secret must remain private\n')
+        probe = root / 'limits-probe'
+        subprocess.run(['clang','-std=c11',str(ROOT / 'tests/mods/scan_limits_probe.c'),'-o',str(probe)],
+                       check=True, capture_output=True, timeout=30)
+        with ScanSandbox(str(probe), content, args.database) as worker:
+            result = worker.run([], capture_output=True, timeout=10)
+            assert result.returncode == 0, result
+            limits = json.loads(result.stdout)
+            assert 170 <= limits.pop('alarm') <= 180, limits
+            assert limits == dict(cpu=150, file=512*1024*1024, fds=128, core=0), limits
         with ScanSandbox('/bin/cat', content, args.database) as worker:
             permitted = worker.run([str(allowed)], capture_output=True, timeout=10)
             assert permitted.returncode == 0 and permitted.stdout == allowed.read_bytes(), permitted

@@ -1,5 +1,6 @@
 """Portable, bounded mod packages. Validation never executes uploaded code."""
 import hashlib
+from decimal import Decimal, InvalidOperation
 import json
 import re
 import stat
@@ -13,6 +14,8 @@ MAX_TOTAL = 256 * 1024 * 1024
 MAX_FILE = 64 * 1024 * 1024
 MAX_FILES = 2048
 MAX_MANIFEST = 256 * 1024
+MAX_MAP_JSON = 4 * 1024 * 1024
+MAX_SCRIPT = 1024 * 1024
 ID = re.compile(r'[a-z][a-z0-9]*(?:-[a-z0-9]+)*\Z')
 VERSION = re.compile(r'(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\Z')
 SHA = re.compile(r'[0-9a-f]{64}\Z')
@@ -64,6 +67,7 @@ def validate_payload(name, data):
                           b'\xce\xfa\xed\xfe', b'\xfe\xed\xfa\xce')
     require(not data.startswith(executable_headers), 'Native executable payload forbidden')
     if kind == 'scripts':
+        require(len(data) <= MAX_SCRIPT, 'Script source exceeds1MiB')
         try:
             source = data.decode('utf-8')
         except UnicodeError as exc:
@@ -71,6 +75,7 @@ def validate_payload(name, data):
         require('\x00' not in source and not data.startswith(b'\x1bLua'),
                 'Binary/compiled Lua forbidden')
     elif kind == 'maps':
+        require(len(data) <= MAX_MAP_JSON, 'Map descriptor exceeds4MiB')
         require(isinstance(read_json(data), dict), 'Draft map payload must be a JSON object')
     elif kind == 'textures':
         validate_dds(data)
@@ -115,14 +120,64 @@ def object_pairs(pairs):
     return obj
 
 
+def json_budget(text):
+    """Count tokens/depth/collection members before a JSON decoder allocates objects."""
+    stack = []
+    quoted = escaped = atom = False
+    nodes = 0
+    for char in text:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif char == '\\':
+                escaped = True
+            elif char == '"':
+                quoted = False
+            continue
+        if char == '"':
+            quoted, atom = True, False
+            nodes += 1
+        elif char in '{[':
+            stack.append(['}' if char == '{' else ']', 1])
+            require(len(stack) <= 32, 'JSON nesting exceeds32 levels')
+            nodes += 1
+            atom = False
+        elif char in '}]':
+            require(stack and stack[-1][0] == char, 'Invalid JSON nesting')
+            stack.pop()
+            atom = False
+        elif char == ',':
+            require(stack, 'Invalid JSON collection')
+            stack[-1][1] += 1
+            require(stack[-1][1] <= 4096, 'JSON collection exceeds4096 members')
+            atom = False
+        elif char in ': \t\r\n':
+            atom = False
+        elif not atom:
+            atom = True
+            nodes += 1
+        require(nodes <= 65536, 'JSON token budget exceeded')
+    require(not quoted and not stack, 'Incomplete JSON')
+
+
 def read_json(data):
     try:
         if isinstance(data, bytes):
+            require(len(data) <= MAX_MAP_JSON, 'JSON input exceeds4MiB')
             data = data.decode('utf-8')
+        require(isinstance(data, str) and len(data.encode('utf-8')) <= MAX_MAP_JSON, 'JSON input exceeds4MiB')
         require(not data.startswith('\ufeff'), 'JSON must be UTF-8 without a byte-order mark')
+        json_budget(data)
+        def number(value, integer=False):
+            require(len(value) <= 128, 'JSON number exceeds limit')
+            parsed = Decimal(value)
+            require(parsed.is_finite() and parsed.copy_abs() <= Decimal('79228162514264337593543950335'),
+                    'JSON number exceeds supported range')
+            return int(value) if integer else parsed
         return json.loads(data, object_pairs_hook=object_pairs,
+                          parse_int=lambda value: number(value, True), parse_float=number,
                           parse_constant=lambda _: require(False, 'Nonfinite JSON value'))
-    except (UnicodeError, json.JSONDecodeError, RecursionError) as exc:
+    except (UnicodeError, json.JSONDecodeError, RecursionError, InvalidOperation) as exc:
         raise ModError('Invalid JSON') from exc
 
 
@@ -140,7 +195,11 @@ def validate_manifest(m):
     for field, limit in [('name', 120), ('author', 120), ('description', 4000)]:
         value = m[field]
         require(isinstance(value, str) and 0 < len(value) <= limit
-                and all(ord(c) >= 32 for c in value), f'Invalid {field}')
+                and all(ord(c) >= 32 and not 127 <= ord(c) <= 159 for c in value), f'Invalid {field}')
+        try:
+            require(len(value.encode('utf-16-le')) // 2 <= limit, f'Invalid {field} length')
+        except UnicodeError as exc:
+            raise ModError(f'Invalid {field} Unicode') from exc
     deps = m['dependencies']
     require(isinstance(deps, dict) and len(deps) <= 32, 'Invalid dependencies')
     for key, value in deps.items():
@@ -163,6 +222,42 @@ def validate_manifest(m):
     return m
 
 
+def validate_zip_metadata(path):
+    """Bound the central directory before ZipFile eagerly allocates ZipInfo objects."""
+    path = Path(path)
+    length = path.stat().st_size
+    require(22 <= length <= MAX_ARCHIVE, 'Invalid archive size')
+    with path.open('rb') as stream:
+        require(stream.read(4) == b'PK\x03\x04', 'ZIP prefixes and self-extracting archives are forbidden')
+        tail_size = min(length, 1046)  # EOCD plus at most1024 bytes of archive comment.
+        stream.seek(length - tail_size)
+        tail = stream.read(tail_size)
+        end = -1
+        for at in range(len(tail) - 22, -1, -1):
+            if tail[at:at+4] == b'PK\x05\x06' and at + 22 + struct.unpack_from('<H', tail, at+20)[0] == len(tail):
+                end = at
+                break
+        require(end >= 0, 'Bounded single-disk ZIP end record required')
+        _, disk, start, disk_count, count, size, offset, _ = struct.unpack_from('<4s4H2IH', tail, end)
+        require(disk == start == 0 and disk_count == count and 2 <= count <= MAX_FILES + 1,
+                'Invalid archive entry count or disk layout')
+        directory_end = length - tail_size + end
+        require(4 <= offset and 0 < size <= (MAX_FILES + 1) * (46 + 180 + 4096 + 1024)
+                and offset + size == directory_end, 'Invalid or excessive ZIP directory')
+        stream.seek(offset)
+        for _ in range(count):
+            require(stream.tell() + 46 <= directory_end, 'Truncated ZIP directory')
+            header = stream.read(46)
+            require(len(header) == 46 and header[:4] == b'PK\x01\x02', 'Invalid ZIP directory entry')
+            name, extra, comment, entry_disk = struct.unpack_from('<4H', header, 28)
+            require(0 < name <= 180 and extra <= 4096 and comment <= 1024 and entry_disk == 0,
+                    'ZIP entry metadata exceeds limits')
+            skip = name + extra + comment
+            require(stream.tell() + skip <= directory_end, 'Truncated ZIP entry metadata')
+            stream.seek(skip, 1)
+        require(stream.tell() == directory_end, 'ZIP directory entry count mismatch')
+
+
 def inspect_package(path, destination=None):
     """Validate all entries, including actual bytes/CRC; optionally extract safely.
 
@@ -172,6 +267,7 @@ def inspect_package(path, destination=None):
     """
     path = Path(path)
     require(path.stat().st_size <= MAX_ARCHIVE, 'Archive too large')
+    validate_zip_metadata(path)
     try:
         with zipfile.ZipFile(path) as archive:
             infos = archive.infolist()

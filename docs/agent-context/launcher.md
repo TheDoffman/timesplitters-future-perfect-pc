@@ -868,8 +868,12 @@ GameSettings.StartInfo gains a two-argument bypass for Play without mods while
 retaining the existing one-argument contract. Its normal path verifies the active
 overlay before passing TSFP_MOD_TEXTURE_DIR. Maps/audio/scripts cannot be enabled.
 Internet origins require HTTPS; redirects/external URLs fail closed; downloads
-recheck fresh scans. 12 workshop groups run with --workshop and shared UI suites.
-A Windows full run passed; the final focused checks pass while a later full run
-hit the existing running-game guard. Native Mac build/sign/package and60 UI
-groups pass. Linux, live modded gameplay and public Mac deployment remain pending.
+recheck fresh scans.13 workshop groups run with --workshop and shared UI suites.
+ZIP central records are bounded before ZipArchive allocation. Shared ModJson
+caps depth/nodes/collections and matches numbers without repeated suffix copies.
+Map JSON is4MiB and Lua source1MiB/file. The current Windows full run passes60 UI
+groups; changed parsing guards still need current Mac/Linux host checks. Earlier
+native checkpoints and Windows live texture-menu evidence are in STATUS.
+The [private creator API](../development/mod-creator-service.md) has no native
+creator UI yet; public hosting and gameplay scripting remain incomplete.
 See [Mac setup](../development/mac-mod-hosting.md).
