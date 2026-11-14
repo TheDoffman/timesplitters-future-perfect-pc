@@ -21,6 +21,17 @@ static std::string source;
 static std::atomic<bool> verified{true};
 static std::atomic<unsigned> probes{0};
 static bool requested=true,network_locked=false;
+static bool local_cache(const std::string &value) {
+#ifdef _WIN32
+    int count=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,value.c_str(),-1,nullptr,0);
+    if(count<=0)return false;
+    std::wstring wide((size_t)count,L'\0');
+    if(!MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,value.c_str(),-1,wide.data(),count))return false;
+    return SetEnvironmentVariableW(L"TSFP_MOD_SCRIPT_CACHE_PARENT",wide.c_str())!=FALSE;
+#else
+    return setenv("TSFP_MOD_SCRIPT_CACHE_PARENT",value.c_str(),1)==0;
+#endif
+}
 extern "C" const char *pc_mod_bootstrap_source(size_t *length) {
     bool ready=requested && verified.load();if(length)*length=ready?source.size():0;return ready?source.data():nullptr;
 }
@@ -44,9 +55,11 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
         CHECK(pc_mod_runtime_shutdown());std::puts("PASS ordinary");return 0;
     }
     std::string error;lease=tsfp::mods::SaveNamespace::open(original,std::string(64,'a'),error);CHECK(lease);
-    int prepared=pc_mod_runtime_prepare(cache.c_str());Shutdown shutdown;
+    bool from_environment=mode=="cache-env" || mode=="cache-missing" || mode=="cache-empty";
+    if(from_environment)CHECK(local_cache(mode=="cache-missing"?cache+"/absent":mode=="cache-empty"?"":cache));
+    int prepared=pc_mod_runtime_prepare(from_environment?nullptr:cache.c_str());Shutdown shutdown;
     CHECK(pc_mod_runtime_selected() && network_locked);
-    if(mode=="refused"){CHECK(!prepared && pc_mod_runtime_faulted() && !verified.load());std::puts("PASS refused");return 0;}
+    if(mode=="refused" || mode=="cache-missing" || mode=="cache-empty"){CHECK(!prepared && pc_mod_runtime_faulted() && !verified.load());std::puts("PASS refused");return 0;}
     CHECK(prepared && !pc_mod_runtime_faulted());
     char overlay[192];CHECK(pc_mod_runtime_overlay(overlay,sizeof overlay) && std::strstr(overlay,"Offline Arcade"));
     const char label[]="100% ready \xce\xa9";

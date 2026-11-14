@@ -8,7 +8,8 @@ import pytest
 from test_script_process import process_tools
 
 
-@pytest.mark.parametrize('mode',['ordinary','run','results','fault','repeat','tamper','other-thread','missing','changed',
+@pytest.mark.parametrize('mode',['ordinary','run','results','fault','repeat','tamper','other-thread','missing','changed','cache-env','cache-missing',
+    pytest.param('cache-empty',marks=pytest.mark.skipif(sys.platform=='win32',reason='Win32 empty environment values remove the variable')),
     pytest.param('large-parent',marks=pytest.mark.skipif(sys.platform!='linux',reason='Linux fork/exec RSS boundary'))])
 def test_compiled_factory_only_admits_verified_offline_play_and_drains(process_tools,tmp_path,mode):
     worker=process_tools['worker'];app=tmp_path/'App \u03a9';app.mkdir()
@@ -20,7 +21,7 @@ def test_compiled_factory_only_admits_verified_offline_play_and_drains(process_t
     if guardian.is_file():shutil.copy2(guardian,bundle/guardian.name)
     if mode=='missing':(bundle/worker.name).unlink()
     if mode=='changed':(bundle/worker.name).write_bytes(b'changed compiled worker')
-    cache=tmp_path/'Cache';cache.mkdir()
+    cache=tmp_path/'Cache \u03a9';cache.mkdir()
     original=tmp_path/'Saves';original.mkdir();(original/'keep.sav').write_bytes(b'original progress')
     p=subprocess.run([str(driver),'refused' if mode in ('missing','changed') else mode,str(cache),str(original)],capture_output=True,timeout=15)
     assert p.returncode==0 and b'PASS' in p.stdout,(p.returncode,p.stdout,p.stderr)

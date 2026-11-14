@@ -356,3 +356,19 @@ parent-death/process-group cleanup. A 256MiB parent probe reproduced12/12 immedi
 RSS samples above128MiB before this boundary: they measured the inherited game,
 not the worker. test_game_runtime.py adds a real large-parent VM execution case.
 Worker memory/CPU/source budgets remain unchanged. Real Linux rerun pending.
+
+The exec boundary passes12/12 post-exec probe samples below128MiB, plus74 factory/
+process/session checks (2 skips) on EACH host and10 Linux ASan/UBSan factory cases.
+Updated Linux game/build/platform checks pass; actual script score4/rank1 and End
+reach stage8, then SDL quit exits0 with ordinary save hashes preserved. This is
+WSLg software Vulkan acceptance, not physical Linux/Deck hardware validation.
+
+TSFP_MOD_SCRIPT_CACHE_PARENT is an optional trusted local developer/host selection
+when prepare receives NULL; otherwise the explicit trusted API parent wins. With
+no selected source it is ignored. Absent uses the native OS cache; malformed or
+unsafe selections fail. Windows reads Unicode through GetEnvironmentVariableW.
+It is outside the capsule/package, never selects an executable and retains every
+PrivateDirectory ownership/ACL/link/volume check. This allows an already protected
+local test folder without changing account-wide ACLs. Public launcher emits no
+script handoff or cache override yet. Unicode/missing/empty native cases exercise
+this selection; Windows empty setter semantics remove the variable (host skip).

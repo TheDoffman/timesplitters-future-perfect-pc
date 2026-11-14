@@ -302,3 +302,6 @@ Production startup/title factory now connects compiled helpers, bootstrap lease
 probes, offline-only network policy, automatic match binding and HUD/shutdown.
 See mod-scripting.md#production-game-factory for measured checks and pending scenes;
 public launcher script activation and deployment remain unfinished.
+
+Actual native Mac tick/First-to-Three and Linux tick matches now exercise the
+production bridge. Explicit local cache selection and exec metering: mod-scripting.md.

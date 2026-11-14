@@ -11,6 +11,16 @@
 #include <mutex>
 #include <thread>
 #include <algorithm>
+#include <stdexcept>
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 extern "C" void pc_network_lock_offline(void);
 namespace {
 struct Context {
@@ -27,6 +37,28 @@ std::atomic<bool> selected{false},failed{false},closing{false};
 char diagnostic[256];
 std::string hud_message;
 std::chrono::steady_clock::time_point message_until;
+std::string local_cache_parent() {
+    // Explicit trusted local developer/host selection, never a package field.
+    // RuntimeResources still validates native ownership, permissions and paths.
+#ifdef _WIN32
+    wchar_t value[4096];SetLastError(ERROR_SUCCESS);
+    DWORD count=GetEnvironmentVariableW(L"TSFP_MOD_SCRIPT_CACHE_PARENT",value,4096);
+    if(!count && GetLastError()==ERROR_ENVVAR_NOT_FOUND)return tsfp::mods::native_cache_parent();
+    if(!count || count>=4096)throw std::runtime_error("Invalid local cache selection");
+    int bytes=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,value,(int)count,nullptr,0,nullptr,nullptr);
+    if(bytes<=0 || bytes>4095)throw std::runtime_error("Invalid local cache selection");
+    std::string result((size_t)bytes,'\0');
+    if(WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,value,(int)count,result.data(),bytes,nullptr,nullptr)!=bytes)
+        throw std::runtime_error("Invalid local cache selection");
+    return result;
+#else
+    const char *value=std::getenv("TSFP_MOD_SCRIPT_CACHE_PARENT");
+    if(!value)return tsfp::mods::native_cache_parent();
+    size_t size=0;while(size<=4095 && value[size])++size;
+    if(!size || size>4095)throw std::runtime_error("Invalid local cache selection");
+    return std::string(value,size);
+#endif
+}
 void fail(const char *message) noexcept {
     if(!failed.load()) {
         size_t n=0;while(n<sizeof(diagnostic)-1 && message[n])++n;
@@ -51,7 +83,7 @@ extern "C" int pc_mod_runtime_prepare(const char *parent) {
         std::string error;
         tsfp::mods::ImagePins pins{TSFP_MOD_RUNTIME_WORKER_SHA256,TSFP_MOD_RUNTIME_GUARDIAN_SHA256};
         context->resources=tsfp::mods::RuntimeResources::create(TSFP_MOD_RUNTIME_SUBDIR,TSFP_MOD_RUNTIME_WORKER,
-            pins,parent?parent:tsfp::mods::native_cache_parent(),error);
+            pins,parent?parent:local_cache_parent(),error);
         if(!context->resources){fail("Compiled helpers or private cache were unavailable");return 0;}
         constexpr uint32_t policy=TSFP_MOD_IMAGES_VERIFIED|TSFP_MOD_SOURCE_VERIFIED|TSFP_MOD_SEPARATE_SAVES|TSFP_MOD_OFFLINE;
         TsfpModMatchConfig config{context->resources->worker().c_str(),context->resources->cache().c_str(),source,length,

@@ -1,3 +1,22 @@
+Native script acceptance (feature/mod-platform,2026-11-14): source0aef1cdb CI
+43648827557 and source710337a9 CI43649810415 both finish GREEN23 success/2 intentional
+skips. Factory/process/session74 pass/2 skips EACH Windows/Mac/Linux; Linux factory
+ASan/UBSan10 pass. Linux exec-boundary probe fixes12/12 inherited-RSS violations
+without changing budgets, and its game/build/platform checks pass.
+Mac original First-to-Three completes real accepted bot kills: ID3 score3/rank1,
+raw kills3,98 results samples, exit0 and preserved ordinary saves. GameSHA1822a261
+6e12d620afec6af8059e6fdab2cfec8a788a64a209875ea18944ef11 (build0aef1cdb).
+Linux software Vulkan tick fixture score4/rank1 plus scripted End/results/quit pass;
+the unchanged First-to-Three also completes: ID5 score3/rank1, raw kills3, exit0,
+ordinary saves preserved. GameSHA1a29a113c1a056e72558ac4f907db152c490a4f886f418fe0174d7cbec249233
+(build710337a9). Native Mac actual VM-error fixture ends safely in results and
+quits0 with originals preserved, using the0aef game; checkout was710 at observation.
+Native overlay visual capture remains unverified (window capture unavailable).
+Local developer cache override now retains strict existing permission/path checks
+and ignores ordinary startup. Windows Unicode/invalid selection11 pass/2 host
+skips; native cross-host checks/builds and Windows actual match pending. No global
+account ACL changed. Public launcher scripting, hosting/trust and release remain open.
+
 Actual native game scripting (source0aef1cdb,2026-11-14): Mac arm64 production
 startup executed a local tick fixture: real score4/rank1, scripted End, visible
 stage8 results and SDL quit exit0; ordinary save hashes preserved. Native game

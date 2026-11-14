@@ -7,6 +7,9 @@ extern "C" {
 /* Once, after bootstrap storage commit, before the guest starts. NULL selects
  * the native OS cache parent; an explicit parent is a trusted host/test input,
  * never a mod field. No capsule request leaves ordinary gameplay unchanged. */
+/* NULL selects the OS cache parent, or explicit local TSFP_MOD_SCRIPT_CACHE_PARENT.
+ * Uploaded packages never provide this value. Every selection retains strict
+ * native path/ownership/permission checks; ordinary startup ignores it. */
 int pc_mod_runtime_prepare(const char *cache_parent);
 int pc_mod_runtime_selected(void);
 /* Simulation-thread only. can_start is false for results; keep an already bound

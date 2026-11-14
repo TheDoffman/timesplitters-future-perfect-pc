@@ -58,6 +58,13 @@ an explicit original save root (`RECOMP_SAVE_DIR` on Windows; the existing expli
 native root on POSIX). This is a developer integration surface, not a replacement
 for launcher package authorization or an instruction to activate untrusted files.
 
+An explicit local developer/host can set `TSFP_MOD_SCRIPT_CACHE_PARENT` to an
+existing private native-filesystem folder for helper staging. The default is the
+OS user's cache folder. This option is read only after a source handoff commits;
+ordinary startup ignores it. It is outside the capsule, supplies no executable
+or policy and cannot bypass path, owner, ACL, link or filesystem checks. The
+public launcher does not emit a script handoff or this option yet.
+
 Prepare verifies/copies the source, resolves the existing save-location preference
 read-only, acquires/rechecks the package-derived namespace lease, permanently
 locks host location changes and arms the kernel fence. Commit independently
