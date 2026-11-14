@@ -61,6 +61,12 @@ static int run(const char *worker,const char *cache,const char *scenario,const c
         WORD_AT(0x7de458)=1;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7de458)=0;
         WORD_AT(0x7de454)=10u<<8;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7de454)=9u<<8;
         WORD_AT(0x7356d8)=0xfffffff0;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7356d8)=0x10000;
+        CHECK(pc_mod_game_capture(&world) && world.epoch==epoch);
+        WORD_AT(0x7de30c)=8;CHECK(pc_mod_game_capture(&world) && world.epoch==epoch);
+        WORD_AT(0x7de30c)=7;CHECK(pc_mod_game_capture(&world) && world.epoch>epoch);epoch=world.epoch;
+        WORD_AT(0x10000+8)=4;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x10000+8)=0;
+        CHECK(pc_mod_game_capture(&world) && world.epoch==epoch);
+        WORD_AT(0x7de30c)=6;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7de30c)=7;
         CHECK(pc_mod_game_capture(&world) && world.epoch>epoch);free(memory);puts("PASS guards");return 0;
     }
     static char source[1048577];size_t size=fread(source,1,sizeof(source),stdin);CHECK(size && size<=1048576);

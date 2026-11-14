@@ -11,7 +11,8 @@ mod_watchdog.c/.h, mod_seal.c/.h, mod_process.hpp + Windows/POSIX adapters,
 mod_guardian_mac.c, mod_session.cpp/.hpp, mod_match.cpp/.h and pc_mod_guest.inc.
 Build the worker with tools/build/build-mod-worker.py. VM C11; parent C++17.
 The shared game build links the match/title bridge with NULL default binding;
-verified bootstrap, save separation and launcher script activation remain unavailable.
+verified source/save startup exists; launcher script activation and automatic
+match binding remain unavailable.
 
 `mod_saves.cpp/.hpp` provides the native save-namespace lease for that future
 bootstrap. A strict64-hex profile identity chooses a sibling ModSaves/<identity>
@@ -44,7 +45,8 @@ Session::open_verified runs staging on its existing background thread and keeps
 the images until child cleanup ends. Match now requires image pins as well as
 policy assertions and always uses that verified entry. Game builds additionally
 compare caller pins against generated compiled pins; uploaded hashes cannot
-select a different worker. Bootstrap remains unwired; launcher scripting is unavailable.
+select a different worker. Bootstrap supplies verified source/save state; automatic match creation and
+launcher scripting remain unavailable.
 tools/build/mod_runtime_images.py now builds production-only helpers, verifies
 source/configuration/image receipts, stages immutable content-addressed bundles
 and emits a generated pin header. All three normal native game builders invoke
@@ -228,3 +230,29 @@ Story gameplay capture pass, Linux Clang build/MMIO and software-Vulkan state-
 verified Story window pass. Sourcec5ed602d CI1399 aggregate passes. NULL mod binding
 is used throughout; these checks do not activate scripts or replace full custom-
 mode/save/helper/public acceptance. Exact hashes and limits are in STATUS.
+
+## Simulation-owned match lifetime
+
+mod_manager.cpp/.hpp owns one match or its retiring predecessor. Configure once
+with retained bootstrap-owned source/helper paths/pins and the complete verified
+policy. The manager copies those inputs. update uses no filesystem or child IO,
+closes on authority/offline/roster/tick/epoch invalidation or VM fault, and exposes
+no binding while the old session drains. A successor cannot open until stopped
+confirms cleanup/reap. Rejected/failed/retired epochs cannot reopen; explicit close
+is permanent. Results remain available after a legitimate Stop until world exit.
+Shutdown must retain the executable until stopped before destroying the owner.
+This owner builds into the shared game, but startup resource discovery, automatic
+title binding, save-lease recheck scheduling, HUD faults/messages and shutdown
+wiring are still pending. No production script match starts yet.
+
+The title capture keeps the same epoch across transient unsupported flags,
+networking or invalid roster data. Only observed stage exit/reentry, results8 to
+play7, changed valid pool/scene or tick rewind establishes a new epoch. Invalid
+player capture does not commit epoch/roster bookkeeping. This prevents restoring
+flags from silently resurrecting a manager-retired match. The controlled guest
+fixture checks these transitions; actual title scenes remain acceptance work.
+
+Tests: test_mod_manager.py exercises real confined workers for immutable config,
+policy/pin refusal, leave/roster/authority/network/tick invalidation, faults,
+results retention, permanent close and successor creation including cancellation
+while startup is being pumped. test_mod_match.py checks the title adapter.

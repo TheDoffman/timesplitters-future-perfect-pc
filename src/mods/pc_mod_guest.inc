@@ -4,7 +4,7 @@
 #include <math.h>
 static TsfpModMatch *pc_mod_bound;
 static uint64_t pc_mod_epoch;
-static uint32_t pc_mod_pool,pc_mod_scene,pc_mod_tick,pc_mod_running,pc_mod_stop,pc_mod_finished;
+static uint32_t pc_mod_pool,pc_mod_scene,pc_mod_tick,pc_mod_running,pc_mod_stage,pc_mod_stop,pc_mod_finished;
 static uint64_t pc_mod_tick_sent=UINT64_MAX;
 extern void sub_00064810(void),sub_00067450(void);
 
@@ -14,18 +14,23 @@ int pc_mod_game_capture(TsfpModWorld *out) {
     uint32_t stage=WORD_AT(0x7de30cu),scene=WORD_AT(0x79094cu),pool=WORD_AT(0x7356d8u);
     uint32_t mode=WORD_AT(0x7de454u),flags=WORD_AT(0x7de458u),tick=WORD_AT(0x7de318u);
     uint32_t humans=WORD_AT(0x790950u),bots=WORD_AT(0x7a2958u),rate=WORD_AT(0x4e8cecu);
+    /* Only an actual match boundary resets a rejected epoch. Transient bad
+       roster/network/policy reads must not manufacture a fresh match on return. */
+    if(stage!=7u && stage!=8u){pc_mod_running=0;pc_mod_stage=stage;return 0;}
+    if(pc_mod_stage==8u && stage==7u)pc_mod_running=0;
+    pc_mod_stage=stage;
     /* Initial integration is the offline, non-team Arcade rules-index0 path.
        Other title modes/network/save bootstrap contracts remain unimplemented. */
-    if((stage!=7u && stage!=8u) || ((mode>>8)&255u)!=9u || ((mode>>16)&255u)!=0u ||
+    if(((mode>>8)&255u)!=9u || ((mode>>16)&255u)!=0u ||
        (flags&(1u|0x40u|0x08000000u|0x20000000u)) || WORD_AT(0x76b108u) || WORD_AT(0x7de474u) ||
        !humans || humans>4u || bots>16u-humans || !rate || rate>1000 || scene>=100u ||
-       !guest_writable(pool,(humans+bots)*0xea0u)) {pc_mod_running=0;return 0;}
+       !guest_writable(pool,(humans+bots)*0xea0u))return 0;
+    uint64_t epoch=pc_mod_epoch;
     if(!pc_mod_running || pool!=pc_mod_pool || scene!=pc_mod_scene || tick<pc_mod_tick) {
         if(pc_mod_epoch==UINT64_MAX)return 0;
-        ++pc_mod_epoch;
+        ++epoch;
     }
-    pc_mod_running=1;pc_mod_pool=pool;pc_mod_scene=scene;pc_mod_tick=tick;
-    out->epoch=pc_mod_epoch;out->tick=tick;out->player_count=humans+bots;out->tick_rate=rate;
+    out->epoch=epoch;out->tick=tick;out->player_count=humans+bots;out->tick_rate=rate;
     out->offline=out->authoritative=1;
     for(unsigned i=0;i<out->player_count;++i) {
         uint32_t actor=pool+i*0xea0u,entity=WORD_AT(actor),name=WORD_AT(actor+0x70u);
@@ -48,6 +53,7 @@ int pc_mod_game_capture(TsfpModWorld *out) {
         /* Actor/name identity survives body replacement during respawn. */
         out->identities[i]=((uint64_t)actor<<32)|name;
     }
+    pc_mod_epoch=epoch;pc_mod_running=1;pc_mod_pool=pool;pc_mod_scene=scene;pc_mod_tick=tick;
     return 1;
 }
 int pc_mod_game_bind(TsfpModMatch *match) {

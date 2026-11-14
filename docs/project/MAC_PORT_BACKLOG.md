@@ -1,3 +1,14 @@
+Native match lifetime owner (feature/mod-platform, base299236d5): shared
+MatchManager retains verified config/source, closes unsupported/faulted matches,
+forbids reopening a retired epoch and waits for native reap before a successor.
+The title capture distinguishes true round boundaries from transient rejected
+network/roster/policy reads. Windows owner/title tests:33 pass, including startup cancellation;
+cross-host/native game build follow-up pending. Automatic game
+binding/resource discovery, recheck/fault/HUD/shutdown integration remain unfinished.
+The previous bootstrap sourceb00bdf42 CI43635970573 finished23 success,2 intentional
+skips. The c1a07da3 Unicode follow-up still has no observed current-source CI run.
+No public script activation or new gameplay acceptance is claimed.
+
 Verified source/save startup milestone (feature/mod-platform, sourcec1a07da3):
 Windows native game build/platform checks pass; Mac ARM64 and Linux x64 native
 game builds/platform checks pass. Windows focused bootstrap+storage UI:20 pass,

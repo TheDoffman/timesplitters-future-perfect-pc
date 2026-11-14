@@ -1,3 +1,5 @@
+MatchManager now owns one active/retiring native match with reap-before-successor and no stale epoch reopen. Game auto-binding/resource discovery is still pending; see mod-scripting.md.
+
 Bootstrap reads Windows handoff/root environment through the wide CRT and strict UTF8 conversion; empty/oversized pairs fail closed. Native fixtures cover Unicode capsule and save paths. See mod-source-handoff.md.
 
 Native mod_bootstrap now consumes an explicit developer capsule before kernel init and publishes source only after isolated storage commits. The launcher still emits no scripts and no custom-mode manager starts yet. tests/mods/test_mod_bootstrap.py covers real capsule/lease plus shared storage state; see mod-source-handoff.md.
