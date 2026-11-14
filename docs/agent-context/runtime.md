@@ -762,3 +762,7 @@ visibility and objective logic remain guest-owned (Refs #338).
 RTL: [arithmetic/memory](guest-memory-ops.md), [strings](guest-stack-trace.md); [host policy](execution-host.md).
 
 2350: controls-options.md.
+
+2712-script-runtime-startup.patch prepares the production factory after save
+commit and unbinds/drains it before kernel shutdown. Native main.c uses the same
+shared calls. Contracts and pending scenes: mod-scripting.md#production-game-factory.

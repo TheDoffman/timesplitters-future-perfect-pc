@@ -40,7 +40,7 @@ def test_transport(tmp_path, fixture):
     assert result.returncode == 0, result.stdout+result.stderr
     assert 'PASS:' in result.stdout
     if fixture == 'network_eligibility.c':
-        for mode in ('lan', 'online', 'missing', 'disconnected'):
+        for mode in ('lan', 'online', 'missing', 'disconnected', 'locked'):
             result = subprocess.run([str(executable), mode], cwd=tmp_path,
                                     capture_output=True, text=True, timeout=30)
             assert result.returncode == 0, result.stdout+result.stderr

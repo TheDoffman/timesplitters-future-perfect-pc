@@ -31,6 +31,7 @@ int pc_online_connect(void) { return pc_online_connect_mode(PC_ONLINE_ARCADE); }
 
 int pc_online_connect_mode(PcOnlineMode mode)
 {
+    if(pc_network_offline_locked()){fprintf(stderr,"[PC-ONLINE] Scripted modes require offline play\n");return 0;}
     char root[MAX_PATH],python[MAX_PATH],script[MAX_PATH],folder[MAX_PATH],command[2048],line[128];
     STARTUPINFOA startup={sizeof startup}; PROCESS_INFORMATION process={0};
     DWORD pid=GetCurrentProcessId(); unsigned i; FILE *file; HWND owner=xbox_D3D8Window();

@@ -49,6 +49,7 @@ static int fail(const char *message) {
 PcOnlineMode pc_online_mode(void) { return active_mode; }
 int pc_online_connect(void) { return pc_online_connect_mode(PC_ONLINE_ARCADE); }
 int pc_online_connect_mode(PcOnlineMode mode) {
+    if(pc_network_offline_locked()){fprintf(stderr,"[PC-ONLINE] Scripted modes require offline play\n");return 0;}
     /* Native Story transport remains deferred under MAC-013. Do not silently
        join its lobby using the Arcade adapter. */
     if(mode!=PC_ONLINE_ARCADE)return 0;

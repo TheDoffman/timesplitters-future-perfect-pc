@@ -11,6 +11,7 @@
 #include <new>
 #include <string>
 #include <stdexcept>
+#include <atomic>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -22,7 +23,7 @@ void pc_storage_lock_locations(void);
 }
 namespace {
 enum class Phase { Fresh, Ordinary, Preparing, Prepared, Ready, Failed };
-Phase phase=Phase::Fresh;
+std::atomic<Phase> phase{Phase::Fresh};
 struct Context {
     std::unique_ptr<tsfp::mods::SourceCapsule> capsule;
     std::unique_ptr<tsfp::mods::SaveNamespace> saves;
@@ -109,4 +110,14 @@ extern "C" int pc_mod_bootstrap_recheck(void) {
     try {std::string error;if(context->saves->recheck(error))return 1;}
     catch(...){}
     return fail("Isolated save lease changed");
+}
+extern "C" int pc_mod_bootstrap_probe(void) {
+    if(!ready())return 0;
+    try {std::string error;return context->saves->recheck(error)?1:0;}
+    catch(...){return 0;}
+}
+extern "C" void pc_mod_bootstrap_invalidate(void) {
+    // Runtime admission owns its own permanent fuse. No UI/storage mutation
+    // from a probe thread; the established isolated fence/lease remain held.
+    phase.store(Phase::Failed);
 }

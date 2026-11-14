@@ -1,11 +1,17 @@
 /* Supported US title adapter. Derived score/rank rows only; never write raw
    kills/deaths, replay damage, or choose guest addresses from a worker reply. */
 #include "pc_mod_game.h"
+#ifdef TSFP_MOD_GAME
+#include "mod_game_runtime.h"
+#endif
 #include <math.h>
 static TsfpModMatch *pc_mod_bound;
 static uint64_t pc_mod_epoch;
 static uint32_t pc_mod_pool,pc_mod_scene,pc_mod_tick,pc_mod_running,pc_mod_stage,pc_mod_stop,pc_mod_finished;
 static uint64_t pc_mod_tick_sent=UINT64_MAX;
+#ifdef TSFP_MOD_GAME
+static int pc_mod_fault_finished;
+#endif
 extern void sub_00064810(void),sub_00067450(void);
 
 int pc_mod_game_capture(TsfpModWorld *out) {
@@ -113,6 +119,24 @@ void pc_mod_game_limits(void (*original)(void)) {
 }
 void pc_mod_game_frame(void (*original)(void)) {
     original();
+#ifdef TSFP_MOD_GAME
+    if(pc_mod_runtime_selected()) {
+        GuestRegisters registers;save_registers(&registers);
+        TsfpModWorld current;
+        int captured=pc_mod_game_capture(&current);
+        TsfpModMatch *next=pc_mod_runtime_update(captured?&current:NULL,WORD_AT(0x7de30cu)==7u);
+        if(next!=pc_mod_bound) {
+            if(!pc_mod_game_bind(next)) {
+                pc_mod_runtime_request_shutdown();pc_mod_game_bind(NULL);
+            }
+        }
+        if(pc_mod_runtime_faulted() && !pc_mod_fault_finished && captured && WORD_AT(0x7de30cu)==7u) {
+            pc_mod_fault_finished=1;
+            guest_call(sub_00067450,1,1u);
+        }
+        restore_registers(&registers);
+    }
+#endif
     if(!pc_mod_bound)return;
     GuestRegisters saved;save_registers(&saved);
     TsfpModWorld world;
@@ -134,8 +158,21 @@ void pc_mod_game_frame(void (*original)(void)) {
             if(!pc_mod_stop && tsfp_mod_match_enqueue(pc_mod_bound,&world,TSFP_SCRIPT_STOP,0,0)>0)pc_mod_stop=1;
             if(WORD_AT(0x7de30cu)==7u)guest_call(sub_00067450,1,1u);
         }
-        /* Message transactions are available to the future shared HUD adapter;
-           do not treat arbitrary text as a format string or console command. */
+#ifdef TSFP_MOD_GAME
+        for(uint32_t i=0;i<commit.transaction.count;++i) {
+            const tsfp_script_command *command=&commit.transaction.commands[i];
+            if(command->kind==TSFP_SCRIPT_MESSAGE)pc_mod_runtime_message(command->text,command->text_size);
+        }
+#endif
     }
+#ifdef TSFP_MOD_GAME
+    if(status<0 && pc_mod_runtime_selected()) {
+        pc_mod_game_bind(NULL);
+        (void)pc_mod_runtime_update(&world,1);
+        if(pc_mod_runtime_faulted() && !pc_mod_fault_finished && WORD_AT(0x7de30cu)==7u) {
+            pc_mod_fault_finished=1;guest_call(sub_00067450,1,1u);
+        }
+    }
+#endif
     restore_registers(&saved);
 }

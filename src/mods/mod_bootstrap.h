@@ -17,6 +17,10 @@ const char *pc_mod_bootstrap_source(size_t *length);
 const char *pc_mod_bootstrap_profile(void);
 /* Recheck the retained namespace before each new scripted match. */
 int pc_mod_bootstrap_recheck(void);
+/* Read-only background probe after commit; never changes UI/storage policy. */
+int pc_mod_bootstrap_probe(void);
+/* Permanently withhold source after runtime failure; retain fence and lease. */
+void pc_mod_bootstrap_invalidate(void);
 #ifdef __cplusplus
 }
 #endif

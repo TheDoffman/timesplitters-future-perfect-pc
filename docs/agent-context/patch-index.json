@@ -2150,6 +2150,14 @@
       ]
     },
     {
+      "name": "2712-script-runtime-startup.patch",
+      "path": "patches/gameplay/mods/2712-script-runtime-startup.patch",
+      "sha256": "4c40a0533d52b8f732cef1280715fa89a8ff6390d6ce5d565e8734ac51f25b67",
+      "targets": [
+        "titles/futureperfect/src/main.c"
+      ]
+    },
+    {
       "name": "2720-viewmodel-shoulder-visibility.patch",
       "path": "patches/graphics/rendering/2720-viewmodel-shoulder-visibility.patch",
       "sha256": "3fa1241997be6bdc22fbed01c638376fcd1b68a4b065224633196595c897cf46",

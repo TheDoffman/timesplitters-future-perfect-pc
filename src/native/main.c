@@ -8,6 +8,8 @@
 #include "../network/pc_online.h"
 #include "../gameplay/pc_native_rate.h"
 #include "../mods/mod_bootstrap.h"
+#include "../mods/mod_game_runtime.h"
+#include "../mods/pc_mod_game.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,6 +136,7 @@ int main(int argc, char **argv)
         }
     }
     if(!pc_mod_bootstrap_commit())return 2;
+    if(!pc_mod_runtime_prepare(NULL)){pc_mod_runtime_shutdown();return 2;}
     xbox_kernel_bridge_init();
     xbox_watch_init();
     if (xbox_EnvSwitch("RECOMP_AC97_READY", 1)) {
@@ -151,6 +154,8 @@ int main(int argc, char **argv)
     tsfp_native_crash_armed(0);
     pc_discord_stop();
     printf("[NATIVE-BOOT] Guest entry returned\n");
+    pc_mod_game_bind(NULL);
+    pc_mod_runtime_shutdown();
     xbox_kernel_shutdown();
     xbox_MemoryLayoutShutdown();
     free(data);

@@ -21,6 +21,16 @@ int main(int argc,char **argv)
 {
     if(argc>1) {
         startup_mode=argv[1];
+        if(!strcmp(startup_mode,"locked")) {
+            pc_network_lock_offline();CHECK(pc_network_offline_locked());
+            for(unsigned i=0;i<1000000;i++)CHECK(!pc_network_enabled());
+            CHECK(environment_reads==0);
+            pc_network_enable_lan();CHECK(!pc_network_enabled());
+            CHECK(!pc_network_set_online("31000 0123456789abcdef0123456789abcdef 10.254.0.2"));
+            uint32_t args[8]={0};CHECK(pc_network_call(0,args,0)==UINT32_MAX);
+            CHECK(pc_network_set_online(NULL));CHECK(pc_network_offline_locked());
+            puts("PASS: permanent scripted offline policy");return 0;
+        }
         if(!strcmp(startup_mode,"online") || !strcmp(startup_mode,"disconnected")) {
             FILE *f=fopen("startup-online.txt","w");CHECK(f);
             fputs("31000 0123456789abcdef0123456789abcdef 10.254.0.2\n",f);fclose(f);

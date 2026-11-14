@@ -934,11 +934,9 @@ Session idle CPU uses bounded1s windows so legitimate paused-worker overhead
 does not accumulate forever. Host-only sanitizer checks preserve sealed children;
 see mod-scripting.md for actual host evidence and pending checks.
 
-Renewed idle windows exposed Mac CPU undercounting: proc_pid_rusage CPU totals
-are Mach ticks, not nanoseconds. The adapter now uses checked128-bit Mach timebase
-conversion. Linux404 full checks/3 skips and56 host-ASan/UBSan Session checks pass;
-Windows404 full checks/3 skips pass. Updated Mac rerun remains pending.
-
 Corrected Mac Mach CPU conversion passes full/sanitizer checks. Test-host early
 error paths now drain Session cleanup before exit; production crash-profile
 recovery remains pending. See mod-scripting.md/STATUS for exact host counts.
+
+Script startup now locks native networking offline, binds the title model and
+composes HUD status/messages; lifecycle and checks: mod-scripting.md#production-game-factory.

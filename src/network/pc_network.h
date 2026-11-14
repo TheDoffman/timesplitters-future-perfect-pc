@@ -8,6 +8,9 @@ double pc_network_bots_time(void);
 int pc_network_enabled(void);
 /* Startup environment is read once; the menu enables LAN explicitly. */
 void pc_network_enable_lan(void);
+/* One-way startup policy for offline scripted modes; no environment reset. */
+void pc_network_lock_offline(void);
+int pc_network_offline_locked(void);
 unsigned pc_network_arguments(uint32_t address);
 uint32_t pc_network_call(uint32_t address, const uint32_t *args, ptrdiff_t memory_offset);
 void pc_network_shutdown(void);

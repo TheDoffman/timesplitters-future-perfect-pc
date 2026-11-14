@@ -1,0 +1,36 @@
+--- a/titles/futureperfect/src/main.c
++++ b/titles/futureperfect/src/main.c
+@@ -46,6 +46,8 @@
+ #include "xbox_watchpoint.h"
+ #ifdef TSFP_MOD_GAME
+ #include "mod_bootstrap.h"
++#include "mod_game_runtime.h"
++#include "pc_mod_game.h"
+ #endif
+ 
+ /*
+@@ -654,6 +656,13 @@
+     if(!pc_mod_bootstrap_commit()) {
+         MessageBoxA(NULL,"The game could not commit isolated mod saves. See the game log.","Mod startup",MB_OK|MB_ICONERROR);
+         return 1;
++    }
++#endif
++
++#ifdef TSFP_MOD_GAME
++    if(!pc_mod_runtime_prepare(NULL)) {
++        MessageBoxA(NULL,"Compiled script helpers or runtime preparation failed. See the game log.","Mod startup",MB_OK|MB_ICONERROR);
++        pc_mod_runtime_shutdown();return 1;
+     }
+ #endif
+ 
+@@ -759,6 +768,10 @@
+ #ifdef TSFP_PC_CONTROLS
+     pc_crash_watchdog_stop();
+ #endif
++#ifdef TSFP_MOD_GAME
++    pc_mod_game_bind(NULL);
++    pc_mod_runtime_shutdown();
++#endif
+     xbox_kernel_shutdown();
+     xbox_MemoryLayoutShutdown();
+     free(xbe_data);

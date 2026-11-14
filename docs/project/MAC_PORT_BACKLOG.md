@@ -1,3 +1,15 @@
+Production script factory (feature/mod-platform, basedce72492): startup now
+connects committed source/saves to compile-pinned helpers and background lease/cache
+probes. Shared title hooks bind only supported offline play; native Online/LAN/data
+plane remain permanently disabled for this process. Bounded UTF8 HUD messages and
+fault recovery text use the existing overlay; owner-thread shutdown drains before
+releasing resources. Public launcher scripting remains disabled.
+Windows factory/bootstrap/network31 checks pass; latest factory/title30 pass and
+40 diagnostic checks pass. The first HUD compile attempt found a strict shadowing
+warning, fixed by renaming the private message state; the corrected30 pass. Native
+Mac/Linux checks, all three game builds and actual scripted scenes remain pending.
+Baseline63821e5e CI43643876179 finished GREEN:23 success,2 intentional skips.
+
 Fresh-epoch follow-up (base1989b18d): both new network-fresh/authority-fresh
 cases reproduce admission after unsupported flags were restored. The runtime
 now consumes that identity; Windows12 runtime plus4 visibility checks pass.

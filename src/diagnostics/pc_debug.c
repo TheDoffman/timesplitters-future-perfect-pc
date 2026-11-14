@@ -159,7 +159,7 @@ void pc_debug_sample(double fps, double shown_fps)
     }
 }
 
-int pc_debug_overlay(char *text, size_t bytes, const char *cap)
+static int debug_overlay_stats(char *text, size_t bytes, const char *cap)
 {
     char fps[48] = "", ms[32] = "", issues[64] = "", cap_text[24] = "", latency[64]="";
     int shown;
@@ -203,6 +203,23 @@ int pc_debug_overlay(char *text, size_t bytes, const char *cap)
     }
     snprintf(text, bytes, "%s%s%s%s%s", fps, ms, issues, cap_text,latency);
     ReleaseSRWLockShared(&debug_lock);
+    return shown;
+}
+
+#ifdef TSFP_MOD_GAME
+#include "../mods/mod_game_runtime.h"
+#endif
+int pc_debug_overlay(char *text,size_t bytes,const char *cap)
+{
+    if(!text || !bytes)return 0;
+    int shown=debug_overlay_stats(text,bytes,cap);
+#ifdef TSFP_MOD_GAME
+    char mod[128];
+    if(pc_mod_runtime_overlay(mod,sizeof mod)) {
+        char previous[320];snprintf(previous,sizeof previous,"%s",shown?text:"");
+        snprintf(text,bytes,"%s%s%s",mod,shown?" | ":"",previous);return 1;
+    }
+#endif
     return shown;
 }
 

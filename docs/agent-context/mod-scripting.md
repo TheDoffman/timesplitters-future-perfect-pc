@@ -241,9 +241,8 @@ no binding while the old session drains. A successor cannot open until stopped
 confirms cleanup/reap. Rejected/failed/retired epochs cannot reopen; explicit close
 is permanent. Results remain available after a legitimate Stop until world exit.
 Shutdown must retain the executable until stopped before destroying the owner.
-This owner builds into the shared game, but startup resource discovery, automatic
-title binding, save-lease recheck scheduling, HUD faults/messages and shutdown
-wiring are still pending. No production script match starts yet.
+The production factory below now connects this owner to startup and title hooks.
+Actual custom-mode title scenes and launcher activation remain acceptance work.
 
 The title capture keeps the same epoch across transient unsupported flags,
 networking or invalid roster data. Only observed stage exit/reentry, results8 to
@@ -267,7 +266,7 @@ per-session staging still verifies exact bytes independently. native_cache_paren
 reads LocalAppData on Windows or the effective user's OS home/cache directory on
 POSIX; no save path or uploaded field selects this parent. Tests inject their own
 isolated parent and relocate a real native driver/bundle to exercise OS discovery.
-The game bootstrap does not call this resource owner yet.
+The game startup factory calls this resource owner after committing isolated saves.
 
 mod_private.hpp is implemented beside the existing native ownership/ACL adapter
 in mod_saves.cpp. PrivateDirectory creates a fresh random child, holds its native
@@ -306,10 +305,37 @@ probe on an atomic gate while simulation calls continue, reject stale approvals,
 exercise close during probe, exceptions and authority/roster/network changes,
 and execute successors using the real contained worker.
 
-The production startup factory still must supply compiled RuntimeResources and a
-read-only bootstrap lease probe, wire title binding/fault/messages and shutdown.
-These components alone do not enable launcher or normal game script activation.
+The production startup factory below supplies these collaborators. Public launcher
+script activation remains disabled pending actual custom-mode scene acceptance.
 
 An unsupported newly observed epoch is consumed too: restoring offline/authority
 flags cannot admit that same match. The network-fresh/authority-fresh cases fail
 before the fix and require exactly one probe for the next genuinely new match.
+
+## Production game factory
+
+mod_game_runtime.cpp/.h prepares compiled RuntimeResources after bootstrap commit,
+copies the verified source into ScriptRuntime and supplies a read-only bootstrap
+lease/cache probe. No source selection leaves ordinary startup unchanged. A selected
+script permanently locks pc_network offline before any guest execution, including
+LAN enablement, native Online companion startup and direct network dispatch.
+
+pc_mod_guest.inc automatically binds only a validated play-stage7 world; results8
+can retain an existing epoch but cannot start one. Authority/epoch invalidation
+retires the model. VM/probe failures permanently invalidate startup, unbind before
+retiring the model and request the stock end routine once. Shared debug-overlay
+composition shows offline status, bounded UTF8 messages and a recovery instruction
+even when debug statistics are disabled. Messages never become format strings.
+
+Native main and patch2712 wire prepare/unbind/shutdown. The simulation thread owns
+the model; cross-thread shutdown requests closing but retains resources. Owner
+shutdown drains up to5s and releases runtime before resources only when stopped;
+an atexit handler handles ordinary exit. A stalled/different-thread exit retains
+ownership until OS lifetime containment, rather than freeing underneath a probe.
+
+test_game_runtime.py relocates a real compile-pinned helper bundle and exercises
+ordinary startup, actual VM scoring, results admission, VM/probe faults, repeat
+startup, missing/changed helpers, cross-thread shutdown and HUD text. Bootstrap
+and network fixtures retain real save leases and verify the one-way offline lock.
+Windows factory/title30 checks pass; bootstrap/network combined31 pass. Native
+Mac/Linux factory checks, all three game builds and actual title scenes pending.

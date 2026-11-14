@@ -297,3 +297,8 @@ Windows404 full checks/3 skips pass. Updated Mac rerun remains pending.
 Corrected Mac Mach CPU conversion passes full/sanitizer checks. Test-host early
 error paths now drain Session cleanup before exit; production crash-profile
 recovery remains pending. See mod-scripting.md/STATUS for exact host counts.
+
+Production startup/title factory now connects compiled helpers, bootstrap lease
+probes, offline-only network policy, automatic match binding and HUD/shutdown.
+See mod-scripting.md#production-game-factory for measured checks and pending scenes;
+public launcher script activation and deployment remain unfinished.

@@ -38,6 +38,7 @@ static void developer_reset(void);
 static unsigned sent_logs, received_logs;
 static int online;
 static volatile long launch_lan = -1, online_enabled, startup_online_consumed;
+static volatile long offline_locked;
 static NetHostLock configuration_lock = NET_HOST_LOCK_INIT;
 static uint32_t online_ip;
 static unsigned char online_token[16];
@@ -124,6 +125,7 @@ static int latency_control(NetSocket *s, const struct sockaddr_in *address,
 
 int pc_network_enabled(void)
 {
+    if(net_flag_read(&offline_locked))return 0;
     if(net_flag_read(&launch_lan)<0) {
         net_lock(&configuration_lock);
         if(net_flag_read(&launch_lan)<0) {
@@ -142,9 +144,16 @@ int pc_network_enabled(void)
 }
 void pc_network_enable_lan(void)
 {
+    if(net_flag_read(&offline_locked))return;
     net_lock(&configuration_lock);
     net_flag_write(&launch_lan,1);
     net_unlock(&configuration_lock);
+}
+int pc_network_offline_locked(void){return net_flag_read(&offline_locked)!=0;}
+void pc_network_lock_offline(void)
+{
+    net_flag_write(&offline_locked,1);
+    (void)pc_network_set_online(NULL);
 }
 static uint32_t failure(int error) { last_error=error; return UINT32_MAX; }
 static void *pointer(uint32_t a, size_t n, ptrdiff_t offset, int write)
@@ -203,6 +212,7 @@ int pc_network_set_online(const char *configuration)
         net_unlock(&network_lock);
         return 1;
     }
+    if(net_flag_read(&offline_locked))return 0;
     if(sscanf(configuration,"%u %32s %31s %c",&port,token,ip,&extra)!=3 ||
        !port || port>65535 || strlen(token)!=32 || net_inet_pton(AF_INET,ip,&address)!=1 ||
        (ntohl(address)&0xffffff00u)!=0x0afe0000u || !(ntohl(address)&255) || (ntohl(address)&255)==255) return 0;
@@ -665,6 +675,7 @@ static uint32_t call_locked(uint32_t va,const uint32_t *a,ptrdiff_t offset)
 }
 uint32_t pc_network_call(uint32_t va,const uint32_t *a,ptrdiff_t offset)
 {
+    if(net_flag_read(&offline_locked))return failure(WSAENETDOWN);
     static unsigned trace_counts[4096];
     uint32_t result;
     net_lock(&network_lock);
