@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import sys
 import threading
+from types import SimpleNamespace
 from urllib.error import HTTPError
 from urllib.request import Request, build_opener, ProxyHandler
 from wsgiref.simple_server import make_server, WSGIRequestHandler
@@ -18,6 +19,14 @@ from mod_accounts import ServiceError
 from mod_package import digest
 from mod_publication import export_snapshot, validate_snapshot
 from test_creator_service import service, account, package, Scanner, PASSWORD
+
+
+@pytest.mark.parametrize('platform,uid', [('posix',0),('nt',1000)])
+def test_production_factory_refuses_root_and_unsupported_host(monkeypatch,platform,uid):
+    import mod_api
+    monkeypatch.setattr(mod_api,'os',SimpleNamespace(name=platform,geteuid=lambda:uid))
+    with pytest.raises(ServiceError,match='unprivileged'):
+        mod_api.create_app()
 
 
 def call(api, method='GET', path='/v1/account', payload=None, token=None, raw=None, **overrides):

@@ -872,8 +872,8 @@ recheck fresh scans.13 workshop groups run with --workshop and shared UI suites.
 ZIP central records are bounded before ZipArchive allocation. Shared ModJson
 caps depth/nodes/collections and matches numbers without repeated suffix copies.
 Map JSON is4MiB and Lua source1MiB/file. The current Windows full run passes60 UI
-groups; changed parsing guards still need current Mac/Linux host checks. Earlier
-native checkpoints and Windows live texture-menu evidence are in STATUS.
+groups; current Mac61/Linux62 UI groups and package checks also pass. Native
+checkpoints and Windows live texture-menu evidence are in STATUS.
 The [private creator API](../development/mod-creator-service.md) has no native
 creator UI yet; public hosting and gameplay scripting remain incomplete.
 See [Mac setup](../development/mac-mod-hosting.md).

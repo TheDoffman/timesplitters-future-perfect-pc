@@ -370,3 +370,16 @@ def test_low_disk_headroom_refuses_before_spooling(service, tmp_path, monkeypatc
     with pytest.raises(ServiceError) as error:
         reserve(uploads, actor, package(tmp_path))
     assert error.value.status == 507 and not list(uploads.directory.iterdir())
+
+
+def test_creator_named_operator_cannot_impersonate_operator_audit_identity(service, tmp_path):
+    accounts, uploads, _ = service
+    actor, _, _ = account(accounts, 'operator')
+    data = package(tmp_path, author='operator')
+    ticket = queued(uploads, actor, data)
+    uploads.process_next(Scanner())
+    with accounts.repository.db() as db:
+        actors = {row['action']:row['actor'] for row in db.execute('SELECT actor,action FROM workshop_audit')}
+    assert actors['invite-created'] == 'system:operator'
+    assert actors['account-created'] == actors['upload-queued'] == 'user:operator'
+    assert actors['upload-scanned'] == 'system:scanner'

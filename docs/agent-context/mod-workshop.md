@@ -30,8 +30,8 @@ Windows native install/version rollback/removal-to-profile-scene texture loading
 and visual restoration pass. Story gameplay and Mac/Linux game scenes remain unverified.
 
 Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
-launcher-tests.exe --workshop (13 groups). Current Windows native checks pass;
-Mac/Linux must rerun the changed parsing guards. Prior host evidence is below.
+launcher-tests.exe --workshop (13 groups). Current Windows/Mac/Linux launcher
+checks pass; actual Mac Gunicorn-to-ClamAV/review and141 Mac/WSL mod tests pass.
 Public connectivity, full asset formats and scripting remain acceptance work.
 <!-- packet:end -->
 
@@ -82,7 +82,8 @@ validation on all three hosts.
 
 [Service contracts and operator commands](../development/mod-creator-service.md).
 mod_accounts.py owns scrypt/invitations/revocable sessions/recovery/suspension and
-rate/audit bounds. mod_uploads.py reserves quotas, checks ownership again on
+rate/audit bounds. Audit actors use user:/system: namespaces to prevent name
+collisions. mod_uploads.py reserves quotas, checks ownership again on
 finalization, streams private uploads and serializes idempotent scanning/retries.
 Moderation authorization, release approval/revocation and audit share a SQLite
 transaction via Repository.approve_in_transaction/revoke_in_transaction. Failed
@@ -90,7 +91,10 @@ audit cannot publish. Existing operator releases require explicit owner adoption
 mod_api.py is a strict origin/scheme/Host/bearer WSGI API, with no quarantine file
 route. mod_operator.py writes one-time invitations only to new private0600 files.
 Gunicorn27.0.1 is hash-pinned separately; its profile binds127.0.0.1:8767 only.
-It is not wired to public Caddy and no API service has been deployed.
+Production factory rejects UID0/unsupported hosts before touching storage.
+It is not wired to public Caddy. Actual Mac loopback Gunicorn/upload/ClamAV/
+moderator/snapshot/revocation checks pass, then the owned listener closes; no
+persistent API service or real accounts have been deployed.
 
 Python/native preflight ZIP EOCD/actual central records before eager library
 allocation; maximum2049 entries,180-byte names,4096-byte extras,1024-byte comments,

@@ -159,7 +159,7 @@ class Accounts:
                               (name,)).fetchone() is None, 409, 'Creator invitation already exists')
             db.execute('INSERT INTO workshop_invites(token_hash,username,role,created,expires) VALUES(?,?,?,?,?)',
                        (token_hash(secret), name, role, now, now + INVITE_TTL))
-            self.audit(db, 'operator', 'invite-created', name, role)
+            self.audit(db, 'system:operator', 'invite-created', name, role)
         return secret
 
     def recovery_invite(self, name, note):
@@ -176,7 +176,7 @@ class Accounts:
                        (token_hash(secret), name, row['role'], now, now + INVITE_TTL, row['id']))
             db.execute('UPDATE workshop_accounts SET active=0 WHERE id=?', (row['id'],))
             db.execute('DELETE FROM workshop_sessions WHERE account_id=?', (row['id'],))
-            self.audit(db, 'operator', 'account-recovery-issued', name, note.strip())
+            self.audit(db, 'system:operator', 'account-recovery-issued', name, note.strip())
         return secret
 
     def cancel_invite(self, secret):
@@ -187,7 +187,7 @@ class Accounts:
             row = db.execute('SELECT username FROM workshop_invites WHERE token_hash=?', (hashed,)).fetchone()
             if row is not None:
                 db.execute('DELETE FROM workshop_invites WHERE token_hash=?', (hashed,))
-                self.audit(db, 'operator', 'invitation-cancelled', row['username'])
+                self.audit(db, 'system:operator', 'invitation-cancelled', row['username'])
 
     def redeem(self, invitation, password, peer):
         self.authentication_rate(peer, 'invite:' + str(invitation)[:43])
@@ -217,7 +217,7 @@ class Accounts:
                            (salt, derived, account_id))
                 action = 'account-recovered'
             db.execute('DELETE FROM workshop_invites WHERE token_hash=?', (hashed,))
-            self.audit(db, current['username'], action, current['username'])
+            self.audit(db, 'user:' + current['username'], action, current['username'])
             return self._session(db, account_id)
 
     def _session(self, db, account_id):
@@ -249,7 +249,7 @@ class Accounts:
             current = db.execute('SELECT * FROM workshop_accounts WHERE id=?', (account['id'],)).fetchone()
             demand(current['active'] and hmac.compare_digest(bytes(current['password_hash']), expected),
                    401, 'Sign-in failed')
-            self.audit(db, name, 'session-created', name)
+            self.audit(db, 'user:' + name, 'session-created', name)
             return self._session(db, account['id'])
 
     def actor(self, db, actor, roles=ROLES):
@@ -271,7 +271,7 @@ class Accounts:
             db.execute('BEGIN IMMEDIATE')
             actor = self.actor(db, actor)
             db.execute('DELETE FROM workshop_sessions WHERE token_hash=?', (actor.session_hash,))
-            self.audit(db, actor.username, 'session-revoked', actor.username)
+            self.audit(db, 'user:' + actor.username, 'session-revoked', actor.username)
 
     def change_password(self, actor, old_password, new_password, peer):
         self.authentication_rate(peer, actor.username)
@@ -290,7 +290,7 @@ class Accounts:
                                  (salt, derived, actor.id, expected)).rowcount
             demand(changed == 1, 409, 'Account changed; sign in again')
             db.execute('DELETE FROM workshop_sessions WHERE account_id=?', (actor.id,))
-            self.audit(db, actor.username, 'password-changed', actor.username)
+            self.audit(db, 'user:' + actor.username, 'password-changed', actor.username)
 
     def suspend(self, name, note):
         """Local operator recovery, including an account whose sessions were stolen."""
@@ -302,4 +302,4 @@ class Accounts:
             demand(row is not None, 404, 'Unknown creator')
             db.execute('UPDATE workshop_accounts SET active=0 WHERE id=?', (row['id'],))
             db.execute('DELETE FROM workshop_sessions WHERE account_id=?', (row['id'],))
-            self.audit(db, 'operator', 'account-suspended', name, note.strip())
+            self.audit(db, 'system:operator', 'account-suspended', name, note.strip())

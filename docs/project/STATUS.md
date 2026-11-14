@@ -43625,3 +43625,52 @@ not launcher public-download/UI, Story gameplay, script or other-host acceptance
 Ignored evidence: logs/mod-runtime-visual-evidence.json, mod-game-*-validation.txt
 and private/test-saves/mod-live-*-capture/mod-frame*.bmp.86 mod checks now also
 pass under WSL Linux;202 focused workshop/context/CI checks pass on Windows.
+
+# Private creator HTTP service and bounded metadata (2026-11-14)
+
+Source0087f582 is committed/pushed and synchronized through Git to the separate
+Mac and WSL task checkouts; AGENTS hashes match. Primary device checkouts and
+personal saves/settings were preserved. No merge, public service or release.
+
+Implemented invitation-based creator/moderator/admin accounts, scrypt password
+hashing, hashed/revocable12-hour sessions, password change/recovery/suspension,
+bounded persistent rate/audit counters and operator-only ownership adoption.
+The private WSGI API reserves digest/identity/size/storage before upload, validates
+ownership again at finalization, never serves quarantine files, and checks
+authentication again after transfer. A serial OS-locked queue retains private
+scan/review states, retries engine errors and recovers committed jobs without
+reapproving them. Moderator permission, approval/revocation and audit are one
+SQLite transaction; failed audit rolls publication back. Quota/lease bounds and
+remaining production gaps are in the creator-service guide.
+
+Real Mac acceptance uses pinned/hash-verified Gunicorn27.0.1, two sync workers
+on a disposable loopback port, real isolated ClamAV1.5.4 and official definitions.
+Creator invitation redemption, authenticated reservation/body/status, denied
+creator approval, clean-to-moderator-review, approved exact snapshot bytes,
+EICAR rejection, revocation and credential exclusion from public metadata pass.
+Wrong HTTP scheme is rejected; the test simulates a trusted local HTTPS proxy
+header and does not establish internet TLS. Owned server group exits and its
+listener closes. No persistent real accounts or server process were left.
+
+Shared Python/native ZIP preflight bounds actual central records before eager
+decoder allocation. JSON preflight limits nesting/collections/tokens/numeric
+range, with Lua1MiB and map descriptors4MiB. Native numeric parsing no longer
+copies the whole remaining string per value. Windows full launcher checks pass
+(60 shared UI groups,13 workshop groups); native Mac build/sign/package/tests
+pass61 groups; WSL Linux build/test/package passes62 groups plus real package
+install/corruption/repair/restart/preservation. Mac and WSL each pass141 mod
+tests; the final Windows mod rerun also passes141 cases. Prior combined checks
+passed233 cases, with final focused parsing/control/Unicode checks passing.
+Audit actors now use user:/system: namespaces; a further regression case passes
+for a creator named operator. This prevents ambiguous service/user attribution.
+Production factory also rejects UID0 and unsupported hosts before opening
+storage; both refusal cases pass. The complete affected account/API tests pass.
+
+The actual Mac isolation probe additionally compiles a harmless C executable
+and observes hard CPU150s/file512MiB/fd128/core0 bounds plus the180s alarm across
+exec. Filesystem/symlink/child-exec/network canaries pass. Logs copied locally:
+mac-mod-creator-live.txt, mac-mod-creator-isolation.txt, mac-mod-creator-native.txt
+and mac-mod-creator-unit.txt under ignored logs/. Public Caddy routing, native
+creator/moderator screens and credential vaults, worker RSS supervision/service
+identity/scheduling, signed catalog trust, reports/backups, gameplay scripting,
+other content loaders and broader game/public acceptance remain incomplete.

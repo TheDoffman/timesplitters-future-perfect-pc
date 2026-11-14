@@ -127,7 +127,7 @@ class Uploads:
                    507, 'Insufficient workshop disk headroom')
             db.execute('INSERT INTO workshop_uploads(id,account_id,mod_id,version,sha256,size,created,expires,state) '
                        "VALUES(?,?,?,?,?,?,?,?,'open')", (upload_id, actor.id, mod_id, version, sha256, size, now, now + TICKET_TTL))
-            self.accounts.audit(db, actor.username, 'upload-reserved', upload_id, mod_id + '@' + version)
+            self.accounts.audit(db, 'user:' + actor.username, 'upload-reserved', upload_id, mod_id + '@' + version)
         return self.status(actor, upload_id)
 
     def _get(self, db, actor, upload_id):
@@ -184,7 +184,7 @@ class Uploads:
                 demand(not ready.exists() and not ready.is_symlink(), 503, 'Unexpected private upload file')
                 part.rename(ready)
                 db.execute("UPDATE workshop_uploads SET state='queued',lease='',lease_until=0 WHERE id=?", (upload_id,))
-                self.accounts.audit(db, actor.username, 'upload-queued', upload_id, row['sha256'])
+                self.accounts.audit(db, 'user:' + actor.username, 'upload-queued', upload_id, row['sha256'])
             published = True
         except BaseException:
             if not published:
@@ -232,7 +232,7 @@ class Uploads:
                 self.repository.approve_in_transaction(db, row['sha256'], actor.username + ': ' + note.strip())
             else:
                 self.repository.revoke_in_transaction(db, row['sha256'], actor.username + ': ' + note.strip())
-            self.accounts.audit(db, actor.username, action, row['sha256'], note.strip())
+            self.accounts.audit(db, 'user:' + actor.username, action, row['sha256'], note.strip())
             state = db.execute('SELECT state FROM releases WHERE sha256=?', (row['sha256'],)).fetchone()[0]
         return {'id': upload_id, 'sha256': row['sha256'], 'state': state}
 
@@ -256,7 +256,7 @@ class Uploads:
             demand(target is not None, 404, 'Creator unavailable')
             db.execute('INSERT INTO workshop_owners VALUES(?,?) ON CONFLICT(mod_id) DO UPDATE SET account_id=excluded.account_id',
                        (mod_id, target['id']))
-            self.accounts.audit(db, 'operator', 'owner-assigned', mod_id, name + ': ' + note.strip())
+            self.accounts.audit(db, 'system:operator', 'owner-assigned', mod_id, name + ': ' + note.strip())
 
     @contextmanager
     def _worker_lock(self):
@@ -332,7 +332,7 @@ class Uploads:
                                          ('retry' if retry else 'complete', self.accounts.now() + 300 if retry else 0,
                                           'scan-unavailable' if release['state'] == 'scan-error' else '', row['id'], lease)).rowcount
                     demand(changed == 1, 409, 'Scan job changed')
-                    self.accounts.audit(db, 'scanner', 'upload-scanned', row['id'], release['state'])
+                    self.accounts.audit(db, 'system:scanner', 'upload-scanned', row['id'], release['state'])
                 self._remove(row['id'], '.ready')
                 return {'id': row['id'], 'state': release['state'], 'retry': retry}
             except (ModError, OSError, ServiceError):

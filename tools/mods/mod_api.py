@@ -143,6 +143,8 @@ class WorkshopAPI:
 
 def create_app():
     """Gunicorn factory; repository/origin configuration contains no credentials."""
+    demand(os.name == 'posix' and os.geteuid() != 0, 503,
+           'Run the production API as an unprivileged Unix service account')
     root = os.environ['TSFP_WORKSHOP_REPOSITORY']
     origin = os.environ['TSFP_WORKSHOP_ORIGIN']
     repository = Repository(root)

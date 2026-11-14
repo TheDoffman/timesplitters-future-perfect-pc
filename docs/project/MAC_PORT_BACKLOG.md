@@ -10545,3 +10545,15 @@ not establish Mac/Linux modded gameplay. See STATUS and full acceptance matrix.
 Windows native model-to-profile-scene texture install/update/rollback/removal is
 now visually verified with original synthetic DDS and renderer captures; this
 does not establish Mac parity or Story gameplay.
+
+Creator service and metadata guards (source0087f582): VERIFIED FOR NAMED HOST
+CHECKS. Shared native ZIP/JSON allocation guards pass full launcher checks on
+Windows60/Mac61/Linux62 shared UI groups (13 workshop groups). Mac build/sign/
+package passes; Linux install/repair/restart preservation passes. Mac/WSL each
+pass141 mod tests. Real Mac Gunicorn HTTP-to-account/upload-to-isolated-ClamAV/
+moderator-review/snapshot/revocation acceptance passes with disposable identities
+and a private loopback server, then verifies listener shutdown. The C resource
+probe observes CPU/file/fd/core limits and the alarm across exec; canaries pass.
+This does not establish public TLS, native creator UI, persistent host operation,
+worker memory supervision or gameplay scripting. No API daemon/public route or
+real persistent account was installed. See STATUS and mod-creator-service guide.

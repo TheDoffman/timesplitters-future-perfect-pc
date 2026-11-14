@@ -22,6 +22,8 @@ moderator and admin roles are assigned locally; public redemption cannot select
 a role. Password changes revoke all sessions. Local recovery revokes sessions
 and suspends the account until a new one-time invitation is redeemed, preserving
 its identity and owned mods. Suspension immediately invalidates authentication.
+Audit identities distinguish `user:NAME` from `system:operator`/`system:scanner`,
+so a creator's chosen name cannot impersonate a service actor in the history.
 At most five active sessions per account,10,000 accounts/invitations and100,000
 audit records are retained; exhausted capacity stops new mutations for operator
 attention rather than silently deleting audit history. Audit archival/rotation
@@ -113,7 +115,9 @@ Gunicorn27.0.1 is pinned to its published wheel SHA-256, with no extras; see the
 `python -m gunicorn --config hosting/gunicorn.conf.py 'mod_api:create_app()'` only
 after setting `TSFP_WORKSHOP_REPOSITORY` and `TSFP_WORKSHOP_ORIGIN` (an HTTPS
 origin, no credentials). The profile binds127.0.0.1:8767, uses two sync workers,
-180-second request deadlines and bounded headers/request lines. It trusts HTTPS
+180-second request deadlines and bounded headers/request lines. The production
+factory rejects superuser/unsupported-host execution before opening storage;
+use an unprivileged Unix account. It trusts HTTPS
 scheme headers only from loopback and does not log request URLs/credentials.
 Do not expose this backend port directly. Caddy/TLS routing is not installed by
 this command, and public deployment remains incomplete.
