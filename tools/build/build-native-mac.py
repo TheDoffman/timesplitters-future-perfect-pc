@@ -145,6 +145,8 @@ def main():
     run(PYTHON, ROOT / 'tools/build/network-identity.py', '--runtime', UPSTREAM,
         '--game', runtime_root / 'private/game', '--output', BUILD / 'generated')
     # Source builds may reuse another checkout's interpreter and build tree.
+    run(PYTHON, ROOT / 'tools/build/mod_runtime_images.py', '--output', runtime_root / 'build/mod-worker',
+        '--cmake', CMAKE, '--runtime-root', BUILD / 'ModRuntime', '--header', BUILD / 'generated/mod-runtime-images.h')
     (BUILD / 'generated/online-python.h').write_text(
         '#define TSFP_ONLINE_PYTHON ' + json.dumps(str(PYTHON)) + '\n', encoding='utf-8')
     command = [CMAKE, '-S', UPSTREAM / 'titles/futureperfect', '-B', BUILD, '-G', 'Ninja',

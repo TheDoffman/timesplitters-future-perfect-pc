@@ -180,6 +180,10 @@ try {
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\recomp-generation.py'), $toolRoot, '--record')
                     }
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\network-identity.py'))
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\mod_runtime_images.py'),
+                        '--output', (Join-Path $projectRoot 'build\mod-worker'), '--cmake', $cmake,
+                        '--runtime-root', (Join-Path $buildRoot "$Configuration\ModRuntime"),
+                        '--header', (Join-Path $buildRoot 'generated\mod-runtime-images.h'))
                     $gameIconResource = & (Join-Path $projectRoot 'tools\build\build-game-icon.ps1')
                     Invoke-Checked $cmake @('-S', 'titles/futureperfect', '-B', $buildRoot,
                         '-G', 'Visual Studio 17 2022', '-A', 'x64',

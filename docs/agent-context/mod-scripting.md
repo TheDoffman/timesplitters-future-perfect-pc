@@ -16,11 +16,14 @@ The digest covers the copied stream, not a path later reopened for copying.
 Only owned files/empty directories are removed; unknown contents survive cleanup.
 Session::open_verified runs staging on its existing background thread and keeps
 the images until child cleanup ends. Match now requires image pins as well as
-policy assertions and always uses that verified entry. No production compiled
-pins/helper package/bootstrap is wired yet; launcher scripting remains unavailable.
+policy assertions and always uses that verified entry. Game builds additionally
+compare caller pins against generated compiled pins; uploaded hashes cannot
+select a different worker. Bootstrap remains unwired; launcher scripting is unavailable.
 tools/build/mod_runtime_images.py now builds production-only helpers, verifies
 source/configuration/image receipts, stages immutable content-addressed bundles
-and emits a generated pin header. Normal game builders do not consume it yet.
+and emits a generated pin header. All three normal native game builders invoke
+it before CMake, staging ModRuntime/<identity> beside the game executable.
+Game CMake requires that header; release-package copying/signing remains pending.
 No diagnostic runner, test image or VM library is distributed in those bundles.
 
 [Full contracts and evidence](../development/mod-gameplay-scripting.md).

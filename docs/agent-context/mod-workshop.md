@@ -43,7 +43,8 @@ mode play remain required. See [worker and game bridge](mod-scripting.md).
 <!-- packet:end -->
 
 Production native helper staging lives in `tools/build/mod_runtime_images.py`;
-see [image contracts](mod-scripting.md). Game-builder integration is pending.
+see [image contracts](mod-scripting.md). Native builders compile pins and stage
+helpers beside the game; release-package copying and bootstrap remain pending.
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,
 `mod-workshop.py`. The CLI is directly executable; peer imports resolve from its
 directory. Tests add `tools/mods` explicitly and use no private game files.

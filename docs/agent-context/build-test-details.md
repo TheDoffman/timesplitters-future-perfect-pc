@@ -5,6 +5,11 @@ exact bundle contents/header pins, stable repeat staging and refusal of testing,
 sanitizer, changed source/image/configuration/license receipts. Unknown bundle
 files/headers survive refusal. Worker receipts capture source hashes before
 compilation and refuse source changes before overwriting a prior receipt.
+All native game builders run that producer before game CMake and place its
+generated header under the build's generated directory. Game CMake refuses a
+missing header. test_mod_match.py also compiles the actual game-only gate with
+a different digest and proves caller-supplied hashes of a real valid worker are
+refused before a process or private cache is created.
 
 `tests/mods/test_script_images.py` exercises real OS SHA256 providers, immutable
 private helper staging, digest/pin/size/cancellation/path rejection and cleanup

@@ -23,7 +23,7 @@ static int run(const std::string &image,const std::string &cache,const std::stri
     if(scenario=="image-digest")config.worker_sha256="0000000000000000000000000000000000000000000000000000000000000000";
     if(scenario=="initial-world")world.identities[1]=world.identities[0];
     auto *match=tsfp_mod_match_open(&config,&world);
-    if(scenario=="policy" || scenario=="image-policy" || scenario=="initial-world"){CHECK(!match);puts("{\"refused\":true}");return 0;}
+    if(scenario=="policy" || scenario=="image-policy" || scenario=="initial-world" || scenario=="compiled-image-policy"){CHECK(!match);puts("{\"refused\":true}");return 0;}
     CHECK(match);
     struct Drain {TsfpModMatch *match;~Drain(){tsfp_mod_match_close(match);auto end=Clock::now()+std::chrono::seconds(3);
         while(!tsfp_mod_match_stopped(match) && Clock::now()<end)std::this_thread::sleep_for(std::chrono::milliseconds(1));tsfp_mod_match_destroy(match);}} drain{match};

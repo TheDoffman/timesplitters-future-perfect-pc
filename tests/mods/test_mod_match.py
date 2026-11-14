@@ -28,6 +28,14 @@ def test_original_mode_through_game_bridge(process_tools,tmp_path):
     assert result['score']==3 and result['winner']==1 and result['commits']==5
 
 
+def test_game_compiled_pins_refuse_caller_selected_valid_helper(process_tools,tmp_path):
+    worker=process_tools['worker'];driver=worker.with_name('tsfp-mod-pinned-match-driver'+worker.suffix)
+    result=subprocess.run([str(driver),str(worker),str(tmp_path),'compiled-image-policy',*image_pins(worker)],
+                          input=b'return {api=1}',capture_output=True,timeout=8)
+    assert result.returncode==0 and result.stderr==b'',(result.returncode,result.stdout,result.stderr)
+    assert json.loads(result.stdout)=={'refused':True} and not list(tmp_path.iterdir())
+
+
 @pytest.mark.parametrize('scenario',['policy','image-policy','image-digest','initial-world','overflow','stale-epoch','stale-roster','stale-authority','stale-network','invalid-target'])
 def test_game_boundary_faults_before_any_partial_commit(process_tools,tmp_path,scenario):
     result=run(process_tools,tmp_path,scenario,'return {api=1,on_start=function() game.set_score(1,99) end}')

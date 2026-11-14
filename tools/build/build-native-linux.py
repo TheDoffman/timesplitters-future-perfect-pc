@@ -85,6 +85,8 @@ def main():
     run(sys.executable,ROOT/'tools/build/recomp-generation.py',runtime)
     run(sys.executable,ROOT/'tools/build/network-identity.py','--runtime',runtime,'--game',game,'--output',build/'generated')
     (build/'generated/online-python.h').write_text('#define TSFP_ONLINE_PYTHON '+json.dumps(sys.executable)+'\n')
+    run(sys.executable,ROOT/'tools/build/mod_runtime_images.py','--output',ROOT/'build/mod-worker',
+        '--cmake',cmake,'--runtime-root',build/'ModRuntime','--header',build/'generated/mod-runtime-images.h')
     # Keep Debug assertions and symbols, plus the title's existing precise
     # -O2/no-vectorization policy. Host libraries need optimization as well.
     host_flags='-O2 -g' if args.host_optimization=='optimized' else '-g'

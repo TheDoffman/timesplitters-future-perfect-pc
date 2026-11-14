@@ -10746,3 +10746,5 @@ Mac/Linux ordinary and host-sanitizer runs plus updated game linking pending.
 Compiled production pins, helper package and bootstrap/activation remain required.
 
 Native helper production staging follow-up: **In progress**. Shared production producer emits content-addressed helper-only bundles and generated digest headers, refusing stale/instrumented builds. Windows12 producer checks pass; Mac/Linux producer and updated game linking pending. Mac native verification104 checks/1 skip and host-ASan39 checks pass. Linux shared strict-warning repair awaits rerun. Bootstrap/save/launcher/public acceptance remains open; no new platform exception.
+
+Production helper integration: **In progress**. Mac30 producer/image checks pass/2 skips and Linux112 combined checks pass/7 skips. All three normal game builders now stage immutable production helpers beside the executable and require generated compiled digest pins. Windows33 producer/match checks pass. Native game links and Mac/Linux compiled-gate checks pending; release packaging/bootstrap/save/launcher/public acceptance remains open.

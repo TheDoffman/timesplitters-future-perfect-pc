@@ -1,6 +1,9 @@
 #include "mod_match.h"
 #include "mod_session.hpp"
 #include "mod_images.hpp"
+#ifdef TSFP_MOD_GAME
+#include "mod-runtime-images.h"
+#endif
 #include <array>
 #include <algorithm>
 #include <cmath>
@@ -57,6 +60,9 @@ extern "C" TsfpModMatch *tsfp_mod_match_open(const TsfpModMatchConfig *config,co
     try {
         auto match=std::make_unique<TsfpModMatch>();std::string error;
         tsfp::mods::ImagePins pins{config->worker_sha256?config->worker_sha256:"",config->guardian_sha256?config->guardian_sha256:""};
+#ifdef TSFP_MOD_GAME
+        if(pins.worker!=TSFP_MOD_RUNTIME_WORKER_SHA256 || pins.guardian!=TSFP_MOD_RUNTIME_GUARDIAN_SHA256)return nullptr;
+#endif
         match->session=Session::open_verified(config->worker,config->cache,pins,std::string(config->source,config->source_size),config->seed,error);
         if(!match->session)return nullptr;
         match->initial=*world;match->last_tick=world->tick;
