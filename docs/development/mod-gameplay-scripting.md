@@ -232,3 +232,24 @@ Production has no bypass argument, environment variable or protocol message.
 The normal builder leaves testing OFF. Existing56 VM checks execute the test VM;
 production-process checks are separate and never run a sanitized binary whose
 instrumentation requires incompatible executable mappings/address-space limits.
+
+### Abrupt broker death
+
+The Darwin Process adapter now starts a separately built trusted lifetime guardian
+beside the verified worker. A private FD3 pipe closes when the game parent exits,
+including SIGKILL; FD4 returns the owned worker PID before input dispatch. The
+guardian forwards no data and reads no mod protocol. It launches the worker with
+only stdio, meters no untrusted values, watches parent EOF, and retains waitpid
+ownership until that worker exits/is killed. It therefore cannot accidentally
+signal a recycled PID. The game parent queries worker CPU/RSS, not the guardian.
+Normal shutdown closes liveness and waits for the guardian to kill/reap. The
+trusted guardian binary must be included in future signed game-image verification
+and is hashed by BUILD-worker.json. Mac validation is pending at this checkpoint.
+
+A separate test parent/native canary exercises abrupt broker death without the VM
+watchdog: Windows8 process checks pass, including actual kill-on-job-close exit.
+Linux PDEATHSIG and the new Darwin guardian require actual expanded host checks.
+The Windows test waits on the exact worker process handle before deleting only
+its owned GUID profile/cache via the profile API. Crash-time automatic stale-cache
+and profile recovery is not implemented yet; successful abrupt process termination
+does not mean the dead broker ran its ordinary cleanup destructor.

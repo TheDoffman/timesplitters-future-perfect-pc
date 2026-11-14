@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import shutil
 import socket
+import queue
+import threading
 import subprocess
 import sys
 import time
@@ -29,7 +31,8 @@ def process_tools(tmp_path_factory):
     worker = builder.build(tmp_path_factory.mktemp('mod-process'), cmake, testing=True)
     suffix = '.exe' if os.name == 'nt' else ''
     return dict(worker=worker, runner=worker.with_name('tsfp-mod-runner' + suffix),
-                probe=worker.with_name('tsfp-mod-process-probe' + suffix))
+                probe=worker.with_name('tsfp-mod-process-probe' + suffix),
+                lifetime=worker.with_name('tsfp-mod-lifetime-probe' + suffix))
 
 
 def supervise(tools, cache, data, image='probe', **kwargs):
@@ -99,6 +102,8 @@ def test_native_escape_canaries_have_positive_controls(process_tools, tmp_path):
             assert control[key] == 1, (key, control)
         if os.name == 'nt':
             assert control['parent'] == control['registry'] == control['acl_write'] == control['profile_write'] == 1
+        else:
+            assert control['parent_signal'] == 1
         path.with_suffix('.txt.blocked').unlink()
         # Give the runner a real inherited file handle and secret. It must pass
         # only its private stdin/stdout/stderr and synthetic environment onward.
@@ -154,6 +159,64 @@ def test_production_worker_runs_actual_mode_inside_os_policy(process_tools, tmp_
     assert [reply['commands'][0]['value'] for reply in replies[2:5]] == [1, 2, 3]
     assert replies[4]['commands'][-1]['kind'] == 2
     assert not list(tmp_path.iterdir())
+
+
+def test_abrupt_parent_death_terminates_native_worker(process_tools, tmp_path):
+    with subprocess.Popen([str(process_tools['lifetime']), str(process_tools['probe']), str(tmp_path)],
+                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as parent:
+        identity = queue.Queue()
+        reader = threading.Thread(target=lambda: identity.put(parent.stdout.readline()), daemon=True)
+        reader.start()
+        try:
+            worker_pid = int(identity.get(timeout=5))
+            assert worker_pid > 0 and worker_pid != parent.pid
+            if os.name == 'nt':
+                import ctypes
+                kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+                kernel.OpenProcess.restype = ctypes.c_void_p
+                kernel.WaitForSingleObject.argtypes = [ctypes.c_void_p, ctypes.c_uint]
+                kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+                worker_handle = kernel.OpenProcess(0x100000, False, worker_pid)
+                assert worker_handle, ctypes.get_last_error()
+            parent.kill()
+            parent.wait(timeout=5)
+            if os.name == 'nt':
+                try:
+                    assert kernel.WaitForSingleObject(worker_handle, 5000) == 0
+                finally:
+                    kernel.CloseHandle(worker_handle)
+            else:
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    try:
+                        os.kill(worker_pid, 0)  # Existence query only; never signal another PID.
+                        stat = Path(f'/proc/{worker_pid}/stat')
+                        if sys.platform == 'linux' and stat.is_file() and stat.read_text().rsplit(')', 1)[1].split()[0] == 'Z':
+                            break  # WSL PID1 may retain an already-terminated orphan zombie.
+                    except ProcessLookupError:
+                        break
+                    time.sleep(.01)
+                else:
+                    pytest.fail('Native worker survived abrupt parent death')
+        finally:
+            if parent.poll() is None:
+                parent.kill()
+                parent.wait(timeout=5)
+            if os.name == 'nt':
+                # A killed broker cannot execute its own destructor. Clean only
+                # this test's newly-owned GUID profile/cache, after job death.
+                import ctypes
+                for directory in tmp_path.iterdir():
+                    assert directory.is_dir() and directory.resolve().is_relative_to(tmp_path.resolve())
+                    profile = 'TSFP.Mod.' + str(uuid.UUID(directory.name))
+                    userenv = ctypes.WinDLL('userenv')
+                    userenv.DeleteAppContainerProfile.argtypes = [ctypes.c_wchar_p]
+                    userenv.DeleteAppContainerProfile.restype = ctypes.c_long
+                    assert userenv.DeleteAppContainerProfile(profile) == 0
+                    image = directory / 'worker.exe'
+                    assert image.is_file() and not image.is_symlink()
+                    image.unlink()
+                    directory.rmdir()
 
 
 @pytest.mark.skipif(os.name != 'nt', reason='Windows requires the broker to establish its token/job before entry')

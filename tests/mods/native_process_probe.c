@@ -18,6 +18,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <errno.h>
 #ifdef __APPLE__
 #include <mach/mach.h>
@@ -46,12 +47,20 @@ static int inherited_file_readable(unsigned long long value) {
 static void line(char *text,size_t size){if(!fgets(text,(int)size,stdin))text[0]=0;text[strcspn(text,"\r\n")]=0;}
 int main(void) {
     char mode[32],path[2048],numbers[128],registry[512],write_path[2100];
-    int read_ok=0,write_ok=0,network_ok=0,spawn_ok=0,parent_ok=0,descriptor_ok=0,registry_ok=0,acl_write=0,profile_write=0,private_registry_write=0;
+    int read_ok=0,write_ok=0,network_ok=0,spawn_ok=0,parent_ok=0,parent_signal=0,descriptor_ok=0,registry_ok=0,acl_write=0,profile_write=0,private_registry_write=0;
     unsigned long parent=0,port=0;unsigned long long hidden=0;
     setvbuf(stdin,NULL,_IONBF,0);setvbuf(stdout,NULL,_IONBF,0);setvbuf(stderr,NULL,_IONBF,0);
     line(mode,sizeof(mode));line(path,sizeof(path));line(numbers,sizeof(numbers));line(registry,sizeof(registry));
     sscanf(numbers,"%lu %lu %llu",&parent,&port,&hidden);
     if(strcmp(mode,"baseline") && !tsfp_mod_seal()){puts("{\"sealed\":false}");return 126;}
+    if(!strcmp(mode,"lifetime")) {
+#ifdef _WIN32
+        printf("%lu\n",(unsigned long)GetCurrentProcessId());
+#else
+        printf("%lu\n",(unsigned long)getpid());
+#endif
+        for(;;){}
+    }
     if(!strcmp(mode,"hang")){for(;;){}}
     if(!strcmp(mode,"flood")){char data[4096];memset(data,'x',sizeof(data));for(;;)fwrite(data,1,sizeof(data),stdout);}
     if(!strcmp(mode,"diagnostic")){char data[4096];memset(data,'x',sizeof(data));for(;;)fwrite(data,1,sizeof(data),stderr);}
@@ -92,6 +101,7 @@ int main(void) {
     int sock=socket(AF_INET,SOCK_STREAM,0);if(sock>=0){struct sockaddr_in address;memset(&address,0,sizeof(address));address.sin_family=AF_INET;address.sin_port=htons((unsigned short)port);address.sin_addr.s_addr=htonl(0x7f000001);
         network_ok=connect(sock,(struct sockaddr *)&address,sizeof(address))==0;close(sock);}
     descriptor_ok=fcntl((int)hidden,F_GETFD)>=0;
+    parent_signal=kill(getppid(),0)==0; /* Permission query only, never sends a signal. */
     pid_t child=fork();if(child==0)_exit(0);if(child>0){spawn_ok=1;waitpid(child,NULL,0);}
 #ifdef __APPLE__
     mach_port_t task=MACH_PORT_NULL;if(task_for_pid(mach_task_self(),(int)parent,&task)==KERN_SUCCESS){parent_ok=1;mach_port_deallocate(mach_task_self(),task);}
@@ -99,7 +109,7 @@ int main(void) {
     parent_ok=ptrace(PTRACE_TRACEME,0,NULL,NULL)==0;
 #endif
 #endif
-    printf("{\"sealed\":%s,\"read\":%d,\"write\":%d,\"network\":%d,\"spawn\":%d,\"parent\":%d,\"descriptor\":%d,\"registry\":%d,\"acl_write\":%d,\"profile_write\":%d,\"private_registry_write\":%d,\"secret\":%d}\n",
-        strcmp(mode,"baseline")?"true":"false",read_ok,write_ok,network_ok,spawn_ok,parent_ok,descriptor_ok,registry_ok,acl_write,profile_write,private_registry_write,getenv("TSFP_SUPERVISOR_SECRET")!=NULL);
+    printf("{\"sealed\":%s,\"read\":%d,\"write\":%d,\"network\":%d,\"spawn\":%d,\"parent\":%d,\"parent_signal\":%d,\"descriptor\":%d,\"registry\":%d,\"acl_write\":%d,\"profile_write\":%d,\"private_registry_write\":%d,\"secret\":%d}\n",
+        strcmp(mode,"baseline")?"true":"false",read_ok,write_ok,network_ok,spawn_ok,parent_ok,parent_signal,descriptor_ok,registry_ok,acl_write,profile_write,private_registry_write,getenv("TSFP_SUPERVISOR_SECRET")!=NULL);
     return 0;
 }

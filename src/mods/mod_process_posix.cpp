@@ -14,6 +14,8 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <chrono>
+#include <thread>
 #include <pthread.h>
 #ifdef __linux__
 #include <sys/prctl.h>
@@ -27,7 +29,7 @@ namespace {
 void close_fd(int &fd){if(fd>=0)close(fd);fd=-1;}
 class PosixProcess final:public Process {
 public:
-    pid_t pid=-1;int input=-1,output=-1,diagnostic=-1;bool reaped=false;int code=0;
+    pid_t pid=-1,worker_pid=-1;int input=-1,output=-1,diagnostic=-1,liveness=-1;bool reaped=false;int code=0;
     ~PosixProcess()override{terminate();close_fd(input);close_fd(output);close_fd(diagnostic);}
     int write(const void *bytes,size_t size)override {
         if(input<0)return -1;
@@ -67,12 +69,25 @@ public:
         result.resident_bytes=(uint64_t)(resident<0?0:resident)*(uint64_t)sysconf(_SC_PAGESIZE);
 #else
         rusage_info_v4 info{};
-        if(proc_pid_rusage(pid,RUSAGE_INFO_V4,(rusage_info_t *)&info)!=0)return errno==ESRCH;
+        if(proc_pid_rusage(worker_pid,RUSAGE_INFO_V4,(rusage_info_t *)&info)!=0)return errno==ESRCH;
         result.resident_bytes=info.ri_phys_footprint;result.cpu_microseconds=(info.ri_user_time+info.ri_system_time)/1000;
 #endif
         return true;
     }
     void terminate()override {
+#ifdef __APPLE__
+        // The separate trusted guardian owns/reaps the worker and watches this
+        // pipe even when this process is abruptly killed. Do not kill it first.
+        close_fd(liveness);close_input();
+        if(pid>0 && !reaped) {
+            auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(2);
+            do {
+                int status;pid_t found=waitpid(pid,&status,WNOHANG);
+                if(found==pid || (found<0 && errno==ECHILD)){reaped=true;return;}
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            }while(std::chrono::steady_clock::now()<deadline);
+        }
+#endif
         if(pid>0 && !reaped){kill(-pid,SIGKILL);kill(pid,SIGKILL);int status;while(waitpid(pid,&status,0)<0 && errno==EINTR){}reaped=true;}
     }
 };
@@ -88,25 +103,41 @@ std::unique_ptr<Process> Process::start(const std::string &image,const std::stri
     auto child=std::make_unique<PosixProcess>();int in[2]={-1,-1},out[2]={-1,-1},err[2]={-1,-1};
     if(!pipe_pair(in) || !pipe_pair(out) || !pipe_pair(err)){for(int *p:{in,out,err}){close_fd(p[0]);close_fd(p[1]);}error="Cannot create worker pipes";return {};}
     char *environment[]={const_cast<char *>("LANG=C"),const_cast<char *>("LC_ALL=C"),const_cast<char *>("TZ=UTC"),nullptr};
-    char *arguments[]={const_cast<char *>(image.c_str()),nullptr};
 #ifdef __APPLE__
     // Darwin has no closefrom(). CLOEXEC_DEFAULT closes *all* inherited FDs,
     // including high-numbered ones, except these explicit stdio dup actions.
+    auto guardian=(std::filesystem::path(image).parent_path()/"tsfp-mod-guardian").string();
+    if(std::filesystem::is_symlink(guardian,fs) || !std::filesystem::is_regular_file(guardian,fs) || fs) {
+        for(int *p:{in,out,err}){close_fd(p[0]);close_fd(p[1]);}error="Trusted lifetime guardian unavailable";return {};
+    }
+    int life[2]={-1,-1},identity[2]={-1,-1};
+    if(!pipe_pair(life) || !pipe_pair(identity)) {
+        for(int *p:{in,out,err,life,identity}){close_fd(p[0]);close_fd(p[1]);}error="Cannot create guardian pipes";return {};
+    }
+    // Keep these sources above the fixed guardian FD3/FD4 targets so spawn dup
+    // actions cannot overwrite another control source, even in a busy game.
+    int life_source=fcntl(life[0],F_DUPFD_CLOEXEC,5),identity_source=fcntl(identity[1],F_DUPFD_CLOEXEC,5);
+    char *guard_arguments[]={const_cast<char *>(guardian.c_str()),const_cast<char *>(image.c_str()),nullptr};
     posix_spawn_file_actions_t actions;posix_spawnattr_t attributes;
     bool have_actions=posix_spawn_file_actions_init(&actions)==0;
     bool have_attributes=posix_spawnattr_init(&attributes)==0;
     pid_t pid=-1;
-    int status=have_actions && have_attributes?0:ENOMEM;
+    int status=have_actions && have_attributes && life_source>=0 && identity_source>=0?0:ENOMEM;
     if(!status)status=posix_spawn_file_actions_adddup2(&actions,in[0],0);
     if(!status)status=posix_spawn_file_actions_adddup2(&actions,out[1],1);
     if(!status)status=posix_spawn_file_actions_adddup2(&actions,err[1],2);
+    if(!status)status=posix_spawn_file_actions_adddup2(&actions,life_source,3);
+    if(!status)status=posix_spawn_file_actions_adddup2(&actions,identity_source,4);
     if(!status)status=posix_spawnattr_setflags(&attributes,POSIX_SPAWN_CLOEXEC_DEFAULT|POSIX_SPAWN_SETPGROUP);
     if(!status)status=posix_spawnattr_setpgroup(&attributes,0);
-    if(!status)status=posix_spawn(&pid,image.c_str(),&actions,&attributes,arguments,environment);
+    if(!status)status=posix_spawn(&pid,guardian.c_str(),&actions,&attributes,guard_arguments,environment);
     if(have_actions)posix_spawn_file_actions_destroy(&actions);
     if(have_attributes)posix_spawnattr_destroy(&attributes);
+    close_fd(life_source);close_fd(identity_source);close_fd(life[0]);close_fd(identity[1]);
+    child->liveness=life[1];life[1]=-1;
     if(status)pid=-1;
 #else
+    char *arguments[]={const_cast<char *>(image.c_str()),nullptr};
     pid_t parent=getpid();pid_t pid=fork();
     if(pid==0) {
         if(setpgid(0,0) || dup2(in[0],0)<0 || dup2(out[1],1)<0 || dup2(err[1],2)<0)_exit(126);
@@ -116,8 +147,28 @@ std::unique_ptr<Process> Process::start(const std::string &image,const std::stri
     }
 #endif
     close_fd(in[0]);close_fd(out[1]);close_fd(err[1]);
-    if(pid<0){close_fd(in[1]);close_fd(out[0]);close_fd(err[0]);error="Cannot fork worker";return {};}
+    if(pid<0){
+        close_fd(in[1]);close_fd(out[0]);close_fd(err[0]);
+#ifdef __APPLE__
+        close_fd(identity[0]);
+#endif
+        error="Cannot start worker";return {};
+    }
     child->pid=pid;child->input=in[1];child->output=out[0];child->diagnostic=err[0];
+#ifdef __APPLE__
+    int64_t worker_identity=0;size_t received=0;
+    if(fcntl(identity[0],F_SETFL,fcntl(identity[0],F_GETFL)|O_NONBLOCK)<0){close_fd(identity[0]);error="Cannot inspect guardian startup";return {};}
+    auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(2);
+    while(received<sizeof(worker_identity) && std::chrono::steady_clock::now()<deadline) {
+        ssize_t count=::read(identity[0],(unsigned char *)&worker_identity+received,sizeof(worker_identity)-received);
+        if(count>0)received+=(size_t)count;
+        else if(!count || (errno!=EAGAIN && errno!=EINTR))break;
+        else std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    close_fd(identity[0]);
+    if(received!=sizeof(worker_identity) || worker_identity<=0 || worker_identity>INT32_MAX){error="Lifetime guardian startup failed";return {};}
+    child->worker_pid=(pid_t)worker_identity;
+#endif
     for(int fd:{child->input,child->output,child->diagnostic})if(fcntl(fd,F_SETFL,fcntl(fd,F_GETFL)|O_NONBLOCK)<0){error="Cannot set worker pipe mode";return {};}
     return child;
 }

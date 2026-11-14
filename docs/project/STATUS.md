@@ -43793,3 +43793,12 @@ profiles remain after checks. Linux at a668698f passed62 process/VM tests (one
 Windows-only skip). Mac at1b551f33 passed61 with one skip; the remaining assertion
 expected CPU-budget wording although the independent wall deadline correctly killed
 the native hang. The test now accepts either independent limit; rerun pending.
+
+Source ac772502 full mod/CI suites pass: Windows347/2 skips, Mac348/1 skip,
+Linux347/2 skips. Mac/Linux each pass56 ASan/UBSan VM tests. Script process
+coverage was then expanded with actual abrupt broker death. Windows8 checks
+pass, proving the exact worker exits when its broker job handle closes. A new
+Darwin trusted guardian addresses the previously documented parent-death gap;
+Mac/Linux expanded reruns pending. Windows stale crash-profile/cache recovery
+still needs production implementation; the test explicitly cleans its owned GUID
+profile after waiting for the worker process handle. Game activation stays off.

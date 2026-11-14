@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -75,6 +76,7 @@ def build(output, cmake='cmake', sanitize=False, testing=False):
     (output / 'BUILD-worker.json').write_text(json.dumps({
         'schema': 2, 'binary_sha256': sha(binary),
         'runner_sha256': sha(binary.with_name('tsfp-mod-runner.exe' if os.name == 'nt' else 'tsfp-mod-runner')),
+        'guardian_sha256': sha(binary.with_name('tsfp-mod-guardian')) if sys.platform == 'darwin' else None,
         'testing': testing, 'sanitize': sanitize,
         'revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'sources': {p.relative_to(ROOT).as_posix(): sha(p) for p in [

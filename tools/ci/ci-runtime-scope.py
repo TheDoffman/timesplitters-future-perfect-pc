@@ -82,6 +82,7 @@ CPU_TOOLS = {
     'src/mods/mod_process.hpp', 'src/mods/mod_process_windows.cpp', 'src/mods/mod_process_posix.cpp',
     'src/mods/mod_runner.cpp', 'src/mods/mod_seal.c', 'src/mods/mod_seal.h',
     'tests/mods/test_script_process.py', 'tests/mods/native_process_probe.c',
+    'src/mods/mod_guardian_mac.c', 'tests/mods/native_lifetime_probe.cpp',
     'tests/compiler/test_guest_abi.py',
     'tests/compiler/test_guest_call_frames.py',
     'tests/compiler/test_guest_dispatch.py',

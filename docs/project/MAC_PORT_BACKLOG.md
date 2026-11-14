@@ -10610,3 +10610,8 @@ Darwin spawn descriptor isolation compiles after using CLOEXEC_DEFAULT and scope
 Seatbelt API deprecation handling. Mac61 pass/one skip; a hang-test wording mismatch
 is corrected, final rerun pending. Windows exact protected ACLs now also prevent
 writes to the generated private profile;7 expanded process checks pass.
+
+At ac772502 Mac348/one skip and Linux347/two skips full mod/CI checks pass;
+56 ASan/UBSan VM checks pass on each. All current native escape/resource cases
+pass. New trusted Mac lifetime guardian and actual abrupt broker-death test are
+implemented but **Awaiting validation**. Windows8 expanded checks pass. See STATUS.
