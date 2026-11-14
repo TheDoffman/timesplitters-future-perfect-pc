@@ -1,3 +1,5 @@
+ScriptRuntime adds one bounded background preflight/result and epoch-specific approval before MatchManager can bind; production startup/title/shutdown wiring is still pending. See mod-scripting.md.
+
 Native RuntimeResources now discovers OS-adjacent generated helper bundles and verifies private snapshots; PrivateDirectory creates strict-permission caches independently of saves. Bootstrap binding remains pending; see mod-scripting.md.
 
 MatchManager now owns one active/retiring native match with reap-before-successor and no stale epoch reopen. Game auto-binding/resource discovery is still pending; see mod-scripting.md.

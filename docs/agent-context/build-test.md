@@ -1,4 +1,4 @@
-[Native resource/CI tests](build-test-details.md), [context](investigation.md),
+[Native preflight/CI tests](build-test-details.md), [context](investigation.md),
 [mods](mod-scripting.md); [pads](video-options.md).
 Windows FFmpeg [pin details](build-test-details.md); scanner bounds use real children.
 Windows -BuildJobs defaults2 and bounds MSBuild plus MSVC /MP; see pin details.

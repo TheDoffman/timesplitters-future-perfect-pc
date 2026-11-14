@@ -285,3 +285,27 @@ CWD/environment decoys, compiled path shape, missing/changed/pinned/linked helpe
 unsafe parents, separate concurrent fresh caches, retained unknown files and
 native writer permissions. Physical exFAT, crash orphan recovery and production
 startup/frame/shutdown wiring remain separate required acceptance.
+
+## Background match preflight
+
+mod_runtime.cpp/.hpp adds ScriptRuntime around MatchManager. A dedicated native
+thread runs a trusted, retained save/cache probe, never guest or Lua callbacks.
+A single outstanding request/result bounds work. Simulation update uses try-lock
+and retries, performs no filesystem/child IO or joins, and exposes a match only
+after a successful probe for that exact currently live epoch. Leaving or losing
+authority/offline validity invalidates pending approval; older epoch restoration
+cannot resurrect it. Probe failure/exception and VM faults close the runtime
+permanently. Caller close is permanent but is not reported as a fault.
+
+The caller must retain probe resources until stopped reports both the probe
+thread and contained match have stopped, then destroy the runtime before releasing
+those resources. A probe already inside filesystem work finishes in the background;
+close never waits for it on the game thread. The destructor joins that thread;
+production shutdown must therefore drain explicitly. Tests deliberately block the
+probe on an atomic gate while simulation calls continue, reject stale approvals,
+exercise close during probe, exceptions and authority/roster/network changes,
+and execute successors using the real contained worker.
+
+The production startup factory still must supply compiled RuntimeResources and a
+read-only bootstrap lease probe, wire title binding/fault/messages and shutdown.
+These components alone do not enable launcher or normal game script activation.

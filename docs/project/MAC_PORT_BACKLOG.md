@@ -1,3 +1,14 @@
+Background native match preflight (feature/mod-platform, base118be4e3):
+ScriptRuntime runs retained save/cache probes on one background thread and bounds
+one pending request/result. Simulation polls with try-lock and cannot bind stale
+or failed approvals; close waits asynchronously for probe and contained match.
+Windows10 blocked-probe/epoch/lifecycle checks pass with real contained workers.
+Cross-host follow-up and native game builds pending for this component. Resource
+source118be4e3 is verified: Windows60 pass/6 skips; Mac/Linux59 pass/7 skips EACH,
+including native resource/save ASan/UBSan on Mac/Linux. All three game builds and
+platform checks at118be4e3 pass. Automatic startup/title binding, bootstrap probe
+adapter, message/fault UX and game shutdown integration remain unfinished.
+
 CI43637861713 (source46295f44) finished GREEN:23 success,2 intentional skips.
 
 Native resource/cache milestone (feature/mod-platform, base5cf5b93a):
