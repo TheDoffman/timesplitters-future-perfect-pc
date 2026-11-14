@@ -10710,3 +10710,10 @@ Fresh native mod-parent builds: Mac arm64 executable links; post-build checks
 **Awaiting validation**. Linux generation succeeds, but its fresh CMake default
 was GCC despite Clang-only flags; configure now explicitly selects Clang/Clang++
 for the existing numeric policy. Linux build rerun remains pending. See STATUS.
+
+Mod-parent Mac build/platform contracts at a3ecd7e1: **Verified for named checks**.
+Arm64 game executable links; GPU/input/settings/debug/path self-tests and owned
+sparse-disk cleanup pass with verified read-only SDK reuse. Live vanilla scenes
+and custom-mode activation remain unverified. Source runners now take --sdk-root
+for bounded scene checks; Linux package acceptance rejects reusing a checkout SDK.
+Windows97/9 skips runner/build/dependency checks pass; native reruns pending.

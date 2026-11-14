@@ -27,6 +27,9 @@ matching the backend's existing prerequisite checks. GL keeps its smaller setup.
 Linux game configure explicitly selects Clang/Clang++ for the existing Clang
 numeric/vectorization policy, rather than relying on a preexisting CMake cache
 or inherited CC/CXX. Its symbol-scanner setup remains independent.
+Bounded Mac/Linux source runners also accept `--sdk-root` with the same receipt
+verification. Linux package relocation rejects combining it with `--package-root`;
+package acceptance must continue to find all libraries without a checkout SDK.
 
 Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
 n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.

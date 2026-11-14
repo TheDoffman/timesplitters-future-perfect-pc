@@ -121,8 +121,11 @@ def runtime_target(package_root=None):
                       executable_sha256=expected,host_optimization=native.get('host_optimization','unknown packaged host'))
     return build,exe,manifest
 
-def runtime_environment(package_root=None):
-    if not package_root:return linux_vulkan_sdk.probe_environment(linux_vulkan_sdk.verify_install())
+def runtime_environment(package_root=None,sdk_root=None):
+    if package_root and sdk_root:raise ValueError('Packaged acceptance cannot reuse a checkout SDK')
+    if not package_root:
+        sdk=linux_vulkan_sdk.verify_install(ROOT,source_root=sdk_root) if sdk_root else linux_vulkan_sdk.verify_install()
+        return linux_vulkan_sdk.probe_environment(sdk)
     # Relocation acceptance must not find the checkout SDK through LD_LIBRARY_PATH.
     env={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_','VK_','SDL_VULKAN','DYLD_'))
          and k not in ('LD_LIBRARY_PATH','LD_PRELOAD','PYTHONPATH','PYTHONHOME')}
@@ -136,6 +139,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--game-dir',type=Path,required=True)
     p.add_argument('--package-root',type=Path,help='Verify and run a relocated package without the checkout SDK')
+    p.add_argument('--sdk-root',type=Path,help='Read-only verified SDK reuse for source builds; excludes --package-root')
     p.add_argument('--seconds',type=int,default=120)
     p.add_argument('--driver-manifest',type=Path)
     p.add_argument('--capture',action='store_true')
@@ -154,6 +158,7 @@ def main():
     p.add_argument('--story-benchmark',action='store_true',help='Observe only this child scene/flags, skip its intro, and require a gameplay timing window')
     p.add_argument('--test-keys',action='store_true',help='Read synthetic SDL events from the isolated test-keys.txt')
     args=p.parse_args()
+    if args.package_root and args.sdk_root:p.error('--sdk-root cannot be combined with --package-root')
     if platform.system()!='Linux' or platform.machine().lower() not in ('x86_64','amd64'):p.error('Requires Linux x64')
     if not 1<=args.seconds<=600:p.error('Duration must be 1–600 seconds')
     if args.movies and args.seconds<15:p.error('Startup movie acceptance needs at least 15 seconds')
@@ -183,7 +188,7 @@ def main():
         if not (test/'runtime.conf').exists():(test/'runtime.conf').write_text('# Isolated Linux defaults\n')
         if not (test/'pc-display.ini').exists():(test/'pc-display.ini').write_text('TSFP_DISPLAY_V2 640 480 55\n')
         test_frame_rate(test,args.fps)
-        env=runtime_environment(args.package_root)
+        env=runtime_environment(args.package_root,args.sdk_root)
         env.update(RECOMP_GAME_DIR=str(game),RECOMP_SAVE_DIR=str(test),
             RECOMP_INPUT_CONFIG=str(test/'pc-controls.json'),RECOMP_DISPLAY_CONFIG=str(test/'runtime.conf'),
             TSFP_DISPLAY_CONFIG=str(test/'pc-display.ini'),TSFP_SAVE_LOCATION_LOCK='1',

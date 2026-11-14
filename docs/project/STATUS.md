@@ -44004,3 +44004,12 @@ with0 failed functions, but configure inherited GCC and rejected the existing
 Clang-only no-vectorization flags. The game builder now explicitly selects
 Clang/Clang++ to match that established policy and its compiler manifest. No
 optimization flags or game behavior changed; native rebuild remains pending.
+
+Mac mod-parent native build/self-test pass at a3ecd7e1 using the verified reused
+SDK: arm64 executable link, GPU renderer/input/settings/debug/path checks and
+owned sparse test-disk cleanup complete. This verifies compilation/platform
+contracts with NULL default mod binding, not a live custom-mode match. Mac full
+scene acceptance is next. Bounded Mac/Linux source runners now accept the same
+verified --sdk-root; Linux package relocation explicitly refuses SDK reuse so
+packaged dependency acceptance stays independent. Windows runner/build/SDK checks
+pass97 with9 platform skips; native runner checks remain pending.

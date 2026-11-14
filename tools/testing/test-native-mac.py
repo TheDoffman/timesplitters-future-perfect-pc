@@ -142,6 +142,7 @@ def main():
     parser.add_argument('--fps', type=int, choices=(60,), help='Override the native display target for this test only')
     parser.add_argument('--vulkan-driver',choices=('moltenvk','kosmickrisp'),
                         help='Temporary Vulkan driver override; default comes from BUILD.json')
+    parser.add_argument('--sdk-root',type=Path,help='Read-only verified SDK reuse from a same-pin checkout')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
@@ -168,7 +169,9 @@ def run_probe(args, test, env, exe, kind):
     manifest=json.loads(manifest_path.read_text()) if manifest_path.is_file() else {}
     if manifest.get('renderer')=='vulkan':
         import vulkan_sdk
-        env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),
+        source=getattr(args,'sdk_root',None)
+        sdk=vulkan_sdk.verify_install(ROOT,source_root=source) if source else vulkan_sdk.verify_install()
+        env=vulkan_sdk.with_probe_gpu_environment(env,sdk,
             vulkan_sdk.select_driver(manifest,getattr(args,'vulkan_driver',None)))
         env['RECOMP_VK_VALIDATION']='0' if getattr(args,'profile_without_validation',False) else '1'
     env.update(RECOMP_FRAME_INTERP='1', RECOMP_FRAME_TARGET='0',
