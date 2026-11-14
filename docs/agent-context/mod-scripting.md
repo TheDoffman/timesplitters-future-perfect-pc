@@ -30,6 +30,9 @@ Native release-package assembly/signature/relocation acceptance remains pending.
 Mac helpers explicitly target macOS11.0 (first Apple Silicon), rather than the
 build host's OS. Production staging checks that CMake target; native tests inspect
 both Mach-O minimum-version records. This does not claim execution on older hardware.
+The relocated production-bundle test runs First to Three's start/three deaths/
+stop under the real OS boundary and validates score1/2/3 plus End. It is a worker
+protocol test; the game's default binding remains NULL.
 No diagnostic runner, test image or VM library is distributed in those bundles.
 
 [Full contracts and evidence](../development/mod-gameplay-scripting.md).

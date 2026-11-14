@@ -127,11 +127,19 @@ def test_relocated_production_helper_preserves_compiled_hash_and_runs(production
     worker=bundle/('tsfp-mod-worker'+suffix)
     runner=production/'cmake'/('Release' if suffix else '')/('tsfp-mod-runner'+suffix)
     cache=tmp_path/'cache';cache.mkdir()
-    result=subprocess.run([str(runner),str(worker),str(cache)],input=protocol.load(b'return {api=1}')+protocol.quit_worker(),
+    players=[(1,0,0,100,0.,1.,2.),(2,1,0,100,2.,3.,4.)]
+    wire=protocol.load((ROOT/'examples/mods/first-to-three/scripts/main.lua').read_bytes())
+    wire+=protocol.event(1,1,players=players)
+    wire+=b''.join(protocol.event(i+2,3,tick=i+1,players=players,actor=1,target=2) for i in range(3))
+    wire+=protocol.event(5,4,tick=4,players=players)+protocol.quit_worker()
+    result=subprocess.run([str(runner),str(worker),str(cache)],input=wire,
                           capture_output=True,timeout=8)
     assert result.returncode==0 and result.stderr==b'',(result.returncode,result.stdout,result.stderr)
     replies=protocol.replies(result.stdout)
-    assert len(replies)==1 and replies[0]['status']==0 and not list(cache.iterdir())
+    assert len(replies)==6 and all(reply['status']==0 for reply in replies) and not list(cache.iterdir())
+    for sequence,reply in enumerate(replies[1:],1):protocol.validate_commands(reply,sequence,[1,2],stopping=sequence==5)
+    assert [reply['commands'][0]['value'] for reply in replies[2:5]]==[1,2,3]
+    assert replies[4]['commands'][-1]['kind']==2
     # Package assembly cannot merge over even its own prior immutable output.
     with pytest.raises(FileExistsError):packaging.copy(root,build,stage)
 

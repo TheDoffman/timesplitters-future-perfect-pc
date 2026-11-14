@@ -20,6 +20,9 @@ real-worker protocol and tamper/unknown-file tests live in test_runtime_images.p
 Mac helper builds explicitly set deployment target11.0; production staging
 rejects other cached targets and native tests inspect worker/guardian Mach-O
 minimum versions. The newer game's renderer/dependency minimum stays separate.
+The relocated helper check uses production First to Three start/death/stop
+frames, verifies scores1/2/3 and End, and checks private cache cleanup. No game
+binding or save/launcher acceptance is inferred from this developer protocol test.
 
 `tests/mods/test_script_images.py` exercises real OS SHA256 providers, immutable
 private helper staging, digest/pin/size/cancellation/path rejection and cleanup

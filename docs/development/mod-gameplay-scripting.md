@@ -358,3 +358,28 @@ rules-index0. Windows controlled-world fixtures use real isolated Lua with mocke
 stock functions; this is not live gameplay acceptance. Bootstrap verification,
 save namespaces, HUD messages, helper packaging, launcher lifecycle and multiplayer
 remain required. No launcher scripting activation entry point is exposed.
+
+## Verified helper images and production bundles
+
+The game match route requires expected worker/guardian SHA256 digests. Native
+ImageStage copies and hashes the same bounded stream into an exclusive private
+stage before execution; linked/ambiguous paths, wrong digests and unsafe cache
+roots fail closed. Background Session ownership retains that stage until the
+child is cleaned up. Diagnostic Session::open is separate from this game route.
+
+All three native builders invoke tools/build/mod_runtime_images.py to verify
+production source/configuration/image/license receipts, stage immutable
+ModRuntime/<identity> helpers beside the game, and emit generated compilation
+pins. Game CMake requires the header; game-only match startup rejects caller
+pins different from those compiled into the executable. Uploaded manifests
+cannot select another helper. Public packagers preserve exact helper bytes;
+Linux excludes them from RPATH rewriting and includes their source/Lua notice
+in the ELF provider audit. Mac helpers target11.0 explicitly; the renderer and
+other dependencies retain their own minimum versions. Native tests inspect
+actual worker/guardian minimum-version records. No older-host run is claimed.
+
+The relocated production-worker test executes First to Three's start, three
+deaths and stop under OS confinement, validates score1/2/3 and End, and checks
+cleanup. This remains a protocol test: trusted package bootstrap, isolated saves,
+launcher scripting activation, live custom matches and complete release-package
+acceptance remain required. The default title binding is still NULL.
