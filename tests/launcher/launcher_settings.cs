@@ -261,6 +261,26 @@ public static class LauncherSettingsChecks
                     Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
                 }
             });
+            Test("New display settings require installed game capabilities",()=>{
+                string root=Root("display-capabilities");Put(root,"BUILD.json","{\"version\":\"v0.6.2\"}");
+                Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V3 1920 1080 65 130\n");
+                var model=GameSettings.Load(root,null);Require(!model.CanAdjustCrosshair && !model.CanUseWeaponFovDegrees);
+                model.CrosshairSize=50;Reject(()=>model.Save());Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V3 1920 1080 65 130\n");
+                model.CrosshairSize=100;model.WeaponFovDegrees=70;Reject(()=>model.Save());
+                model.WeaponFovDegrees=0;model.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V3 1920 1080 65 130\n");
+                Put(root,"BUILD.json","{\"version\":\"v0.6.2\",\"display_settings_version\":4}");
+                Require(model.CanAdjustCrosshair && !model.CanUseWeaponFovDegrees);model.CrosshairSize=50;model.Save();
+                Put(root,"BUILD.json","{\"version\":\"v0.6.2\",\"display_settings_version\":5}");
+                Require(model.CanAdjustCrosshair && model.CanUseWeaponFovDegrees);model.WeaponFovDegrees=70;model.Save();
+                Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V5 1920 1080 65 70 50\n");
+            });
+            Test("Crosshair slider is disabled for an older installed game",()=>STA(()=>{
+                string root=Root("display-capability-ui");Put(root,"BUILD.json","{\"version\":\"v0.6.2\"}");var owner=new System.Windows.Window();
+                var editor=new SettingsPage(owner.Resources,root,true);
+                Require(!Descendants(editor.View).OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="CrosshairSizeSlider").IsEnabled);
+                Put(root,"BUILD.json","{\"version\":\"v0.6.2\",\"display_settings_version\":5}");editor=new SettingsPage(owner.Resources,root,true);
+                Require(Descendants(editor.View).OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="CrosshairSizeSlider").IsEnabled);owner.Close();
+            }));
             Test("Weapon degree preferences retain V5 and reject invalid angles",()=>{
                 string root=Root("weapon-degrees");Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V5 1920 1080 65 70 50\n");
                 var model=GameSettings.Load(root,null);Require(model.WeaponFovDegrees==70 && model.CrosshairSize==50);

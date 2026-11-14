@@ -30,3 +30,7 @@ References: [video options](video-options.md), [pause menus](pause-settings.md).
 
 Weapon degree changes use V5 without the removed HUD slot; see
 [weapon aperture](video-options.md). Crosshair state is preserved in both formats.
+
+Launcher crosshair controls require installed BUILD.json display_settings_version
+>=4; new degree records require>=5. Native package capability follows build
+receipts; older binaries never advertise it just from the packaging revision.

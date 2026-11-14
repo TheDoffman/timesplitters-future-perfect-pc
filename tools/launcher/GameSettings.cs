@@ -86,6 +86,20 @@ namespace TimeSplitters.Launcher
             }
         }
         public bool CanAdjustFov { get { return SupportsExtendedDisplay; } }
+        int DisplaySettingsVersion
+        {
+            get {
+                try {
+                    string path=Core.PathIn(root,"BUILD.json");
+                    if(!File.Exists(path))return 5; // Unpackaged development build.
+                    object value;
+                    if(!Json.Object(Text(Read(path))).TryGetValue("display_settings_version",out value))return 3;
+                    return value is bool || value is string ? 3 : Convert.ToInt32(value,CultureInfo.InvariantCulture);
+                } catch { return 3; }
+            }
+        }
+        public bool CanAdjustCrosshair { get { return DisplaySettingsVersion>=4; } }
+        public bool CanUseWeaponFovDegrees { get { return DisplaySettingsVersion>=5; } }
         public bool CanAutoResolution
         {
             get {
@@ -423,6 +437,8 @@ namespace TimeSplitters.Launcher
                 "Enter the public numeric Discord Application ID (17–20 digits), or turn off Rich Presence and clear the ID.");
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
+            Core.Require(loading || CanAdjustCrosshair || CrosshairSize==100,"Crosshair Size requires a newer game build. No settings were changed.");
+            Core.Require(loading || CanUseWeaponFovDegrees || WeaponFovDegrees==0,"Weapon FOV degrees require a newer game build. No settings were changed.");
             Core.Require(CrosshairSize>=25 && CrosshairSize<=150 && CrosshairSize%5==0,"Crosshair Size must be 25�150 percent in steps of five.");
             Core.Require(WeaponFovDegrees==0 || (WeaponFovDegrees>=FovMin && WeaponFovDegrees<=FovMax),"Weapon FOV must be between40 and100 degrees.");
             Core.Require(WeaponFov >= 80 && WeaponFov <= 150 && WeaponFov % 5 == 0, "Weapon FOV must be 80–150 percent in steps of five.");

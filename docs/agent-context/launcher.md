@@ -1,3 +1,10 @@
+Installed display-reader capability: BUILD.json display_settings_version gates
+Crosshair Size (>=4) and Weapon FOV degrees (>=5). Missing/invalid metadata
+retains V1-V3 compatibility; unpackaged development builds support5. Older
+games get a disabled crosshair slider and validation rejects unsupported writes
+before any transaction. Windows packages emit5; native Mac/Linux build receipts
+emit5 and their packagers preserve the actual binary receipt value.
+
 Weapon FOV reference angles: GameSettings preserves V5 width/height/worldFov/
 weaponDegrees/crosshair,40-100 degrees. V3/V4 remain exact legacy percentages.
 New regression covers V5 persistence, bounds and malformed records; see

@@ -309,6 +309,8 @@ namespace TimeSplitters.Launcher
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);quality.Children.Add(qualityToggles);
             var hud=PageTheme.Section(viewHud,"HUD","");hud.Children.Add(fps);
             crosshairSize=PercentSlider(hud,"Crosshair Size",25,150,model.CrosshairSize,"CrosshairSizeSlider");
+            crosshairSize.IsEnabled=model.CanAdjustCrosshair;
+            if(!model.CanAdjustCrosshair)hud.Children.Add(Text("Update the game to adjust Crosshair Size.",12));
             hud.Children.Add(Text("100% keeps the original crosshair size. Scope masks remain unchanged.",12));
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
             performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
