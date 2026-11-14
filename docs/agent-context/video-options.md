@@ -148,3 +148,12 @@ Tutorial icon spacing: normal keyboard/mouse icon captions use80% of their
 card text scale, with measured vertical centring inside the original row pitch.
 Description text, wrapping and row positions stay native. Both scale axes and
 x/y arguments restore after each icon draw; controller/multiplayer untouched.
+
+Hint-row spacing follow-up: tutorial_rows adds six logical units between each
+control row and expands the native panel by the matching total. The painter
+recalculates its unpadded height cache at the end; padding never accumulates.
+Keyboard/mouse icon and action-description y positions move together; headings,
+font sizes, controller/split-screen paths and wrapped text remain unchanged.
+Scope and frame arguments restore on return. Windows supported build,12 layout
+tests and actual1280x720 Story captures pass; repeated captures confirm stable
+panel height and visible keycap gaps. Native visual checks remain pending.
