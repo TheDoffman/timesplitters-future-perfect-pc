@@ -15,7 +15,11 @@ static DWORD WINAPI watch(void *unused) {
         Sleep(5);
     }
 }
-int tsfp_mod_watchdog_start(void){HANDLE thread=CreateThread(NULL,0,watch,NULL,0,NULL);if(!thread)return 0;CloseHandle(thread);return 1;}
+int tsfp_mod_watchdog_start(void){
+    HANDLE thread=CreateThread(NULL,0,watch,NULL,0,NULL);
+    if(!thread)return 0;
+    CloseHandle(thread);return 1;
+}
 void tsfp_mod_watchdog_arm(void){InterlockedExchange64(&deadline,(LONG64)(clock_ms()+500));}
 void tsfp_mod_watchdog_disarm(void){InterlockedExchange64(&deadline,0);}
 #else
@@ -33,7 +37,11 @@ static void *watch(void *unused) {
     }
     return NULL;
 }
-int tsfp_mod_watchdog_start(void){pthread_t thread;if(pthread_create(&thread,NULL,watch,NULL))return 0;pthread_detach(thread);return 1;}
+int tsfp_mod_watchdog_start(void){
+    pthread_t thread;
+    if(pthread_create(&thread,NULL,watch,NULL))return 0;
+    pthread_detach(thread);return 1;
+}
 void tsfp_mod_watchdog_arm(void){atomic_store(&deadline,clock_ms()+500);}
 void tsfp_mod_watchdog_disarm(void){atomic_store(&deadline,0);}
 #endif

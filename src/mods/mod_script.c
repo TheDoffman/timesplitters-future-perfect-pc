@@ -142,7 +142,8 @@ tsfp_script_vm *tsfp_script_create(uint32_t seed) {
 }
 static int load_module(lua_State *L) {
     tsfp_script_vm *vm=context(L);int status=luaL_loadbufferx(L,vm->source,vm->source_size,"@mod/main.lua","t");
-    if(status!=LUA_OK)return lua_error(L);lua_call(L,0,1);
+    if(status!=LUA_OK)return lua_error(L);
+    lua_call(L,0,1);
     if(lua_type(L,-1)!=LUA_TTABLE)return reject(L,"script must return an API1 callback table");
     lua_getfield(L,-1,"api");if(!lua_isinteger(L,-1) || lua_tointeger(L,-1)!=1)return reject(L,"unsupported script API");lua_pop(L,1);
     lua_pushnil(L);
@@ -172,7 +173,8 @@ static int invoke(lua_State *L) {
     static const char *names[]={NULL,"on_start","on_tick","on_player_death","on_stop"};
     tsfp_script_vm *vm=context(L);const tsfp_script_event *event=vm->event;
     lua_rawgeti(L,LUA_REGISTRYINDEX,vm->module);lua_getfield(L,-1,names[event->kind]);
-    if(lua_isnil(L,-1))return 0;if(lua_type(L,-1)!=LUA_TFUNCTION)return reject(L,"callback changed to a non-function");
+    if(lua_isnil(L,-1))return 0;
+    if(lua_type(L,-1)!=LUA_TFUNCTION)return reject(L,"callback changed to a non-function");
     lua_createtable(L,0,6);field_integer(L,"sequence",(lua_Integer)event->sequence);field_integer(L,"tick",(lua_Integer)event->tick);
     field_integer(L,"tick_rate",event->tick_rate);field_integer(L,"actor_id",event->actor);field_integer(L,"target_id",event->target);
     lua_pushboolean(L,1);lua_setfield(L,-2,"authoritative");lua_call(L,1,0);return 0;
@@ -201,7 +203,8 @@ int tsfp_script_dispatch(tsfp_script_vm *vm,const tsfp_script_event *event,tsfp_
     if(!success)return 0;
     *result=vm->pending;vm->sequence=event->sequence;vm->tick=event->tick;vm->phase=event->kind==TSFP_SCRIPT_STOP?2:1;
     if(event->kind==TSFP_SCRIPT_TICK){vm->tick_seen=1;vm->last_tick_callback=event->tick;}
-    if(vm->end_queued)vm->ended=1;return 1;
+    if(vm->end_queued)vm->ended=1;
+    return 1;
 }
 const char *tsfp_script_error(const tsfp_script_vm *vm){return vm?vm->error:"cannot create script VM";}
 size_t tsfp_script_memory(const tsfp_script_vm *vm){return vm?vm->used:0;}

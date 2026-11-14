@@ -6,6 +6,8 @@ tests/mods/test_script_worker.py, registered in Windows/Mac native suites and
 the Linux all-mod step. No game assets required. TSFP_MOD_SANITIZE=1 enables
 ASan/UBSan for its compiled Clang/GCC fixture. The worker is not linked to the
 game yet, and launcher script activation remains refused.
+GCC treats misleading guard indentation as an error; shared worker guards use
+separate statements on separate lines. Warning policy remains enabled.
 
 [API, wire, security gates and evidence](../development/mod-gameplay-scripting.md).
 The exact First to Three example is executed by native worker tests. API1 queues
