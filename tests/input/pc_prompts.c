@@ -210,6 +210,17 @@ int main(int argc,char **argv)
     for(int i=0;i<PC_ACTION_COUNT;i++) keys[i]=settings.keys[i][0];
     pc_prompts_reset();
     CHECK(pc_prompts_keyboard_active());
+    _putenv_s("TSFP_TEST_PROMPT_DEVICE","controller");
+    _putenv_s("TSFP_PC_INPUT_STATE","");_putenv_s("TSFP_NATIVE_TEST_KEYS","");
+    CHECK(pc_prompts_keyboard_active()); /* Ordinary launch ignores preview mode. */
+    _putenv_s("TSFP_PC_INPUT_STATE","isolated-preview");CHECK(!pc_prompts_keyboard_active());
+    pc_prompts_keyboard();CHECK(!pc_prompts_keyboard_active());
+    _putenv_s("TSFP_TEST_PROMPT_DEVICE","keyboard");CHECK(pc_prompts_keyboard_active());
+    pc_prompts_controller_layout_begin();CHECK(!pc_prompts_keyboard_active());pc_prompts_controller_layout_end();
+    _putenv_s("TSFP_PC_INPUT_STATE","");_putenv_s("TSFP_NATIVE_TEST_KEYS","isolated-preview");
+    _putenv_s("TSFP_TEST_PROMPT_DEVICE","controller");CHECK(!pc_prompts_keyboard_active());
+    _putenv_s("TSFP_TEST_PROMPT_DEVICE","invalid");CHECK(pc_prompts_keyboard_active());
+    _putenv_s("TSFP_TEST_PROMPT_DEVICE","");_putenv_s("TSFP_NATIVE_TEST_KEYS","");CHECK(pc_prompts_keyboard_active());
     pc_prompts_controller_layout_begin();
     CHECK(!pc_prompts_keyboard_active());
     CHECK(!pc_prompts_rewrite("\v2",text,sizeof text));

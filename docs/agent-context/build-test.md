@@ -1,5 +1,5 @@
 [Native match/startup/CI tests](build-test-details.md), [context](investigation.md),
-[mod fixtures](mod-scripting.md).
+[mods](mod-scripting.md); [pads](video-options.md).
 Windows FFmpeg [pin details](build-test-details.md); scanner bounds use real children.
 Windows -BuildJobs defaults2 and bounds MSBuild plus MSVC /MP; see pin details.
 The standalone texture-mod reader fixture uses C11 with `_POSIX_C_SOURCE=200809L`

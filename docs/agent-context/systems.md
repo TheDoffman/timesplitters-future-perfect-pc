@@ -5,7 +5,7 @@ Native mod_bootstrap now verifies a developer source handoff, leases isolated sa
 
 # Shared systems
 
-[Hints](video-options.md); [Aim](hud-sizing.md).
+[Pads](video-options.md); [Aim](hud-sizing.md).
 
 [Guest adapter notes](guest-adapter-notes.md#host-systems).
 [Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
