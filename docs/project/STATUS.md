@@ -1,3 +1,25 @@
+Match lifetime acceptance (feature/mod-platform, owner679f5687; integrated
+source46295f44): Windows/Mac/Linux owner+title adapter33 pass EACH. Mac/Linux
+host ASan/UBSan33 pass EACH. All three native game builds/platform checks pass,
+both before and after importing main5426485f controller hints INTO this branch.
+Only two guide conflicts were resolved, retaining mod notes and new pad links;
+main was not modified. Merged UI checks: Windows16 pass/2 skips, Mac14 pass/4 skips,
+Linux12 pass/6 skips. No actual automatic script binding/gameplay is claimed.
+
+The long Windows bootstrap/storage/capsule/lease/transition run finished147 pass,
+5 platform skips and one byte-roundtrip failure because the2711 Unicode patch
+changed during that test. The failed fixture hash exactly matches the current
+NULL-root variant; reversing ONLY that expression reproduces the expected old
+getenv hash. No patch-install defect was found. The affected false/pc-presentation
+case reran with fixed source:1 pass,37 deselected. No full-suite rerun was needed.
+
+PR561's newer CI had been prevented by merge conflicts with concurrent main.
+After integration, current-source CI43637861713 started for46295f44; still running
+at this record, with no observed failure. Earlier b00 source CI43635970573 was
+23 success/2 intentional skips. Public workshop deployment, native automatic
+resource discovery/binding, lease-recheck/fault/HUD/shutdown integration and the
+remaining full mod ecosystem acceptance are still required.
+
 Native match lifetime owner (feature/mod-platform, base299236d5): shared
 MatchManager retains verified config/source, closes unsupported/faulted matches,
 forbids reopening a retired epoch and waits for native reap before a successor.
