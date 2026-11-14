@@ -1,9 +1,6 @@
 [Feature test index and details](build-test-details.md), [context](investigation.md),
 [mod workshop](mod-workshop.md).
-Windows fetch-video.ps1 pins the dated FFmpeg autobuild2026-11-13-12-43,
-n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.
-The versioned cache and URL replace the mutable latest asset; checksum mismatch
-still stops setup. Other host FFmpeg adapters and runtime pin are unchanged.
+Windows FFmpeg uses a dated URL/checksum; [pin details](build-test-details.md).
 The standalone texture-mod reader fixture uses C11 with `_POSIX_C_SOURCE=200809L`
 on POSIX hosts so the real trace clock declarations remain available. Run
 `pytest tests/mods/test_texture_mod_mount.py` under Linux as well as Windows/Mac.

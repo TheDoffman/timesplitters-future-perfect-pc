@@ -1,5 +1,12 @@
 # Feature test index
 
+Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
+n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.
+The versioned cache and dated URL replace the mutable latest asset; checksum
+mismatch still stops setup. The archive was downloaded and matched upstream's
+published digest; Windows Setup completed. Other host adapters/runtime pin are
+unchanged. Game build and media playback remain separate acceptance checks.
+
 [Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
 [0.6.2 rollback](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
