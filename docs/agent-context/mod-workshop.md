@@ -246,3 +246,5 @@ this header along with the existing fixed timestamp/file mode.
 
 Native script process isolation is under construction; mod-scripting.md records
 its separate VM, production-process and game-integration acceptance boundaries.
+
+Mac process spawn uses explicit stdio inheritance; see mod-scripting.md.

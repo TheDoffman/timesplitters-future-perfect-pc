@@ -1,5 +1,8 @@
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200809L
+#ifdef __APPLE__
+#define _DARWIN_C_SOURCE
+#endif
 #include "mod_process.hpp"
 #include <unistd.h>
 #include <fcntl.h>
@@ -17,6 +20,7 @@
 #include <sys/syscall.h>
 #else
 #include <libproc.h>
+#include <spawn.h>
 #endif
 namespace tsfp { namespace mods {
 namespace {
@@ -83,18 +87,34 @@ std::unique_ptr<Process> Process::start(const std::string &image,const std::stri
         !std::filesystem::is_regular_file(image,fs) || fs){error="Invalid trusted worker path";return {};}
     auto child=std::make_unique<PosixProcess>();int in[2]={-1,-1},out[2]={-1,-1},err[2]={-1,-1};
     if(!pipe_pair(in) || !pipe_pair(out) || !pipe_pair(err)){for(int *p:{in,out,err}){close_fd(p[0]);close_fd(p[1]);}error="Cannot create worker pipes";return {};}
+    char *environment[]={const_cast<char *>("LANG=C"),const_cast<char *>("LC_ALL=C"),const_cast<char *>("TZ=UTC"),nullptr};
+    char *arguments[]={const_cast<char *>(image.c_str()),nullptr};
+#ifdef __APPLE__
+    // Darwin has no closefrom(). CLOEXEC_DEFAULT closes *all* inherited FDs,
+    // including high-numbered ones, except these explicit stdio dup actions.
+    posix_spawn_file_actions_t actions;posix_spawnattr_t attributes;
+    bool have_actions=posix_spawn_file_actions_init(&actions)==0;
+    bool have_attributes=posix_spawnattr_init(&attributes)==0;
+    pid_t pid=-1;
+    int status=have_actions && have_attributes?0:ENOMEM;
+    if(!status)status=posix_spawn_file_actions_adddup2(&actions,in[0],0);
+    if(!status)status=posix_spawn_file_actions_adddup2(&actions,out[1],1);
+    if(!status)status=posix_spawn_file_actions_adddup2(&actions,err[1],2);
+    if(!status)status=posix_spawnattr_setflags(&attributes,POSIX_SPAWN_CLOEXEC_DEFAULT|POSIX_SPAWN_SETPGROUP);
+    if(!status)status=posix_spawnattr_setpgroup(&attributes,0);
+    if(!status)status=posix_spawn(&pid,image.c_str(),&actions,&attributes,arguments,environment);
+    if(have_actions)posix_spawn_file_actions_destroy(&actions);
+    if(have_attributes)posix_spawnattr_destroy(&attributes);
+    if(status)pid=-1;
+#else
     pid_t parent=getpid();pid_t pid=fork();
     if(pid==0) {
         if(setpgid(0,0) || dup2(in[0],0)<0 || dup2(out[1],1)<0 || dup2(err[1],2)<0)_exit(126);
-#ifdef __linux__
         if(prctl(PR_SET_PDEATHSIG,SIGKILL) || getppid()!=parent || syscall(SYS_close_range,3u,~0u,0))_exit(126);
-#else
-        closefrom(3);
-#endif
         struct rlimit core{0,0},files{64,64};if(setrlimit(RLIMIT_CORE,&core) || setrlimit(RLIMIT_NOFILE,&files))_exit(126);
-        char *environment[]={const_cast<char *>("LANG=C"),const_cast<char *>("LC_ALL=C"),const_cast<char *>("TZ=UTC"),nullptr};
-        char *arguments[]={const_cast<char *>(image.c_str()),nullptr};execve(image.c_str(),arguments,environment);_exit(127);
+        execve(image.c_str(),arguments,environment);_exit(127);
     }
+#endif
     close_fd(in[0]);close_fd(out[1]);close_fd(err[1]);
     if(pid<0){close_fd(in[1]);close_fd(out[0]);close_fd(err[0]);error="Cannot fork worker";return {};}
     child->pid=pid;child->input=in[1];child->output=out[0];child->diagnostic=err[0];

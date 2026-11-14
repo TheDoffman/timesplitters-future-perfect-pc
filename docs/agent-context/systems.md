@@ -911,3 +911,5 @@ tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.
 
 Mod process adapters/worker self-sealing are standalone; see mod-scripting.md.
 No guest hooks or launcher script activation changed.
+
+Darwin mod process creation uses CLOEXEC_DEFAULT; see mod-scripting.md.

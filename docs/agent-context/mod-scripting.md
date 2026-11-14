@@ -48,3 +48,8 @@ pass56 ASan/UBSan worker checks. Selected suites Windows361/Mac363/WSL362 pass
 (platform skips differ). Windows final worker recheck covers the GCC formatting
 follow-up. SDK source packs/validates with README beside its payload tree. These
 are VM/codec tests, not OS confinement or live gameplay acceptance.
+
+Mac SDK has no closefrom: parent uses posix_spawn CLOEXEC_DEFAULT plus explicit
+stdio dup actions/process group; worker closes startup FDs before lowering NOFILE.
+Linux a668698f passes62 process/VM checks (one Windows-only skip); Mac initial
+compile failure is being corrected and its validation remains pending.

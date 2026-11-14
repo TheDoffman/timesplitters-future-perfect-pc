@@ -75,9 +75,10 @@ int tsfp_mod_seal(void) {
 #include <sys/resource.h>
 #include <unistd.h>
 int tsfp_mod_seal(void) {
-    struct rlimit core={0,0},files={3,3};char *error=NULL;int status;
+    struct rlimit previous,core={0,0},files={3,3};char *error=NULL;int status;
+    if(getrlimit(RLIMIT_NOFILE,&previous) || previous.rlim_cur>1048576)return 0;
+    for(int fd=3;(rlim_t)fd<previous.rlim_cur;++fd)close(fd);
     if(setrlimit(RLIMIT_CORE,&core) || setrlimit(RLIMIT_NOFILE,&files))return 0;
-    closefrom(3);
     const char *profile="(version 1)(deny default)(allow file-read-metadata)";
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
