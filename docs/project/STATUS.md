@@ -43997,3 +43997,10 @@ calling tools that write beside their input. Existing differing staged content
 is refused and preserved. Windows updated build/dependency checks pass64/three
 skips, including source/cache preservation and mismatch refusal. Native reruns
 and staged-generation output checks remain pending.
+
+The fresh Mac mod-parent game build links an arm64 executable with the reused
+verified SDK; post-build checks are still running. Fresh Linux generation finishes
+with0 failed functions, but configure inherited GCC and rejected the existing
+Clang-only no-vectorization flags. The game builder now explicitly selects
+Clang/Clang++ to match that established policy and its compiler manifest. No
+optimization flags or game behavior changed; native rebuild remains pending.

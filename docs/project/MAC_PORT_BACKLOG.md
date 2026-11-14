@@ -10705,3 +10705,8 @@ SDK receipts/pins verify. Fresh Mac Vulkan setup lacked pinned backend submodule
 setup now initializes Vulkan-Headers/volk/VMA before configure. Linux generation
 also stages its executable locally to keep metadata beside owned input. Windows
 64/three skips updated checks pass; actual native build/staging reruns pending.
+
+Fresh native mod-parent builds: Mac arm64 executable links; post-build checks
+**Awaiting validation**. Linux generation succeeds, but its fresh CMake default
+was GCC despite Clang-only flags; configure now explicitly selects Clang/Clang++
+for the existing numeric policy. Linux build rerun remains pending. See STATUS.

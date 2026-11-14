@@ -90,6 +90,7 @@ def main():
     host_flags='-O2 -g' if args.host_optimization=='optimized' else '-g'
     command=[cmake,'-S',runtime/'titles/futureperfect','-B',build,'-G','Ninja',
         '-DCMAKE_BUILD_TYPE=Debug','-DCMAKE_MAKE_PROGRAM='+str(ninja),
+        '-DCMAKE_C_COMPILER=clang','-DCMAKE_CXX_COMPILER=clang++',
         '-DCMAKE_C_FLAGS_DEBUG='+host_flags,'-DCMAKE_CXX_FLAGS_DEBUG='+host_flags,
         '-DTSFP_NATIVE_DIR='+str(ROOT/'src/native'),'-DTSFP_NATIVE_RHI=ON','-DTSFP_VULKAN_SDK='+str(sdk)]
     media=None;configure_env=dict(os.environ)
