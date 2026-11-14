@@ -43858,3 +43858,12 @@ and have no VM watchdog. Actual Mac/Linux Session validation is pending. This do
 not add guest hooks, activate scripts, apply game commands or provision public
 hosting. Installed helper verification, live match epoch/authority/save contracts
 and real title integration/public acceptance remain required.
+
+At658ae09e actual Session/process checks pass native Mac63/one skip, WSL Linux62/
+two skips, matching Windows63/one skip. The shared parent parser accepts the valid
+control corpus and rejects malformed native responses on all three hosts. A new
+idle-metering follow-up uses50ms CPU per1s idle window, preventing long legitimate
+pauses from eventually exhausting a cumulative idle allowance. Windows passes a
+native four-window25ms-CPU/window positive control. The trusted-parent ASan/UBSan
+build mode is implemented separately from VM sanitizer mode; sealed child binaries
+remain ordinary. Actual host-sanitizer/updated Unix checks are still pending.

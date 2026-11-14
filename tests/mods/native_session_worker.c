@@ -5,9 +5,38 @@
 #include <stdint.h>
 #include <stdlib.h>
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <fcntl.h>
 #include <io.h>
+#else
+#include <time.h>
 #endif
+static uint64_t milliseconds(void) {
+#ifdef _WIN32
+    return GetTickCount64();
+#else
+    struct timespec time;clock_gettime(CLOCK_MONOTONIC,&time);return (uint64_t)time.tv_sec*1000+(uint64_t)time.tv_nsec/1000000;
+#endif
+}
+static uint64_t cpu_microseconds(void) {
+#ifdef _WIN32
+    FILETIME created,exited,kernel,user;ULARGE_INTEGER a,b;
+    if(!GetProcessTimes(GetCurrentProcess(),&created,&exited,&kernel,&user))return UINT64_MAX;
+    a.LowPart=kernel.dwLowDateTime;a.HighPart=kernel.dwHighDateTime;b.LowPart=user.dwLowDateTime;b.HighPart=user.dwHighDateTime;
+    return (a.QuadPart+b.QuadPart)/10;
+#else
+    struct timespec time;if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&time))return UINT64_MAX;
+    return (uint64_t)time.tv_sec*1000000+(uint64_t)time.tv_nsec/1000;
+#endif
+}
+static void pause_idle(void) {
+#ifdef _WIN32
+    Sleep(985);
+#else
+    struct timespec time={0,985000000};nanosleep(&time,NULL);
+#endif
+}
 static unsigned char data[1048584];
 static uint32_t u32(const unsigned char *p){return (uint32_t)p[0]|(uint32_t)p[1]<<8|(uint32_t)p[2]<<16|(uint32_t)p[3]<<24;}
 static void put(unsigned char *p,uint32_t n){for(unsigned i=0;i<4;++i)p[i]=(unsigned char)(n>>(8*i));}
@@ -26,6 +55,16 @@ int main(void) {
     if(length==9 && !memcmp(source,"load-hang",9)){for(;;){}}
     if(length>10 && !memcmp(source,"load-wire:",10)){wire(source+10,length-10);for(;;){}}
     ack();
+    if(length==10 && !memcmp(source,"paced-idle",10)) {
+        for(unsigned i=0;i<4;++i){
+            uint64_t start=cpu_microseconds(),wall=milliseconds();if(start==UINT64_MAX)return 2;
+            while(cpu_microseconds()-start<25000){if(milliseconds()-wall>500)return 2;}
+            pause_idle();
+        }
+        if(!input())return 2;
+        unsigned char bytes[32]={0};put(bytes,28);put(bytes+4,1);put(bytes+12,1);fwrite(bytes,1,sizeof(bytes),stdout);
+        while(input()){}return 0;
+    }
     if(length==9 && !memcmp(source,"idle-spin",9)){for(;;){}}
     if(length==11 && !memcmp(source,"idle-output",11)){fputs("unsolicited",stdout);for(;;){}}
     /* Preserve fixture source while reading the first event. */

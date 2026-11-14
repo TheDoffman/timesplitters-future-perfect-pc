@@ -28,9 +28,10 @@ static int run(const std::string &image,const std::string &cache,const std::stri
     if(!session){puts("{\"refused\":true}");return 0;}
     tsfp_script_result result{};uint64_t sequence=0;bool fault=false;size_t polls=0;bool busy=false;
     auto poll=[&]{++polls;return timed([&]{return session->poll(result,sequence,error);});};
-    auto deadline=Clock::now()+std::chrono::seconds(6);
+    auto deadline=Clock::now()+std::chrono::seconds(30);
     auto wait=[&](SessionStatus target) {
-        while(Clock::now()<deadline){auto status=poll();if(status==target)return true;if(status==SessionStatus::Faulted){fault=true;return false;}if(result.count)return false;std::this_thread::sleep_for(std::chrono::milliseconds(1));}
+        auto request_deadline=Clock::now()+std::chrono::seconds(3);
+        while(Clock::now()<deadline && Clock::now()<request_deadline){auto status=poll();if(status==target)return true;if(status==SessionStatus::Faulted){fault=true;return false;}if(result.count)return false;std::this_thread::sleep_for(std::chrono::milliseconds(1));}
         return false;
     };
     auto submit=[&](const tsfp_script_event &event) {
@@ -50,6 +51,7 @@ static int run(const std::string &image,const std::string &cache,const std::stri
             fault=true;
         }else {
             if(scenario=="match")std::this_thread::sleep_for(std::chrono::milliseconds(2100));
+            if(scenario=="paced-idle")std::this_thread::sleep_for(std::chrono::milliseconds(4200));
             tsfp_script_event event{};event.sequence=1;event.kind=TSFP_SCRIPT_START;event.tick_rate=60;event.player_count=2;
             event.players[0]={1,0,0,100,0,1,2};event.players[1]={2,1,0,100,2,3,4};
             if(scenario=="invalid-sequence")event.sequence=3;

@@ -252,3 +252,7 @@ stays unavailable; public release acceptance and helper crash recovery are pendi
 Persistent native Session supervision/transaction validation is implemented;
 see mod-scripting.md for bounded async API and current host evidence. Actual
 game event/command adapters and script activation remain pending.
+
+Session idle CPU uses bounded1s windows so legitimate paused-worker overhead
+does not accumulate forever. Host-only sanitizer checks preserve sealed children;
+see mod-scripting.md for actual host evidence and pending checks.

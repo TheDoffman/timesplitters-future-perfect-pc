@@ -150,7 +150,7 @@ void Session::work(std::shared_ptr<State> state,std::string image,std::string ca
     try {
         child=Process::start(image,cache,failure);
         if(!child)throw std::runtime_error("Cannot start confined script worker");
-        auto rate_start=Clock::now();ProcessUsage usage{};
+        auto rate_start=Clock::now(),idle_start=Clock::now();ProcessUsage usage{};
         if(!child->usage(usage))throw std::runtime_error("Cannot inspect script worker");
         uint64_t rate_cpu=usage.cpu_microseconds,idle_cpu=usage.cpu_microseconds;
         auto inspect=[&](uint64_t cpu_base,uint64_t budget) {
@@ -196,7 +196,7 @@ void Session::work(std::shared_ptr<State> state,std::string image,std::string ca
                 if(failure.empty())failure="Invalid script transaction";
                 throw std::runtime_error("Script transaction refused");
             }
-            idle_cpu=usage.cpu_microseconds;return result;
+            idle_cpu=usage.cpu_microseconds;idle_start=Clock::now();return result;
         };
         std::vector<unsigned char> load(4);load.reserve(source.size()+12);put32(load,1);put32(load,seed);
         load.insert(load.end(),source.begin(),source.end());frame(load);
@@ -204,6 +204,7 @@ void Session::work(std::shared_ptr<State> state,std::string image,std::string ca
         {std::lock_guard<std::mutex> lock(state->mutex);state->phase=SessionStatus::Ready;}
         for(;;) {
             inspect(idle_cpu,50000);
+            if(Clock::now()-idle_start>=std::chrono::seconds(1)){idle_cpu=usage.cpu_microseconds;idle_start=Clock::now();}
             unsigned char extra;int unsolicited=child->read(&extra,1);
             if(unsolicited!=0)throw std::runtime_error("Unsolicited script output");
             tsfp_script_event event{};bool queued=false;

@@ -58,14 +58,15 @@ def prepare_lua(output):
     return destination
 
 
-def build(output, cmake='cmake', sanitize=False, testing=False):
+def build(output, cmake='cmake', sanitize=False, testing=False, host_sanitize=False):
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     lua = prepare_lua(output)
     subprocess.run([cmake, '-S', str(ROOT / 'src/mods'), '-B', str(output / 'cmake'),
                     '-DTSFP_LUA_SOURCE=' + str(lua), '-DCMAKE_BUILD_TYPE=Release',
                     '-DTSFP_MOD_SANITIZE=' + ('ON' if sanitize else 'OFF'),
-                    '-DTSFP_MOD_TESTING=' + ('ON' if testing else 'OFF')], check=True)
+                    '-DTSFP_MOD_TESTING=' + ('ON' if testing else 'OFF'),
+                    '-DTSFP_MOD_HOST_SANITIZE=' + ('ON' if host_sanitize else 'OFF')], check=True)
     subprocess.run([cmake, '--build', str(output / 'cmake'), '--config', 'Release', '--parallel', '2'], check=True)
     name = 'tsfp-mod-worker.exe' if os.name == 'nt' else 'tsfp-mod-worker'
     binary = output / 'cmake' / ('Release' if os.name == 'nt' else '') / name
@@ -77,7 +78,7 @@ def build(output, cmake='cmake', sanitize=False, testing=False):
         'schema': 2, 'binary_sha256': sha(binary),
         'runner_sha256': sha(binary.with_name('tsfp-mod-runner.exe' if os.name == 'nt' else 'tsfp-mod-runner')),
         'guardian_sha256': sha(binary.with_name('tsfp-mod-guardian')) if sys.platform == 'darwin' else None,
-        'testing': testing, 'sanitize': sanitize,
+        'testing': testing, 'sanitize': sanitize, 'host_sanitize': host_sanitize,
         'revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'sources': {p.relative_to(ROOT).as_posix(): sha(p) for p in [
             ROOT / 'tools/build/build-mod-worker.py', ROOT / 'config/mods/lua-source.json',
@@ -90,5 +91,6 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, default=ROOT / 'build/mod-worker')
     parser.add_argument('--cmake', default='cmake')
     parser.add_argument('--sanitize', action='store_true')
+    parser.add_argument('--sanitize-host', action='store_true', help='Instrument trusted native host code; keep sealed child binaries ordinary')
     args = parser.parse_args()
-    print(build(args.output, args.cmake, args.sanitize))
+    print(build(args.output, args.cmake, args.sanitize, host_sanitize=args.sanitize_host))

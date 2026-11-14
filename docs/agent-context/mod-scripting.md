@@ -109,7 +109,7 @@ end order, printable UTF8 message and bounded ASCII diagnostic. Load ACK has no
 commands; Stop has no score/end commands. Parsing completes into a private result
 before any transaction is published. Faults clear pending commands and kill/reap.
 Callbacks have500ms independent wall/250ms CPU budgets; load2s/250ms CPU;
-RSS128MiB, idle CPU50ms, session CPU1s per10s window. Unsolicited stdout/stderr
+RSS128MiB, idle CPU50ms per1s window, session CPU1s per10s window. Unsolicited stdout/stderr
 faults even while waiting for host consumption. Source remains capped1MiB.
 Background pipe readiness waits avoid Windows timer-rounded polling; idle wakeup
 uses a condition variable notified by submit/close. No global timer policy changes.
@@ -123,3 +123,12 @@ never ship. Mac/Linux checks and real game event adapters remain pending. The
 host adapter must verify images/package/authority/save namespace and recheck the
 live match epoch/roster before applying a result atomically. Session checks alone
 are not actual game integration or multiplayer/save agreement.
+
+Source658ae09e Session/process checks pass Mac63/1 skip and Linux62/2 skips,
+matching Windows63/1 skip. Follow-up idle metering uses50ms per1s rather than
+cumulative paused time; a sealed canary spends25ms actual CPU in each of four
+idle windows and remains accepted (Windows check passes; other hosts pending).
+TSFP_MOD_HOST_SANITIZE=1 instruments trusted Session/Process/driver with ASan/
+UBSan on Clang/GCC while keeping sealed children ordinary. The builder records
+host_sanitize separately and offers --sanitize-host; this is distinct from VM
+sanitizers. Actual host-sanitized validation is pending at this checkpoint.

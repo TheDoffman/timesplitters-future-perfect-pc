@@ -28,7 +28,8 @@ def process_tools(tmp_path_factory):
     local = Path(sys.executable).with_name('cmake.exe' if os.name == 'nt' else 'cmake')
     cmake = str(local) if local.is_file() else shutil.which('cmake')
     assert cmake, 'Install the repository-pinned CMake for native isolation checks'
-    worker = builder.build(tmp_path_factory.mktemp('mod-process'), cmake, testing=True)
+    worker = builder.build(tmp_path_factory.mktemp('mod-process'), cmake, testing=True,
+                           host_sanitize=os.environ.get('TSFP_MOD_HOST_SANITIZE') == '1')
     suffix = '.exe' if os.name == 'nt' else ''
     return dict(worker=worker, runner=worker.with_name('tsfp-mod-runner' + suffix),
                 probe=worker.with_name('tsfp-mod-process-probe' + suffix),

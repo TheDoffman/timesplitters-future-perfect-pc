@@ -279,7 +279,7 @@ not a Session pointer, until cleanup ends. The game must keep its executable/mod
 alive through shutdown; this is not a dynamically unloadable plugin ABI.
 
 Per-request independent wall budget: load2s, event500ms. CPU budget250ms/request,
-50ms while idle,1s per10s session window; RSS128MiB. The session rejects unsolicited
+50ms per1s idle window,1s per10s session window; RSS128MiB. The session rejects unsolicited
 stdout or any stderr, including while a prior result awaits consumption. Source
 stays1MiB. Process::wait_for_activity is background-only and waits at most2ms on
 pending Windows IO events or POSIX poll; submission/close wake the idle condition
@@ -304,3 +304,19 @@ corpus, native hangs/crashes/stderr, idle CPU/output and nonblocking close. Vali
 native score/draw/end/UTF8 transactions provide positive controls. Test helper
 executables are compiled only in TSFP_MOD_TESTING and must never ship. Actual
 Mac/Linux Session checks are pending at this checkpoint.
+
+The idle CPU allowance renews by1s accounting window after checking the previous
+window; it is not a cumulative50ms limit over a long paused match. A native fixture
+uses25ms measured process CPU in each of four separated idle windows, then returns
+a valid event reply. This must remain accepted, while idle busy-spin is stopped.
+Windows passes the new case. At658ae09e Mac63 and Linux62 Session/process cases
+pass (one/two platform skips). Updated host checks are pending.
+
+`TSFP_MOD_HOST_SANITIZE=1 python -m pytest tests/mods/test_script_session.py`
+builds ASan/UBSan versions of trusted Session/Process/driver on Clang/GCC, while
+production/hostile child workers remain ordinary OS-sealed binaries. Native OS
+memory/exec limits are incompatible with instrumented child layouts; the trusted
+parent parser still must receive sanitizer coverage. `--sanitize-host` exposes the
+same builder option; BUILD-worker.json records host_sanitize separately from the
+VM sanitizer mode. The normal release build defaults both options off. This test
+mode never relaxes child isolation or provides a production runtime bypass.

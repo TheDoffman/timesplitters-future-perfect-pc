@@ -10630,3 +10630,9 @@ waits are implemented; Windows55 Session plus8 Process checks pass, one Mac-only
 skip. No guest hooks/activation yet. Mac/Linux exact helper/process/session tests,
 verified game adapters, multiplayer/saves and actual scripted gameplay remain
 required. See mod-scripting.md/mod-gameplay-scripting.md/STATUS for contracts.
+
+At658ae09e Mac63 Session/process checks pass (one Windows-only skip), Linux62
+pass (two skips). Shared asynchronous sessions are verified for those named native
+component contracts, not actual game adapters. New renewing idle CPU accounting
+and host-parent ASan/UBSan coverage are **Awaiting validation** on Mac/Linux;
+Windows idle positive control passes. See STATUS/mod-scripting.md.

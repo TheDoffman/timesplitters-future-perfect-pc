@@ -916,3 +916,7 @@ activation changed. Persistent game bridge and actual mode gameplay remain pendi
 Mod Session uses shared asynchronous native supervision and validated typed
 transactions; no title hooks yet. Process background-only readiness waits use
 Windows pending-IO events/POSIX poll. See mod-scripting.md for contracts/evidence.
+
+Session idle CPU uses bounded1s windows so legitimate paused-worker overhead
+does not accumulate forever. Host-only sanitizer checks preserve sealed children;
+see mod-scripting.md for actual host evidence and pending checks.

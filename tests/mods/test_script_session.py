@@ -18,7 +18,7 @@ def run(tools, tmp_path, source, scenario='fault', hostile=False):
     worker = tools['worker'].with_name('tsfp-mod-session-worker' + suffix) if hostile else tools['worker']
     result = subprocess.run([str(driver), str(worker), str(tmp_path), scenario],
                             input=source.encode() if isinstance(source, str) else source,
-                            capture_output=True, timeout=12)
+                            capture_output=True, timeout=40)
     assert result.returncode == 0, (result.returncode, result.stdout[:2048], result.stderr[:2048])
     assert result.stderr == b''
     records = [json.loads(line) for line in result.stdout.splitlines()]
@@ -107,6 +107,11 @@ def test_unsolicited_idle_activity_faults_without_dispatch(process_tools, tmp_pa
 def test_close_returns_immediately_while_native_callback_is_hung(process_tools, tmp_path):
     records = run(process_tools, tmp_path, 'hang', 'close', hostile=True)
     assert records == [records[-1]] and records[-1]['stopped'] is True
+
+
+def test_allowed_idle_cpu_does_not_accumulate_across_idle_windows(process_tools, tmp_path):
+    records = run(process_tools, tmp_path, 'paced-idle', 'paced-idle', hostile=True)
+    assert records[0] == dict(sequence=1, commands=[])
 
 
 @pytest.mark.parametrize('wire', [
