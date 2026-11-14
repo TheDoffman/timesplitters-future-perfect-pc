@@ -3,7 +3,10 @@ cases reproduce admission after unsupported flags were restored. The runtime
 now consumes that identity; Windows12 runtime plus4 visibility checks pass.
 The imported queue fixture's conditional copy and unconditional increment are
 separate statements, preserving behavior with GCC indentation warnings enabled.
-Cross-host follow-up for this fix is pending. Integrated1989b18d game regeneration,
+Source63821e5e follow-up:16 runtime/visibility checks pass EACH Windows/Mac/Linux;
+Mac/Linux host ASan/UBSan12 runtime checks pass EACH. All three native game
+builds/platform checks pass. CI43643876179 is running with no observed failure.
+Integrated1989b18d game regeneration,
 builds and platform checks pass on all three hosts. Mac focused merge71 pass/4
 skips; Linux68 pass/6 skips plus the queue warning now fixed. CI43640843210 is
 green:23 success,2 intentional skips. Production game binding remains unfinished.
