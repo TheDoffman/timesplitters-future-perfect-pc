@@ -4,6 +4,8 @@
 [Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
 The initial non-team adapter reports team0; original actor team identity stays private.
 The match bridge checks compiled game pins before privately staging helpers; see mod-scripting.md.
+The native mod-save lease validates owned per-profile trees and exclusive locks;
+guest storage does not select it yet. See the same guide for filesystem limits.
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;

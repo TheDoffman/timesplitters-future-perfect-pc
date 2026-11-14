@@ -19,6 +19,7 @@
     "tests/mods/test_script_images.py",
     "tests/mods/test_runtime_images.py",
     "tests/mods/test_mod_match.py",
+    "tests/mods/test_mod_saves.py",
     "tests/mods/test_original_mod_scores.py",
     "tests/textures/test_texture_preference.py",
     "tests/textures/test_texture_runtime.py",

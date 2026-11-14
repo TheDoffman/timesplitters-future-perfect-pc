@@ -7,6 +7,22 @@ Build the worker with tools/build/build-mod-worker.py. VM C11; parent C++17.
 The shared game build links the match/title bridge with NULL default binding;
 verified bootstrap, save separation and launcher script activation remain unavailable.
 
+`mod_saves.cpp/.hpp` provides the native save-namespace lease for that future
+bootstrap. A strict64-hex profile identity chooses a sibling ModSaves/<identity>
+directory; normal saves are neither copied nor modified. Versioned owner markers
+must match exactly; unknown/incomplete directories survive refusal. The lease
+blocks a second process, survives normal close with progress intact and releases
+on abrupt process exit. Recheck rejects linked/hard-linked/special files, changed
+markers, excessive depth/count and unsafe writer permissions. No guest storage
+selects this root yet; bootstrap must hold the lease through storage shutdown and
+abort scripted play on failure, never fall back to original saves.
+Windows creates protected user/System/admin ACLs and accepts owner-only parent
+OWNER RIGHTS grants. POSIX requires current ownership and no other writers.
+Recognized exFAT volumes use structural markers/link checks/locking because native
+ACLs/mode ownership are unavailable; actual exFAT/sandbox acceptance is pending.
+mod_files.hpp exposes the existing path validator; ImageStage retains its strict
+private-directory default. Save leases apply their own volume-aware policy.
+
 `mod_images.cpp/.hpp` stages immutable worker/guardian copies with expected SHA256
 pins supplied by the trusted caller. Windows uses CNG, Darwin CommonCrypto and
 Linux OpenSSL EVP. Local absolute paths reject linked ancestors; cache staging is

@@ -1,5 +1,17 @@
 # Feature test index
 
+`tests/mods/test_mod_saves.py` uses native leases and disposable save canaries:
+persistence without copying originals, absent roots, independent profiles,
+exclusive concurrent processes, abrupt-exit release, marker/collision refusal,
+link/hard-link redirects, live tamper rechecks, bounded depth, POSIX modes/FIFOs/
+large sparse metadata and native Windows broad-write ACL rejection. Parent
+Unicode/space paths and explicit same-filesystem relocation retain both normal
+and mod progress; cross-filesystem/device acceptance remains separate. Parent
+OWNER RIGHTS ACLs are accepted only after current-user ownership is verified.
+Filesystem adapters recognize exFAT without assuming it supports ACLs; real
+exFAT device/storage/sandbox acceptance remains pending. No disk-image allocation
+or guest storage routing is performed by this component. It is not Lua activation.
+
 `tests/mods/test_runtime_images.py` builds real production helpers and checks
 exact bundle contents/header pins, stable repeat staging and refusal of testing,
 sanitizer, changed source/image/configuration/license receipts. Unknown bundle

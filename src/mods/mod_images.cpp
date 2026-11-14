@@ -1,4 +1,5 @@
 #include "mod_images.hpp"
+#include "mod_files.hpp"
 #include <array>
 #include <filesystem>
 #include <stdexcept>
@@ -37,11 +38,12 @@ bool digest(const std::string &s) noexcept {
     return true;
 }
 void require(bool value,const char *message){if(!value)throw std::runtime_error(message);}
-fs::path plain_path(const std::string &text,bool directory) {
+fs::path plain_path(const std::string &text,bool directory,bool private_directory=true) {
     require(!text.empty() && text.size()<=32760 && text.find('\0')==std::string::npos,"Invalid helper path");
     auto path=fs::u8path(text);require(path.is_absolute(),"Helper paths must be absolute");
     for(const auto &part:path)require(part!="." && part!="..","Relative helper path component");
 #ifdef _WIN32
+    (void)private_directory;
     auto drive=path.root_name().wstring();
     require(drive.size()==2 && ((drive[0]>=L'A' && drive[0]<=L'Z') || (drive[0]>=L'a' && drive[0]<=L'z')) && drive[1]==L':',"Helper paths must be local");
     for(const auto &part:path)if(part!=path.root_name()) {
@@ -58,7 +60,7 @@ fs::path plain_path(const std::string &text,bool directory) {
 #else
         struct stat info{};require(lstat(cursor.c_str(),&info)==0 && !S_ISLNK(info.st_mode),"Linked or missing helper path");
         require((!first || directory)?S_ISDIR(info.st_mode):S_ISREG(info.st_mode),"Invalid helper path type");
-        if(first && directory)require(info.st_uid==geteuid() && !(info.st_mode&0022),"Helper cache is not private to its owner");
+        if(first && directory && private_directory)require(info.st_uid==geteuid() && !(info.st_mode&0022),"Helper cache is not private to its owner");
 #endif
         auto parent=cursor.parent_path();if(parent==cursor || parent.empty())break;cursor=parent;first=false;
     }
@@ -179,6 +181,8 @@ void copy_pinned(const fs::path &source,const fs::path &target,const std::string
 #endif
 }
 }
+std::filesystem::path checked_path(const std::string &text,bool directory,bool private_directory){return plain_path(text,directory,private_directory);}
+bool sha256_text(const std::string &text) noexcept {return digest(text);}
 bool ImagePins::valid()const noexcept {
 #ifdef __APPLE__
     return digest(worker) && digest(guardian);

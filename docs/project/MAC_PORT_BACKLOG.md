@@ -10765,3 +10765,5 @@ no older hardware execution is claimed. Public-package assembly/signing and actu
 bootstrap/save/launcher/custom-match/public-release acceptance remain **In progress**.
 Exact binary/bundle hashes and scope are recorded in STATUS. No platform exception
 or full system completion is claimed.
+
+Native mod save leases (base8a6dc507): **In progress**. Shared native ownership/locking/tree checks and Windows/POSIX filesystem adapters preserve per-profile progress without copying originals. Windows39 checks pass/5 POSIX skips, including Unicode/relocation and real ACL refusal; previous save/image53/9 skips pass. Macro guards repair a strict game-build define collision; native link rerun and Mac/Linux component/ASan checks pending. exFAT branch/device/sandbox, cross-filesystem relocation, real storage/bootstrap/launcher integration and custom-match/public acceptance remain open; no platform exception or full activation is claimed.
