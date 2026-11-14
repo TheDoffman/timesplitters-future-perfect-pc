@@ -30,7 +30,8 @@ class Scanner:
     def scan(self, directory):
         assert (Path(directory) / 'mod.json').is_file()
         return {'engine': 'TEST ONLY', 'version': 'fixture', 'time': int(time.time()),
-                'status': self.status, 'detail': 'Synthetic test result'}
+                'status': self.status, 'detail': 'Synthetic test result',
+                'database_max_age_days': 2}
 
 
 def create_package(tmp_path, mod_id='test-map', version='1.0.0', dependencies=None):
@@ -282,10 +283,47 @@ def test_clamav_exit_codes_and_limit_flags(tmp_path, monkeypatch, code, status):
             return subprocess.CompletedProcess(command, 0, stdout=b'ClamAV test/database/date')
         assert '--alert-exceeds-max=yes' in command
         assert '--max-filesize=65M' in command
+        assert '--fail-if-cvd-older-than=2' in command
+        assert '--official-db-only=yes' in command
+        assert '--follow-dir-symlinks=0' in command
+        assert '--follow-file-symlinks=0' in command
         assert kwargs['timeout'] == 180
         return subprocess.CompletedProcess(command, code)
     monkeypatch.setattr(subprocess, 'run', run)
     assert ClamScanner().scan(tmp_path)['status'] == status
+
+
+def test_scanner_explicit_database_is_used_for_version_and_scan(tmp_path, monkeypatch):
+    commands = []
+    def run(command, **kwargs):
+        commands.append(command)
+        assert '--database=' + str(tmp_path.resolve()) in command
+        return subprocess.CompletedProcess(command, 0, stdout=b'ClamAV test/database/date')
+    monkeypatch.setattr(subprocess, 'run', run)
+    report = ClamScanner(database=tmp_path).scan(tmp_path)
+    assert report['status'] == 'clean'
+    assert report['database_max_age_days'] == 2
+    assert len(commands) == 2
+
+
+def test_scanner_missing_explicit_database_fails_before_execution(tmp_path, monkeypatch):
+    monkeypatch.setattr(subprocess, 'run', lambda *a, **kw: pytest.fail('Must not execute'))
+    assert ClamScanner(database=tmp_path / 'missing').scan(tmp_path)['status'] == 'error'
+
+
+def test_legacy_clean_scan_requires_rescan_before_approval_or_publication(tmp_path):
+    repo, _, sha = approved(tmp_path)
+    with repo.db() as db:
+        row = db.execute('SELECT scan FROM releases WHERE sha256=?', (sha,)).fetchone()
+        scan = json.loads(row['scan'])
+        del scan['database_max_age_days']
+        db.execute('UPDATE releases SET scan=? WHERE sha256=?', (json.dumps(scan), sha))
+    assert repo.catalog() == []
+    with pytest.raises(ModError):
+        repo.approved_blob(sha)
+    repo.rescan(sha, Scanner())
+    repo.approve(sha, 'Fixture reviewer: rescanned under enforced database policy')
+    assert len(repo.catalog()) == 1
 
 
 def test_scanner_timeout_blocks(tmp_path, monkeypatch):

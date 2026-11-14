@@ -66,6 +66,9 @@ python tools/mods/mod-workshop.py submit build/workshop-demo.zip --repository pr
 
 Submission requires a trusted `clamscan` executable and working virus databases.
 Use `--clamscan PATH` if it is not on PATH. There is **no skip-scan option**.
+Use `--clamav-database PATH` to select the operator-owned database directory for
+both version identity and scanning. Official signatures are required; databases
+older than2 days cause an error. Directory/file symlinks are never followed.
 Maintain definitions with the scanner's normal updater. The CLI returns exit 2
 for detections, scanner errors, missing databases or timeouts. A clean scan
 produces `pending-review`; it never automatically publishes the package.
@@ -119,9 +122,10 @@ Revocation removes search/download availability and cannot be undone with
 approve/rescan. Already downloaded copies remain on disk. Rescanning a
 non-revoked release returns it to review, even when clean. Approvals, search
 results and downloads require a clean scan less than 24 hours old; expired
-releases disappear until rescanned and reviewed. The prototype records the
-scanner version/database identity string but **does not enforce database age**.
-Fresh definitions and automated rescan scheduling are production prerequisites.
+releases disappear until rescanned and reviewed. The report records the scanner
+version/database identity and enforced2-day definition-age policy. Legacy
+reports without that policy require rescan and review. Automated database
+updates and rescan scheduling remain production prerequisites.
 Search matches ID, name, author and description, including older approved
 versions. Ranking, pagination and version-channel selection are future work.
 
@@ -282,6 +286,8 @@ protection; plan key rotation/recovery before release. Hashes alone do not
 authenticate a catalog. Rescan on fresh signature updates and schedule periodic
 rescans. Enforce scanner database freshness; an engine outage must stop new
 approvals. Revoke compromised releases and tell installed clients what changed.
+The adapter now enforces definition age; scheduled updates/rescans and isolated
+workers still need production integration.
 
 The first public version can use one scanner plus structural/content validation
 and manual review; additional engines or isolated behavioral analysis can be
@@ -318,3 +324,10 @@ The suite uses synthetic scanner results only within tests, plus missing-engine
 and subprocess-result/timeout fixtures. It exercises actual loopback HTTP search,
 download, staging and revocation. It does not claim live antivirus detection,
 real game loading, sandbox security, public hosting or performance acceptance.
+
+Run `python tests/mods/live_clamav.py --database PATH --clamscan PATH` explicitly
+on the host with real official databases. It uses disposable private packages:
+clean content stays private until review, EICAR is rejected, empty databases and
+missing engines fail closed, and revocation removes availability. EICAR is the
+harmless standard antivirus test file, never executed. This test does not prove
+scanner OS isolation or detection of all malicious content.

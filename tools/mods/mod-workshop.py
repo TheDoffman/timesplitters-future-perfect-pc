@@ -38,6 +38,7 @@ def main(argv=None):
             command.add_argument('package')
         if name in ('submit', 'rescan'):
             command.add_argument('--clamscan', default='clamscan', help='Trusted scanner executable')
+            command.add_argument('--clamav-database', help='Operator-owned official ClamAV database directory')
         if name in ('approve', 'revoke', 'rescan', 'inspect'):
             command.add_argument('sha256')
         if name in ('approve', 'revoke'):
@@ -63,9 +64,9 @@ def main(argv=None):
         else:
             repo = Repository(args.repository)
             if args.command == 'submit':
-                result = repo.submit(args.package, ClamScanner(args.clamscan))
+                result = repo.submit(args.package, ClamScanner(args.clamscan, args.clamav_database))
             elif args.command == 'rescan':
-                result = repo.rescan(args.sha256, ClamScanner(args.clamscan))
+                result = repo.rescan(args.sha256, ClamScanner(args.clamscan, args.clamav_database))
             elif args.command == 'approve':
                 repo.approve(args.sha256, args.note)
                 result = {'state': 'approved', 'sha256': args.sha256}

@@ -7,7 +7,8 @@ Authoritative product scope, usage, trust boundaries and follow-up milestones:
 Mod operator tools live in tools/mods/: bounded package validation, ClamAV
 quarantine/review, immutable releases, scan expiry/revocation, loopback preview
 and approved static exports. Public uploads/authentication, signed metadata,
-scan isolation/freshness enforcement and scripting are still incomplete.
+scan isolation and scripting are still incomplete. ClamAV enforces official-only
+databases at most2 days old; legacy scan reports require a rescan/review.
 The selected public host is the user's Mac mini; no domain purchase is required
 for the planned Funnel trial. SSH works, but no public service has been deployed.
 
@@ -29,7 +30,7 @@ Actual modded gameplay requires a new game build and scene verification.
 Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
 launcher-tests.exe --workshop (12 groups). Windows and native Mac checks pass.
 WSL Linux checks also pass:77 Python/C workshop checks,61 native shared UI groups
-and launcher package install/repair/restart. Live ClamAV, public connectivity,
+and launcher package install/repair/restart. Public connectivity,
 full asset formats and scripting remain acceptance work.
 <!-- packet:end -->
 
@@ -47,9 +48,13 @@ these are not evidence of real malware detection.
 Quarantine stores immutable digest-addressed blobs and SQLite release/event
 records under the explicitly supplied private repository root. Only fresh clean
 scans plus manual review appear in search/download. Missing scanner or scan
-limits/timeouts fail closed. No CLI scan bypass exists. The scanner runs as the
-operator and its database age is not enforced: production requires isolated
-workers and freshness policy. Synthetic scanners exist only in tests.
+limits/timeouts/stale databases fail closed. No CLI scan bypass exists. The
+scanner uses official signatures, a2-day maximum database age and no symlink
+following. --clamav-database selects the same directory for identity and scan.
+Reports without that age-policy marker require rescanning before publication.
+The scanner still runs as the operator; production requires isolated workers.
+Synthetic scanners exist only in tests; tests/mods/live_clamav.py explicitly
+exercises real clean/EICAR/error/quarantine/review/revocation behavior.
 
 Installations are separate immutable version directories. Texture-only mods can
 be enabled in the native library; Lua, maps and audio remain unavailable for
@@ -81,7 +86,7 @@ latest full Windows launcher command passes.
 network or gameplay. WPF/Avalonia navigation uses ModsNav/ModsHost. Setup and
 the no-purchased-domain Funnel trial: [Mac hosting](../development/mac-mod-hosting.md).
 Mac SSH is now verified; its existing working files were preserved. Public
-deployment, Tailscale bandwidth, game host acceptance and live ClamAV remain
+deployment, Tailscale bandwidth and game host acceptance remain
 unverified.
 
 ## Texture library and runtime overlay
@@ -129,7 +134,9 @@ Mac SSH access is now verified using an existing project alias. AGENTS.md hashes
 match Windows. Its active checkout has unrelated STATUS edits and many untracked
 cloud-conflict copies: preserve them and use a separate .nosync worktree. Caddy
 and Python are present; Tailscale's command is a stale missing-app wrapper and
-ClamAV is absent. No public hosting has been enabled.
+ClamAV1.5.4 is installed with official databases in the workshop's private
+Application Support/scanner directory. No background service or public hosting
+has been enabled. Live repository acceptance is run separately from unit tests.
 
 ## Mac validation checkpoint f6770b2b
 

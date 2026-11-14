@@ -11,25 +11,36 @@ import time
 from mod_package import MAX_ARCHIVE, ModError, SHA, digest, inspect_package, require
 
 SCAN_TTL = 24 * 60 * 60
+DATABASE_MAX_AGE_DAYS = 2
 
 
 class ClamScanner:
     """Fail closed on missing scanner, timeout, scan limits, and engine errors."""
-    def __init__(self, executable='clamscan'):
+    def __init__(self, executable='clamscan', database=None):
         self.executable = executable
+        self.database = Path(database).absolute() if database is not None else None
 
     def scan(self, folder):
         report = {'engine': 'ClamAV', 'version': '', 'status': 'error',
-                  'time': int(time.time()), 'detail': ''}
+                  'time': int(time.time()), 'detail': '',
+                  'database_max_age_days': DATABASE_MAX_AGE_DAYS}
         try:
-            version = subprocess.run([self.executable, '--version'], capture_output=True,
+            database_args = []
+            if self.database is not None:
+                require(self.database.is_dir() and not self.database.is_symlink(),
+                        'Scanner database directory is missing or linked')
+                database_args = ['--database=' + str(self.database)]
+            version = subprocess.run([self.executable, *database_args, '--version'], capture_output=True,
                                      timeout=10, check=True)
             report['version'] = version.stdout.decode('utf-8', errors='replace')[:512].strip()
             require(report['version'].startswith('ClamAV '), 'Unexpected scanner identity')
             # Scan normalized extracted files. Every limit alert blocks approval.
             with tempfile.TemporaryFile() as log:
                 result = subprocess.run(
-                    [self.executable, '--recursive', '--infected', '--no-summary',
+                    [self.executable, *database_args, '--recursive', '--infected', '--no-summary',
+                     '--official-db-only=yes',
+                     '--fail-if-cvd-older-than=' + str(DATABASE_MAX_AGE_DAYS),
+                     '--follow-dir-symlinks=0', '--follow-file-symlinks=0',
                      '--alert-exceeds-max=yes', '--max-filesize=65M', '--max-scansize=512M',
                      '--max-files=4096', '--max-recursion=8', str(Path(folder).resolve())],
                     stdout=log, stderr=subprocess.STDOUT, timeout=180)
@@ -122,7 +133,8 @@ class Repository:
     @staticmethod
     def fresh(report):
         age = time.time() - report.get('time', 0)
-        return report.get('status') == 'clean' and 0 <= age < SCAN_TTL
+        return (report.get('status') == 'clean' and 0 <= age < SCAN_TTL
+                and report.get('database_max_age_days') == DATABASE_MAX_AGE_DAYS)
 
     def approve(self, sha, reviewer_note):
         require(isinstance(reviewer_note, str) and 0 < len(reviewer_note.strip()) <= 2000,

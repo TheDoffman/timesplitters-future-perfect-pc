@@ -44,8 +44,9 @@ workshop while the installed game remains available.
 Source is synchronized through Git into a separate `.nosync` task worktree. The
 native Mac launcher build/sign/package/tests passed at f6770b2b, as did package/
 reader checks and a real Caddy loopback/expiry test. These results do not establish
-public HTTPS access or live modded gameplay. ClamAV is still absent and the
-existing Tailscale wrapper points to a missing application.
+public HTTPS access or live modded gameplay. ClamAV1.5.4 is now installed with
+official FreshClam databases in the private workshop scanner directory. No
+scanner daemon was started. The Tailscale wrapper still points to a missing app.
 
 On this FileProvider-managed Desktop, the generated app acquired FinderInfo and
 code signing failed despite the builder's existing metadata cleanup. The same
@@ -74,7 +75,9 @@ Follow the official installer instructions for the chosen packages. Do not copy
 the Windows virtual environment to the Mac. Set up ClamAV's normal
 [FreshClam database updates](https://docs.clamav.net/manual/Usage/SignatureManagement.html)
 and verify a live scan before accepting community submissions. The project
-adapter still does not enforce database-age policy or OS-isolate the scanner.
+adapter enforces official signatures and a maximum2-day database age; it does
+not yet OS-isolate the scanner. Pass `--clamav-database` explicitly for private
+host databases and run `tests/mods/live_clamav.py` for real engine acceptance.
 
 Get this branch onto the Mac through Git after it is committed/pushed. A shared
 Codex account does not transfer local source files. Use the same root AGENTS.md;
@@ -219,7 +222,7 @@ alternate public paths. Backup the private repository and event history without
 making them public.
 
 Before opening public creator submissions, implement ownership/authentication,
-upload quotas, isolated scan workers, database freshness enforcement, moderation
+upload quotas, isolated scan workers, scheduled database updates/rescans, moderation
 and report handling. The download-only server supplies none of those endpoints.
 The full [workshop implementation plan](mod-workshop.md#full-product-implementation-plan)
 tracks these remaining milestones.

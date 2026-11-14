@@ -15,7 +15,7 @@ their named components; none substitute for actual host/game/public acceptance.
 | Multiplayer and saves | Cosmetic texture path leaves guest data unchanged; originals/settings/saves are not modified by library code | Server authority, ordered gameplay-mod/hash negotiation, mismatch behavior, modded save namespaces and real multiplayer acceptance |
 | Public Mac mini hosting without a purchased domain | Separate Git worktree at f6770b2b; native Mac tests pass; actual Caddy loopback catalog/write/private-path/expiry/shutdown checks pass | Persistent service setup, working HTTPS/tunnel identity, external connectivity and availability/reboot acceptance |
 | Creator accounts/ownership/uploads | Local operator submission only; no public upload route exists | Authenticated identity/ownership, upload authorization, quotas/rate limits, private quarantine, ownership transfers and abuse protection |
-| Virus/malicious-content handling | Structural/payload validation, fail-closed ClamAV adapter, explicit review and scan expiry; synthetic tests pass | Real ClamAV installation/detection, fresh database enforcement, isolated bounded workers, queue/retry policies, scheduled rescans and unsafe-script/content analysis |
+| Virus/malicious-content handling | Structural/payload validation, fail-closed ClamAV adapter with official signatures and2-day definition-age cap, explicit review and scan expiry; Mac ClamAV installed/databases updated; synthetic tests pass | Real detection acceptance, isolated bounded workers, queue/retry policies, scheduled updates/rescans and unsafe-script/content analysis |
 | Moderation and reporting | Local approval/revocation and append-only operator events | Moderator roles/UI, player reports, takedowns, notification and operational staffing/policy |
 | Catalog and update trust | HTTPS, exact URLs, immutable hashes, scan expiry and availability recheck | Signed catalog/root trust, anti-rollback/expiry, key rotation/recovery and distributed revocation enforcement before code loading/automatic activation |
 | Storage and operations | Separate quarantine/approved exports/installed versions/active overlays; bounded archives and snapshot budgets | Persistent operation, global quotas, managed recovery, actual backup/restore, host/account isolation and incident/revocation drills |
@@ -37,7 +37,8 @@ The current Mac checkout contains unrelated edits and untracked cloud-conflict
 copies. Preserve it. Use a separate task worktree, skip LFS artwork hydration,
 and transfer source through Git. The existing Tailscale command points at a
 missing application; a usable public identity has not been established. ClamAV
-is absent. These are operational prerequisites, not evidence of a deployed host.
+is now installed with official databases; live acceptance is separate. These are
+operational prerequisites, not evidence of a deployed host.
 
 Do not close the goal while any requirement above remains incomplete or lacks
 the corresponding real-world acceptance evidence. Do not merge main without
