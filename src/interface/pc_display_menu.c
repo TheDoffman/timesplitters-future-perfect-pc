@@ -1272,10 +1272,11 @@ static void build_menu(void)
     SettingsDividerStyle divider=settings_divider_begin(menu);
     labels();guest_call(sub_000771D0,1,menu);settings_divider_end(divider);
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART) {
+        int panel_aligned=settings_panel_anchor(menu);
         float y=FLOAT_AT(menu+0x64);
         if(isfinite(y)) {
             if(!video_anchor_ready){video_anchor_y=y;video_anchor_ready=1;}
-            WORD_AT(menu+0x64)=bits(video_anchor_y);
+            WORD_AT(menu+0x64)=bits(panel_aligned?fminf(video_anchor_y,FLOAT_AT(menu+0x64)):video_anchor_y);
         }
     }
     restore_registers(&r);g_esp+=4;

@@ -1,3 +1,9 @@
+Settings panel/binding alignment (base6239ce95): shared canvas-percent anchors,
+native builder leading and measured glyph centering require no host adapter.
+Windows build and16 focused checks pass. Native Mac/Linux visual acceptance
+remains pending, including aspect/resolution changes. See
+docs/agent-context/pause-settings.md for source and test contracts.
+
 Pause Settings consolidation (branch follow-up, base20d0f5ef): IMPLEMENTED / VALIDATION
 PENDING on native Mac/Linux. Shared menu hub and factory return policy retain
 native child save/cancel routines; no host adapter is needed. Desktop-exit rows

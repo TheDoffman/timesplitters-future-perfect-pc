@@ -225,6 +225,14 @@ int main(void)
     CHECK(fabsf(pc_ui_caption_fit(200,10,120,20)-.5f)<.00001f);
     CHECK(pc_ui_caption_fit(200,40,120,20)==1.f);
     CHECK(pc_ui_caption_fit(0,40,120,20)==1.f && pc_ui_caption_fit(90,40,NAN,20)==1.f);
+    /* Short/tall glyphs and bearings share the native row midpoint after
+     * fitting; changing the typeface must not move the selection rectangle. */
+    for(unsigned scale=1;scale<=4;scale++)for(int bearing=-2;bearing<=6;bearing+=2) {
+        float top=(float)bearing*scale,bottom=14.f*scale,cell=30.f*scale;
+        float y=pc_ui_caption_y(10.f,cell,bottom,top);
+        CHECK(fabsf((y+top+y+bottom)*.5f-(10.f+cell*.5f))<.0001f);
+    }
+    CHECK(pc_ui_caption_y(10,30,NAN,0)==10 && pc_ui_caption_y(10,0,14,2)==10);
     /* Measurement and glyph rendering must see the same two-axis scale.
        Other menu rows, descriptions and gameplay retain their original size. */
     for(unsigned mode=0;mode<8;mode++) {

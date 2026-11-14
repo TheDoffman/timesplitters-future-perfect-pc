@@ -153,7 +153,7 @@ static void menu_slider_keyboard_pointer(float x,float left,float width)
 }
 extern void sub_00071B60(void),sub_00041DC0(void);
 static uint32_t kb_label_measure;
-static void kb_label(float x,float y,float width,float height,const char *text,int scale,uint32_t color)
+static void kb_label_cell(float x,float y,float width,float height,const char *text,int scale,uint32_t color,int center)
 {
     extern void sub_0003FCF0(void),sub_0003F8D0(void);
     char caption[192];text=kb_display_label(text,caption);
@@ -168,16 +168,20 @@ static void kb_label(float x,float y,float width,float height,const char *text,i
     if(kb_label_measure) {
         guest_call(sub_0003FCF0,4,kb_label_measure,kb_label_measure+4,label,0u);
         float fit=pc_ui_caption_fit(width,height,FLOAT_AT(kb_label_measure),FLOAT_AT(kb_label_measure+4));
+        float measured_height=FLOAT_AT(kb_label_measure+4)*fit;
         if(fit<1.f) {
             guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=bits(fx*fit);WORD_AT(0x7e7280)=bits(fy*fit);
             guest_call(sub_0003F8D0,0);
         }
+        if(center)y=pc_ui_caption_y(y,height,measured_height,settings_row_text_top(label));
     }
     guest_call(sub_00041DC0,4,bits(x),bits(y),label,color);
     guest_call(sub_00022FF0,0);WORD_AT(0x7e7270)=saved_x;WORD_AT(0x7e7280)=saved_y;
     guest_call(sub_0003F8D0,0);
     WORD_AT(0x007E7260u)=align;
 }
+static void kb_label(float x,float y,float width,float height,const char *text,int scale,uint32_t color)
+{kb_label_cell(x,y,width,height,text,scale,color,0);}
 static void kb_box(float x,float y,float w,float h,uint32_t color)
 {
     guest_call(sub_000814B0,9,bits(1.f),(uint32_t)(int)x,(uint32_t)(int)y,
@@ -216,7 +220,7 @@ static void kb_binding_draw(uint32_t menu,uint32_t item,const float b[4])
     uint32_t color=guest_call(sub_00154FE0,2,0xc7d6e57fu,WORD_AT(menu+0xf4));
     float w=b[2]-b[0],y=b[1];char name[80],cap[84];
     /* The row uses the same native panel/highlight as controller Customize. */
-    kb_label(b[0],y,w*.52f-4.f,b[3]-y-2.f,pc_keyboard_action_labels[action],58,color);
+    kb_label_cell(b[0],y,w*.52f-4.f,b[3]-y,pc_keyboard_action_labels[action],58,color,1);
     for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
         pc_settings_key_name(kb_settings.keys[action][slot],name,sizeof name);
         snprintf(cap,sizeof cap,"[%s]",name);
@@ -225,7 +229,7 @@ static void kb_binding_draw(uint32_t menu,uint32_t item,const float b[4])
         input_icon_cell_height=fmaxf(0.f,b[3]-y-4.f);
         input_icon_cell_width=fmaxf(0.f,w*(slot?.21f:.24f)-8.f);
 #endif
-        kb_label(b[0]+w*(slot?.79f:.55f),y,w*(slot?.21f:.24f)-4.f,b[3]-y-2.f,cap,53,color);
+        kb_label_cell(b[0]+w*(slot?.79f:.55f),y,w*(slot?.21f:.24f)-4.f,b[3]-y,cap,53,color,1);
 #if TSFP_INPUT_ICONS
         input_icon_cell_height=saved_height;input_icon_cell_width=saved_width;
 #endif

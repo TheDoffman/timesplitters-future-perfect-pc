@@ -44,3 +44,29 @@ private/pause-glass/settings-*. The supported Windows build passes. Native Mac/L
 split-screen and network gameplay acceptance remain separate. The local preview
 uses the existing0.6.0 build checkout; source changes on this branch are based
 on20d0f5ef. Game data, screenshots, settings and saves remain local/ignored.
+
+
+## Shared panel spacing and binding cells
+
+Follow-up base6239ce95: `settings_panel_anchor` in
+`pc_settings_spacing.inc` aligns Audio, Video and tabbed Controls to24% of the
+logical canvas. Pages that exceed the available height move up to keep their
+bottom at84%; invalid heights retain the existing anchor. The existing per-menu
+anchor keeps tabs steady. Confirmation/capture dialogs keep native positioning.
+Audio body leading1.0 and Controls body leading0.9 are set through native71B10
+before layout; header leading and font sizes are unchanged. Never resize cached
+row geometry after finalization: custom slider caches must remain consistent.
+
+`kb_label_cell` measures fitted glyph bounds and uses `pc_ui_caption_y` to
+center action labels and primary/alternate keycaps in their existing highlight
+cells. Mini-keyboard labels, headings, hit targets and binding behavior retain
+their existing paths. Both frontend and pause menus share this implementation.
+
+Validation: supported Windows build passes;16 focused graphics checks pass,
+two Mac-only compile checks skipped. Actual1280x720 frontend/pause Audio,
+Video, Controls, Controller slider and keyboard binding pages1/2 were checked.
+`settings_panel.c` covers shared anchor/footer bounds and unchanged cached row
+geometry; `ui_layout.c` covers fitted caption midpoints with varied bearings.
+Screenshots/receipts remain local under private/pause-glass/menu-spacing-final.
+Native Mac/Linux visual acceptance remains pending. The desktop preview still
+uses the existing0.6.0 build checkout with these changes selectively applied.

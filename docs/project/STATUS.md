@@ -1,3 +1,12 @@
+Settings panel alignment (branch follow-up, base6239ce95): Audio and Controls
+now share Video's top inset in frontend and pause menus. Native body leading
+leaves footer space; cached slider geometry and font sizes are preserved.
+Keyboard action labels and both binding columns are vertically centered in
+selection rows. Windows build and16 focused checks pass (two Mac-only checks
+skipped); frontend/pause roots, Controller slider and binding pages1/2 checked
+at1280x720. Native Mac/Linux visual checks remain pending.
+See docs/agent-context/pause-settings.md. Existing local preview updated.
+
 Pause Settings consolidation (branch follow-up on fix/pause-menu-glass-backdrop,
 base20d0f5ef): native pause Controls row becomes Settings; Audio row is hidden
 without layout height. The hub uses the main Settings order Audio/Video/Controls,

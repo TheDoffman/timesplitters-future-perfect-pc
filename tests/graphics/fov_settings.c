@@ -1286,12 +1286,12 @@ int main(int argc,char **argv)
     /* Keep the root header fixed as content height changes; modal pages
      * retain their own native centring. */
     controls_tab=0;controls_anchor_ready=0;
-    WORD_AT(controls_menu+0x68)=bits(200.f);WORD_AT(controls_menu+0x64)=bits(12.f);
-    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
-    WORD_AT(controls_menu+0x68)=bits(120.f);WORD_AT(controls_menu+0x64)=bits(0.f);
-    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
-    WORD_AT(controls_menu+0x68)=bits(240.f);controls_anchor();
-    CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
+    WORD_AT(controls_menu+0x68)=bits(53.f);WORD_AT(controls_menu+0x64)=bits(12.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
+    WORD_AT(controls_menu+0x68)=bits(47.f);WORD_AT(controls_menu+0x64)=bits(0.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
+    WORD_AT(controls_menu+0x68)=bits(58.f);controls_anchor();
+    CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
     controls_tab=2;kb_page=KB_CAPTURE;WORD_AT(controls_menu+0x64)=bits(55.f);
     controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==55.f);
     { /* Section shortcuts work from a setting row, once per press, without
