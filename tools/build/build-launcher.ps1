@@ -92,6 +92,7 @@ $cacheInputs = @($PSCommandPath, (Join-Path $PSScriptRoot 'launcher-cache.ps1'),
     (Join-Path $project 'src/interface/pc_display_modes.inc'), (Join-Path $project 'config/build/launcher-artwork.json'))
 $cacheInputs += @(Get-ChildItem -LiteralPath $source -File | ForEach-Object { $_.FullName })
 $cacheInputs += @(Get-ChildItem -LiteralPath (Join-Path $project 'tests/launcher') -Filter '*.cs' -File | ForEach-Object { $_.FullName })
+$cacheInputs += Join-Path $project 'tests/launcher/workshop-trust-fixtures.json'
 foreach ($name in ($references + @('csc.exe', 'csc.exe.config', 'clr.dll', 'mscorlib.dll', 'System.Drawing.dll', 'System.Xml.dll', 'System.Configuration.dll',
     'WPF/PresentationCore.dll', 'WPF/PresentationFramework.dll', 'WPF/WindowsBase.dll'))) {
     $cacheInputs += Join-Path $framework $name
