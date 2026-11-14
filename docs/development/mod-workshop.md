@@ -183,8 +183,11 @@ The Mac scanner runs in a deny-default Seatbelt profile. Its readable inputs are
 the extracted upload, official database/certificates and public runtime libraries.
 Only a private temporary directory is writable. Network and child execution are
 denied; inherited environment variables and file descriptors are removed. Hard
-CPU150s, output-file1MiB, descriptor128 and core0 limits apply before exec; the
-parent kills the engine after180s. Each scan uses a fresh process. Unsupported
+CPU150s, per-file512MiB, descriptor128 and core0 limits apply before exec; the
+parent kills the engine after180s or diagnostic output over1MiB, retaining only
+64KiB in memory. The file limit accommodates the engine's512MiB scan budget;
+engine diagnostics with an otherwise clean exit also require operator repair.
+Isolation policyv2 requires older reports to be rescanned. Each scan uses a fresh process. Unsupported
 hosts or broken sandbox startup fail closed, with no unsandboxed CLI fallback.
 Memory supervision, queue/global concurrency limits and a dedicated production
 service identity still need integration. A parser sandbox does not prove that

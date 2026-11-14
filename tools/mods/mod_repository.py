@@ -38,18 +38,20 @@ class ClamScanner:
                 report['version'] = version.stdout.decode('utf-8', errors='replace')[:512].strip()
                 require(report['version'].startswith('ClamAV '), 'Unexpected scanner identity')
                 # Scan normalized extracted files. Every limit alert blocks approval.
-                with tempfile.TemporaryFile() as log:
-                    result = worker.run(
+                result = worker.scan(
                         [*database_args, '--recursive', '--infected', '--no-summary',
                          '--official-db-only=yes', '--tempdir=' + str(worker.scratch),
                          '--fail-if-cvd-older-than=' + str(DATABASE_MAX_AGE_DAYS),
                          '--follow-dir-symlinks=0', '--follow-file-symlinks=0',
                          '--alert-exceeds-max=yes', '--max-filesize=65M', '--max-scansize=512M',
                          '--max-files=4096', '--max-recursion=8', str(Path(folder).resolve())],
-                        stdout=log, stderr=subprocess.STDOUT, timeout=180)
-                    log.seek(0)
-                    report['detail'] = log.read(65536).decode('utf-8', errors='replace')
+                        timeout=180)
+                report['detail'] = result.stdout.decode('utf-8', errors='replace')
             report['status'] = {0: 'clean', 1: 'blocked'}.get(result.returncode, 'error')
+            # Warnings can indicate incomplete coverage even when the engine
+            # exits zero. Review the engine condition instead of approving it.
+            if report['status'] == 'clean' and report['detail'].strip():
+                report['status'] = 'error'
         except (OSError, subprocess.SubprocessError, ModError) as exc:
             report['detail'] = str(exc)[:2048]
         return report

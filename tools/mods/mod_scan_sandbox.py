@@ -6,10 +6,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 
 from mod_package import require
 
-ISOLATION_POLICY = 'macos-seatbelt-v1'
+ISOLATION_POLICY = 'macos-seatbelt-v2'
 
 
 def sandbox_profile(executable, content, database, scratch):
@@ -58,14 +59,53 @@ class ScanSandbox:
                                 TMPDIR=str(self.scratch), LC_ALL='C', TZ='UTC')
         return self
 
-    def run(self, arguments, **kwargs):
+    def command(self, arguments):
         # The trusted child sets hard CPU/output/fd limits before exec. Unlike a
         # preexec_fn it is safe when the parent has other threads. exec preserves
         # the PID, so subprocess timeout kills the actual sandboxed engine.
-        command = [sys.executable, str(Path(__file__).with_name('scan_child.py')),
-                   '/usr/bin/sandbox-exec', '-p', self.profile, str(self.executable), *arguments]
-        return subprocess.run(command, env=self.environment, cwd=self.scratch,
+        return [sys.executable, str(Path(__file__).with_name('scan_child.py')),
+                '/usr/bin/sandbox-exec', '-p', self.profile, str(self.executable), *arguments]
+
+    def run(self, arguments, **kwargs):
+        return subprocess.run(self.command(arguments), env=self.environment, cwd=self.scratch,
                               stdin=subprocess.DEVNULL, close_fds=True, **kwargs)
+
+    def scan(self, arguments, timeout=180):
+        """Drain diagnostics without an unbounded file, buffer, or pipe deadlock."""
+        command = self.command(arguments)
+        child = subprocess.Popen(command, env=self.environment, cwd=self.scratch,
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT, close_fds=True)
+        captured = bytearray()
+        exceeded = []
+        failures = []
+        def drain():
+            total = 0
+            try:
+                while chunk := child.stdout.read(65536):
+                    total += len(chunk)
+                    captured.extend(chunk[:max(0, 65536 - len(captured))])
+                    if total > 1024 * 1024:
+                        exceeded.append(True)
+                        child.kill()
+                        break
+            except OSError as exc:
+                failures.append(str(exc))
+                child.kill()
+        reader = threading.Thread(target=drain, daemon=True)
+        reader.start()
+        try:
+            child.wait(timeout=timeout)
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait(timeout=10)
+            reader.join(timeout=10)
+            child.stdout.close()
+        require(not reader.is_alive(), 'Scanner diagnostic reader did not stop')
+        require(not failures, 'Scanner diagnostic stream failed')
+        require(not exceeded, 'Scanner diagnostic output exceeded1MiB')
+        return subprocess.CompletedProcess(command, child.returncode, stdout=bytes(captured))
 
     def __exit__(self, *args):
         if self.temporary is not None:

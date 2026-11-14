@@ -32,7 +32,7 @@ class Scanner:
         assert (Path(directory) / 'mod.json').is_file()
         return {'engine': 'TEST ONLY', 'version': 'fixture', 'time': int(time.time()),
                 'status': self.status, 'detail': 'Synthetic test result',
-                'database_max_age_days': 2, 'isolation': 'macos-seatbelt-v1'}
+                'database_max_age_days': 2, 'isolation': 'macos-seatbelt-v2'}
 
 
 @pytest.fixture
@@ -48,6 +48,8 @@ def scanner_process_stub(tmp_path, monkeypatch):
             pass
         def run(self, arguments, **kwargs):
             return subprocess.run([self.executable, *arguments], **kwargs)
+        def scan(self, arguments, **kwargs):
+            return self.run(arguments, capture_output=True, **kwargs)
     monkeypatch.setattr(mod_repository, 'ScanSandbox', Worker)
 
 
@@ -305,7 +307,7 @@ def test_clamav_exit_codes_and_limit_flags(tmp_path, monkeypatch, scanner_proces
         assert '--follow-dir-symlinks=0' in command
         assert '--follow-file-symlinks=0' in command
         assert kwargs['timeout'] == 180
-        return subprocess.CompletedProcess(command, code)
+        return subprocess.CompletedProcess(command, code, stdout=b'')
     monkeypatch.setattr(subprocess, 'run', run)
     assert ClamScanner().scan(tmp_path)['status'] == status
 
@@ -315,13 +317,23 @@ def test_scanner_explicit_database_is_used_for_version_and_scan(tmp_path, monkey
     def run(command, **kwargs):
         commands.append(command)
         assert '--database=' + str(tmp_path.resolve()) in command
-        return subprocess.CompletedProcess(command, 0, stdout=b'ClamAV test/database/date')
+        return subprocess.CompletedProcess(command, 0,
+            stdout=b'ClamAV test/database/date' if '--version' in command else b'')
     monkeypatch.setattr(subprocess, 'run', run)
     report = ClamScanner(database=tmp_path).scan(tmp_path)
     assert report['status'] == 'clean'
     assert report['database_max_age_days'] == 2
-    assert report['isolation'] == 'macos-seatbelt-v1'
+    assert report['isolation'] == 'macos-seatbelt-v2'
     assert len(commands) == 2
+
+
+def test_engine_warning_with_clean_exit_is_withheld(tmp_path, monkeypatch, scanner_process_stub):
+    def run(command, **kwargs):
+        data = b'ClamAV test/database/date' if '--version' in command else b'WARNING: incomplete scan\n'
+        return subprocess.CompletedProcess(command, 0, stdout=data)
+    monkeypatch.setattr(subprocess, 'run', run)
+    report = ClamScanner(database=tmp_path).scan(tmp_path)
+    assert report['status'] == 'error' and 'incomplete scan' in report['detail']
 
 
 def test_scanner_missing_explicit_database_fails_before_execution(tmp_path, monkeypatch):

@@ -54,8 +54,11 @@ following. --clamav-database selects the same directory for identity and scan.
 Reports without that age-policy marker require rescanning before publication.
 mod_scan_sandbox.py uses a Mac deny-default Seatbelt process: only this content,
 definitions, public runtime/certs and private temp are readable; only temp is
-writable. No network or child exec. scan_child.py sets hard CPU150s, output1MiB,
-fd128/core0 limits; parent enforces180s. Unsupported hosts fail closed, no bypass.
+writable. No network or child exec. scan_child.py sets hard CPU150s, file512MiB,
+fd128/core0 limits; parent enforces180s and kills diagnostic output over1MiB,
+retaining at most64KiB. Any clean-exit diagnostic is withheld. Policyv2 invalidates
+earlier scans; file bounds must accommodate ClamAV's512MiB scan budget.
+Unsupported hosts fail closed, no bypass.
 RAM supervision, service identity and production job queues remain incomplete.
 Synthetic scanners exist only in tests; tests/mods/live_clamav.py explicitly
 exercises real clean/EICAR/error/quarantine/review/revocation behavior.
