@@ -10558,12 +10558,15 @@ This does not establish public TLS, native creator UI, persistent host operation
 worker memory supervision or gameplay scripting. No API daemon/public route or
 real persistent account was installed. See STATUS and mod-creator-service guide.
 
-Signed workshop producer metadata (base eb75e03d): SHARED IMPLEMENTATION, HOST
-VALIDATION PENDING. mod_trust.py/mod_signing.py and mod_publication.py implement
+Signed workshop producer metadata (source b01ad2a5): VERIFIED FOR NAMED
+PRODUCER/HOST CHECKS. mod_trust.py/mod_signing.py and mod_publication.py implement
 RSA3072 exact-byte catalog trust, offline two-key root rotation, expiry, bounded
 permanent revocations and persistent publication sequences. Public host preflight
 requires an independent root; unsigned exports are explicitly development-only.
-Windows282 selected checks pass,2 Unix-only checks skip. Native launcher code
-is unchanged and still needs signature/checkpoint/pin integration. Mac/Linux
-crypto/key-permission tests, actual Caddy validation and all public acceptance
-remain pending. See STATUS and docs/development/mod-catalog-trust.md.
+Windows282 selected checks pass,2 Unix-only checks skip; Mac284 pass, including
+actual encrypted-root ceremony/private permissions/online export; WSL283 pass,
+with the non-root ceremony skipped. Actual Mac Caddy configuration and loopback
+signed catalog/root GET verification pass; private routes404/writes405 and owned
+listener shutdown pass. Native launcher code is unchanged and still needs
+signature/checkpoint/pin integration. No production keys/public TLS deployment
+or client acceptance is claimed. See STATUS and docs/development/mod-catalog-trust.md.

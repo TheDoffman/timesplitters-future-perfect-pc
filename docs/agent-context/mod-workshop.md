@@ -31,7 +31,7 @@ and visual restoration pass. Story gameplay and Mac/Linux game scenes remain unv
 
 Checks: pytest tests/mods; Windows build-launcher.ps1 -Test; standalone
 launcher-tests.exe --workshop (13 groups). Current Windows/Mac/Linux launcher
-checks pass; actual Mac Gunicorn-to-ClamAV/review and141 Mac/WSL mod tests pass.
+checks pass; actual Mac Gunicorn-to-ClamAV/review and real signing/key-ceremony tests pass.
 Public connectivity, full asset formats and scripting remain acceptance work.
 <!-- packet:end -->
 
@@ -118,7 +118,11 @@ production keys are still absent. Wire/commands/bounds:
 [catalog trust](../development/mod-catalog-trust.md). Real-crypto tests:
 tests/mods/test_catalog_trust.py, registered in native suites; hash-pinned wheels
 in hosting/requirements-signing.txt. Caddy allows only numbered public roots and
-catalog trust metadata in addition to approved package routes.
+catalog trust metadata in addition to approved package routes. At b01ad2a5,
+Windows282/Mac284/WSL283 selected checks pass (platform skips differ). Actual
+Mac encrypted-root ceremony, private permissions, online export, Caddy signed
+HTTP GET/private-route/write rejection and owned listener shutdown pass; no
+public TLS or native-client trust is established.
 
 `mod_publication.py` exports approved/fresh content to a new separate static
 snapshot (4MiB catalog, 1,000 releases, 512MiB package cap). Preflight rejects

@@ -43688,7 +43688,13 @@ only public descriptors enter roots. Signing wheels are version/hash pinned.
 Windows:282 selected mod/CI-scope/runtime-suite checks pass,2 Unix-only key tests
 skip; real signature tampering, two-threshold rotation, replay/equivocation,
 revocation retention and counter persistence are covered. Native code unchanged.
-Mac/Linux signing tests and actual Caddy configuration acceptance are pending
-at this checkpoint. No production key, persistent service or public endpoint
-was created. Native signature enforcement/checkpoints/pins are still required
+Exact source b01ad2a5 is synchronized through Git to the separate Mac/WSL
+checkouts. Mac284 selected checks pass, including actual encrypted-root key
+ceremony/private permissions/online export; WSL283 pass with the non-root ceremony
+skipped. Hash-pinned wheel installation passes on all three hosts. Actual Mac
+Caddy validates the new configuration and serves signed catalog/numbered-root GET
+bytes that pass verification; private/missing routes404 and writes405. Its owned
+process stops and loopback8766 closes. This is loopback HTTP evidence, not public
+TLS or native client trust. No production key, persistent service or public
+endpoint was created. Native signature enforcement/checkpoints/pins are still required
 before public client distribution; see mod-catalog-trust.md and the full matrix.
