@@ -1074,7 +1074,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-028 | Preserve frontend camera FOV (#82) | Awaiting validation |
 | MAC-029 | Skippable idle demo video (#50) | Awaiting validation |
 | MAC-030 | Menu mouse selection (#86) | Awaiting validation |
-| MAC-031 | Quit to Desktop menu entries | Awaiting validation |
+| MAC-031 | Quit to Desktop menu entries (retired) | Not applicable |
 | MAC-032 | Responsive menu backgrounds and scope masks | Awaiting validation |
 | MAC-033 | Full-display transition fades | Awaiting validation |
 | MAC-034 | Plain improvement form handoff | Not applicable |
@@ -4948,7 +4948,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-031 — Quit to Desktop menu entries (retired)
 
-- **Status:** Retired by user request,2026-11-13, pause Settings follow-up.
+- **Status:** Not applicable
+- Retired by user request,2026-11-13, pause Settings follow-up.
 - Shared menu insertion, desktop confirmation callbacks and the old quit fixture
   were removed. Ordinary host window close/shutdown remains unchanged. The legacy
   quit-desktop patch still supplies the menu-finalization hooks used by update
