@@ -76,3 +76,7 @@ The existing Pause Glass Preview desktop shortcut uses that executable. Personal
 saves/settings were retained. This local preview remains based on0.6.0; no PR,
 push or release was made. Other scenes, actual32:9/split-screen, live resize while
 paused, and native Mac/Linux visual acceptance remain unverified.
+
+Historical upgrade fixtures omit2730/2731 alongside the graphics patches they
+require. Complete fresh/upgrade paths explicitly assert offscreen-copy and
+pause-placement hooks are installed; production patch discovery is unchanged.

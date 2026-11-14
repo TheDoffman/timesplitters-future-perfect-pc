@@ -82,3 +82,7 @@ ignored under private/pause-glass/keyboard-edge.
 Live1280x720 acceptance: all16 binding pages (four groups, two pages, both
 frontend/pause) pass endpoint bounds; captures confirm inset highlights and
 Alternate columns. Existing centered captions remain intact.
+
+The standalone hub fixture declares Story pause hooks/counters only on
+Windows, matching the production finalization guard; Mac warning-as-error
+compilation must not retain unused Windows-only stubs.

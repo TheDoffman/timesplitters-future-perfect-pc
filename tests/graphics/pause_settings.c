@@ -26,11 +26,16 @@ void sub_00071B10(void){stub=3;}
 void sub_00071C50(void){stub=4;}
 void sub_00079D60_gen(void){stub=5;}
 void sub_000771D0(void){stub=6;}
-static unsigned rows,layouts,notices,story_rows,story_layouts;
+static unsigned rows,layouts,notices;
+#ifdef _WIN32
+static unsigned story_rows,story_layouts;
+#endif
 static uint32_t callbacks[4],captions[4],next_parent,next_menu;
 static void main_update_notice_open(uint32_t m){CHECK(m==0x2000);notices++;}
+#ifdef _WIN32
 static void pc_story_network_pause_rows(void){story_rows++;}
 static void pc_story_network_pause_layout(uint32_t m){CHECK(m==0x2000);story_layouts++;}
+#endif
 static uint32_t guest_call(void (*fn)(void),unsigned n,...)
 {
     uint32_t a[6];va_list ap;va_start(ap,n);for(unsigned i=0;i<n;i++)a[i]=va_arg(ap,uint32_t);va_end(ap);
