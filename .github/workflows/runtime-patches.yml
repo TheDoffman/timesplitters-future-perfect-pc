@@ -77,7 +77,7 @@ jobs:
         run: node --test tests/repository/repository-context.test.mjs tests/repository/repository-evidence.test.mjs
 
   patches:
-    name: Patches Â· ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }} Â· ${{ matrix.shard }}/3
+    name: Patches · ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }} · ${{ matrix.shard }}/3
     needs: plan
     if: needs.plan.outputs.transitions == 'true'
     runs-on: ${{ matrix.os }}
@@ -153,7 +153,7 @@ jobs:
           retention-days: 30
 
   native:
-    name: Runtime Â· ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }} Â· ${{ matrix.shard }}/3
+    name: Runtime · ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }} · ${{ matrix.shard }}/3
     needs: plan
     if: needs.plan.outputs.native == 'true'
     runs-on: ${{ matrix.os }}
@@ -246,7 +246,7 @@ jobs:
           retention-days: 30
 
   mac-gpu:
-    name: GPU Â· Mac
+    name: GPU · Mac
     needs: plan
     if: needs.plan.outputs.gpu == 'true'
     runs-on: macos-latest
@@ -275,7 +275,7 @@ jobs:
         run: python tools/testing/test-rhi-mac.py --setup-sdk --driver moltenvk
 
   release:
-    name: Release Â· ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }}
+    name: Release · ${{ matrix.os == 'windows-latest' && 'Windows' || 'Mac' }}
     needs: plan
     if: needs.plan.outputs.release == 'true'
     runs-on: ${{ matrix.os }}
@@ -338,7 +338,7 @@ jobs:
           retention-days: 30
 
   linux-foundation:
-    name: Vulkan Â· Linux
+    name: Vulkan · Linux
     needs: plan
     if: needs.plan.outputs.gpu == 'true'
     runs-on: ubuntu-24.04
