@@ -1,3 +1,18 @@
+Verified source/save startup milestone (feature/mod-platform, sourcec1a07da3):
+Windows native game build/platform checks pass; Mac ARM64 and Linux x64 native
+game builds/platform checks pass. Windows focused bootstrap+storage UI:20 pass,
+including Unicode capsule/save roots, empty/oversized environment pairs and
+irreversible picker lock. Mac/Linux capsule+lease+storage+bootstrap/UI suite:
+107 pass,12 platform skips EACH. Native host ASan/UBSan bootstrap:19 pass EACH
+Mac/Linux. These check the startup source/save gate; no custom game mode has
+started in a real game scene. Source remains unavailable until kernel root and
+held lease commit successfully. Production launcher still does not emit scripts.
+Public deployment, in-game manager/lifetime/offline policy, signed production
+trust and complete gameplay/update/rollback/backup acceptance remain unfinished.
+Runtime CI run43635970573 checks earlier sourceb00bdf42 and is still running;
+current-source CI is not yet observed. Windows full patch-transition regression
+is still running separately; no failure has been reported so far.
+
 Bootstrap follow-up (base2e430b04): all three native game builds/platform checks
 passed; Windows build sourceb00bdf42, Mac/Linux2e430b04. A new Unicode capsule test
 found ANSI getenv corrupted Windows paths. Shared bootstrap now uses wide CRT
