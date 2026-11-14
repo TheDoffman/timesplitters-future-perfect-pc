@@ -64,6 +64,10 @@ static void original(void)
     CHECK(ui_placement==((players==1 && wide && hud_scale<1.f)?3:4));
     if(ui_placement==3)CHECK(ui_tag==0x1476f0);
     CHECK(font==7);CHECK(WORD_AT(box+0xec)==270+expected_growth);
+    float gap=keyboard && players==1 && WORD_AT(box+24)==UINT32_MAX?6.f:0.f;
+    CHECK(tutorial_row_gap==gap && tutorial_row_index==0);
+    CHECK(WORD_AT(box+0xf0)==100+(unsigned)(gap*3));
+    WORD_AT(box+0xf0)=100; /* Native painter refreshes its unpadded height cache. */
     CHECK(fabsf(tutorial_extra-expected_extra)<.01f);
     /* Each normal action uses the same widest-label column, including wraps. */
     for(unsigned i=0;i<4;i++){
@@ -73,11 +77,6 @@ static void original(void)
         pc_display_tutorial_wrap(wrap_original);
         CHECK(fabsf(seen-(230.f+expected_growth-expected_extra))<.01f);
         CHECK(WORD_AT(frame-120)==saved && g_esp==frame-124);
-        g_esp=frame-128;WORD_AT(g_esp)=0x147d17;tutorial_set_float(g_esp+4,99);
-        pc_display_tutorial_text(text_original);
-        CHECK(fabsf(seen-(99+expected_extra))<.01f && tutorial_float(frame-124)==99);
-        /* The widest key must end before the action begins. */
-        if(expected_extra>0)CHECK(59+widths[i]*.9f+8<=seen+.01f);
         /* Different-width captions retain one visible column centre. */
         g_esp=frame-128;WORD_AT(g_esp)=0x147cae;
         WORD_AT(g_esp+12)=0x3000+i*4;WORD_AT(0x3000+i*4)=i;
@@ -86,9 +85,16 @@ static void original(void)
         if(tutorial_icon_column>0.f)
             CHECK(fabsf(seen+widths[i]*.9f*.8f*.5f-(59.f+tutorial_icon_column*.5f))<.01f);
         else CHECK(seen==59.f);
-        if(tutorial_icon_column>0.f)CHECK(fabsf(seen_scale-.72f)<.001f && fabsf(seen_y-51.8f)<.001f);
+        if(tutorial_icon_column>0.f)CHECK(fabsf(seen_scale-.72f)<.001f && fabsf(seen_y-(51.8f+gap*i))<.001f);
         CHECK(tutorial_float(frame-120)==50.f && fabsf(tutorial_float(0x7e7270)-(players==1?.9f:1.f))<.001f);
         CHECK(tutorial_float(frame-124)==59.f && g_esp==frame-124);
+        g_esp=frame-128;WORD_AT(g_esp)=0x147d17;tutorial_set_float(g_esp+4,99);tutorial_set_float(g_esp+8,50);
+        pc_display_tutorial_text(text_original);
+        CHECK(fabsf(seen-(99+expected_extra))<.01f && tutorial_float(frame-124)==99);
+        CHECK(fabsf(seen_y-(50.f+i*gap))<.001f && tutorial_row_index==(gap>0?i+1:0));
+        /* The widest key must end before the action begins. */
+        if(expected_extra>0)CHECK(59+widths[i]*.9f+8<=seen+.01f);
+
 
     }
     /* Compound stick descriptions and unrelated font calls keep their layout. */
@@ -107,7 +113,7 @@ static void run(float extra,int growth)
     WORD_AT(g_esp+4)=0;pc_display_tutorial(original);
     CHECK(tutorial_float(0x7e7270)==1.f && tutorial_float(0x7e7280)==1.f);
     CHECK(g_esp==0x2004 && WORD_AT(0x7a5a2c)==270);
-    CHECK(tutorial_extra==0 && tutorial_icon_column==0 && tutorial_normal_row==0 && font==7);
+    CHECK(tutorial_extra==0 && tutorial_icon_column==0 && tutorial_row_gap==0 && tutorial_row_index==0 && tutorial_normal_row==0 && font==7 && WORD_AT(0x7a5a30)==100);
     CHECK(ui_placement==4 && ui_tag==123);
     CHECK(placement_changes-changes==((players==1 && wide && hud_scale<1.f)?2:0));
 }
@@ -117,7 +123,7 @@ int main(void)
     tutorial_set_float(0x4c0460,1);
     tutorial_set_float(0x7e7270,1);tutorial_set_float(0x7e7280,1);
     WORD_AT(0x7a5a20)=4;WORD_AT(0x7a5a34)=1;
-    WORD_AT(0x7a5a24)=59;WORD_AT(0x7a5a2c)=270;
+    WORD_AT(0x7a5a24)=59;WORD_AT(0x7a5a2c)=270;WORD_AT(0x7a5a30)=100;
     for(unsigned i=0;i<4;i++){
         WORD_AT(0x7a5940+i*28+4)=18;
         WORD_AT(0x7a5940+i*28+12)=i;
