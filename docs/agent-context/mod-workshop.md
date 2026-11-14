@@ -226,3 +226,10 @@ despite the builder's existing xattr cleanup. The same code passed with output
 under ~/Library/Caches/tsfp-mod-platform/launcher. Keep generated Mac bundles out
 of cloud-managed folders; no change to signing policy/keys was needed. This
 verifies native launcher/service components, not actual game mods or public TLS.
+
+Native trust source24236283: Windows66/Mac67/Linux68 shared UI groups pass.
+Mac signing/package/post-test signature verification and Linux actual installed
+package repair/restart/render preservation pass. Mac288/WSL287 selected Python
+checks pass (one WSL non-root ceremony skip). Native source/vector receipts and
+Windows build-cache inputs bind the golden data. Production pins/HTTPS identity
+and public client acceptance remain unprovisioned.

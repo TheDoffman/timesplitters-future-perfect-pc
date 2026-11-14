@@ -10571,13 +10571,18 @@ listener shutdown pass. Native launcher code is unchanged and still needs
 signature/checkpoint/pin integration. No production keys/public TLS deployment
 or client acceptance is claimed. See STATUS and docs/development/mod-catalog-trust.md.
 
-Native workshop trust enforcement (base ee72804d): SHARED IMPLEMENTATION,
-NATIVE MAC/LINUX VALIDATION PENDING. ModTrustPage.cs is compiled through the
+Native workshop trust enforcement (source24236283): VERIFIED FOR NAMED
+NATIVE HOST CONTRACTS. ModTrustPage.cs is compiled through the
 shared Page source pattern; RSA, signed-state/root rotation, anti-rollback and
 expiry policy are common to WPF/Avalonia. Origin receipts enforce availability
 and revocations before enabling/mounting workshop mods. Windows66 shared UI
 groups/full launcher checks pass;286 selected Python checks pass,2 Unix skips.
 Golden vectors contain public signatures and original synthetic DDS/ZIP only;
 private fixture keys were discarded. Production pins/service remain blank.
-Mac sign/package/runtime checks and public internet acceptance remain required.
-See STATUS and mod-catalog-trust.md.
+Mac67/Linux68 shared UI groups now pass, alongside Windows66. Mac signing,
+packaging and post-test signature verification pass; Linux actual package install,
+corruption rejection, copied-helper repair and restart/render preservation pass.
+Mac288/WSL287 selected Python checks pass (one WSL non-root ceremony skip).
+Source/test-vector receipts bind the new trust checks. This proves native model
+mount/revocation/recovery, not actual new game scenes or public HTTPS. Production
+pins and public internet acceptance remain required. See STATUS and the trust guide.

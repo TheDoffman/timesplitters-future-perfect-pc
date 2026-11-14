@@ -202,7 +202,7 @@ publication reservation. Unix checks cover private file permissions and an actua
 encrypted-root/public-descriptor-to-online-export ceremony. No fixture key is a
 production key. The existing host expiry test now uses a signed snapshot.
 
-Still required: native host/public acceptance, compiled production trust pins,
+Still required: public internet acceptance, compiled production trust pins,
 live publication switching, a real
 offline production ceremony, separate service identities/backups, and public
 internet acceptance. Antivirus scanning and signature validation do not prove
@@ -217,3 +217,9 @@ and mounting, concurrent writers, cancelled/oversized metadata, and revocation
 during transfer. `test_native_trust_fixtures.py` independently verifies those same
 public vectors with the producer and validates the original asset package. These
 checks use an injected test clock, not a production clock/verification bypass.
+
+At source24236283, native Windows66/Mac67/Linux68 shared UI groups pass, including
+these cross-language vectors and model activation/revocation/recovery checks. Mac
+app sign/package/post-test signature verification and Linux installed package
+repair/restart preservation pass. This is not public TLS or actual new game-scene
+acceptance. Production keys/pins remain unprovisioned.

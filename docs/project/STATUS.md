@@ -43717,6 +43717,11 @@ expiry, revocation during transfer/activation/mounting and recovery. Selected
 Python mod/fixture/shared-layout/CI-scope/runtime checks:286 pass,2 Unix skips.
 One existing Windows session fixture encountered a transient sharing violation
 reading its child-ready file; it now retries only sharing errors within its
-existing10s bound. The full subsequent run passes. Mac/Linux native validation
-is pending this source checkpoint. Public pin provisioning, live HTTPS and the
-rest of the full mod acceptance matrix remain incomplete.
+existing10s bound. The full subsequent run passes. Exact source24236283 is
+synchronized through Git and verified on all three native hosts: Windows66,
+Mac67 and Linux68 shared UI groups. Mac sign/package and post-test signature
+verification pass. Linux install/corruption/repair/copied-helper/restart/render
+preservation checks pass. Mac288 selected Python checks pass; WSL287 pass with
+one non-root ceremony skip. New trust test sources/public vectors are bound in
+Mac/Linux build receipts and Windows build-cache inputs. Public pin provisioning,
+live HTTPS and the rest of the full mod acceptance matrix remain incomplete.
