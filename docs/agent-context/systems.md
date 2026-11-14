@@ -1,3 +1,5 @@
+POSIX startup retains its original UTF8 boot labels; no additional behavior change.
+
 Native mod_bootstrap now verifies a developer source handoff, leases isolated saves and arms the storage fence before kernel init; commit publishes source only after checking the actual root. pc_storage_lock_locations permanently prevents picker writes. Match activation remains pending; see mod-source-handoff.md.
 
 # Shared systems

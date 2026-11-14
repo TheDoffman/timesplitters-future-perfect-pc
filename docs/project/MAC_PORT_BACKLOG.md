@@ -4,7 +4,8 @@ preferences read-only, leases package-isolated saves, permanently locks host sav
 location changes and binds the kernel fence before initialization. Source is only
 published after actual save-root/lease verification. Launcher script emission,
 match manager, offline/lifetime/fault gates and custom-mode gameplay remain pending.
-Windows focused bootstrap+storage menu:16 pass. Cross-host builds/tests pending.
+Windows/Mac/Linux focused bootstrap+storage menu:16 pass each. Native game builds
+and full integration checks pending.
 Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Windows
 67 shared UI groups; Mac68, Linux69. Mac Desktop FinderInfo still disrupts signing;
 Mac build passes using supported --output under the owned Library/Caches folder.

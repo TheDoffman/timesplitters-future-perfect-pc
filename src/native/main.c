@@ -103,9 +103,9 @@ int main(int argc, char **argv)
     }
     fclose(f);
 #ifdef __linux__
-    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect â€” Linux x64\n");
+    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — Linux x64\n");
 #else
-    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect â€” macOS ARM64\n");
+    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — macOS ARM64\n");
 #endif
     printf("[NATIVE-BOOT] XBE loaded: %ld bytes; saves: %s\n", size, saves);
     if (!xbox_MemoryLayoutInit(data, (size_t)size)) {
