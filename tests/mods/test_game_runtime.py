@@ -2,12 +2,14 @@
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 import pytest
 from test_script_process import process_tools
 
 
-@pytest.mark.parametrize('mode',['ordinary','run','results','fault','repeat','tamper','other-thread','missing','changed'])
+@pytest.mark.parametrize('mode',['ordinary','run','results','fault','repeat','tamper','other-thread','missing','changed',
+    pytest.param('large-parent',marks=pytest.mark.skipif(sys.platform!='linux',reason='Linux fork/exec RSS boundary'))])
 def test_compiled_factory_only_admits_verified_offline_play_and_drains(process_tools,tmp_path,mode):
     worker=process_tools['worker'];app=tmp_path/'App \u03a9';app.mkdir()
     driver=app/('factory'+worker.suffix)

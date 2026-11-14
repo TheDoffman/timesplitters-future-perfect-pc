@@ -151,19 +151,31 @@ std::unique_ptr<Process> Process::start(const std::string &image,const std::stri
     if(status)pid=-1;
 #else
     char *arguments[]={const_cast<char *>(image.c_str()),nullptr};
+    // A game-sized parent can exceed the worker RSS cap before exec replaces
+    // its inherited address space. EOF on this CLOEXEC pipe establishes that
+    // replacement (or child exit) before any caller samples worker usage.
+    int executed[2]={-1,-1};
+    if(!pipe_pair(executed)) {
+        for(int *p:{in,out,err,executed}){close_fd(p[0]);close_fd(p[1]);}
+        error="Cannot establish worker exec boundary";return {};
+    }
     pid_t parent=getpid();pid_t pid=fork();
     if(pid==0) {
         if(setpgid(0,0) || dup2(in[0],0)<0 || dup2(out[1],1)<0 || dup2(err[1],2)<0)_exit(126);
-        if(prctl(PR_SET_PDEATHSIG,SIGKILL) || getppid()!=parent || syscall(SYS_close_range,3u,~0u,0))_exit(126);
+        if(dup2(executed[1],3)<0 || fcntl(3,F_SETFD,FD_CLOEXEC)<0)_exit(126);
+        if(prctl(PR_SET_PDEATHSIG,SIGKILL) || getppid()!=parent || syscall(SYS_close_range,4u,~0u,0))_exit(126);
         struct rlimit core{0,0},files{64,64};if(setrlimit(RLIMIT_CORE,&core) || setrlimit(RLIMIT_NOFILE,&files))_exit(126);
         execve(image.c_str(),arguments,environment);_exit(127);
     }
+    close_fd(executed[1]);
 #endif
     close_fd(in[0]);close_fd(out[1]);close_fd(err[1]);
     if(pid<0){
         close_fd(in[1]);close_fd(out[0]);close_fd(err[0]);
 #ifdef __APPLE__
         close_fd(identity[0]);
+#else
+        close_fd(executed[0]);
 #endif
         error="Cannot start worker";return {};
     }
@@ -181,6 +193,19 @@ std::unique_ptr<Process> Process::start(const std::string &image,const std::stri
     close_fd(identity[0]);
     if(received!=sizeof(worker_identity) || worker_identity<=0 || worker_identity>INT32_MAX){error="Lifetime guardian startup failed";return {};}
     child->worker_pid=(pid_t)worker_identity;
+#else
+    bool crossed=false;
+    if(fcntl(executed[0],F_SETFL,fcntl(executed[0],F_GETFL)|O_NONBLOCK)>=0) {
+        auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(2);
+        while(std::chrono::steady_clock::now()<deadline) {
+            unsigned char unexpected;ssize_t count=::read(executed[0],&unexpected,1);
+            if(!count){crossed=true;break;}
+            if(count>0 || (errno!=EAGAIN && errno!=EINTR))break;
+            struct pollfd pending{executed[0],POLLIN,0};(void)::poll(&pending,1,2);
+        }
+    }
+    close_fd(executed[0]);
+    if(!crossed){error="Worker exec boundary timed out";return {};}
 #endif
     for(int fd:{child->input,child->output,child->diagnostic})if(fcntl(fd,F_SETFL,fcntl(fd,F_GETFL)|O_NONBLOCK)<0){error="Cannot set worker pipe mode";return {};}
     return child;

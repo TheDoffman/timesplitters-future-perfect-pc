@@ -1,3 +1,20 @@
+Actual native game scripting (source0aef1cdb,2026-11-14): Mac arm64 production
+startup executed a local tick fixture: real score4/rank1, scripted End, visible
+stage8 results and SDL quit exit0; ordinary save hashes preserved. Native game
+SHA1822a2616e12d620afec6af8059e6fdab2cfec8a788a64a209875ea18944ef11.
+The unchanged original First-to-Three SDK script also ran with six stock bots:
+botID3 scores1->2->3 matched its raw three accepted kills, ended the match and
+ranked first. Its full results/shutdown evidence is being collected. Both use
+explicit local capsules and disposable test data; public launcher scripting stays
+disabled. All three rule-fixed native builds/platform checks pass; factory/title30
+checks pass EACH host. One earlier Mac crash remains undetermined.
+Linux actual admission reached a fail-closed resource fault before script scoring.
+A focused256MiB parent Process probe reproduces12/12 RSS samples above128MiB before
+exec. Process::start now uses a bounded CLOEXEC pipe to establish exec before
+metering; no worker/source budget is raised. Regression fixture and native reruns
+pending. Windows real startup still refuses the existing LocalAppData unknown-SID
+write grant; account ACLs preserved. Public hosting/trust/release remain unfinished.
+
 Production runtime host acceptance (sourcedbd92a98): Mac/Linux focused51 pass/1
 skip EACH; native host ASan/UBSan factory9 pass EACH; all three game/platform builds
 pass (Windowsdf0c4512, Unixdbd92a98; POSIX-only alias follow-up). Native Mac ordinary

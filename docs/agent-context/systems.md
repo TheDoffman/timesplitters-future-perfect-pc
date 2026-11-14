@@ -926,13 +926,9 @@ Native mod process adapters/self-sealing and Mac lifetime guardian pass named
 Windows/Mac/Linux checks; see mod-scripting.md. No guest hooks or launcher script
 activation changed. Persistent game bridge and actual mode gameplay remain pending.
 
-Mod Session uses shared asynchronous native supervision and validated typed
-transactions; no title hooks yet. Process background-only readiness waits use
-Windows pending-IO events/POSIX poll. See mod-scripting.md for contracts/evidence.
+Mod Session supervision, title hooks and background pipe readiness: mod-scripting.md.
 
-Session idle CPU uses bounded1s windows so legitimate paused-worker overhead
-does not accumulate forever. Host-only sanitizer checks preserve sealed children;
-see mod-scripting.md for actual host evidence and pending checks.
+Session idle CPU uses bounded1s windows; sanitizer evidence: mod-scripting.md.
 
 Corrected Mac Mach CPU conversion passes full/sanitizer checks. Test-host early
 error paths now drain Session cleanup before exit; production crash-profile
@@ -943,3 +939,5 @@ composes HUD status/messages; lifecycle and checks: mod-scripting.md#production-
 POSIX maps WSAENETDOWN to the shared Xbox ABI value10050 for offline refusal.
 The title adapter admits observed US Deathmatch rule3; actual scenes exposed the
 earlier synthetic rule0 mismatch. See mod-scripting.md for acceptance limits.
+Linux worker usage starts after a bounded CLOEXEC exec boundary, excluding the
+inherited game address space; worker limits remain fixed. See mod-scripting.md.

@@ -348,3 +348,11 @@ One prior Mac run crashed after loading; a corrected observer run reaches gamepl
 and quits cleanly. Neither run executed a script. Windows real startup refuses an
 inherited unknown-SID write grant on its LocalAppData cache parent; do not weaken
 policy or silently change account ACLs. Full crash/scene acceptance remains open.
+
+Linux Process::start now waits on a private CLOEXEC exec-boundary pipe before
+returning. FD3 is retained only before exec; close_range removes all higher FDs,
+and successful exec closes FD3. The background supervisor waits at most2s, retaining
+parent-death/process-group cleanup. A 256MiB parent probe reproduced12/12 immediate
+RSS samples above128MiB before this boundary: they measured the inherited game,
+not the worker. test_game_runtime.py adds a real large-parent VM execution case.
+Worker memory/CPU/source budgets remain unchanged. Real Linux rerun pending.

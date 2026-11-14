@@ -9,6 +9,7 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <vector>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -30,6 +31,12 @@ extern "C" void pc_mod_bootstrap_invalidate(void){verified.store(false);}
 extern "C" void pc_network_lock_offline(void){network_locked=true;}
 struct Shutdown {~Shutdown(){if(!pc_mod_runtime_shutdown())std::abort();}};
 static int run(const std::string &mode,const std::string &cache,const std::string &original) {
+    std::vector<unsigned char> ballast;
+    if(mode=="large-parent") {
+        ballast.resize(256u*1024*1024);
+        volatile unsigned char *pages=ballast.data();
+        for(size_t i=0;i<ballast.size();i+=4096)pages[i]=0x5a;
+    }
     source="return {api=1,on_start=function() game.set_score(1,4) end}";
     if(mode=="fault")source="return {api=1,on_start=function() error('fixture mode stopped') end}";
     if(mode=="ordinary") {
