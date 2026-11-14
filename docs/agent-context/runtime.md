@@ -1,11 +1,10 @@
-[Sticks](controller-deadzones.md).
-[2990](control-presets.md).
-[Tools](developer-tools-integration.md).
+[Sun](fidelity-comparison.md), [sticks](controller-deadzones.md),
+[tools](developer-tools-integration.md).
 
-[FOV node filter](video-options.md); [Uplink](native-uplink.md).
-[UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
+[Video](video-options.md); [Uplink](native-uplink.md).
+[UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
 
-[Effect depth](native-effect-depth.md).
+[Depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
 [MP hooks](multiplayer-exit.md)
 2465 wraps356800 for rewards;

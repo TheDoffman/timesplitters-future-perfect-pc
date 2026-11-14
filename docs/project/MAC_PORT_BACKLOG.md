@@ -1,3 +1,12 @@
+Sun/visibility repair (Awaiting validation on Mac, uncommitted, base1375e144):
+the user-requested removal of the optional comparison preset applies to shared
+settings and both guest/native menus; no Mac-specific preset remains. Normal
+saved options remain authoritative; obsolete sidecars are ignored.
+Shared visibility cache, original SDK wrappers, allocator repair and D3D11,
+Vulkan/legacyGL adapters remain. Prior Windows mission sun/roof checks pass;
+native Mac/Linux/GL GPU counts, occlusion and cleanup still await validation.
+No assets, colours or gameplay policy are changed. See fidelity-comparison.md.
+
 Keyboard binding right-edge inset (base64eb0399): shared native builder
 endpoints; no host adapter. Windows build passes; Mac/Linux actual visual
 acceptance pending. See docs/agent-context/pause-settings.md.

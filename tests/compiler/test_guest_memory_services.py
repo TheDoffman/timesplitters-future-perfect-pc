@@ -36,7 +36,7 @@ def executable(tmp_path_factory):
     return build(tmp_path_factory.mktemp('guest-memory-services'))
 
 
-@pytest.mark.parametrize('mode',['allocation','statistics','gpu','access'])
+@pytest.mark.parametrize('mode',['allocation','dma','statistics','gpu','access'])
 def test_guest_memory_services(executable,mode):
     run=subprocess.run([str(executable),mode],capture_output=True,text=True,timeout=30)
     assert run.returncode==0,run.stdout+run.stderr
@@ -44,6 +44,7 @@ def test_guest_memory_services(executable,mode):
 
 
 @pytest.mark.parametrize('mode,mutation',[
+    ('dma',('tsfp_physical_allocate_high_range(m->vm.allocations,bytes,4096,0,UINT32_MAX)', 'tsfp_physical_allocate_range(m->vm.allocations,bytes,4096,0,UINT32_MAX)')),
     ('allocation',('base && kind==TSFP_MM_STACK?base+bytes:base','base && kind==TSFP_MM_STACK?base:base')),
     ('statistics',('output,TSFP_MEMORY_STATISTICS_BYTES,1','output,4,1')),
     ('gpu',('if(bytes>m->physical_size)return 0;','if(bytes>m->physical_size && !bytes)return 0;')),

@@ -1,3 +1,6 @@
+The optional Fidelity Comparison controls were removed; normal display settings
+and saved preferences apply. [Independent sun repair](fidelity-comparison.md).
+
 # Video Options click feedback
 
 Section selectors share `pc_settings_navigation.inc` with Controls: native

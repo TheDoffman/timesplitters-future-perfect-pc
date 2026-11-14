@@ -1,11 +1,12 @@
 [Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
 [0.6.2 rollback](control-presets.md); [Tex](texture-preference.md).
 [Arms](video-options.md).
+[Visibility tests](fidelity-comparison.md); [batch bounds](independent.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
 Developer warnings: [launcher](launcher.md).
-[Profile tests](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
+[Save tests](multiplayer-exit.md#validation).
 [Icons](controls-options.md).
 [Effect depth](native-effect-depth.md).
 [Update tests](main-menu-update.md).

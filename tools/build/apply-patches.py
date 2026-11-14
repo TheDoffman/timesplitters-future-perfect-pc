@@ -342,7 +342,9 @@ def patch_records(paths):
 
     # Offscreen CopyRects extends the final shared screen-copy/resolve path,
     # including the late-applied temporal map and MSAA synchronization patches.
-    for name in ('2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch'):
+    # Visibility queries follow the final shared renderer extensions.
+    for name in ('2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch',
+                 '3001-host-visibility-queries.patch'):
         pause_patch = by_name.get(name)
         if pause_patch:
             paths.remove(pause_patch)

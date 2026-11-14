@@ -1,13 +1,12 @@
 [Sticks](controller-deadzones.md), [Rollback](control-presets.md), [updates](main-menu-update.md).
 [Tex](texture-preference.md); [arms](video-options.md).
+[Sun/visibility repair](fidelity-comparison.md); optional comparison preset removed,
+normal settings and menus restored.
 
 [Uplink throw tests and policy](native-uplink.md#throw-impulse).
-Networking: `pc_network_enabled()` reads startup config once,
-then uses shared atomic flags in the indirect-dispatch hot path. The System Link
-menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
-its own flag. Missing launch files are not retried on every guest call, and an
-explicit disconnect does not re-import stale startup credentials. Windows, Mac
-and Linux share this policy. See `tests/network/network_eligibility.c`.
+[Network startup eligibility and atomic dispatch](network-performance.md),
+including missing files and explicit disconnect; fixture:
+`tests/network/network_eligibility.c`.
 
 [Developer Tools integration](developer-tools-integration.md).
 
