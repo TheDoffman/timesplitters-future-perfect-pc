@@ -2144,7 +2144,7 @@
     {
       "name": "2711-verified-script-startup.patch",
       "path": "patches/gameplay/mods/2711-verified-script-startup.patch",
-      "sha256": "b2ef23f0918d79d871763a82947dc39ff69d62ffb67ebceec43273e855a6fb36",
+      "sha256": "802724afad2055dee604120c2af92d12d7eb43ab21ca4ae8741ceb274107c175",
       "targets": [
         "titles/futureperfect/src/main.c"
       ]

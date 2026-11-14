@@ -14,7 +14,7 @@ def launch(tmp_path):
     original=tmp_path/'Saves';original.mkdir()
     (original/'personal.sav').write_bytes(b'original progress')
     capsule=tmp_path/'launch.bin';capsule.write_bytes(base64.b64decode(VECTOR['wire']))
-    environment={k:v for k,v in os.environ.items() if not k.startswith('TSFP_MOD_SCRIPT_CAPSULE')}
+    environment={k:v for k,v in os.environ.items() if not k.startswith('TSFP_MOD_SCRIPT_CAPSULE') and k!='RECOMP_SAVE_DIR'}
     environment.update(TSFP_MOD_SCRIPT_CAPSULE=str(capsule),TSFP_MOD_SCRIPT_CAPSULE_SHA256=VECTOR['sha256'])
     return original,capsule,environment
 
@@ -53,12 +53,15 @@ def test_absent_handoff_keeps_ordinary_storage_unfenced(process_tools,launch):
     assert not (launch[0].parent/'ModSaves').exists()
 
 
-@pytest.mark.parametrize('kind',['missing-path','missing-pin','empty-pin','wrong-pin','missing-file','no-root','bad-preference','late'])
+@pytest.mark.parametrize('kind',['missing-path','missing-pin','empty-pin','both-empty','long-path','long-pin','wrong-pin','missing-file','no-root','bad-preference','late'])
 def test_invalid_request_closes_storage_before_any_source_is_available(process_tools,launch,kind):
     env=launch[2];mode=kind if kind in ('no-root','late') else 'run';preference='-'
     if kind=='missing-path':env.pop('TSFP_MOD_SCRIPT_CAPSULE')
     if kind=='missing-pin':env.pop('TSFP_MOD_SCRIPT_CAPSULE_SHA256')
     if kind=='empty-pin':env['TSFP_MOD_SCRIPT_CAPSULE_SHA256']=''
+    if kind=='both-empty':env.update(TSFP_MOD_SCRIPT_CAPSULE='',TSFP_MOD_SCRIPT_CAPSULE_SHA256='')
+    if kind=='long-path':env['TSFP_MOD_SCRIPT_CAPSULE']='x'*4096
+    if kind=='long-pin':env['TSFP_MOD_SCRIPT_CAPSULE_SHA256']='a'*65
     if kind=='wrong-pin':env['TSFP_MOD_SCRIPT_CAPSULE_SHA256']='0'*64
     if kind=='missing-file':launch[1].unlink()
     if kind=='bad-preference':preference='fail'
@@ -96,3 +99,13 @@ def test_lease_survives_startup_and_recheck_withholds_source_after_marker_tamper
         r=json.loads(out);assert not r['ready'] and not r['rechecked'] and r['locked']
     finally:
         if p.poll() is None:p.communicate(b'\n',timeout=10)
+
+
+def test_unicode_capsule_and_original_paths_are_preserved(process_tools,launch,tmp_path):
+    parent=tmp_path/'Player \u03a9 data';parent.mkdir()
+    original=parent/'Saves';original.mkdir();(original/'personal.sav').write_bytes(b'original progress')
+    capsule=parent/'source.bin';capsule.write_bytes(launch[1].read_bytes())
+    launch[2]['TSFP_MOD_SCRIPT_CAPSULE']=str(capsule)
+    assert run(process_tools,(original,capsule,launch[2]))['ready']
+    launch[2]['RECOMP_SAVE_DIR']=str(original)
+    assert run(process_tools,(original,capsule,launch[2]),'environment-root')['ready']

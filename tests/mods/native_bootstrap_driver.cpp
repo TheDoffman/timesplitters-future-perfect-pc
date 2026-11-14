@@ -37,7 +37,7 @@ static int run(const std::string &mode,const std::string &original,const std::st
     std::strcpy(paths.save,original.c_str());
     if(late && !tsfp_storage_commit(&storage,&paths))return 3;
     bool before=pc_mod_bootstrap_source(nullptr)!=nullptr;
-    int prepared=pc_mod_bootstrap_prepare(mode=="no-root"?nullptr:original.c_str());
+    int prepared=pc_mod_bootstrap_prepare((mode=="no-root" || mode=="environment-root")?nullptr:original.c_str());
     size_t length=99;bool premature=pc_mod_bootstrap_source(&length)!=nullptr || length!=0;
     char required[4096]={};int fence=tsfp_storage_required(&storage,required,sizeof required);
     bool escape=false;int committed=0,rechecked=0;

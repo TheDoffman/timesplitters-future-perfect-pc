@@ -1,3 +1,5 @@
+Patch2711 passes NULL to shared bootstrap so Windows obtains the explicit RECOMP_SAVE_DIR as UTF8, bypassing ANSI getenv; no default root is introduced.
+
 Patch2711 invokes the shared mod bootstrap before Windows kernel init and checks its storage commit before bridge/guest entry. POSIX main uses the same API. Absent capsule variables preserve stock startup; explicit handoff failure aborts. See mod-source-handoff.md.
 
 # Runtime

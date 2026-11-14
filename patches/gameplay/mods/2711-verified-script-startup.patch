@@ -15,7 +15,7 @@
      /* Step 3: Initialize Xbox kernel */
      printf("Initializing Xbox kernel replacement...\n");
 +#ifdef TSFP_MOD_GAME
-+    if(!pc_mod_bootstrap_prepare(getenv("RECOMP_SAVE_DIR"))) {
++    if(!pc_mod_bootstrap_prepare(NULL)) {
 +        MessageBoxA(NULL,"Verified script startup or isolated saves failed. See the game log.","Mod startup",MB_OK|MB_ICONERROR);
 +        free(xbe_data);return 1;
 +    }

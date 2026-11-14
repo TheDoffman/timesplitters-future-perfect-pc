@@ -5,7 +5,8 @@
 extern "C" {
 #endif
 /* Startup thread only. Both absent capsule variables select ordinary startup.
- * A request requires an explicit original save root. Call before kernel init,
+ * A request requires an explicit original save root; NULL reads RECOMP_SAVE_DIR
+ * with native UTF8 conversion (never a personal default). Call before kernel init,
  * then commit after all host storage initialization, before starting the guest.
  * Failure MUST abort startup. There is deliberately no reset/unlock operation. */
 int pc_mod_bootstrap_prepare(const char *original_saves);

@@ -1,3 +1,5 @@
+Bootstrap fixtures also execute Unicode capsule/root environment reads, and empty/oversized handoff rejection.
+
 ## Script startup storage
 
 tests/mods/test_mod_bootstrap.py builds the real native bootstrap/capsule/save lease with shared guest_storage.c metadata and narrow UI/kernel adapters. It checks source publication only after commit, original-save canaries, preference resolution before picker lock, live exclusive lease and tampered marker refusal. tests/storage/test_storage_menu.py separately checks the real permanent UI lock before any target creation. Actual game builds/patch validation remain required; this fixture does not start a custom match.

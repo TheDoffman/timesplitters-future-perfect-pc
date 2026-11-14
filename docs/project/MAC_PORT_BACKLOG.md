@@ -1,3 +1,10 @@
+Bootstrap follow-up (base2e430b04): all three native game builds/platform checks
+passed; Windows build sourceb00bdf42, Mac/Linux2e430b04. A new Unicode capsule test
+found ANSI getenv corrupted Windows paths. Shared bootstrap now uses wide CRT
+plus strict UTF8 conversion and bounded values; Windows startup obtains its
+explicit original root through that adapter. Fixed Windows focused17 checks pass;
+expanded empty/oversized request cases and cross-host follow-up pending.
+
 Mod bootstrap storage milestone (feature/mod-platform, base28f42934): shared
 native startup now consumes an explicit developer capsule, resolves original save
 preferences read-only, leases package-isolated saves, permanently locks host save

@@ -68,3 +68,11 @@ and lease until OS teardown so static destructors cannot unlock live guest stora
 withholds source for the rest of the process. No VM or custom mode is started by
 these calls. The game match manager, offline gating, fault handling and drain on
 shutdown remain separate integration work.
+
+A NULL original-root argument reads the explicit RECOMP_SAVE_DIR through the
+bootstrap environment adapter. Windows uses wide CRT environment strings and
+strict UTF16-to-UTF8 conversion for both capsule and root, preserving Unicode;
+POSIX keeps native bytes. Reads are bounded before allocation (path4095/pin64).
+Missing original roots never select a default. The Windows entry passes NULL to
+use this adapter; POSIX already supplies its explicitly required root. Both absent
+capsule variables preserve ordinary startup without reading a mod save root.
