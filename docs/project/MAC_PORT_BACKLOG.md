@@ -10649,3 +10649,12 @@ Linux404/three skips plus56 host-sanitizer checks pass; Windows404/three skips p
 The test-host early-error drain guard is implemented and Windows-verified; final
 Unix teardown/sanitizer reruns pending. Actual game integration/public acceptance
 and production stale-profile recovery remain required. See STATUS/mod-scripting.md.
+
+Native persistent Session source46a34727: **Verified for named component checks**.
+Mac57 Session cases plus8 Process cases pass (one Windows-only skip); all57
+trusted-parent ASan/UBSan Session checks pass. Linux57 plus7 Process cases pass
+(two skips) and57 host-sanitizer cases pass; Windows65 Session/Process cases pass
+(one Mac-only skip),175 with CI selector/runtime checks. Includes explicit early
+host-error teardown and corrected Mach CPU accounting. Real title adapters,
+mod saves/multiplayer, signed helper packaging/recovery and playable public mod
+release remain required. See STATUS/mod-scripting.md for exact acceptance bounds.

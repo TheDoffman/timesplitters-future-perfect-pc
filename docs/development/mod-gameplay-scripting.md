@@ -302,8 +302,7 @@ Stop delivery, unconsumed-result backpressure, maximum-source chunked pipe write
 invalid source/events, strict malformed/truncated/status/command/text/sequence
 corpus, native hangs/crashes/stderr, idle CPU/output and nonblocking close. Valid
 native score/draw/end/UTF8 transactions provide positive controls. Test helper
-executables are compiled only in TSFP_MOD_TESTING and must never ship. Actual
-Mac/Linux Session checks are pending at this checkpoint.
+executables are compiled only in TSFP_MOD_TESTING and must never ship. Actual Mac/Linux Session checks now pass for the named cases; see final evidence below.
 
 The idle CPU allowance renews by1s accounting window after checking the previous
 window; it is not a cumulative50ms limit over a long paused match. A native fixture
@@ -341,3 +340,10 @@ Unix rerun pending). Three empty profiles from prior failed test-host exits were
 individually ownership-verified and removed through the Windows profile API; this
 does not implement production stale crash-profile recovery. Real game shutdown
 must keep its executable/module alive until Session::stopped, even on errors.
+
+Final source46a34727 checks:57 Session cases pass on Windows/Mac/Linux, including
+forced-failure host teardown. All57 trusted-parent ASan/UBSan cases pass separately
+on native Mac and Linux. Combined Session/Process counts: Windows65/one Mac-only
+skip; Mac65/one Windows-only skip; Linux64/two skips. Windows with CI selection/
+runtime-check cases passes175/one skip. These later tests do not change the already
+verified production VM/session behavior; full-suite source/counts remain in STATUS.

@@ -43894,3 +43894,22 @@ logs/mod-session-owned-orphan-profiles.json. Unknown profiles/files were not del
 This is manual test cleanup; automatic production crash-profile recovery remains
 pending. The final extra teardown case still needs Mac/Linux ordinary/sanitizer
 reruns. No script activation, guest mutation, main merge or public deployment.
+
+# Final native Session acceptance (source46a34727; 2026-11-14)
+
+57 persistent Session checks pass on Windows, Mac and Linux. All57 trusted-parent
+ASan/UBSan checks also pass on each of native Mac/Linux. Combined Session/Process:
+Windows65 pass/one Mac-only skip; Mac65 pass/one Windows-only skip; Linux64 pass/
+two skips. Windows with CI selection/runtime-check cases:175 pass/one skip.
+Normal/source logs: mod-session-final-{win,mac,linux}.txt; sanitized logs:
+mod-session-host-asan-final-{mac,linux}.txt. Full earlier matching-production suites:
+Windows404/3 skips; Linux404/3 skips atb2afea90; Mac406/one skip atf37ee9ba. The
+46a34727 follow-up only adds test-host error-path draining and its explicit case.
+
+The explicit failure-teardown test now keeps its host alive until cleanup ends;
+no temporary Windows profiles remain after the final test pass. Actual scripted
+matches in the original game are still unimplemented/unverified: test events are
+synthetic. No originals/settings/saves were changed. Scripts remain inactive in
+the launcher; public service/production pins, verified helper game packaging,
+stale crash-profile recovery, save/multiplayer agreements and full public release
+acceptance remain required. Full goal remains active; no main merge performed.

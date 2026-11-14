@@ -1,151 +1,127 @@
-# Mod worker and native checks
+# Mod worker, process boundary and native sessions
 
-Shared standalone Lua VM: src/mods/mod_script.c/.h, mod_worker.c and
-mod_watchdog.c/.h. Native process boundary: mod_process.hpp, Windows/POSIX
-adapters, mod_seal.c/.h and Darwin mod_guardian_mac.c. tsfp-mod-runner is a
-bounded batch diagnostic tool, not the asynchronous game bridge. Build through
-tools/build/build-mod-worker.py; C11 worker/C++17 parent, pinned CMake4.4.4.
-The game is not connected and launcher script activation remains refused.
+Authoritative source: src/mods/mod_script.c/.h (Lua API), mod_worker.c (wire),
+mod_watchdog.c/.h, mod_seal.c/.h, mod_process.hpp + Windows/POSIX adapters,
+mod_guardian_mac.c and mod_session.cpp/.hpp. Build with the shared pinned-CMake
+builder tools/build/build-mod-worker.py. VM C11; native parent C++17. The game
+is not connected and launcher script activation remains refused.
 
-[API, wire, security gates and evidence](../development/mod-gameplay-scripting.md).
-API1 queues score/end/message transactions from copied32-player snapshots.
-Memory16MiB, instructions200000 load/100000 callback,64 calls/commands,
-512-byte printable UTF8 messages and terminal faults discard partial commands.
-The worker watchdog bounds C library operations at500ms. Production precreates
-its VM/watchdog then seals before reading any protocol input; seed reset occurs
-before loading, preserving deterministic game RNG.
+[Full contracts and evidence](../development/mod-gameplay-scripting.md).
+API1 provides on_start/on_tick/on_player_death/on_stop, copied32-player snapshots,
+score/end/message transactions and deterministic RNG. Memory16MiB; load/callback
+instructions200000/100000;64 calls/commands;512-byte printable UTF8 messages.
+Terminal faults discard partial commands. Worker watchdog500ms includes C library
+operations. Production precreates VM/watchdog, seals, then reads source. Source
+seed reset precedes loading; Lua hash-state initialization is separate.
 
-## Process boundary
+## Native session
 
-Process supplies private nonblocking pipes, resource accounting and owned-child
-termination. The batch runner independently limits2s wall/1.5s CPU/128MiB resident,
-4MiB input/1MiB output/4096 diagnostic bytes; output is withheld until exit.
-It never interprets or applies gameplay commands. The new mod_session.cpp/.hpp implements persistent asynchronous supervision and
-native transaction validation; actual title adapters/activation remain pending.
+Session links Process/shared POD types, never Lua. A background-owned thread
+creates/meters/communicates/reaps; open/dispatch/poll/close do no child IO/waits.
+Dispatch/poll try-lock and return Busy/Contended. The caller retains/retries the
+same immutable event on a later iteration. One pending event and one unconsumed
+result bound backpressure; there is no unbounded queue. Close signals/wakes,
+never joins on the host thread; stopped() confirms owned child cleanup ended.
+The executable/module must stay alive until stopped, including early-error teardown.
+The test host has an explicit drain guard; this is not a dynamically unloadable ABI.
 
-Windows uses a new capability-free low-privilege AppContainer, explicit inherited
-stdio allowlist, synthetic environment, dynamic-code/Win32k mitigations and a
-one-process128MiB kill-on-close job assigned before resume. The production worker
-verifies token/job/mitigation and refuses direct unconfined launch. The documented
-LPAC creation attribute is mandatory: TokenIsLessPrivilegedAppContainer class46
-is not a supported user-mode query on this host. An ALL_APPLICATION_PACKAGES file
-grant is explicitly denied by the production LPAC test. Owned staged image/profile
-ACLs are exact/protected (broker/system/admin full; package read/execute). Keeping
-default profile grants alongside a deny failed a real profile-write canary.
-Ancestor reparse paths are rejected. Normal shutdown removes owned stage/profile;
-automatic recovery of stale crash profiles/cache remains pending. The abrupt-death
-test cleans only its own recorded GUID profile after waiting for exact worker exit.
+Host event checks cover lifecycle/sequence/ticks, roster uniqueness and finite/
+bounded player fields/IDs. Native reply parsing checks exact protocol/status/
+sequence/heap/count/length, all command structures/targets/score/end order, printable
+UTF8 and bounded ASCII diagnostics. Load ACK has no commands; Stop has no score/
+end. A full private result is validated before publication. Faults clear unconsumed
+commands and kill/reap. Unsolicited stdout/stderr faults even while a result waits.
+Load2s/event500ms wall;250ms CPU per request;128MiB RSS; idle50ms CPU per1s window;
+session1s CPU per10s window. Renew idle windows after checking prior usage, so
+legitimate paused watchdog overhead does not accumulate forever. A sealed fixture
+spends25ms actual CPU in each of four idle windows as the positive control.
 
-Linux x86_64 sets PDEATHSIG before exec, closes inherited descriptors, then the
-worker applies non-dumpability/no-new-privileges,128MiB address space/core/FD limits
-and thread-synchronized seccomp. It permits private stdio and necessary memory/
-clock/wait/exit operations; files/network/spawn/exec/tracing/executable mappings
-are denied. Unsupported architectures fail closed.
+Background pipe waits use pending Windows IO events/POSIX poll, at most2ms;
+submission/close wake the idle condition variable. No global system timer changes.
+tsfp-mod-runner remains the separate batch diagnostic supervisor (2s whole-batch,
+1.5s CPU/128MiB RSS,4MiB input/1MiB stdout/4096 stderr); it is not used for matches.
+Neither Session nor runner applies guest commands.
 
-Darwin uses posix_spawn CLOEXEC_DEFAULT and explicit stdio actions. A separate
-trusted guardian watches a private parent-liveness pipe and owns/reaps the worker
-on normal or abrupt parent exit. An independent PID handshake lets the parent
-meter worker CPU/RSS. Only stdio reaches the worker, which closes startup FDs,
-lowers core/FD limits and applies deny-default Seatbelt (metadata reads only).
-Darwin has no closefrom API. The paired deprecated Seatbelt APIs have narrowly
-scoped warning suppression; no security check or fallback is disabled.
+## OS adapters
 
-All helper images/paths must come from a verified installation, never manifests.
-BUILD-worker.json schema2 hashes worker/runner and Mac guardian and records
-source/revision/test/sanitizer modes. Signed game packaging is still unwired.
+Windows: capability-free LPAC; explicit stdio inheritance; synthetic environment;
+dynamic-code/Win32k mitigations; one-process128MiB kill-on-close job assigned before
+resume. Worker verifies token/job/mitigation, refuses direct unconfined launch.
+LPAC uses the documented creation opt-out attribute; TokenIsLessPrivilegedAppContainer
+class46 is unsupported for user-mode queries here. An explicit ALL_APPLICATION_PACKAGES
+file read grant is denied in real tests. Owned staged image/profile ACLs are exact/
+protected: broker/system/admin full, package read/execute. Keeping default profile
+callback/capability grants beside a deny failed the original profile-write canary.
+Ancestor reparse paths are rejected. Normal cleanup removes owned cache/profile.
+Automatic recovery of stale crash profiles/cache remains pending; abrupt-death
+tests clean only their own recorded GUID identities after exact worker exit.
 
-## Source and tests
+Linux x86_64: preexec PDEATHSIG, close_range, non-dumpable/no-new-privileges,
+128MiB address space/core/FD limits, seccomp TSYNC over all threads. Private stdio
+plus memory/clock/wait/exit primitives; no files/network/spawn/exec/tracing or
+executable mappings. Unsupported architectures fail closed.
 
-Pristine Lua5.5.1 lives under vendor/lua-5.5.1, MIT LICENSES/Lua.txt. The shared
-pin records official archive/original hashes, four attributed upstream fixes and
-committed prepared hashes. Fixes apply only to verified new build copies with
-Git ceiling set; reused copies cannot self-attest. Never force LUA_USE_C89, which
-can silently select32-bit Windows integers. The VM asserts64-bit Lua integers.
-Lua payloads are LF across hosts. No generated guest/pristine runtime edits.
+Darwin: posix_spawn CLOEXEC_DEFAULT/explicit stdio; a separate trusted guardian
+watches parent liveness, owns/reaps the worker after normal/abrupt parent death,
+and returns its PID over a separate private handshake so the host meters worker
+CPU/RSS. Only stdio reaches the worker; startup FDs close, core/FD limits lower,
+deny-default Seatbelt permits metadata reads only. No closefrom API exists. Paired
+deprecated Seatbelt APIs have narrowly scoped warning suppression, no fallback.
+Darwin rusage CPU totals are Mach ticks: checked128-bit mach_timebase_info conversion
+is mandatory. /1000 alone undercounted Apple Silicon CPU, exposed by renewed idle
+busy-spin checks. Actual corrected CPU/native idle tests now pass on the Mac mini.
 
-TSFP_MOD_TESTING builds separate tsfp-mod-vm-test and native process/lifetime
-canaries. The VM test binary skips sealing at compile time for focused fuzz/quota/
-ASan checks. Production has no runtime bypass. Test binaries must never ship.
-tests/mods/test_script_worker.py covers56 actual VM checks; test_script_process.py
-covers production OS confinement/resources/lifetime. Both are in native CI; Linux
-runs all mod tests. TSFP_MOD_SANITIZE=1 selects ASan/UBSan VM checks, separate from
-production-process checks requiring ordinary memory layouts.
+## Source, builds and verification
 
-Source ac772502 full mod/CI suites pass Windows347/2 skips, Mac348/1 skip,
-Linux347/2 skips. Mac/Linux56 ASan/UBSan VM checks each pass. Source6457f1fe expanded
-production process tests pass Windows8, Mac7/1 Windows-only skip, Linux7/1 skip. Mac at c12b8541 adds a required
-missing-guardian refusal test:8 pass/1 skip, with no direct-spawn fallback.
-Actual denied native canaries include private file read/write, loopback connect,
-child spawning, parent access/signalling permission, inherited descriptor and
-secret environment; Windows also checks registry/executable ACL/profile writes.
-Positive unconfined controls prove the capabilities existed. Native hangs/floods/
-allocations are bounded and the original First to Three mode runs inside the
-production OS policy. Abrupt broker death terminates the exact native worker.
-Windows final process/CI recheck118 passes. Host details/logs are in STATUS.
+Pristine Lua5.5.1 is vendor/lua-5.5.1, MIT LICENSES/Lua.txt. The pin records official
+archive/original files, four attributed upstream fixes and committed prepared hashes.
+Fix only verified build copies, with Git ceiling set. Reuse must match committed
+hashes, never self-attested receipts. Never force LUA_USE_C89 (can select32-bit
+Windows integers); the VM asserts64-bit integers. Lua payloads are LF on all hosts.
+No generated guest/pristine runtime edits were made for this component.
 
-## Remaining integration
+BUILD-worker.json schema2 binds worker/runner/Mac guardian, source/revision and
+separate testing/sanitize/host_sanitize flags. Helper paths/images must come from a
+verified installation, never uploaded manifests. Signed game packaging is unwired.
+TSFP_MOD_TESTING builds separate vm-test/native process/lifetime/session fixtures;
+NEVER SHIP test binaries. The VM test binary skips sealing only at compile time;
+production has no runtime bypass. Tests/mods routes are in native CI/Linux all-mod.
 
-No game event/command hooks exist yet. Original title script timing patches are
-not a Lua mod VM; verify shared native interfaces/source/callers before wrappers.
-Still required: verified asset/game event adapters and live match-epoch validation, multiplayer authority/hash agreement, mod save
-namespaces, launcher script lifecycle, verified signed helper packaging/crash
-recovery and actual custom-mode gameplay on all hosts. Full public workshop
-acceptance remains mandatory. VM/process checks do not prove those requirements.
-Unchanged Python/native trust vectors and live scanner/operator evidence remain
-in mod-workshop.md and the catalog trust guide.
+TSFP_MOD_SANITIZE=1 instruments the VM test. TSFP_MOD_HOST_SANITIZE=1 instruments
+trusted Session/Process/driver with ASan/UBSan on Clang/GCC, while sealed children
+remain ordinary (OS exec/address-space limits conflict with child instrumentation).
+The builder --sanitize-host exposes the latter option; both are off by default.
 
-## Persistent native sessions
+Source46a34727:57 Session cases pass Windows/Mac/Linux;57 host-ASan/UBSan Session
+cases also pass on each of Mac/Linux. Combined Session/Process: Windows65 pass/1
+Mac-only skip, Mac65 pass/1 Windows-only skip, Linux64 pass/2 skips. Windows final
+with CI selection/runtime-check cases:175 pass/1 skip. Full mod/CI suites at matching
+production source: Windows404/3 skips, Linux404/3 skips (b2afea90), Mac406/1 skip
+(f37ee9ba). The later change adds only test-host teardown/case.56 actual VM checks
+are included in those full suites; prior Mac/Linux VM-ASan checks also pass.
 
-mod_session.cpp/.hpp links only the native Process adapter and shared POD types,
-never Lua. A background-owned thread creates/meters/communicates/reaps the worker;
-open/dispatch/poll/close do no process IO or waits. Dispatch/poll use try-lock and
-report Busy/Contended; the caller retains and retries the same event. There is one
-pending event and one unconsumed result, no unbounded queues. Close signals the
-thread without joining on the game thread; stopped() means child cleanup finished.
+Coverage: original First to Three mode past2s,100 stateful callbacks/Stop, full1MiB
+source pipe transfer, backpressure, invalid source/events and malicious native wire
+corpus, valid boundary/UTF8 controls, native hang/partial pipes/crash/stderr/idle
+abuse, renewing idle CPU, nonblocking cancel and early-error teardown. OS canaries
+have successful unconfined controls and denied file/network/spawn/parent/signal/
+inherited descriptor/environment access; Windows adds registry/executable ACL and
+private profile writes. Abrupt broker death terminates the exact native worker.
+See STATUS/ignored logs for exact host versions and per-revision receipts.
 
-The session checks authoritative event lifecycle/sequence/ticks/roster/numbers;
-validates every reply header/length/status/sequence/heap/count, command/target/score/
-end order, printable UTF8 message and bounded ASCII diagnostic. Load ACK has no
-commands; Stop has no score/end commands. Parsing completes into a private result
-before any transaction is published. Faults clear pending commands and kill/reap.
-Callbacks have500ms independent wall/250ms CPU budgets; load2s/250ms CPU;
-RSS128MiB, idle CPU50ms per1s window, session CPU1s per10s window. Unsolicited stdout/stderr
-faults even while waiting for host consumption. Source remains capped1MiB.
-Background pipe readiness waits avoid Windows timer-rounded polling; idle wakeup
-uses a condition variable notified by submit/close. No global timer policy changes.
+Three empty Windows profiles from failed pre-drain test-host exits were individually
+verified by known creation times, protected4-rule ACL/current broker owner/derived
+package SID, then removed through the profile API. No broad package-folder deletion.
+Ownership evidence stays ignored; manual test cleanup is not production crash recovery.
 
-Windows63 session/process checks pass, one Mac-only skip, including55 new session
-checks: original mode past2s,100 stateful ticks/Stop, backpressure, invalid source/
-host events, malformed native reply corpus, native hangs/crash/partial pipes/stderr,
-idle CPU/output, asynchronous close and full1MiB source transfer. The test-only
-hostile worker uses production OS sealing and has no VM watchdog. Test binaries
-never ship. Cross-host component checks now pass; real game event adapters remain pending. The
-host adapter must verify images/package/authority/save namespace and recheck the
-live match epoch/roster before applying a result atomically. Session checks alone
-are not actual game integration or multiplayer/save agreement.
+## Remaining game/public integration
 
-Source658ae09e Session/process checks pass Mac63/1 skip and Linux62/2 skips,
-matching Windows63/1 skip. Follow-up idle metering uses50ms per1s rather than
-cumulative paused time; a sealed canary spends25ms actual CPU in each of four
-idle windows and remains accepted (Windows check passes; other hosts pending).
-TSFP_MOD_HOST_SANITIZE=1 instruments trusted Session/Process/driver with ASan/
-UBSan on Clang/GCC while keeping sealed children ordinary. The builder records
-host_sanitize separately and offers --sanitize-host; this is distinct from VM
-sanitizers. At b2afea90 Linux56 host-ASan/UBSan Session checks pass; at f37ee9ba Mac56
-also pass, after the Mach CPU conversion correction.
-
-Renewed idle windows exposed Mac CPU undercounting: proc_pid_rusage CPU totals
-are Mach ticks, not nanoseconds. The adapter now uses checked128-bit Mach timebase
-conversion. Linux404 full checks/3 skips and56 host-ASan/UBSan Session checks pass;
-Windows404 full checks/3 skips pass. Updated Mac rerun remains pending.
-
-Final process/session source f37ee9ba: Mac full mod/CI suite406 pass/1 skip and56
-host-ASan/UBSan Session checks pass. Linux/Windows full suites404 pass/3 skips;
-Linux56 host-ASan/UBSan Session checks pass. A follow-up test-host Drain guard keeps
-the executable alive through asynchronous Session cleanup on early error returns;
-its explicit forced-failure test passes on Windows, Unix final rerun pending.
-Three empty GUID profiles from earlier failed test-host exits were individually
-verified against their known creation times, exact protected4-rule ACLs/current
-broker owner/derived package SID, then removed through DeleteAppContainerProfile.
-No broad package-folder deletion; ownership evidence stays in ignored logs. This
-manual test cleanup is not production stale crash-profile recovery.
+Actual guest event/command hooks, live match epoch/roster revalidation and atomic
+application, bounded title-event queue/coalescing, multiplayer authority/hash
+agreement, mod save namespaces, launcher script lifecycle, verified signed helper
+packaging/crash recovery and actual custom-mode gameplay remain required. The host
+must establish image/package/authority/save policy before opening a session. Existing
+original-title script timing patches are not Lua hooks; verify native source/callers
+before adding wrappers. Full public workshop acceptance remains mandatory. These
+component tests do not prove gameplay, public HTTPS, backups or a usable release.
+Unchanged trust vectors and scanner/operator evidence are in mod-workshop.md.
