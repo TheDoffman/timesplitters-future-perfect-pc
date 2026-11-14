@@ -43929,3 +43929,17 @@ Initial title support is offline, non-team Arcade rules-index0. Verified helper
 packaging, trusted bootstrap/save namespaces, HUD messages, fault UX, launcher
 lifecycle, multiplayer agreements and full public workshop acceptance remain
 required. No public deployment, main merge or private asset publication occurred.
+
+Native bridge sourceb8504672 ordinary checks pass on all configured hosts:
+Windows83/one skip, Mac83/one skip, Linux82/two skips. Sanitizers on Mac/Linux
+found an unaligned read in a16-bit raw-stat fixture assertion; corrected to two
+byte reads. Updated Windows19 match/original-title checks pass. The local-only
+original-title fixture lifts pinned US640C0/641C0/64810/67450, checks unbound raw
+scoring/ranking, then real isolated Lua score/ranking/End. Death/frame/final finish
+side effects remain mocked; actual gameplay remains unverified. Non-team API
+snapshots report team0 rather than the title's raw actor identity comparison.
+
+Windows full build regenerates/compiles new wrappers but MSVC C1002 exhausts
+backend heap in recomp_0011.c, including with one job and /MP1. A local smaller
+generation split is being tested. This is not a successful game build or a reason
+to enable scripting. Mac/Linux updated sanitizer/original-title checks pending.

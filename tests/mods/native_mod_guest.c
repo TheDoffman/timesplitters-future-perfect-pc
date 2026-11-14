@@ -55,6 +55,8 @@ static int run(const char *worker,const char *cache,const char *scenario) {
     TsfpModWorld world;CHECK(pc_mod_game_capture(&world));uint64_t epoch=world.epoch;
     CHECK(world.player_count==2 && world.players[0].health==100);
     if(!strcmp(scenario,"guards")) {
+        WORD_AT(0x10000+0x84)=UINT32_MAX;
+        CHECK(pc_mod_game_capture(&world) && world.players[0].team==0);
         WORD_AT(0x76b108)=1;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x76b108)=0;
         WORD_AT(0x7de458)=1;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7de458)=0;
         WORD_AT(0x7de454)=10u<<8;CHECK(!pc_mod_game_capture(&world));WORD_AT(0x7de454)=9u<<8;
@@ -88,7 +90,7 @@ static int run(const char *worker,const char *cache,const char *scenario) {
         pause_short();
     }
     if(finished!=1 || WORD_AT(0x10000+0xa6c)!=3 || WORD_AT(0x10000+0xa68)!=1 || WORD_AT(0x10000+0xea0+0xa68)!=2 ||
-       WORD_AT(0x10000+0xa10+2)!=0 || WORD_AT(0x21000+0x258)!=3 || !original_frames)outcome=3;
+       memory[0x10000+0xa10+2]!=0 || memory[0x10000+0xa10+3]!=0 || WORD_AT(0x21000+0x258)!=3 || !original_frames)outcome=3;
 cleanup:
     pc_mod_game_bind(NULL);tsfp_mod_match_close(match);
     for(unsigned i=0;i<2000 && !tsfp_mod_match_stopped(match);++i)pause_short();

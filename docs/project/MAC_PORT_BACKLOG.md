@@ -10668,3 +10668,11 @@ Mac/Linux ordinary/sanitized checks and game builds remain pending. No launcher
 script activation/bootstrap exists. Separate saves, verified helper packaging,
 HUD messages, multiplayer and actual custom-mode gameplay remain required.
 See STATUS and mod-scripting.md; the full goal remains incomplete.
+
+Native mod match bridge sourceb8504672: **Verified for named component checks**.
+Mac83/one platform skip, Linux82/two skips, Windows83/one skip ordinary combined
+checks pass. A raw-stat assertion's unaligned read was caught by host sanitizers;
+its byte-read correction and original-title fixture still need Mac/Linux reruns.
+Windows19 match/original-title checks pass; stock death/frame/final finish remain
+mocks. Game builds/play and activation/bootstrap/save/multiplayer remain required.
+Windows full-build MSVC backend heap exhaustion is under investigation. See STATUS.

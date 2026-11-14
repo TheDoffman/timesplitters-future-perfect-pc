@@ -31,7 +31,9 @@ int pc_mod_game_capture(TsfpModWorld *out) {
         uint32_t actor=pool+i*0xea0u,entity=WORD_AT(actor),name=WORD_AT(actor+0x70u);
         tsfp_script_player *p=&out->players[i];
         if(WORD_AT(actor+8u)!=i || !name)return 0;
-        p->id=i+1;p->team=WORD_AT(actor+0x84u);
+        /* Stock scoring uses actor+84 even for non-team identity comparisons.
+           This adapter admits no team mode: the public API reports no team. */
+        p->id=i+1;p->team=0;
         memcpy(&p->score,(void *)((uintptr_t)(actor+0xa6cu)+g_xbox_mem_offset),4);
         float position[3];memcpy(position,(void *)((uintptr_t)(actor+0x30u)+g_xbox_mem_offset),sizeof(position));
         p->x=position[0];p->y=position[1];p->z=position[2];

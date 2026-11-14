@@ -138,6 +138,17 @@ mock original title functions. They do not establish actual gameplay or final
 fault UX; messages still need a shared HUD adapter. Registered native route:
 `tests/mods/test_mod_match.py`. Cross-host integration checks remain pending.
 
+Sourceb8504672 ordinary bridge/Session/Process checks pass Windows83/one skip,
+Mac83/one skip and Linux82/two skips. Host sanitizers caught an unaligned32-bit
+read in the fixture's16-bit raw-stat assertion; the assertion now reads its two
+bytes. The first updated sanitizer reruns remain pending. Production was unchanged.
+`test_original_mod_scores.py` locally lifts only pinned US score/rank/end routines
+into a disposable fixture linked to the real isolated parent. Generated/private
+instructions remain local. Missing private XBE skips; a wrong hash fails. Stock
+death/frame/final finish side effects remain mocks, so it is not live gameplay.
+The initial non-team adapter reports API team0 rather than exposing the title's
+actor+84 identity comparison value; stock raw score calculation still uses it.
+
 Multiplayer authority/hash agreement, mod save namespaces, launcher script
 lifecycle, verified signed helper packaging/crash recovery, message rendering
 and actual custom-mode gameplay remain required. The host
