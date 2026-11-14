@@ -64,7 +64,7 @@ static void original(void)
     CHECK(ui_placement==((players==1 && wide && hud_scale<1.f)?3:4));
     if(ui_placement==3)CHECK(ui_tag==0x1476f0);
     CHECK(font==7);CHECK(WORD_AT(box+0xec)==270+expected_growth);
-    float gap=keyboard && players==1 && WORD_AT(box+24)==UINT32_MAX?6.f:0.f;
+    float gap=players==1 && WORD_AT(box+24)==UINT32_MAX?6.f:0.f;
     CHECK(tutorial_row_gap==gap && tutorial_row_index==0);
     CHECK(WORD_AT(box+0xf0)==100+(unsigned)(gap*3));
     WORD_AT(box+0xf0)=100; /* Native painter refreshes its unpadded height cache. */
@@ -83,9 +83,9 @@ static void original(void)
         tutorial_set_float(g_esp+4,59.f);tutorial_set_float(g_esp+8,50.f);
         font=18;pc_display_tutorial_text(text_original);font=7;
         if(tutorial_icon_column>0.f)
-            CHECK(fabsf(seen+widths[i]*.9f*.8f*.5f-(59.f+tutorial_icon_column*.5f))<.01f);
+            CHECK(fabsf(seen+widths[i]*.9f*(keyboard?.8f:1.f)*.5f-(59.f+tutorial_icon_column*.5f))<.01f);
         else CHECK(seen==59.f);
-        if(tutorial_icon_column>0.f)CHECK(fabsf(seen_scale-.72f)<.001f && fabsf(seen_y-(51.8f+gap*i))<.001f);
+        if(tutorial_icon_column>0.f)CHECK(fabsf(seen_scale-(keyboard?.72f:.9f))<.001f && fabsf(seen_y-((keyboard?51.8f:50.f)+gap*i))<.001f);
         CHECK(tutorial_float(frame-120)==50.f && fabsf(tutorial_float(0x7e7270)-(players==1?.9f:1.f))<.001f);
         CHECK(tutorial_float(frame-124)==59.f && g_esp==frame-124);
         g_esp=frame-128;WORD_AT(g_esp)=0x147d17;tutorial_set_float(g_esp+4,99);tutorial_set_float(g_esp+8,50);
@@ -134,8 +134,13 @@ int main(void)
     widths[1]=128;run(83.2f,84);
     /* Near an edge, growth is bounded and remaining description width wraps. */
     WORD_AT(0x104)=359;run(83.2f,15);WORD_AT(0x104)=639;
-    /* Switching to a controller or split screen preserves original geometry. */
-    keyboard=0;run(0,0);keyboard=1;players=2;run(0,0);players=1;
+    /* Mixed controller face-button/trigger captions share the same column,
+       padding, per-row centre and state restoration as keyboard hints. */
+    float saved_widths[4];memcpy(saved_widths,widths,sizeof widths);
+    keyboard=0;widths[0]=14;widths[1]=20;widths[2]=24;widths[3]=28;run(0,0);
+    memcpy(widths,saved_widths,sizeof widths);keyboard=1;
+    /* Split screen retains its native geometry for either input device. */
+    players=2;run(0,0);keyboard=0;run(0,0);keyboard=1;players=1;
     /* No prompt rows must not resize ordinary tutorial prose. */
     for(unsigned i=0;i<4;i++)WORD_AT(0x7a5940+i*28+24)=0;
     run(0,0);

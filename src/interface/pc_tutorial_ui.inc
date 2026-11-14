@@ -31,7 +31,7 @@ static void tutorial_columns(void (*original)(void))
     uint32_t frame=g_esp,index=WORD_AT(frame+4),box,rows,view;unsigned controls=0;
     float widest=0,old_extra=tutorial_extra,old_column=tutorial_icon_column,column;
     int old_row=tutorial_normal_row;
-    if(index>=4 || !pc_prompts_keyboard_active() || guest_call(sub_001CDAE0,0)!=1) {
+    if(index>=4 || guest_call(sub_001CDAE0,0)!=1) {
         original();return;
     }
     box=0x007A5940u+index*0x114u;rows=WORD_AT(box+0xE0u);
@@ -138,7 +138,7 @@ void pc_display_tutorial_text(void (*original)(void))
        and restore the argument so other text/shadow passes are unaffected. */
     if(menu_mouse_footer_text()) WORD_AT(frame+16)=0x405a7f00u|(color&0xffu);
     /* Normal tutorial action icons share a column. Centre their measured PC
-       captions rather than aligning unequal mouse/keycap widths at the left. */
+       captions rather than aligning unequal button/trigger/keycap widths at the left. */
     if(tutorial_icon_column>0.f && WORD_AT(frame)==0x00147CAEu && frame>=128 &&
        guest_writable(frame-128,128)) {
         uint32_t caption=WORD_AT(frame+12);
@@ -146,9 +146,10 @@ void pc_display_tutorial_text(void (*original)(void))
         guest_call(sub_0003FCF0,4,frame-32,frame-28,caption,0u);
         float old_height=tutorial_float(frame-28);
         /* Keycap artwork extends beyond the text's measured line. Reduce only
-           action-icon captions, leaving a gap inside the native row pitch. */
-        tutorial_set_float(0x7e7270,tutorial_float(0x7e7270)*.8f);
-        tutorial_set_float(0x7e7280,tutorial_float(0x7e7280)*.8f);
+           keyboard captions; controller glyphs retain their native size. */
+        float caption_scale=pc_prompts_keyboard_active()?.8f:1.f;
+        tutorial_set_float(0x7e7270,tutorial_float(0x7e7270)*caption_scale);
+        tutorial_set_float(0x7e7280,tutorial_float(0x7e7280)*caption_scale);
         guest_call(sub_0003F8D0,0);icon_scaled=1;
         guest_call(sub_0003FCF0,4,frame-32,frame-28,caption,0u);
         g_esp=frame;

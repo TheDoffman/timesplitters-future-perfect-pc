@@ -34,3 +34,8 @@ Weapon degree changes use V5 without the removed HUD slot; see
 Launcher crosshair controls require installed BUILD.json display_settings_version
 >=4; new degree records require>=5. Native package capability follows build
 receipts; older binaries never advertise it just from the packaging revision.
+
+Isolated prompt rendering probes may set TSFP_TEST_PROMPT_DEVICE=controller or
+keyboard only with TSFP_PC_INPUT_STATE or TSFP_NATIVE_TEST_KEYS. This selects
+glyph rendering without changing bindings or normal last-device state; ordinary
+launches ignore it. pc_prompts.c retains controller-diagram override precedence.
