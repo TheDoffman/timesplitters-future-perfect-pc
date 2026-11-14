@@ -39,6 +39,9 @@ mode, with memory/instruction/host-call/transaction limits and a wall watchdog.
 OS confinement and independent supervision have native host checks. Shared title
 hooks and a queued match bridge now have controlled-world Windows fixtures;
 launcher activation and actual custom-mode gameplay remain pending. See [worker](mod-scripting.md).
+The local-only original score/rank/end fixture now passes on Windows alongside
+the18 bridge checks; updated Unix sanitizer checks remain pending. Non-team
+snapshots report API team0. This does not enable gameplay scripts in the launcher.
 <!-- packet:end -->
 
 Local source: `tools/mods/mod_package.py`, `mod_repository.py`, `mod_server.py`,
