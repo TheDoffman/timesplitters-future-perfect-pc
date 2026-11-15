@@ -74,7 +74,8 @@ public static class LauncherSharedUiChecks
     static string WorkshopCatalog(string sha,long scanned,bool available=true,string download=null)
     {
         object release=new {sha256=sha,download=download??"/v1/packages/"+sha,
-            manifest=new {id="community-demo",name="Community Demo",version="1.0.0",author="Map Maker",description="A packaging example",game="tsfp-us-45410066",api="tsfp-mod-v1-draft"},
+            manifest=new {schema=1,id="community-demo",name="Community Demo",version="1.0.0",author="Map Maker",description="A packaging example",game="tsfp-us-45410066",api="tsfp-mod-v1-draft",
+                dependencies=new Dictionary<string,string>{{"base-textures","1.0.0"}},files=new Dictionary<string,object>{{"textures/0123456789abcdef.dds",new {sha256=new string('a',64),size=152}}}},
             scan=new {engine="TEST ONLY",time=scanned}};
         return Json.Encode(new {schema=1,releases=available?new[]{release}:new object[0]});
     }
@@ -103,6 +104,7 @@ public static class LauncherSharedUiChecks
         long now=DateTimeOffset.UtcNow.ToUnixTimeSeconds();string sha=new string('a',64);
         Test("workshop catalog validates identities and freshness",()=>{
             var entries=ModWorkshopClient.Parse(WorkshopCatalog(sha,now-1),DateTime.UtcNow);
+            Need(entries.Single().Categories.SequenceEqual(new[]{"textures"}) && entries.Single().PayloadBytes==152 && entries.Single().Dependencies.Single()=="base-textures @ 1.0.0","Browse details differ from validated package metadata");
             Need(entries.Length==1 && entries[0].Author=="Map Maker","Mod metadata lost");
             Need(ModWorkshopClient.Parse(WorkshopCatalog(sha,now-90000),DateTime.UtcNow).Length==0,"Stale scan appeared");
             Need(ModWorkshopClient.Parse(WorkshopCatalog(sha,now+3600),DateTime.UtcNow).Length==0,"Future scan appeared");
@@ -122,6 +124,34 @@ public static class LauncherSharedUiChecks
                 Need(page.VisibleCount==1,"Mod card missing");page.Search.Text="map maker";Need(page.VisibleCount==1,"Creator search failed");
                 page.Search.Text="no matching mod";Need(page.VisibleCount==0,"Search did not filter");
                 page.Load().GetAwaiter().GetResult();Need(requests==0 && page.StatusText.Contains("Preview"),"Preview attempted network access");
+            }
+        });
+        Test("workshop browse bounds cards and resets pages after filtering or refresh",()=>{
+            using(var page=new ModWorkshopPage(root,true)) {
+                var releases=Enumerable.Range(0,23).SelectMany(i=>new[]{"1.0.0","2.0.0"}.Select(version=>new WorkshopRelease {
+                    Id="mod-"+i.ToString("00"),Name="Mod "+i.ToString("00"),Version=version,Author="Example creator",Description="Example",Categories=new[]{"textures"},ScanEngine="TEST",ScannedUtc=DateTime.UtcNow})).ToArray();
+                page.SetReleases(releases);
+                Need(page.MatchingCount==23 && page.VisibleCount==20 && page.PageCount==2 && !page.Previous.IsEnabled && page.Next.IsEnabled,"Latest-release paging failed");
+                Click(page.Next);Need(page.PageNumber==2 && page.VisibleCount==3 && page.Previous.IsEnabled && !page.Next.IsEnabled,"Last page is incomplete or unbounded");
+                page.Search.Text="mod-00";Need(page.PageNumber==1 && page.VisibleCount==1 && !page.Next.IsEnabled,"Search left an empty old page");
+                page.Search.Text="";page.OlderVersions.IsChecked=true;Need(page.MatchingCount==46 && page.PageCount==3 && page.VisibleCount==20,"Older versions were lost or unbounded");
+                Click(page.Next);Click(page.Next);Need(page.PageNumber==3 && page.VisibleCount==6,"History paging failed");
+                page.SetReleases(releases.Take(2).ToArray());Need(page.PageNumber==1 && page.VisibleCount==2 && !page.Next.IsEnabled,"Refresh retained an invalid page");
+            }
+        });
+        Test("workshop content and creator filters use latest metadata and numeric version order",()=>{
+            var releases=new[]{
+                new WorkshopRelease {Id="mode",Name="Mode",Version="2.9.0",Author="Old Maker",Description="Old release",Categories=new[]{"maps"}},
+                new WorkshopRelease {Id="mode",Name="Mode",Version="2.10.0",Author="New Maker",Description="Current mode",Categories=new[]{"scripts","textures"}},
+                new WorkshopRelease {Id="large",Name="Large",Version="99999999999999999999.0.0",Author="New Maker",Description="Large version",Categories=new[]{"audio"}}};
+            Need(WorkshopRelease.Select(releases,"","old","maps",false,"name").Length==0,"An old match replaced latest release metadata");
+            Need(WorkshopRelease.Select(releases,"","old","maps",true,"name").Single().Version=="2.9.0","Older release filter failed");
+            Need(WorkshopRelease.Select(releases,"","new","textures",false,"name").Single().Version=="2.10.0","Mixed-content filter failed");
+            Need(WorkshopRelease.Select(releases,"","","",true,"version").Select(r=>r.Version).SequenceEqual(new[]{"99999999999999999999.0.0","2.10.0","2.9.0"}),"Version sorting overflowed or compared lexically");
+            using(var page=new ModWorkshopPage(root,true)) {
+                page.SetReleases(releases);page.Creator.Text="OLD";page.Category.SelectedIndex=3;Need(page.VisibleCount==0,"Page ignored creator/content filters");
+                page.OlderVersions.IsChecked=true;Need(page.VisibleCount==1,"History filter did not refresh immediately");
+                page.Creator.Text="new";page.Category.SelectedIndex=2;Need(page.VisibleCount==1,"Gameplay category did not match a mixed package");
             }
         });
         Test("workshop downloads verify hashes and recheck removal before fetching",()=>{

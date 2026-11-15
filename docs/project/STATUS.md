@@ -1,3 +1,15 @@
+Workshop discovery (feature/mod-platform, basebc67c1c9): shared ModWorkshopPage
+adds content/creator filters, name/creator/numeric-version sorting, latest release
+per ID by default and explicit older-release browsing. Browse renders at most20
+cards per page; changed filters/catalog reset the page. Categories, expanded
+payload bytes and exact dependencies come from the same strict manifest parser
+used by native installation. Mixed packages match each content category. The
+model supports all three launchers without a new platform adapter. Windows
+full launcher tests pass (71 shared UI groups,116 isolated regressions plus the
+installer/settings/maintenance suites);110 portable policy tests/31 subtests pass.
+Windows preview inspected; native Mac/Linux builds and visual checks pending. Public
+HTTPS, creator UI, map/audio activation and the full release remain unfinished.
+
 Workshop gateway private-host acceptance (2026-11-15, sourcea8743bba):
 The confined localhost8768 gateway forwards only fixed static8766/API8767 routes,
 has no repository/snapshot/key path, strips download credentials and controls API

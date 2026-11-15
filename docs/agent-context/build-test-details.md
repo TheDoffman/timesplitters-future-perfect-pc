@@ -1,3 +1,8 @@
+Launcher shared UI checks now cover bounded workshop paging/reset/history,
+creator/content filters including mixed packages, validated dependency/payload
+metadata and numeric version order beyond Int64. Native host/visual acceptance
+is separate from these behavioral contracts.
+
 test_gateway_service.py covers canonical origin/injection boundaries, refusal of
 repository/key settings or a gateway snapshot tree, managed health before server
 construction, origin-bound watchdog and interpreter/source-preserving agents.

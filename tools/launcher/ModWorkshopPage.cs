@@ -26,7 +26,27 @@ namespace TimeSplitters.Launcher
     {
         public string Id, Name, Version, Author, Description, Sha256, ScanEngine;
         public DateTime ScannedUtc;
+        public string[] Categories=new string[0];
+        public string[] Dependencies=new string[0];
+        public long PayloadBytes;
         public string SearchText { get { return Id+" "+Name+" "+Author+" "+Description; } }
+        public static readonly IComparer<string> Versions=Comparer<string>.Create((left,right)=>{
+            string[] a=left.Split('.'),b=right.Split('.');
+            for(int i=0;i<3;i++){int order=a[i].Length.CompareTo(b[i].Length);if(order==0)order=String.CompareOrdinal(a[i],b[i]);if(order!=0)return order;}
+            return 0;
+        });
+        public static WorkshopRelease[] Select(IEnumerable<WorkshopRelease> source,string query,string creator,string category,bool older,string sort)
+        {
+            var selected=source;
+            if(!older)selected=selected.GroupBy(r=>r.Id,StringComparer.Ordinal).Select(group=>group.OrderByDescending(r=>r.Version,Versions).First());
+            selected=selected.Where(r=>r.SearchText.IndexOf((query??"").Trim(),StringComparison.OrdinalIgnoreCase)>=0 &&
+                (r.Author??"").IndexOf((creator??"").Trim(),StringComparison.OrdinalIgnoreCase)>=0 &&
+                (String.IsNullOrEmpty(category) || r.Categories.Contains(category)));
+            if(sort=="creator")return selected.OrderBy(r=>r.Author,StringComparer.OrdinalIgnoreCase).ThenBy(r=>r.Id,StringComparer.Ordinal).ThenByDescending(r=>r.Version,Versions).ToArray();
+            if(sort=="version")return selected.OrderByDescending(r=>r.Version,Versions).ThenBy(r=>r.Id,StringComparer.Ordinal).ToArray();
+            return selected.OrderBy(r=>r.Name,StringComparer.OrdinalIgnoreCase).ThenBy(r=>r.Id,StringComparer.Ordinal).ThenByDescending(r=>r.Version,Versions).ToArray();
+        }
+        public static string ContentName(string kind){return kind=="textures"?"Textures":kind=="scripts"?"Gameplay scripts":kind=="maps"?"Maps":kind=="audio"?"Audio":"Other content";}
     }
 
     // Shared, bounded catalog/download client. Downloading never activates code.
@@ -80,6 +100,7 @@ namespace TimeSplitters.Launcher
             foreach(var item in list) {
                 var entry=item as Dictionary<string,object>;Core.Require(entry!=null,"Invalid workshop release.");
                 var manifest=Object(entry,"manifest");var scan=Object(entry,"scan");
+                var package=ModLibrary.Manifest(Json.Encode(manifest));
                 string sha=Text(entry,"sha256",64),id=Text(manifest,"id",80),version=Text(manifest,"version",32);
                 Core.Require(Regex.IsMatch(sha,"\\A[0-9a-f]{64}\\z") && Regex.IsMatch(id,"\\A[a-z][a-z0-9]*(?:-[a-z0-9]+)*\\z") &&
                     Regex.IsMatch(version,"\\A(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\z"),"Invalid workshop identity or digest.");
@@ -88,6 +109,9 @@ namespace TimeSplitters.Launcher
                 long seconds;Core.Require(Int64.TryParse(Json.String(scan,"time"),out seconds) && seconds>=0 && seconds<=253402300799,"Invalid workshop scan date.");
                 var release=new WorkshopRelease {Id=id,Version=version,Sha256=sha,Name=Text(manifest,"name",120),Author=Text(manifest,"author",120),
                     Description=Text(manifest,"description",4000),ScanEngine=Text(scan,"engine",120),ScannedUtc=DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime};
+                release.Categories=package.Files.Keys.Select(name=>name.Split('/')[0]).Distinct().OrderBy(name=>name,StringComparer.Ordinal).ToArray();
+                release.Dependencies=package.Dependencies.OrderBy(pair=>pair.Key,StringComparer.Ordinal).Select(pair=>pair.Key+" @ "+pair.Value).ToArray();
+                release.PayloadBytes=package.Files.Values.Sum(file=>file.Size);
                 if(release.ScannedUtc<=now && now-release.ScannedUtc<TimeSpan.FromHours(24))result.Add(release);
             }
             return result.ToArray();
@@ -166,11 +190,25 @@ namespace TimeSplitters.Launcher
         public readonly Button Cancel=new Button {Name="CancelModTransfer",Content="Cancel",IsEnabled=false,Margin=new Thickness(0,0,10,8)};
         public readonly Button BrowseTab=new Button {Content="Browse",Margin=new Thickness(0,0,10,8)};
         public readonly Button InstalledTab=new Button {Content="Installed",Margin=new Thickness(0,0,10,8)};
+        public readonly ComboBox Category=new ComboBox {Name="ModCategory",MinWidth=155,Margin=new Thickness(0,0,12,8)};
+        public readonly TextBox Creator=new TextBox {Name="ModCreator",MinWidth=150,Margin=new Thickness(0,0,12,8)};
+        public readonly ComboBox Sort=new ComboBox {Name="ModSort",MinWidth=150,Margin=new Thickness(0,0,12,8)};
+        public readonly CheckBox OlderVersions=new CheckBox {Name="OlderModVersions",Content="Include older releases",Margin=new Thickness(0,7,12,8)};
+        public readonly Button Previous=new Button {Name="PreviousModPage",Content="Previous",Margin=new Thickness(0,0,10,8)};
+        public readonly Button Next=new Button {Name="NextModPage",Content="Next",Margin=new Thickness(0,0,10,8)};
         public event Action PlayWithoutModsRequested;
         public event Action<bool> FileBusyChanged;
         readonly StackPanel results=new StackPanel();readonly TextBlock status;
         readonly string root;readonly bool preview;readonly ModWorkshopClient client;
         readonly ModLibrary library;bool installedTab;
+        readonly WrapPanel filters=new WrapPanel(),pager=new WrapPanel();
+        readonly TextBlock pageLabel=PageTheme.Text("",12,"#9EB4C8");
+        readonly ScrollViewer scroll;
+        int page;
+        public const int PageSize=20;
+        public int MatchingCount {get;private set;}
+        public int PageNumber {get{return page+1;}}
+        public int PageCount {get{return Math.Max(1,(MatchingCount+PageSize-1)/PageSize);}}
         CancellationTokenSource stop;WorkshopRelease[] releases=new WorkshopRelease[0];bool disposed;string service="";
         public string StatusText {get{return status.Text;}}
         public int VisibleCount {get;private set;}
@@ -185,34 +223,60 @@ namespace TimeSplitters.Launcher
             var header=PageTheme.Header("COMMUNITY WORKSHOP","Mods","Browse community creations, check their details and download packages here.");View.Children.Add(header);
             var toolbar=new WrapPanel();header.Children.Add(toolbar);
             toolbar.Children.Add(BrowseTab);toolbar.Children.Add(InstalledTab);
-            BrowseTab.Click+=(s,e)=>{installedTab=false;Render();};InstalledTab.Click+=(s,e)=>{installedTab=true;Render();};
+            BrowseTab.Click+=(s,e)=>{installedTab=false;ResetPage();};InstalledTab.Click+=(s,e)=>{installedTab=true;ResetPage();};
             var searchLabel=PageTheme.Text("Search mods",13);searchLabel.Margin=new Thickness(0,9,12,8);toolbar.Children.Add(searchLabel);
             toolbar.Children.Add(Search);toolbar.Children.Add(Refresh);toolbar.Children.Add(Cancel);
             AutomationProperties.SetName(Search,"Search mods by name, creator or description");
-            Ui.Tip(Search,"Search by name, creator or description");Ui.TextChanged(Search,Render);
+            Ui.Tip(Search,"Search by name, creator or description");Ui.TextChanged(Search,ResetPage);
+            header.Children.Add(filters);
+            filters.Children.Add(FilterLabel("Content"));filters.Children.Add(Category);
+            foreach(var item in new[]{new[]{"","All content"},new[]{"textures","Textures"},new[]{"scripts","Gameplay scripts"},new[]{"maps","Maps"},new[]{"audio","Audio"}})
+                Category.Items.Add(new ComboBoxItem {Tag=item[0],Content=item[1]});
+            Category.SelectedIndex=0;
+            filters.Children.Add(FilterLabel("Creator"));filters.Children.Add(Creator);
+            filters.Children.Add(FilterLabel("Sort"));filters.Children.Add(Sort);
+            foreach(var item in new[]{new[]{"name","Name"},new[]{"creator","Creator"},new[]{"version","Version, newest first"}})
+                Sort.Items.Add(new ComboBoxItem {Tag=item[0],Content=item[1]});
+            Sort.SelectedIndex=0;filters.Children.Add(OlderVersions);
+            AutomationProperties.SetName(Category,"Filter mods by content");AutomationProperties.SetName(Creator,"Filter mods by creator");AutomationProperties.SetName(Sort,"Sort mod releases");
+            Category.SelectionChanged+=(s,e)=>ResetPage();Sort.SelectionChanged+=(s,e)=>ResetPage();Ui.TextChanged(Creator,ResetPage);Ui.CheckedChanged(OlderVersions,ResetPage);
             Refresh.Click+=async(s,e)=>await Load();Cancel.Click+=(s,e)=>{if(stop!=null)stop.Cancel();};
-            var scroll=new ScrollViewer {Content=results,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};Grid.SetRow(scroll,1);View.Children.Add(scroll);
+            scroll=new ScrollViewer {Content=results,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};Grid.SetRow(scroll,1);View.Children.Add(scroll);
             var footer=new StackPanel {Margin=new Thickness(0,12,0,0)};Grid.SetRow(footer,2);View.Children.Add(footer);
-            footer.Children.Add(PageTheme.Text("Texture mods require a mod-capable game build and Enhanced textures. Maps, audio and scripts stay inactive in this build.",12,"#FFDAA6"));
+            pager.Children.Add(Previous);pager.Children.Add(Next);pager.Children.Add(pageLabel);footer.Children.Add(pager);
+            Previous.Click+=(s,e)=>{page--;Render();Ui.ScrollHome(scroll);};Next.Click+=(s,e)=>{page++;Render();Ui.ScrollHome(scroll);};
+            footer.Children.Add(PageTheme.Text("Textures and offline gameplay modes require a compatible game build. Map and audio packages can be installed but cannot be activated yet.",12,"#FFDAA6"));
             var recovery=new WrapPanel();footer.Children.Add(recovery);
             var disableAll=new Button {Name="DisableAllMods",Content="Disable all mods",Margin=new Thickness(0,8,10,8)};
             disableAll.Click+=async(s,e)=>await ChangeLibrary(token=>library.DisableAll(token),"All mods disabled. Installed packages were preserved.");recovery.Children.Add(disableAll);
             var withoutMods=new Button {Name="PlayWithoutMods",Content="Play without mods",Margin=new Thickness(0,8,10,8)};
             withoutMods.Click+=(s,e)=>{if(!preview && stop==null && PlayWithoutModsRequested!=null)PlayWithoutModsRequested();};recovery.Children.Add(withoutMods);
             status=PageTheme.Text("The community workshop server has not been connected yet.",12,"#9EB4C8");footer.Children.Add(status);
-            if(preview)releases=new[]{new WorkshopRelease {Id="preview-map",Name="Example community map",Version="1.0.0",Author="Example creator",Description="Interface example for a community map listing. No map or gameplay is included.",ScanEngine="Preview example",ScannedUtc=DateTime.UtcNow},
-                new WorkshopRelease {Id="preview-mode",Name="Example game mode",Version="1.0.0",Author="Example creator",Description="Interface example for a scripted game mode listing. No script is downloaded or executed.",ScanEngine="Preview example",ScannedUtc=DateTime.UtcNow}};
+            if(preview)releases=new[]{new WorkshopRelease {Id="preview-map",Name="Example community map",Version="1.0.0",Author="Example creator",Categories=new[]{"maps"},Description="Interface example for a community map listing. No map or gameplay is included.",ScanEngine="Preview example",ScannedUtc=DateTime.UtcNow},
+                new WorkshopRelease {Id="preview-mode",Name="Example game mode",Version="1.0.0",Author="Example creator",Categories=new[]{"scripts"},Description="Interface example for a scripted game mode listing. No script is downloaded or executed.",ScanEngine="Preview example",ScannedUtc=DateTime.UtcNow}};
             Render();
         }
-        public void SetReleases(WorkshopRelease[] value){releases=value??new WorkshopRelease[0];Render();}
+        public void SetReleases(WorkshopRelease[] value){releases=value??new WorkshopRelease[0];ResetPage();}
+        static TextBlock FilterLabel(string text){var label=PageTheme.Text(text,13);label.Margin=new Thickness(0,9,8,8);return label;}
+        void ResetPage(){page=0;Render();if(scroll!=null)Ui.ScrollHome(scroll);}
+        static string Choice(ComboBox box){var item=box.SelectedItem as ComboBoxItem;return item==null?"":(string)item.Tag;}
         void Render()
         {
             results.Children.Clear();VisibleCount=0;string query=(Search.Text??"").Trim();
+            Ui.Show(filters,!installedTab);Ui.Show(pager,!installedTab);
             if(installedTab){RenderInstalled(query);return;}
-            foreach(var release in releases.Where(r=>r.SearchText.IndexOf(query,StringComparison.OrdinalIgnoreCase)>=0)) {
+            var selected=WorkshopRelease.Select(releases,query,Creator.Text,Choice(Category),OlderVersions.IsChecked==true,Choice(Sort));
+            MatchingCount=selected.Length;page=Math.Max(0,Math.Min(page,PageCount-1));
+            Previous.IsEnabled=page>0;Next.IsEnabled=page+1<PageCount;
+            pageLabel.Text=MatchingCount+" matching release(s) · Page "+PageNumber+" of "+PageCount;
+            foreach(var release in selected.Skip(page*PageSize).Take(PageSize)) {
                 VisibleCount++;
                 var card=PageTheme.Section(results,release.Name+"  "+release.Version,release.Description);
                 card.Children.Add(PageTheme.Text("By "+release.Author,13,"#A7D9FA"));
+                string size=release.PayloadBytes<1048576?release.PayloadBytes.ToString(CultureInfo.InvariantCulture)+" bytes":(release.PayloadBytes/1048576.0).ToString("0.##",CultureInfo.InvariantCulture)+" MiB";
+                string content=String.Join(" · ",release.Categories.Select(WorkshopRelease.ContentName));
+                card.Children.Add(PageTheme.Text(content+(release.PayloadBytes>0?" · Payload "+size:""),12,"#B4C7D8"));
+                if(release.Dependencies.Length>0)card.Children.Add(PageTheme.Text("Requires: "+String.Join(", ",release.Dependencies),12,"#B4C7D8"));
                 card.Children.Add(PageTheme.Text("Reviewed by the repository operator · scanned with "+release.ScanEngine+" · "+release.ScannedUtc.ToString("u",CultureInfo.InvariantCulture),11,"#9EB4C8"));
                 var button=new Button {Name="DownloadMod",Content="Download package",IsEnabled=stop==null,Margin=new Thickness(0,12,0,0)};
                 AutomationProperties.SetName(button,"Download "+release.Name+" "+release.Version);

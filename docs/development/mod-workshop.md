@@ -153,8 +153,10 @@ releases disappear until rescanned and reviewed. The report records the scanner
 version/database identity and enforced2-day definition-age policy. Legacy
 reports without that policy and the current isolation marker require rescan and review. Automated database
 updates and rescan scheduling remain production prerequisites.
-Search matches ID, name, author and description, including older approved
-versions. Ranking, pagination and version-channel selection are future work.
+Search matches ID, name, author and description. The native launcher paginates
+results and includes older approved versions when selected; the operator preview
+retains its simple list. Relevance ranking and version-channel selection remain
+future work.
 
 ## Package contract
 
@@ -281,6 +283,15 @@ execution or downloads. Handle dedicated-server compatibility, deterministic
 rules and separate modded save namespaces explicitly.
 
 ### 3. Player mod manager in the existing launcher
+
+Browse offers content and creator filters, name/creator/numeric-version sorting
+and20 results per page. It shows the latest approved available release per mod
+by default; **Include older releases** exposes retained reviewed versions for
+manual version selection. Search and filters apply to the displayed version's
+metadata. Mixed packages match every included content kind. Cards show expanded
+payload size and exact dependencies from strictly validated manifests; this size
+is not a compressed download estimate. Filtering and catalog refresh reset paging.
+Only the supported US Future Perfect game and draft API appear in this catalog.
 
 The shared `ModWorkshopPage.cs` supplies catalog browsing, search, bounded
 hash-verified downloads and native installation on the common WPF/Avalonia page.
