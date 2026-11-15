@@ -33,6 +33,7 @@ int main(int argc,char **argv) {
     double started=now();if(started<0)return 125;
     struct rlimit core={0,0};if(setrlimit(RLIMIT_CORE,&core))return 125;
     if(signal(SIGPIPE,SIG_IGN)==SIG_ERR)return 125;
+    if(signal(SIGCHLD,SIG_DFL)==SIG_ERR)return 125;
     posix_spawn_file_actions_t actions;posix_spawnattr_t attributes;
     if(posix_spawn_file_actions_init(&actions))return 125;
     if(posix_spawnattr_init(&attributes)){posix_spawn_file_actions_destroy(&actions);return 125;}

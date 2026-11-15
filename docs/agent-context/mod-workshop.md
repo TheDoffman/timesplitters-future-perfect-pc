@@ -1,3 +1,7 @@
+Scanner controllers now require default SIGCHLD handling so another handler cannot
+steal guardian exit status and turn an engine error into apparent success. The
+native guardian resets its own SIGCHLD disposition before spawning its child.
+
 Darwin process sampling accepts unrelated system UID -2 while enforcing the exact
 service UID throughout the managed descendant subtree; live host exposed this
 OS-format difference before agent re-enablement.

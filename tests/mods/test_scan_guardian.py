@@ -129,3 +129,20 @@ def test_changed_guardian_receipt_or_image_is_refused(guardian, tmp_path, monkey
         output.write(b'changed')
     with pytest.raises(ModError, match='receipt'):
         sandbox.verified_guardian()
+
+
+def test_controller_that_ignores_child_status_is_refused(worker):
+    code = '''import signal,sys
+from pathlib import Path
+sys.path.insert(0,sys.argv[1])
+from mod_scan_sandbox import ScanSandbox
+from mod_package import ModError
+signal.signal(signal.SIGCHLD,signal.SIG_IGN)
+try:
+ with ScanSandbox(sys.argv[2],Path(sys.argv[3]),Path(sys.argv[4])):pass
+except ModError:print('refused')
+else:raise AssertionError('Lost child exit status could be treated as a clean scan')
+'''
+    result = subprocess.run([sys.executable, '-c', code, str(ROOT / 'tools/mods'), str(worker.executable),
+                             str(worker.content), str(worker.database)], capture_output=True, timeout=10)
+    assert result.returncode == 0 and result.stdout.strip() == b'refused'

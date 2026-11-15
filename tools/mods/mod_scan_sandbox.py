@@ -5,6 +5,7 @@ import hashlib
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -87,6 +88,8 @@ class ScanSandbox:
     def __enter__(self):
         require(sys.platform == 'darwin' and Path('/usr/bin/sandbox-exec').is_file(),
                 'Isolated scanning requires the configured Mac workshop host')
+        require(signal.getsignal(signal.SIGCHLD) == signal.SIG_DFL,
+                'Scanner controller must retain its own child exit status')
         require(self.database is not None, 'An explicit official scanner database directory is required')
         self.database = Path(self.database).resolve()
         require(self.content.is_dir() and self.database.is_dir(), 'Missing content or scanner database')
