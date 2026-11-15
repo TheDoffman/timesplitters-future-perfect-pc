@@ -1,3 +1,13 @@
+Canonical workshop HTTPS authorities now permit the default port or explicit
+8443/10000 only. Signed roots/catalogs/cache identities retain the exact port;
+cross-port metadata and root rotations are rejected. Python and native validators
+reject explicit443/leading-zero aliases, paths, credentials and unapproved ports
+for signed origins. Transport URLs normalize through Uri before root matching.
+Caddy's Host matcher gets only the validated hostname; API Host/Origin retain the
+port. Existing private443 routing must stay private; separate8443 is planned.
+Golden port-bound signatures and actual Caddy transport/API tests cover this.
+
+
 # Workshop publication trust
 
 The producer and shared native launcher implement this protocol. It is not a

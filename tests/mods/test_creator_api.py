@@ -75,6 +75,16 @@ def test_wsgi_authentication_cookie_and_role_injection_are_rejected(service):
     assert call(api, token=token)['status'] == 401
 
 
+@pytest.mark.parametrize('port', [8443, 10000])
+def test_https_port_is_bound_to_host_and_browser_origin(service, port):
+    accounts, _, _ = service
+    origin = 'https://workshop.invalid:' + str(port)
+    api = WorkshopAPI(accounts, origin)
+    assert call(api, path='/healthz', HTTP_HOST='workshop.invalid:' + str(port), HTTP_ORIGIN=origin)['status'] == 200
+    assert call(api, path='/healthz', HTTP_HOST='workshop.invalid', HTTP_ORIGIN=origin)['status'] == 403
+    assert call(api, path='/healthz', HTTP_HOST='workshop.invalid:' + str(port), HTTP_ORIGIN='https://workshop.invalid')['status'] == 403
+
+
 @pytest.mark.parametrize('overrides', [
     {'HTTP_HOST':'attacker.invalid'}, {'wsgi.url_scheme':'http'},
     {'HTTP_ORIGIN':'https://attacker.invalid'}, {'HTTP_ORIGIN':'null'},

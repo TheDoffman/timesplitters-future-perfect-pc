@@ -38,6 +38,8 @@ namespace TimeSplitters.Launcher
         internal static object[] Array(Dictionary<string,object> data,string name,int maximum)
         {object v;Need(data.TryGetValue(name,out v) && v is object[] && ((object[])v).Length<=maximum,"invalid metadata array.");return (object[])v;}
         internal static bool IsHash(string value){return value!=null && Regex.IsMatch(value,@"\A[0-9a-f]{64}\z");}
+        internal static bool CanonicalOrigin(string value)
+        {return value!=null && value.Length<=255 && Regex.IsMatch(value,@"\Ahttps://(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?(?::(?:8443|10000))?\z");}
         internal static byte[] Base64(string text,int maximum)
         {
             Need(text.Length<=4*((maximum+2)/3),"base64 exceeds its budget.");byte[] data;
@@ -83,7 +85,7 @@ namespace TimeSplitters.Launcher
             byte[] payload;Envelope(wire,MaxRoot,out payload);var data=JsonBytes(payload,MaxRoot/2);Fields(data,"type schema version origin issued expires keys roles");
             Need(Text(data,"type")=="tsfp-workshop-root" && Number(data,"schema")==1,"unsupported root.");
             var root=new Root {Data=data,Version=Number(data,"version"),Issued=Number(data,"issued",0),Expires=Number(data,"expires",0),Origin=Text(data,"origin")};
-            Need(Regex.IsMatch(root.Origin,@"\Ahttps://(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?\z"),"invalid canonical HTTPS origin.");
+            Need(CanonicalOrigin(root.Origin),"invalid canonical HTTPS origin.");
             Need(root.Expires>root.Issued && root.Expires-root.Issued<=366L*86400,"invalid root lifetime.");
             var keys=Object(data,"keys");Need(keys.Count>=3 && keys.Count<=8,"invalid root key count.");
             foreach(var pair in keys){var key=pair.Value as Dictionary<string,object>;Need(key!=null && KeyId(key)==pair.Key,"key identifier mismatch.");}

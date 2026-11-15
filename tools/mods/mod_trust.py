@@ -62,14 +62,17 @@ def origin(value):
             and not any(c.isspace() or ord(c) < 32 for c in value), 'Invalid metadata origin')
     try:
         url = urlsplit(value)
-        valid = (url.scheme == 'https' and url.hostname and url.netloc == url.hostname
+        port = url.port
+        authority = (url.hostname or '') + (':' + str(port) if port in (8443, 10000) else '')
+        valid = (url.scheme == 'https' and url.hostname and port in (None, 8443, 10000)
+                 and url.netloc == authority and value == 'https://' + authority
                  and url.path == '' and not url.query and not url.fragment
                  and re.fullmatch(r'(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+'
                                   r'[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?', url.hostname)
                  and '\\' not in value)
     except ValueError:
         valid = False
-    require(valid, 'Trust metadata requires a canonical HTTPS origin without a port or path')
+    require(valid, 'Trust metadata requires a canonical HTTPS origin with default, 8443 or 10000 port and no path')
     return value
 
 

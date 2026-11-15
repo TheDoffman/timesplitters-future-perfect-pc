@@ -77,6 +77,25 @@ public static class WorkshopTrustChecks
     }
     public static void Run(string root,Action<string,Action> test)
     {
+        test("native trust binds supported HTTPS ports across catalog verification transport and rotation",()=>{
+            foreach(string port in new[]{"8443","10000"}) {
+                var authority=ModTrust.Roots(Bytes("port_root"+port),new byte[0][],Unix);
+                Need(authority.Origin==Origin+":"+port,"Signed port was discarded");
+                ModTrust.Catalog(Bytes("port_metadata"+port),Bytes("port_catalog"),authority,Unix);
+            }
+            var first=ModTrust.Roots(Bytes("port_root8443"),new byte[0][],Unix);
+            Reject(()=>ModTrust.Catalog(Bytes("port_metadatawrongdefault"),Bytes("port_catalog"),first,Unix),"Same-key metadata crossed HTTPS authorities");
+            Reject(()=>ModTrust.Roots(Bytes("port_root8443"),new[]{Bytes("port_root10000")},Unix),"Root rotation changed the HTTPS port");
+            Reject(()=>ModTrust.Roots(Bytes("port_root_invalid444"),new byte[0][],Unix),"Signed but unapproved port accepted");
+            string folder=Path.Combine(root,"port-transport");Directory.CreateDirectory(Core.PathIn(folder,"Support/Mods"));File.WriteAllBytes(Core.PathIn(folder,"Support/Mods/trusted-root.json"),Bytes("port_root8443"));int requests=0;
+            using(var client=new ModWorkshopClient(new Handler(request=>{
+                requests++;Need(request.RequestUri.Port==8443,"Transport silently used the default port");
+                return Response(request.RequestUri.AbsolutePath=="/v1/catalog"?"port_catalog":"port_metadata8443");
+            }),folder,()=>Now)) {
+                Need(client.Read(Origin+":8443",CancellationToken.None).GetAwaiter().GetResult().Length==0,"Supported-port catalog failed");
+                int before=requests;Reject(()=>client.Read(Origin,CancellationToken.None).GetAwaiter().GetResult(),"Wrong-port service reused a pinned authority");Need(requests==before,"Wrong authority reached the network");
+            }
+        });
         test("workshop planning completes without posting continuations to a blocked caller context",()=>{
             string folder=Path.Combine(root,"dependency-context");var library=DependencyLibrary(folder);
             using(var client=DependencyClient(folder,()=>1)) {

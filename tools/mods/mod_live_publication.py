@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import uuid
+from urllib.parse import urlsplit
 
 from mod_backup import private_directory, regular
 from mod_package import digest, read_json, require
@@ -227,7 +228,7 @@ class CaddyServer:
             if self.role == 'downloads':
                 environment['TSFP_MOD_PUBLIC_ROOT'] = str(snapshot)
             else:
-                environment['TSFP_WORKSHOP_HOST'] = self.origin[len('https://'):]
+                environment['TSFP_WORKSHOP_HOST'] = urlsplit(self.origin).hostname
             process = subprocess.Popen([str(guardian), str(read), '--deadline-seconds', str(seconds),
                                         '/usr/bin/sandbox-exec', '-p', policy, str(self.executable),
                                         'run', '--config', str(config), '--adapter', 'caddyfile'],

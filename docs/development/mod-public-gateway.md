@@ -28,7 +28,9 @@ Example trusted local configuration:
 ```
 
 The config parent/state must be owned and mode0700. Hostnames are canonical DNS
-origins without ports, paths or whitespace. No uploaded value selects proxy
+origins with the default port or explicit8443/10000, without paths or whitespace.
+The signed origin and API Host/Origin include that port; Caddy matches the DNS
+hostname separately because its Host matcher removes the request port. No uploaded value selects proxy
 destinations, source/config paths, arguments, credentials or filesystem roots.
 
 ```sh

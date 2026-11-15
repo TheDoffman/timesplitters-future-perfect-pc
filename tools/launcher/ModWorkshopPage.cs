@@ -126,7 +126,8 @@ namespace TimeSplitters.Launcher
             Uri uri;
             Core.Require(Uri.TryCreate(value,UriKind.Absolute,out uri) && uri.UserInfo.Length==0 &&
                 uri.AbsolutePath=="/" && uri.Query.Length==0 && uri.Fragment.Length==0 &&
-                uri.Scheme=="https" && uri.IsDefaultPort,
+                uri.Scheme=="https" && (uri.IsDefaultPort || uri.Port==8443 || uri.Port==10000) &&
+                ModTrust.CanonicalOrigin(uri.GetLeftPart(UriPartial.Authority)),
                 "The workshop needs an HTTPS service address.");
             return uri;
         }

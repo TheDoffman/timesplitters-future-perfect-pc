@@ -88,7 +88,8 @@ def test_waiting_gateway_does_not_construct_server_before_managed_health(data, m
 
 
 @pytest.mark.skipif(sys.platform != 'darwin', reason='Actual confined Mac Caddy transport')
-def test_actual_gateway_bounds_http_framing_before_completed_backend_requests(tmp_path):
+@pytest.mark.parametrize('suffix', ['', ':8443', ':10000'])
+def test_actual_gateway_bounds_http_framing_before_completed_backend_requests(tmp_path, suffix):
     import hashlib
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     import shutil
@@ -147,8 +148,8 @@ def test_actual_gateway_bounds_http_framing_before_completed_backend_requests(tm
     server = None
 
     def request(headers, body=b''):
-        wire = (b'POST /v1/sessions HTTP/1.1\r\nHost: workshop.example.test\r\n'
-                b'Connection: close\r\n' + headers + b'\r\n' + body)
+        wire = (b'POST /v1/sessions HTTP/1.1\r\nHost: ' + ('workshop.example.test' + suffix).encode('ascii') +
+                b'\r\nConnection: close\r\n' + headers + b'\r\n' + body)
         with socket.create_connection(('127.0.0.1', 8768), timeout=3) as connection:
             connection.settimeout(3)
             connection.sendall(wire)
@@ -165,7 +166,7 @@ def test_actual_gateway_bounds_http_framing_before_completed_backend_requests(tm
         return int(reply.split(b' ', 2)[1])
 
     try:
-        server = service.CaddyServer(caddy, tmp_path, role='gateway', origin='https://workshop.example.test')
+        server = service.CaddyServer(caddy, tmp_path, role='gateway', origin='https://workshop.example.test' + suffix)
         server.start(None, 60)
         deadline = time.monotonic() + 5
         while True:

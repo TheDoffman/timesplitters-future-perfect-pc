@@ -1,3 +1,26 @@
+Canonical workshop HTTPS authorities now permit the default port or explicit
+8443/10000 only. Signed roots/catalogs/cache identities retain the exact port;
+cross-port metadata and root rotations are rejected. Python and native validators
+reject explicit443/leading-zero aliases, paths, credentials and unapproved ports
+for signed origins. Transport URLs normalize through Uri before root matching.
+Caddy's Host matcher gets only the validated hostname; API Host/Origin retain the
+port. Existing private443 routing must stay private; separate8443 is planned.
+Golden port-bound signatures and actual Caddy transport/API tests cover this.
+
+Windows full launcher suite passes80 shared UI groups; selected producer/API/
+transport checks67 pass/13 host skips. Private routing baseline is preserved;
+no Funnel configuration or public exposure changed during this source update.
+Native Mac port-specific checks remain pending source sync.
+
+Dependency install follow-up validated (sourcecd0be0a1): Windows full launcher
+suite passes79 shared UI groups; native Mac build/sign/strict verification and
+80 shared UI groups pass after context-independent client awaits and marshalled
+page progress. Signed fixture responses validate dependency install/reuse,
+partial cancellation, combined byte limits, revocation and manifest binding.
+These are injected HTTPS responses, not public TLS or native-game acceptance.
+Tailscale is now online; its private443 service is preserved. Separate8443
+workshop routing still requires canonical-origin support and public acceptance.
+
 Mac install-flow follow-up: source60a23344 built and signed, but its native UI
 test blocked on the first dependency case when a Task.Run continuation captured
 Avalonia's non-pumping test context. Owned PID46000 was sampled, then terminated;

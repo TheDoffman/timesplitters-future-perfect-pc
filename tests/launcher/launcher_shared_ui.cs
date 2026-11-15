@@ -123,6 +123,11 @@ public static class LauncherSharedUiChecks
             Need(ModWorkshopClient.ServiceUri("https://workshop.example.ts.net").Host=="workshop.example.ts.net","HTTPS service rejected");
             foreach(var url in new[]{"http://127.0.0.1:8765","http://example.com","https://user:secret@example.com","https://example.com/subpath","https://example.com/?redirect=1","file:///tmp/package"})
                 WorkshopReject(()=>ModWorkshopClient.ServiceUri(url),"Unsafe service URL accepted");
+            foreach(int port in new[]{8443,10000})Need(ModWorkshopClient.ServiceUri("https://workshop.example.ts.net:"+port).Port==port,"Supported HTTPS port rejected");
+            foreach(var authority in new[]{"https://workshop.example.ts.net:444","https://workshop.example.ts.net:10001"})
+                WorkshopReject(()=>ModWorkshopClient.ServiceUri(authority),"Unapproved HTTPS port accepted");
+            foreach(var authority in new[]{"https://workshop.example.ts.net:443","https://workshop.example.ts.net:08443","HTTPS://workshop.example.ts.net:8443"})
+                Need(!ModTrust.CanonicalOrigin(authority),"Noncanonical signed authority accepted");
         });
         Test("workshop shared page searches creators and previews stay offline",()=>{
             int requests=0;

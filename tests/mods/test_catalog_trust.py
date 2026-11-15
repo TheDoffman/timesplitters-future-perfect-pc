@@ -16,10 +16,25 @@ import mod_signing
 from mod_package import ModError, digest
 from mod_repository import Repository
 from mod_trust import (MAX_REVOKED, PublicationSigner, encode, envelope, key_id, make_root,
-                       public_key, root_document, sign, trusted_root, verify_catalog)
+                       public_key, root_document, sign, trusted_root, verify_catalog, origin)
 from test_mod_workshop import approved
 
 ORIGIN = 'https://workshop.example.test'
+
+
+@pytest.mark.parametrize('suffix', ['', ':8443', ':10000'])
+def test_canonical_https_origins_allow_only_supported_authorities(suffix):
+    value = ORIGIN + suffix
+    assert origin(value) == value
+
+
+@pytest.mark.parametrize('value', [ORIGIN + ':443', ORIGIN + ':444', ORIGIN + ':08443',
+                                 ORIGIN + ':10001', ORIGIN + ':8443/', ORIGIN + ':8443/path',
+                                 'HTTPS://workshop.example.test:8443', 'https://WORKSHOP.example.test:8443',
+                                 'https://user@workshop.example.test:8443', ORIGIN + ':8443?token=x'])
+def test_noncanonical_or_unapproved_https_port_origins_are_rejected(value):
+    with pytest.raises(ModError):
+        origin(value)
 
 
 def authority(keys, now):

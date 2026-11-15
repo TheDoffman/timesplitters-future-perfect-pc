@@ -4,12 +4,10 @@ The selected deployment target is the owner's Mac mini, accessible over the
 internet, with no purchased domain. **Mods are browsed and searched inside the
 existing launcher.** A separate public website is optional.
 
-The local prototype now includes authenticated creator uploads, isolated scanning,
-private review, signed catalogs and native launcher enforcement. Public access has
-not been enabled. The current Caddy configuration serves approved downloads only;
-proxying the creator API, persistent operation, recovery and public acceptance
-remain required for the complete system. This download-only hosting milestone is
-not the full requested workshop.
+Private-host integration includes authenticated creator uploads, isolated scanning,
+manual review, signed publication/revocation and native launcher enforcement.
+A separate confined gateway routes approved downloads and creator API requests.
+Public access and production service deployment remain incomplete.
 
 Texture overlays and one restricted gameplay mode can be enabled by compatible
 native launchers. The packaged First to Three example has completed real matches
@@ -23,20 +21,21 @@ Private scan worker/watchdog and a separate six-hour official definition updater
 are installed as pinned login agents under the owner's Application Support.
 Actual guarded scan/review/rescan, process-isolation canaries and the first
 FreshClam check pass. The six-hour interval has not elapsed; these agents need
-the user's login session. Dedicated production identity, unattended boot,
-automatic publication invalidation/refresh and internet access remain incomplete.
+the user's login session. The dedicated locked production identity and private
+folder layout are now verified. Production jobs/root-owned runtime, unattended
+boot and internet access remain incomplete. Private live publication invalidation
+and refresh pass; that controller is not yet the production service.
 See [scanner operation](mod-scan-service.md) and [current status](../project/STATUS.md).
 
 ## Layout and public address
 
 ```text
-Player's launcher -- HTTPS --> Tailscale Funnel address
-                                  |
-                              Mac mini
-                                  |
-                         Caddy on 127.0.0.1:8766
-                                  |
-                   approved static publication snapshot
+Player's launcher -- HTTPS:8443 --> Tailscale Funnel
+                                          |
+                                  gateway127.0.0.1:8768
+                                   |              |
+                        static8766              creator API8767
+                    approved snapshot       private account/upload data
 
 Private repository + quarantine + scans + moderation stay outside that snapshot.
 ```
@@ -65,9 +64,10 @@ official FreshClam databases in the private workshop scanner directory. No
 scanner daemon was started. Tailscale1.104.7 is installed in /Applications; its
 official ZIP checksum, strict/deep Developer ID signature and Apple notarization
 were verified (Tailscale Inc., team W5364U7YZB). The app was opened in the
-background, but the CLI reports Failed to save preferences. An older1.94.1
-network extension is activated/enabled. A later status query did not respond and was stopped without stopping the app
-or network service. Working sign-in/public access remains unverified; complete the [official setup](https://tailscale.com/docs/install/mac).
+background. Later read-only CLI checks confirm signed-in/online operation.
+An existing private Serve mapping occupies HTTPS443. Preserve it; the workshop
+uses a separately selected free port such as8443. No public Funnel mapping has
+yet been verified. See the [official setup](https://tailscale.com/docs/install/mac).
 
 On this FileProvider-managed Desktop, the generated app acquired FinderInfo and
 code signing failed despite the builder's existing metadata cleanup. The same
@@ -182,23 +182,33 @@ in the public request path. Caddy's
 and [loopback binding](https://caddyserver.com/docs/caddyfile/directives/bind)
 provide that small serving surface.
 
-Check `http://127.0.0.1:8766/v1/catalog` on the Mac. Then, in a separate terminal,
-authenticate/configure Tailscale as described in its documentation and run:
+The static server alone is not the complete workshop ingress. Prepare and verify
+the [confined gateway](mod-public-gateway.md) and its private API backend first.
+Inspect existing Serve/Funnel mappings before enabling public access. Do not
+replace a private443 mapping or use a global reset. Select a free supported HTTPS
+port and preserve all existing routes and their private/public visibility.
 
-```sh
-tailscale funnel --bg 8766
-tailscale funnel status
-```
+After production gateway acceptance, an example mapping on unused8443 is:
 
-The Funnel command can prompt for the owner's account approval. Use the
-**actual HTTPS address it returns**; do not invent a hostname. Verify the
-catalog from another internet connection before distributing it. See
-[Funnel CLI documentation](https://tailscale.com/docs/reference/tailscale-cli/funnel)
-for account setup, status and removal commands. To stop this specific mapping:
+~~~sh
+tailscale funnel --https=8443 --bg http://127.0.0.1:8768
+tailscale funnel status --json
+~~~
 
-```sh
-tailscale funnel 8766 off
-```
+The command can require the owner's browser approval. Use the actual HTTPS
+address it returns, including the port. Verify catalog/package/account behavior
+from an independent internet connection and confirm existing443 routes remain
+private before distributing the launcher. See the
+[Funnel CLI documentation](https://tailscale.com/docs/reference/tailscale-cli/funnel).
+To remove only this mapping, use its matching port flags:
+
+~~~sh
+tailscale funnel --https=8443 off
+~~~
+
+For a temporary connectivity test use a foreground, bounded process and only a
+non-sensitive health backend; verify cleanup and the original routing afterward.
+Do not expose the operator preview, quarantine, source checkout or personal apps.
 
 ## Connect the launcher
 
@@ -206,7 +216,7 @@ The shared Mods page reads `Support/Mods/service.json` relative to the chosen
 installation root. This contains a public URL only, with no secrets:
 
 ```json
-{"service":"https://ACTUAL-MAC-NAME.ACTUAL-TAILNET.ts.net"}
+{"service":"https://ACTUAL-MAC-NAME.ACTUAL-TAILNET.ts.net:8443"}
 ```
 
 Replace the example with the verified address returned by Funnel. HTTPS is
