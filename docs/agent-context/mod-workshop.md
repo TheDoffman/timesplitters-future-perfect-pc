@@ -1,3 +1,13 @@
+Native creator backend wire check: creator_backend.cs launches the real Python
+WorkshopAPI/Accounts/Uploads/SDK packager against a disposable SQLite repository
+through bounded private pipes. It exercises actual invitation/Unicode password
+redemption/login, exact upload/quarantine, cursor history, ownership and immutable
+version refusals, no quarantine download route, session revocation and no clear
+password storage. No socket, scan result, approval or publication is fabricated.
+This is not HTTPS/internet/scanner acceptance. --test-creator-backend is separate
+from UI tests/normal launches; build test commands pass explicit developer Python
+and source root. Backend sources/helper/Python identity enter validation receipts.
+
 Native worker CI failure diagnostics: session-driver rejected submission reports
 scenario, submission/phase/stopped state and bounded Session error; match-driver
 failed checks include the bounded match fault/error. Real idle-spin and callback

@@ -30,8 +30,12 @@ reservations until expiry, so check status before retrying.
 Every authenticated request uses the configured HTTPS authority and rechecks
 the live installed trust-root chain before sending credentials. There are no
 redirects, cookies, default OS credentials or automatic upload retries. Responses
-have strict structural and size limits. The native UI/model tests inject API
-responses; they do not establish real internet TLS or public scanner acceptance.
+have strict structural and size limits. UI-only adversarial checks inject API
+responses. A separate developer backend mode runs the real account/upload API,
+SQLite and SDK packager through private pipes, checking actual quarantine,
+ownership, immutable versions, Unicode passwords and remote session revocation.
+It opens no network server and does not scan or publish. Real internet TLS and
+public creator-to-scanner-to-game acceptance remain unfinished.
 
 Private snapshot/staged restore tooling and conservative publication reconciliation
 are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery

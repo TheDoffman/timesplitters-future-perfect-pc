@@ -1546,3 +1546,19 @@ uses the real idle-spin child to fault before a later dispatch, checking bounded
 diagnostics and cleanup. test_mod_match.py::test_game_bridge_driver_reports_callback_failure
 uses a real Lua callback error to check the bridge fault reason and cleanup.
 Neither control increases production or test deadlines/resource limits.
+
+Native creator backend: tests/launcher/creator_backend.cs and
+native_creator_backend.py exercise actual WSGI/SQLite/account/upload/SDK code via
+private request/response pipes. The standalone --test-creator-backend mode checks
+real invitation redemption, NFC/UTF8 password login, exact quarantine upload,
+history pagination, immutable-version/ownership refusals, unavailable quarantine
+download route, remote session revocation, no password files and complete cleanup.
+It opens no network listener and neither scans nor approves; public TLS and the
+full scanner/publication/game path remain separate acceptance work.
+Windows build-launcher.ps1 -Test chooses explicit TSFP_TEST_CREATOR_PYTHON,
+otherwise .venv/Scripts/python.exe or setup-python's python.exe; Python3.12+ is a
+developer-only requirement for this mode. Mac/Linux builders pass their own
+interpreter. Normal launcher/UI modes remain Python-free. Test source root and
+interpreter are scoped to the helper; source/helper/Python identity participate
+in build validation receipts/cache. All helper credentials belong to a discarded
+private fixture and never enter command-line arguments or build logs.

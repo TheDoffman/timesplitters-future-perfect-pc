@@ -93,6 +93,20 @@ $cacheInputs = @($PSCommandPath, (Join-Path $PSScriptRoot 'launcher-cache.ps1'),
 $cacheInputs += @(Get-ChildItem -LiteralPath $source -File | ForEach-Object { $_.FullName })
 $cacheInputs += @(Get-ChildItem -LiteralPath (Join-Path $project 'tests/launcher') -Filter '*.cs' -File | ForEach-Object { $_.FullName })
 $cacheInputs += Join-Path $project 'tests/launcher/workshop-trust-fixtures.json'
+$creatorPython = ''
+$creatorPythonVersion = ''
+if ($Test) {
+    $creatorPython = $env:TSFP_TEST_CREATOR_PYTHON
+    if (!$creatorPython) { $creatorPython = Join-Path $project '.venv/Scripts/python.exe' }
+    if (!(Test-Path -LiteralPath $creatorPython -PathType Leaf)) {
+        $creatorPython = (Get-Command python.exe -ErrorAction Stop).Source
+    }
+    $creatorPython = [IO.Path]::GetFullPath($creatorPython)
+    $creatorPythonVersion = & $creatorPython -I -c 'import sys; assert sys.version_info >= (3,12); print(sys.version)'
+    if ($LASTEXITCODE -ne 0) { throw 'Creator backend integration tests require developer Python 3.12 or newer.' }
+    $cacheInputs += @($creatorPython, (Join-Path $project 'tests/launcher/native_creator_backend.py'))
+    $cacheInputs += @(Get-ChildItem -LiteralPath (Join-Path $project 'tools/mods') -Filter '*.py' -File | ForEach-Object { $_.FullName })
+}
 foreach ($name in ($references + @('csc.exe', 'csc.exe.config', 'clr.dll', 'mscorlib.dll', 'System.Drawing.dll', 'System.Xml.dll', 'System.Configuration.dll',
     'WPF/PresentationCore.dll', 'WPF/PresentationFramework.dll', 'WPF/WindowsBase.dll'))) {
     $cacheInputs += Join-Path $framework $name
@@ -101,6 +115,7 @@ foreach ($path in @($BannerPath, $LogoPath, $BackdropPath)) {
     if (Test-Path -LiteralPath $path -PathType Leaf) { $cacheInputs += $path }
 }
 $cacheOptions = "launcher-v1|test=$Test|art=$RequireArtwork|banner=$BannerPath|logo=$LogoPath|backdrop=$BackdropPath|os=$([Environment]::OSVersion.VersionString)|ps=$($PSVersionTable.PSVersion)|culture=$([Globalization.CultureInfo]::CurrentCulture.Name)"
+$cacheOptions += "|creator-python=$creatorPython|creator-python-version=$creatorPythonVersion"
 $fingerprint = Get-LauncherFingerprint -Paths $cacheInputs -Options $cacheOptions
 if ($Test -and !$Rebuild -and (Test-LauncherReceipt -Receipt $receipt -Fingerprint $fingerprint -Output $Output -Files $cachedFiles)) {
     $buildOutcome = 'reused verified build and tests'
@@ -175,6 +190,7 @@ if ($Test) {
         $testArgs += '/reference:' + (Join-Path $framework "WPF\$reference")
     }
     $testArgs += @((Join-Path $project 'tests\launcher\workshop_trust.cs'), ('/resource:' + (Join-Path $project 'tests\launcher\workshop-trust-fixtures.json') + ',workshop-trust-fixtures.json'))
+    $testArgs += Join-Path $project 'tests/launcher/creator_backend.cs'
     $testArgs += @(('/resource:' + (Join-Path $project 'tests\launcher\mod-launch-vectors.json') + ',mod-launch-vectors.json'))
     $testArgs += $commonSources + @((Join-Path $source 'Bootstrap.cs'),
         (Join-Path $source 'Launcher.cs'), (Join-Path (Split-Path -Parent $PSScriptRoot) 'release\ImportGame.cs'),
@@ -207,6 +223,17 @@ if ($Test) {
     if ($LASTEXITCODE -ne 0) { throw 'Launcher unfinished-session tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --maintenance
     if ($LASTEXITCODE -ne 0) { throw 'Launcher maintenance tests failed.' }
+    $previousCreatorPython = $env:TSFP_TEST_CREATOR_PYTHON
+    $previousCreatorSource = $env:TSFP_TEST_CREATOR_SOURCE_ROOT
+    try {
+        $env:TSFP_TEST_CREATOR_PYTHON = $creatorPython
+        $env:TSFP_TEST_CREATOR_SOURCE_ROOT = $project
+        & (Join-Path $Output 'launcher-tests.exe') --test-creator-backend
+        if ($LASTEXITCODE -ne 0) { throw 'Native creator backend integration failed.' }
+    } finally {
+        $env:TSFP_TEST_CREATOR_PYTHON = $previousCreatorPython
+        $env:TSFP_TEST_CREATOR_SOURCE_ROOT = $previousCreatorSource
+    }
 }
 Get-Item -LiteralPath (Join-Path $Output 'TimeSplitters Launcher.exe') | Select-Object FullName,Length
 if ($Test) {

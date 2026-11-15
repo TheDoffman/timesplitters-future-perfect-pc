@@ -10,6 +10,7 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import tarfile
 import urllib.request
 import zipfile
@@ -109,7 +110,8 @@ def main():
                *sorted((ROOT / 'tools/launcher').rglob('*.cs')), *sorted((ROOT / 'tools/launcher').glob('*.xaml')),
                ROOT / 'tools/launcher/linux/LinuxLauncher.csproj', ROOT / 'tools/launcher/linux/packages.lock.json',
                ROOT / 'tools/launcher/macos/generate_layout.py',
-               ROOT / 'tests/launcher/workshop_trust.cs', ROOT / 'tests/launcher/workshop-trust-fixtures.json', ROOT / 'tests/launcher/mod-launch-vectors.json']
+               ROOT / 'tests/launcher/creator_backend.cs', ROOT / 'tests/launcher/native_creator_backend.py',
+               *sorted((ROOT / 'tools/mods').glob('*.py')), ROOT / 'tests/launcher/workshop_trust.cs', ROOT / 'tests/launcher/workshop-trust-fixtures.json', ROOT / 'tests/launcher/mod-launch-vectors.json']
     receipt = {'source_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                'working_tree_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                'source_sha256': {p.relative_to(ROOT).as_posix(): digest(p) for p in sources},
@@ -119,6 +121,8 @@ def main():
         env['TSFP_TEST_REQUIRE_ICON'] = '1' if (args.artwork_dir / 'launcher.ico').is_file() else '0'
         for mode in ('--test', '--test-ui'):
             subprocess.run([str(binary), mode], check=True, cwd=ROOT, env=env)
+        backend_env = dict(env, TSFP_TEST_CREATOR_PYTHON=sys.executable, TSFP_TEST_CREATOR_SOURCE_ROOT=str(ROOT))
+        subprocess.run([str(binary), '--test-creator-backend'], check=True, cwd=ROOT, env=backend_env)
     if args.package:
         archive = output / f'TimeSplitters-Launcher-v{version}-linux-x64.zip'
         with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as zip:

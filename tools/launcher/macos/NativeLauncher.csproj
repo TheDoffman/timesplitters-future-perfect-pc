@@ -10,6 +10,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
     <Compile Include="*.cs" />
     <Compile Include="../../../tests/launcher/launcher_shared_ui.cs" />
+    <Compile Include="../../../tests/launcher/creator_backend.cs" />
     <Compile Include="../ModScriptLaunch.cs" />
     <EmbeddedResource Include="../../../tests/launcher/mod-launch-vectors.json" LogicalName="mod-launch-vectors.json" />
     <Compile Include="../../../tests/launcher/workshop_trust.cs" />
