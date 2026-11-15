@@ -105,6 +105,19 @@ def test_explicit_repair_plan_requires_exact_observed_partial_record(partial):
     assert receipt['user_uuid'] != result['user_uuid'] and not result['services_started']
 
 
+def test_repair_accepts_exact_disabled_authority_visible_to_administrator(partial):
+    receipt, user = partial
+    user['AuthenticationAuthority'] = identity.DISABLED
+    assert repair.assess(receipt, user, {identity.ACCOUNT: 600}, {}, user['GeneratedUID'][0])['uid'] == 600
+
+
+def test_repair_rejects_other_authentication_authority(partial):
+    receipt, user = partial
+    user['AuthenticationAuthority'] = [';ShadowHash;']
+    with pytest.raises(repair.identity.ProvisionError, match='authentication policy'):
+        repair.assess(receipt, user, {identity.ACCOUNT: 600}, {}, user['GeneratedUID'][0])
+
+
 @pytest.mark.parametrize('field,value', [('GeneratedUID', ['FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF']),
                                          ('UserShell', ['/bin/zsh']), ('RealName', ['Unrecognized account'])])
 def test_repair_preserves_changed_accounts(partial, field, value):

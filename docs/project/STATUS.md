@@ -1,3 +1,12 @@
+Actual root identity inspection: a Terminal-launched read-only sudo diagnostic,
+started over SSH, shows AuthenticationAuthority exactly DisabledUser/DisabledTags
+SecureToken. These flags were hidden from ordinary SSH reads, not missing or
+cleared. The first repair correctly refused before mutation because its snapshot
+expected None. Repair admission now accepts either absent authority or those two
+exact disabled markers and rejects all other policies; mismatch errors name only
+fields. The same UUID/receipt/group/directory gates remain. Administrator repair
+and completed-receipt verification still need actual acceptance.
+
 Actual Mac launcher sourcee3e9f7f3: built/signed/strictly verified in an owned
 Library/Caches test output and72 shared UI groups pass. Default Desktop bundle
 verification failed because FinderInfo reappeared after clearing; original failed

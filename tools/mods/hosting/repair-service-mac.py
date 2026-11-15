@@ -34,10 +34,13 @@ def assess(receipt, user, users, groups, expected_uuid):
     for value in (expected_uuid, receipt['user_uuid'], receipt['group_uuid']):
         need(isinstance(value, str), 'Invalid identity UUID')
         need(str(uuid.UUID(value)).upper() == value, 'Invalid identity UUID')
+    need(user.get('AuthenticationAuthority') in (None, identity.DISABLED),
+         'Unexpected partial authentication policy; preserving account')
     expected = dict(UniqueID=[str(number)], PrimaryGroupID=[str(number)], UserShell=['/usr/bin/false'],
                     NFSHomeDirectory=[str(identity.ROOT / 'data')], GeneratedUID=[expected_uuid],
-                    AuthenticationAuthority=None, IsHidden=None, RealName=None)
-    need(user == expected, 'Partial account differs from the inspected failure; preserving it')
+                    AuthenticationAuthority=user.get('AuthenticationAuthority'), IsHidden=None, RealName=None)
+    differences = ', '.join(sorted(name for name in set(user) | set(expected) if user.get(name) != expected.get(name)))
+    need(user == expected, 'Partial account differs from the inspected failure (' + differences + '); preserving it')
     need(users.get(identity.ACCOUNT) == number and list(users.values()).count(number) == 1,
          'Partial user identity collision')
     need(identity.ACCOUNT.casefold() not in {name.casefold() for name in groups}
@@ -47,8 +50,8 @@ def assess(receipt, user, users, groups, expected_uuid):
 
 def finish_records(receipt):
     path = '/Users/' + identity.ACCOUNT
-    # Preserve the OS-assigned GeneratedUID. Password writes can clear authority
-    # flags, so explicitly disable authentication after the unusable marker.
+    # Preserve the OS-assigned GeneratedUID. Write the unusable marker first,
+    # then explicitly enforce the final disabled authentication policy.
     for name, values in [('Password', ['*']), ('RealName', ['TimeSplitters Workshop Service']),
                          ('IsHidden', ['1']), ('AuthenticationAuthority', identity.DISABLED)]:
         identity.command('/usr/bin/dscl', '.', '-create', path, name, *values)
