@@ -86,6 +86,8 @@ CPU_TOOLS = {
     'tools/mods/hosting/runtime-images-mac.py', 'tests/mods/test_host_runtime_images.py',
     'tools/mods/hosting/runtime_wheels.py', 'tests/mods/test_runtime_wheels.py',
     'tools/mods/mod_runtime_files.py', 'tests/mods/test_runtime_files.py',
+    'tools/mods/hosting/host_release.py', 'tools/mods/hosting/prepare-release-mac.py',
+    'tools/mods/hosting/install-release-mac.py', 'tests/mods/test_host_release.py',
     'config/mods/clamav-certificate.json',
     'tests/mods/test_creator_service.py', 'tests/mods/test_creator_api.py', 'tests/mods/test_package_budgets.py',
     'tests/mods/live_creator_service.py', 'tests/mods/scan_limits_probe.c',

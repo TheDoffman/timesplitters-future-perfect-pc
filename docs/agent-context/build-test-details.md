@@ -1,3 +1,10 @@
+tests/mods/test_host_release.py covers unsafe/colliding/escaping entries, duplicate
+or noninteger metadata, root-before-identity admission and POSIX complete descriptor
+verification, tampered/extra/linked inputs, writable ancestors and exclusive copies.
+POSIX fixtures use a private new directory under HOME and never modify accounts,
+system folders or jobs. Real prepare-release/install plan verification precedes
+any privileged callback; actual root-owned copy and UID600 smoke are separate gates.
+
 tests/mods/test_runtime_files.py verifies receipt ambiguity/number rejection and
 literal-only bundled Seatbelt grants without Homebrew/parent/network/fork access.
 POSIX cases create an owner-private temporary directory under the test user's

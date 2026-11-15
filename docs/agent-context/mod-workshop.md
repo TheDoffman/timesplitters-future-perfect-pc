@@ -1,3 +1,22 @@
+Immutable release preparation: hosting/prepare-release-mac.py freezes clean tracked
+tools/mods/config/mods bytes from the exact Git revision plus the source-bound
+guardian into an owner-private, read-only snapshot. Its descriptor binds that
+snapshot to an existing runtime receipt SHA without duplicating runtime payloads.
+host_release.py checks exact inventories, component-contained links, digest/mode/
+ownership/nlink/ancestor rules, path collisions and storage/count budgets using
+descriptor-relative nofollow opens. install-release-mac.py defaults to plan-only;
+explicit administrator --apply rechecks the completed service identity and writes
+only a new root-owned releases/<descriptor-sha> tree. It never selects an active
+release, registers jobs or changes public routing/data/accounts. Existing partial
+or unknown targets are preserved/refused; complete identical targets are verified.
+The intended locked-account smoke clears kernel supplementary groups, requires
+real/effective UID/GID600, refuses root/admin access groups, imports pinned crypto
+and runs the guarded sandbox scanner version command. Then all installed hashes,
+modes and inventories are rechecked before the root-owned completion receipt.
+macOS getgroups reports directory-service access groups, so it must not be assumed
+empty after setgroups([]); see Python3.12 os.getgroups documentation. Privileged
+installation and actual dropped-account acceptance remain pending.
+
 Packaged scanner confinement: mod_runtime_files.runtime_access validates an adjacent
 owner-controlled runtime receipt, nonlinked/non-writable-by-others ancestors and
 regular single-link executable/library bytes, modes and digests. Bounded native
