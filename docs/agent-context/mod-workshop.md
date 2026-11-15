@@ -2,7 +2,7 @@ Managed publication: live-publication-mac.py now generates private controller an
 independent watchdog login agents. Managed startup waits for fresh matching
 publication-descendants-v1 health bound to its actual PID before key admission.
 The watchdog samples2GiB/eight-process descendant bounds and15s controller
-heartbeat, cancels by owned launchd label; controller also withdraws if watchdog
+heartbeat, retains the exact bounded fault reason and cancels by owned launchd label; controller also withdraws if watchdog
 health expires. mod_host_watch.py shares the existing bounded numeric sampler
 with scan-service-mac.py; scanner limits/protocol remain unchanged. Actual
 launchd resource/stall/restart acceptance remains required before deployment.

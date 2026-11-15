@@ -122,7 +122,7 @@ def test_unknown_status_is_preserved_and_fault_survives_health(data):
     service.status(data, dict(status='terminated', reason='memory'), 'watchdog')
     service.status(data, dict(status='watching', watched_pid=os.getpid(),
                               supervision_policy=service.SUPERVISION_POLICY), 'watchdog')
-    assert 'last_fault' in json.loads((data['state'] / 'watchdog.json').read_bytes())
+    assert json.loads((data['state'] / 'watchdog.json').read_bytes())['last_fault']['reason'] == 'memory'
 
 
 def test_managed_start_waits_without_loading_keys_or_public_bytes(data, monkeypatch):

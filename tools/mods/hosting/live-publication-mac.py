@@ -64,7 +64,8 @@ def status(data, value, component='publication'):
     result = dict(schema=1, repository=str(data['repository']), service=data['label'],
                   component=component, pid=os.getpid(), time=int(time.time()), **value)
     if value['status'] in ('error', 'terminated'):
-        result['last_fault'] = dict(time=result['time'], reason='Live publication stopped; private operator inspection required')
+        result['last_fault'] = dict(time=result['time'], reason=value.get('reason',
+                                   'Live publication stopped; private operator inspection required'))
     elif 'last_fault' in old:
         result['last_fault'] = old['last_fault']
     wire = json.dumps(result, separators=(',', ':')).encode()
