@@ -83,6 +83,17 @@ def resolve_dependency(name, image, rpaths):
     return found.pop()
 
 
+def license_files(formula):
+    notices = [p for p in formula.iterdir() if p.is_file() and p.name.lower().startswith(('license', 'copying', 'copyright', 'notice'))]
+    if not notices and formula.parent.name == 'sqlite':
+        header = formula / 'include/sqlite3.h'
+        require(header.is_file() and b'The author disclaims copyright to this source code.' in header.read_bytes()[:2048],
+                'SQLite header license notice is missing')
+        notices = [header]
+    require(notices, 'No license found for runtime dependency: ' + str(formula))
+    return notices
+
+
 class Builder:
     def __init__(self, output):
         self.output, self.total, self.records, self.images = output, 0, {}, {}
@@ -193,10 +204,8 @@ class Builder:
                 parts = Path(record['source']).relative_to(CELLAR).parts
                 formulas.add(CELLAR / parts[0] / parts[1])
         for formula in sorted(formulas):
-            notices = [p for p in formula.iterdir() if p.is_file() and p.name.lower().startswith(('license', 'copying', 'copyright', 'notice'))]
-            require(notices, 'No top-level license found for runtime dependency: ' + formula.name)
-            for path in notices:
-                self.copy(path, Path('Licenses') / formula.relative_to(CELLAR) / path.name)
+            for path in license_files(formula):
+                self.copy(path, Path('Licenses') / formula.relative_to(CELLAR) / path.relative_to(formula))
 
 
 def build(args):

@@ -3,7 +3,9 @@ bundle as the ordinary user, never installs or starts jobs. It copies a Python
 framework without external site-packages, discovers recursive Mach-O dependencies,
 rejects missing/ambiguous/external loader paths, rewrites non-system dependencies
 relative to their staged images, removes search paths and verifies code signatures.
-Formula licenses and before/after image hashes are retained. A real isolated Python
+Formula licenses and before/after image hashes are retained; SQLite uses its
+installed header's verified copyright disclaimer when no top-level notice exists.
+A real isolated Python
 invocation must report a prefix/executable inside the bundle and load SSL/sqlite/
 zlib/ctypes; all three server tools must report versions. Source/copy budgets and
 root refusal are tested. Pinned Python packages, production ownership/install and

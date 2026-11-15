@@ -94,3 +94,18 @@ def test_staging_never_runs_as_root_or_non_mac(monkeypatch):
     monkeypatch.setattr(runtime.os, 'getuid', lambda: 0, raising=False)
     with pytest.raises(ValueError, match='without sudo'):
         runtime.build(SimpleNamespace(output='/not-created'))
+
+
+def test_sqlite_notice_requires_the_actual_disclaimer_not_a_missing_license(tmp_path):
+    formula = tmp_path / 'sqlite/1'
+    (formula / 'include').mkdir(parents=True)
+    header = formula / 'include/sqlite3.h'
+    header.write_text('unknown header')
+    with pytest.raises(ValueError, match='notice is missing'):
+        runtime.license_files(formula)
+    header.write_text('The author disclaims copyright to this source code.')
+    assert runtime.license_files(formula) == [header]
+    other = tmp_path / 'unknown/1'
+    other.mkdir(parents=True)
+    with pytest.raises(ValueError, match='No license'):
+        runtime.license_files(other)
