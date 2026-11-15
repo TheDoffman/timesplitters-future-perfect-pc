@@ -58,7 +58,13 @@ oversized headers431 and both fixed/chunked16385-byte JSON413 before completed
 backend requests. Exactly16384 chunked bytes succeed. A request supplying both
 Content-Length and chunked encoding is normalized to chunked framing with no
 Content-Length at the backend; it consumes exactly the decoded body.
-The optional actual-Caddy test in test_gateway_service.py preserves these checks.
+The actual-Caddy test in test_gateway_service.py preserves these checks and is
+registered in native CI (skips without macOS/Caddy). It also exercises every
+launcher API route, including report creation/history/resolution, digest lookup,
+scan evidence and POST-only Lua/DDS previews. These private routes retain bearer
+credentials and the16KiB JSON cap; wrong methods, malformed IDs and unknown paths
+remain unavailable. Recording loopback backends establish transport routing;
+separate API tests establish account roles and package authorization.
 
 Temporary launchd jobs for both gateway and publication pass watchdog/controller
 restart, scaled128MiB memory cancellation with256MiB allocation, actual15s stalled

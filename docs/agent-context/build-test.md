@@ -1,4 +1,4 @@
-[SDK and service proofs](build-test-details.md).
+[SDK/service proofs](build-test-details.md). Native CI includes confined gateway routes.
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

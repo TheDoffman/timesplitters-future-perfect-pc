@@ -1,3 +1,10 @@
+Gatewayfile now routes private report creation/history/resolution, digest lookup,
+scan evidence and Lua/DDS inspection to the API, preserving exact methods/hex IDs,
+16KiB JSON limits and separate credential-stripped static downloads. Native
+test_gateway_service exercises shipped confined Caddy against recording loopback
+backends at all three supported HTTPS authorities; registered in native CI.
+Public deployment and application authorization remain separate acceptance gates.
+
 Actual f234 native proof now passes: trusted root startup->same PID/UID/GID600,
 kernel[600], root restoration and health writes denied, root-controller label stop,
 worker+child exit and all temporary jobs unloaded. Root receipt is0600; post-proof

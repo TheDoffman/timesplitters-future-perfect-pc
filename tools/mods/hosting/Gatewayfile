@@ -65,21 +65,21 @@ http://:8768 {
 
         @post {
             method POST
-            path /v1/accounts/redeem /v1/sessions /v1/account/password /v1/uploads
+            path /v1/accounts/redeem /v1/sessions /v1/account/password /v1/uploads /v1/reports
         }
         handle @post {
             import json_api
         }
         @review {
             method POST
-            path_regexp review ^/v1/moderation/[0-9a-f]{32}$
+            path_regexp review ^/v1/moderation/([0-9a-f]{32}(/(source|texture))?|reports/[0-9a-f]{32})$
         }
         handle @review {
             import json_api
         }
         @get {
             method GET
-            path /healthz /v1/account /v1/uploads /v1/moderation
+            path /healthz /v1/account /v1/uploads /v1/moderation /v1/reports /v1/moderation/reports /v1/moderation/report-history
         }
         handle @get {
             import json_api
@@ -89,6 +89,13 @@ http://:8768 {
             path_regexp ticket ^/v1/uploads/[0-9a-f]{32}$
         }
         handle @ticket {
+            import json_api
+        }
+        @evidence {
+            method GET
+            path_regexp evidence ^/v1/moderation/([0-9a-f]{32}/evidence|by-digest/[0-9a-f]{64})$
+        }
+        handle @evidence {
             import json_api
         }
         @logout {

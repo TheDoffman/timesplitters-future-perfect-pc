@@ -106,6 +106,7 @@ def test_actual_gateway_bounds_http_framing_before_completed_backend_requests(tm
                    capture_output=True, check=True, timeout=90)
     tmp_path.chmod(0o700)
     completed = []
+    routed = []
 
     class Backend(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
@@ -136,20 +137,30 @@ def test_actual_gateway_bounds_http_framing_before_completed_backend_requests(tm
                 completed.append(dict(size=len(body), sha256=hashlib.sha256(body).hexdigest(),
                                       length=self.headers.get('Content-Length'),
                                       encoding=self.headers.get('Transfer-Encoding')))
+                routed.append((self.server.server_port, self.command, self.path,
+                               self.headers.get('Authorization'), self.headers.get('X-Forwarded-Proto'),
+                               self.headers.get('X-Forwarded-Host')))
                 self.send_response(200)
                 self.send_header('Content-Length', '0')
                 self.end_headers()
             except (OSError, ValueError, AssertionError):
                 self.close_connection = True
 
+        do_GET = do_HEAD = do_PUT = do_DELETE = do_POST
+
     backend = ThreadingHTTPServer(('127.0.0.1', 8767), Backend)
     backend.daemon_threads = True
     thread = threading.Thread(target=backend.serve_forever, daemon=True)
     thread.start()
+    downloads = ThreadingHTTPServer(('127.0.0.1', 8766), Backend)
+    downloads.daemon_threads = True
+    download_thread = threading.Thread(target=downloads.serve_forever, daemon=True)
+    download_thread.start()
     server = None
 
-    def request(headers, body=b''):
-        wire = (b'POST /v1/sessions HTTP/1.1\r\nHost: ' + ('workshop.example.test' + suffix).encode('ascii') +
+    def request(headers, body=b'', method='POST', path='/v1/sessions', host=None):
+        wire = ((method + ' ' + path + ' HTTP/1.1\r\nHost: ').encode('ascii') +
+                (host or ('workshop.example.test' + suffix)).encode('ascii') +
                 b'\r\nConnection: close\r\n' + headers + b'\r\n' + body)
         with socket.create_connection(('127.0.0.1', 8768), timeout=3) as connection:
             connection.settimeout(3)
@@ -190,6 +201,49 @@ def test_actual_gateway_bounds_http_framing_before_completed_backend_requests(tm
                        b'4000\r\n' + b'x' * 16384 + b'\r\n0\r\n\r\n') == 200
         assert request(b'Content-Length: 999\r\nTransfer-Encoding: chunked\r\n',
                        b'4\r\n1234\r\n0\r\n\r\n') == 200
+        assert completed == [dict(size=len(body), sha256=hashlib.sha256(body).hexdigest(),
+                                  length=None, encoding='chunked') for body in (b'x' * 16384, b'1234')]
+        # Exercise the shipped Caddyfile, not a model of its regexes. The local
+        # backend records routing only; application authorization has its own tests.
+        upload, digest = 'a' * 32, 'b' * 64
+        private = [('GET', path) for path in (
+            '/healthz', '/v1/account', '/v1/uploads', '/v1/uploads/' + upload,
+            '/v1/moderation', '/v1/reports?after=1', '/v1/moderation/reports?after=2',
+            '/v1/moderation/report-history?after=3', '/v1/moderation/by-digest/' + digest,
+            '/v1/moderation/' + upload + '/evidence')]
+        private += [('POST', path) for path in (
+            '/v1/accounts/redeem', '/v1/sessions', '/v1/account/password', '/v1/uploads',
+            '/v1/reports', '/v1/moderation/reports/' + upload, '/v1/moderation/' + upload,
+            '/v1/moderation/' + upload + '/source', '/v1/moderation/' + upload + '/texture')]
+        private += [('PUT', '/v1/uploads/' + upload), ('DELETE', '/v1/sessions/current')]
+        headers = (b'Content-Length: 0\r\nAuthorization: Bearer fixture\r\n'
+                   b'X-Forwarded-Proto: http\r\nX-Forwarded-Host: attacker.invalid\r\n')
+        routed.clear()
+        for method, path in private:
+            assert request(headers, method=method, path=path) == 200, (method, path)
+            assert routed[-1] == (8767, method, path, 'Bearer fixture', 'https', None)
+        for path in ('/v1/reports', '/v1/moderation/reports/' + upload,
+                     '/v1/moderation/' + upload + '/source', '/v1/moderation/' + upload + '/texture'):
+            before = len(routed)
+            assert request(b'Content-Length: 16385\r\n', b'x' * 16385, path=path) == 413
+            assert len(routed) == before
+        for path in ('/v1/catalog', '/v1/trust/catalog', '/v1/trust/roots/1', '/v1/packages/' + digest):
+            for method in ('GET', 'HEAD'):
+                assert request(headers, method=method, path=path) == 200
+                assert routed[-1][:4] == (8766, method, path, None)
+        before = len(routed)
+        for method, path in (
+                ('GET', '/v1/moderation/' + upload + '/source'),
+                ('GET', '/v1/moderation/' + upload + '/texture'),
+                ('POST', '/v1/moderation/' + upload + '/evidence'),
+                ('POST', '/v1/moderation/reports/' + upload + '/source'),
+                ('GET', '/v1/moderation/by-digest/' + digest[:-1]),
+                ('POST', '/v1/moderation/' + upload.upper()),
+                ('DELETE', '/v1/reports'), ('PUT', '/v1/packages/' + digest),
+                ('GET', '/v1/moderation/report-history/extra'), ('GET', '/private/service.json')):
+            assert request(headers, method=method, path=path) == 404, (method, path)
+        assert request(headers, host='attacker.invalid') == 403
+        assert len(routed) == before
         assert server.running()
     finally:
         if server is not None:
@@ -197,6 +251,7 @@ def test_actual_gateway_bounds_http_framing_before_completed_backend_requests(tm
         backend.shutdown()
         backend.server_close()
         thread.join(timeout=3)
-    assert completed == [dict(size=len(body), sha256=hashlib.sha256(body).hexdigest(),
-                              length=None, encoding='chunked') for body in (b'x' * 16384, b'1234')]
+        downloads.shutdown()
+        downloads.server_close()
+        download_thread.join(timeout=3)
     assert not list((tmp_path / 'caddy-runtime/units').iterdir())
