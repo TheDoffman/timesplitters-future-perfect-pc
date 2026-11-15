@@ -58,12 +58,30 @@ unfinished scripting, asset types, hosting/security and release requirements.
 
 ## Use the native launcher library
 
-Open **Mods → Browse**, select **Install package**, then use **Installed** to
-enable supported textures, disable a mod, switch to a retained version, or
-uninstall a disabled version. Installation does not automatically enable a mod.
+Open **Mods → Browse**, select **Install package**, review the exact required
+versions, and confirm the download. Existing matching dependencies are verified
+and reused. Cancellation can leave completed packages installed but inactive;
+retrying verifies those packages rather than downloading them again.
+
+In **Installed**, choose Enable on a supported texture package or gameplay mode.
+Review the selected package and its installed dependencies together, including
+any active versions that will be replaced, then confirm. Unrelated active mods
+are kept. Missing dependencies, conflicting payloads, incompatible retained mods
+and stale reviews stop the change. Installation does not automatically enable a
+mod. Gameplay modes need a compatible game build, offline Arcade Deathmatch and
+a new match; they use separate progress.
+
+Use **Installed → Check for updates** to refresh the signed workshop catalog.
+A newer version offers **Review update** on the newest installed version from
+that workshop. Local packages and packages from another workshop address are
+not automatically associated. Review and install the update's dependencies,
+then enable the new version through its separate activation review. The old
+active profile and installed version are kept until that switch. To roll back,
+enable a retained older version and review its dependency changes. Uninstall
+is available for disabled versions that other installed packages do not require.
 Textures require Enhanced mode and a game built with this branch's overlay
 reader; an existing published game does not gain support by updating only its
-launcher. Actual modded game acceptance is still pending.
+launcher. Public creator-to-launcher-to-game acceptance is still pending.
 
 Enabled packages are pinned by their ID, exact version and SHA-256. Conflicting
 texture keys, dependency cycles, missing exact dependencies and two active
@@ -73,8 +91,8 @@ never copies or overwrites the official texture pack. Unknown personal files
 inside a version directory stop uninstall until the owner moves them aside.
 
 **Disable all mods** preserves installed packages. **Play without mods** skips
-even a corrupt profile without rewriting it. Maps/audio/scripts can be installed
-but their enable controls remain unavailable until those runtimes are finished.
+even a corrupt profile without rewriting it. Maps and audio can be installed
+but cannot be activated yet. Gameplay modes remain inactive on older game builds.
 The CLI `install` below is an operator/testing staging command; the player UI
 uses `Mods/Packages`, `Mods/profile.json` and `Mods/Active` instead.
 

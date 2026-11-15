@@ -1,3 +1,23 @@
+Launcher dependency activation and update discovery (2026-11-15, source42567c4f):
+Installed Enable now reviews its exact installed dependency closure, preserving
+unrelated active mods and showing replaced versions before one profile change.
+Confirmation repeats planning and verifies package bytes, capabilities and trust;
+stale/cancelled/conflicting changes preserve the profile. Installed Check for
+updates offers newer numeric versions from the same workshop authority, ignoring
+already installed newer versions. Review update reuses fresh signed dependency
+installation, retains old versions and leaves activation to a separate review.
+Windows full launcher build/test passes86 shared UI groups. The Mac mini native
+build passes87 groups and strict bundle signature verification, including actual
+dispatcher-driven Enable/Confirm. Mac BUILD-launcher.json SHA256:
+7ffd20d5fb10e9a951849c89481d0874a4ac0e30927a6e19831fab90cae936b7.
+Both task checkouts are clean and source is pushed. Latest three-host CI is still
+pending. Prior10197bc2 launcher CI passed all3 hosts, but broader runtime CI failed
+the first worker-response wait in test_original_mode_through_game_bridge. The
+same Windows bridge suite passes21 cases locally at42567c4f; the CI failure's
+cause remains unproven. No runtime limit was relaxed. The Mac administrator
+system-domain diagnostic remains at its original native sudo prompt; production
+installation/public hosting, keys and full release acceptance remain incomplete.
+
 Immutable host-release preparation (2026-11-15, source0338e8e0):
 prepare-release-mac.py now freezes the exact clean Git hosting source and its
 source-bound guardian into a private read-only snapshot, referencing the already
