@@ -1,3 +1,16 @@
+Native launchd group initialization repair (2026-11-15):
+The dd9d9862 protected runtime installed successfully under descriptorSHA
+9d70b9497d374f7411364271b807ce15c7f54e0ef257de4d2f70b87a4031046b.
+Its actual UID600 isolated scanner/cryptography smoke reports kernel groups[600],
+official certificate verification and temporary-state removal. The subsequent
+InitGroups=false launchd target reported real/effective UID/GID600 but retained
+kernel groups[600,12,61,702,701,100], so the proof correctly refused it (exit2).
+Both temporary labels are independently verified absent. The worker/proof target
+now specifies InitGroups=true, following the host's documented initialization
+semantics; the strict kernel-group and directory root/admin checks are unchanged.
+Windows core identity/monitor checks pass58 with17 POSIX skips (0.41s). Corrected
+native enforcement is still pending; no production services or endpoint started.
+
 Root installation and native group-check repair (2026-11-15):
 The user authenticated the pinned native Terminal step. The b6fd11b4 immutable
 release installed successfully under descriptorSHA

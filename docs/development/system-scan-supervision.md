@@ -30,10 +30,13 @@ Python. `--generate` writes new root-owned plists and a deployment marker under
 the fixed `monitor` directory. It refuses existing state and does not load jobs.
 The generated Python path is canonical, inside the installed runtime. The monitor
 uses `-I -S -B` and a minimal environment; the scanner uses `-I -B` under
-`_tsfpworkshop`. Both jobs specify `InitGroups=false`, disable core dumps and retain
-launchd process-group cleanup. The local macOS launchd.plist manual confirms that
-InitGroups controls supplementary group initialization when UserName is set;
-actual launchd identity/group acceptance is still required.
+`_tsfpworkshop`. The scanner specifies `InitGroups=true` to initialize credentials
+for that account; the root monitor uses false. Both disable core dumps and retain
+launchd process-group cleanup. Native testing with initialization disabled showed
+extra kernel groups for the restricted job, while explicit subprocess group
+clearing produced only600. The host getgroups(2) manual documents initgroups
+opting into account membership with a single returned primary GID. The corrected
+launchd setting must still pass the unchanged strict native credential check.
 
 The worker's `--system-worker` mode accepts no configuration argument: it reads the
 fixed private scan configuration and requires a non-root identity without root or

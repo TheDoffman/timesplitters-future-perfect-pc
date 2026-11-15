@@ -68,12 +68,12 @@ def test_root_and_invalid_worker_identity_refused(uid):
     with pytest.raises(ModError):monitor.watch_once(uid,{},lambda _:pytest.fail('invalid identity reached OS'))
 
 
-def test_plists_separate_privileges_and_disable_supplementary_groups():
+def test_plists_separate_privileges_and_initialize_restricted_credentials():
     release=monitor.ROOT/'releases'/('a'*64)
     python=release/'runtime/bin/python3.12'
     worker,watch=monitor.plists(release,dict(uid=600,gid=600),python)
     assert worker['UserName']=='_tsfpworkshop' and watch['UserName']=='root'
-    assert worker['InitGroups'] is False and watch['InitGroups'] is False
+    assert worker['InitGroups'] is True and watch['InitGroups'] is False
     assert worker['ProgramArguments']==[str(python),'-I','-B',str(release/'source/tools/mods/hosting/scan-service-mac.py'),'--system-worker']
     assert watch['ProgramArguments'][-1]=='--watchdog' and '--config' not in watch['ProgramArguments']
     assert worker['AbandonProcessGroup'] is False and watch['AbandonProcessGroup'] is False

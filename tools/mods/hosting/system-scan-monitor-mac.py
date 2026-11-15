@@ -189,7 +189,7 @@ def plists(release, account, python):
     common = dict(RunAtLoad=True, ProcessType='Background', AbandonProcessGroup=False,
                   Umask=0o077, StandardOutPath='/dev/null', StandardErrorPath='/dev/null',
                   EnvironmentVariables=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(ROOT/'data'),TMPDIR=str(ROOT/'data')))
-    scan = dict(common,Label=label(),UserName='_tsfpworkshop',GroupName='_tsfpworkshop',InitGroups=False,
+    scan = dict(common,Label=label(),UserName='_tsfpworkshop',GroupName='_tsfpworkshop',InitGroups=True,
                 ProgramArguments=[str(python),'-I','-B',str(worker),'--system-worker'],
                 StartInterval=60,HardResourceLimits=dict(Core=0,CPU=420,FileSize=512*1024**2,NumberOfFiles=256))
     watch = dict(common,Label=label()+'.monitor',UserName='root',GroupName='wheel',InitGroups=False,

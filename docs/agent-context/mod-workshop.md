@@ -1,3 +1,11 @@
+Native dd9d root installation also completed; its smoke kernel groups are[600].
+The InitGroups=false launchd target actually retained kernel[600,12,61,702,701,100],
+so its strict proof correctly refused. Both fixture job labels are absent. Worker
+plists now enable InitGroups to initialize account credentials (root monitor stays
+false); kernel/service-GID and directory root/admin checks are unchanged. Native
+proof of this setting is still required. Untracked private-initializer work is
+separate and not included in the frozen proof component.
+
 Native b6fd root installation completed, including sealed-runtime/UID600 smoke;
 its inert system proof refused Python's directory-membership list as if it were
 kernel credentials. Both test labels are verified absent. mod_host_identity.py

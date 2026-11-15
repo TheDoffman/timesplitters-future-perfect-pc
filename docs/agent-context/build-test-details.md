@@ -1,3 +1,7 @@
+Generated-job contracts now require InitGroups=true for the restricted target/
+worker and false for the root monitor, matching the native group diagnostic.
+Strict effective credential checks remain enabled; a real launchd rerun is required.
+
 test_host_identity.py covers bounded native gid arrays/failures/size changes,
 separate directory versus kernel membership, partial UID/GID drops and rejection
 of root/admin/stray kernel groups. Actual Mac libSystem getgroups comparison and

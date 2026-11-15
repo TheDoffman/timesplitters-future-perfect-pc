@@ -85,7 +85,7 @@ def job(role, release, fixture, python):
             if role=='target' else [str(code/'probe-system-scan-monitor-mac.py'),'--controller',nonce])
     return dict(Label=target+('.proof-monitor' if role=='controller' else ''),
                 UserName='root' if role=='controller' else identity.ACCOUNT,
-                GroupName='wheel' if role=='controller' else identity.ACCOUNT,InitGroups=False,
+                GroupName='wheel' if role=='controller' else identity.ACCOUNT,InitGroups=role=='target',
                 ProgramArguments=[str(python),'-I','-S','-B',*args],RunAtLoad=True,KeepAlive=False,
                 AbandonProcessGroup=False,ProcessType='Background',ExitTimeOut=5,Umask=0o077,
                 EnvironmentVariables=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(fixture),TMPDIR='/private/tmp'),
