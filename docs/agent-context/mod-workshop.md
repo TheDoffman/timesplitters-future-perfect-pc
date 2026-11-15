@@ -3,8 +3,9 @@ private login-agent job and fixed official FreshClam config. No upload-controlle
 arguments, proxy, shell hooks, external mirrors or daemon mode are accepted. Native
 lifetime guardian,180s controller timeout,1MiB output limit/hash-only diagnostics,
 private non-overlapping lock and storage preflight bound maintenance. Definition
-checks never bypass scanner freshness or approve uploads. Actual host deployment
-and update acceptance must be recorded separately; see mod-scan-service.md.
+checks never bypass scanner freshness or approve uploads. Pinned88c9b3f7 private login-agent deployment and its initial official check plus
+subsequent isolated scan passed. The six-hour interval has not elapsed; production
+identity/boot acceptance remains pending. See mod-scan-service.md and STATUS.
 
 Worker admission now also requires exact macos-seatbelt-v3; v2 is held even with
 a healthy guardian heartbeat. Legacy approved v2 reports are withheld until rescan.

@@ -1,3 +1,20 @@
+Scheduled official definition maintenance (2026-11-14, source88c9b3f7):
+A separate private six-hour login agent now runs FreshClam from pinned Application
+Support source with the existing separate runtime and verified native guardian.
+Generated config permits only official mirror/database testing, bounded network
+attempts, foreground operation and no shell hooks/proxy/custom sources/log files.
+Command deadline180s, output limit1MiB, hash-only diagnostics, private lock and
+storage preflight bound each check; scanner freshness/approval gates remain intact.
+Mac definition/service/IO31 tests pass, including actual native guarded success,
+nonzero exit, timeout and output flood. Windows CI-scope98 pass/12 POSIX skips.
+Actual installed launchd job org.timesplitters.workshop.definitions.93faf31bb414d33dc68767a5
+completed its initial official check with exit0 after SSH disconnected. Source and
+plist hashes verified. Subsequent isolated ClamAV1.5.4/daily28183 clean scan passes
+under macos-seatbelt-v3. EvidenceSHA
+2a198b46dc3e0732bbf2afae5b9cfee9261beff6c3f2bd6feb2403eaa24d0d6c.
+Six-hour interval is configured but has not elapsed; unattended boot and dedicated
+production identity remain unverified. No public server started. Latest CI pending.
+
 Scanner isolation v3 and private pinned deployment (2026-11-14, source27b01f86):
 The scanner now explicitly denies process-info* and allows only public named
 hardware/runtime sysctls. A native positive control demonstrated the old same-user
@@ -35,8 +52,8 @@ watchdog at190s; evidenceSHA69b9700b4582761dc27e06133b42c6bd47fd473d6c30beee85e4
 Current installed provenance is in private current-installation.json; original
 installation.json is retained as historical first-install evidence.
 This remains a private login-session prototype. No public server was started;
-unattended boot, dedicated service identity, definition updates, automatic signed
-publication/invalidation, off-device recovery and public release remain unfinished.
+unattended boot, dedicated service identity, six-hour update-cycle acceptance,
+automatic signed publication/invalidation, off-device recovery and public release remain unfinished.
 Full goal remains active; main untouched.
 
 Periodic reviewed-release scans (source6dfa2417,2026-11-14): rescan-next shares

@@ -19,6 +19,14 @@ builds; they do not establish a published release or public upload-to-play flow.
 Maps, audio and additional Lua files remain inactive. See [workshop scope](mod-workshop.md)
 and [acceptance evidence](../project/STATUS.md).
 
+Private scan worker/watchdog and a separate six-hour official definition updater
+are installed as pinned login agents under the owner's Application Support.
+Actual guarded scan/review/rescan, process-isolation canaries and the first
+FreshClam check pass. The six-hour interval has not elapsed; these agents need
+the user's login session. Dedicated production identity, unattended boot,
+automatic publication invalidation/refresh and internet access remain incomplete.
+See [scanner operation](mod-scan-service.md) and [current status](../project/STATUS.md).
+
 ## Layout and public address
 
 ```text

@@ -46,8 +46,9 @@ launches; Play without mods still works. This preference is stored locally in
 Settings/mod-cache-location.txt and never comes from a downloaded package.
 Maps, audio and additional Lua files remain inactive; formats/APIs remain drafts.
 Native game bootstrap, helper confinement and gameplay hooks have been tested on
-all three hosts through developer handoffs. Actual launcher-to-game acceptance
-of this new activation path remains pending. No public infrastructure,
+all three hosts through developer handoffs. Packaged First to Three has completed real offline matches through launcher-
+generated handoffs on all three hosts with ordinary saves preserved; public
+creator upload-to-launcher-to-game acceptance remains pending. No public infrastructure,
 production signing keys or usable scripting release has been deployed. The selected host is the owner's Mac
 mini, over the internet without a purchased domain. See the
 [Mac hosting setup](mac-mod-hosting.md) for the approved static-download alpha,

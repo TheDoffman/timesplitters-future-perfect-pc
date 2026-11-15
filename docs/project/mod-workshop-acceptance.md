@@ -8,20 +8,23 @@ their named components; none substitute for actual host/game/public acceptance.
 | --- | --- | --- |
 | Creator packaging and SDK | `tools/mods/mod-workshop.py pack/validate`, original example, bounded package validator and keyed DDS contract | Stable documented asset/gameplay API, importers, richer original starter projects and complete creator documentation |
 | Real asset additions | Shared DDS worker; bounded reader tests; Windows build/host checks and actual native model install/update/rollback/removal-to-profile-scene rendering with original synthetic DDS pass | Story/gameplay scene tests and Mac/Linux live game builds/scenes; audio, map and other content loading/import workflows |
-| Sandboxed gameplay scripting and custom modes | Pinned Lua5.5.1 standalone worker executes original custom-mode callbacks with copied snapshots, score/end/message transactions, memory/instruction/call/event limits and wall watchdog; real three-host adversarial checks and Mac/Linux ASan/UBSan pass; activation remains refused | Independent OS-confined process/RSS/pipe supervision, real guest API/event adapters, entity budgets, multiplayer/save contracts and live custom-mode gameplay |
+| Sandboxed gameplay scripting and custom modes | Pinned Lua5.5.1, native Windows LPAC/Linux seccomp/Mac Seatbelt workers and verified lifetime/resource supervision; shared guest adapters, score/end/message transactions, memory/time/host-call budgets; packaged First to Three finishes real offline matches through launcher-generated handoffs on all3 hosts, with original saves preserved; see STATUS | Stable published SDK/API, richer entity/content support, remaining crash recovery and public creator-to-native-game acceptance |
 | Launcher browsing/search | Shared Mods page, scan/creator information, bounded HTTPS catalog and verified download; Windows, native Mac and WSL Linux shared UI checks pass | Categories/filters/pagination, production endpoint and richer release/permission/report information |
 | Native installation and lifecycle | `ModLibraryPage.cs`: immutable versions, strict JSON/ZIP/DDS validation, dependency/cycle/conflict guards, enable/disable, version switch/rollback, uninstall and unknown-file preservation; Windows/Mac/WSL Linux contracts pass | Complete all content types, additional cross-filesystem acceptance, interrupted-work/recovery UX, storage and profile management at production scale |
-| Normal/recovery launch | Shared `GameSettings.StartInfo` configures verified texture overlay; Play without mods bypasses corrupt profiles without rewriting them | Actual game sessions, activation compatibility negotiation and end-to-end preservation across update/rollback/removal |
-| Multiplayer and saves | Cosmetic texture path leaves guest data unchanged; originals/settings/saves are not modified by library code | Server authority, ordered gameplay-mod/hash negotiation, mismatch behavior, modded save namespaces and real multiplayer acceptance |
-| Public Mac mini hosting without a purchased domain | Separate Git worktree at f6770b2b; native Mac tests pass; actual Caddy loopback catalog/write/private-path/expiry/shutdown checks pass | Persistent service setup, working HTTPS/tunnel identity, external connectivity and availability/reboot acceptance |
+| Normal/recovery launch | Shared launcher revalidates package/trust/source capsule and build capability before modded launch; Play without mods bypasses damaged profiles; real packaged-mode match and original-save preservation pass on Windows/Mac/Linux | Public install-to-play and update/rollback/removal preservation flow, interrupted/abrupt-crash recovery and final release compatibility checks |
+| Multiplayer and saves | Native capsule bootstrap isolates mode saves under bound package/profile identities and forces scripted modes offline; three-host launcher handoffs preserve ordinary saves | Ordered multiplayer mod/hash negotiation, authority/mismatch behavior and actual multiplayer acceptance; broader save/profile recovery |
+| Public Mac mini hosting without a purchased domain | Separate .nosync task worktree; actual Caddy loopback/private-path/expiry checks; pinned private scanner/watchdog and initial official definition-update login-agent check pass | Dedicated production identity, unattended boot, persistent public API/publication refresh, working HTTPS/tunnel identity and independent internet acceptance |
 | Creator accounts/ownership/uploads | Private WSGI API with invitation accounts, scrypt, revocable sessions/recovery, transactional ownership, exact digest/size reservations, storage/pending/daily quotas and local ownership transfer; real Mac Gunicorn-to-ClamAV/review/snapshot/revocation passes at0087f582 | Native creator UI and credential vaults, public TLS deployment and abuse/load acceptance |
-| Virus/malicious-content handling | Bounded ZIP/JSON preflight; Mac deny-default scanner sandbox with CPU/file/fd/time/output bounds, official signatures and2-day age cap; real clean/EICAR/error/review/revocation/canaries; serial queued retries and charged quarantine; legacy reports require rescan/review | Worker memory enforcement/persistent supervisor, dedicated service identity, scheduled updates/rescans and unsafe-script/content analysis |
+| Virus/malicious-content handling | Bounded ZIP/JSON validation; v3 Seatbelt explicitly denies process info; signed native lifetime guardian and PPID-tree sampled RSS/process/wall supervision; real escaped-session/root-death and clean/EICAR/error checks; queued manual review, periodic rescans and initial scheduled-updater check | Six-hour update-cycle and production uptime acceptance, dedicated identities, malicious-script/content analysis and public abuse/capacity acceptance |
 | Moderation and reporting | Authenticated moderator/admin API with transactional approval/revocation/audit; clean scan still requires review | Native moderator UI, player reports, notification and operational staffing/policy |
 | Catalog and update trust | Producer RSA3072 signed metadata, offline root thresholds/rotation, bounded permanent revocations and SQLite publication counter; shared native signature/root verification, locked atomic signed-state persistence, replay/expiry/revocation checks and origin receipts before installation/activation/mounting | Independent public-client/internet acceptance, release-pinned production root, backup/high-water recovery, live publication switching and distributed internet revocation drill; see mod-catalog-trust.md |
-| Storage and operations | Separate quarantine/approved exports/installed versions/active overlays; bounded archives and snapshot budgets | Persistent operation, global quotas, managed recovery, actual backup/restore, host/account isolation and incident/revocation drills |
+| Storage and operations | Separate quarantine/approved/installed/active stores; package/upload budgets; private bounded SQLite/blob snapshots, new-root auth-revoking recovery barrier and explicit revocation/high-water reconciliation; actual Mac backup/restore/resume fixture drill passes | Off-device/key recovery, scheduled backup retention, production cutover/recovery, capacity above current limits, identity isolation and incident drills |
 | Player distribution | Uses existing native launcher runtime, with no player Python requirement | Complete three-host packaging/signature/Gatekeeper checks, authorized source synchronization/review, actual public release and independent install-to-play verification |
 
-Windows evidence as of 2026-11-14: a full launcher build/test command passed;
+The table above reflects current component evidence; the following foundation
+notes are historical and do not override newer STATUS records.
+
+Windows foundation evidence as of 2026-11-14: a full launcher build/test command passed;
 12 focused workshop groups cover native library/client behavior; DDS/parser/
 Classic/streaming tests and adversarial Python workshop cases pass. Logs and
 exact counts are in [STATUS](STATUS.md) and ignored task logs. Subsequent focused
@@ -33,10 +36,10 @@ package command:61 shared UI groups plus package install, corruption rejection,
 repair and restart/render checks. This is configured-host launcher evidence;
 Linux gameplay and public internet acceptance remain unrun.
 
-The current Mac checkout contains unrelated edits and untracked cloud-conflict
-copies. Preserve it. Use a separate task worktree, skip LFS artwork hydration,
-and transfer source through Git. The existing Tailscale command points at a
-missing application; a usable public identity has not been established. ClamAV
+The primary Mac checkout contains unrelated edits and cloud-conflict copies;
+work continues in a separate .nosync task worktree. Preserve the primary checkout
+and transfer source through Git. Tailscale is installed but working sign-in/public
+identity remains unverified; see mac-mod-hosting.md. ClamAV
 is now installed with official databases; live checks are recorded below. These are
 operational prerequisites, not evidence of a deployed host.
 
