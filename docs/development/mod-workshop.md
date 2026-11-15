@@ -36,6 +36,14 @@ are included in the mode's isolated save identity. Each launch revalidates the
 packages, workshop trust and source capsule. Choose offline Arcade Deathmatch
 and start a new match; scripts cannot access online play and use separate saves.
 Only one gameplay mode can be selected. Older builds keep scripts inactive.
+Installed also provides an optional Gameplay mod storage folder. Leave it blank
+for the normal OS cache. If that cache has unsafe permissions, choose an existing
+local folder writable only by your account (plus system administrators). The
+native runtime still rejects shared, linked or unsupported filesystems; selecting
+a folder does not change its permissions. Helper files use this location; mode
+saves remain in their separate namespace. Missing configured folders stop modded
+launches; Play without mods still works. This preference is stored locally in
+Settings/mod-cache-location.txt and never comes from a downloaded package.
 Maps, audio and additional Lua files remain inactive; formats/APIs remain drafts.
 Native game bootstrap, helper confinement and gameplay hooks have been tested on
 all three hosts through developer handoffs. Actual launcher-to-game acceptance

@@ -265,6 +265,19 @@ public static class LauncherSharedUiChecks
             // Selected mode metadata never survives the explicit original-game path.
             var plain=GameSettings.StartInfo(folder,true);Need(!plain.EnvironmentVariables.ContainsKey("TSFP_MOD_SCRIPT_CAPSULE") && !plain.EnvironmentVariables.ContainsKey("TSFP_MOD_SCRIPT_CAPSULE_SHA256"),"Original-game launch inherited a capsule");
         });
+        Test("gameplay cache preference is local, validated and bypassed by original-game recovery",()=>{
+            string folder=Path.Combine(root,"mode-cache-location");Directory.CreateDirectory(folder);string cache=Path.Combine(folder,"Private cache \u03a9");Directory.CreateDirectory(cache);
+            Need(ModCacheLocation.Load(folder)=="","Default cache preference changed");
+            foreach(string bad in new[]{"relative",Path.Combine(folder,"missing"),cache+"\nother"})WorkshopReject(()=>ModCacheLocation.Save(folder,bad),"Invalid cache path accepted");
+            ModCacheLocation.Save(folder,cache);Need(ModCacheLocation.Load(folder)==cache,"Unicode cache path did not round trip");
+            string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));Directory.CreateDirectory(Path.GetDirectoryName(manifest));File.WriteAllText(manifest,"{\"mod_script_version\":1}");
+            var library=new ModLibrary(folder,()=>false);string package=LibraryPackage(root,"cache-mode","1.0.0",1,script:true);var mode=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);library.Enable(mode.Key,System.Threading.CancellationToken.None);
+            var info=GameSettings.StartInfo(folder);Need(info.EnvironmentVariables["TSFP_MOD_SCRIPT_CACHE_PARENT"]==cache,"Selected local cache was not handed to the game");
+            Directory.Delete(cache);WorkshopReject(()=>GameSettings.StartInfo(folder),"Unavailable configured cache silently fell back");
+            info=GameSettings.StartInfo(folder,true);Need(!info.EnvironmentVariables.ContainsKey("TSFP_MOD_SCRIPT_CACHE_PARENT"),"Original-game recovery read or inherited a cache override");
+            ModCacheLocation.Save(folder,"");Need(ModCacheLocation.Load(folder)=="","Default cache could not be restored");
+            Need(!GameSettings.StartInfo(folder).EnvironmentVariables.ContainsKey("TSFP_MOD_SCRIPT_CACHE_PARENT"),"Cleared cache override was emitted");
+        });
         Test("native mod tampering, cancellation and game-running guards retain the active profile",()=>{
             string folder=Path.Combine(root,"mod-preservation");Directory.CreateDirectory(folder);bool running=false;var library=new ModLibrary(folder,()=>running);
             string package=LibraryPackage(root,"preserved","1.0.0",1);var mod=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);library.Enable(mod.Key,System.Threading.CancellationToken.None);

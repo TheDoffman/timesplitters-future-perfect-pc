@@ -225,6 +225,12 @@ namespace TimeSplitters.Launcher
         void RenderInstalled(string query)
         {
             if(preview){results.Children.Add(PageTheme.Text("Preview only. No installed packages are read or changed.",14));return;}
+            var storage=PageTheme.Section(results,"Gameplay mod storage","Optional: choose an existing private folder if your default cache cannot run gameplay mods. Leave blank for the default. This keeps helper files here; game progress stays in separate mod saves. Use a local drive with write access restricted to your account. Shared folders and exFAT are unsupported.");
+            var location=new TextBox {Name="ModCacheLocation",Margin=new Thickness(0,8,0,8),IsEnabled=stop==null};
+            try{location.Text=ModCacheLocation.Load(root);}catch(Exception error){status.Text=error.Message;}
+            storage.Children.Add(location);
+            var saveLocation=new Button {Name="SaveModCacheLocation",Content="Save storage folder",IsEnabled=stop==null,Margin=new Thickness(0,0,0,8)};
+            saveLocation.Click+=(s,e)=>{try{ModCacheLocation.Save(root,location.Text);status.Text="Gameplay mod storage preference saved. Folder permissions are checked when the mode starts.";}catch(Exception error){status.Text=error.Message;}};storage.Children.Add(saveLocation);
             try {
                 string[] enabled=library.Enabled();
                 foreach(var mod in library.List().Where(m=>(m.Id+" "+m.Name+" "+m.Author+" "+m.Description).IndexOf(query,StringComparison.OrdinalIgnoreCase)>=0)) {

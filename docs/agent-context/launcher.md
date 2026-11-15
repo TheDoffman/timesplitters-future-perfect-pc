@@ -2,7 +2,10 @@
 shared bounded encoder, compiled on Windows/Mac/Linux. Its golden wire/hash/save-
 identity vector also drives the native reader tests. Package authorization must
 precede encoding. ModLibrary now writes and revalidates a generation capsule for one
-main.lua mode, gated by BUILD.json mod_script_version=1; see mod-workshop.md.
+main.lua mode, gated by BUILD.json mod_script_version=1. ModCacheLocation stores an
+optional user-selected cache parent in Settings/mod-cache-location.txt; Installed
+exposes the shared field. Modes emit it only after validation; without-mods bypass
+never reads it. Native owner/ACL/filesystem policy remains required; see mod-workshop.md.
 
 Installed display-reader capability: BUILD.json display_settings_version gates
 Crosshair Size (>=4) and Weapon FOV degrees (>=5). Missing/invalid metadata

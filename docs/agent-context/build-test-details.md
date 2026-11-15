@@ -1,3 +1,7 @@
+launcher_shared_ui.cs tests local cache selection, Unicode preference persistence,
+missing/invalid path refusal, blank/default reset and Play without mods bypass.
+The preference never relaxes native cache permission checks or supplies code.
+
 Gameplay-mode capability: Mac/Linux native build receipts emit mod_script_version=1;
 packagers preserve that value with missing=0. Windows packaging emits1 beside
 the required compiled helper bundle. The launcher refuses unsupported, malformed

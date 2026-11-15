@@ -1,11 +1,36 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace TimeSplitters.Launcher
 {
+    // Installation-local user preference. Uploaded packages/catalogs cannot set
+    // it. Native code still enforces owner permissions and executable-cache rules.
+    public static class ModCacheLocation
+    {
+        static string Preference(string root){return Core.PathIn(root,Path.GetDirectoryName(LauncherPlatform.Settings(root)[0]).Replace('\\','/')+"/mod-cache-location.txt");}
+        static string Validate(string path)
+        {
+            Core.Require(!String.IsNullOrWhiteSpace(path) && Encoding.UTF8.GetByteCount(path)<4095 && Path.IsPathRooted(path) && !path.Any(Char.IsControl),"Choose an absolute gameplay mod storage folder.");
+            string full=Path.GetFullPath(path);
+            Core.Require(String.Equals(Path.GetPathRoot(path),Path.GetPathRoot(full),SaveLocations.Comparison) && !full.StartsWith(@"\\",StringComparison.Ordinal) && Directory.Exists(full),"The gameplay mod storage folder is unavailable or is not a local folder.");
+            Core.PathIn(full,".tsfp-mod-cache-check");return full;
+        }
+        public static string Load(string root)
+        {
+            string file=Preference(root);if(!File.Exists(file))return "";
+            Core.Require(new FileInfo(file).Length<4096,"The gameplay mod storage preference is too large.");
+            string text=new UTF8Encoding(false,true).GetString(File.ReadAllBytes(file)).TrimEnd('\r','\n');return text.Length==0?"":Validate(text);
+        }
+        public static void Save(string root,string path)
+        {
+            Core.Require(!Core.GameRunning(),"Close the game before changing gameplay mod storage.");
+            Core.Write(Preference(root),String.IsNullOrWhiteSpace(path)?"":Validate(path));
+        }
+    }
     // Source handoff only. The caller authenticates packages/catalog and verifies
     // the source against its package BEFORE creating a capsule. No paths, helper
     // hashes, policy assertions or executable/native payloads belong in this wire.

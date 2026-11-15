@@ -1,3 +1,11 @@
+Installed now exposes optional gameplay mod storage through ModCacheLocation
+(ModScriptLaunch.cs). This trusted local preference validates absolute local,
+unlinked, existing UTF8 paths and is emitted only for a verified active mode.
+Unavailable configured folders fail visibly; blank restores OS cache selection.
+Native permission/filesystem checks remain authoritative. Uploaded packages cannot
+write this Settings preference. Native shared UI checks cover Unicode round trips,
+bad/missing locations, default restore and original-game recovery bypass.
+
 Launcher gameplay activation: ModLibrary accepts one scripts/main.lua mode with
 optional flat DDS textures, alongside texture packages, only when the installed
 BUILD.json advertises mod_script_version=1. It rechecks workshop availability,

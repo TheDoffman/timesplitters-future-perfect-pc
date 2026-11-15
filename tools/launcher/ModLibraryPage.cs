@@ -361,6 +361,7 @@ namespace TimeSplitters.Launcher
             if(capsule!=null) {
                 Core.Require(new FileInfo(capsulePath).Length==capsule.Bytes.Length && Core.Hash(capsulePath)==capsule.Sha256,"Active gameplay mode changed. Re-enable it or launch without mods.");
                 Core.Require(!String.IsNullOrEmpty(info.EnvironmentVariables["RECOMP_SAVE_DIR"]),"Gameplay modes require an explicit original save location.");
+                string cache=ModCacheLocation.Load(root);if(cache.Length>0)info.EnvironmentVariables["TSFP_MOD_SCRIPT_CACHE_PARENT"]=cache;
                 info.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE"]=capsulePath;
                 info.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE_SHA256"]=capsule.Sha256;
             } else Core.Require(!File.Exists(capsulePath),"Unexpected active gameplay mode. Re-enable the profile.");
