@@ -1,3 +1,10 @@
+tests/mods/test_host_runtime_images.py exercises Mach-O load/identity parsing,
+loader-environment refusal, system-path boundaries, ambiguous rpaths, Cellar
+ownership boundaries, exclusive bounded copies and root/non-Mac staging refusal.
+POSIX path/ownership cases skip on Windows. Native staging additionally executes
+the relocated isolated interpreter and version commands and verifies signatures;
+it does not prove root deployment or production service access.
+
 tests/mods/test_system_service_probe.py tests the plan-only default, locked
 nonpersistent launchd specs, exact nonce labels, privilege-before-state admission,
 standalone worker syntax and bounded nofollow/ownership/hardlink/mode results.
