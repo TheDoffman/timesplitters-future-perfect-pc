@@ -1,3 +1,8 @@
+Installed updates use WorkshopRelease.UpdateFor on the current workshop catalog:
+same-origin receipts only, numeric newest versions, no duplicate installed offers.
+Review update reuses signed dependency planning and retains the active profile
+and previous version. Refresh in Installed checks updates. See mod-workshop.md.
+
 Installed activation now uses ModLibrary.PreviewEnable/ApplyEnable and an in-page
 ModEnablePlan review. It resolves exact installed dependencies (32 packages),
 keeps unrelated active mods, and shows added/replaced versions before confirmation.

@@ -1526,3 +1526,8 @@ incompatibility and duplicate payload conflicts. Use Windows PowerShell5.1
 tools/build/build-launcher.ps1 -Test (pwsh7 lacks this build's WPF drawing host),
 and native build-mac-launcher.py --test for the same shared behavior on Avalonia.
 The new tests use installed fixtures; they do not assert public connectivity.
+
+Update discovery groups cover numeric ordering, exact authority/port binding,
+local packages, already installed newer versions, removed offers and review/back
+without network/writes. An actual installed Enable/Confirm test pumps the native
+UI dispatcher under a10s bound and checks the complete dependency profile.

@@ -1,3 +1,15 @@
+Installed update discovery: WorkshopRelease.UpdateFor compares numeric versions
+only for receipts bound to the current verified catalog's canonical origin.
+An older retained version does not offer an update already installed from that
+origin; local/unbound packages and other authorities are never substituted.
+Installed Refresh is labelled Check for updates. Review update reads a fresh
+signed catalog and uses the existing dependency install review/verification;
+the old installed key is shown, Back returns to Installed, and installation
+keeps the previous active profile/version until a separate enable review.
+Removed/stale offers cannot bypass fresh planning/confirmation. Shared tests
+cover numeric versions, origins/ports, retained versions and offline preview;
+dispatcher-pumped actual installed Enable/Confirm exercises shared UI callbacks.
+
 Native activation review: installed Enable opens an exact dependency closure
 review before changing the active profile. ModEnablePlan retains copied arrays,
 profile digest and package/origin bindings; ApplyEnable repeats planning under

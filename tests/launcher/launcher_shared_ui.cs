@@ -22,6 +22,31 @@ public static class LauncherSharedUiChecks
     static void Need(bool value,string message){if(!value)throw new Exception(message);}
     static void Test(string name,Action action){action();passed++;Console.WriteLine("PASS shared UI: "+name);}
     static void Click(Button button){button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));}
+    static void WithUiContext(Action action)
+    {
+#if MACOS || LINUX
+        action();
+#else
+        var previous=System.Threading.SynchronizationContext.Current;
+        System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(System.Windows.Threading.Dispatcher.CurrentDispatcher));
+        try{action();}finally{System.Threading.SynchronizationContext.SetSynchronizationContext(previous);}
+#endif
+    }
+    static void PumpUntil(Func<bool> done,string message)
+    {
+        var elapsed=System.Diagnostics.Stopwatch.StartNew();
+#if MACOS || LINUX
+        while(!done() && elapsed.Elapsed<TimeSpan.FromSeconds(10)){Avalonia.Threading.Dispatcher.UIThread.RunJobs();System.Threading.Thread.Sleep(1);}
+#else
+        if(!done()) {
+            var frame=new System.Windows.Threading.DispatcherFrame();
+            var timer=new System.Windows.Threading.DispatcherTimer {Interval=TimeSpan.FromMilliseconds(5)};
+            timer.Tick+=(s,e)=>{if(done() || elapsed.Elapsed>=TimeSpan.FromSeconds(10))frame.Continue=false;};
+            timer.Start();try{System.Windows.Threading.Dispatcher.PushFrame(frame);}finally{timer.Stop();}
+        }
+#endif
+        Need(done(),message);
+    }
     static IEnumerable<Element> All(Element root)
     {
 #if MACOS || LINUX
@@ -213,6 +238,31 @@ public static class LauncherSharedUiChecks
                 Click(Find<Button>(page.View,"CancelModInstallPlan"));Need(page.Search.IsEnabled && page.VisibleCount==2,"Back did not restore browse");
             }
         });
+        Test("workshop updates use numeric versions exact origins and the newest installed version",()=>{
+            string origin=WorkshopTrustChecks.Origin;
+            var current=new InstalledMod {Id="update-demo",Version="1.9.0",WorkshopOrigin=origin};
+            var catalog=new[]{PlannedRelease("update-demo","1.8.0","0000000000000001"),PlannedRelease("update-demo","1.10.0","0000000000000001"),PlannedRelease("other","9.0.0","0000000000000002")};
+            Need(WorkshopRelease.UpdateFor(current,catalog,new[]{current},origin).Version=="1.10.0","Numeric newer release was missed");
+            Need(WorkshopRelease.UpdateFor(current,catalog,new[]{current},origin+":8443")==null,"An offer crossed workshop authorities");
+            Need(WorkshopRelease.UpdateFor(current,catalog,new[]{current},"")==null,"An unloaded workshop offered an update");
+            var local=new InstalledMod {Id=current.Id,Version=current.Version};
+            Need(WorkshopRelease.UpdateFor(local,catalog,new[]{local},origin)==null,"An unbound local package was treated as a workshop package");
+            var newer=new InstalledMod {Id=current.Id,Version="1.10.0",WorkshopOrigin=origin};
+            Need(WorkshopRelease.UpdateFor(current,catalog,new[]{current,newer},origin)==null && WorkshopRelease.UpdateFor(newer,catalog,new[]{current,newer},origin)==null,"Already installed update was offered again");
+            var elsewhere=new InstalledMod {Id=current.Id,Version="2.0.0",WorkshopOrigin=origin+":8443"};
+            Need(WorkshopRelease.UpdateFor(current,catalog,new[]{current,elsewhere},origin)!=null,"Another authority hid a valid update");
+            Need(WorkshopRelease.UpdateFor(current,new WorkshopRelease[0],new[]{current},origin)==null,"A removed release remained an update offer");
+        });
+        Test("update review names the retained version and returns to installed without downloading",()=>{
+            int requests=0;using(var page=new ModWorkshopPage(root,true,new ModWorkshopClient(new WorkshopHandler(_=>{requests++;throw new Exception("Update preview accessed network");})))) {
+                var releases=WorkshopTrustChecks.DependencyReleases();var plan=WorkshopInstallPlan.Create(releases.Single(r=>r.Id=="addon"),releases,new InstalledMod[0],WorkshopTrustChecks.Origin);
+                page.ShowInstallPlan(plan,"addon@0.9.0");
+                Need(All(page.View).OfType<TextBlock>().Any(t=>(t.Text??"").Contains("addon@0.9.0")),"Update review hid the previous version");
+                Need(Convert.ToString(Find<Button>(page.View,"CancelModInstallPlan").Content)=="Back to installed","Update back action lost its context");
+                Click(Find<Button>(page.View,"ConfirmModInstall"));Need(requests==0 && page.StatusText.Contains("Preview only"),"Update preview downloaded content");
+                Click(Find<Button>(page.View,"CancelModInstallPlan"));Need(Convert.ToString(page.Refresh.Content)=="Check for updates" && page.VisibleCount==0,"Back did not restore the installed view");
+            }
+        });
         Test("workshop downloads verify hashes and recheck removal before fetching",()=>{
             string folder=Path.Combine(root,"workshop-downloads");WorkshopTrustChecks.Pin(folder);byte[] bytes=WorkshopTrustChecks.Bytes("package");string hash;
             using(var algorithm=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(algorithm.ComputeHash(bytes)).Replace("-","").ToLowerInvariant();
@@ -378,6 +428,21 @@ public static class LauncherSharedUiChecks
             WorkshopReject(()=>library.PreviewEnable("enable-conflict@1.0.0",System.Threading.CancellationToken.None),"Conflicting enabled payload accepted");
             Need(File.ReadAllText(Path.Combine(folder,"Mods/profile.json"))==profile,"Rejected preview changed profile");
         });
+        Test("installed enable and confirm controls apply dependencies through the UI dispatcher",()=>WithUiContext(()=>{
+            string folder=Path.Combine(root,"enable-ui-dispatch");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
+            foreach(string id in new[]{"ui-base","ui-root"}) {
+                string zip=LibraryPackage(root,id,"1.0.0",1,id=="ui-base"?"1111111111111111":"2222222222222222",id=="ui-base"?null:new Dictionary<string,string>{{"ui-base","1.0.0"}});
+                library.Install(zip,Core.Hash(zip),System.Threading.CancellationToken.None);
+            }
+            using(var page=new ModWorkshopPage(folder,false,new ModWorkshopClient(new WorkshopHandler(_=>{throw new Exception("Installed activation accessed network");})))) {
+                bool busy=false;page.FileBusyChanged+=value=>busy=value;Click(page.InstalledTab);
+                Click(All(page.View).OfType<Button>().Where(b=>b.Name=="ToggleMod").Last());
+                PumpUntil(()=>!busy,"Enable preview did not return to the UI dispatcher");
+                Need(library.Enabled().Length==0 && Find<Button>(page.View,"ConfirmModEnable").IsEnabled,"Enable control skipped its review");
+                Click(Find<Button>(page.View,"ConfirmModEnable"));PumpUntil(()=>!busy,"Enable confirmation did not return to the UI dispatcher");
+                Need(library.Enabled().SequenceEqual(new[]{"ui-base@1.0.0","ui-root@1.0.0"}) && page.StatusText.Contains("enabled"),"UI confirmation did not enable the closure");
+            }
+        }));
         Test("native mod validation rejects archive traversal and duplicate metadata",()=>{
             string folder=Path.Combine(root,"mod-hostile");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
             foreach(string extra in new[]{"../outside.dds","scripts/payload.exe","Textures/0123456789abcdef.dds"}) {

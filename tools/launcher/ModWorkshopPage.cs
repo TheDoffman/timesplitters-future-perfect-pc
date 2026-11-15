@@ -48,6 +48,15 @@ namespace TimeSplitters.Launcher
             return selected.OrderBy(r=>r.Name,StringComparer.OrdinalIgnoreCase).ThenBy(r=>r.Id,StringComparer.Ordinal).ThenByDescending(r=>r.Version,Versions).ToArray();
         }
         public static string ContentName(string kind){return kind=="textures"?"Textures":kind=="scripts"?"Gameplay scripts":kind=="maps"?"Maps":kind=="audio"?"Audio":"Other content";}
+        // Offers are discovery only. Preparing/confirming still reads a fresh
+        // signed catalog and verifies the exact dependency install plan.
+        public static WorkshopRelease UpdateFor(InstalledMod mod,IEnumerable<WorkshopRelease> catalog,IEnumerable<InstalledMod> installed,string origin)
+        {
+            if(String.IsNullOrEmpty(origin) || mod.WorkshopOrigin!=origin)return null;
+            if(installed.Any(m=>m.Id==mod.Id && m.WorkshopOrigin==origin && Versions.Compare(m.Version,mod.Version)>0))return null;
+            return catalog.Where(r=>r.Id==mod.Id && r.Package!=null && Versions.Compare(r.Version,mod.Version)>0)
+                .OrderByDescending(r=>r.Version,Versions).FirstOrDefault();
+        }
     }
 
     // Pure planning against one freshly verified catalog. Execution must recheck
@@ -305,6 +314,7 @@ namespace TimeSplitters.Launcher
         public int PageCount {get{return Math.Max(1,(MatchingCount+PageSize-1)/PageSize);}}
         CancellationTokenSource stop;WorkshopRelease[] releases=new WorkshopRelease[0];bool disposed;string service="";
         WorkshopInstallPlan pendingPlan;
+        string pendingPrevious;
         ModEnablePlan pendingEnable;
         public string StatusText {get{return status.Text;}}
         public int VisibleCount {get;private set;}
@@ -352,8 +362,8 @@ namespace TimeSplitters.Launcher
                 new WorkshopRelease {Id="preview-mode",Name="Example game mode",Version="1.0.0",Author="Example creator",Categories=new[]{"scripts"},Description="Interface example for a scripted game mode listing. No script is downloaded or executed.",ScanEngine="Preview example",ScannedUtc=DateTime.UtcNow}};
             Render();
         }
-        public void SetReleases(WorkshopRelease[] value){pendingPlan=null;releases=value??new WorkshopRelease[0];ResetPage();}
-        internal void ShowInstallPlan(WorkshopInstallPlan value){pendingPlan=value;installedTab=false;ResetPage();}
+        public void SetReleases(WorkshopRelease[] value){pendingPlan=null;pendingPrevious=null;releases=value??new WorkshopRelease[0];ResetPage();}
+        internal void ShowInstallPlan(WorkshopInstallPlan value,string previous=null){pendingPlan=value;pendingPrevious=previous;installedTab=false;ResetPage();}
         internal void ShowEnablePlan(ModEnablePlan value){pendingPlan=null;pendingEnable=value;installedTab=true;ResetPage();}
         static TextBlock FilterLabel(string text){var label=PageTheme.Text(text,13);label.Margin=new Thickness(0,9,8,8);return label;}
         void ResetPage(){page=0;Render();if(scroll!=null)Ui.ScrollHome(scroll);}
@@ -362,6 +372,7 @@ namespace TimeSplitters.Launcher
         void Render()
         {
             results.Children.Clear();VisibleCount=0;string query=(Search.Text??"").Trim();
+            Refresh.Content=installedTab?"Check for updates":"Refresh mods";
             Ui.Show(filters,!installedTab && pendingPlan==null);Ui.Show(pager,!installedTab && pendingPlan==null);Search.IsEnabled=stop==null && pendingPlan==null && pendingEnable==null;
             if(pendingEnable!=null){RenderEnablePlan();return;}
             if(pendingPlan!=null){RenderPlan();return;}
@@ -390,7 +401,8 @@ namespace TimeSplitters.Launcher
         void RenderPlan()
         {
             var plan=pendingPlan;var selected=plan.Ordered.Last();
-            var card=PageTheme.Section(results,"Install "+selected.Name+" "+selected.Version,"Review the exact required versions. Existing versions and the active mod profile are kept. Packages remain inactive until you enable them from Installed.");
+            var card=PageTheme.Section(results,(pendingPrevious==null?"Install ":"Update ")+selected.Name+" "+selected.Version,"Review the exact required versions. Existing versions and the active mod profile are kept. Packages remain inactive until you enable them from Installed.");
+            if(pendingPrevious!=null)card.Children.Add(PageTheme.Text("Current installed version: "+pendingPrevious+". It stays available for rollback.",13,"#A7D9FA"));
             card.Children.Add(PageTheme.Text(plan.Downloads.Length+" package(s) to download · "+PayloadSize(plan.NewPayloadBytes)+" of new payload after extraction. Download size may differ.",13));
             foreach(var release in plan.Ordered) {
                 bool download=plan.Downloads.Contains(release);
@@ -401,7 +413,7 @@ namespace TimeSplitters.Launcher
             var actions=new WrapPanel {Margin=new Thickness(0,12,0,0)};card.Children.Add(actions);
             var confirm=new Button {Name="ConfirmModInstall",Content=plan.Downloads.Length==0?"Verify installed packages":"Install required packages",IsEnabled=stop==null,Margin=new Thickness(0,0,10,0)};
             confirm.Click+=async(s,e)=>await ConfirmInstall();actions.Children.Add(confirm);
-            var back=new Button {Name="CancelModInstallPlan",Content="Back to browse",IsEnabled=stop==null};back.Click+=(s,e)=>{pendingPlan=null;ResetPage();};actions.Children.Add(back);
+            var back=new Button {Name="CancelModInstallPlan",Content=pendingPrevious==null?"Back to browse":"Back to installed",IsEnabled=stop==null};back.Click+=(s,e)=>{installedTab=pendingPrevious!=null;pendingPrevious=null;pendingPlan=null;ResetPage();};actions.Children.Add(back);
         }
         void RenderInstalled(string query)
         {
@@ -414,7 +426,9 @@ namespace TimeSplitters.Launcher
             saveLocation.Click+=(s,e)=>{try{ModCacheLocation.Save(root,location.Text);status.Text="Gameplay mod storage preference saved. Folder permissions are checked when the mode starts.";}catch(Exception error){status.Text=error.Message;}};storage.Children.Add(saveLocation);
             try {
                 string[] enabled=library.Enabled();
-                foreach(var mod in library.List().Where(m=>(m.Id+" "+m.Name+" "+m.Author+" "+m.Description).IndexOf(query,StringComparison.OrdinalIgnoreCase)>=0)) {
+                var installed=library.List();string authority=String.IsNullOrEmpty(service)?"":ServiceUriOrigin(service);
+                results.Children.Add(PageTheme.Text("Check for updates to read the workshop's latest reviewed releases. Updating keeps the current version installed and enabled until you review a switch.",13,"#B4C7D8"));
+                foreach(var mod in installed.Where(m=>(m.Id+" "+m.Name+" "+m.Author+" "+m.Description).IndexOf(query,StringComparison.OrdinalIgnoreCase)>=0)) {
                     VisibleCount++;var card=PageTheme.Section(results,mod.Name+"  "+mod.Version,mod.Description);bool active=enabled.Contains(mod.Key);
                     card.Children.Add(PageTheme.Text("By "+mod.Author+" · "+(active?(mod.ScriptMode?"Enabled offline gameplay mode · separate saves":"Enabled for Enhanced textures"):"Installed, disabled"),13,"#A7D9FA"));
                     var actions=new WrapPanel();card.Children.Add(actions);
@@ -422,6 +436,13 @@ namespace TimeSplitters.Launcher
                     toggle.Click+=async(s,e)=>{if(active)await ChangeLibrary(token=>library.Disable(mod.Key,token),"Mod disabled. Other files were preserved.");else await PrepareEnable(mod.Key);};actions.Children.Add(toggle);
                     var remove=new Button {Name="UninstallMod",Content="Uninstall",IsEnabled=stop==null && !active,Margin=new Thickness(0,12,10,0)};
                     remove.Click+=async(s,e)=>await ChangeLibrary(token=>library.Uninstall(mod.Key),"Mod version uninstalled. Game files, settings and saves were preserved.");actions.Children.Add(remove);
+                    var update=WorkshopRelease.UpdateFor(mod,releases,installed,authority);
+                    if(update!=null) {
+                        card.Children.Add(PageTheme.Text("Update available: "+update.Version+". Review its required packages before downloading.",13,"#A7D9FA"));
+                        var review=new Button {Name="ReviewModUpdate",Content="Review update",IsEnabled=stop==null,Margin=new Thickness(0,8,10,0)};
+                        AutomationProperties.SetName(review,"Review update for "+mod.Name+" from "+mod.Version+" to "+update.Version);
+                        review.Click+=async(s,e)=>await PrepareInstall(update,mod.Key);card.Children.Add(review);
+                    }
                 }
                 if(VisibleCount==0)results.Children.Add(PageTheme.Text("No installed mods match this view. Browse the workshop to install a package.",14,"#B4C7D8"));
             }catch(Exception){status.Text="The installed mod library needs attention. Disable all mods or play without mods to recover.";}
@@ -481,13 +502,13 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(!disposed)Busy(false);}
             }
         }
-        async Task PrepareInstall(WorkshopRelease release)
+        async Task PrepareInstall(WorkshopRelease release,string previous=null)
         {
             if(disposed || stop!=null)return;
             if(preview){status.Text="Preview only. No installed files were read or changed.";return;}
             using(var operation=new CancellationTokenSource(TimeSpan.FromSeconds(45))) {
                 stop=operation;Busy(true);status.Text="Checking required packages…";
-                try {service=ModWorkshopClient.Service(root);var plan=await client.Plan(service,release,library,operation.Token);if(!disposed){ShowInstallPlan(plan);status.Text="Review the required packages before installing.";}}
+                try {service=ModWorkshopClient.Service(root);var plan=await client.Plan(service,release,library,operation.Token);if(!disposed){ShowInstallPlan(plan,previous);status.Text="Review the required packages before installing.";}}
                 catch(OperationCanceledException){if(!disposed)status.Text="Install preview cancelled. No packages were installed.";}
                 catch(Exception error){if(!disposed)status.Text=error.Message;}
                 finally{stop=null;if(!disposed)Busy(false);}
