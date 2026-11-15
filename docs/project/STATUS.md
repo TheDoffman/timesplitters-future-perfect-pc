@@ -8,10 +8,21 @@ per minute. Native validation binds identity/path/digests/size/offset/text bytes
 the read-only UI wraps/scrolls text and makes control/bidi characters visible.
 API checks pass23 tests on Windows with4 POSIX-only cases skipped; the preceding
 creator API/service run passes45 tests. Final Windows launcher validation passes
-98 UI groups plus actual backend checks (47.96s). Mac source inspection/unsafe-file
-acceptance remains pending. Sourceca6f5605 all3 native
-launcher and complete release-package CI jobs pass. Matching host source needs
-a new frozen bundle; da3 lacks the source-preview endpoint. Asset previews,
+98 UI groups plus actual backend checks (47.96s). At source30fa6091 Mac passes99
+UI groups, real backend mode and strict signatures; all49 API/service cases pass,
+including actual POSIX symlink/hardlink/writable/FIFO refusal (11.66s).
+The actual native creator/ClamAV/moderator mode also reads the exact archived
+original Lua bytes before approval/revocation, exit0/9.544s. Runtime inventory
+and official definitions remain unchanged. AcceptanceSHA
+4d30d2caa64ba2605ade26bb0664c4880f23eafd1d2c560fb9c52baa21a1c7bd;
+native build receiptSHA99ca62a96e12dd81fba9d0d47e28ea296c0ab30e5e33fa5676633be9d949d9e5.
+The matching45-source/3339-runtime-file bundle is frozen/plan-verified, binding
+the existing runtime without duplication;150974924 installation bytes.
+DescriptorSHAd654540d23eed3f6f290a670195edd651b77f8a4ea4b3348bea5eb8421db67c2;
+preparation receiptSHA7cc7db615e41ffa472a3e67d303af316617a253090f64fed66000117b230aaed.
+Sourceca6f5605 all3 native launcher and complete package CI jobs pass; new Lua
+source Linux CI remains pending. The olderda3 bundle lacks source preview and is
+preserved as historical preparation. Privileged install remains pending. Asset previews,
 public moderation/hosting, reports and full creator-to-game release remain open.
 
 Native moderator scan evidence (2026-11-15):

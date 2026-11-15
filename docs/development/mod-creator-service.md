@@ -101,6 +101,10 @@ At sourceda3e7631, the same real Mac mode also verifies the native evidence view
 against all4 actual clean/detected/error scan records before approval/revocation.
 The matching host bundle is prepared and plan-verified; privileged installation
 and public acceptance remain unfinished.
+At source30fa6091, actual native Lua preview also matches the archived original
+script, alongside the real scanner/evidence/approval/revocation checks. Mac API
+tests reject linked, writable and FIFO stored blobs. The matching source-preview
+host bundle is frozen/plan-verified; no production service has been installed.
 
 Private snapshot/staged restore tooling and conservative publication reconciliation
 are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery

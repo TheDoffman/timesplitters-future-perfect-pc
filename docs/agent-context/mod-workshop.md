@@ -9,7 +9,9 @@ and verifies a complete single-page digest. UI offers all declared Lua scripts,
 read-only portions and visible control/bidi escapes. Asset previews remain open.
 Tests cover access/unscanned/path/digest/offset/UTF-8 boundaries/corruption/rates,
 native bindings and UI; real Mac moderation mode reads the original script too.
-Host API changed again: da3 is historical preparation until a matching new freeze.
+Host API changed again: da3 is historical; matching30fa source bundle is now
+frozen/plan-verified. Actual native Lua/scanner/moderation acceptance passes;
+privileged installation remains pending. Source-inspection details: STATUS.
 
 GET /v1/moderation/<upload>/evidence exposes role-gated completed-scan metadata:
 exact upload/digest/state, engine/version/status/time/isolation/definition-age
