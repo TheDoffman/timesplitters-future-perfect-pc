@@ -1,3 +1,9 @@
+test_publication_service.py checks new-only private agents/runtime preservation,
+managed PID/policy/freshness health admission, startup waiting before key access,
+shared numeric-descendant RSS sampling, heartbeat cancellation and unknown/fault
+preservation. Startup unit tests stub only process resource-setting to preserve
+the pytest runner; actual launchd acceptance must verify managed operation.
+
 test_live_publication.py covers real signed refresh/revocation, scan-error and
 review withholding, post-export moderation race, failure withdrawal, receipt-based
 retention, unknown-output preservation and recovery barriers. Native guardian

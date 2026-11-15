@@ -1,3 +1,12 @@
+Managed publication: live-publication-mac.py now generates private controller and
+independent watchdog login agents. Managed startup waits for fresh matching
+publication-descendants-v1 health bound to its actual PID before key admission.
+The watchdog samples2GiB/eight-process descendant bounds and15s controller
+heartbeat, cancels by owned launchd label; controller also withdraws if watchdog
+health expires. mod_host_watch.py shares the existing bounded numeric sampler
+with scan-service-mac.py; scanner limits/protocol remain unchanged. Actual
+launchd resource/stall/restart acceptance remains required before deployment.
+
 Live publication: mod_live_publication.py/hosting/live-publication-mac.py poll only
 approved availability plus cumulative revocations, withdraw old Caddy before
 refresh, sign monotonically newer immutable exports and recheck moderation after
@@ -8,7 +17,9 @@ files and recover complete receipts after interrupted retention. Caddy gets only
 a static tree/minimal environment and an owned parent-lifetime guardian lease.
 Guardian default210s is unchanged; trusted publication callers can explicitly
 select1..86400s leases. See [live publication](../development/mod-live-publication.md). This controller
-is not yet publicly deployed or accepted.
+passed actual private Caddy HTTP revocation/error/barrier and controller-death
+acceptance with disposable keys. Persistent production service and internet
+acceptance remain unfinished; see STATUS.
 
 Definition maintenance: hosting/definitions-service-mac.py generates a six-hour
 private login-agent job and fixed official FreshClam config. No upload-controlled

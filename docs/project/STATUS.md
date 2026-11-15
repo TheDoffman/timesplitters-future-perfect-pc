@@ -1,3 +1,32 @@
+Live signed publication controller (2026-11-14, sourcedf6c9eed):
+Private controller polls approved availability/cumulative revocations, withdraws
+old Caddy before refresh, signs/validates a newer immutable export, rechecks
+moderation and serves only that static tree. Failed refresh, recovery barrier,
+server exit or near-expired root stops downloads; old exports are never fallback.
+Thirty-second scan-validity margin avoids expiry-copy churn; metadata refreshes
+at30min. Owned receipts retain current/previous snapshots, recover complete
+receipts after interrupted pruning and preserve changed/unknown outputs.
+Native guardian adds an explicit bounded server lease; scanner default210s is
+unchanged. Caddy receives minimal environment and no keys/database paths. Existing
+installed scanner27/updater88 pins remain unchanged with their own default helper.
+Selected native Mac publication/trust/workshop/guardian/definition suites131 pass;
+backup/periodic/creator API/service68 pass. Windows common publication/trust/scope
+196 pass/12 POSIX skips. Prior sourcedeb26f41 full CI43671817320 is green; latest
+publication-source CI43672598020 completed successfully. Managed-agent work is a
+subsequent revision and needs its own checks.
+Actual private Caddy HTTP acceptance signs version1 -> revocation version2 in0.612s,
+then revoked package GET returns404. A second scan-error release is withheld;
+recovery barrier withdraws serving. Actual CLI loader starts with disposable
+online fixture key; controller SIGKILL causes guardian and Caddy exit, with port
+8766 no longer listening. Synthetic scan reports and fixture keys were used for
+this publication-only test; no production identities/keys or internet endpoint.
+EvidenceSHA21b6f773fcbbfdc3b551983bf9a2e4778b3e43973680da5f3392f347ea33e14e.
+First acceptance harness misread verify_catalog's tuple result, failed before the
+revocation assertion and stopped its server; a fresh fixture corrected the harness.
+The controller is not installed as a persistent production job. Public HTTPS,
+service identity/isolation, independent internet invalidation timing, endpoint/
+root pinning and full release acceptance remain unfinished. Goal active.
+
 Scheduled official definition maintenance (2026-11-14, source88c9b3f7):
 A separate private six-hour login agent now runs FreshClam from pinned Application
 Support source with the existing separate runtime and verified native guardian.
