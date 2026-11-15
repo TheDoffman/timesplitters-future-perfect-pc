@@ -30,7 +30,13 @@ def command(*arguments):
                             stderr=subprocess.PIPE, timeout=15,
                             env=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin', LC_ALL='C'))
     require(len(result.stdout) + len(result.stderr) <= 1024**2, 'Directory command output exceeded budget')
-    require(result.returncode == 0, 'Directory command failed; preserve partial setup for administrator inspection')
+    action = Path(arguments[0]).name
+    if action == 'dscl' and '-create' in arguments:
+        index = arguments.index('-create')
+        action += ' create ' + (arguments[index + 2] if len(arguments) > index + 2 else 'record')
+    require(result.returncode == 0, 'Directory command failed (' + action + ', exit ' + str(result.returncode)
+            + '): ' + result.stderr.decode('utf-8', 'replace')[:512]
+            + '; preserve partial setup for administrator inspection')
     return result.stdout
 
 
@@ -131,6 +137,16 @@ def create_record(kind, values):
         command('/usr/bin/dscl', '.', '-create', path, name, *value)
 
 
+def generated_uuid(kind, fallback):
+    value = attributes(kind, 'GeneratedUID')['GeneratedUID']
+    if value is None:
+        command('/usr/bin/dscl', '.', '-create', '/' + kind + '/' + ACCOUNT, 'GeneratedUID', fallback)
+        return fallback
+    require(len(value) == 1 and str(uuid.UUID(value[0])).upper() == value[0],
+            'Unexpected OS-generated identity; preserve partial setup')
+    return value[0]
+
+
 def apply():
     require(sys.platform == 'darwin' and os.geteuid() == 0, 'Run --apply locally with administrator sudo on the Mac')
     unlinked(ROOT)
@@ -143,12 +159,14 @@ def apply():
     os.chmod(ROOT, 0o755)
     write_new(ROOT / MARKER, result)
     # Authentication is disabled before assigning a usable numeric user ID.
-    create_record('Users', dict(UserShell=['/usr/bin/false'], AuthenticationAuthority=DISABLED,
-                  Password=['*'], UniqueID=[str(result['uid'])], PrimaryGroupID=[str(result['gid'])],
-                  NFSHomeDirectory=[str(ROOT / 'data')], GeneratedUID=[result['user_uuid']],
+    create_record('Users', dict(UserShell=['/usr/bin/false'], Password=['*'], AuthenticationAuthority=DISABLED,
+                  UniqueID=[str(result['uid'])], PrimaryGroupID=[str(result['gid'])],
+                  NFSHomeDirectory=[str(ROOT / 'data')],
                   RealName=['TimeSplitters Workshop Service'], IsHidden=['1']))
-    create_record('Groups', dict(PrimaryGroupID=[str(result['gid'])], GeneratedUID=[result['group_uuid']],
+    result['user_uuid'] = generated_uuid('Users', result['user_uuid'])
+    create_record('Groups', dict(PrimaryGroupID=[str(result['gid'])],
                   Password=['*'], RealName=['TimeSplitters Workshop Service'], GroupMembership=[ACCOUNT]))
+    result['group_uuid'] = generated_uuid('Groups', result['group_uuid'])
     for name, owner, group, mode in [('data', result['uid'], result['gid'], 0o700),
                                      ('secrets', result['uid'], result['gid'], 0o700), ('releases', 0, 0, 0o755)]:
         path = ROOT / name

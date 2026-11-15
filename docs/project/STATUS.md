@@ -1,3 +1,19 @@
+Actual Mac launcher sourcee3e9f7f3: built/signed/strictly verified in an owned
+Library/Caches test output and72 shared UI groups pass. Default Desktop bundle
+verification failed because FinderInfo reappeared after clearing; original failed
+output preserved. Windows71 groups/full suite pass. Linux CI remains required.
+
+Identity partial repair: repair-service-mac.py explicitly binds the observed
+OS-assigned user UUID and exact pre-group/pre-directory attributes to a root-owned
+preparing receipt. It preserves that UUID, disables authentication after the
+unusable password marker, creates only the missing group/new folders and verifies
+all identity/directory policy before replacing the receipt. A new root-owned
+intent preserves the original receipt before changes; unknown files/changed
+accounts or a partial repair are refused. No deletion, migration or service start.
+Fresh provision also preserves OS-assigned UUIDs and writes disabled authority
+after Password. Directory failures now report operation/exit and bounded stderr.
+Administrator execution and actual repair acceptance remain pending.
+
 Workshop discovery (feature/mod-platform, basebc67c1c9): shared ModWorkshopPage
 adds content/creator filters, name/creator/numeric-version sorting, latest release
 per ID by default and explicit older-release browsing. Browse renders at most20

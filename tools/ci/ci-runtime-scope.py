@@ -81,7 +81,7 @@ CPU_TOOLS = {
     'tools/mods/mod_public_sandbox.py', 'tests/mods/test_public_sandbox.py',
     'tools/mods/mod_service_watch.py', 'tools/mods/hosting/Gatewayfile',
     'tools/mods/hosting/gateway-service-mac.py', 'tests/mods/test_gateway_service.py',
-    'tools/mods/hosting/provision-service-mac.py', 'tests/mods/test_service_identity.py',
+    'tools/mods/hosting/provision-service-mac.py', 'tools/mods/hosting/repair-service-mac.py', 'tests/mods/test_service_identity.py',
     'tests/mods/test_creator_service.py', 'tests/mods/test_creator_api.py', 'tests/mods/test_package_budgets.py',
     'tests/mods/live_creator_service.py', 'tests/mods/scan_limits_probe.c',
     'tools/mods/mod_trust.py', 'tools/mods/mod_signing.py',
