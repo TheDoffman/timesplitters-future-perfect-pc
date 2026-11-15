@@ -11,6 +11,10 @@ unknown payloads, preserving/refusing unknowns and hashing known signature data.
 Signing-order regression requires deepest-first signatures after all rewrites,
 then strict verification of the finished set; later nested changes must not
 invalidate an already-accepted framework seal.
+Native sourceb9acb85e staging passed all94 final image signatures; an independent
+rename-and-restore check repeated all signatures/hashes, ran all three tools and
+loaded Python SSL/sqlite/zlib/ctypes with no Homebrew images. This is base-runtime
+acceptance; Python application packages and dedicated-account service tests remain.
 POSIX path/ownership cases skip on Windows. Native staging additionally executes
 the relocated isolated interpreter and version commands and verifies signatures;
 it does not prove root deployment or production service access.

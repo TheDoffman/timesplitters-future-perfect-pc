@@ -9,7 +9,8 @@ A real isolated Python
 invocation must report a prefix/executable inside the bundle and load SSL/sqlite/
 zlib/ctypes; all three server tools must report versions. Source/copy budgets and
 root refusal are tested. Pinned Python packages, production ownership/install and
-service-specific sandbox access remain separate; native staging is pending.
+service-specific sandbox access remain separate. Native base-runtime staging and
+relocation acceptance passed for sourceb9acb85e; see STATUS for exact scope.
 FreshClam version checks explicitly use /dev/null configuration, avoiding its
 compiled Homebrew configuration path. Stage outside synced Desktop folders:
 native Python.app signing rejects FinderInfo injected into those app directories.

@@ -1,3 +1,29 @@
+Mac private base-runtime acceptance (2026-11-15, sourceb9acb85e):
+runtime-images-mac.py stages Python3.12, ClamAV1.5.4 clamscan/FreshClam and
+Caddy2.11.2 with recursive native libraries and all14 installed license notices.
+The final bundle contains3097 recorded files/links,136197135 payload bytes and94
+native images. All final image signatures verify strictly. Independent acceptance
+renamed the bundle, rechecked every recorded hash/mode/link and every signature,
+then successfully ran all three tools and isolated Python SSL/sqlite/zlib/ctypes.
+Python reported the relocated prefix; none of its406 loaded images used Homebrew.
+The original bundle location was restored in finally. ReceiptSHA
+9d08836d744b9ad2d5a5d78a26e7a023d87d5c50c19d0ff82489dfdbcc5b14c2;
+acceptanceSHAf4aca5740ab6202966ae01b4a6b4f4cd412475ea1af11ce5279167f50897e497.
+Earlier staging stopped for a missing SQLite top-level notice (the installed
+header has the disclaimer), synced-Desktop FinderInfo, a missing FreshClam default
+configuration, and an invalid framework seal from signing before nested rewrites.
+Each cause was corrected and failure evidence preserved; obsolete staging trees
+were recycled after path/ownership/inventory verification. One active runtime
+remains outside synced Desktop storage. This contains no installed application
+Python packages, production keys, accounts or persistent/public services.
+Selected Windows tests141 pass/13 POSIX skips; Mac154 pass. Current CI is pending.
+The original Mac task checkout returned missing-origin and truncated-pack reads;
+its shared Git metadata was preserved. A shallow sparse hosting-source checkout
+outside synced storage tracks the same task branch and passed the native checks.
+It is separate from the existing game build/source; no personal settings/saves
+or other checkout were replaced. System-job permission diagnostic still awaits
+native administrator authentication; no production deployment is implied.
+
 Public HTTPS connectivity acceptance (2026-11-15, sourceef234211):
 A bounded foreground Funnel on unused8443 forwarded to the confined gateway8768
 and static8766. The probe started only those confined marker servers; no creator
