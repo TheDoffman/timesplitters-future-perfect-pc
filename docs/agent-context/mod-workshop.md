@@ -3,6 +3,9 @@ scan evidence and Lua/DDS inspection to the API, preserving exact methods/hex ID
 16KiB JSON limits and separate credential-stripped static downloads. Native
 test_gateway_service exercises shipped confined Caddy against recording loopback
 backends at all three supported HTTPS authorities; registered in native CI.
+Actual user Mac at2619f6f6 passes14 gateway cases2.57s; Windows API/gateway/scope
+142pass15POSIX/native skips18.73s. Both source checkouts synced; root runtime still
+f234, without this gateway change. Only existing private443 routing is configured.
 Public deployment and application authorization remain separate acceptance gates.
 
 Actual f234 native proof now passes: trusted root startup->same PID/UID/GID600,
@@ -37,8 +40,8 @@ Native probe now exercises protected root bootstrap->UID600, denied root restore
 root-health write refusal, same-PID/PGID and child containment, root controller's
 label stop using a test-only wall clock, exited processes and all labels unloaded.
 Both prior direct-launchd attempts correctly refused extra groups; their jobs are
-verified absent. Explicit bootstrap native permission/boot acceptance remains
-pending. Details: ../development/system-scan-supervision.md and STATUS. Existing
+verified absent. Explicit bootstrap permission proof passes; persistent boot
+acceptance remains pending. Details: ../development/system-scan-supervision.md and STATUS. Existing
 GUI prototypes remain separate; no production/public service started.
 
 Actual user Mac at07f7f0a7 now passes native build106 UI+normal backend and real

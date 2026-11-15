@@ -8,9 +8,9 @@ unchanged. Persistent service scanning, initialization/definitions, restart/boot
 and public operation are still separate gates; see STATUS.
 The native permission probe proved that `_tsfpworkshop` can inspect a system job
 but cannot signal it through `launchctl`. The existing GUI scan prototype remains
-separate. Root installation, permission/lifecycle acceptance of the new monitor,
-locked-account configuration/definition initialization and boot operation remain
-required before public deployment.
+separate. Root installation and inert permission/cancellation proof have passed;
+locked-account configuration/definition initialization, persistent-job lifecycle
+and boot operation remain required before public deployment.
 
 `tools/mods/hosting/system-scan-monitor-mac.py` runs a small privileged monitor.
 It controls only the scanner label derived from the fixed configuration path
@@ -53,7 +53,8 @@ heartbeat is unhealthy. Once the PID is restricted, a return to root fails close
 Owner and RSS come from one numeric process snapshot. The system worker waits
 boundedly for the monitor to observe its restricted phase before admitting work.
 The label-based cancellation,480-second lifetime and independent native scanner
-containment remain in force. Native bootstrap enforcement is still required.
+containment remain in force. Native inert bootstrap enforcement passed at f234;
+persistent production scanning and boot acceptance remain required.
 
 The worker's `--system-worker` mode accepts no configuration argument: it reads the
 fixed private scan configuration and requires a non-root identity without root or

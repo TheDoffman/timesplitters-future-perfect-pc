@@ -1,3 +1,17 @@
+Confined launcher gateway route acceptance (2026-11-15):
+Source2619f6f6 repairs missing report/history/resolution, digest/evidence lookup
+and Lua/DDS inspection forwarding in Gatewayfile. Actual confined Caddy on the
+user Mac passes all14 gateway tests (2.57s), including complete launcher route
+coverage at default/8443/10000 authorities, method/ID/Host rejection,16KiB JSON
+framing limits, private bearer preservation/HTTPS scheme replacement and separate
+credential-stripped download routing. Recording backends test transport, while
+application authorization remains separately tested. Windows API/gateway/CI scope
+checks pass142 with15 POSIX/native skips (18.73s). The native CI suite now includes
+these checks. Source is synchronized on both task checkouts; the immutable root
+installation remains f234 and does not yet include this gateway change. Actual
+Tailscale Serve/Funnel status still shows only the original private443 mapping to
+127.0.0.1:18789; no public8443 mapping or production service was enabled.
+
 Native protected-bootstrap and monitor permission proof (2026-11-15):
 At sourcef234f4e2 the protected runtime installed and the actual inert system-job
 proof passed (native Terminal exit0). Root startup was observed as unhealthy;
