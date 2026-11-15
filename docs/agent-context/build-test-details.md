@@ -1,3 +1,11 @@
+tests/mods/test_system_service_probe.py tests the plan-only default, locked
+nonpersistent launchd specs, exact nonce labels, privilege-before-state admission,
+standalone worker syntax and bounded nofollow/ownership/hardlink/mode results.
+POSIX result cases skip on Windows. These unit tests never bootstrap jobs; actual
+Mac --apply requires administrator authentication and records preserved receipt
+after unloading its two temporary jobs. No production/public-service acceptance
+is implied. CI classifies the probe and its tests as CPU-only workshop inputs.
+
 Canonical workshop HTTPS authorities now permit the default port or explicit
 8443/10000 only. Signed roots/catalogs/cache identities retain the exact port;
 cross-port metadata and root rotations are rejected. Python and native validators

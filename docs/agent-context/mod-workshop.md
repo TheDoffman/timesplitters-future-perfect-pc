@@ -1,3 +1,14 @@
+System launchd permission diagnostic: hosting/probe-system-service-mac.py defaults
+to plan-only. Explicit privileged --apply verifies the completed locked identity,
+then creates two nonce-scoped temporary system jobs under that account. One job
+tests targeted print/kill against the other; no public listener or production job
+is started. Root reads bounded nofollow results through a held directory FD,
+unloads both owned labels and preserves a root-owned acceptance receipt. This
+determines whether the production watchdog needs a separate privilege adapter;
+it does not install persistent services. test_system_service_probe.py covers
+admission, exact job identities, resource limits and POSIX result preservation.
+Native execution and watchdog permission result remain pending.
+
 Canonical workshop HTTPS authorities now permit the default port or explicit
 8443/10000 only. Signed roots/catalogs/cache identities retain the exact port;
 cross-port metadata and root rotations are rejected. Python and native validators
