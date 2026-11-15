@@ -20,9 +20,12 @@ public static class CreatorBackendChecks
     sealed class Backend : HttpMessageHandler
     {
         readonly Process child;readonly object exchange=new object();readonly Task<string> errors;
+        readonly int timeout;
         public readonly string Invitation,OtherInvitation,Package,OtherPackage;
+        public readonly Dictionary<string,object> ScanPackages;
+        public long Unix=WorkshopTrustChecks.Unix;
         public string LastBearer;
-        public Backend(string folder)
+        public Backend(string folder,bool scanning=false)
         {
             string python=Environment.GetEnvironmentVariable("TSFP_TEST_CREATOR_PYTHON");
             string source=Environment.GetEnvironmentVariable("TSFP_TEST_CREATOR_SOURCE_ROOT");
@@ -31,15 +34,17 @@ public static class CreatorBackendChecks
                 UseShellExecute=false,CreateNoWindow=true,RedirectStandardInput=true,RedirectStandardOutput=true,RedirectStandardError=true,
                 StandardOutputEncoding=new UTF8Encoding(false),StandardErrorEncoding=new UTF8Encoding(false),WorkingDirectory=source
             };
+            info.EnvironmentVariables["TSFP_TEST_CREATOR_REAL_SCAN"]=scanning?"1":"0";timeout=scanning?210000:15000;
             child=Process.Start(info);errors=child.StandardError.ReadToEndAsync();
             try {
                 var hello=Read();Need(hello.ContainsKey("ready") && hello["ready"] is bool && (bool)hello["ready"],"Creator backend did not initialize.");
                 Invitation=ModTrust.Text(hello,"invitation");OtherInvitation=ModTrust.Text(hello,"other_invitation");Package=ModTrust.Text(hello,"package");OtherPackage=ModTrust.Text(hello,"other_package");
+                ScanPackages=ModTrust.Object(hello,"scan_packages");
             }catch{Dispose();throw;}
         }
         Dictionary<string,object> Read()
         {
-            var read=child.StandardOutput.ReadLineAsync();Need(read.Wait(15000),"Creator backend response timed out.");
+            var read=child.StandardOutput.ReadLineAsync();Need(read.Wait(timeout),"Creator backend response timed out.");
             string line=read.GetAwaiter().GetResult();Need(line!=null && line.Length<=2*1024*1024,"Creator backend ended or exceeded the response limit.");return ModJson.Read(line,2*1024*1024);
         }
         Dictionary<string,object> Exchange(object packet)
@@ -60,6 +65,8 @@ public static class CreatorBackendChecks
             var response=Exchange(new {method="GET",path=path,query="",authority=new Uri(WorkshopTrustChecks.Origin).Authority,origin=WorkshopTrustChecks.Origin,authorization=bearer,content_type="",length=0,body=""});
             return (int)ModTrust.Number(response,"status",100,599);
         }
+        public Dictionary<string,object> Scan(string kind){return Exchange(new {scan_next=kind});}
+        public void Advance(){Unix=ModTrust.Number(Exchange(new {advance=301}),"now",Unix+301,Unix+301);}
         protected override void Dispose(bool disposing)
         {
             if(disposing) {
@@ -106,6 +113,47 @@ public static class CreatorBackendChecks
             }
             Console.WriteLine("PASS creator backend: real invitation, exact upload, quarantine history, ownership, immutable versions and session revocation.");return 0;
         }finally{Directory.Delete(root,true);}
+    }
+    public static int RunScanner()
+    {
+#if !MACOS
+        throw new InvalidOperationException("Real native creator scanner acceptance requires the Mac workshop host.");
+#else
+        Need(!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("TSFP_TEST_CREATOR_SCANNER_CONFIG")),"Select the verified private scanner acceptance configuration.");
+        string root=Path.Combine(Path.GetFullPath("."),"tsfp-creator-scanner-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+        try {
+            WorkshopTrustChecks.Pin(root);Core.Write(Core.PathIn(root,"Support/Mods/service.json"),Json.Encode(new {service=WorkshopTrustChecks.Origin}));
+            using(var backend=new Backend(Path.Combine(root,"private-backend"),true))
+            using(var client=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>DateTimeOffset.FromUnixTimeSeconds(backend.Unix).UtcDateTime)) {
+                client.Redeem(backend.Invitation,"Disposable native scanner password!",CancellationToken.None).GetAwaiter().GetResult();
+                foreach(string kind in new[]{"clean","eicar","empty","missing"}) {
+                    var plan=CreatorPackagePlan.Review(ModTrust.Text(backend.ScanPackages,kind),CancellationToken.None);
+                    var uploaded=client.Upload(plan,CancellationToken.None).GetAwaiter().GetResult();Need(uploaded.State=="queued","Native scanner fixture did not enter quarantine.");
+                    bool error=kind=="empty" || kind=="missing";int attempts=error?3:1;
+                    for(int attempt=1;attempt<=attempts;attempt++) {
+                        var result=backend.Scan(error?kind:"normal");var job=ModTrust.Object(result,"job");var scan=ModTrust.Object(result,"scan");
+                        Need(ModTrust.Text(job,"id")==uploaded.Id,"Scanner processed the wrong owned fixture.");
+                        string status=ModTrust.Text(scan,"status");
+                        Need(status==(error?"error":kind=="clean"?"clean":"blocked"),"Unexpected real scanner result: "+Json.Encode(scan));
+                        if(!error) {
+                            Need(ModTrust.Text(scan,"isolation")=="macos-seatbelt-v3" && ModTrust.Text(scan,"version").StartsWith("ClamAV "),"Scanner did not prove its isolated engine identity.");
+                            if(kind=="eicar")Need(ModTrust.Text(scan,"detail").Contains("FOUND"),"The real engine did not report its EICAR detection.");
+                        }
+                        Need(ModTrust.Number(result,"catalog_count",0,0)==0,"Scanner acceptance published an unreviewed package.");
+                        var current=client.History(0,CancellationToken.None).GetAwaiter().GetResult().Single(row=>row.Id==uploaded.Id);
+                        string expected=error?(attempt<3?"retry":"scan-error"):kind=="clean"?"pending-review":"rejected";
+                        Need(current.State==expected && current.Sha256==plan.Sha256,"Native history misrepresented real scan/retry state.");
+                        if(error)Need(current.Error=="scan-unavailable","Scanner errors lost their fail-closed status.");
+                        Need(backend.Probe("/v1/packages/"+plan.Sha256,backend.LastBearer)==404,"Creator API exposed scanner fixture bytes.");
+                        Console.WriteLine("PASS creator scanner: "+kind+" attempt "+attempt+" -> "+expected+"; no public catalog entry.");
+                        if(error && attempt<3)backend.Advance();
+                    }
+                }
+                client.SignOut(CancellationToken.None).GetAwaiter().GetResult();Need(!Directory.Exists(Core.PathIn(root,"Mods")),"Scanner acceptance installed or enabled content.");
+            }
+            return 0;
+        }finally{Directory.Delete(root,true);}
+#endif
     }
     sealed class Borrowed : HttpMessageHandler
     {

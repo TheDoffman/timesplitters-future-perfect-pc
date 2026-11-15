@@ -1,6 +1,6 @@
 [Native checks](build-test-details.md); [context](investigation.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
-Workshop: [host, backend, client, worker checks and receipts](build-test-details.md).
+Workshop: [host, backend, scanner, client and worker checks](build-test-details.md).
 
 Epoch/GCC checks: build-test-details.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))

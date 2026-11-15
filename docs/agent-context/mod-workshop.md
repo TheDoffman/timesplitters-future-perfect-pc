@@ -1,3 +1,13 @@
+Native creator scanner acceptance adds explicit Mac --test-creator-scanner.
+It extends the same native-client/real-WSGI private-pipe fixture with actual
+ClamScanner/ScanSandbox/guardian processing. Owner-private configuration pins the
+bundled runtime receipt and official DB path; default backend/UI tests do not
+scan or create EICAR. Cases exercise clean->pending-review, real EICAR->rejected,
+and empty/missing-engine errors through all3 retries->scan-error. Test account/
+retry time advances do not alter OS time, AV freshness, scanner budgets or policy.
+Every state is reread through ModCreatorClient.History; catalog stays empty and
+quarantine download stays404. No approval/publication/public TLS is implied.
+
 Native creator backend wire check: creator_backend.cs launches the real Python
 WorkshopAPI/Accounts/Uploads/SDK packager against a disposable SQLite repository
 through bounded private pipes. It exercises actual invitation/Unicode password

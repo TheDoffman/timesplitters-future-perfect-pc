@@ -1567,3 +1567,15 @@ interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;
 Python is not included in the player package. Windows records its interpreter
 path/version/hash through the existing validation-cache fingerprint.
+
+Mac-only --test-creator-scanner uses explicit TSFP_TEST_CREATOR_SCANNER_CONFIG:
+an owner-private JSON with engine, database and runtime_receipt_sha256. The engine
+must have a valid matching bundled-runtime receipt. The regular developer Python/
+source-root variables are also required. It uses real guarded isolated ClamAV,
+official definitions and harmless EICAR; normal build/UI/backend modes stay
+scanner-free. Clean/EICAR and empty/missing-definition/engine cases must produce
+pending-review/rejected and retry/retry/scan-error respectively. Each native
+history read must agree; nothing is approved, installed, enabled or published.
+The account retry clock advances301s in the fixture; OS/AV clocks and resource
+limits remain unchanged. The explicit scanner-mode pipe wait allows the existing
+180s scanner deadline plus teardown; ordinary wire checks retain their15s wait.

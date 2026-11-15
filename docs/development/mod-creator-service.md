@@ -37,6 +37,13 @@ ownership, immutable versions, Unicode passwords and remote session revocation.
 It opens no network server and does not scan or publish. Real internet TLS and
 public creator-to-scanner-to-game acceptance remain unfinished.
 
+An explicit Mac developer scanner mode extends the native client fixture through
+the real isolated ClamAV queue. It requires a private configuration pinning the
+accepted bundled engine and official definitions. It checks clean-to-review,
+EICAR rejection and fail-closed scanner errors, including exhausted retry status
+in the native client. It never approves or exposes the fixture packages. This
+private-pipe acceptance is separate from public HTTPS and in-game acceptance.
+
 Private snapshot/staged restore tooling and conservative publication reconciliation
 are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery
 drill passes; production cutover and off-device recovery remain acceptance work.
