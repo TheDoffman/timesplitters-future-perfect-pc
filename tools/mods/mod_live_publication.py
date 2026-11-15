@@ -8,6 +8,7 @@ import re
 import signal
 import stat
 import subprocess
+import sys
 import time
 import uuid
 
@@ -191,27 +192,36 @@ class LivePublisher:
 
 class CaddyServer:
     def __init__(self, executable, state):
+        require(sys.platform == 'darwin' and Path('/usr/bin/sandbox-exec').is_file(),
+                'Public download confinement requires the Mac host')
         self.executable = Path(executable).resolve(strict=True)
         info = self.executable.stat()
         require(stat.S_ISREG(info.st_mode) and info.st_uid in (0, os.geteuid()) and not info.st_mode & 0o6022
                 and os.access(self.executable, os.X_OK), 'Unsafe Caddy executable')
         self.state = private_directory(state)
         self.child = None
+        self.scratch = None
 
     def start(self, snapshot, seconds):
         require(signal.getsignal(signal.SIGCHLD) == signal.SIG_DFL, 'Publisher must own child exit status')
-        require(self.child is None and type(seconds) is int and 0 < seconds <= 3600, 'Invalid public server lease')
+        require(self.child is None and self.scratch is None and type(seconds) is int and 0 < seconds <= 3600,
+                'Invalid public server lease')
         require(not any(c in str(snapshot) for c in '"{}\r\n'), 'Invalid public snapshot path')
         guardian = verified_guardian()
+        from mod_public_sandbox import acquire, profile
+        self.scratch = acquire(self.state)
         read, write = os.pipe()
         try:
             config = Path(__file__).with_name('hosting') / 'Caddyfile'
+            policy = profile(self.executable, snapshot, config, self.scratch.path)
             process = subprocess.Popen([str(guardian), str(read), '--deadline-seconds', str(seconds),
-                                        str(self.executable), 'run', '--config', str(config), '--adapter', 'caddyfile'],
+                                        '/usr/bin/sandbox-exec', '-p', policy, str(self.executable),
+                                        'run', '--config', str(config), '--adapter', 'caddyfile'],
                                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                       close_fds=True, pass_fds=(read,), start_new_session=True, cwd=self.state,
-                                       env=dict(PATH='/usr/bin:/bin', HOME=str(self.state), TMPDIR=str(self.state),
-                                                TSFP_MOD_PUBLIC_ROOT=str(snapshot), LC_ALL='C'))
+                                       close_fds=True, pass_fds=(read, self.scratch.lease), start_new_session=True,
+                                       cwd=self.scratch.path,
+                                       env=dict(PATH='/usr/bin:/bin', HOME=str(self.scratch.path), TMPDIR=str(self.scratch.path),
+                                                TSFP_MOD_PUBLIC_ROOT=str(snapshot), LC_ALL='C', TZ='UTC'))
             self.child = GuardedChild(process, write)
             write = None
         finally:
@@ -220,10 +230,16 @@ class CaddyServer:
                 os.close(write)
 
     def running(self):
-        return self.child is not None and self.child.poll() is None
+        running = self.child is not None and self.child.poll() is None
+        if running:
+            self.scratch.check()
+        return running
 
     def stop(self):
         if self.child is not None:
             self.child.kill()
             self.child.wait(timeout=10)
             self.child = None
+        if self.scratch is not None:
+            scratch, self.scratch = self.scratch, None
+            scratch.close()

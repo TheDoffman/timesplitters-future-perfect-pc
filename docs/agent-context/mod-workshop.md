@@ -1,3 +1,13 @@
+Public static-server confinement: CaddyServer now requires Mac Seatbelt and
+mod_public_sandbox.profile (public tree/fixed config/system runtime reads, private
+scratch writes, self-signals, hardware sysctls, explicit process-info denial and
+localhost8766 inbound/bind only). No outbound/fork/private-data fallback. Per-server
+scratch is owner-marked and leased outside the writable work directory; guardian
+inherits its lease while the server inherits only stdio. Reclaim requires exclusive
+lease after guardian/server exit. Running scratch is sampled at256 entries/32MiB,
+bounded cleanup unlinks owned output without following links; unknown/incomplete
+stores are preserved. Actual integrated Caddy acceptance remains required.
+
 Service identity preparation: hosting/provision-service-mac.py defaults to a
 read-only Directory Services plan. Explicit local administrator --apply creates
 only a new locked _tsfpworkshop user/private group and root-owned service layout.

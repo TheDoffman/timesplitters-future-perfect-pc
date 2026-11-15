@@ -1,3 +1,10 @@
+test_public_sandbox.py covers scratch ownership, live-lease exclusion, released
+lease recovery, storage withdrawal, symlink-target preservation, and unknown-root
+refusal. Actual Darwin guardian retains its lease after controller closes its FD;
+server receives neither lease/liveness FD. Native positive controls and confined
+canaries cover private reads/writes, aliases, outbound/bind/fork denial and allowed
+public reads/scratch writes. Integrated Caddy/restart acceptance remains separate.
+
 test_service_identity.py uses read-only planning/fake directory commands only:
 UID/GID collision selection, disabled-before-UID ordering, malformed inventories,
 unknown/partial preservation and privilege admission. It creates no system users.

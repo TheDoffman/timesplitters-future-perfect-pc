@@ -1,3 +1,17 @@
+Dedicated service identity preparation (2026-11-14, source47bbae3b):
+provision-service-mac.py defaults to a read-only Directory Services plan; actual
+Mac plan selects unused UID/GID600 for _tsfpworkshop. Ten planner/preservation/
+privilege tests pass on Mac; Windows identity/CI-scope108 pass. Administrator
+--apply is explicit and creates only a locked non-admin service user/private group
+and new root-owned Library/Application Support layout; no code/data/key migration
+or service/network startup. Unknown/partial records are preserved and refused.
+The SSH session reports sudo requires a password. A read-only pinned script copy
+is ready at private/service-identity-47bbae3b/provision-service-mac.py, SHA
+07becf08741bde77869e57910d2b35b51e543f85373d65365f908bb0e85c903e.
+Local administrator execution was requested; privileged apply has NOT been
+performed or verified by this agent. Production identity, daemon deployment,
+HTTPS, signing and public end-to-end release acceptance remain unfinished.
+
 Managed publication services (2026-11-14, managed source6b245a9f, fault handling54989350):
 The publication CLI generates private KeepAlive controller/watchdog login agents.
 Managed startup waits for fresh publication-descendants-v1 health bound to the
@@ -9,7 +23,9 @@ preserves scanner sampler behavior. Pre-server/key-admission faults are recorded
 only by the lock owner; a lock loser cannot overwrite the active status.
 Mac selected managed/scan-service/live-publication/guardian/definition suites54
 pass; Windows common policy/CI-scope107 pass/24 POSIX skips. Source/context checks
-pass. Prior full sourcedf6c9eed CI43672598020 is green; new source CI is pending.
+pass. Full source54989350 CI43674026983 is green; identity-preparation
+source47bbae3b CI43674845729 completed successfully; static-server sandbox work
+is subsequent and needs its own checks.
 Actual temporary launchd jobs pass watchdog restart and controller restart with
 old guardian/Caddy children reaped. Scaled128MiB sampled memory limit with a
 256MiB private allocation cancels the owned controller; real15s heartbeat expiry
