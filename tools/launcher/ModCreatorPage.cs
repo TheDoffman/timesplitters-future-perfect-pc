@@ -50,7 +50,7 @@ namespace TimeSplitters.Launcher
             ModTrust.Need(Regex.IsMatch(ModId,@"\A[a-z][a-z0-9]*(?:-[a-z0-9]+)*\z") && Regex.IsMatch(Version,@"\A(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\z") && Regex.IsMatch(Sha256,@"\A[0-9a-f]{64}\z"),"invalid upload package identity.");
             Size=ModTrust.Number(data,"size",1,ModWorkshopClient.MaxPackageBytes);Created=ModTrust.Number(data,"created",0);Expires=ModTrust.Number(data,"expires",Created);RetryAt=ModTrust.Number(data,"retry_at",0);
             State=Text(data,"state",32);Error=Text(data,"error",2000);
-            ModTrust.Need(new[]{"open","receiving","queued","processing","retry","complete","pending-review","approved","rejected","held","revoked","expired","failed"}.Contains(State),"unknown upload state.");
+            ModTrust.Need(new[]{"open","receiving","queued","processing","retry","complete","pending-review","approved","rejected","scan-error","held","revoked","expired","failed"}.Contains(State),"unknown upload state.");
             Cursor=cursor?ModTrust.Number(data,"cursor",1,999999999):0;
         }
         internal static string Text(Dictionary<string,object> data,string key,int max)
@@ -75,7 +75,7 @@ namespace TimeSplitters.Launcher
         void Pin()
         {
             try {
-                Core.Require(ModWorkshopClient.ServiceUri(ModWorkshopClient.Service(root)).GetLeftPart(UriPartial.Authority)==origin,"The workshop address changed. Sign in again after refreshing Mods.");
+                Core.Require(ModWorkshopClient.ServiceUri(ModWorkshopClient.Service(root)).GetLeftPart(UriPartial.Authority)==origin,"The workshop address changed. Restart the launcher before signing in again.");
                 using(var store=new ModTrustStore(root,origin,Now))ModTrust.Roots(store.Pinned,store.Updates,Now);
             }catch{Forget();throw;}
         }

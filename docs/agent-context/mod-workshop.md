@@ -12,6 +12,9 @@ upload never installs, enables or approves. ModLibrary.InspectPackage now reuses
 the full strict ZIP/manifest/payload validation without extraction or publishing.
 Native UI/model contract fixtures are injected HTTPS responses, not proof of
 public TLS, real creator-to-scanner integration or credential-vault persistence.
+History also accepts the backend's terminal scan-error state after retry
+exhaustion, preserving its failure detail; unknown states remain invalid. An
+address change clears the session and requires restarting the bound client.
 
 Installed update discovery: WorkshopRelease.UpdateFor compares numeric versions
 only for receipts bound to the current verified catalog's canonical origin.

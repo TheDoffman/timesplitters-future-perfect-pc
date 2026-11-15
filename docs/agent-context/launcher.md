@@ -22,7 +22,7 @@ port. Existing private443 routing must stay private; separate8443 is planned.
 Golden port-bound signatures and actual Caddy transport/API tests cover this.
 
 ModCreatorPage adds Creator sign-in/invitation redemption, ZIP review, confirmed
-private upload and bounded status history to Mods. ModCreatorClient binds every
+private upload and bounded scan/error history to Mods. ModCreatorClient binds every
 request to the configured live pinned root/origin, rejects redirects and bounds
 responses. Sessions remain in memory; secret inputs clear on submit/tab exit.
 Read-only InspectPackage shares installer validation. Full details/tests are in

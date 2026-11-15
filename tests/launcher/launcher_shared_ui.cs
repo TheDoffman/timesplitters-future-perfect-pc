@@ -405,6 +405,17 @@ public static class LauncherSharedUiChecks
                 }
             }
         });
+        Test("creator history retains exhausted scanner errors without treating them as approval",()=>{
+            string folder=Path.Combine(root,"creator-scan-error");CreatorConfig(folder);string zip=LibraryPackage(folder,"creator-error","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(CreatorLogin());
+                var row=CreatorRow(plan,"scan-error",1);row["error"]="scan-unavailable";return CreatorJson(new {uploads=new[]{row}});
+            }),()=>WorkshopTrustChecks.Now)) {
+                client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                var row=client.History(0,System.Threading.CancellationToken.None).GetAwaiter().GetResult().Single();Need(row.State=="scan-error" && row.Error=="scan-unavailable","Exhausted scanner failure was hidden or misclassified");
+                WorkshopReject(()=>new CreatorUpload(CreatorRow(plan,"unknown-state")),"An unknown server state was accepted");
+            }
+        });
         Test("creator expiry cancellation and service changes prevent stale authenticated requests",()=>{
             foreach(string mode in new[]{"expiry","cancel","origin","logout"}) {
                 string folder=Path.Combine(root,"creator-auth-change-"+mode);CreatorConfig(folder);int requests=0;DateTime clock=WorkshopTrustChecks.Now;

@@ -1538,3 +1538,5 @@ history/sign-out, no credential files, tampered archives and mismatched tickets,
 oversized/duplicate JSON, invalid expiry,401 clearing and masked UI secret reset.
 Fixtures inject responses at HttpMessageHandler and use disposable public trust
 vectors; they do not prove a live API/scanner, public TLS or OS credential vault.
+The exhausted-scan regression keeps scan-error/scan-unavailable visible in history
+and rejects unknown states; this follows mod_uploads.status's release-state mapping.
