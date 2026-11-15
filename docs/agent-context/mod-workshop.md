@@ -1,3 +1,12 @@
+Periodic maintenance: mod_rescan.py/rescan-next revalidates one due reviewed
+immutable package under the Uploads worker lock. Fresh clean renews the prior
+review; detection revokes; transient error withholds/retries; changed bytes need
+manual repair/review. Slow AV holds no SQLite writer lock. Lease/state compare
+preserves concurrent moderation and allows interrupted-scan reclaim. Backup
+refuses active leases; restore clears renewal records. See
+[scan maintenance](../development/mod-scan-maintenance.md). Persistent supervisor,
+RSS monitoring, launchd deployment and automatic signed refresh remain pending.
+
 Private host recovery: tools/mods/mod_backup.py captures a reserved-lock SQLite
 snapshot plus referenced immutable/queued bytes, with private ownership and bounded
 file/disk budgets. Restore only creates a fresh root, revokes auth, suspends accounts,

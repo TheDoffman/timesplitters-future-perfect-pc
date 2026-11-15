@@ -166,6 +166,43 @@ def test_disk_budget_refusal_does_not_create_output(host, tmp_path, monkeypatch)
     assert not (tmp_path / 'backup').exists()
 
 
+def test_restore_never_automatically_renews_a_historical_periodic_review(host, tmp_path):
+    import time
+    from mod_rescan import rescan_next, RESCAN_INTERVAL
+    repository, accounts, _, _, sha, _, _ = host
+    now = int(time.time())
+    with repository.db() as db:
+        report = json.loads(repository.get(sha)['scan'])
+        report['time'] = now - RESCAN_INTERVAL - 1
+        db.execute('UPDATE releases SET scan=? WHERE sha256=?', (json.dumps(report), sha))
+    assert rescan_next(accounts, Scanner('error'), now=now)['retry_at'] is not None
+    snapshot(repository.root, tmp_path / 'backup')
+    restored = tmp_path / 'restored'
+    restore(tmp_path / 'backup', restored)
+    finish_recovery(restored, reconciliation(tmp_path / 'review.json'))
+    recovered = Repository(restored)
+    assert rescan_next(Accounts(recovered), Scanner(), now=now + RESCAN_INTERVAL) is None
+    assert recovered.get(sha)['state'] == 'scan-error'
+
+
+def test_backup_refuses_an_inflight_periodic_scan(host, tmp_path):
+    from mod_rescan import rescan_next, RESCAN_INTERVAL
+    import time
+    repository, accounts, _, _, sha, _, _ = host
+    now = int(time.time())
+    with repository.db() as db:
+        report = json.loads(repository.get(sha)['scan'])
+        report['time'] = now - RESCAN_INTERVAL - 1
+        db.execute('UPDATE releases SET scan=? WHERE sha256=?', (json.dumps(report), sha))
+    class DuringScan(Scanner):
+        def scan(self, folder):
+            with pytest.raises(ModError, match='busy'):
+                snapshot(repository.root, tmp_path / 'backup')
+            assert not (tmp_path / 'backup').exists()
+            return super().scan(folder)
+    assert rescan_next(accounts, DuringScan(), now=now)['state'] == 'approved'
+
+
 @pytest.mark.parametrize('state', ['receiving', 'processing'])
 def test_busy_upload_or_worker_refuses_snapshot_before_output(host, tmp_path, state):
     repository, _, _, _, _, upload_id, _ = host

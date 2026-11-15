@@ -39,10 +39,10 @@ def main(argv=None):
     check_public = commands.add_parser('check-public', help='Preflight a static public snapshot')
     check_public.add_argument('snapshot')
     check_public.add_argument('--trusted-root', required=True)
-    for name in ('invite','recover-account','suspend-account','assign-owner','scan-next'):
+    for name in ('invite','recover-account','suspend-account','assign-owner','scan-next','rescan-next'):
         command = commands.add_parser(name)
         command.add_argument('--repository', required=True)
-        if name != 'scan-next':
+        if name not in ('scan-next','rescan-next'):
             command.add_argument('username')
         if name == 'invite':
             command.add_argument('--role', choices=('creator','moderator','admin'), default='creator')
@@ -50,7 +50,7 @@ def main(argv=None):
             command.add_argument('--note', required=True)
         if name == 'assign-owner':
             command.add_argument('--mod-id', required=True)
-        if name == 'scan-next':
+        if name in ('scan-next','rescan-next'):
             command.add_argument('--clamscan', default='clamscan')
             command.add_argument('--clamav-database', required=True)
     for name in ('submit', 'approve', 'revoke', 'rescan', 'search', 'serve', 'inspect'):
@@ -94,7 +94,7 @@ def main(argv=None):
             from mod_signing import bounded_file
             from mod_trust import MAX_ROOT
             result = validate_snapshot(args.snapshot, bounded_file(args.trusted_root, MAX_ROOT))
-        elif args.command in ('invite','recover-account','suspend-account','assign-owner','scan-next'):
+        elif args.command in ('invite','recover-account','suspend-account','assign-owner','scan-next','rescan-next'):
             accounts = Accounts(Repository(args.repository))
             if args.command == 'invite':
                 result = issue_invitation(accounts, args.username, args.role)
@@ -106,6 +106,9 @@ def main(argv=None):
             elif args.command == 'assign-owner':
                 Uploads(accounts).assign_owner(args.mod_id, args.username, args.note)
                 result = {'id': args.mod_id, 'username': args.username}
+            elif args.command == 'rescan-next':
+                from mod_rescan import rescan_next
+                result = rescan_next(accounts, ClamScanner(args.clamscan, args.clamav_database))
             else:
                 result = Uploads(accounts).process_next(ClamScanner(args.clamscan, args.clamav_database))
         else:

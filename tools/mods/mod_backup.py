@@ -24,7 +24,7 @@ MANIFEST = 'backup.json'
 BARRIER = '.recovery-required'
 TABLES = {'releases', 'events', 'workshop_accounts', 'workshop_invites',
           'workshop_sessions', 'workshop_rate', 'workshop_audit',
-          'workshop_owners', 'workshop_uploads', 'publication_sequence', 'recovery_revocations'}
+          'workshop_owners', 'workshop_uploads', 'publication_sequence', 'recovery_revocations', 'periodic_scans'}
 
 
 def private_directory(path):
@@ -116,6 +116,9 @@ def inventory(db):
             and not db.execute('PRAGMA foreign_key_check').fetchall(), 'Database integrity check failed')
     require(db.execute('PRAGMA page_count').fetchone()[0] * db.execute('PRAGMA page_size').fetchone()[0]
             <= MAX_DB, 'Database snapshot exceeds its budget')
+    if 'periodic_scans' in tables:
+        require(not db.execute("SELECT 1 FROM periodic_scans WHERE lease<>'' LIMIT 1").fetchone(),
+                'Periodic scanner is busy; quiesce it and retry the backup')
     refs = {}
     for row in db.execute('SELECT sha256 FROM releases LIMIT ?', (MAX_FILES + 1,)):
         require(isinstance(row[0], str) and SHA.fullmatch(row[0]) is not None, 'Invalid stored release identity')
@@ -243,6 +246,9 @@ def restore(backup, destination):
                 db.execute('DELETE FROM workshop_invites')
             if 'workshop_accounts' in tables:
                 db.execute('UPDATE workshop_accounts SET active=0')
+            if 'periodic_scans' in tables:
+                # A restored historical review cannot renew itself automatically.
+                db.execute('DELETE FROM periodic_scans')
             if 'workshop_uploads' in tables:
                 db.execute("UPDATE workshop_uploads SET state='expired',error='host-restored' WHERE state='open'")
                 db.execute("UPDATE workshop_uploads SET lease='',lease_until=0,retry_at=0")

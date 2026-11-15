@@ -65,7 +65,9 @@ minutes, longer than the scanner child's180-second ordinary-process alarm and
 parent deadline; active leases block another job. Recovering a committed release
 does not rescan or reapprove it. Scan errors retry after five minutes, at most
 three attempts. Unexpected failures are held and remain charged for operator
-investigation. The scanner still needs external memory supervision, persistent
+investigation. The new [rescan-next](mod-scan-maintenance.md) command renews existing reviews
+only after fresh isolated scans; detection revokes and errors withhold availability.
+The scanner still needs external memory supervision, persistent
 service identity and automatic scheduling before production operation.
 
 Clean scans stop at `pending-review`. An authenticated moderator/admin must

@@ -1,3 +1,9 @@
+test_periodic_rescan.py checks prior-review-only renewal, due/retry clocks,
+detection revocation, concurrent manual actions during the unlocked slow scan,
+changed-byte quarantine, crash reclaim and queue/periodic worker exclusion.
+Backup tests also cover active periodic lease refusal and removal of historical
+renewal authority after restore. Runtime scope includes the new worker/test.
+
 test_host_backup.py targets the Mac/POSIX host and is registered in runtime scope.
 It verifies database WAL capture under an admission-blocking reserved lock, queued
 bytes/auth isolation, new-only output, tamper/link/hardlink/extra/schema rejection,
