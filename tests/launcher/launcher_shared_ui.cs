@@ -302,11 +302,11 @@ public static class LauncherSharedUiChecks
             Array.Copy(BitConverter.GetBytes(pair.Value),0,bytes,pair.Key,4);
         for(int i=128;i<bytes.Length;i++)bytes[i]=marker;return bytes;
     }
-    static string LibraryPackage(string root,string id,string version,byte marker,string key="0123456789abcdef",Dictionary<string,string> dependencies=null,bool script=false,string extra=null)
+    static string LibraryPackage(string root,string id,string version,byte marker,string key="0123456789abcdef",Dictionary<string,string> dependencies=null,bool script=false,string extra=null,string author="Test creator")
     {
         string file=script?"scripts/main.lua":"textures/"+key+".dds";byte[] data=script?System.Text.Encoding.UTF8.GetBytes("return true\n"):WorkshopDds(marker);string hash;
         using(var sha=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(sha.ComputeHash(data)).Replace("-","").ToLowerInvariant();
-        string json=Json.Encode(new {schema=1,id=id,version=version,name=id,author="Test creator",description="Synthetic original fixture",game="tsfp-us-45410066",api="tsfp-mod-v1-draft",dependencies=dependencies??new Dictionary<string,string>(),files=new Dictionary<string,object>{{file,new {sha256=hash,size=data.Length}}}});
+        string json=Json.Encode(new {schema=1,id=id,version=version,name=id,author=author,description="Synthetic original fixture",game="tsfp-us-45410066",api="tsfp-mod-v1-draft",dependencies=dependencies??new Dictionary<string,string>(),files=new Dictionary<string,object>{{file,new {sha256=hash,size=data.Length}}}});
         string package=Path.Combine(root,Guid.NewGuid().ToString("N")+".zip");
         using(var archive=System.IO.Compression.ZipFile.Open(package,System.IO.Compression.ZipArchiveMode.Create)) {
             using(var output=archive.CreateEntry("mod.json").Open()){byte[] text=System.Text.Encoding.UTF8.GetBytes(json);output.Write(text,0,text.Length);}
@@ -314,6 +314,148 @@ public static class LauncherSharedUiChecks
             if(extra!=null)using(var output=archive.CreateEntry(extra).Open())output.Write(data,0,data.Length);
         }
         return package;
+    }
+    static System.Net.Http.HttpResponseMessage CreatorJson(object value,int status=200)
+    {return new System.Net.Http.HttpResponseMessage((System.Net.HttpStatusCode)status){Content=new System.Net.Http.StringContent(Json.Encode(value),System.Text.Encoding.UTF8,"application/json")};}
+    static object CreatorLogin()
+    {return new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role="creator"}};}
+    static Dictionary<string,object> CreatorRow(CreatorPackagePlan plan,string state,long cursor=0)
+    {
+        var data=new Dictionary<string,object>{{"id",new string('a',32)},{"mod_id",plan.Id},{"version",plan.Version},{"sha256",plan.Sha256},{"size",plan.Size},{"created",WorkshopTrustChecks.Unix},{"expires",WorkshopTrustChecks.Unix+900},{"state",state},{"retry_at",0},{"error",""}};
+        if(cursor>0)data.Add("cursor",cursor);return data;
+    }
+    static void CreatorConfig(string folder)
+    {WorkshopTrustChecks.Pin(folder);Core.Write(Core.PathIn(folder,"Support/Mods/service.json"),Json.Encode(new {service=WorkshopTrustChecks.Origin}));}
+    static void SetCreatorSecret(Element view,string name,string secret)
+    {
+#if MACOS || LINUX
+        Find<TextBox>(view,name).Text=secret;
+#else
+        Find<PasswordBox>(view,name).Password=secret;
+#endif
+    }
+    static void CreatorChecks(string root)
+    {
+        Test("creator package review validates all bytes without installing or extracting",()=>{
+            string folder=Path.Combine(root,"creator-review");Directory.CreateDirectory(folder);
+            string zip=LibraryPackage(folder,"creator-demo","1.0.0",1,author:"fixture-creator");var before=Directory.GetFileSystemEntries(folder);
+            var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);
+            Need(plan.Id=="creator-demo" && plan.Author=="fixture-creator" && plan.Sha256==Core.Hash(zip) && plan.Size==new FileInfo(zip).Length,"Package review differs from source");
+            Need(Directory.GetFileSystemEntries(folder).SequenceEqual(before),"Creator review extracted or installed content");
+            var stop=new System.Threading.CancellationTokenSource();stop.Cancel();WorkshopReject(()=>CreatorPackagePlan.Review(zip,stop.Token),"Cancelled review completed");
+            string bad=LibraryPackage(folder,"creator-bad","1.0.0",1,extra:"../escape.dds",author:"fixture-creator");WorkshopReject(()=>CreatorPackagePlan.Review(bad,System.Threading.CancellationToken.None),"Traversal package passed creator review");
+        });
+        Test("creator transport pins the authority before sending credentials and rejects redirects",()=>{
+            foreach(bool wrong in new[]{true,false}) {
+                string folder=Path.Combine(root,"creator-pin-"+wrong);CreatorConfig(folder);int requests=0;
+                if(wrong)Core.Write(Core.PathIn(folder,"Support/Mods/service.json"),Json.Encode(new {service=WorkshopTrustChecks.Origin+":8443"}));
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{requests++;var response=new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.Redirect);response.Headers.Location=new Uri("https://elsewhere.example.test/");return response;}),()=>WorkshopTrustChecks.Now)) {
+                    WorkshopReject(()=>client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Unsafe creator authority accepted");
+                    Need(requests==(wrong?0:1) && !client.SignedIn,"Creator credentials crossed an authority or redirect");
+                }
+            }
+        });
+        Test("creator upload rechecks reviewed bytes binds reservations and retains private status",()=>{
+            string folder=Path.Combine(root,"creator-transfer");CreatorConfig(folder);string zip=LibraryPackage(folder,"creator-demo","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int transfers=0;
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                string path=request.RequestUri.AbsolutePath;Need(request.RequestUri.GetLeftPart(UriPartial.Authority)==WorkshopTrustChecks.Origin,"Creator request escaped its origin");
+                if(path=="/v1/sessions"){Need(request.Headers.Authorization==null,"Previous bearer leaked into sign-in");return CreatorJson(CreatorLogin());}
+                Need(request.Headers.Authorization.Scheme=="Bearer" && request.Headers.Authorization.Parameter==new string('t',43),"Creator request lost authentication");
+                if(path=="/v1/uploads" && request.Method==System.Net.Http.HttpMethod.Post)return CreatorJson(CreatorRow(plan,"open"),201);
+                if(path=="/v1/uploads/"+new string('a',32)) {transfers++;Need(request.Content.Headers.ContentType.MediaType=="application/zip" && request.Content.Headers.ContentLength==plan.Size,"Upload framing changed");Need(request.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult().SequenceEqual(File.ReadAllBytes(zip)),"Upload bytes differ from reviewed package");return CreatorJson(CreatorRow(plan,"queued"),202);}
+                if(path=="/v1/uploads")return CreatorJson(new {uploads=new[]{CreatorRow(plan,"pending-review",1)}});
+                if(path=="/v1/sessions/current")return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                throw new Exception("Unexpected creator route");
+            }),()=>WorkshopTrustChecks.Now)) {
+                client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                Need(client.Upload(plan,System.Threading.CancellationToken.None).GetAwaiter().GetResult().State=="queued" && transfers==1,"Upload was auto-approved or duplicated");
+                Need(client.History(0,System.Threading.CancellationToken.None).GetAwaiter().GetResult().Single().State=="pending-review","Review state was not preserved");
+                client.SignOut(System.Threading.CancellationToken.None).GetAwaiter().GetResult();Need(!client.SignedIn && client.Username==null && !Directory.Exists(Path.Combine(folder,"Mods")),"Sign-out retained authentication or upload enabled a mod");
+                Need(!Directory.GetFiles(folder,"*.json",SearchOption.AllDirectories).Any(p=>File.ReadAllText(p).Contains(new string('t',43)) || File.ReadAllText(p).Contains("fixture-password-not-a-real-account")),"Creator credentials reached disk");
+            }
+        });
+        Test("creator upload refuses changed packages and mismatched tickets before transfer",()=>{
+            foreach(bool change in new[]{true,false}) {
+                string folder=Path.Combine(root,"creator-stale-"+change);CreatorConfig(folder);string zip=LibraryPackage(folder,"creator-demo","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int reservations=0,transfers=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(CreatorLogin());
+                    if(request.Method==System.Net.Http.HttpMethod.Put){transfers++;throw new Exception("Invalid upload transferred");}
+                    reservations++;var row=CreatorRow(plan,"open");row["sha256"]=new string('0',64);return CreatorJson(row,201);
+                }),()=>WorkshopTrustChecks.Now)) {
+                    client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    if(change)File.AppendAllText(zip,"changed");
+                    WorkshopReject(()=>client.Upload(plan,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Stale or mismatched upload completed");Need(transfers==0 && reservations==(change?0:1),"Invalid package consumed the wrong upload stage");
+                }
+            }
+        });
+        Test("creator responses bound allocations reject invalid sessions and forget rejected authentication",()=>{
+            foreach(string mode in new[]{"oversize","duplicate","expiry","unauthorized","logout"}) {
+                string folder=Path.Combine(root,"creator-response-"+mode);CreatorConfig(folder);int requests=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    requests++;if(mode=="oversize"){var response=CreatorJson(new {});response.Content.Headers.ContentLength=512*1024+1;return response;}
+                    if(mode=="duplicate")return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK){Content=new System.Net.Http.StringContent("{\"token\":\"a\",\"token\":\"b\"}",System.Text.Encoding.UTF8,"application/json")};
+                    if(mode=="expiry")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix,account=new {username="fixture-creator",role="creator"}});
+                    return requests==1?CreatorJson(CreatorLogin()):new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);
+                }),()=>WorkshopTrustChecks.Now)) {
+                    if(mode=="unauthorized" || mode=="logout") {
+                        client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                        WorkshopReject(()=>{if(mode=="logout")client.SignOut(System.Threading.CancellationToken.None).GetAwaiter().GetResult();else client.History(0,System.Threading.CancellationToken.None).GetAwaiter().GetResult();},"Rejected authentication was accepted");
+                    }else WorkshopReject(()=>client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Malformed creator session accepted");
+                    Need(!client.SignedIn,"Invalid creator response retained a session");
+                }
+            }
+        });
+        Test("creator expiry cancellation and service changes prevent stale authenticated requests",()=>{
+            foreach(string mode in new[]{"expiry","cancel","origin","logout"}) {
+                string folder=Path.Combine(root,"creator-auth-change-"+mode);CreatorConfig(folder);int requests=0;DateTime clock=WorkshopTrustChecks.Now;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{requests++;return CreatorJson(CreatorLogin());}),()=>clock)) {
+                    client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    var cancellation=new System.Threading.CancellationTokenSource();
+                    if(mode=="expiry")clock=clock.AddHours(13);
+                    if(mode=="origin")Core.Write(Core.PathIn(folder,"Support/Mods/service.json"),Json.Encode(new {service=WorkshopTrustChecks.Origin+":8443"}));
+                    if(mode=="cancel" || mode=="logout")cancellation.Cancel();
+                    WorkshopReject(()=>{if(mode=="logout")client.SignOut(cancellation.Token).GetAwaiter().GetResult();else client.History(0,cancellation.Token).GetAwaiter().GetResult();},"Stale or cancelled creator request completed");
+                    Need(requests==1 && client.SignedIn==(mode=="cancel"),"Stale credentials were transmitted or session clearing differed");
+                }
+            }
+        });
+        Test("creator preview stays offline and the native account form clears secrets",()=>WithUiContext(()=>{
+            using(var page=new ModCreatorPage(root,true)) {
+                SetCreatorSecret(page.View,"CreatorPassword","preview-private-password");SetCreatorSecret(page.View,"CreatorInvitation",new string('s',43));
+                Click(Find<Button>(page.View,"CreatorSignIn"));Need(page.StatusText.Contains("Preview only"),"Creator preview accessed authentication");
+                page.ClearCredentials();
+            }
+            string folder=Path.Combine(root,"creator-ui");CreatorConfig(folder);
+            string zip=LibraryPackage(folder,"creator-ui-demo","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int transfers=0;
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(CreatorLogin());
+                if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                if(request.Method==System.Net.Http.HttpMethod.Post)return CreatorJson(CreatorRow(plan,"open"),201);
+                if(request.Method==System.Net.Http.HttpMethod.Put){transfers++;return CreatorJson(CreatorRow(plan,"queued"),202);}
+                return CreatorJson(new {uploads=new[]{CreatorRow(plan,"pending-review",1)}});
+            }),()=>WorkshopTrustChecks.Now))
+            using(var page=new ModCreatorPage(folder,false,client)) {
+                Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-password-not-a-real-account");
+                Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignOut"),"Creator sign-in did not return to its UI");
+                Find<TextBox>(page.View,"CreatorPackagePath").Text=zip;Click(Find<Button>(page.View,"ReviewCreatorPackage"));
+                PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="ConfirmCreatorUpload" && b.IsEnabled),"Creator ZIP review did not return to its UI");
+                Need(transfers==0,"Creator review uploaded without confirmation");
+                Click(Find<Button>(page.View,"ConfirmCreatorUpload"));PumpUntil(()=>page.StatusText.StartsWith("Package received privately"),"Creator upload did not return to its UI");
+                Need(transfers==1 && !Directory.Exists(Path.Combine(folder,"Mods")),"Creator upload duplicated or installed a package");
+                Click(Find<Button>(page.View,"RefreshCreatorUploads"));PumpUntil(()=>page.StatusText=="Upload status refreshed.","Creator history did not return to its UI");
+                Need(All(page.View).OfType<TextBlock>().Any(t=>(t.Text??"").Contains("pending-review")),"Creator UI hid manual review status");
+                Click(Find<Button>(page.View,"CreatorSignOut"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignIn"),"Creator sign-out did not return to its UI");
+#if MACOS || LINUX
+                Need(Find<TextBox>(page.View,"CreatorPassword").Text=="" && Find<TextBox>(page.View,"CreatorInvitation").Text=="","Creator form retained secrets");
+#else
+                Need(Find<PasswordBox>(page.View,"CreatorPassword").Password=="" && Find<PasswordBox>(page.View,"CreatorInvitation").Password=="","Creator form retained secrets");
+#endif
+            }
+            using(var workshop=new ModWorkshopPage(root,true)) {
+                Click(workshop.CreatorTab);Need(All(workshop.View).OfType<Button>().Any(b=>b.Name=="CreatorSignIn"),"Workshop did not expose the creator page");
+                Click(workshop.BrowseTab);Need(workshop.VisibleCount==2,"Leaving creator lost the workshop view");
+            }
+        }));
     }
     static void LibraryChecks(string root)
     {
@@ -536,7 +678,7 @@ public static class LauncherSharedUiChecks
     }
     public static int RunWorkshop()
     {
-        Action run=()=>{string root=Path.Combine(TestBase(),"tsfp-workshop-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);try{WorkshopChecks(root);LibraryChecks(root);}finally{Directory.Delete(root,true);}};
+        Action run=()=>{string root=Path.Combine(TestBase(),"tsfp-workshop-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);try{WorkshopChecks(root);LibraryChecks(root);CreatorChecks(root);}finally{Directory.Delete(root,true);}};
 #if MACOS || LINUX
         run();return 0;
 #else
@@ -550,6 +692,7 @@ public static class LauncherSharedUiChecks
         try {
             WorkshopChecks(root);
             LibraryChecks(root);
+            CreatorChecks(root);
             Test("main menu update notice follows version and selected channel",()=>{
                 var release=new Release {Tag="v1.2.4",Channel="stable"};
                 Need(GameUpdateNotice.Encode("v1.2.3",release,"stable",123)=="TSFP_GAME_UPDATE_V1 123 v1.2.3 v1.2.4\n","Newer release missing");

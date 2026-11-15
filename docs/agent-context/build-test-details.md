@@ -1531,3 +1531,10 @@ Update discovery groups cover numeric ordering, exact authority/port binding,
 local packages, already installed newer versions, removed offers and review/back
 without network/writes. An actual installed Enable/Confirm test pumps the native
 UI dispatcher under a10s bound and checks the complete dependency profile.
+
+Creator shared groups exercise read-only full ZIP validation, credential pinning
+before transport, redirect refusal, authenticated exact-byte reservation/upload/
+history/sign-out, no credential files, tampered archives and mismatched tickets,
+oversized/duplicate JSON, invalid expiry,401 clearing and masked UI secret reset.
+Fixtures inject responses at HttpMessageHandler and use disposable public trust
+vectors; they do not prove a live API/scanner, public TLS or OS credential vault.

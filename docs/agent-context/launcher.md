@@ -21,14 +21,13 @@ Caddy's Host matcher gets only the validated hostname; API Host/Origin retain th
 port. Existing private443 routing must stay private; separate8443 is planned.
 Golden port-bound signatures and actual Caddy transport/API tests cover this.
 
-Mac install-flow follow-up: source60a23344 built and signed, but its native UI
-test blocked on the first dependency case when a Task.Run continuation captured
-Avalonia's non-pumping test context. Owned PID46000 was sampled, then terminated;
-the test/build failure is retained. ModWorkshopClient awaits now avoid caller
-context capture. The page uses Progress<string> to marshal updates to its UI,
-ignoring queued reports after the operation finishes. A bounded non-pumping
-context regression runs before dependency installs to detect this failure
-without an indefinite test hang. Native re-verification remains required.
+ModCreatorPage adds Creator sign-in/invitation redemption, ZIP review, confirmed
+private upload and bounded status history to Mods. ModCreatorClient binds every
+request to the configured live pinned root/origin, rejects redirects and bounds
+responses. Sessions remain in memory; secret inputs clear on submit/tab exit.
+Read-only InspectPackage shares installer validation. Full details/tests are in
+mod-workshop.md and build-test-details.md. ModWorkshopClient awaits remain free
+of caller-context capture; the prior Mac deadlock regression remains covered.
 
 Dependency install flow: ModWorkshopPage now prepares a fresh signed dependency
 plan, displays exact versions/reuse/new expanded payload size and requires an

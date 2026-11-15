@@ -1,6 +1,6 @@
 [Native checks](build-test-details.md); [context](investigation.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
-Workshop port/identity/release/activation/updates: build-test-details.md.
+Workshop port/identity/release/activation/updates/creator: build-test-details.md.
 
 Epoch/GCC checks: build-test-details.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))

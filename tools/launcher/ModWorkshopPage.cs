@@ -293,6 +293,7 @@ namespace TimeSplitters.Launcher
         public readonly Button Cancel=new Button {Name="CancelModTransfer",Content="Cancel",IsEnabled=false,Margin=new Thickness(0,0,10,8)};
         public readonly Button BrowseTab=new Button {Content="Browse",Margin=new Thickness(0,0,10,8)};
         public readonly Button InstalledTab=new Button {Content="Installed",Margin=new Thickness(0,0,10,8)};
+        public readonly Button CreatorTab=new Button {Name="CreatorModsTab",Content="Creator",Margin=new Thickness(0,0,10,8)};
         public readonly ComboBox Category=new ComboBox {Name="ModCategory",MinWidth=155,Margin=new Thickness(0,0,12,8)};
         public readonly TextBox Creator=new TextBox {Name="ModCreator",MinWidth=150,Margin=new Thickness(0,0,12,8)};
         public readonly ComboBox Sort=new ComboBox {Name="ModSort",MinWidth=150,Margin=new Thickness(0,0,12,8)};
@@ -301,9 +302,9 @@ namespace TimeSplitters.Launcher
         public readonly Button Next=new Button {Name="NextModPage",Content="Next",Margin=new Thickness(0,0,10,8)};
         public event Action PlayWithoutModsRequested;
         public event Action<bool> FileBusyChanged;
-        readonly StackPanel results=new StackPanel();readonly TextBlock status;
+        readonly StackPanel results=new StackPanel();readonly TextBlock status,searchLabel;
         readonly string root;readonly bool preview;readonly ModWorkshopClient client;
-        readonly ModLibrary library;bool installedTab;
+        readonly ModLibrary library;bool installedTab,creatorTab;ModCreatorPage creator;
         readonly WrapPanel filters=new WrapPanel(),pager=new WrapPanel();
         readonly TextBlock pageLabel=PageTheme.Text("",12,"#9EB4C8");
         readonly ScrollViewer scroll;
@@ -328,9 +329,10 @@ namespace TimeSplitters.Launcher
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
             var header=PageTheme.Header("COMMUNITY WORKSHOP","Mods","Browse community creations, check their details and download packages here.");View.Children.Add(header);
             var toolbar=new WrapPanel();header.Children.Add(toolbar);
-            toolbar.Children.Add(BrowseTab);toolbar.Children.Add(InstalledTab);
-            BrowseTab.Click+=(s,e)=>{pendingEnable=null;pendingPlan=null;installedTab=false;ResetPage();};InstalledTab.Click+=(s,e)=>{pendingEnable=null;pendingPlan=null;installedTab=true;ResetPage();};
-            var searchLabel=PageTheme.Text("Search mods",13);searchLabel.Margin=new Thickness(0,9,12,8);toolbar.Children.Add(searchLabel);
+            toolbar.Children.Add(BrowseTab);toolbar.Children.Add(InstalledTab);toolbar.Children.Add(CreatorTab);
+            BrowseTab.Click+=(s,e)=>{if(creator!=null)creator.ClearCredentials();creatorTab=false;pendingEnable=null;pendingPlan=null;installedTab=false;ResetPage();};InstalledTab.Click+=(s,e)=>{if(creator!=null)creator.ClearCredentials();creatorTab=false;pendingEnable=null;pendingPlan=null;installedTab=true;ResetPage();};
+            CreatorTab.Click+=(s,e)=>{pendingEnable=null;pendingPlan=null;creatorTab=true;if(creator==null)creator=new ModCreatorPage(root,preview);ResetPage();};
+            searchLabel=PageTheme.Text("Search mods",13);searchLabel.Margin=new Thickness(0,9,12,8);toolbar.Children.Add(searchLabel);
             toolbar.Children.Add(Search);toolbar.Children.Add(Refresh);toolbar.Children.Add(Cancel);
             AutomationProperties.SetName(Search,"Search mods by name, creator or description");
             Ui.Tip(Search,"Search by name, creator or description");Ui.TextChanged(Search,ResetPage);
@@ -373,7 +375,9 @@ namespace TimeSplitters.Launcher
         {
             results.Children.Clear();VisibleCount=0;string query=(Search.Text??"").Trim();
             Refresh.Content=installedTab?"Check for updates":"Refresh mods";
-            Ui.Show(filters,!installedTab && pendingPlan==null);Ui.Show(pager,!installedTab && pendingPlan==null);Search.IsEnabled=stop==null && pendingPlan==null && pendingEnable==null;
+            Ui.Show(searchLabel,!creatorTab);Ui.Show(Search,!creatorTab);Ui.Show(Refresh,!creatorTab);Ui.Show(Cancel,!creatorTab);
+            Ui.Show(filters,!creatorTab && !installedTab && pendingPlan==null);Ui.Show(pager,!creatorTab && !installedTab && pendingPlan==null);Search.IsEnabled=stop==null && pendingPlan==null && pendingEnable==null;
+            if(creatorTab){results.Children.Add(creator.View);return;}
             if(pendingEnable!=null){RenderEnablePlan();return;}
             if(pendingPlan!=null){RenderPlan();return;}
             if(installedTab){RenderInstalled(query);return;}
@@ -485,7 +489,7 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(FileBusyChanged!=null)FileBusyChanged(false);if(!disposed)Busy(false);}
             }
         }
-        void Busy(bool value){Refresh.IsEnabled=!value;Cancel.IsEnabled=value;BrowseTab.IsEnabled=!value;InstalledTab.IsEnabled=!value;Render();}
+        void Busy(bool value){Refresh.IsEnabled=!value;Cancel.IsEnabled=value;BrowseTab.IsEnabled=!value;InstalledTab.IsEnabled=!value;CreatorTab.IsEnabled=!value;Render();}
         public async Task Load()
         {
             if(disposed||stop!=null)return;
@@ -547,7 +551,7 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(!disposed)Busy(false);}
             }
         }
-        public void Dispose(){disposed=true;if(stop!=null)stop.Cancel();client.Dispose();}
+        public void Dispose(){disposed=true;if(stop!=null)stop.Cancel();if(creator!=null)creator.Dispose();client.Dispose();}
         static string ServiceUriOrigin(string value){return ModWorkshopClient.ServiceUri(value).GetLeftPart(UriPartial.Authority);}
     }
 }

@@ -1,3 +1,18 @@
+Native creator flow: ModCreatorPage.cs contains the shared Creator tab and client
+for sign-in/invitation redemption, explicit ZIP review/upload, sign-out and cursor
+history. Credentials are masked and never persisted; a session is origin-bound
+and memory-only. Every API request rechecks the configured address and live
+installed root chain before adding credentials; redirects/cookies/default auth
+are disabled. JSON responses are bounded to512KiB with strict field/type/state/
+cursor validation; server error bodies are not echoed. Upload revalidates the
+reviewed archive before reserving, binds the exact ticket identity/digest/size,
+and transfers a read-held stream without automatic retries. Source changes and
+wrong authors/tickets fail before transfer. Status distinguishes scan/review;
+upload never installs, enables or approves. ModLibrary.InspectPackage now reuses
+the full strict ZIP/manifest/payload validation without extraction or publishing.
+Native UI/model contract fixtures are injected HTTPS responses, not proof of
+public TLS, real creator-to-scanner integration or credential-vault persistence.
+
 Installed update discovery: WorkshopRelease.UpdateFor compares numeric versions
 only for receipts bound to the current verified catalog's canonical origin.
 An older retained version does not offer an update already installed from that

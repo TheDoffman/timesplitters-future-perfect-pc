@@ -18,8 +18,10 @@ standard library for packages and requires Python 3.12 or newer; publication
 signing uses pinned PyCA cryptography. It has no paid API.
 The private creator/moderator API additionally uses a separately pinned Gunicorn
 host runtime. Accounts, ownership, quota-reserved uploads, a serial scan queue
-and authenticated review are now implemented; native creator screens and public
-deployment are still incomplete. See [creator service](mod-creator-service.md).
+and authenticated review are now implemented. The native Creator tab supports
+sign-in/invitations, reviewed ZIP uploads and status history with memory-only
+sessions; persistent credential vaults, native moderation and public deployment
+remain incomplete. See [creator service](mod-creator-service.md).
 Signed static exports, offline root rotation and monotonic publication versions
 and shared native signature/checkpoint/revocation enforcement are implemented.
 Production pins and public acceptance are still pending. See

@@ -1,10 +1,37 @@
 # Private creator service
 
 The creator/moderator backend is implemented in this task branch. It is not
-exposed to the internet. Native creator screens, credential-vault integration,
-a persistent scan supervisor, operational backup scheduling and public host
+exposed to the internet. The launcher now includes creator sign-in, invitation
+redemption, reviewed uploads and status history. Persistent credential-vault
+integration, native moderator screens, production supervision/backups and public host
 acceptance remain required before release. The existing Caddy configuration
 still serves only approved snapshot downloads and does not proxy this API.
+
+## Native creator workflow
+
+Open **Mods → Creator** in a launcher built from this branch. Sign in with your
+workshop username/password, or redeem an operator invitation with a new password.
+Passwords and invitations are masked and cleared after submission or leaving the
+tab. Sessions last at most12 hours and stay in memory for this launcher process;
+they are never written to preferences, logs or a credential file. Sign out also
+forgets the local session if its server revocation request fails. Persistent
+OS credential-vault storage remains unfinished.
+
+Build a ZIP with the SDK, enter its full path, and choose **Review ZIP**. The
+launcher validates the complete archive, manifest and payload without installing
+or extracting it. Its author must match your signed-in username. Confirm the
+displayed immutable version/digest to upload; changed bytes require another
+review. The client reserves exact metadata, binds the returned ticket, and sends
+the ZIP to private quarantine. It does not approve, publish or enable the mod.
+Use **Refresh uploads** to see queued scans, failures and pending manual review;
+history is paged at100 records. Cancelled or interrupted transfers can leave
+reservations until expiry, so check status before retrying.
+
+Every authenticated request uses the configured HTTPS authority and rechecks
+the live installed trust-root chain before sending credentials. There are no
+redirects, cookies, default OS credentials or automatic upload retries. Responses
+have strict structural and size limits. The native UI/model tests inject API
+responses; they do not establish real internet TLS or public scanner acceptance.
 
 Private snapshot/staged restore tooling and conservative publication reconciliation
 are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery

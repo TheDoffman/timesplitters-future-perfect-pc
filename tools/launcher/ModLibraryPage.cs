@@ -206,7 +206,9 @@ namespace TimeSplitters.Launcher
             else if(name.EndsWith(".wav",StringComparison.OrdinalIgnoreCase))Core.Require(bytes.Length>=12 && Encoding.ASCII.GetString(bytes,0,4)=="RIFF" && Encoding.ASCII.GetString(bytes,8,4)=="WAVE","Invalid WAV payload.");
             else Core.Require(bytes.Length>=4 && Encoding.ASCII.GetString(bytes,0,4)=="OggS","Invalid Ogg payload.");
         }
-        InstalledMod Extract(string package,string destination,string expected,CancellationToken token)
+        public static InstalledMod InspectPackage(string package,CancellationToken token)
+        {token.ThrowIfCancellationRequested();Core.Require(new FileInfo(package).Length<=ModWorkshopClient.MaxPackageBytes,"Mod archive exceeds its download limit.");return Extract(package,null,Core.Hash(package),token);}
+        static InstalledMod Extract(string package,string destination,string expected,CancellationToken token)
         {
             Core.Require(HashPattern.IsMatch(expected??"") && new FileInfo(package).Length<=ModWorkshopClient.MaxPackageBytes && Core.Hash(package)==expected,"Mod archive integrity failure.");
             ValidateZipMetadata(package);
@@ -225,9 +227,9 @@ namespace TimeSplitters.Launcher
                     token.ThrowIfCancellationRequested();var entry=archive.GetEntry(pair.Key);Core.Require(entry!=null && entry.Length==pair.Value.Size,"Mod payload/manifest mismatch.");byte[] bytes;
                     using(var input=entry.Open())bytes=Read(input,entry.Length,64L*1024*1024,token);
                     Core.Require(Hash(bytes)==pair.Value.Sha256,"Mod payload checksum mismatch.");ValidatePayload(pair.Key,bytes);
-                    string path=Core.PathIn(destination,pair.Key);Directory.CreateDirectory(Path.GetDirectoryName(path));using(var output=new FileStream(path,FileMode.CreateNew,FileAccess.Write,FileShare.None))output.Write(bytes,0,bytes.Length);
+                    if(destination!=null){string path=Core.PathIn(destination,pair.Key);Directory.CreateDirectory(Path.GetDirectoryName(path));using(var output=new FileStream(path,FileMode.CreateNew,FileAccess.Write,FileShare.None))output.Write(bytes,0,bytes.Length);}
                 }
-                File.WriteAllText(Core.PathIn(destination,"mod.json"),json,new UTF8Encoding(false));mod.Sha256=expected;return mod;
+                if(destination!=null)File.WriteAllText(Core.PathIn(destination,"mod.json"),json,new UTF8Encoding(false));mod.Sha256=expected;return mod;
             }
         }
         internal static bool SameManifest(InstalledMod left,InstalledMod right)
