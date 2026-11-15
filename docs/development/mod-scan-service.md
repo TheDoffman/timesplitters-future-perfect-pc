@@ -1,9 +1,11 @@
 # Mac scan worker and watchdog
 
-The repaired private Mac installation is pinned to source21a60844. Actual
+The repaired private Mac installation is pinned to source27b01f86. Actual
 session/group escape, controller death, scaled RSS/wall cancellation, output
-flood and real ClamAV checks passed before re-enabling its two owned login agents.
-The former hold and old source/plists/data are preserved. This establishes private
+flood, positive-control process-environment denial and real ClamAV checks passed before re-enabling its two owned login agents.
+The former holds and old source/plists/data are preserved. v3 explicitly denies
+process-info*; a named sysctl allowlist alone cannot block process-argument access.
+Workers hold older v2 policies, and old v2 scan reports require rescan. This establishes private
 login-session operation; public uploads, unattended boot, service identity,
 definition updates and publication refresh still need production acceptance.
 See [status](../project/STATUS.md) for scoped evidence hashes.

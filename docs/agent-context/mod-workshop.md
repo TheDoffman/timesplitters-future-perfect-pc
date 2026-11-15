@@ -1,13 +1,12 @@
 Worker admission now also requires exact macos-seatbelt-v3; v2 is held even with
 a healthy guardian heartbeat. Legacy approved v2 reports are withheld until rescan.
 
-Current containment HOLD: an actual native positive-control canary exposed
-same-user process environments via unrestricted sysctl-read. Both installed jobs
-were disabled/unloaded again; only fabricated test data was queried. The v3
-Seatbelt policy permits hardware/runtime metadata only AND explicitly denies
-process-info*: named sysctl denial alone did not block KERN_PROCARGS2 on this Mac.
-Old v2 reports no longer satisfy current approval/availability policy. Actual
-native canary denial and real ClamAV compatibility must pass before upgrading.
+The v3 Seatbelt policy explicitly denies process-info* and permits only public
+hardware/runtime sysctls. A native positive-control canary proved the prior
+same-user environment exposure; v3 denies it with EPERM. Named sysctl denial
+alone was insufficient on this Mac. Real ClamAV and launchd queue/review/rescan/
+watchdog restart passed before pinned27b01f86 private re-deployment. Old holds and
+source/plists/data remain preserved. Public operation is still unfinished.
 
 Scan-service config-only tests use a private inert executable: hosted CI Python
 can be group-writable and is correctly rejected by the production scanner policy.
@@ -22,7 +21,7 @@ service UID throughout the managed descendant subtree; live host exposed this
 OS-format difference before agent re-enablement.
 
 Scanner containment repair is implemented and the private Mac login-agent
-installation upgraded to pinned21a60844 after actual escaped-session/root-death,
+installation upgraded to pinned27b01f86 after actual escaped-session/root-death,
 RSS/wall cancellation and real AV acceptance. mod_scan_sandbox.py routes all
 run/scan calls through receipt-verified scan_guardian_mac.c, built by
 build-scan-guardian.py. Parent-pipe EOF/cancellation kills and reaps the owned
@@ -50,8 +49,8 @@ review; detection revokes; transient error withholds/retries; changed bytes need
 manual repair/review. Slow AV holds no SQLite writer lock. Lease/state compare
 preserves concurrent moderation and allows interrupted-scan reclaim. Backup
 refuses active leases; restore clears renewal records. See
-[scan maintenance](../development/mod-scan-maintenance.md). Persistent supervisor,
-RSS monitoring, launchd deployment and automatic signed refresh remain pending.
+[scan maintenance](../development/mod-scan-maintenance.md). Private login-agent
+supervision is installed; automatic signed refresh and public operation remain pending.
 
 Private host recovery: tools/mods/mod_backup.py captures a reserved-lock SQLite
 snapshot plus referenced immutable/queued bytes, with private ownership and bounded

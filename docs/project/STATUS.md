@@ -1,40 +1,43 @@
-CURRENT scanner containment HOLD (2026-11-14): after the guardian upgrade,
-a native positive-control canary demonstrated unrestricted sysctl-read can expose
-another same-user process environment. Only fabricated test data was queried.
-Both private agents are disabled/unloaded again; source/data/evidence preserved.
-EvidenceSHAfcb57df94bc7048af32e420bd1d098c8103c8c163a894d7a2083bdae7ca2be62.
-The new v3 allowlist and native regression require real ClamAV acceptance and
-pinned re-deployment before re-enablement. The following earlier upgrade remains
-historical evidence, not current running-service status. Full goal remains active.
-
-Scanner containment repair and private deployment (2026-11-14, source21a60844):
-Actual Seatbelt probes permit setsid/setpgid; group-only cleanup was insufficient.
-The replacement signed native guardian owns the scanner PID, kills/reaps it on
-parent-pipe loss or cancellation, and survives controller group cleanup. The
-independent watchdog samples the complete numeric PPID subtree across sessions.
-No process argv/environment is sampled; cancellation targets the owned launchd label.
-Default SIGCHLD ownership is required; output capture and helper provenance are bounded.
-Mac native containment/service/IO suite25 passes; workshop/rescan/recovery96 passes.
-Live guarded queue -> manual review -> periodic renewal -> watchdog restart passes,
-evidenceSHAaf0cf2b5e9c9712f75832a05bf185b261b5999add3beacbc4d0f5a42af50dd62.
-Actual escaped-child memory/wall cancellation kills both scanner and guardian;
-limits were scaled only in private fixtures. EvidenceSHA
-a5d2332cf6e0f54d36d8e9ad576f382b3213963454e5fd0ebe02103b43ca8aaf.
-Actual ClamAV1.5.4 clean/EICAR/empty-database/missing-engine/revocation checks pass,
-evidenceSHAec57a79a172062f27428daf43807b76b24127d23687f8b850d119a29c4bf8cad.
-The private Application Support installation was upgraded from94a87d0b to pinned
-21a60844, including C source, signed helper, receipt and separate stdlib runtime.
-Old source/plists/hold evidence/data were preserved; both owned login agents now
-run the repaired release. Initial empty cycle completed under guardian-descendants-v1
-health. Upgrade evidenceSHA7643347009d9367febfa8fe537c630d104df710d892bda351313b8e501c800e4.
-Public server was not started. This is a private login-agent prototype, not verified
-unattended boot or dedicated non-administrator production hosting. Current Linux
-local verification is unavailable because WSL VM creation timed out; the prior
-ed05 native-independent suites passed18 with6 Mac-only skips. CI Linux exposed a group-writable hosted Python fixture; config-only tests now
-use a private inert executable while retaining the production permission gate.
-Latest CI pending.
-Full goal remains active; internet deployment, service identity, definition updates,
-automatic signed refresh, off-device recovery and packaged public release remain.
+Scanner isolation v3 and private pinned deployment (2026-11-14, source27b01f86):
+The scanner now explicitly denies process-info* and allows only public named
+hardware/runtime sysctls. A native positive control demonstrated the old same-user
+environment exposure; confined v3 receives EPERM and cannot see the fabricated
+canary. The installed pinned copy also passes this native positive-control check,
+evidenceSHA61eb0be8ac1e8b8106c75e5000bcacc2cddf37ced17d6dd831e261f2c3632780.
+Only owned test processes with fabricated environments were queried.
+Named sysctl denial alone did not stop this call on the host. Old v2 scan reports
+are withheld from approval/availability; workers refuse v2 even with healthy
+lifetime supervision. No upload gets automatic review or approval.
+Mac selected containment/service/IO/workshop/rescan/recovery124 tests pass.
+Windows common scanner/workshop81 pass with7 POSIX skips. Config-only tests now
+use a private inert executable because hosted CI Python can be group-writable;
+production permission enforcement is preserved. Local Linux checks are unavailable
+because WSL VM creation timed out; latest CI remains pending.
+Actual ClamAV1.5.4 clean/EICAR/empty-database/missing-engine/revocation passes under
+v3, evidenceSHA1bd1f31ab1647d509fb21fa173689d1e748fc9fc2366de3a3f5e084db1b1b43e.
+Actual launchd queued scan -> explicit manual review -> periodic renewal ->
+watchdog restart passes under v3; temporary fixture jobs unloaded. EvidenceSHA
+5079bf64ce05091273c9fa5a8fce8750c452f535cfe657b9815f7ff11456eae2.
+The native guardian owns/reaps the scanner PID across session escape and parent
+pipe loss, survives controller-group cleanup, enforces its own210s fallback and
+uses verified source/image receipts. Numeric PPID-tree RSS/process sampling spans
+sessions; cancellation targets the owned launchd label. Diagnostic capture is
+bounded and default SIGCHLD ownership is required. Actual escaped-child scaled
+RSS/wall cancellation proofSHAa5d2332cf6e0f54d36d8e9ad576f382b3213963454e5fd0ebe02103b43ca8aaf.
+The private Application Support installation was upgraded from21a60844 to pinned
+27b01f86 with native helperSHA5c26cc43613313cd3691581eafd0caab6a3fdc2533a3d3d06cdf703bcb8a472d.
+Both owned login agents run the repaired release and its initial empty cycle
+completed under guardian-descendants-v1 health. Old source/plists/hold evidence
+and repository data are preserved. Upgrade evidenceSHA
+6d1247bd76c83a63092e61d50f363be6b5e242ad4a95ea02054908293a581550.
+After SSH disconnected, a later scheduled empty cycle completed with healthy
+watchdog at190s; evidenceSHA69b9700b4582761dc27e06133b42c6bd47fd473d6c30beee85e4a3e46f6942e5.
+Current installed provenance is in private current-installation.json; original
+installation.json is retained as historical first-install evidence.
+This remains a private login-session prototype. No public server was started;
+unattended boot, dedicated service identity, definition updates, automatic signed
+publication/invalidation, off-device recovery and public release remain unfinished.
+Full goal remains active; main untouched.
 
 Periodic reviewed-release scans (source6dfa2417,2026-11-14): rescan-next shares
 the queue worker lock, withholds availability during slow AV without holding a
