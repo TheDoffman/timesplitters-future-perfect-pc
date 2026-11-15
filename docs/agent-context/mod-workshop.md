@@ -7,6 +7,8 @@ unloads both owned labels and preserves a root-owned acceptance receipt. This
 determines whether the production watchdog needs a separate privilege adapter;
 it does not install persistent services. test_system_service_probe.py covers
 admission, exact job identities, resource limits and POSIX result preservation.
+Simulated POSIX lifecycle checks cover successful cleanup and partial bootstrap
+or result failure without invoking launchd or changing real ownership.
 Native execution and watchdog permission result remain pending.
 
 Canonical workshop HTTPS authorities now permit the default port or explicit

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -80,3 +81,49 @@ def test_result_validation_preserves_unrecognized_files(tmp_path, kind):
         assert path.exists()
     finally:
         os.close(directory_fd)
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='POSIX root-guard simulation; no real launchd commands')
+@pytest.mark.parametrize('failure', [None, 'target-bootstrap', 'watchdog-result'])
+def test_lifecycle_unloads_only_owned_nonce_jobs_even_after_partial_failure(tmp_path, monkeypatch, failure):
+    (tmp_path / 'releases').mkdir()
+    (tmp_path / 'data').mkdir()
+    monkeypatch.setattr(probe.identity, 'ROOT', tmp_path)
+    monkeypatch.setattr(probe.identity, 'existing', lambda: dict(uid=os.getuid()))
+    monkeypatch.setattr(probe.sys, 'platform', 'darwin')
+    monkeypatch.setattr(probe.os, 'geteuid', lambda: 0)
+    monkeypatch.setattr(probe.os, 'chown', lambda *_: None)
+    calls, loaded = [], set()
+
+    def command(*args):
+        calls.append(args)
+        if args[0] == 'print':
+            return SimpleNamespace(returncode=0 if args[1] in loaded else 113, stdout=b'state = exited\n', stderr=b'')
+        if args[0] == 'bootstrap':
+            import plistlib
+            label = plistlib.loads(Path(args[2]).read_bytes())['Label']
+            loaded.add('system/' + label)
+            return SimpleNamespace(returncode=5 if failure == 'target-bootstrap' else 0, stdout=b'', stderr=b'fixture')
+        assert args[0] == 'bootout' and args[1].startswith('system/org.timesplitters.workshop.permissions.')
+        loaded.discard(args[1])
+        return SimpleNamespace(returncode=0, stdout=b'', stderr=b'')
+
+    def result(_fd, name, uid):
+        if failure == 'watchdog-result' and name == 'watchdog.json':
+            raise probe.identity.ProvisionError('fixture result failure')
+        return dict(role=name.removesuffix('.json'), uid=uid, gid=uid, pid=123, kill_exit=0)
+
+    monkeypatch.setattr(probe, 'launchctl', command)
+    monkeypatch.setattr(probe, 'await_result', result)
+    if failure:
+        with pytest.raises(probe.identity.ProvisionError):
+            probe.apply()
+        assert not list(tmp_path.glob('releases/*/acceptance.json'))
+    else:
+        value = probe.apply()
+        assert value['all_temporary_jobs_unloaded'] and value['account_can_control_system_job']
+        assert len(list(tmp_path.glob('releases/*/acceptance.json'))) == 1
+    assert not loaded
+    attempted = [call for call in calls if call[0] == 'bootstrap']
+    stopped = [call for call in calls if call[0] == 'bootout']
+    assert len(attempted) == len(stopped) == (1 if failure == 'target-bootstrap' else 2)

@@ -1,8 +1,10 @@
 tests/mods/test_system_service_probe.py tests the plan-only default, locked
 nonpersistent launchd specs, exact nonce labels, privilege-before-state admission,
 standalone worker syntax and bounded nofollow/ownership/hardlink/mode results.
-POSIX result cases skip on Windows. These unit tests never bootstrap jobs; actual
-Mac --apply requires administrator authentication and records preserved receipt
+POSIX result cases skip on Windows. These unit tests never bootstrap jobs.
+POSIX lifecycle simulations mock root admission/ownership and all launchctl calls,
+checking cleanup after partial bootstrap/result failure and preserved receipts.
+Real Mac --apply requires administrator authentication and records preserved receipt
 after unloading its two temporary jobs. No production/public-service acceptance
 is implied. CI classifies the probe and its tests as CPU-only workshop inputs.
 
