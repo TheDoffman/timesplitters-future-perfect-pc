@@ -118,6 +118,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/mods/mod_lua_bundle.py','tests/mods/test_lua_bundle.py','examples/mods/modular-first-to-three/scripts/rules/scores.lua','examples/mods/modular-first-to-three/mod.json'], {'native'}),
     (['examples/mods/modular-first-to-three/scripts/rules/scores.lua'], {'native'}),
     (['examples/mods/modular-first-to-three/mod.json'], {'native'}),
+    (['tools/mods/mod_texture_preview.py'], {'native'}),
+    (['tests/mods/test_texture_preview.py'], {'native'}),
     (['tools/mods/mod_accounts.py', 'tools/mods/mod_uploads.py', 'tools/mods/mod_api.py', 'tools/mods/mod_operator.py', 'tests/mods/test_creator_api.py'], {'native'}),
     (['tools/mods/mod_trust.py', 'tools/mods/mod_signing.py', 'tests/mods/test_catalog_trust.py', 'tools/mods/hosting/requirements-signing.txt'], {'native'}),
     (['src/mods/mod_script.c', 'src/mods/mod_worker.c', 'tools/build/build-mod-worker.py', 'tests/mods/test_script_worker.py'], {'native'}),

@@ -185,6 +185,9 @@ public static class CreatorBackendChecks
             var clean=queue.Single(row=>row.ModId=="native-clean");Need(clean.State=="pending-review" && clean.Package.Author==creator.Username,"The native reviewer selected a different package.");
             var source=reviewer.Source(clean,"scripts/main.lua",0,CancellationToken.None).GetAwaiter().GetResult();
             Need(source.Text=="return {api=1}\n" && source.Offset==0 && source.NextOffset==source.Size,"Actual source inspection differed from the immutable original script.");
+            var texture=reviewer.Texture(clean,"textures/0123456789abcdef.dds",CancellationToken.None).GetAwaiter().GetResult();
+            Need(texture.Width==4 && texture.Height==4 && texture.PreviewWidth==4 && texture.PreviewHeight==4 && texture.Format=="BC1","Actual texture preview differed from the immutable original DDS.");
+            Need(texture.DisplayPixels().SequenceEqual(Enumerable.Range(0,64).Select(i=>(byte)(i%4>=2?255:0))),"Actual texture preview did not show the original red pixels.");
             Console.WriteLine("PASS native moderation: role-gated Lua preview matches exact archived original bytes without extraction/execution.");
             var before=backend.Observe();Need(ModTrust.Array(before,"catalog",1).Length==0 && ModTrust.Array(before,"audit",1).Length==0,"Native moderation started from nonempty approved/audit state.");
             const string approval="Reviewed original native acceptance source",revocation="Withdraw disposable native acceptance";

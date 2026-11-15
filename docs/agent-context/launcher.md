@@ -1,7 +1,7 @@
-Installed updates use WorkshopRelease.UpdateFor on the current workshop catalog:
-same-origin receipts only, numeric newest versions, no duplicate installed offers.
-Review update reuses signed dependency planning and retains the active profile
-and previous version. Refresh in Installed checks updates. See mod-workshop.md.
+DDS moderation previews use ModCreatorClient.Texture and a bounded pixel view;
+see mod-workshop.md. Installed updates use WorkshopRelease.UpdateFor on the current
+catalog: same-origin receipts, numeric latest versions, no installed duplicates.
+Review reuses dependency planning and retains active/previous versions.
 
 Installed activation now uses ModLibrary.PreviewEnable/ApplyEnable and an in-page
 ModEnablePlan review. It resolves exact installed dependencies (32 packages),

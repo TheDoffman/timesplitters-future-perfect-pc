@@ -1,3 +1,11 @@
+DDS preview tests: test_texture_preview.py covers original BC1/BC2/BC3/BGRA8
+vectors, color/alpha selectors, base-level sampling (hostile smaller mips), bounds,
+private role/digest/payload binding, rate admission and POSIX unsafe-blob rejection.
+Native shared UI/client tests reject forged shape/format/base64/size/identities,
+render pixels and clear them on sign-out without installing or making decisions.
+Explicit real Mac moderation mode now reads a synthetic DDS too; its new check
+is unrun on the user's low-space host. Normal backend mode still never scans.
+
 test_lua_bundle.py covers SDK linking/passive CLI, unchanged inputs/lone-main/default
 pack, ordinal ZIP/module order, ambiguous/case/FS paths, invalid bytes, count/source
 budgets. test_script_worker.py packs and executes the original modular mode in the

@@ -339,6 +339,11 @@ public static class LauncherSharedUiChecks
         var payload=ModLibrary.Manifest((string)ModeratorRow(zip,plan)["manifest"]).Files["scripts/main.lua"];
         return new Dictionary<string,object>{{"id",new string('a',32)},{"sha256",plan.Sha256},{"path","scripts/main.lua"},{"payload_sha256",payload.Sha256},{"size",payload.Size},{"offset",0L},{"next_offset",payload.Size},{"text",text}};
     }
+    static Dictionary<string,object> ModeratorTexture(string zip,CreatorPackagePlan plan)
+    {
+        var payload=ModLibrary.InspectPackage(zip,System.Threading.CancellationToken.None).Files["textures/0123456789abcdef.dds"];
+        return new Dictionary<string,object>{{"id",new string('a',32)},{"sha256",plan.Sha256},{"path","textures/0123456789abcdef.dds"},{"payload_sha256",payload.Sha256},{"size",payload.Size},{"width",4},{"height",4},{"format","BC1"},{"preview_width",4},{"preview_height",4},{"rgba",Convert.ToBase64String(Enumerable.Range(0,64).Select(i=>(byte)(i%4==3?255:64)).ToArray())}};
+    }
     static void SetCreatorSecret(Element view,string name,string secret)
     {
 #if MACOS || LINUX
@@ -424,6 +429,43 @@ public static class LauncherSharedUiChecks
             string remoteZip=Path.Combine(installedRoot,"original-signed-fixture.zip");File.WriteAllBytes(remoteZip,WorkshopTrustChecks.Bytes("package"));var remote=library.Install(remoteZip,WorkshopTrustChecks.Sha,System.Threading.CancellationToken.None,workshopOrigin:WorkshopTrustChecks.Origin);
             string localZip=LibraryPackage(installedRoot,"local-unbound","1.0.0",1);library.Install(localZip,Core.Hash(localZip),System.Threading.CancellationToken.None);
             using(var workshop=new ModWorkshopPage(installedRoot,false,new ModWorkshopClient(new WorkshopHandler(_=>{throw new Exception("Installed report selection accessed the network");})))){Click(workshop.InstalledTab);var buttons=All(workshop.View).OfType<Button>().Where(b=>b.Name=="ReportInstalledMod").ToArray();Need(buttons.Length==1,"Installed reporting lost origin binding");Click(buttons[0]);Need(All(workshop.View).OfType<TextBlock>().Any(t=>(t.Text??"").Contains(remote.Id+" @ "+remote.Version)),"Installed reporting selected another release");Need(library.Enabled().Length==0 && library.List().Length==2,"Report selection changed installed/active mods");}
+        }));
+        Test("moderator texture preview binds identity format shape pixels and role",()=>{
+            string folder=Path.Combine(root,"moderator-texture");CreatorConfig(folder);string zip=LibraryPackage(folder,"texture-preview","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var review=new ModeratorUpload(ModeratorRow(zip,plan));
+            foreach(string mode in new[]{"valid","digest","path","width","shape","format","pixels","base64","size","archive","creator","cancel"}) {
+                int requests=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role=mode=="creator"?"creator":"moderator"}});
+                    requests++;Need(request.Method==System.Net.Http.HttpMethod.Post && request.RequestUri.AbsolutePath.EndsWith("/texture"),"Unexpected texture route");
+                    var row=ModeratorTexture(zip,plan);if(mode=="digest")row["payload_sha256"]=new string('f',64);if(mode=="path")row["path"]="../secret.dds";if(mode=="width")row["width"]=3;if(mode=="shape")row["preview_width"]=128;if(mode=="format")row["format"]="DX10";if(mode=="pixels")row["rgba"]="AAAA";if(mode=="base64")row["rgba"]=(string)row["rgba"]+"\n";if(mode=="size")row["size"]=128;if(mode=="archive")row["sha256"]=new string('f',64);return CreatorJson(row);
+                }),()=>WorkshopTrustChecks.Now))using(var stop=new System.Threading.CancellationTokenSource()) {
+                    client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();if(mode=="cancel")stop.Cancel();
+                    if(mode=="valid"){var image=client.Texture(review,"textures/0123456789abcdef.dds",stop.Token).GetAwaiter().GetResult();Need(image.Width==4 && image.PreviewWidth==4 && image.Format=="BC1","Texture metadata changed");}
+                    else WorkshopReject(()=>client.Texture(review,"textures/0123456789abcdef.dds",stop.Token).GetAwaiter().GetResult(),"Invalid texture preview accepted");
+                    Need(requests==(mode=="creator" || mode=="cancel"?0:1),"Forbidden texture preview reached transport");
+                    WorkshopReject(()=>client.Texture(review,"../private.dds",System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Undeclared texture requested");
+                }
+            }
+        });
+        Test("moderator texture display preserves color and composites transparency",()=>{
+            string folder=Path.Combine(root,"moderator-alpha");Directory.CreateDirectory(folder);string zip=LibraryPackage(folder,"texture-alpha","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var row=ModeratorTexture(zip,plan);var pixels=new byte[64];pixels[4]=255;pixels[7]=128;row["rgba"]=Convert.ToBase64String(pixels);
+            byte[] display=new ModeratorTexturePreview(ModJson.Read(Json.Encode(row)),new ModeratorUpload(ModeratorRow(zip,plan)),"textures/0123456789abcdef.dds").DisplayPixels();
+            Need(display.Take(8).SequenceEqual(new byte[]{72,72,72,255,36,36,164,255}),"Texture transparency/color compositing changed");
+        });
+        Test("moderator texture UI renders bounded pixels and clears them on sign-out",()=>WithUiContext(()=>{
+            string folder=Path.Combine(root,"moderator-texture-ui");CreatorConfig(folder);string zip=LibraryPackage(folder,"texture-review-ui","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int previews=0;
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role="moderator"}});
+                if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                if(request.RequestUri.AbsolutePath.EndsWith("/evidence"))return CreatorJson(ModeratorScan(plan,"pending-review",true));
+                if(request.RequestUri.AbsolutePath.EndsWith("/texture")){previews++;return CreatorJson(ModeratorTexture(zip,plan));}
+                Need(request.Method==System.Net.Http.HttpMethod.Get,"Texture preview sent a package decision");return CreatorJson(new {uploads=new[]{ModeratorRow(zip,plan)}});
+            }),()=>WorkshopTrustChecks.Now))using(var page=new ModCreatorPage(folder,false,client)) {
+                Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-password-not-a-real-account");Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="RefreshModeratorUploads" && b.IsEnabled),"Texture moderator sign-in failed");
+                Click(Find<Button>(page.View,"RefreshModeratorUploads"));PumpUntil(()=>page.StatusText=="Moderation queue refreshed.","Texture queue failed");Click(Find<Button>(page.View,"ModeratorUpload"+new string('a',32)));PumpUntil(()=>page.StatusText=="Scan evidence refreshed.","Texture evidence failed");
+                Click(Find<Button>(page.View,"InspectModeratorTexture"));PumpUntil(()=>page.StatusText=="Texture preview loaded.","Texture preview did not render");var image=Find<Image>(page.View,"ModeratorTextureImage");Need(image.Source!=null && image.Width==8 && image.Height==8 && previews==1,"Texture image is missing or unbounded");
+                Click(Find<Button>(page.View,"CreatorSignOut"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignIn"),"Texture sign-out failed");Need(!All(page.View).OfType<Image>().Any(i=>i.Name=="ModeratorTextureImage") && !Directory.Exists(Path.Combine(folder,"Mods")),"Preview survived logout or installed content");
+            }
         }));
         Test("moderator source preview binds bytes path offsets manifest and role",()=>{
             string folder=Path.Combine(root,"moderator-source");CreatorConfig(folder);string zip=LibraryPackage(folder,"source-demo","1.0.0",1,script:true);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var review=new ModeratorUpload(ModeratorRow(zip,plan));

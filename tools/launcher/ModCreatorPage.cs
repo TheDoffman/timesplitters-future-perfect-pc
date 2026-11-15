@@ -114,6 +114,51 @@ namespace TimeSplitters.Launcher
             }return output.ToString();
         }
     }
+    public sealed class ModeratorTexturePreview
+    {
+        public readonly string Path,PayloadSha256,Format;
+        public readonly int Width,Height,PreviewWidth,PreviewHeight;
+        public readonly long Size;
+        readonly byte[] pixels;
+        internal ModeratorTexturePreview(Dictionary<string,object> data,ModeratorUpload review,string path)
+        {
+            ModTrust.Fields(data,"id sha256 path payload_sha256 size width height format preview_width preview_height rgba");
+            ModTrust.Need(CreatorUpload.Text(data,"id",32)==review.Id && CreatorUpload.Text(data,"sha256",64)==review.Sha256 && CreatorUpload.Text(data,"path",180)==path,"texture preview identity mismatch.");
+            ModPayload entry;ModTrust.Need(path.StartsWith("textures/",StringComparison.Ordinal) && path.EndsWith(".dds",StringComparison.Ordinal) && review.Package.Files.TryGetValue(path,out entry),"undeclared texture preview.");
+            entry=review.Package.Files[path];Path=path;PayloadSha256=CreatorUpload.Text(data,"payload_sha256",64);Size=ModTrust.Number(data,"size",128,24*1024*1024);
+            ModTrust.Need(Size==entry.Size && PayloadSha256==entry.Sha256,"texture preview differs from the manifest.");
+            Width=(int)ModTrust.Number(data,"width",1,4096);Height=(int)ModTrust.Number(data,"height",1,4096);
+            ModTrust.Need((Width&(Width-1))==0 && (Height&(Height-1))==0,"invalid texture dimensions.");
+            Format=CreatorUpload.Text(data,"format",8);ModTrust.Need(new[]{"BC1","BC2","BC3","BGRA8"}.Contains(Format),"unsupported texture preview format.");
+            int scale=Math.Max(1,Math.Max(Width,Height)/128);
+            PreviewWidth=(int)ModTrust.Number(data,"preview_width",Math.Max(1,Width/scale),Math.Max(1,Width/scale));
+            PreviewHeight=(int)ModTrust.Number(data,"preview_height",Math.Max(1,Height/scale),Math.Max(1,Height/scale));
+            string encoded=ModTrust.Text(data,"rgba");ModTrust.Need(encoded.Length<=87384,"texture preview exceeds pixel budget.");pixels=Convert.FromBase64String(encoded);
+            ModTrust.Need(pixels.Length==PreviewWidth*PreviewHeight*4 && Convert.ToBase64String(pixels)==encoded,"invalid texture preview pixels.");
+        }
+        internal byte[] DisplayPixels()
+        {
+            var bgra=new byte[pixels.Length];for(int i=0;i<pixels.Length;i+=4) {
+                int p=i/4,background=((p%PreviewWidth/8+p/PreviewWidth/8)%2==0)?72:112,alpha=pixels[i+3];
+                bgra[i]=(byte)((pixels[i+2]*alpha+background*(255-alpha)+127)/255);
+                bgra[i+1]=(byte)((pixels[i+1]*alpha+background*(255-alpha)+127)/255);
+                bgra[i+2]=(byte)((pixels[i]*alpha+background*(255-alpha)+127)/255);bgra[i+3]=255;
+            }
+            return bgra;
+        }
+        internal Image Image(out IDisposable lifetime)
+        {
+            byte[] bgra=DisplayPixels();
+#if MACOS || LINUX
+            var bitmap=new Avalonia.Media.Imaging.WriteableBitmap(new PixelSize(PreviewWidth,PreviewHeight),new Vector(96,96),Avalonia.Platform.PixelFormat.Bgra8888,Avalonia.Platform.AlphaFormat.Opaque);
+            using(var frame=bitmap.Lock())for(int y=0;y<PreviewHeight;y++)System.Runtime.InteropServices.Marshal.Copy(bgra,y*PreviewWidth*4,IntPtr.Add(frame.Address,y*frame.RowBytes),PreviewWidth*4);
+            lifetime=bitmap;
+#else
+            var bitmap=System.Windows.Media.Imaging.BitmapSource.Create(PreviewWidth,PreviewHeight,96,96,System.Windows.Media.PixelFormats.Bgra32,null,bgra,PreviewWidth*4);bitmap.Freeze();lifetime=null;
+#endif
+            return new Image {Name="ModeratorTextureImage",Source=bitmap,Width=PreviewWidth*2,Height=PreviewHeight*2,Margin=new Thickness(0,8,0,8)};
+        }
+    }
     public sealed class WorkshopReport
     {
         public readonly string Id,Sha256,ModId,Version,Reporter,Reason,Description,State,Resolution;
@@ -254,6 +299,15 @@ namespace TimeSplitters.Launcher
                 return new ModeratorSourcePage(await Request(HttpMethod.Post,"v1/moderation/"+review.Id+"/source",JsonBody(new {sha256=review.Sha256,path=path,offset=offset}),200,true,cancel).ConfigureAwait(false),review,path,offset);
             }finally{gate.Release();}
         }
+        public async Task<ModeratorTexturePreview> Texture(ModeratorUpload review,string path,CancellationToken cancel)
+        {
+            ModPayload entry;Core.Require(review!=null && path!=null && path.StartsWith("textures/",StringComparison.Ordinal) && path.EndsWith(".dds",StringComparison.Ordinal) && review.Package.Files.TryGetValue(path,out entry) && entry.Size<=24*1024*1024,"Select a declared DDS texture.");
+            await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanModerate,"Sign in with a moderator account to inspect textures.");
+                return new ModeratorTexturePreview(await Request(HttpMethod.Post,"v1/moderation/"+review.Id+"/texture",JsonBody(new {sha256=review.Sha256,path=path}),200,true,cancel).ConfigureAwait(false),review,path);
+            }finally{gate.Release();}
+        }
         public async Task Moderate(ModeratorUpload review,string action,string note,CancellationToken cancel)
         {
             Core.Require(review!=null && (action=="approve" || action=="revoke"),"Invalid moderation decision.");
@@ -319,6 +373,9 @@ namespace TimeSplitters.Launcher
         readonly TextBox package=new TextBox {Name="CreatorPackagePath",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reviewNote=new TextBox {Name="ModeratorNote",MaxLength=1800,MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly ComboBox sourceFiles=new ComboBox {Name="ModeratorSourceFile",MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        readonly ComboBox textureFiles=new ComboBox {Name="ModeratorTextureFile",MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        ModeratorTexturePreview texturePreview;
+        IDisposable textureBitmap;
         readonly ComboBox reportReason=new ComboBox {Name="PlayerReportReason",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reportDescription=new TextBox {Name="PlayerReportDescription",MaxLength=1000,MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reportResolution=new TextBox {Name="ModeratorReportResolution",MaxLength=1800,MinWidth=260,Margin=new Thickness(0,6,0,8)};
@@ -371,7 +428,7 @@ namespace TimeSplitters.Launcher
         {var button=new Button {Name=name,Content=title,IsEnabled=stop==null && enabled,Margin=new Thickness(0,8,10,0)};button.Click+=(s,e)=>action();panel.Children.Add(button);return button;}
         void Render()
         {
-            Detach(username);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(reportReason);Detach(reportDescription);Detach(reportResolution);View.Children.Clear();bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();}
+            Detach(username);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(textureFiles);Detach(reportReason);Detach(reportDescription);Detach(reportResolution);View.Children.Clear();if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();}
             View.Children.Add(status);var cancel=Button(View,"CancelCreatorOperation","Cancel request",()=>{if(stop!=null)stop.Cancel();});cancel.IsEnabled=stop!=null;Ui.Show(cancel,stop!=null);
             var account=PageTheme.Section(View,"Creator account",authenticated?"Signed in as "+client.Username+" ("+client.Role+")":"Use your workshop account or redeem an operator invitation.");
             if(!authenticated) {
@@ -399,7 +456,7 @@ namespace TimeSplitters.Launcher
             if(uploads.Length==100)Button(history,"NextCreatorUploads","Next uploads",async()=>{cursor=uploads.Last().Cursor;await History();},authenticated);
             if(client!=null && client.CanModerate){RenderModeratorReports();RenderModeration();}
         }
-        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;sourcePage=null;decision=null;decisionNote=null;reviewNote.Text="";sourceFiles.ItemsSource=null;}
+        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;sourcePage=null;texturePreview=null;textureFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";sourceFiles.ItemsSource=null;}
         void RenderReports(bool authenticated)
         {
             var panel=PageTheme.Section(View,"Report a mod","Choose Report release in Browse to flag a specific version. Sign-in is required; reports are private to your account and moderators.");
@@ -454,7 +511,7 @@ namespace TimeSplitters.Launcher
             Button(panel,"RefreshModeratorUploads","Refresh moderation",async()=>await Reviews(0));
             foreach(var item in reviews) {
                 var row=item;
-                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,async()=>{selectedReview=row;scanEvidence=null;sourcePage=null;sourceFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";await Run(async token=>{scanEvidence=await Client.Evidence(row,token);},"Scan evidence refreshed.",35);});
+                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,async()=>{selectedReview=row;scanEvidence=null;sourcePage=null;texturePreview=null;textureFiles.ItemsSource=null;sourceFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";await Run(async token=>{scanEvidence=await Client.Evidence(row,token);},"Scan evidence refreshed.",35);});
             }
             if(reviews.Length==100)Button(panel,"NextModeratorUploads","Next reviews",async()=>await Reviews(reviews.Last().Cursor));
             if(selectedReview==null)return;
@@ -485,6 +542,16 @@ namespace TimeSplitters.Launcher
 #endif
                     panel.Children.Add(sourceView);
                     if(page.NextOffset<page.Size)Button(panel,"NextModeratorSource","Next source portion",async()=>await ReadSource(review,page.Path,page.NextOffset));
+                }
+            }
+            var textures=review.Package.Files.Keys.Where(path=>path.StartsWith("textures/",StringComparison.Ordinal) && path.EndsWith(".dds",StringComparison.Ordinal)).OrderBy(path=>path,StringComparer.Ordinal).ToArray();
+            if(textures.Length>0) {
+                string chosen=textureFiles.SelectedItem as string;textureFiles.ItemsSource=textures;textureFiles.SelectedItem=textures.Contains(chosen)?chosen:textures[0];textureFiles.IsEnabled=stop==null;panel.Children.Add(textureFiles);
+                Button(panel,"InspectModeratorTexture","Preview DDS texture",async()=>{texturePreview=null;await Run(async token=>{texturePreview=await Client.Texture(review,(string)textureFiles.SelectedItem,token);},"Texture preview loaded.",45);});
+                if(texturePreview!=null) {
+                    var picture=texturePreview;panel.Children.Add(PageTheme.Text(picture.Path+" · "+picture.Width+" × "+picture.Height+" · "+picture.Format+" · SHA-256: "+picture.PayloadSha256,12));
+                    panel.Children.Add(PageTheme.Text("Base-level sample. Checkerboard shows transparency. Fine detail may be omitted; this is not a safety verdict.",12));
+                    panel.Children.Add(picture.Image(out textureBitmap));
                 }
             }
             if(decision==null) {
@@ -526,6 +593,6 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(!disposed)Render();}
             }
         }
-        public void Dispose(){disposed=true;ClearCredentials();ClearReviews();ClearReports();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
+        public void Dispose(){disposed=true;if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}ClearCredentials();ClearReviews();ClearReports();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
     }
 }

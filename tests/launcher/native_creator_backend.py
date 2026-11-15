@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import stat
+import struct
 import sys
 from urllib.parse import urlsplit
 
@@ -31,13 +32,20 @@ def emit(value):
     print(wire, flush=True)
 
 
-def package(root, author, version, identity='native-original', script=b'return {api=1}\n'):
+def package(root, author, version, identity='native-original', script=b'return {api=1}\n', texture=False):
     source = root / ('source-' + identity + '-' + version)
     (source / 'scripts').mkdir(parents=True)
     (source / 'scripts/main.lua').write_bytes(script)
+    if texture:
+        # Original solid-red BC1, all three required mips; no game assets.
+        header = bytearray(128)
+        for offset,value in {0:0x20534444,4:124,12:4,16:4,28:3,76:32,80:4,84:0x31545844}.items():
+            struct.pack_into('<I',header,offset,value)
+        (source / 'textures').mkdir()
+        (source / 'textures/0123456789abcdef.dds').write_bytes(header+struct.pack('<HHI',0xf800,0,0)*3)
     (source / 'mod.json').write_text(json.dumps(dict(
         schema=1, id=identity, name='Original native wire fixture',
-        version=version, author=author, description='Asset-free test source',
+        version=version, author=author, description='Original synthetic test source',
         game='tsfp-us-45410066', api='tsfp-mod-v1-draft', dependencies={}, files={})))
     output = root / (identity + '-' + version + '.zip')
     build_package(source, output)
@@ -71,7 +79,7 @@ def main():
         # EICAR is a harmless AV test string. It is never executed as Lua/code.
         eicar = b'X5O!P%@AP[4\\PZX54(P^)7CC)7}$' + b'EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
         scan_packages = {kind: package(root, 'native-creator', '1.0.0', 'native-' + kind,
-                                      eicar if kind == 'eicar' else b'return {api=1}\n')
+                                      eicar if kind == 'eicar' else b'return {api=1}\n', texture=kind=='clean')
                          for kind in ('clean', 'eicar', 'empty', 'missing')}
         (root / 'empty-definitions').mkdir(mode=0o700)
     emit(dict(ready=True, invitation=accounts.create_invite('native-creator'),

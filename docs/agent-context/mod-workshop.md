@@ -1,3 +1,19 @@
+Private DDS moderation preview: POST /v1/moderation/<upload>/texture binds
+sha256/path to a completed job and declared DDS (<=24MiB). Shared _preview_bytes
+also serves Lua: nofollow/nonblock regular single-link owner/mode checks, bounded
+archive+payload hashing and stable FD metadata. mod_texture_preview.thumbnail
+validates the complete DDS then uses integer-only base-level sampling to <=128x128
+RGBA; BC1/BC2/BC3/BGRA8 only, no extraction/native decoder/image libraries.
+24/account then48/global per minute, durable separate rate buckets; no decisions.
+Native ModeratorTexturePreview binds identity/manifest/size/format/power-of-two
+shape/canonical base64/exact pixel budget; UI composites transparency on a checker,
+uses thin WPF/Avalonia bitmap adapters, disposes resources and clears account/
+package selections. Every declared texture is selectable. Sampling is a review aid,
+not a safety verdict or complete-detail/runtime-use proof. Audio/maps still open.
+Native real-scanner moderation fixture now includes original red DDS and reads it;
+new actual user-Mac scanner/preview acceptance awaits space. A newer matching host
+bundle is required; old430 lacks this endpoint. Production remains inactive.
+
 Creator SDK pack --modules uses mod_lua_bundle.compose to link<=32 local Lua
 sources into existing scripts/main.lua, with exact dot-name imports, per-VM cache,
 cycle/unknown errors and unchanged1MiB generated-source budget. All sources share

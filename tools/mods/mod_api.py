@@ -133,6 +133,10 @@ class WorkshopAPI:
         match = re.fullmatch(r'/v1/moderation/([0-9a-f]{32})/evidence', path)
         if match and method == 'GET':
             return 200, self.uploads.evidence(actor, match[1])
+        match = re.fullmatch(r'/v1/moderation/([0-9a-f]{32})/texture', path)
+        if match and method == 'POST':
+            data = self._json(environ, ('sha256','path'))
+            return 200, self.uploads.texture_preview(actor, match[1], data['sha256'], data['path'])
         match = re.fullmatch(r'/v1/moderation/([0-9a-f]{32})/source', path)
         if match and method == 'POST':
             data = self._json(environ, ('sha256','path','offset'))

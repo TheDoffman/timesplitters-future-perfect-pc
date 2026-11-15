@@ -1,4 +1,4 @@
-[SDK/modules](build-test-details.md).
+[SDK/modules and DDS inspection](build-test-details.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

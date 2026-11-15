@@ -1,3 +1,23 @@
+Private DDS moderation preview (2026-11-15):
+The native Creator moderation view can select any declared DDS and show a
+bounded base-level sample with dimensions, format, exact payload digest and
+checkerboard transparency. BC1/BC2/BC3/BGRA8 previews use integer-only sampling,
+not image libraries or native uploaded-content decoders. The private texture
+endpoint requires a completed scan and moderator/admin role, binds the reviewed
+archive/manifest/payload and shares the Lua inspector's immutable-blob checks.
+Persistent admission is24/account then48/global per minute. Pixels are bounded
+to128x128, and native responses bind identity, size, format, shape and canonical
+base64 before bitmap creation. Native resources and selections clear on logout.
+Inspection makes no package decision, install, extraction or publication; sampled
+fine detail is incomplete and a preview is not a safety verdict.
+Windows API/decoder/scope/runtime checks pass161 with8 POSIX-only skips (22.36s).
+The full native launcher checks pass105 UI groups plus real normal backend
+(51.54s). The explicit real Mac moderation fixture now also contains an original
+red DDS and checks the actual preview pixels; that new scanner/preview run is
+unrun while storage remains below2GiB. Mac/Linux native compilation/display and
+public acceptance remain pending. A matching newer host bundle is required;
+the previous430 host lacks this endpoint and production remains inactive.
+
 Creator modular Lua SDK (2026-11-15):
 pack --modules now links up to32 project Lua files into the existing verified
 scripts/main.lua. Local exact-name imports cache module values, reject cycles/

@@ -3,7 +3,7 @@
 The creator/moderator backend is implemented in this task branch. It is not
 exposed to the internet. The launcher now includes creator sign-in, invitation
 redemption, reviewed uploads and status history. Persistent credential-vault
-integration, player reports, production supervision/backups and public host
+integration, production supervision/backups and public host
 acceptance remain required before release. The existing Caddy configuration
 still serves only approved snapshot downloads and does not proxy this API.
 
@@ -103,8 +103,22 @@ read-only text, with hidden control/direction characters shown as Unicode escape
 **Next source portion** reads the next64KiB or less; use **Read Lua source** to
 start again. All declared Lua scripts are selectable, including those beyond the
 first32 manifest rows. Scripts are limited to1MiB each. No code is executed and
-no archive is installed or extracted. Asset previews remain unfinished; inspect
-other content independently before approving.
+no archive is installed or extracted.
+
+For textures, select any declared DDS and choose **Preview DDS texture**. The
+launcher shows the original dimensions, format, payload digest and a sample of
+the base level, bounded to128 ×128 pixels. A checkerboard shows transparency.
+BC1, BC2, BC3 and BGRA8 are supported. Smaller authored mip images are not used
+for this preview. Sampling can miss fine details; inspect the full content
+independently as needed. Audio and map previews remain unfinished.
+
+The private `POST /v1/moderation/<upload>/texture` endpoint accepts only the exact
+reviewed `sha256` and declared `path` after a completed scan. It rechecks archive
+and payload integrity, validates the complete DDS and samples pixels using bounded
+integer operations without a native decoder, image library, extraction or code
+execution. Persistent limits are24/account then48/global per minute. Inspection
+never approves, publishes or installs anything. Previews clear on sign-out or
+review selection changes. The matching updated host API is required.
 
 The role-gated source endpoint binds the reviewed archive digest and declared
 file, rechecks the stored archive/payload hashes and size, and returns UTF-8 byte
