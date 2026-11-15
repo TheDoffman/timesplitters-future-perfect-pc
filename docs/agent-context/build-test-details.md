@@ -1,3 +1,8 @@
+test_host_identity.py covers bounded native gid arrays/failures/size changes,
+separate directory versus kernel membership, partial UID/GID drops and rejection
+of root/admin/stray kernel groups. Actual Mac libSystem getgroups comparison and
+native restricted launchd/subprocess smoke are separate enforcement evidence.
+
 test_system_monitor_probe.py checks default no-side-effect plan, nonce/path and
 role/executable bindings, installed-root entry gate, no arbitrary target options,
 bounded inert worker syntax/identity diagnostics, and cleanup attempting every

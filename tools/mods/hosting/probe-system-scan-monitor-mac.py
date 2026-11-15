@@ -34,13 +34,14 @@ role,state,code,fixture=sys.argv[1],Path(sys.argv[2]),Path(sys.argv[3]),Path(sys
 assert role in ('target','reader')
 spec=importlib.util.spec_from_file_location('proof_monitor',code)
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);m.ROOT=fixture
-value=dict(uid=os.getuid(),euid=os.geteuid(),gid=os.getgid(),egid=os.getegid(),groups=os.getgroups(),pid=os.getpid(),pgid=os.getpgrp())
+from mod_host_identity import kernel_groups
+value=dict(uid=os.getuid(),euid=os.geteuid(),gid=os.getgid(),egid=os.getegid(),groups=os.getgroups(),kernel_groups=kernel_groups(),pid=os.getpid(),pgid=os.getpgrp())
 def write():
  name='.ready-'+uuid.uuid4().hex
  with os.fdopen(os.open(state/name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600),'w') as out:
   json.dump(value,out);out.flush();os.fsync(out.fileno())
  os.replace(state/name,state/'target.json')
-value['identity_ok']=value['uid']==value['euid']==value['gid']==value['egid']>=600 and set(value['groups'])<={value['uid']}
+value['identity_ok']=value['uid']==value['euid']==value['gid']==value['egid']>=600 and set(value['kernel_groups'])<={value['uid']} and not {0,80}.intersection(value['groups'])
 if not value['identity_ok']:
  value['phase']='identity-refused'
  if role=='target':write()
@@ -190,7 +191,8 @@ def apply():
             if role=='target':
                 target=await_ready(fixture/'state/target.json',account['uid'])
                 identity.require(target.get('phase')=='ready' and target.get('uid')==target.get('euid')==target.get('gid')==target.get('egid')==account['uid']
-                                 and target.get('pid')==target.get('pgid') and set(target.get('groups',[]))<={account['uid']}
+                                 and target.get('pid')==target.get('pgid') and set(target.get('kernel_groups',[]))<={account['uid']}
+                                 and not {0,80}.intersection(target.get('groups',[]))
                                  and target.get('healthy') is True and target.get('heartbeat_write_denied') is True,
                                  'Native locked job identity or root heartbeat enforcement failed: '+json.dumps(target)[:500])
                 identity.require(type(target.get('child_pid')) is int and target['child_pid']>1

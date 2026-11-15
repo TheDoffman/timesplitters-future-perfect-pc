@@ -38,6 +38,14 @@ actual launchd identity/group acceptance is still required.
 The worker's `--system-worker` mode accepts no configuration argument: it reads the
 fixed private scan configuration and requires a non-root identity without root or
 admin supplementary groups. It ignores the older worker-writable GUI heartbeat.
+On macOS, `mod_host_identity.py` reads effective groups through the fixed
+libSystem `getgroups` entry point, with an explicit gid_t ABI and a bounded array.
+Modern Python `os.getgroups()` instead returns directory memberships unaffected
+by setgroups; see [Python's documentation](https://docs.python.org/3.12/library/os.html#os.getgroups)
+and the host getgroups(2) manual. Kernel groups must be empty or the service GID;
+directory membership separately must exclude root/admin. Both lists are retained
+in smoke/proof reports. The native launchd and subprocess privilege-drop paths
+must satisfy these checks independently.
 Instead it checks a root-owned, bounded, single-link, non-writable-by-others
 heartbeat through held nofollow descriptors. Service/UID/policy/status/time must
 match. The root directory chain is also verified. Health is published atomically

@@ -254,9 +254,9 @@ def main():
     try:
         require(sys.platform == 'darwin', 'Run the launchd scan service on the Mac host')
         if args.system_worker:
-            require(args.config is None and os.geteuid() >= 600 and os.getuid() == os.geteuid()
-                    and os.getgid() == os.getegid() == os.geteuid()
-                    and set(os.getgroups()) <= {os.geteuid()}, 'Use the locked system worker identity')
+            from mod_host_identity import require_locked_process
+            require(args.config is None,'The system worker uses its fixed configuration')
+            require_locked_process()
             monitor = system_monitor()
             data = config(monitor.config_path())
             require(data['label'] == monitor.label(), 'System scan identity mismatch')

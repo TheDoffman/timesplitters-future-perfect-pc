@@ -29,6 +29,8 @@ assert os.getuid()==os.geteuid()==uid and os.getgid()==os.getegid()==uid
 assert 0 not in os.getgroups() and 80 not in os.getgroups()
 assert Path(sys.prefix).resolve().is_relative_to(root/'runtime')
 sys.path.insert(0,str(root/'source/tools/mods'))
+from mod_host_identity import kernel_groups
+assert set(kernel_groups()) <= {uid}
 import importlib.metadata
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from mod_scan_sandbox import ScanSandbox,verified_guardian
@@ -42,7 +44,7 @@ with tempfile.TemporaryDirectory(prefix='release-smoke-',dir=data) as temporary:
  with ScanSandbox(str(root/'runtime/bin/clamscan'),content,database) as worker:
   result=worker.run(['--database='+str(database),'--version'],capture_output=True,check=True,timeout=10)
   version=result.stdout.decode().strip();assert version.startswith('ClamAV ')
-print(json.dumps(dict(uid=uid,gid=os.getgid(),groups=os.getgroups(),prefix=sys.prefix,scanner_version=version,
+print(json.dumps(dict(uid=uid,gid=os.getgid(),groups=os.getgroups(),kernel_groups=kernel_groups(),prefix=sys.prefix,scanner_version=version,
  packages={n:importlib.metadata.version(n) for n in ('gunicorn','cryptography','cffi','pycparser')},
  guardian_sha256=hashlib.sha256(guardian.read_bytes()).hexdigest(),runtime_images=len(access['images']),
  certificate_verified=True,temporary_state_removed=True,network_started=False,services_started=False)))
@@ -103,6 +105,8 @@ def install(plan):
     smoke = release.decode(result.stdout, 8192)
     release.require(smoke.get('uid') == account['uid'] and smoke.get('gid') == account['gid']
                     and isinstance(smoke.get('groups'), list) and all(type(g) is int and g not in (0, 80) for g in smoke['groups'])
+                    and isinstance(smoke.get('kernel_groups'), list)
+                    and all(type(g) is int and g == account['uid'] for g in smoke['kernel_groups'])
                     and smoke.get('certificate_verified') is True
                     and smoke.get('temporary_state_removed') is True, 'Unexpected locked-account smoke report')
     # Runtime and code must remain unchanged after the locked process uses them.

@@ -1,3 +1,12 @@
+Native b6fd root installation completed, including sealed-runtime/UID600 smoke;
+its inert system proof refused Python's directory-membership list as if it were
+kernel credentials. Both test labels are verified absent. mod_host_identity.py
+now reads bounded fixed libSystem getgroups credentials on Mac; kernel groups
+must be empty/service GID and directory memberships must still exclude root/admin.
+Scanner admission, installed smoke and native proof share this distinction.
+Direct UID501 comparison and local getgroups(2)/Python docs verify the API issue;
+corrected UID600 native proof remains required. No production/public jobs started.
+
 Native root-monitor proof is probe-system-scan-monitor-mac.py: plan by default,
 installed-release --apply only. It creates inert UID600 target+child and temporary
 root controller, verifies real/effective/groups/PGID and root-health write denial,

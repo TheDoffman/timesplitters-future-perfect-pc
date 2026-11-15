@@ -1,3 +1,19 @@
+Root installation and native group-check repair (2026-11-15):
+The user authenticated the pinned native Terminal step. The b6fd11b4 immutable
+release installed successfully under descriptorSHA
+1745a3fde702ce2998871f298d81e9b7b94084a70c4ebc45b940c61e93fcd993,
+including root-owned inventory verification and the UID600 isolated scanner smoke.
+The subsequent inert system proof exited2 at its group check: UID/GID600 were
+correct, but Python reported directory memberships [600,12,61,702,701,100]. Both
+temporary test labels are verified absent. No production job or endpoint started.
+Python's macOS os.getgroups API reports directory memberships independently of
+setgroups; the host getgroups(2) manual confirms the fixed process-list variant.
+A new bounded libSystem credential helper now separates these checks: only the
+service GID or empty kernel groups are admitted, and root/admin directory
+memberships remain forbidden. Scanner admission, installed smoke and native proof
+use that distinction. Windows identity/release/monitor checks pass73 with25 POSIX
+skips (0.45s); corrected native launchd/kernel enforcement remains pending.
+
 Native system-monitor proof preparation (2026-11-15):
 Added an installed-release-only bounded proof with inert restricted/root system
 jobs. It checks actual identity/groups, root-health read/write protections,
