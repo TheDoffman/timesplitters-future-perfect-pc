@@ -1,3 +1,27 @@
+Public HTTPS connectivity acceptance (2026-11-15, sourceef234211):
+A bounded foreground Funnel on unused8443 forwarded to the confined gateway8768
+and static8766. The probe started only those confined marker servers; no creator
+API, accounts, quarantine or signing keys were configured for it. The private443 route
+was checked throughout. Public DNS returned global relay addresses; a Windows
+curl client disabled proxies and pinned a public relay address to bypass private
+Tailnet DNS, validated the TLS certificate and received HTTP200 with the exact
+nonce and SHA256 bytes from the Mac. The browser fetch tool could not accept the
+nondefault-port URL; the actual curl/public-relay result supplies this evidence.
+The probe was stopped afterward. Fresh status equals the entire original Serve
+configuration, no public Funnel mapping remains, owned children are stopped,
+scratch is reaped and8766/8768 listeners are closed. No global reset was used.
+Server acceptanceSHA41036e3b273988ddc8def0d34915cca7f5a32ad21e95d4f69a55150f6bcced1b.
+Client acceptanceSHA131a93350ab967b3ddecb0c6788cc7f1909314eac5e9638815e64534a1ed6343.
+Combined acceptanceSHA492a29d5968f89239c234a8bcde6a494834262178fd409878eda11094c6e25b5.
+The first fixture attempt stopped safely because self-sampling included Darwin's
+setuid ps child; separate owned-child sampling fixed the fixture. Its stopped
+receipt/original routing are preserved. No production sampler policy was changed.
+Mac producer/API/gateway/port suites80 pass, native launcher build/sign/strict
+verify and81 UI groups pass. Windows selected suites67 pass/13 skips, full native
+launcher80 UI groups pass. Full sourceef CI43688011646 is green, as is sourcecd0
+CI43686136861. Public signed catalogs, creator-to-native-game flow and production
+service deployment are still required; this was a temporary connectivity probe.
+
 Canonical workshop HTTPS authorities now permit the default port or explicit
 8443/10000 only. Signed roots/catalogs/cache identities retain the exact port;
 cross-port metadata and root rotations are rejected. Python and native validators

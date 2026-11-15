@@ -7,7 +7,9 @@ existing launcher.** A separate public website is optional.
 Private-host integration includes authenticated creator uploads, isolated scanning,
 manual review, signed publication/revocation and native launcher enforcement.
 A separate confined gateway routes approved downloads and creator API requests.
-Public access and production service deployment remain incomplete.
+A temporary public HTTPS marker probe passed through the confined gateway;
+it was removed and the existing private routing restored. The production
+workshop service is not deployed. See the scoped acceptance in STATUS.
 
 Texture overlays and one restricted gameplay mode can be enabled by compatible
 native launchers. The packaged First to Three example has completed real matches
@@ -66,8 +68,8 @@ official ZIP checksum, strict/deep Developer ID signature and Apple notarization
 were verified (Tailscale Inc., team W5364U7YZB). The app was opened in the
 background. Later read-only CLI checks confirm signed-in/online operation.
 An existing private Serve mapping occupies HTTPS443. Preserve it; the workshop
-uses a separately selected free port such as8443. No public Funnel mapping has
-yet been verified. See the [official setup](https://tailscale.com/docs/install/mac).
+uses a separately selected free port such as8443. A temporary8443 Funnel passed public-relay/TLS/marker verification, then was
+removed with the original routing restored; no production mapping is active. See the [official setup](https://tailscale.com/docs/install/mac).
 
 On this FileProvider-managed Desktop, the generated app acquired FinderInfo and
 code signing failed despite the builder's existing metadata cleanup. The same
