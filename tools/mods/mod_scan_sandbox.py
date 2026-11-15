@@ -1,5 +1,7 @@
 """Private Mac-host scanner process: deny by default, no network or child processes."""
 import json
+from contextlib import contextmanager
+import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -7,10 +9,50 @@ import subprocess
 import sys
 import tempfile
 import threading
+import stat
 
-from mod_package import require
+from mod_package import require, read_json
 
 ISOLATION_POLICY = 'macos-seatbelt-v2'
+GUARDIAN_ROOT = Path(__file__).resolve().parents[2] / 'build/scan-guardian'
+
+
+def verified_guardian():
+    root = GUARDIAN_ROOT
+    binary, receipt = root / 'scan-guardian-mac', root / 'receipt.json'
+    for path in (binary, receipt):
+        for member in (path, *path.parents):
+            require(not member.is_symlink(), 'Linked scanner guardian path refused')
+        info = path.stat()
+        require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_uid in (0, os.geteuid())
+                and not info.st_mode & 0o6022 and 0 < info.st_size <= (1024**2 if path == binary else 4096),
+                'Unsafe scanner guardian file')
+    require(not root.stat().st_mode & 0o022, 'Scanner guardian directory is writable by others')
+    record = read_json(receipt.read_bytes())
+    source = Path(__file__).with_name('scan_guardian_mac.c')
+    require(isinstance(record, dict) and type(record.get('schema')) is int and record['schema'] == 1
+            and record.get('producer') == 'tsfp-scan-guardian-v1'
+            and record.get('source_sha256') == hashlib.sha256(source.read_bytes()).hexdigest()
+            and record.get('sha256') == hashlib.sha256(binary.read_bytes()).hexdigest()
+            and os.access(binary, os.X_OK), 'Scanner guardian receipt is missing, stale or changed')
+    return binary
+
+
+class GuardedChild:
+    def __init__(self, process, lifetime):
+        self.process, self.lifetime = process, lifetime
+        self.lock = threading.Lock()
+
+    def kill(self):
+        # Never kill the guardian first. Closing this private parent endpoint
+        # tells it to kill and reap its still-owned scanner PID, in any group.
+        with self.lock:
+            descriptor, self.lifetime = self.lifetime, None
+        if descriptor is not None:
+            os.close(descriptor)
+
+    def __getattr__(self, name):
+        return getattr(self.process, name)
 
 
 def sandbox_profile(executable, content, database, scratch):
@@ -35,6 +77,7 @@ def sandbox_profile(executable, content, database, scratch):
 
 class ScanSandbox:
     """No fallback to an unsandboxed engine on unsupported/broken hosts."""
+    GUARDED_PARENT_LIFETIME = True
     def __init__(self, executable, content, database):
         self.requested_executable = executable
         self.content = Path(content).resolve()
@@ -51,6 +94,8 @@ class ScanSandbox:
         require(found is not None, 'Scanner executable is missing')
         self.executable = Path(found).resolve()
         require(self.executable.is_file(), 'Scanner executable is missing')
+        require(not self.executable.stat().st_mode & 0o6022, 'Unsafe scanner executable permissions')
+        self.guardian = verified_guardian()
         self.temporary = tempfile.TemporaryDirectory(prefix='tsfp-scan-worker-')
         self.scratch = Path(self.temporary.name).resolve()
         os.chmod(self.scratch, 0o700)
@@ -62,29 +107,57 @@ class ScanSandbox:
     def command(self, arguments):
         # The trusted child sets hard CPU/output/fd limits before exec. Unlike a
         # preexec_fn it is safe when the parent has other threads. exec preserves
-        # the PID, so subprocess timeout kills the actual sandboxed engine.
+        # the PID. A separate owned-child guardian also enforces parent lifetime.
         return [sys.executable, str(Path(__file__).with_name('scan_child.py')),
                 '/usr/bin/sandbox-exec', '-p', self.profile, str(self.executable), *arguments]
 
+    @contextmanager
+    def _spawn(self, arguments, merge=False):
+        read, write = os.pipe()
+        process = None
+        try:
+            process = subprocess.Popen([str(self.guardian), str(read), *self.command(arguments)],
+                                       env=self.environment, cwd=self.scratch, stdin=subprocess.DEVNULL,
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT if merge else subprocess.PIPE,
+                                       close_fds=True, pass_fds=(read,), start_new_session=True)
+            os.close(read)
+            read = None
+            child = GuardedChild(process, write)
+            write = None
+            try:
+                yield child
+            finally:
+                child.kill()
+                process.wait(timeout=10)
+        finally:
+            for descriptor in (read, write):
+                if descriptor is not None:
+                    os.close(descriptor)
+
     def run(self, arguments, **kwargs):
-        return subprocess.run(self.command(arguments), env=self.environment, cwd=self.scratch,
-                              stdin=subprocess.DEVNULL, close_fds=True, **kwargs)
+        timeout = kwargs.pop('timeout', 10)
+        check = kwargs.pop('check', False)
+        kwargs.pop('capture_output', False)
+        require(not kwargs, 'Unsupported scanner process options')
+        result = self._collect(arguments, timeout, merge=False)
+        if check:
+            result.check_returncode()
+        return result
 
     def scan(self, arguments, timeout=180):
+        return self._collect(arguments, timeout, merge=True)
+
+    def _collect(self, arguments, timeout, merge):
         """Drain diagnostics without an unbounded file, buffer, or pipe deadlock."""
-        command = self.command(arguments)
-        child = subprocess.Popen(command, env=self.environment, cwd=self.scratch,
-                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT, close_fds=True)
-        captured = bytearray()
+        captured = [bytearray(), bytearray()]
         exceeded = []
         failures = []
-        def drain():
+        def drain(pipe, index, child):
             total = 0
             try:
-                while chunk := child.stdout.read(65536):
+                while chunk := pipe.read(65536):
                     total += len(chunk)
-                    captured.extend(chunk[:max(0, 65536 - len(captured))])
+                    captured[index].extend(chunk[:max(0, 65536 - len(captured[index]))])
                     if total > 1024 * 1024:
                         exceeded.append(True)
                         child.kill()
@@ -92,20 +165,26 @@ class ScanSandbox:
             except OSError as exc:
                 failures.append(str(exc))
                 child.kill()
-        reader = threading.Thread(target=drain, daemon=True)
-        reader.start()
-        try:
-            child.wait(timeout=timeout)
-        finally:
-            if child.poll() is None:
+        with self._spawn(arguments, merge=merge) as child:
+            pipes = [child.stdout] + ([] if merge else [child.stderr])
+            readers = [threading.Thread(target=drain, args=(pipe, index, child), daemon=True)
+                       for index, pipe in enumerate(pipes)]
+            for reader in readers:
+                reader.start()
+            try:
+                child.wait(timeout=timeout)
+            finally:
                 child.kill()
                 child.wait(timeout=10)
-            reader.join(timeout=10)
-            child.stdout.close()
-        require(not reader.is_alive(), 'Scanner diagnostic reader did not stop')
+                for reader, pipe in zip(readers, pipes):
+                    reader.join(timeout=10)
+                    pipe.close()
+            require(not any(reader.is_alive() for reader in readers), 'Scanner diagnostic reader did not stop')
+            returncode = child.returncode
         require(not failures, 'Scanner diagnostic stream failed')
         require(not exceeded, 'Scanner diagnostic output exceeded1MiB')
-        return subprocess.CompletedProcess(command, child.returncode, stdout=bytes(captured))
+        return subprocess.CompletedProcess(self.command(arguments), returncode, stdout=bytes(captured[0]),
+                                           stderr=None if merge else bytes(captured[1]))
 
     def __exit__(self, *args):
         if self.temporary is not None:

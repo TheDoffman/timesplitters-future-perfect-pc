@@ -67,6 +67,7 @@ CPU_TOOLS = {
     'tools/mods/hosting/run-mac-mod-host.sh', 'tools/mods/hosting/Caddyfile',
     'tests/mods/test_mod_workshop.py',
     'tools/mods/mod_scan_sandbox.py', 'tools/mods/scan_child.py',
+    'tools/mods/scan_guardian_mac.c', 'tools/build/build-scan-guardian.py', 'tests/mods/test_scan_guardian.py',
     'tests/mods/test_scanner_process.py', 'tests/mods/live_clamav.py',
     'tests/mods/live_scan_isolation.py',
     'tools/mods/mod_accounts.py', 'tools/mods/mod_uploads.py', 'tools/mods/mod_api.py',

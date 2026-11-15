@@ -2,8 +2,8 @@
 
 **Containment hold:** an actual sandbox probe demonstrated that setsid/setpgid
 can escape process-group-only sampling/cleanup. Both installed private agents
-are disabled and unloaded. New worker admission is held until a parent-liveness
-guardian and descendant-tree supervision are implemented and verified. Do not
+are disabled and unloaded. New worker admission is held until the new parent-liveness
+guardian and descendant-tree supervision pass actual adversarial host checks. Do not
 enable these jobs for untrusted uploads yet. The earlier normal/group probes
 remain scoped evidence, not proof against this escape.
 
@@ -71,3 +71,17 @@ installed plist files when uninstalling; preserve the private repository and
 status/fault evidence. Logout/power loss, watchdog restart and forced cancellation
 must be distinguished from completed scans. An interrupted upload/rescan remains
 withheld and follows the existing lease/reclaim rules on a later worker cycle.
+
+Build the native lifetime helper before any isolated scanner command:
+
+```sh
+python tools/build/build-scan-guardian.py
+```
+
+Its receipt binds the signed helper image to the current C source. Missing,
+changed, linked or stale helpers refuse scanning. The helper owns and reaps the
+actual scanner PID, watches a private parent pipe and a210-second fallback, and
+survives controller process-group cleanup long enough to stop escaped scanners.
+The process-tree watchdog samples numeric PID/PPID/RSS/UID metadata (no argv or
+environment). This repair must pass the new actual escape/controller-death tests
+and be included in the pinned installed release before lifting the hold.

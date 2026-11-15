@@ -1,5 +1,6 @@
 """Exercise parent output and timeout bounds using actual harmless child processes."""
 import os
+from contextlib import contextmanager
 from pathlib import Path
 import subprocess
 import sys
@@ -18,6 +19,20 @@ def process(tmp_path, script, monkeypatch):
     worker.scratch = tmp_path
     worker.environment = os.environ.copy()
     monkeypatch.setattr(worker, 'command', lambda arguments: [sys.executable, '-c', script])
+    @contextmanager
+    def spawn(arguments, merge=False):
+        # Test-only seam for portable pipe/timeout tests. Production has no
+        # unguarded fallback; real Darwin guardian lifetimes are tested separately.
+        child = subprocess.Popen(worker.command(arguments), env=worker.environment, cwd=worker.scratch,
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT if merge else subprocess.PIPE)
+        try:
+            yield child
+        finally:
+            if child.poll() is None:
+                child.kill()
+            child.wait(timeout=10)
+    monkeypatch.setattr(worker, '_spawn', spawn)
     return worker
 
 
@@ -40,3 +55,17 @@ def test_success_and_error_diagnostics_preserve_exit_status(tmp_path, monkeypatc
     worker = process(tmp_path, 'print("scan result")', monkeypatch)
     result = worker.scan([], timeout=10)
     assert result.returncode == 0 and result.stdout.strip() == b'scan result'
+
+
+def test_version_stderr_flood_is_bounded_too(tmp_path, monkeypatch):
+    worker = process(tmp_path, 'import sys\nwhile True: sys.stderr.buffer.write(b"x"*65536)', monkeypatch)
+    with pytest.raises(ModError, match='output exceeded'):
+        worker.run([], capture_output=True, timeout=10)
+
+
+def test_version_streams_and_check_semantics(tmp_path, monkeypatch):
+    worker = process(tmp_path, 'import sys; print("version"); print("warning",file=sys.stderr);sys.exit(2)', monkeypatch)
+    result = worker.run([], capture_output=True, timeout=10)
+    assert result.stdout.strip() == b'version' and result.stderr.strip() == b'warning'
+    with pytest.raises(subprocess.CalledProcessError):
+        worker.run([], capture_output=True, check=True, timeout=10)

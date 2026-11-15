@@ -19,12 +19,12 @@ spec.loader.exec_module(service)
 
 @pytest.fixture
 def managed(monkeypatch):
-    data = {'label': 'org.timesplitters.workshop.scan.fixture'}
+    data = {'label': 'org.timesplitters.workshop.scan.fixture', 'uid': 123}
     monkeypatch.setattr(service, 'target', lambda _: 'gui/123/' + data['label'])
     return data
 
 
-def commands(rss='1024', pid=456, pgid=None):
+def commands(rss='1024', pid=456, rows=None):
     calls = []
     def command(args):
         calls.append(args)
@@ -32,9 +32,7 @@ def commands(rss='1024', pid=456, pgid=None):
             return 0, 'service = {\n pid = ' + str(pid) + '\n}'
         if args[1] == 'kill':
             return 0, ''
-        if args[-1] == 'pgid=':
-            return 0, str(pid if pgid is None else pgid)
-        return 0, rss
+        return 0, rows if rows is not None else str(pid) + ' 1 ' + rss + ' 123\n'
     return command, calls
 
 
@@ -61,11 +59,19 @@ def test_idle_missing_service_and_ambiguous_identity(managed):
         service.managed_pid('pid = 1\npid = 2\n')
 
 
-@pytest.mark.parametrize('rss,pgid', [('bad data', 456), ('1\n' * 9, 456), ('100', 99)])
-def test_bad_samples_and_group_escape_fail_closed(managed, rss, pgid):
-    command, _ = commands(rss, pgid=pgid)
+@pytest.mark.parametrize('rows', ['bad data', '456 1 100 999',
+                                '456 1 1 123\n' + ''.join(str(i)+' 456 1 123\n' for i in range(600,608))])
+def test_bad_samples_owner_changes_and_process_budget_fail_closed(managed, rows):
+    command, _ = commands(rows=rows)
     with pytest.raises(ModError):
         service.watch_once(managed, {}, command)
+
+
+def test_descendants_are_counted_without_session_or_group_membership(managed):
+    command, _ = commands(rows='456 1 1 123\n600 456 2 123\n601 600 3000 123\n999 1 9000000 888\n')
+    _, result = service.watch_once(managed, {}, command)
+    assert result['rss_bytes'] == 3003 * 1024
+    assert result['supervision_policy'] == service.SUPERVISION_POLICY
 
 
 @pytest.fixture
@@ -142,6 +148,7 @@ def test_admission_waits_without_touching_repository_until_supervised(private_co
 
 def test_group_only_containment_is_held_until_both_components_upgrade(private_config, monkeypatch):
     from mod_scan_sandbox import ScanSandbox
+    monkeypatch.setattr(ScanSandbox, 'GUARDED_PARENT_LIFETIME', False)
     assert not service.admit(private_config)
     assert json.loads(service.status_file(private_config, 'worker').read_text())['status'] == 'held'
     monkeypatch.setattr(ScanSandbox, 'GUARDED_PARENT_LIFETIME', True, raising=False)

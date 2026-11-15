@@ -1,3 +1,10 @@
+test_scan_guardian.py builds/codesigns the actual Darwin helper and native
+adversarial probe: join guardian group + setsid + cancel alarm, timeout/flood,
+parent/group signal denial, controller SIGKILL and image/receipt tampering.
+Portable scanner-process tests use a test-only spawn seam for bounded stdout/
+stderr and check/timeout behavior; production has no unguarded fallback.
+Native helper/source/receipt is required before isolated scans can start.
+
 Scan-service capability tests reject legacy group-only heartbeats and missing
 owned-parent lifetime containment. Only explicit test doubles advertise the future
 capability while exercising the remaining health gate. Actual sandbox setsid/

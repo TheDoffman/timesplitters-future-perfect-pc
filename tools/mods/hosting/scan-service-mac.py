@@ -47,6 +47,7 @@ def config(path):
             and info.st_uid in (0, os.geteuid()), 'Unsafe scanner executable')
     data['scanner'] = scanner
     data['config'] = path
+    data['uid'] = os.geteuid()
     suffix = hashlib.sha256(str(path).encode()).hexdigest()[:24]
     data['label'] = 'org.timesplitters.workshop.scan.' + suffix
     return data
@@ -130,7 +131,7 @@ def run_command(arguments):
                             stderr=subprocess.STDOUT, timeout=3, check=False)
     # These fixed OS utilities read only this owned job, never arbitrary uploaded
     # command output or a full user-domain environment dump.
-    require(len(result.stdout) <= 65536, 'Host utility output exceeded its budget')
+    require(len(result.stdout) <= 1024 * 1024, 'Host utility output exceeded its budget')
     return result.returncode, result.stdout.decode('utf-8', errors='strict')
 
 
@@ -144,24 +145,33 @@ def managed_pid(output):
     return int(values[0]) if values else None
 
 
-def sample(pid, command=run_command):
-    code, output = command(['/bin/ps', '-p', str(pid), '-o', 'pgid='])
-    if code != 0:
-        require(not output.strip(), 'Cannot inspect managed worker identity')
-        return None
-    if not output.strip():
-        return None
-    require(output.strip() == str(pid), 'Managed worker is not a process group leader')
-    code, output = command(['/bin/ps', '-g', str(pid), '-o', 'rss='])
-    if code != 0:
-        require(not output.strip(), 'Cannot sample managed scan memory')
-        return None
-    if not output.strip():
-        return None
+def sample(pid, command=run_command, uid=None):
+    # Numeric process metadata only: no argv/environment or personal file names.
+    # Session/group changes do not alter this parent-child relationship.
+    code, output = command(['/bin/ps', '-axo', 'pid=,ppid=,rss=,uid='])
+    require(code == 0, 'Cannot sample managed scan descendants')
     rows = output.splitlines()
-    require(len(rows) <= MAX_PROCESSES and all(re.fullmatch(r'\s*[0-9]+\s*', row) for row in rows),
-            'Managed scan process/output budget exceeded')
-    return sum(int(row) for row in rows) * 1024
+    require(len(rows) <= 8192, 'Host process metadata budget exceeded')
+    processes, children = {}, {}
+    for row in rows:
+        require(re.fullmatch(r'\s*[0-9]+\s+[0-9]+\s+[0-9]+\s+[0-9]+\s*', row), 'Malformed process sample')
+        identity, parent, rss, owner = map(int, row.split())
+        require(identity not in processes, 'Duplicate process sample')
+        processes[identity] = (rss, owner)
+        children.setdefault(parent, []).append(identity)
+    if pid not in processes:
+        return None
+    expected_uid = processes[pid][1] if uid is None else uid
+    pending, seen, total = [pid], set(), 0
+    while pending:
+        current = pending.pop()
+        require(current not in seen and len(seen) < MAX_PROCESSES, 'Managed scan process budget exceeded')
+        seen.add(current)
+        rss, owner = processes[current]
+        require(owner == expected_uid, 'Managed scan owner changed')
+        total += rss * 1024
+        pending.extend(children.get(current, ()))
+    return total
 
 
 def watch_once(data, observed, command=run_command, clock=time.monotonic):
@@ -171,19 +181,20 @@ def watch_once(data, observed, command=run_command, clock=time.monotonic):
         return {}, {'status': 'error', 'reason': 'Worker service is not loaded'}
     pid = managed_pid(output)
     if pid is None:
-        return {}, {'status': 'idle'}
+        return {}, {'status': 'idle', 'supervision_policy': SUPERVISION_POLICY}
     now = clock()
     start = observed.get('start', now) if observed.get('pid') == pid else now
-    memory = sample(pid, command)
+    memory = sample(pid, command, data.get('uid'))
     if memory is None:
-        return {}, {'status': 'idle'}
+        return {}, {'status': 'idle', 'supervision_policy': SUPERVISION_POLICY}
     reason = 'memory' if memory > MEMORY_BYTES else 'wall-time' if now - start > WALL_SECONDS else None
     if reason:
         # Signal the launchd-owned SERVICE, not the sampled PID. If the worker
         # exited/restarted meanwhile, no unrelated process can be targeted.
         command(['/bin/launchctl', 'kill', 'SIGKILL', target(data)])
         return {}, {'status': 'terminated', 'reason': reason, 'rss_bytes': memory}
-    return {'pid': pid, 'start': start}, {'status': 'watching', 'pid': pid, 'rss_bytes': memory}
+    return {'pid': pid, 'start': start}, {'status': 'watching', 'pid': pid, 'rss_bytes': memory,
+                                       'supervision_policy': SUPERVISION_POLICY}
 
 
 def watchdog(data):

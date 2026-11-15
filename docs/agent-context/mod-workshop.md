@@ -1,3 +1,13 @@
+Scanner containment repair is implemented pending actual adversarial host checks:
+mod_scan_sandbox.py now routes ALL run/scan calls through a verified native
+scan_guardian_mac.c, built by build-scan-guardian.py. Private parent pipe EOF/
+cancellation triggers owned-child PID kill/reap across session changes; guardian
+runs outside the managed worker group, passes only stdio to the scanner and has
+its own210s monotonic fallback. Captured version/scan streams are bounded. The
+watchdog walks bounded numeric PPID metadata, counting all descendants regardless
+of groups, and advertises guardian-descendants-v1. Installed agents remain disabled
+until escaped-scanner/root-death/resource acceptance and pinned deployment upgrade.
+
 Scan-service SECURITY HOLD: actual Seatbelt probe permits setsid/setpgid. Group-
 only RSS/launchd cleanup is insufficient. Installed private jobs are disabled and
 unloaded. admit() now requires ScanSandbox.GUARDED_PARENT_LIFETIME plus matching
