@@ -43,8 +43,26 @@ policy. Existing publication adapters preserve its metadata/agent contract.
 Missing health, stalled controllers, excess sampled descendant memory or child
 exit withdraw ingress. A guardian lease is renewed by bounded restart every30min.
 
-This code/configuration alone is not public deployment. Actual Caddy/Gunicorn
-routing, credential/origin isolation, body/framing limits, large downloads,
-managed restart/resource behavior and real HTTPS need acceptance. Private API
+Private Mac acceptance at sourcea8743bba verifies real Caddy routing, stripped
+static-download credentials, controlled API scheme headers, route/method/Host
+restrictions, a SHA-verified1MiB transfer and oversized JSON rejection. A separate
+real Gunicorn/accounts/uploads/official ClamAV/signing fixture verifies creator
+and reviewer roles, clean review, EICAR rejection, automatic signed publication,
+logout and revoke-to-404 in0.549s. Keys/accounts are disposable fixtures.
+Transient static refresh can return502 while downloads are withdrawn.
+
+Raw HTTP checks reject conflicting lengths400, unknown transfer encoding501,
+oversized headers431 and both fixed/chunked16385-byte JSON413 before completed
+backend requests. Exactly16384 chunked bytes succeed. A request supplying both
+Content-Length and chunked encoding is normalized to chunked framing with no
+Content-Length at the backend; it consumes exactly the decoded body.
+The optional actual-Caddy test in test_gateway_service.py preserves these checks.
+
+Temporary launchd jobs for both gateway and publication pass watchdog/controller
+restart, scaled128MiB memory cancellation with256MiB allocation, actual15s stalled
+heartbeat cancellation, child reaping and scratch recovery. All test jobs were
+unloaded. See STATUS for receipt hashes.
+
+These checks do not establish public deployment. Real HTTPS/internet, private API
 client-IP rate accounting, public abuse/load behavior and production system-domain
 service identity remain deployment gates.

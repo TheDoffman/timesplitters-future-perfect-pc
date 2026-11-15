@@ -1,3 +1,35 @@
+Workshop gateway private-host acceptance (2026-11-15, sourcea8743bba):
+The confined localhost8768 gateway forwards only fixed static8766/API8767 routes,
+has no repository/snapshot/key path, strips download credentials and controls API
+forwarded scheme headers. Native canaries deny direct public-tree/private-file
+reads and arbitrary/source-bound outbound connections; both backend ports work.
+Selected Mac publication/gateway/sandbox suites37 pass before the new transport
+regression. Full gateway source519a6d84 CI43678593035 is green.
+Controlled-backend routing checks verify Host/method/path restrictions, credential
+and cookie stripping,1MiB SHA256 transfer and JSON413. EvidenceSHA
+1e912c21b400449cb592678bfaca6ccbf5c62c4f0f4c5ebbc34a6ec5ff335c19.
+Real private Gunicorn/Accounts/Uploads/official ClamAV1.5.4 fixture verifies
+creator/reviewer invites, authentication, ownership denial, clean manual approval,
+EICAR rejection, automatic signed catalog/package verification, revoke-to-404
+in0.549s and logout. EvidenceSHA
+fb4ef6183d3c80f92bc666e67e9a554f5aa9cfb7f16a025185334dca0425c8b9.
+This is no native-client/in-game or public-internet proof. Static withdrawal during
+refresh may return transient502; the fixture retries while no old fallback serves.
+Raw transport rejects conflicting lengths400, unsupported encoding501, oversized
+headers431, fixed/chunked16385-byte JSON413, with no completed backend requests.
+Exactly16384 chunked bytes pass; Content-Length plus chunked is normalized to one
+chunked body with Content-Length removed. EvidenceSHA
+53d829c6398a134ad26303a95f4f7463e9b31a0d57b38c6d5ed08716fe3cc1f9.
+Actual launchd restart, scaled128MiB memory cancellation and15s stalled heartbeat
+cancellation pass for both services after shared Supervisor extraction. Old
+guardian/Caddy children are reaped, scratch recovered, all temporary jobs unloaded.
+Publication evidenceSHAa4011223116e8029b23d0fbfb45a0b5780fc20bc85403663711259b5daa0d42d.
+Gateway evidenceSHA3a2619b4b3ee5eab5dd7a75e36d4dcce31ddd6acbc54dbe278e1ee282ec42ada.
+All keys and accounts are private disposable fixtures; no production endpoint
+was created. Administrator identity setup remains unverified, with no service
+user present at the last read-only check. Production system-domain supervision,
+TLS/internet, client-IP abuse accounting and full launcher/game release remain open.
+
 Static download confinement and scratch recovery (2026-11-14, source7c6d403c):
 CaddyServer now requires Mac Seatbelt with public snapshot/fixed Caddyfile/system
 runtime reads, writes only to a fresh private work directory, self-signals and
@@ -17,7 +49,7 @@ was rejected because it permitted a hostile bound outbound connection. Final
 native controls prove bound TCP connect, connectx and UDP sendto remain denied.
 Mac sandbox/live/managed/guardian suites34 pass; Windows common policy/scope100
 pass/23 POSIX skips. Source/context checks pass. Prior full identity source47bbae3b
-CI43674845729 is green; current source CI43677114580 is in progress.
+CI43674845729 is green; source7c6d403c CI43677114580 and gateway source519a6d84 CI43678593035 are green.
 Actual confined signed Caddy flow passes revocation to HTTP404 in0.606s,
 scan-error/recovery-barrier withdrawal, CLI startup, controller SIGKILL cleanup
 and crashed scratch recovery. EvidenceSHA

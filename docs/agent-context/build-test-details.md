@@ -2,7 +2,12 @@ test_gateway_service.py covers canonical origin/injection boundaries, refusal of
 repository/key settings or a gateway snapshot tree, managed health before server
 construction, origin-bound watchdog and interpreter/source-preserving agents.
 Publication service tests also exercise the extracted shared Supervisor. Actual
-Caddy/Gunicorn routing, framing/body limits and gateway confinement need live checks.
+Caddy/Gunicorn routing and native confinement have private-host acceptance.
+The optional actual-Mac Caddy transport test checks conflicting lengths, invalid
+transfer encoding, header limits, fixed/chunked JSON limits, boundary acceptance
+and removal of Content-Length when chunked framing is selected. It skips when
+Caddy is absent. Managed launchd restart/memory/stall evidence is in STATUS;
+these checks do not prove public HTTPS or a production deployment.
 
 test_public_sandbox.py covers scratch ownership, live-lease exclusion, released
 lease recovery, storage withdrawal, symlink-target preservation, and unknown-root
@@ -237,7 +242,7 @@ The Windows scene observer also refuses executable-only inputs without pak/xmv
 directories; a compiled game is not proof that playable data was provisioned.
 
 Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
-n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4…699996.
+n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4â€¦699996.
 The versioned cache and dated URL replace the mutable latest asset; checksum
 mismatch still stops setup. The archive was downloaded and matched upstream's
 published digest; Windows Setup completed. Other host adapters/runtime pin are

@@ -10,8 +10,11 @@ headers are controlled by the trusted gateway. JSON and ZIP body bounds differ.
 CaddyServer gateway role receives no snapshot/repository/key paths and its own
 sandbox permits only those two proxy destinations. mod_service_watch.Supervisor
 shares prior publication PID/origin-or-repository health, sampled RSS, fault and
-agent generation; publication adapters preserve existing contracts. Gateway
-integration/body/header/isolation acceptance remains required before deployment.
+agent generation; publication adapters preserve existing contracts. Actual private gateway routing, authenticated creator/reviewer flow, official
+ClamAV clean/EICAR decisions, signed publication/revocation and native isolation
+pass. Transport checks enforce header/framing/fixed/chunked body bounds. Actual
+managed gateway/publication restart, memory/stall cancellation and scratch
+recovery pass. Public TLS/internet and production identity still need acceptance.
 
 Public-server native canaries also prove process-environment denial against an
 owned ready native target with fabricated environment and a successful control.
