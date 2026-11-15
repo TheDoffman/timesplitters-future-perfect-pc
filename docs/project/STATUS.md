@@ -5,9 +5,16 @@ separate approve/revoke confirmation. Back sends no mutation; decisions bind the
 returned upload/digest/state. Authentication changes clear selections. The server
 retains role/fresh-clean-scan/audit enforcement. Windows full launcher checks pass
 (47.95s), including two new adversarial/dispatcher UI groups, existing creator
-checks and actual API creator403/moderator empty-queue checks. UI decisions use
-injected responses; no scan result or production review is fabricated. Native Mac
-validation is pending for this change. Public moderator acceptance, full source/
+checks and actual API creator403/moderator empty-queue checks. Source0ad7ec35 Mac
+build/test passes97 shared UI groups, actual backend mode and strict codesign;
+clean native build receiptSHA
+c62299bbaef90c0c117ef120d5a839fc64b9ff4313b6d5d3a5586d5ba4f1c010.
+The existing creator API/service suite passes42 tests. UI decisions use injected
+responses; no scan result or production review is fabricated. The read-only Mac
+game-prerequisite check remains unsuccessful: primary checkout Python3.13 target
+is missing; the older task root has linked installation paths. Neither checkout
+was altered to bypass those checks. New moderation Linux CI remains pending.
+Public moderator acceptance, full source/
 scan-evidence inspection, reports and production operation remain unfinished.
 Prior sourcec3911602 all3 native launcher and three-platform packaging CI jobs
 pass; broader runtime validation remains in progress. No public deployment.
