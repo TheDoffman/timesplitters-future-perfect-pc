@@ -59,6 +59,8 @@ the installed Python/Gunicorn child through the verified native lifetime guardia
 It checks root health while serving and publishes its heartbeat every5 seconds.
 The child receives fixed configuration and binds only127.0.0.1:8767; the existing
 trusted Gunicorn settings retain2 synchronous workers and bounded requests.
+The optional Gunicorn control socket is disabled; protected job control has a
+single fixed interface and no additional local management socket.
 The guardian has a3600-second deadline, and the parent retires after3300 seconds
 so launchd can renew the service. Parent death closes the private guardian pipe
 and stops/reaps the API process group. Root observation is an additional control,

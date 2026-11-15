@@ -17,3 +17,5 @@ errorlog = '-'
 capture_output = False
 umask = 0o077
 preload_app = False
+# All process control belongs to the protected fixed-job monitor.
+control_socket_disable = True

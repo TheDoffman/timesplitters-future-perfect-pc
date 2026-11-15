@@ -4,7 +4,7 @@ only fixed labels, numeric process state and bounded inert controller heartbeats
 configs/keys/signing/network stay UID600. Root health binds role/release/PID/UID;
 GUI-writable health cannot admit system workers. Generation checks config after
 dropping credentials and writes new-only plists after scan-monitor generation.
-API uses the guardian, existing fixed Gunicorn settings and bounded renewal.
+API uses the guardian, fixed Gunicorn settings (control socket off) and renewal.
 Details: ../development/system-host-supervision.md. Native child/auth/cleanup and
 file/control tests are registered in native
 CI; protected installation/lifecycle/boot/public deployment remain pending.

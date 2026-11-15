@@ -257,6 +257,7 @@ def test_actual_api_child_factory_auth_and_guardian_group_cleanup(tmp_path):
     subprocess.run([sys.executable,str(ROOT/'tools/build/build-scan-guardian.py')],capture_output=True,check=True,timeout=90)
     tmp_path.chmod(0o700)
     repository=Repository(tmp_path/'repository')
+    repository.root.chmod(0o700)
     accounts=Accounts(repository)
     password='Disposable API child fixture password!'
     token=accounts.redeem(accounts.create_invite('childfixture','creator'),password,'127.0.0.1')['token']
@@ -299,15 +300,21 @@ def test_actual_api_child_factory_auth_and_guardian_group_cleanup(tmp_path):
         assert status==200 and json.loads(body)==dict(username='childfixture',role='creator')
         assert request('/healthz',{'Host':'workshop.example.test:8443'})[0]==403
         assert request('/healthz',dict(headers,Host='other.example.test'))[0]==403
-        rows=subprocess.check_output(['/bin/ps','-A','-o','pid=,ppid='],text=True,timeout=3)
-        tree={process.pid}
-        values=[tuple(map(int,row.split())) for row in rows.splitlines()]
+        deadline=time.monotonic()+5
         while True:
-            new={pid for pid,parent in values if parent in tree}-tree
-            if not new:break
-            tree.update(new)
+            rows=subprocess.check_output(['/bin/ps','-A','-o','pid=,ppid='],text=True,timeout=3)
+            tree={process.pid}
+            values=[tuple(map(int,row.split())) for row in rows.splitlines()]
+            while True:
+                new={pid for pid,parent in values if parent in tree}-tree
+                if not new:break
+                tree.update(new)
+            if len(tree)>=4:break
+            assert time.monotonic()<deadline
+            time.sleep(.05)
         # Guardian, Gunicorn master and both configured sync workers.
         assert len(tree)==4
+        assert not (tmp_path/'.gunicorn').exists()
         tracked=sorted(tree)
     finally:
         if child is not None:child.kill();child.wait(timeout=10)
