@@ -212,12 +212,20 @@ def test_private_reports_target_prior_approval_and_do_not_mutate_release(service
     assert call(api, path='/v1/moderation/reports', token=token)['status'] == 403
     queue = call(api, path='/v1/moderation/reports', token=reviewer)['body']['reports']
     assert len(queue) == 1 and queue[0]['id'] == row['id']
+    linked = '/v1/moderation/by-digest/' + row['sha256']
+    assert call(api, path=linked, token=token)['status'] == 403
+    assert call(api, path=linked, token=reviewer)['body']['id'] == ticket['id']
+    assert call(api, path='/v1/moderation/by-digest/'+'f'*64, token=reviewer)['status'] == 404
+    assert call(api, path='/v1/moderation/report-history', token=token)['status'] == 403
     route = '/v1/moderation/reports/' + row['id']
     decision = dict(action='close', note='Investigated original fixture')
     assert call(api, 'POST', route, dict(action='approve', note='Not a release decision'), reviewer)['status'] == 400
     assert call(api, 'POST', route, decision, other)['status'] == 403
     assert call(api, 'POST', route, decision, reviewer)['body']['state'] == 'closed'
     assert call(api, path='/v1/moderation/reports', token=reviewer)['body'] == {'reports':[]}
+    history = call(api, path='/v1/moderation/report-history', token=reviewer)['body']['reports']
+    assert len(history) == 1 and history[0]['state'] == 'closed'
+    assert call(api, path='/v1/moderation/report-history', token=reviewer, QUERY_STRING='after='+str(row['cursor']))['body'] == {'reports':[]}
     assert call(api, path='/v1/reports', token=token)['body']['reports'][0]['resolution'] == decision['note']
     assert len(accounts.repository.catalog()) == 1
     assert call(api, 'POST', route, dict(action='reopen', note='Follow up requested'), reviewer)['body']['state'] == 'open'

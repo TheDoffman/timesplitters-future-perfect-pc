@@ -76,12 +76,13 @@ class Reports:
             self.accounts.audit(db, 'user:' + actor.username, 'report-created', report_id, sha + ': ' + reason)
             return self._row(db, report_id)
 
-    def list(self, actor, after=0, moderation=False):
+    def list(self, actor, after=0, moderation=False, history=False):
         demand(type(after) is int and 0 <= after <= 999999999, 400, 'Invalid report cursor')
+        demand(not history or moderation, 400, 'Report history requires moderation')
         with self.repository.db() as db:
             db.execute('BEGIN')
             actor = self.accounts.actor(db, actor, ('moderator','admin')) if moderation else self.accounts.actor(db, actor)
-            condition, values = ("state='open'", ()) if moderation else ('account_id=?', (actor.id,))
+            condition, values = ('1=1' if history else "state='open'", ()) if moderation else ('account_id=?', (actor.id,))
             rows = db.execute('SELECT id FROM workshop_reports WHERE ' + condition + ' AND sequence>? '
                               'ORDER BY sequence LIMIT ?', (*values, after, PAGE)).fetchall()
             return [self._row(db, row['id']) for row in rows]

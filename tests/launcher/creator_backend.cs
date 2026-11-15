@@ -204,6 +204,8 @@ public static class CreatorBackendChecks
                 var closed=reviewer.ResolveReport(incoming[0],"close","Reviewed original fixture; no package decision",CancellationToken.None).GetAwaiter().GetResult();
                 Need(closed.State=="closed" && player.Reports(0,false,CancellationToken.None).GetAwaiter().GetResult().Single().State=="closed","Reporter history did not receive moderator resolution.");
                 Need(reviewer.Reports(0,true,CancellationToken.None).GetAwaiter().GetResult().Length==0,"Closed report remained in the open moderation queue.");
+                Need(reviewer.Reports(0,true,CancellationToken.None,true).GetAwaiter().GetResult().Single().State=="closed","Moderator history lost the actual closed report.");
+                Need(reviewer.ReportedRelease(closed,CancellationToken.None).GetAwaiter().GetResult().Id==clean.Id,"Native report inspection selected another archived upload.");
                 Need(ModTrust.Array(backend.Observe(),"catalog",1).Length==1,"Reporting/resolution changed package availability.");
                 player.SignOut(CancellationToken.None).GetAwaiter().GetResult();
                 Console.WriteLine("PASS native reports: another player -> private real report -> moderator closure -> reporter status; catalog unchanged.");

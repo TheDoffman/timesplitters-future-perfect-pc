@@ -73,7 +73,7 @@ class WorkshopAPI:
         query = environ.get('QUERY_STRING','')
         cursor = 0
         if query:
-            demand(method == 'GET' and path in ('/v1/moderation','/v1/uploads','/v1/reports','/v1/moderation/reports') and len(query) <= 64,
+            demand(method == 'GET' and path in ('/v1/moderation','/v1/uploads','/v1/reports','/v1/moderation/reports','/v1/moderation/report-history') and len(query) <= 64,
                    400, 'Unsupported query')
             try:
                 parsed = parse_qs(query, strict_parsing=True, max_num_fields=1)
@@ -99,8 +99,8 @@ class WorkshopAPI:
         if path == '/v1/reports' and method == 'POST':
             data = self._json(environ, ('sha256','reason','description'))
             return 201, self.reports.create(actor, data['sha256'], data['reason'], data['description'])
-        if path in ('/v1/reports','/v1/moderation/reports') and method == 'GET':
-            return 200, {'reports': self.reports.list(actor, cursor, path == '/v1/moderation/reports')}
+        if path in ('/v1/reports','/v1/moderation/reports','/v1/moderation/report-history') and method == 'GET':
+            return 200, {'reports': self.reports.list(actor, cursor, path != '/v1/reports', path == '/v1/moderation/report-history')}
         match = re.fullmatch(r'/v1/moderation/reports/([0-9a-f]{32})', path)
         if match and method == 'POST':
             data = self._json(environ, ('action','note'))
@@ -127,6 +127,9 @@ class WorkshopAPI:
             return 202, self.uploads.receive(actor, match[1], environ['wsgi.input'], self._length(environ))
         if path == '/v1/moderation' and method == 'GET':
             return 200, {'uploads': self.uploads.reviews(actor, cursor)}
+        match = re.fullmatch(r'/v1/moderation/by-digest/([0-9a-f]{64})', path)
+        if match and method == 'GET':
+            return 200, self.uploads.review_by_digest(actor, match[1])
         match = re.fullmatch(r'/v1/moderation/([0-9a-f]{32})/evidence', path)
         if match and method == 'GET':
             return 200, self.uploads.evidence(actor, match[1])

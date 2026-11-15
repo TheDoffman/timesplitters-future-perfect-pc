@@ -1,3 +1,17 @@
+Native moderator report workflow (2026-11-15):
+The Creator page now shows role-gated open reports and full report history.
+Moderators inspect the exact digest-bound release through the existing scan/Lua/
+package-revocation view, then separately review and confirm a noted close/reopen.
+Back sends no decision; report decisions never change release approval. Selection
+clears on account changes and own history shows support reference IDs. New history
+and digest lookup APIs enforce moderator roles; the native client rejects changed
+digest/version and binds report cursor on resolution. Windows full checks pass102
+UI groups plus real normal backend (48.18s); API checks pass26/4 POSIX skips.
+New Mac/Linux UI validation, real user-Mac report/scanner/restore acceptance and
+matching host preparation remain pending. User-host disk remains below2GiB and
+the original administrator prompt remains unanswered. Broader public/SDK/game/
+recovery/release requirements are unchanged and unfinished.
+
 Private player reports (2026-11-15):
 Browse and same-workshop Installed receipts now open an exact-release report form,
 with sign-in, category/text review, explicit confirmation and own status history.

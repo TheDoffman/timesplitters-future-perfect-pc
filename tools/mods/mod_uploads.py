@@ -247,6 +247,16 @@ class Uploads:
                               "WHERE u.state='complete' AND u.rowid>? ORDER BY u.rowid LIMIT 100", (after,)).fetchall()
             return [dict(row) for row in rows]
 
+    def review_by_digest(self, actor, sha):
+        demand(isinstance(sha, str) and SHA.fullmatch(sha), 400, 'Invalid review digest')
+        with self.repository.db() as db:
+            self.accounts.actor(db, actor, ('moderator','admin'))
+            row = db.execute("SELECT u.rowid AS cursor,u.id,u.mod_id,u.version,u.sha256,r.state,r.manifest "
+                             "FROM workshop_uploads u JOIN releases r ON u.sha256=r.sha256 "
+                             "WHERE u.state='complete' AND u.sha256=?", (sha,)).fetchone()
+            demand(row is not None, 404, 'Completed review unavailable')
+            return dict(row)
+
     def evidence(self, actor, upload_id):
         """Role-gated bounded scan metadata; no raw scanner output or host paths."""
         self._path(upload_id, '.ready')

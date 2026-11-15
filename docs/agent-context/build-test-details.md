@@ -1,3 +1,9 @@
+Moderator-report tests add role-protected full history and exact-digest completed
+release lookup. Dispatcher UI checks note/review/Back/confirm, close/history/reopen,
+inspection without package mutations and sign-out cleanup; client checks reject
+changed digest/version and creator-role lookups. The opt-in real Mac mode checks
+closed history/linked release once storage permits; it remains an explicit gate.
+
 Report API tests cover prior approval/privacy/role/duplicate/cursor/rates (a capped
 account cannot drain global admission), audit
 rollback and nonmutation of release availability. Host backup/restore preserves

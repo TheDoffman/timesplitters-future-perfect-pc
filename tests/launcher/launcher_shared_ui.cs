@@ -351,6 +351,42 @@ public static class LauncherSharedUiChecks
     {return new Dictionary<string,object>{{"cursor",1L},{"id",new string('d',32)},{"sha256",plan.Sha256},{"mod_id",plan.Id},{"version",plan.Version},{"reporter","fixture-creator"},{"reason","other"},{"description","Original report for review"},{"created",WorkshopTrustChecks.Unix},{"updated",WorkshopTrustChecks.Unix},{"state","open"},{"resolution",""}};}
     static void CreatorChecks(string root)
     {
+        Test("reported release inspection rejects changed digests versions and creator roles",()=>{
+            string folder=Path.Combine(root,"reported-release-binding");CreatorConfig(folder);string zip=LibraryPackage(folder,"reported-lookup","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var report=new WorkshopReport(PlayerReport(plan));
+            foreach(string mode in new[]{"valid","digest","version","creator"}) {
+                int lookups=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role=mode=="creator"?"creator":"moderator"}});
+                    lookups++;Need(request.Method==System.Net.Http.HttpMethod.Get && request.RequestUri.AbsolutePath=="/v1/moderation/by-digest/"+plan.Sha256,"Reported release used an unexpected route");
+                    var row=ModeratorRow(zip,plan,"approved");if(mode=="digest")row["sha256"]=new string('f',64);if(mode=="version")row["version"]="2.0.0";return CreatorJson(row);
+                }),()=>WorkshopTrustChecks.Now)) {
+                    client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    if(mode=="valid")Need(client.ReportedRelease(report,System.Threading.CancellationToken.None).GetAwaiter().GetResult().Sha256==plan.Sha256,"Reported release lost its archive binding");else WorkshopReject(()=>client.ReportedRelease(report,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Unbound/unauthorized reported release accepted");
+                    Need(lookups==(mode=="creator"?0:1),"A creator sent an inspection request");
+                }
+            }
+        });
+        Test("moderator report UI inspects exact release and confirms close reopen without package decisions",()=>WithUiContext(()=>{
+            string folder=Path.Combine(root,"moderator-report-ui");CreatorConfig(folder);string zip=LibraryPackage(folder,"report-review","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int decisions=0,packageDecisions=0;string state="open",resolution="";
+            Func<Dictionary<string,object>> record=()=>{var row=PlayerReport(plan);row["state"]=state;row["resolution"]=resolution;row["updated"]=WorkshopTrustChecks.Unix+decisions;return row;};
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                string path=request.RequestUri.AbsolutePath;
+                if(path=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role="moderator"}});
+                if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                if(path=="/v1/moderation/reports" || path=="/v1/moderation/report-history")return CreatorJson(new {reports=state=="open" || path.EndsWith("report-history")?new[]{record()}:new Dictionary<string,object>[0]});
+                if(path=="/v1/moderation/by-digest/"+plan.Sha256)return CreatorJson(ModeratorRow(zip,plan,"approved"));
+                if(path.EndsWith("/evidence"))return CreatorJson(ModeratorScan(plan,"approved"));
+                if(path=="/v1/moderation/reports/"+new string('d',32) && request.Method==System.Net.Http.HttpMethod.Post){decisions++;var body=ModJson.Read(request.Content.ReadAsStringAsync().GetAwaiter().GetResult());state=ModTrust.Text(body,"action")=="close"?"closed":"open";resolution=ModTrust.Text(body,"note");return CreatorJson(record());}
+                if(request.Method==System.Net.Http.HttpMethod.Post)packageDecisions++;throw new Exception("Unexpected moderator report request");
+            }),()=>WorkshopTrustChecks.Now))using(var page=new ModCreatorPage(folder,false,client)) {
+                Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-password-not-a-real-account");Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="RefreshModeratorReports" && b.IsEnabled),"Report moderator sign-in did not finish");
+                Click(Find<Button>(page.View,"RefreshModeratorReports"));PumpUntil(()=>page.StatusText=="Moderator reports refreshed.","Open reports did not load");Click(Find<Button>(page.View,"ModeratorReport"+new string('d',32)));
+                Click(Find<Button>(page.View,"InspectReportedRelease"));PumpUntil(()=>page.StatusText.StartsWith("Reported release loaded"),"Reported release inspection did not finish");Need(All(page.View).OfType<TextBlock>().Any(t=>(t.Text??"").Contains(plan.Sha256)) && packageDecisions==0,"Report inspection changed a package");
+                Click(Find<Button>(page.View,"ReviewReportDecision"));Need(!All(page.View).OfType<Button>().Any(b=>b.Name=="ConfirmReportDecision"),"Blank resolution reached confirmation");Find<TextBox>(page.View,"ModeratorReportResolution").Text="Investigated original issue";Click(Find<Button>(page.View,"ReviewReportDecision"));Need(decisions==0,"Report review submitted early");Click(Find<Button>(page.View,"CancelReportDecision"));Need(decisions==0,"Report Back submitted a decision");Click(Find<Button>(page.View,"ReviewReportDecision"));Click(Find<Button>(page.View,"ConfirmReportDecision"));PumpUntil(()=>page.StatusText.StartsWith("Report decision recorded"),"Report close did not finish");Need(state=="closed" && decisions==1,"Report close duplicated or changed state");
+                Click(Find<Button>(page.View,"ModeratorReportHistory"));PumpUntil(()=>page.StatusText=="Moderator reports refreshed.","Report history did not load");Click(Find<Button>(page.View,"ModeratorReport"+new string('d',32)));Find<TextBox>(page.View,"ModeratorReportResolution").Text="Reopen for further review";Click(Find<Button>(page.View,"ReviewReportDecision"));Click(Find<Button>(page.View,"ConfirmReportDecision"));PumpUntil(()=>page.StatusText.StartsWith("Report decision recorded"),"Report reopen did not finish");Need(state=="open" && decisions==2 && packageDecisions==0,"Report reopen changed package decisions");
+                Click(Find<Button>(page.View,"CreatorSignOut"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignIn"),"Report moderator sign-out did not finish");Need(!All(page.View).OfType<Button>().Any(b=>b.Name=="RefreshModeratorReports"),"Sign-out retained moderator reports");
+            }
+        }));
         Test("player report receipts and private history bind release account state and cursor",()=>{
             string folder=Path.Combine(root,"player-report-client");CreatorConfig(folder);var plan=CreatorPackagePlan.Review(LibraryPackage(folder,"reported-demo","1.0.0",1),System.Threading.CancellationToken.None);
             foreach(string mode in new[]{"valid","digest","reporter","state","history-owner","duplicate"}) {

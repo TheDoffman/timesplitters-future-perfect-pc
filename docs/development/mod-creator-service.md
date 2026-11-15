@@ -61,9 +61,18 @@ One report/account/digest is retained; limits are5/account and200/global per day
 and10000 records before operator attention. Check history after an interrupted
 submission instead of retrying automatically. Drafts clear on account changes.
 
-The authenticated moderator API provides an open report queue and audited close/
-reopen decisions with mandatory notes. Native moderator report screens remain
-unfinished. Report history is included in private backups and preserved by
+Moderator/admin accounts see **Player reports** in the Creator tab. **Open reports**
+shows unresolved concerns; **Report history** includes closed reports. Select a
+report to read its reporter, issue, exact version/digest and previous resolution.
+**Inspect reported release** loads the digest-bound package's current scan/source
+review below, without changing its approval. Closing a report does not revoke a
+package; use the separate reviewed revocation action when appropriate.
+
+Enter a resolution note, review close/reopen and confirm. **Back** sends no
+decision. Refresh after an interrupted operation. Own report history shows its
+reference ID for support. Closed reports can be selected from moderator history
+and reopened after another confirmed review. History pages contain20 records and
+are restricted to moderator/admin accounts. Report history is included in private backups and preserved by
 recovery, whose authentication/publication barriers still apply. Reports never
 appear in public catalogs or package downloads. Public abuse/load acceptance and
 operator notification/staffing remain unfinished.

@@ -1,3 +1,15 @@
+Native moderator report controls now list open reports and20-row complete history,
+require note/review/confirm for close/reopen, and clear selections on auth changes.
+Inspect reported release uses role-gated GET /v1/moderation/by-digest/<sha>, binds
+ID/version/digest, then reuses existing scan/source/revocation review. It makes no
+package decision. GET /v1/moderation/report-history includes closed reports for
+moderator/admin only. Native resolution binds immutable cursor too; own report
+history shows the report ID for support. Cancel text now applies to all requests.
+API/UI tests cover roles/history/cursors, wrong lookup digest/version and confirmed
+close/Back/reopen/inspection without package mutations. Real Mac mode extends
+closed-history/linked-release checks, still unrun while user-host disk is low.
+Host source changed;6c candidate is historical until new matching preparation.
+
 mod_reports.py adds private authenticated reports for previously approved release
 digests, including now-revoked/withheld installed versions. One/account/digest,
 5/account and200/global per day; account admission runs first so capped accounts
@@ -9,7 +21,7 @@ workshop_reports and recovery retains report history while revoking auth.
 Native Report/Reports/ResolveReport bind identity/account/state/notes/cursors.
 Browse and same-origin Installed receipts open a confirmed report form in Creator;
 hashless examples/local/other-origin installs offer none. Drafts clear on account
-changes; no automatic retry. Native moderator report-screen work remains open.
+changes; no automatic retry. Moderator report UI is described above.
 API/UI/restore tests and actual Mac scanner mode cover another player's report,
 private status and moderator closure with the catalog unchanged. Host API/module
 source changed; matching6c0a5caf46-source bundle is frozen/plan-verified. Native UI
