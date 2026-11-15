@@ -1,3 +1,28 @@
+Native creator-to-scanner acceptance (2026-11-15, source4a933431):
+The native creator client now submits SDK-built original packages through the real
+WorkshopAPI/Accounts/Uploads backend into the real isolated Mac ClamAV queue.
+This acceptance uses private pipes, not public HTTPS. All8 scan observations pass:
+clean->pending-review, harmless EICAR->rejected, empty official definitions and
+missing engine each retry twice then reach scan-error after the third attempt.
+Each state/digest/error is reread through native history. The catalog stays empty,
+quarantine download attempts return404, and nothing is approved/installed/enabled.
+The accepted runtime's3339-file/link inventory including its receipt and official
+definition hashes/inodes/sizes/mtimes are unchanged after the run. AcceptanceSHA
+d4d2d96a037aa92db5444b2be6ca15ef9c025c373ba7dd02d90d17231216b225.
+A bad pinned-runtime configuration returns controlled exit1, no helper child and
+no leftover fixture; acceptanceSHA
+e618ea8c5f29f22378616481ca7fbaeda45e4d44d1da33c3109deb9aa398ba96.
+An initial wrapper JSON-decoding error and abrupt test exit were corrected; the
+failed receipt is retained and its verified24-file fixture was inventoried before
+targeted removal. Production state, scanner inputs and definitions were preserved.
+Windows full launcher checks and real backend mode pass; native Mac passes95 UI
+groups, real backend mode and strict signatures. All3 launcher/package CI jobs at
+6d467fa4 pass and its complete PR validation is green; latest4a CI is pending.
+The Mac administrator diagnostic still awaits the original native sudo prompt.
+Root600 deployment, production keys/public HTTPS, full creator-to-game acceptance,
+remaining content/SDK/credential-vault/moderation/reporting work and release are
+incomplete. These component checks do not complete the full mod-platform goal.
+
 Launcher dependency activation and update discovery (2026-11-15, source42567c4f):
 Installed Enable now reviews its exact installed dependency closure, preserving
 unrelated active mods and showing replaced versions before one profile change.
