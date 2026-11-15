@@ -1,3 +1,20 @@
+Private player reports (2026-11-15):
+Browse and same-workshop Installed receipts now open an exact-release report form,
+with sign-in, category/text review, explicit confirmation and own status history.
+Hashless examples/local/other-origin installs offer no report. The API accepts
+only previously approved digests, including later withdrawn versions; reports
+are private to the reporter and moderator/admin open queue. Close/reopen notes
+and report creation are audited transactionally without changing release state.
+One/account/digest,5/account and200/global per day,10000 retained records and20-row
+pages bound storage/responses. Backup inventory admits and preserves report rows
+behind normal recovery/auth barriers. Windows full launcher checks pass100 UI
+groups plus backend mode (48.45s); initial API/service/backup selection passes47
+tests with20 POSIX skips, and final API-only checks pass26/4 POSIX skips. Mac real
+report/backup acceptance is pending. Native moderator report screens, public
+abuse/load/notification/staffing acceptance remain unfinished. Source9605bd88 full
+CI run43754535207 is complete/green. New hosting source needs a matching46-file
+freeze; the older30fa candidate lacks reports. Production remains inactive.
+
 Native Lua source inspection (2026-11-15):
 Moderators can request declared Lua source from completed jobs through an exact
 archive-digest binding. The backend uses a nonblocking/nofollow regular-file open,

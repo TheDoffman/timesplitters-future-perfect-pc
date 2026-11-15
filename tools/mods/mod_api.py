@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlsplit
 from mod_accounts import Accounts, ServiceError, demand
 from mod_package import ModError, read_json
 from mod_repository import Repository
+from mod_reports import Reports
 from mod_uploads import Uploads
 
 MAX_JSON = 16384
@@ -27,6 +28,7 @@ class WorkshopAPI:
         self.scheme = parsed.scheme
         self.accounts = accounts
         self.uploads = uploads if uploads is not None else Uploads(accounts)
+        self.reports = Reports(accounts)
 
     @staticmethod
     def _length(environ):
@@ -71,7 +73,7 @@ class WorkshopAPI:
         query = environ.get('QUERY_STRING','')
         cursor = 0
         if query:
-            demand(method == 'GET' and path in ('/v1/moderation','/v1/uploads') and len(query) <= 64,
+            demand(method == 'GET' and path in ('/v1/moderation','/v1/uploads','/v1/reports','/v1/moderation/reports') and len(query) <= 64,
                    400, 'Unsupported query')
             try:
                 parsed = parse_qs(query, strict_parsing=True, max_num_fields=1)
@@ -94,6 +96,15 @@ class WorkshopAPI:
             result['account'] = self._identity(self.accounts.authenticate(result['token']))
             return 200, result
         actor = self._actor(environ)
+        if path == '/v1/reports' and method == 'POST':
+            data = self._json(environ, ('sha256','reason','description'))
+            return 201, self.reports.create(actor, data['sha256'], data['reason'], data['description'])
+        if path in ('/v1/reports','/v1/moderation/reports') and method == 'GET':
+            return 200, {'reports': self.reports.list(actor, cursor, path == '/v1/moderation/reports')}
+        match = re.fullmatch(r'/v1/moderation/reports/([0-9a-f]{32})', path)
+        if match and method == 'POST':
+            data = self._json(environ, ('action','note'))
+            return 200, self.reports.moderate(actor, match[1], data['action'], data['note'])
         if path == '/v1/account' and method == 'GET':
             return 200, self._identity(actor)
         if path == '/v1/sessions/current' and method == 'DELETE':

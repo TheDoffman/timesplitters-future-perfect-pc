@@ -24,7 +24,7 @@ MANIFEST = 'backup.json'
 BARRIER = '.recovery-required'
 TABLES = {'releases', 'events', 'workshop_accounts', 'workshop_invites',
           'workshop_sessions', 'workshop_rate', 'workshop_audit',
-          'workshop_owners', 'workshop_uploads', 'publication_sequence', 'recovery_revocations', 'periodic_scans'}
+          'workshop_owners', 'workshop_uploads', 'workshop_reports', 'publication_sequence', 'recovery_revocations', 'periodic_scans'}
 
 
 def private_directory(path):

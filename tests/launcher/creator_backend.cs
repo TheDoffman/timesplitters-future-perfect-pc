@@ -195,6 +195,19 @@ public static class CreatorBackendChecks
             var catalog=ModTrust.Array(backend.Observe(),"catalog",1);Need(catalog.Length==1 && catalog[0] is string && (string)catalog[0]==clean.Sha256,"Approval exposed a different/unsafe package.");
             Need(backend.Probe("/v1/packages/"+clean.Sha256,backend.LastBearer)==404,"The private API became a package download service.");
             Console.WriteLine("PASS native moderation: real clean scan -> native approval -> exact repository catalog/blob; no public download route.");
+            using(var player=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>DateTimeOffset.FromUnixTimeSeconds(backend.Unix).UtcDateTime)) {
+                player.Redeem(backend.OtherInvitation,"Disposable native player report password!",CancellationToken.None).GetAwaiter().GetResult();
+                var report=player.Report(clean.Sha256,"broken","Original synthetic report for moderator acceptance",CancellationToken.None).GetAwaiter().GetResult();
+                Need(report.Sha256==clean.Sha256 && report.Reporter==player.Username,"Actual report targeted another package/account.");
+                Need(creator.Reports(0,false,CancellationToken.None).GetAwaiter().GetResult().Length==0,"Report privacy leaked another account's submission.");
+                var incoming=reviewer.Reports(0,true,CancellationToken.None).GetAwaiter().GetResult();Need(incoming.Length==1 && incoming[0].Id==report.Id,"Moderator did not receive the real player report.");
+                var closed=reviewer.ResolveReport(incoming[0],"close","Reviewed original fixture; no package decision",CancellationToken.None).GetAwaiter().GetResult();
+                Need(closed.State=="closed" && player.Reports(0,false,CancellationToken.None).GetAwaiter().GetResult().Single().State=="closed","Reporter history did not receive moderator resolution.");
+                Need(reviewer.Reports(0,true,CancellationToken.None).GetAwaiter().GetResult().Length==0,"Closed report remained in the open moderation queue.");
+                Need(ModTrust.Array(backend.Observe(),"catalog",1).Length==1,"Reporting/resolution changed package availability.");
+                player.SignOut(CancellationToken.None).GetAwaiter().GetResult();
+                Console.WriteLine("PASS native reports: another player -> private real report -> moderator closure -> reporter status; catalog unchanged.");
+            }
             reviewer.Moderate(approved,"revoke",revocation,CancellationToken.None).GetAwaiter().GetResult();
             Need(reviewer.Reviews(0,CancellationToken.None).GetAwaiter().GetResult().Single(row=>row.Id==clean.Id).State=="revoked","Revocation did not reach native review history.");
             Need(creator.History(0,CancellationToken.None).GetAwaiter().GetResult().Single(row=>row.Id==clean.Id).State=="revoked","Creator history hid revocation.");

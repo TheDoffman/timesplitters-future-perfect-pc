@@ -44,6 +44,30 @@ EICAR rejection and fail-closed scanner errors, including exhausted retry status
 in the native client. It never approves or exposes the fixture packages. This
 private-pipe acceptance is separate from public HTTPS and in-game acceptance.
 
+## Player reports
+
+Choose **Report release** on a Browse card, or on a same-workshop Installed version
+even if it has left the current catalog. Local/unbound/other-workshop packages
+are not sent to this host. The Creator page shows the selected ID/version/digest.
+Sign in, select a category and describe the issue, then review and confirm before
+sending. **Back** sends nothing. Workshop accounts currently require an operator
+invitation; reporting does not require owning or uploading a mod.
+
+Reports stay private to the reporter and moderators. **Refresh your reports**
+shows open/closed status and the moderator's resolution, with20 records per page.
+Reports and resolutions do not approve/revoke packages or alter installed files.
+Only previously approved digests are reportable, including later withdrawn ones.
+One report/account/digest is retained; limits are5/account and200/global per day,
+and10000 records before operator attention. Check history after an interrupted
+submission instead of retrying automatically. Drafts clear on account changes.
+
+The authenticated moderator API provides an open report queue and audited close/
+reopen decisions with mandatory notes. Native moderator report screens remain
+unfinished. Report history is included in private backups and preserved by
+recovery, whose authentication/publication barriers still apply. Reports never
+appear in public catalogs or package downloads. Public abuse/load acceptance and
+operator notification/staffing remain unfinished.
+
 ## Native moderation
 
 Moderator and administrator accounts see a **Moderation** section inside the

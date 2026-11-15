@@ -347,8 +347,48 @@ public static class LauncherSharedUiChecks
         Find<PasswordBox>(view,name).Password=secret;
 #endif
     }
+    static Dictionary<string,object> PlayerReport(CreatorPackagePlan plan)
+    {return new Dictionary<string,object>{{"cursor",1L},{"id",new string('d',32)},{"sha256",plan.Sha256},{"mod_id",plan.Id},{"version",plan.Version},{"reporter","fixture-creator"},{"reason","other"},{"description","Original report for review"},{"created",WorkshopTrustChecks.Unix},{"updated",WorkshopTrustChecks.Unix},{"state","open"},{"resolution",""}};}
     static void CreatorChecks(string root)
     {
+        Test("player report receipts and private history bind release account state and cursor",()=>{
+            string folder=Path.Combine(root,"player-report-client");CreatorConfig(folder);var plan=CreatorPackagePlan.Review(LibraryPackage(folder,"reported-demo","1.0.0",1),System.Threading.CancellationToken.None);
+            foreach(string mode in new[]{"valid","digest","reporter","state","history-owner","duplicate"}) {
+                int submissions=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(CreatorLogin());
+                    var row=PlayerReport(plan);
+                    if(request.Method==System.Net.Http.HttpMethod.Post) {submissions++;if(mode=="digest")row["sha256"]=new string('f',64);if(mode=="reporter")row["reporter"]="another-account";if(mode=="state")row["state"]="closed";return CreatorJson(row,201);}
+                    if(mode=="history-owner")row["reporter"]="another-account";
+                    return CreatorJson(new {reports=mode=="duplicate"?new[]{row,row}:new[]{row}});
+                }),()=>WorkshopTrustChecks.Now)) {
+                    client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    Action create=()=>client.Report(plan.Sha256,"other","Original report for review",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    if(new[]{"digest","reporter","state"}.Contains(mode))WorkshopReject(create,"Forged report receipt accepted");else {create();if(mode=="valid")Need(client.Reports(0,false,System.Threading.CancellationToken.None).GetAwaiter().GetResult().Length==1,"Own report disappeared");else WorkshopReject(()=>client.Reports(0,false,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Private/duplicate report history accepted");}
+                    Need(submissions==1,"Report creation retried automatically");
+                    WorkshopReject(()=>client.Reports(0,true,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"A creator listed moderator reports");
+                }
+            }
+        });
+        Test("player report UI reviews exact release and sends only after confirmation",()=>WithUiContext(()=>{
+            string folder=Path.Combine(root,"player-report-ui");CreatorConfig(folder);var plan=CreatorPackagePlan.Review(LibraryPackage(folder,"reported-ui","1.0.0",1),System.Threading.CancellationToken.None);int submissions=0;
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(CreatorLogin());
+                if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                if(request.Method==System.Net.Http.HttpMethod.Post){submissions++;var body=ModJson.Read(request.Content.ReadAsStringAsync().GetAwaiter().GetResult());Need(ModTrust.Text(body,"sha256")==plan.Sha256 && ModTrust.Text(body,"description")=="Original report for review","Report changed reviewed release/text");return CreatorJson(PlayerReport(plan),201);}
+                return CreatorJson(new {reports=new[]{PlayerReport(plan)}});
+            }),()=>WorkshopTrustChecks.Now))using(var page=new ModCreatorPage(folder,false,client)) {
+                page.BeginReport(plan.Id,plan.Version,plan.Sha256);Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-password-not-a-real-account");Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignOut"),"Report sign-in did not finish");
+                Find<TextBox>(page.View,"PlayerReportDescription").Text="Original report for review";Click(Find<Button>(page.View,"ReviewPlayerReport"));Need(submissions==0,"Review sent a report");Click(Find<Button>(page.View,"CancelPlayerReport"));Need(submissions==0,"Back sent a report");Click(Find<Button>(page.View,"ReviewPlayerReport"));Click(Find<Button>(page.View,"ConfirmPlayerReport"));PumpUntil(()=>page.StatusText.StartsWith("Report recorded"),"Report submission did not return to UI");Need(submissions==1 && Find<TextBox>(page.View,"PlayerReportDescription").Text=="","Report duplicated or retained submitted draft");
+                Click(Find<Button>(page.View,"RefreshPlayerReports"));PumpUntil(()=>page.StatusText=="Report status refreshed.","Report history did not return to UI");Need(!Directory.Exists(Path.Combine(folder,"Mods")),"Reporting installed or enabled a package");
+            }
+            using(var workshop=new ModWorkshopPage(root,true)){Need(All(workshop.View).OfType<Button>().Where(b=>b.Name=="ReportModRelease").All(b=>!b.IsEnabled),"Hashless interface examples offered a report");workshop.SetReleases(new[]{new WorkshopRelease {Id=plan.Id,Version=plan.Version,Sha256=plan.Sha256,Name="Original report fixture",Author="fixture-creator",Description="Synthetic interface fixture"}});Click(All(workshop.View).OfType<Button>().First(b=>b.Name=="ReportModRelease"));Need(All(workshop.View).OfType<Button>().Any(b=>b.Name=="ReviewPlayerReport"),"Browse did not open the bound report form");}
+            string installedRoot=Path.Combine(root,"report-installed");CreatorConfig(installedRoot);var library=new ModLibrary(installedRoot,()=>false,()=>WorkshopTrustChecks.Now);
+            using(var signed=new ModWorkshopClient(new WorkshopHandler(request=>WorkshopTrustChecks.Response(request.RequestUri.AbsolutePath=="/v1/catalog"?"catalog1":"metadata1")),installedRoot,()=>WorkshopTrustChecks.Now))signed.Read(WorkshopTrustChecks.Origin,System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+            string remoteZip=Path.Combine(installedRoot,"original-signed-fixture.zip");File.WriteAllBytes(remoteZip,WorkshopTrustChecks.Bytes("package"));var remote=library.Install(remoteZip,WorkshopTrustChecks.Sha,System.Threading.CancellationToken.None,workshopOrigin:WorkshopTrustChecks.Origin);
+            string localZip=LibraryPackage(installedRoot,"local-unbound","1.0.0",1);library.Install(localZip,Core.Hash(localZip),System.Threading.CancellationToken.None);
+            using(var workshop=new ModWorkshopPage(installedRoot,false,new ModWorkshopClient(new WorkshopHandler(_=>{throw new Exception("Installed report selection accessed the network");})))){Click(workshop.InstalledTab);var buttons=All(workshop.View).OfType<Button>().Where(b=>b.Name=="ReportInstalledMod").ToArray();Need(buttons.Length==1,"Installed reporting lost origin binding");Click(buttons[0]);Need(All(workshop.View).OfType<TextBlock>().Any(t=>(t.Text??"").Contains(remote.Id+" @ "+remote.Version)),"Installed reporting selected another release");Need(library.Enabled().Length==0 && library.List().Length==2,"Report selection changed installed/active mods");}
+        }));
         Test("moderator source preview binds bytes path offsets manifest and role",()=>{
             string folder=Path.Combine(root,"moderator-source");CreatorConfig(folder);string zip=LibraryPackage(folder,"source-demo","1.0.0",1,script:true);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var review=new ModeratorUpload(ModeratorRow(zip,plan));
             foreach(string mode in new[]{"valid","digest","path","offset","body","creator","cancel"}) {

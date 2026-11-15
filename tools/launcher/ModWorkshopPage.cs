@@ -399,9 +399,13 @@ namespace TimeSplitters.Launcher
                 button.Click+=async(s,e)=>await Download(release);card.Children.Add(button);
                 var install=new Button {Name="InstallMod",Content="Install package",IsEnabled=stop==null,Margin=new Thickness(0,8,0,0)};
                 AutomationProperties.SetName(install,"Install "+release.Name+" "+release.Version);install.Click+=async(s,e)=>await PrepareInstall(release);card.Children.Add(install);
+                var report=new Button {Name="ReportModRelease",Content="Report release",IsEnabled=stop==null && release.Sha256!=null && Regex.IsMatch(release.Sha256,@"\A[0-9a-f]{64}\z"),Margin=new Thickness(0,8,0,0)};
+                AutomationProperties.SetName(report,"Report "+release.Name+" "+release.Version);report.Click+=(s,e)=>OpenReport(release.Id,release.Version,release.Sha256);card.Children.Add(report);
             }
             if(VisibleCount==0)results.Children.Add(PageTheme.Text(releases.Length==0?"Approved mods will appear here when the workshop is available.":"No mods match your search.",14,"#B4C7D8"));
         }
+        void OpenReport(string id,string version,string sha)
+        {pendingEnable=null;pendingPlan=null;creatorTab=true;if(creator==null)creator=new ModCreatorPage(root,preview);creator.BeginReport(id,version,sha);ResetPage();}
         void RenderPlan()
         {
             var plan=pendingPlan;var selected=plan.Ordered.Last();
@@ -431,6 +435,7 @@ namespace TimeSplitters.Launcher
             try {
                 string[] enabled=library.Enabled();
                 var installed=library.List();string authority=String.IsNullOrEmpty(service)?"":ServiceUriOrigin(service);
+                string reportAuthority=authority;if(reportAuthority.Length==0)try{reportAuthority=ServiceUriOrigin(ModWorkshopClient.Service(root));}catch{}
                 results.Children.Add(PageTheme.Text("Check for updates to read the workshop's latest reviewed releases. Updating keeps the current version installed and enabled until you review a switch.",13,"#B4C7D8"));
                 foreach(var mod in installed.Where(m=>(m.Id+" "+m.Name+" "+m.Author+" "+m.Description).IndexOf(query,StringComparison.OrdinalIgnoreCase)>=0)) {
                     VisibleCount++;var card=PageTheme.Section(results,mod.Name+"  "+mod.Version,mod.Description);bool active=enabled.Contains(mod.Key);
@@ -440,6 +445,10 @@ namespace TimeSplitters.Launcher
                     toggle.Click+=async(s,e)=>{if(active)await ChangeLibrary(token=>library.Disable(mod.Key,token),"Mod disabled. Other files were preserved.");else await PrepareEnable(mod.Key);};actions.Children.Add(toggle);
                     var remove=new Button {Name="UninstallMod",Content="Uninstall",IsEnabled=stop==null && !active,Margin=new Thickness(0,12,10,0)};
                     remove.Click+=async(s,e)=>await ChangeLibrary(token=>library.Uninstall(mod.Key),"Mod version uninstalled. Game files, settings and saves were preserved.");actions.Children.Add(remove);
+                    if(reportAuthority.Length>0 && mod.WorkshopOrigin==reportAuthority) {
+                        var report=new Button {Name="ReportInstalledMod",Content="Report release",IsEnabled=stop==null,Margin=new Thickness(0,12,10,0)};
+                        report.Click+=(s,e)=>OpenReport(mod.Id,mod.Version,mod.Sha256);actions.Children.Add(report);
+                    }
                     var update=WorkshopRelease.UpdateFor(mod,releases,installed,authority);
                     if(update!=null) {
                         card.Children.Add(PageTheme.Text("Update available: "+update.Version+". Review its required packages before downloading.",13,"#A7D9FA"));

@@ -1,3 +1,10 @@
+Report API tests cover prior approval/privacy/role/duplicate/cursor/rates, audit
+rollback and nonmutation of release availability. Host backup/restore preserves
+report history behind recovery/auth barriers. Native tests bind receipt/history
+identity, explicit confirm/Back, origin-bound Installed targets and hashless
+preview refusal. Real Mac mode checks another player's report/closure/status while
+the genuinely scanned/approved release stays available until separate revocation.
+
 Source-preview API tests verify role/unscanned/hash/path refusal, UTF-8 page
 boundaries and reassembly, corrupted stored archives and persistent rate limits.
 Native checks bind exact source metadata/bytes and render hidden bidi escapes;

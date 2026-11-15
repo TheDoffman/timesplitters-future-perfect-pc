@@ -51,6 +51,23 @@ def reconciliation(path, floor=12, revoked=()):
     return path
 
 
+def test_report_history_survives_private_restore_with_auth_revoked(host, tmp_path):
+    from mod_reports import Reports
+    repository, accounts, _, token, sha, _, _ = host
+    report = Reports(accounts).create(accounts.authenticate(token), sha, 'broken', 'Original private recovery fixture')
+    destination, recovered = tmp_path / 'report-backup', tmp_path / 'report-restore'
+    snapshot(repository.root, destination)
+    restore(destination, recovered)
+    restored = Repository(recovered)
+    with restored.db() as db:
+        row = db.execute('SELECT id,sha256,description,state FROM workshop_reports').fetchone()
+        assert tuple(row) == (report['id'],sha,'Original private recovery fixture','open')
+        assert not db.execute('SELECT 1 FROM workshop_sessions').fetchone()
+    assert (recovered / BARRIER).is_file()
+    with pytest.raises(ModError):
+        restored.catalog()
+
+
 def test_snapshot_restore_preserves_bytes_ownership_and_history_but_not_auth(host, tmp_path):
     repository, accounts, uploads, token, sha, upload_id, pending = host
     accounts.create_invite('not-yet-redeemed')

@@ -114,6 +114,20 @@ namespace TimeSplitters.Launcher
             }return output.ToString();
         }
     }
+    public sealed class WorkshopReport
+    {
+        public readonly string Id,Sha256,ModId,Version,Reporter,Reason,Description,State,Resolution;
+        public readonly long Cursor,Created,Updated;
+        internal WorkshopReport(Dictionary<string,object> data)
+        {
+            ModTrust.Fields(data,"cursor id sha256 mod_id version reporter reason description created updated state resolution");
+            Id=CreatorUpload.Text(data,"id",32);Sha256=CreatorUpload.Text(data,"sha256",64);ModId=CreatorUpload.Text(data,"mod_id",80);Version=CreatorUpload.Text(data,"version",32);Reporter=CreatorUpload.Text(data,"reporter",32);
+            ModTrust.Need(Regex.IsMatch(Id,@"\A[0-9a-f]{32}\z") && Regex.IsMatch(Sha256,@"\A[0-9a-f]{64}\z") && Regex.IsMatch(ModId,@"\A[a-z][a-z0-9]*(?:-[a-z0-9]+)*\z") && Regex.IsMatch(Version,@"\A(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\z") && Regex.IsMatch(Reporter,@"\A[a-z][a-z0-9-]{2,31}\z"),"invalid report identity.");
+            Cursor=ModTrust.Number(data,"cursor",1,999999999);Created=ModTrust.Number(data,"created",0,253402300799);Updated=ModTrust.Number(data,"updated",Created,253402300799);
+            Reason=CreatorUpload.Text(data,"reason",16);Description=CreatorUpload.Text(data,"description",1000);State=CreatorUpload.Text(data,"state",16);Resolution=CreatorUpload.Text(data,"resolution",1800);
+            ModTrust.Need(new[]{"malware","broken","policy","other"}.Contains(Reason) && new[]{"open","closed"}.Contains(State) && Description.Trim().Length>0 && (State!="closed" || Resolution.Trim().Length>0),"invalid report content.");
+        }
+    }
     // Passwords and bearer sessions stay in memory. No cookies, redirect,
     // credential files, diagnostic payloads or automatic upload retries.
     public sealed class ModCreatorClient : IDisposable
@@ -147,7 +161,7 @@ namespace TimeSplitters.Launcher
                 using(var response=await http.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,cancel).ConfigureAwait(false)) {
                     int code=(int)response.StatusCode;
                     if(code==401)Forget();
-                    Core.Require(code==expected,code==401?"Sign in again to use the creator workshop.":code==403?"This workshop action is not allowed for this account.":code==409?"The package identity, version or ownership conflicts with an existing upload.":code==429?"The workshop request limit was reached. Wait before trying again.":"The workshop could not complete this request (HTTP "+code+"). Refresh upload status before retrying.");
+                    Core.Require(code==expected,code==401?"Sign in again to use the creator workshop.":code==403?"This workshop action is not allowed for this account.":code==409?"The request conflicts with an existing item or changed status. Refresh its workshop status before retrying.":code==429?"The workshop request limit was reached. Wait before trying again.":"The workshop could not complete this request (HTTP "+code+"). Refresh workshop status before retrying.");
                     if(code==204)return null;
                     Core.Require(response.Content!=null && response.Content.Headers.ContentType!=null && response.Content.Headers.ContentType.MediaType=="application/json","Invalid creator response format.");
                     const int maximum=512*1024;
@@ -253,6 +267,39 @@ namespace TimeSplitters.Launcher
                 ModTrust.Need(CreatorUpload.Text(response,"id",32)==review.Id && CreatorUpload.Text(response,"sha256",64)==review.Sha256 && CreatorUpload.Text(response,"state",32)==(action=="approve"?"approved":"revoked"),"moderation result differs from the reviewed decision. Refresh the review queue before retrying.");
             }finally{gate.Release();}
         }
+        public async Task<WorkshopReport> Report(string sha,string reason,string description,CancellationToken cancel)
+        {
+            Core.Require(sha!=null && Regex.IsMatch(sha,@"\A[0-9a-f]{64}\z") && new[]{"malware","broken","policy","other"}.Contains(reason),"Select a release and report category.");
+            description=(description??"").Trim();Core.Require(description.Length>0 && description.Length<=1000 && !description.Any(Char.IsControl),"Enter a report of 1 to 1000 characters without control characters.");
+            await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                var result=new WorkshopReport(await Request(HttpMethod.Post,"v1/reports",JsonBody(new {sha256=sha,reason=reason,description=description}),201,true,cancel).ConfigureAwait(false));
+                ModTrust.Need(result.Sha256==sha && result.Reporter==Username && result.Reason==reason && result.Description==description && result.State=="open" && result.Resolution=="","report receipt differs from the submitted release. Refresh reports before retrying.");return result;
+            }finally{gate.Release();}
+        }
+        public async Task<WorkshopReport[]> Reports(long after,bool moderation,CancellationToken cancel)
+        {
+            Core.Require(after>=0 && after<=999999999,"Invalid report cursor.");await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(!moderation || CanModerate,"Sign in with a moderator account to review reports.");
+                var response=await Request(HttpMethod.Get,(moderation?"v1/moderation/reports":"v1/reports")+"?after="+after.ToString(System.Globalization.CultureInfo.InvariantCulture),null,200,true,cancel).ConfigureAwait(false);
+                ModTrust.Fields(response,"reports");var result=new List<WorkshopReport>();var ids=new HashSet<string>();long previous=after;
+                foreach(var value in ModTrust.Array(response,"reports",20)) {
+                    var data=value as Dictionary<string,object>;ModTrust.Need(data!=null,"invalid report history.");var row=new WorkshopReport(data);
+                    ModTrust.Need(row.Cursor>previous && ids.Add(row.Id) && (moderation?row.State=="open":row.Reporter==Username),"unexpected report ownership/state/order.");previous=row.Cursor;result.Add(row);
+                }return result.ToArray();
+            }finally{gate.Release();}
+        }
+        public async Task<WorkshopReport> ResolveReport(WorkshopReport report,string action,string note,CancellationToken cancel)
+        {
+            Core.Require(report!=null && (action=="close" || action=="reopen"),"Invalid report decision.");note=(note??"").Trim();Core.Require(note.Length>0 && note.Length<=1800 && !note.Any(Char.IsControl),"Enter a resolution note of 1 to 1800 characters.");
+            await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanModerate,"Sign in with a moderator account to resolve reports.");
+                var result=new WorkshopReport(await Request(HttpMethod.Post,"v1/moderation/reports/"+report.Id,JsonBody(new {action=action,note=note}),200,true,cancel).ConfigureAwait(false));
+                ModTrust.Need(result.Id==report.Id && result.Sha256==report.Sha256 && result.Reporter==report.Reporter && result.ModId==report.ModId && result.Version==report.Version && result.Description==report.Description && result.Reason==report.Reason && result.Created==report.Created && result.State==(action=="close"?"closed":"open") && result.Resolution==note,"report resolution differs from the reviewed record. Refresh reports before retrying.");return result;
+            }finally{gate.Release();}
+        }
         public void Dispose(){Forget();http.Dispose();}
     }
 
@@ -263,6 +310,8 @@ namespace TimeSplitters.Launcher
         readonly TextBox package=new TextBox {Name="CreatorPackagePath",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reviewNote=new TextBox {Name="ModeratorNote",MaxLength=1800,MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly ComboBox sourceFiles=new ComboBox {Name="ModeratorSourceFile",MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        readonly ComboBox reportReason=new ComboBox {Name="PlayerReportReason",MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        readonly TextBox reportDescription=new TextBox {Name="PlayerReportDescription",MaxLength=1000,MinWidth=260,Margin=new Thickness(0,6,0,8)};
 #if MACOS || LINUX
         readonly TextBox password=new TextBox {Name="CreatorPassword",PasswordChar='\u25cf',Margin=new Thickness(0,6,0,8)};
         readonly TextBox invitation=new TextBox {Name="CreatorInvitation",PasswordChar='\u25cf',Margin=new Thickness(0,6,0,8)};
@@ -282,9 +331,17 @@ namespace TimeSplitters.Launcher
         ModeratorUpload[] reviews=new ModeratorUpload[0];ModeratorUpload selectedReview;string decision,decisionNote;
         ModeratorEvidence scanEvidence;
         ModeratorSourcePage sourcePage;
+        string reportSha,reportModId,reportVersion,reportDraftReason,reportDraftText;WorkshopReport[] reports=new WorkshopReport[0];
         public string StatusText {get{return status.Text;}}
         public ModCreatorPage(string root,bool preview=false):this(root,preview,null){}
-        internal ModCreatorPage(string root,bool preview,ModCreatorClient client){this.root=root;this.preview=preview;this.client=client;AutomationProperties.SetName(username,"Workshop username");AutomationProperties.SetName(password,"Workshop password");AutomationProperties.SetName(invitation,"Workshop invitation");AutomationProperties.SetName(package,"Mod ZIP file path");status.Margin=new Thickness(0,0,0,12);Render();}
+        internal ModCreatorPage(string root,bool preview,ModCreatorClient client){this.root=root;this.preview=preview;this.client=client;AutomationProperties.SetName(username,"Workshop username");AutomationProperties.SetName(password,"Workshop password");AutomationProperties.SetName(invitation,"Workshop invitation");AutomationProperties.SetName(package,"Mod ZIP file path");AutomationProperties.SetName(reportDescription,"Describe the problem with this release");foreach(string reason in new[]{"malware","broken","policy","other"})reportReason.Items.Add(new ComboBoxItem {Tag=reason,Content=reason});reportReason.SelectedIndex=3;status.Margin=new Thickness(0,0,0,12);Render();}
+        public void BeginReport(string id,string version,string sha)
+        {
+            if(stop!=null){status.Text="Finish or cancel the current request before choosing another release.";return;}
+            Core.Require(id!=null && id.Length<=80 && Regex.IsMatch(id,@"\A[a-z][a-z0-9]*(?:-[a-z0-9]+)*\z") && version!=null && version.Length<=32 && Regex.IsMatch(version,@"\A(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\z") && sha!=null && Regex.IsMatch(sha,@"\A[0-9a-f]{64}\z"),"Invalid report target.");
+            reportSha=sha;reportModId=id;reportVersion=version;ClearReports();status.Text="Sign in to report this exact mod release. Reports are private to you and moderators.";Render();
+        }
+        void ClearReports(){reports=new WorkshopReport[0];reportDraftReason=null;reportDraftText=null;reportDescription.Text="";}
         ModCreatorClient Client {get{if(client==null)client=new ModCreatorClient(root);return client;}}
         bool SignedIn {get{return client!=null && client.SignedIn;}}
         public void ClearCredentials()
@@ -302,7 +359,7 @@ namespace TimeSplitters.Launcher
         {var button=new Button {Name=name,Content=title,IsEnabled=stop==null && enabled,Margin=new Thickness(0,8,10,0)};button.Click+=(s,e)=>action();panel.Children.Add(button);return button;}
         void Render()
         {
-            Detach(username);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);Detach(sourceFiles);View.Children.Clear();bool authenticated=SignedIn;if(!authenticated)ClearReviews();
+            Detach(username);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(reportReason);Detach(reportDescription);View.Children.Clear();bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();}
             View.Children.Add(status);var cancel=Button(View,"CancelCreatorOperation","Cancel request",()=>{if(stop!=null)stop.Cancel();});cancel.IsEnabled=stop!=null;Ui.Show(cancel,stop!=null);
             var account=PageTheme.Section(View,"Creator account",authenticated?"Signed in as "+client.Username+" ("+client.Role+")":"Use your workshop account or redeem an operator invitation.");
             if(!authenticated) {
@@ -312,8 +369,9 @@ namespace TimeSplitters.Launcher
                 account.Children.Add(PageTheme.Text("Invitation (for a new account or account recovery)",13));account.Children.Add(invitation);
                 Button(account,"CreatorRedeem","Redeem invitation",async()=>await Authenticate(true));
                 account.Children.Add(PageTheme.Text("Sign-in details are kept for this launcher session only.",12,"#9EB4C8"));
-            }else Button(account,"CreatorSignOut","Sign out",async()=>{reviewed=null;uploads=new CreatorUpload[0];ClearReviews();await Run(token=>Client.SignOut(token),"Signed out. Local game files were preserved.",35);});
+            }else Button(account,"CreatorSignOut","Sign out",async()=>{reviewed=null;uploads=new CreatorUpload[0];ClearReviews();ClearReports();await Run(token=>Client.SignOut(token),"Signed out. Local game files were preserved.",35);});
             username.IsEnabled=password.IsEnabled=invitation.IsEnabled=stop==null;
+            RenderReports(authenticated);
             var submission=PageTheme.Section(View,"Submit a package","Build a ZIP with the mod SDK, enter its full file path, then review it before upload. Its author must match your creator username.");
             submission.Children.Add(package);package.IsEnabled=stop==null;
             Button(submission,"ReviewCreatorPackage","Review ZIP",async()=>await Run(async token=>{string path=package.Text;var plan=await Task.Run(()=>CreatorPackagePlan.Review(path,token),token);Core.Require(plan.Author==Client.Username,"The package author must match your signed-in creator account.");reviewed=plan;},"Review the package details before uploading.",120),authenticated);
@@ -330,6 +388,28 @@ namespace TimeSplitters.Launcher
             if(client!=null && client.CanModerate)RenderModeration();
         }
         void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;sourcePage=null;decision=null;decisionNote=null;reviewNote.Text="";sourceFiles.ItemsSource=null;}
+        void RenderReports(bool authenticated)
+        {
+            var panel=PageTheme.Section(View,"Report a mod","Choose Report release in Browse to flag a specific version. Sign-in is required; reports are private to your account and moderators.");
+            if(reportSha!=null) {
+                panel.Children.Add(PageTheme.Text(reportModId+" @ "+reportVersion+" · SHA-256: "+reportSha,12,"#A7D9FA"));
+                if(reportDraftReason==null) {
+                    panel.Children.Add(PageTheme.Text("Category",13));panel.Children.Add(reportReason);reportReason.IsEnabled=authenticated && stop==null;
+                    panel.Children.Add(PageTheme.Text("What happened? Up to 1000 characters. Omit passwords and personal information.",13));panel.Children.Add(reportDescription);reportDescription.IsEnabled=authenticated && stop==null;
+                    Button(panel,"ReviewPlayerReport","Review report",()=>{string message=(reportDescription.Text??"").Trim();var category=reportReason.SelectedItem as ComboBoxItem;if(category==null || message.Length==0 || message.Length>1000 || message.Any(Char.IsControl)){status.Text="Choose a category and enter a report of 1 to 1000 characters without control characters.";return;}reportDraftReason=(string)category.Tag;reportDraftText=message;Render();},authenticated);
+                }else {
+                    panel.Children.Add(PageTheme.Text(reportDraftReason+": "+reportDraftText,13));
+                    panel.Children.Add(PageTheme.Text("Send this report to moderators? This does not change the mod's approval or installed files.",12,"#FFDAA6"));
+                    Button(panel,"ConfirmPlayerReport","Send report",async()=>{string sha=reportSha,id=reportModId,version=reportVersion,reason=reportDraftReason,message=reportDraftText;reportDraftReason=null;reportDraftText=null;await Run(async token=>{var result=await Client.Report(sha,reason,message,token);Core.Require(result.ModId==id && result.Version==version,"The report receipt describes a different release. Refresh reports before retrying.");reports=new[]{result};reportDescription.Text="";},"Report recorded. Refresh your reports for moderator updates.",35);},authenticated);
+                    Button(panel,"CancelPlayerReport","Back",()=>{reportDraftReason=null;reportDraftText=null;Render();});
+                }
+            }
+            Button(panel,"RefreshPlayerReports","Refresh your reports",async()=>await FetchReports(0),authenticated);
+            foreach(var report in reports)panel.Children.Add(PageTheme.Text(report.ModId+" @ "+report.Version+" · "+report.State+" · "+report.Reason+" · "+report.Description+(report.Resolution.Length>0?" · Moderator: "+report.Resolution:""),13));
+            if(reports.Length==20)Button(panel,"NextPlayerReports","Next reports",async()=>await FetchReports(reports.Last().Cursor),authenticated);
+        }
+        async Task FetchReports(long after)
+        {reports=new WorkshopReport[0];await Run(async token=>{reports=await Client.Reports(after,false,token);},"Report status refreshed.",35);}
         async Task Reviews(long after)
         {ClearReviews();await Run(async token=>{reviews=await Client.Reviews(after,token);},"Moderation queue refreshed.",35);}
         void RenderModeration()
@@ -393,7 +473,7 @@ namespace TimeSplitters.Launcher
         {sourcePage=null;await Run(async token=>{sourcePage=await Client.Source(review,path,offset,token);},"Lua source loaded for inspection. Nothing was executed or installed.",45);}
         async Task Authenticate(bool redeem)
         {
-            string name=username.Text??"",secret=Password,invite=Invitation;ClearCredentials();ClearReviews();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
+            string name=username.Text??"",secret=Password,invite=Invitation;ClearCredentials();ClearReviews();ClearReports();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
             await Run(token=>redeem?Client.Redeem(invite,secret,token):Client.SignIn(name,secret,token),"Signed in. Review a ZIP to submit your addition.",45);
         }
         async Task History()
@@ -410,6 +490,6 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(!disposed)Render();}
             }
         }
-        public void Dispose(){disposed=true;ClearCredentials();ClearReviews();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
+        public void Dispose(){disposed=true;ClearCredentials();ClearReviews();ClearReports();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
     }
 }

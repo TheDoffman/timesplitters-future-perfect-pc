@@ -1,3 +1,18 @@
+mod_reports.py adds private authenticated reports for previously approved release
+digests, including now-revoked/withheld installed versions. One/account/digest,
+5/account and200/global per day,10000 retained records; cursor pages20 bound
+response sizes with UTF-16-compatible1000/1800 text limits. Reporter sees only own
+history; moderator/admin sees open queue and closes/reopens with transactional
+audit. Report state never changes release approval/catalog. Backup TABLES admits
+workshop_reports and recovery retains report history while revoking auth.
+Native Report/Reports/ResolveReport bind identity/account/state/notes/cursors.
+Browse and same-origin Installed receipts open a confirmed report form in Creator;
+hashless examples/local/other-origin installs offer none. Drafts clear on account
+changes; no automatic retry. Native moderator report-screen work remains open.
+API/UI/restore tests and actual Mac scanner mode cover another player's report,
+private status and moderator closure with the catalog unchanged. Host API/module
+source changed; prior30fa bundle is historical until a matching46-source freeze.
+
 POST /v1/moderation/<upload>/source permits moderator/admin Lua inspection for a
 completed job, bound archive digest and declared scripts/*.lua. It rechecks the
 regular single-link owned blob with nofollow, bounded streaming archive hash,

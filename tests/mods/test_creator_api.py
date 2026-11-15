@@ -186,6 +186,100 @@ def test_source_preview_refuses_unsafe_stored_blob(service, tmp_path, damage):
     assert response['status'] == 503 and 'text' not in response['body']
 
 
+def test_private_reports_target_prior_approval_and_do_not_mutate_release(service, tmp_path):
+    accounts, uploads, _ = service
+    creator, token, _ = account(accounts)
+    _, other, _ = account(accounts, 'bravo')
+    _, reviewer, _ = account(accounts, 'reviewer', 'moderator')
+    api = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
+    data = package(tmp_path)
+    ticket = uploads.begin(creator, 'test-addon', '1.0.0', digest(data), len(data))
+    uploads.receive(creator, ticket['id'], io.BytesIO(data), len(data))
+    report = dict(sha256=digest(data), reason='broken', description='Original private issue description')
+    assert call(api, 'POST', '/v1/reports', report)['status'] == 401
+    assert call(api, 'POST', '/v1/reports', report, token)['status'] == 404
+    uploads.process_next(Scanner())
+    assert call(api, 'POST', '/v1/reports', report, token)['status'] == 404
+    accounts.repository.approve(digest(data), 'Fixture review, not actual AV acceptance')
+    assert call(api, 'POST', '/v1/reports', dict(report, reporter='bravo'), token)['status'] == 400
+    receipt = call(api, 'POST', '/v1/reports', report, token)
+    assert receipt['status'] == 201 and receipt['body']['state'] == 'open'
+    row = receipt['body']
+    assert row['reporter'] == 'alice' and row['sha256'] == digest(data)
+    assert call(api, 'POST', '/v1/reports', report, token)['status'] == 409
+    assert call(api, path='/v1/reports', token=other)['body'] == {'reports':[]}
+    assert call(api, path='/v1/reports', token=token, QUERY_STRING='after='+str(row['cursor']))['body'] == {'reports':[]}
+    assert call(api, path='/v1/moderation/reports', token=token)['status'] == 403
+    queue = call(api, path='/v1/moderation/reports', token=reviewer)['body']['reports']
+    assert len(queue) == 1 and queue[0]['id'] == row['id']
+    route = '/v1/moderation/reports/' + row['id']
+    decision = dict(action='close', note='Investigated original fixture')
+    assert call(api, 'POST', route, dict(action='approve', note='Not a release decision'), reviewer)['status'] == 400
+    assert call(api, 'POST', route, decision, other)['status'] == 403
+    assert call(api, 'POST', route, decision, reviewer)['body']['state'] == 'closed'
+    assert call(api, path='/v1/moderation/reports', token=reviewer)['body'] == {'reports':[]}
+    assert call(api, path='/v1/reports', token=token)['body']['reports'][0]['resolution'] == decision['note']
+    assert len(accounts.repository.catalog()) == 1
+    assert call(api, 'POST', route, dict(action='reopen', note='Follow up requested'), reviewer)['body']['state'] == 'open'
+    assert len(accounts.repository.catalog()) == 1
+    accounts.repository.revoke(digest(data), 'Separate fixture withdrawal')
+    assert call(api, 'POST', '/v1/reports', report, other)['status'] == 201
+    assert accounts.repository.catalog() == []
+    with accounts.repository.db() as db:
+        audit = db.execute("SELECT actor,action FROM workshop_audit WHERE action LIKE 'report-%' ORDER BY sequence").fetchall()
+    assert [tuple(record) for record in audit] == [('user:alice','report-created'),('user:reviewer','report-close'),('user:reviewer','report-reopen'),('user:bravo','report-created')]
+
+
+def test_reports_fail_closed_on_audit_and_persist_rate_admission(service, tmp_path, monkeypatch):
+    accounts, uploads, _ = service
+    actor, token, _ = account(accounts)
+    _, reviewer, _ = account(accounts, 'reviewer', 'moderator')
+    api = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
+    data = package(tmp_path)
+    ticket = uploads.begin(actor, 'test-addon', '1.0.0', digest(data), len(data))
+    uploads.receive(actor, ticket['id'], io.BytesIO(data), len(data))
+    uploads.process_next(Scanner())
+    accounts.repository.approve(digest(data), 'Unit fixture only')
+    report = dict(sha256=digest(data), reason='other', description='Private fixture report')
+    original = accounts.audit
+    def fail(db, actor, action, target, note=''):
+        if action.startswith('report-'):
+            raise ServiceError(503, 'Fixture audit refusal')
+        return original(db, actor, action, target, note)
+    monkeypatch.setattr(accounts, 'audit', fail)
+    assert call(api, 'POST', '/v1/reports', report, token)['status'] == 503
+    assert call(api, path='/v1/reports', token=token)['body'] == {'reports':[]}
+    monkeypatch.setattr(accounts, 'audit', original)
+    row = call(api, 'POST', '/v1/reports', report, token)['body']
+    monkeypatch.setattr(accounts, 'audit', fail)
+    assert call(api, 'POST', '/v1/moderation/reports/'+row['id'], dict(action='close', note='Blocked audit'), reviewer)['status'] == 503
+    assert call(api, path='/v1/reports', token=token)['body']['reports'][0]['state'] == 'open'
+    monkeypatch.setattr(accounts, 'audit', original)
+    for _ in range(3):
+        assert call(api, 'POST', '/v1/reports', report, token)['status'] == 409
+    restarted = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
+    assert call(restarted, 'POST', '/v1/reports', report, token)['status'] == 429
+    assert call(api, 'POST', '/v1/reports', dict(report, description='\U0001f600'*1000), token)['status'] == 400
+    assert len(accounts.repository.catalog()) == 1
+
+
+def test_report_capacity_refuses_without_exposing_or_mutating_a_release(service, tmp_path, monkeypatch):
+    import mod_reports
+    accounts, uploads, _ = service
+    actor, token, _ = account(accounts)
+    data = package(tmp_path)
+    ticket = uploads.begin(actor, 'test-addon', '1.0.0', digest(data), len(data))
+    uploads.receive(actor, ticket['id'], io.BytesIO(data), len(data))
+    uploads.process_next(Scanner())
+    accounts.repository.approve(digest(data), 'Unit fixture only')
+    api = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
+    monkeypatch.setattr(mod_reports, 'MAX_REPORTS', 0)
+    response = call(api, 'POST', '/v1/reports', dict(sha256=digest(data), reason='other', description='Private fixture'), token)
+    assert response['status'] == 503
+    assert call(api, path='/v1/reports', token=token)['body'] == {'reports':[]}
+    assert len(accounts.repository.catalog()) == 1
+
+
 def test_wsgi_authentication_cookie_and_role_injection_are_rejected(service):
     accounts, uploads, _ = service
     api = WorkshopAPI(accounts, 'https://workshop.invalid')
