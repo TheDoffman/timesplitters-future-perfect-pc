@@ -1,4 +1,5 @@
-launcher_shared_ui.cs tests local cache selection, Unicode preference persistence,
+launcher_shared_ui.cs clicks the real Installed storage field/Save button to test
+local cache selection, Unicode preference persistence,
 missing/invalid path refusal, blank/default reset and Play without mods bypass.
 The preference never relaxes native cache permission checks or supplies code.
 

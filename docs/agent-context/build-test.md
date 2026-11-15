@@ -1,6 +1,6 @@
 [Native checks](build-test-details.md); [context](investigation.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
-Script/profile/cache tests: build-test-details.md.
+Script/profile/cache UI tests: build-test-details.md.
 
 Epoch/GCC checks: build-test-details.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))

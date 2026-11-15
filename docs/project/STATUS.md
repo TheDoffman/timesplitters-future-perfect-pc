@@ -1,3 +1,23 @@
+Launcher-selected script/cache acceptance (source1bdc81dc,2026-11-14): real
+Windows game consumed the native launcher's package-derived First to Three
+capsule and local ModCacheLocation preference. A natural bot reached score3,
+rank1/raw kills3; stage8 results appeared, ordinary save hashes were preserved,
+and WM_CLOSE exited0. The test uses a disposable installed-layout fixture with
+explicit capability metadata, a helper bundle copied beside the unchanged native
+4d76dbb8 binary (SHA21694c4779d9c3e56c886e13ef088ce014acf71121ecdf85c32cd14f7dac4586).
+Only display/input/data fixtures are supplied by the harness; capsule/hash,
+explicit ordinary save root and cache parent come from GameSettings.StartInfo.
+SDK archiveSHA65e6ed6d53ccd2ef658ab27f0eccc5c216b49a2b92c0e8cb397dc3a346038d42;
+profile b057afad041f29692dc98454fd8e31503ecacf7f03bc319f81bf7079c6f18130;
+evidenceSHA196bcf1d4bad803251a71be212b4251ae2d020880ea3415fa3b83da275cf60a7.
+The optional Installed storage field keeps native owner/ACL/filesystem enforcement
+and never changes global permissions. Default remains OS cache. Source1bdc81dc
+full launcher checks pass Windows69/Mac70/Linux71 UI groups. Mac signing uses an
+owned cache output outside Desktop to avoid Finder metadata reattachment.
+Actual Mac/Linux launcher-to-game scenes, public workshop upload-to-play,
+update/rollback/removal gameplay acceptance, crash recovery, release packages
+and internet publication remain unfinished. Full goal active; main untouched.
+
 Launcher gameplay activation (source f8e17083, 2026-11-14): shared installed
 profiles support one scripts/main.lua mode with optional textures on game builds
 advertising mod_script_version=1. Each launch rechecks signed workshop availability,

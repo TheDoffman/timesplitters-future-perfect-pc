@@ -269,6 +269,12 @@ public static class LauncherSharedUiChecks
             string folder=Path.Combine(root,"mode-cache-location");Directory.CreateDirectory(folder);string cache=Path.Combine(folder,"Private cache \u03a9");Directory.CreateDirectory(cache);
             Need(ModCacheLocation.Load(folder)=="","Default cache preference changed");
             foreach(string bad in new[]{"relative",Path.Combine(folder,"missing"),cache+"\nother"})WorkshopReject(()=>ModCacheLocation.Save(folder,bad),"Invalid cache path accepted");
+            using(var page=new ModWorkshopPage(folder,false,new ModWorkshopClient(new WorkshopHandler(request=>{throw new Exception("Storage controls attempted a network request");})))) {
+                Click(page.InstalledTab);var field=Find<TextBox>(page.View,"ModCacheLocation");var save=Find<Button>(page.View,"SaveModCacheLocation");
+                Need(field.IsEnabled && save.IsEnabled,"Gameplay storage controls are unavailable");field.Text=cache;Click(save);
+                Need(ModCacheLocation.Load(folder)==cache && page.StatusText.Contains("saved"),"Gameplay storage controls did not save the Unicode path");
+                field.Text="";Click(save);Need(ModCacheLocation.Load(folder)=="","Storage controls could not restore the default");
+            }
             ModCacheLocation.Save(folder,cache);Need(ModCacheLocation.Load(folder)==cache,"Unicode cache path did not round trip");
             string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));Directory.CreateDirectory(Path.GetDirectoryName(manifest));File.WriteAllText(manifest,"{\"mod_script_version\":1}");
             var library=new ModLibrary(folder,()=>false);string package=LibraryPackage(root,"cache-mode","1.0.0",1,script:true);var mode=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);library.Enable(mode.Key,System.Threading.CancellationToken.None);
