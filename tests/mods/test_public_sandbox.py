@@ -108,9 +108,17 @@ PROBE = r'''
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 int main(int argc,char **argv){
  if(argc<3)return 2;int action=0,result=-1,error=0,seen=0;
+ if(strcmp(argv[1],"env-target")==0){puts(getenv("TSFP_FAKE_ENV")?"ready":"missing");fflush(stdout);sleep(30);return 0;}
  if(strcmp(argv[1],"fds")==0){result=0;for(int fd=3;fd<256;fd++)if(fcntl(fd,F_GETFD)>=0)result++;}
+ else if(strcmp(argv[1],"procargs")==0){
+  int mib[3]={CTL_KERN,KERN_PROCARGS2,atoi(argv[2])};size_t size=1024*1024;char *bytes=malloc(size);if(!bytes)return 3;
+  errno=0;result=sysctl(mib,3,bytes,&size,NULL,0);error=errno;const char needle[]="TSFP_FAKE_ENV=test-only";
+  if(result==0)for(size_t i=0;i+sizeof(needle)-1<=size;i++)if(memcmp(bytes+i,needle,sizeof(needle)-1)==0)seen=1;free(bytes);
+ }
  else if(strcmp(argv[1],"bound-net")==0 || strcmp(argv[1],"connectx")==0 || strcmp(argv[1],"udp-send")==0){
   int udp=strcmp(argv[1],"udp-send")==0;int s=socket(AF_INET,udp?SOCK_DGRAM:SOCK_STREAM,0),one=1;
   setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&one,sizeof(one));setsockopt(s,SOL_SOCKET,SO_REUSEPORT,&one,sizeof(one));
@@ -185,6 +193,17 @@ def test_actual_public_policy_blocks_private_aliases_network_and_children(state,
         assert run(['fork', '-'], False)['result'] == 0 and run(['fork', '-'])['result'] == -1
         assert run(['bind', '0'], False)['result'] == 0 and run(['bind', '0'])['result'] == -1
         assert run(['fds', '-'])['result'] == 0  # Neither parent-liveness nor scratch-lease FD reaches the server.
+        target = subprocess.Popen([str(binary), 'env-target', '-'],
+                                  env=dict(PATH='/usr/bin:/bin', TSFP_FAKE_ENV='test-only'),
+                                  stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        try:
+            assert target.stdout.readline() == b'ready\n'
+            assert run(['procargs', str(target.pid)], False)['seen']
+            refused = run(['procargs', str(target.pid)])
+            assert refused['result'] == -1 and refused['errno'] in (1, 13) and refused['seen'] is False
+        finally:
+            target.kill()
+            target.communicate(timeout=5)
         with socket.socket() as listener:
             listener.bind(('127.0.0.1', 0))
             listener.listen(4)

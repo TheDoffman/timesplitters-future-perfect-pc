@@ -1,3 +1,6 @@
+Public-server native canaries also prove process-environment denial against an
+owned ready native target with fabricated environment and a successful control.
+
 Darwin large-file responses need a narrow network-outbound exception for local
 server port8766 with NO supplied remote endpoint (sendfile response context).
 Plain local-port allowance would also permit hostile source-bound connections;

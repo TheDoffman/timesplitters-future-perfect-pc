@@ -1,6 +1,6 @@
 [Native checks](build-test-details.md); [context](investigation.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
-Public sandbox response-path and identity tests: build-test-details.md.
+Public response-path, canary and identity tests: build-test-details.md.
 
 Epoch/GCC checks: build-test-details.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
