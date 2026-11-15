@@ -1,3 +1,21 @@
+Native real scanner-to-moderator acceptance (2026-11-15, sourcec294267c):
+Actual Mac --test-creator-moderation passes all8 real scan observations, then
+native moderator approval/revocation through the real WSGI/SQLite API. The native
+review queue contains exactly1 clean pending review,1 EICAR rejection and2 exhausted
+scan errors. Detected/error approval is refused. Only the clean digest enters the
+repository catalog and actual approved_blob guard after approval; revocation
+withdraws both. Creator/reviewer histories and both real account/release audit
+trails agree on actor, digest, action and note. The private API never serves ZIPs.
+AcceptanceSHA f99a7f09ad3f00f871ec4e0b8869da1f61d61aafa75ce92c101bf4c0dcac5612,
+exit0/9.679s; sealed runtime inventory and official definition hashes/inodes/
+sizes/mtimes remain unchanged. Clean native build receiptSHA
+6576e7cbb7a8f001d521261e388476d07bef6cae15c64618de9c4a535f88125d.
+Windows full launcher checks pass48.07s; native Mac passes97 UI groups, actual
+backend checks and signatures. This opt-in developer mode is UID501 private-pipe
+acceptance in a disposable repository: no signed publication, TLS/listener, public
+download, install/activation or production service/key changes. Linux/new source
+CI and existing Mac game-prerequisite failures remain separate open checks.
+
 Native moderator launcher integration (2026-11-15):
 The Creator page now exposes completed-job moderation to moderator/admin accounts,
 with strict manifest/identity/cursor checks, package details, bounded notes and a

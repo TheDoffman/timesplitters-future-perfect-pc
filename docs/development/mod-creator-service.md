@@ -76,6 +76,9 @@ guards. Its private repository observer is not exposed through HTTP. The fixture
 never signs/publishes a catalog, opens a listener or installs/enables content.
 This check requires the same explicitly selected sealed runtime and official
 definitions as scanner acceptance; ordinary build tests never scan or approve.
+This acceptance passes on the actual Mac at sourcec294267c, including both audit
+trails and withdrawal after revocation. It does not establish public TLS,
+publication, downloaded installation or locked-service-account operation.
 
 Private snapshot/staged restore tooling and conservative publication reconciliation
 are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery
