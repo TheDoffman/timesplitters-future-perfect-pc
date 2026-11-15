@@ -8,6 +8,13 @@ then import all four pinned versions and perform an ephemeral Ed25519 round trip
 Archive writable bits normalize to644/755; the installed wheel archive itself
 must still be an owner-controlled regular file. Official664 RECORD/source members
 are admitted without granting those write permissions in the resulting runtime.
+Source8e887eb4 packaged-runtime native acceptance verified all96 final signatures
+and all file/link hashes after rename, all four exact versions and a disposable
+Ed25519 round trip; none of421 loaded Python images came from Homebrew. A real
+Gunicorn/API loopback fixture checked readiness, insecure-scheme/anonymous denial,
+invitation redemption, authenticated identity and rejection after logout, then
+stopped cleanly with temporary state removed. No scanner/public/root acceptance
+is implied; see STATUS for receipt hashes and precise scope.
 
 tests/mods/test_host_runtime_images.py exercises Mach-O load/identity parsing,
 loader-environment refusal, system-path boundaries, ambiguous rpaths, Cellar

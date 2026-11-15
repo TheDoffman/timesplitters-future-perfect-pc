@@ -11,7 +11,10 @@ may resolve outside Cellar. Package metadata/licenses remain in the final invent
 Isolated imports must match all four pinned versions; a disposable in-memory
 Ed25519 signature round trip checks the cryptographic backend without storing keys.
 No pip, network, source builds or personal site-packages are used during staging.
-Native packaged-runtime acceptance remains pending; base-only acceptance is below.
+Native packaged-runtime acceptance passed at source8e887eb4:96 final signatures,
+all pinned versions, relocated signing/imports and real loopback API account/session
+checks. This remains user-account staging; dedicated identity, scanner sandbox
+access to the relocated libraries and production installation remain separate.
 
 Mac server runtime preparation: hosting/runtime-images-mac.py stages a new private
 bundle as the ordinary user, never installs or starts jobs. It copies a Python
@@ -23,8 +26,9 @@ installed header's verified copyright disclaimer when no top-level notice exists
 A real isolated Python
 invocation must report a prefix/executable inside the bundle and load SSL/sqlite/
 zlib/ctypes; all three server tools must report versions. Source/copy budgets and
-root refusal are tested. Pinned Python packages, production ownership/install and
-service-specific sandbox access remain separate. Native base-runtime staging and
+root refusal are tested. Without --wheelhouse this covers only the base runtime.
+Production ownership/install and service-specific sandbox access remain separate.
+Native base-runtime staging and
 relocation acceptance passed for sourceb9acb85e; see STATUS for exact scope.
 FreshClam version checks explicitly use /dev/null configuration, avoiding its
 compiled Homebrew configuration path. Stage outside synced Desktop folders:

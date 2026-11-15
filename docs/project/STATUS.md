@@ -1,3 +1,30 @@
+Mac packaged runtime/API acceptance (2026-11-15, source8e887eb4):
+Offline application-wheel integration now includes exact/hash-pinned Gunicorn
+27.0.1, cryptography50.0.2, cffi2.1.1 and pycparser3.12 with their license metadata.
+Official wheel664 source/RECORD members are normalized to644/755 rather than
+granting archive write bits. The first strict-mode attempt stopped before package
+installation; its stopped stage evidence/log were preserved and that tree recycled.
+The completed bundle has3337 recorded files/links,149022996 payload bytes and96
+native images. Independent relocation acceptance repeated all final signatures,
+hashes/modes/links and all three executable version commands, imported exact
+package versions and completed an ephemeral Ed25519 signature verification. None
+of421 loaded Python images came from Homebrew. The bundle was restored afterward.
+Runtime receiptSHA14f115ae265f92b7cbd15b74748ddd9dc25a5850b19a17913882c7322c67f7ce;
+relocation acceptanceSHAa671bcfd7d06677d0ddf15546837d5b01df0e7c580d7143ac776054842bd61ed.
+A real Gunicorn process running this isolated runtime served the existing API
+on a held loopback socket. Actual HTTP checked health, insecure-scheme rejection,
+anonymous account denial, invitation redemption, authenticated creator identity,
+logout and rejection of the revoked token. Gunicorn stopped cleanly, logs contained
+no fixture password/invitation/token, and the temporary repository was removed.
+HTTP acceptanceSHAa3a6e6f565b0f06f28c46ec39d2fc26b59d07c68af71f30f64720620bae078c0.
+The superseded base-only runtime was recycled after exact inventory/hash/ownership
+checks, preserving its receipt and acceptance; one packaged runtime remains.
+Selected Windows tests160 pass/15 POSIX skips; Mac175 pass. CI remains pending.
+All these processes ran as the ordinary Mac user. The locked service account's
+system-job diagnostic still awaits native administrator authentication. Root-owned
+installation, sandbox access to relocated scanner libraries, actual relocated
+clean/EICAR scanning, production services/keys and public acceptance remain open.
+
 Mac private base-runtime acceptance (2026-11-15, sourceb9acb85e):
 runtime-images-mac.py stages Python3.12, ClamAV1.5.4 clamscan/FreshClam and
 Caddy2.11.2 with recursive native libraries and all14 installed license notices.
