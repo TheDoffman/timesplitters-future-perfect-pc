@@ -301,9 +301,9 @@ class Uploads:
             demand(entry is not None and path.startswith('scripts/') and path.lower().endswith('.lua'),
                    400, 'Select a declared Lua source file')
             demand(0 < entry['size'] <= MAX_SCRIPT and offset < entry['size'], 400, 'Invalid source preview offset')
-            allowed = self.accounts.rate(db, 'source-preview-global', 'all', 48, 60)
+            allowed = self.accounts.rate(db, 'source-preview-account', str(actor.id), 24, 60)
             if allowed:
-                allowed = self.accounts.rate(db, 'source-preview-account', str(actor.id), 24, 60)
+                allowed = self.accounts.rate(db, 'source-preview-global', 'all', 48, 60)
         demand(allowed, 429, 'Source preview request limit reached')
         data = self._preview_bytes(sha, path, entry, MAX_SCRIPT)
         try:

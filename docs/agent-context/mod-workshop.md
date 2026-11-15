@@ -1,3 +1,8 @@
+Lua source-preview admission now checks the24/account bucket before48/global.
+An already capped reviewer cannot spend shared inspection capacity with denied
+requests; regression first failed on the previous order, then passes with all48
+global slots retained. This matches DDS/report admission; inspection stays private.
+
 Private DDS moderation preview: POST /v1/moderation/<upload>/texture binds
 sha256/path to a completed job and declared DDS (<=24MiB). Shared _preview_bytes
 also serves Lua: nofollow/nonblock regular single-link owner/mode checks, bounded
@@ -10,6 +15,9 @@ shape/canonical base64/exact pixel budget; UI composites transparency on a check
 uses thin WPF/Avalonia bitmap adapters, disposes resources and clears account/
 package selections. Every declared texture is selectable. Sampling is a review aid,
 not a safety verdict or complete-detail/runtime-use proof. Audio/maps still open.
+All3 launcher/normal-backend and complete-package CI jobs pass at3cc247f2;
+Mac/Linux logs confirm the actual native preview/color/alpha/render/logout tests.
+User Mac pure decoder18 tests pass; newer real-scanner acceptance is separate.
 Native real-scanner moderation fixture now includes original red DDS and reads it;
 new actual user-Mac scanner/preview acceptance awaits space. A newer matching host
 bundle is required; old430 lacks this endpoint. Production remains inactive.

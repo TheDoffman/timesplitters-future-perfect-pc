@@ -122,7 +122,7 @@ review selection changes. The matching updated host API is required.
 
 The role-gated source endpoint binds the reviewed archive digest and declared
 file, rechecks the stored archive/payload hashes and size, and returns UTF-8 byte
-offsets plus the file digest. Requests are limited to24/account and48/global per
+offsets plus the file digest. Requests are limited to24/account then48/global per
 minute. It supports completed scans, including rejected/error states for manual
 investigation; source access never approves a package. Interrupted reads can be
 retried explicitly. Older hosts need the matching API release for these views.

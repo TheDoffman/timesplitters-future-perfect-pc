@@ -154,6 +154,10 @@ def test_source_preview_limits_are_persistent_and_do_not_publish(service, tmp_pa
             assert accounts.rate(db, 'source-preview-account', str(reviewer.id), 24, 60)
     assert call(api, 'POST', route, request, token)['status'] == 429
     assert call(api, 'POST', route, request, token)['status'] == 429
+    # An already capped reviewer must not exhaust inspection for other staff.
+    with accounts.repository.db() as db:
+        for _ in range(48):
+            assert accounts.rate(db, 'source-preview-global', 'all', 48, 60)
     assert accounts.repository.catalog() == []
 
 

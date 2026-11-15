@@ -1,3 +1,11 @@
+Source inspection admission repair (2026-11-15):
+An account already at its24/minute Lua-inspection limit previously consumed the
+48/minute shared inspection quota when receiving429 responses. A regression
+reproduced that depletion. Admission now checks the account before the global
+bucket; repeated denials retain all48 shared slots. Windows creator API and DDS
+preview checks pass46 with8 POSIX-only skips (26.83s). This changes server source,
+without a native protocol/UI change; production deployment remains pending.
+
 Private DDS moderation preview (2026-11-15):
 The native Creator moderation view can select any declared DDS and show a
 bounded base-level sample with dimensions, format, exact payload digest and
@@ -14,9 +22,18 @@ Windows API/decoder/scope/runtime checks pass161 with8 POSIX-only skips (22.36s)
 The full native launcher checks pass105 UI groups plus real normal backend
 (51.54s). The explicit real Mac moderation fixture now also contains an original
 red DDS and checks the actual preview pixels; that new scanner/preview run is
-unrun while storage remains below2GiB. Mac/Linux native compilation/display and
-public acceptance remain pending. A matching newer host bundle is required;
-the previous430 host lacks this endpoint and production remains inactive.
+unrun while storage remains below2GiB. At source3cc247f2 all3 native launcher/
+normal-backend jobs and the complete three-platform release package check pass
+in run43764329417. Actual Mac/Linux job logs confirm preview identity/color/
+alpha/render/logout checks and normal backend acceptance; broader runtime CI
+remains separate. On the user's Mac, all18 pure decoder cases pass (0.13s),
+without an upload/scanner/game build. The matching3cc48-source/3339-runtime-file
+bundle was frozen and plan-verified,150991475 installation bytes, without another
+runtime copy. DescriptorSHA
+b092e28f4c7d548b3d8f8a3cbfb2446e598f0aa85274596771d29e5ece51b317;
+preparation receiptSHAb0889265e7bd2c0aeb7eb38c89b33a6f44c2a4b414fb6600d83f4b6e8f5c3e24.
+The later source-admission repair above needs a newer matching host candidate.
+Public/scanner/locked-service acceptance remains pending and production inactive.
 
 Creator modular Lua SDK (2026-11-15):
 pack --modules now links up to32 project Lua files into the existing verified

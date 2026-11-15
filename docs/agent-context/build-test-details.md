@@ -1,3 +1,5 @@
+test_creator_api.py source-preview rate regression proves repeated account-capped
+requests retain all48 global inspection slots; account admission now runs first.
 DDS preview tests: test_texture_preview.py covers original BC1/BC2/BC3/BGRA8
 vectors, color/alpha selectors, base-level sampling (hostile smaller mips), bounds,
 private role/digest/payload binding, rate admission and POSIX unsafe-blob rejection.
