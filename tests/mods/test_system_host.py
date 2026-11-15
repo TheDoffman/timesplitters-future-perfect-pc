@@ -243,3 +243,79 @@ def test_fixed_host_clis_reject_arbitrary_config_commands_and_targets(program,mo
     monkeypatch.setattr(program.sys,'argv',['host','--role','api','--command','shell'])
     with pytest.raises(SystemExit) as error:program.main()
     assert error.value.code==2
+
+
+@pytest.mark.skipif(sys.platform!='darwin',reason='Actual Mac guardian and Gunicorn child transport')
+def test_actual_api_child_factory_auth_and_guardian_group_cleanup(tmp_path):
+    import http.client
+    import socket
+    import subprocess
+    from mod_accounts import Accounts
+    from mod_repository import Repository
+    from mod_scan_sandbox import GuardedChild, verified_guardian
+    if importlib.util.find_spec('gunicorn') is None:pytest.skip('Gunicorn is required for actual child transport')
+    subprocess.run([sys.executable,str(ROOT/'tools/build/build-scan-guardian.py')],capture_output=True,check=True,timeout=90)
+    tmp_path.chmod(0o700)
+    repository=Repository(tmp_path/'repository')
+    accounts=Accounts(repository)
+    password='Disposable API child fixture password!'
+    token=accounts.redeem(accounts.create_invite('childfixture','creator'),password,'127.0.0.1')['token']
+    with socket.socket() as port_check:port_check.bind(('127.0.0.1',8767))
+    # Call the shipped child factory as an ordinary test user. Immutable-root/
+    # UID600 admission is deliberately a separate protected system-job acceptance.
+    script=('import importlib.util,json,sys;from pathlib import Path;'
+            'source=Path(sys.argv[1]);s=importlib.util.spec_from_file_location("child_factory",source);'
+            'm=importlib.util.module_from_spec(s);s.loader.exec_module(m);'
+            'm.api_child(dict(repository=Path(sys.argv[2]),origin="https://workshop.example.test:8443"))')
+    read,write=os.pipe()
+    child=None; tracked=[]
+    def request(path,headers):
+        connection=http.client.HTTPConnection('127.0.0.1',8767,timeout=3)
+        try:
+            connection.request('GET',path,headers=headers)
+            response=connection.getresponse()
+            return response.status,response.read()
+        finally:connection.close()
+    try:
+        process=subprocess.Popen([str(verified_guardian()),str(read),'--deadline-seconds','60',
+                                  sys.executable,'-I','-B','-c',script,str(ROOT/'tools/mods/hosting/system-host-service-mac.py'),str(repository.root)],
+                                 stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                                 close_fds=True,pass_fds=(read,),start_new_session=True,cwd=tmp_path,
+                                 env=dict(PATH='/usr/bin:/bin',HOME=str(tmp_path),TMPDIR=str(tmp_path),LC_ALL='C',TZ='UTC'))
+        child=GuardedChild(process,write);write=None
+        os.close(read);read=None
+        headers={'Host':'workshop.example.test:8443','X-Forwarded-Proto':'https'}
+        deadline=time.monotonic()+10
+        while True:
+            try:
+                status,body=request('/healthz',headers)
+                assert status==200 and json.loads(body)=={'ready':True}
+                break
+            except (ConnectionRefusedError,ConnectionResetError):
+                assert child.poll() is None and time.monotonic()<deadline
+                time.sleep(.05)
+        assert request('/v1/account',headers)[0]==401
+        status,body=request('/v1/account',dict(headers,Authorization='Bearer '+token))
+        assert status==200 and json.loads(body)==dict(username='childfixture',role='creator')
+        assert request('/healthz',{'Host':'workshop.example.test:8443'})[0]==403
+        assert request('/healthz',dict(headers,Host='other.example.test'))[0]==403
+        rows=subprocess.check_output(['/bin/ps','-A','-o','pid=,ppid='],text=True,timeout=3)
+        tree={process.pid}
+        values=[tuple(map(int,row.split())) for row in rows.splitlines()]
+        while True:
+            new={pid for pid,parent in values if parent in tree}-tree
+            if not new:break
+            tree.update(new)
+        # Guardian, Gunicorn master and both configured sync workers.
+        assert len(tree)==4
+        tracked=sorted(tree)
+    finally:
+        if child is not None:child.kill();child.wait(timeout=10)
+        for fd in (read,write):
+            if fd is not None:os.close(fd)
+    deadline=time.monotonic()+5
+    while True:
+        present=set(map(int,subprocess.check_output(['/bin/ps','-A','-o','pid='],text=True,timeout=3).split()))
+        if not present.intersection(tracked):break
+        assert time.monotonic()<deadline,'API child group did not exit after guardian pipe closure'
+        time.sleep(.05)

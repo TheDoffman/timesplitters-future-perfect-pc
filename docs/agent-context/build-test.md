@@ -1,4 +1,4 @@
-[SDK/service proofs](build-test-details.md). Native CI covers gateway/system host control.
+[Service proofs](build-test-details.md). Native CI: host control/API child auth/reaping.
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

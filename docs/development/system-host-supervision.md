@@ -69,3 +69,9 @@ scratch leases, private locks, signed refresh/revocation behavior and root-healt
 checks in system mode. Independent native system-job lifecycle, locked-account
 clean/EICAR/error/rescan, restart/boot, trust recovery/backup and public internet
 acceptance remain required before claiming a deployed workshop.
+
+`test_system_host.py` also starts the real child factory under the native guardian
+with a disposable private account, verifies HTTP origin/scheme and bearer checks,
+observes the configured Gunicorn process tree and closes the parent pipe to check
+group cleanup. This ordinary-user fixture tests child transport/lifetime, not the
+installed root-to-UID600 system-job path.

@@ -5,7 +5,8 @@ configs/keys/signing/network stay UID600. Root health binds role/release/PID/UID
 GUI-writable health cannot admit system workers. Generation checks config after
 dropping credentials and writes new-only plists after scan-monitor generation.
 API uses the guardian, existing fixed Gunicorn settings and bounded renewal.
-Details: ../development/system-host-supervision.md. Tests are registered in native
+Details: ../development/system-host-supervision.md. Native child/auth/cleanup and
+file/control tests are registered in native
 CI; protected installation/lifecycle/boot/public deployment remain pending.
 
 Actual Mac at2619f6f6 passes14 confined gateway cases2.57s: all launcher routes,
