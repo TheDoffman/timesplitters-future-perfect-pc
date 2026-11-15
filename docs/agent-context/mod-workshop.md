@@ -1,7 +1,8 @@
 Current containment HOLD: an actual native positive-control canary exposed
 same-user process environments via unrestricted sysctl-read. Both installed jobs
 were disabled/unloaded again; only fabricated test data was queried. The v3
-Seatbelt policy permits hardware/runtime metadata only, excluding process args.
+Seatbelt policy permits hardware/runtime metadata only AND explicitly denies
+process-info*: named sysctl denial alone did not block KERN_PROCARGS2 on this Mac.
 Old v2 reports no longer satisfy current approval/availability policy. Actual
 native canary denial and real ClamAV compatibility must pass before upgrading.
 

@@ -69,6 +69,9 @@ def sandbox_profile(executable, content, database, scratch):
     reads = subpaths([*runtime, *public_certs, content, database, scratch]) + literals([
         '/', '/dev/null', '/dev/random', '/dev/urandom', '/private/etc/localtime', executable])
     return ('(version 1)(deny default)'
+            # macOS process-argument sysctls use process-info checks rather
+            # than the named sysctl gate; explicit denial is necessary here.
+            '(deny process-info*)'
             '(allow process-exec (literal ' + quote(executable) + '))'
             # Process-argument sysctls expose other same-user environments even
             # when their files are denied. Grant only public runtime metadata.
