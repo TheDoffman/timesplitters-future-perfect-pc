@@ -76,7 +76,8 @@ def root_json(directory, name):
 def healthy(uid, clock=time.time):
     value = root_json(ROOT / 'monitor', 'scan.json')
     stamp = value.get('time')
-    require(value.get('schema') == 1 and type(value.get('uid')) is int and value['uid'] == uid
+    require(type(value.get('schema')) is int and value['schema'] == 1
+            and type(value.get('uid')) is int and value['uid'] == uid
             and value.get('service') == label() and value.get('policy') == POLICY
             and type(stamp) is int and 0 <= clock()-stamp <= 10
             and value.get('status') in ('watching','idle'), 'System scan monitor is not healthy')

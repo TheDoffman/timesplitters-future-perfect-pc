@@ -98,8 +98,10 @@ def heartbeat(tmp_path,monkeypatch):
 def test_heartbeat_atomic_readable_and_error_stale_identity_fail_closed(heartbeat):
     assert heartbeat.stat().st_mode&0o777==0o644
     monitor.healthy(600)
-    for change in [dict(uid=501),dict(uid=True),dict(service='other'),dict(policy='old'),dict(status='terminated'),
+    original=heartbeat.read_bytes()
+    for change in [dict(schema=True),dict(uid=501),dict(uid=True),dict(service='other'),dict(policy='old'),dict(status='terminated'),
                    dict(time=True),dict(time=int(time.time())-60),dict(time=int(time.time())+60)]:
+        heartbeat.write_bytes(original)
         monitor.write_health(600,dict(status='idle'))
         value=json.loads(heartbeat.read_bytes());value.update(change);heartbeat.write_text(json.dumps(value))
         with pytest.raises(ModError):monitor.healthy(600)

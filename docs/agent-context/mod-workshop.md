@@ -1,3 +1,7 @@
+System-heartbeat schema rejects bool-as-integer too. The POSIX rejection test
+restores its original fixture between corruptions; writer preservation of unknown
+records must remain enabled. Mac first run exposed that fixture sequencing issue.
+
 System scan monitor implementation: system-scan-monitor-mac.py fixes the privilege
 split for future system jobs. Root monitor addresses only a fixed derived scanner
 label, never accepts commands/targets/config paths, samples UID-bound descendants
