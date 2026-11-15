@@ -23,7 +23,7 @@ public static class CreatorBackendChecks
     {
         readonly Process child;readonly object exchange=new object();readonly Task<string> errors;
         readonly int timeout;
-        public readonly string Invitation,OtherInvitation,Package,OtherPackage;
+        public readonly string Invitation,OtherInvitation,ReviewerInvitation,Package,OtherPackage;
         public readonly Dictionary<string,object> ScanPackages;
         public long Unix=WorkshopTrustChecks.Unix;
         public string LastBearer;
@@ -42,6 +42,7 @@ public static class CreatorBackendChecks
                 var hello=Read();Need(hello.ContainsKey("ready") && hello["ready"] is bool && (bool)hello["ready"],"Creator backend did not initialize.");
                 Invitation=ModTrust.Text(hello,"invitation");OtherInvitation=ModTrust.Text(hello,"other_invitation");Package=ModTrust.Text(hello,"package");OtherPackage=ModTrust.Text(hello,"other_package");
                 ScanPackages=ModTrust.Object(hello,"scan_packages");
+                ReviewerInvitation=ModTrust.Text(hello,"reviewer_invitation");
             }catch{Dispose();throw;}
         }
         Dictionary<string,object> Read()
@@ -92,11 +93,17 @@ public static class CreatorBackendChecks
             WorkshopTrustChecks.Pin(root);Core.Write(Core.PathIn(root,"Support/Mods/service.json"),Json.Encode(new {service=WorkshopTrustChecks.Origin}));
             using(var backend=new Backend(Path.Combine(root,"private-backend")))
             using(var first=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>WorkshopTrustChecks.Now))
+            using(var reviewer=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>WorkshopTrustChecks.Now))
             using(var other=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>WorkshopTrustChecks.Now)) {
                 const string password="Disposable native account password! e\u0301",loginPassword="Disposable native account password! \u00e9";
                 first.Redeem(backend.Invitation,password,CancellationToken.None).GetAwaiter().GetResult();Need(first.Username=="native-creator","Real account redemption differed.");
                 var plan=CreatorPackagePlan.Review(backend.Package,CancellationToken.None);
                 var uploaded=first.Upload(plan,CancellationToken.None).GetAwaiter().GetResult();Need(uploaded.State=="queued" && uploaded.Sha256==plan.Sha256,"Real upload did not enter private quarantine.");
+                Need(backend.Probe("/v1/moderation",backend.LastBearer)==403,"The real API allowed a creator to list moderation records.");
+                Reject(()=>first.Reviews(0,CancellationToken.None).GetAwaiter().GetResult(),"moderator account","The native creator issued a moderator request.");
+                reviewer.Redeem(backend.ReviewerInvitation,password,CancellationToken.None).GetAwaiter().GetResult();
+                Need(reviewer.CanModerate && reviewer.Reviews(0,CancellationToken.None).GetAwaiter().GetResult().Length==0,"The moderator queue exposed an unscanned upload.");
+                reviewer.SignOut(CancellationToken.None).GetAwaiter().GetResult();
                 var history=first.History(0,CancellationToken.None).GetAwaiter().GetResult();Need(history.Length==1 && history[0].Id==uploaded.Id && history[0].State=="queued","Real upload history differed.");
                 Need(first.History(history[0].Cursor,CancellationToken.None).GetAwaiter().GetResult().Length==0,"Real history cursor repeated an upload.");
                 Need(backend.Probe("/v1/packages/"+plan.Sha256,backend.LastBearer)==404,"The creator API exposed quarantine download bytes.");

@@ -326,6 +326,11 @@ public static class LauncherSharedUiChecks
     }
     static void CreatorConfig(string folder)
     {WorkshopTrustChecks.Pin(folder);Core.Write(Core.PathIn(folder,"Support/Mods/service.json"),Json.Encode(new {service=WorkshopTrustChecks.Origin}));}
+    static Dictionary<string,object> ModeratorRow(string zip,CreatorPackagePlan plan,string state="pending-review")
+    {
+        string manifest;using(var archive=System.IO.Compression.ZipFile.OpenRead(zip))using(var reader=new StreamReader(archive.GetEntry("mod.json").Open()))manifest=reader.ReadToEnd();
+        return new Dictionary<string,object>{{"cursor",1L},{"id",new string('a',32)},{"mod_id",plan.Id},{"version",plan.Version},{"sha256",plan.Sha256},{"state",state},{"manifest",manifest}};
+    }
     static void SetCreatorSecret(Element view,string name,string secret)
     {
 #if MACOS || LINUX
@@ -336,6 +341,56 @@ public static class LauncherSharedUiChecks
     }
     static void CreatorChecks(string root)
     {
+        Test("moderator decisions bind exact digest identity state role and note",()=>{
+            string folder=Path.Combine(root,"moderator-client");CreatorConfig(folder);string zip=LibraryPackage(folder,"moderator-demo","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);
+            foreach(string mode in new[]{"valid","creator","duplicate","manifest","state","digest","note","cancel"}) {
+                int decisions=0,reads=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role=mode=="creator"?"creator":"moderator"}});
+                    Need(request.Headers.Authorization!=null && request.Headers.Authorization.Parameter==new string('t',43),"Moderator request lost authentication");
+                    if(request.Method==System.Net.Http.HttpMethod.Get){reads++;var row=ModeratorRow(zip,plan);if(mode=="manifest")row["version"]="2.0.0";if(mode=="state")row["state"]="queued";return CreatorJson(new {uploads=mode=="duplicate"?new[]{row,row}:new[]{row}});}
+                    decisions++;Need(request.RequestUri.AbsolutePath=="/v1/moderation/"+new string('a',32),"Decision addressed another upload");
+                    var body=ModJson.Read(request.Content.ReadAsStringAsync().GetAwaiter().GetResult());Need(ModTrust.Text(body,"note")=="Reviewed original source" && ModTrust.Text(body,"action")=="approve","Decision changed note or action");
+                    return CreatorJson(new {id=new string('a',32),sha256=mode=="digest"?new string('f',64):plan.Sha256,state="approved"});
+                }),()=>WorkshopTrustChecks.Now)) {
+                    client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    if(new[]{"creator","duplicate","manifest","state"}.Contains(mode)) {
+                        WorkshopReject(()=>client.Reviews(0,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Invalid moderator queue accepted");
+                        Need(decisions==0 && (mode!="creator" || reads==0),"Creator issued a moderator request");continue;
+                    }
+                    var review=client.Reviews(0,System.Threading.CancellationToken.None).GetAwaiter().GetResult().Single();
+                    using(var stop=new System.Threading.CancellationTokenSource()) {
+                        if(mode=="cancel")stop.Cancel();
+                        Action submit=()=>client.Moderate(review,"approve",mode=="note"?" ":"Reviewed original source",stop.Token).GetAwaiter().GetResult();
+                        if(mode=="valid")submit();else WorkshopReject(submit,"Invalid or cancelled moderation decision accepted");
+                    }
+                    Need(decisions==(mode=="valid" || mode=="digest"?1:0),"Invalid moderation input reached the server");
+                }
+            }
+        });
+        Test("moderator UI requires note review and confirmation and Back makes no decision",()=>WithUiContext(()=>{
+            string folder=Path.Combine(root,"moderator-ui");CreatorConfig(folder);string zip=LibraryPackage(folder,"moderator-ui","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int decisions=0;string state="pending-review";
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role="moderator"}});
+                if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                if(request.Method==System.Net.Http.HttpMethod.Get)return CreatorJson(new {uploads=new[]{ModeratorRow(zip,plan,state)}});
+                decisions++;var body=ModJson.Read(request.Content.ReadAsStringAsync().GetAwaiter().GetResult());state=ModTrust.Text(body,"action")=="approve"?"approved":"revoked";
+                return CreatorJson(new {id=new string('a',32),sha256=plan.Sha256,state=state});
+            }),()=>WorkshopTrustChecks.Now))
+            using(var page=new ModCreatorPage(folder,false,client)) {
+                Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-password-not-a-real-account");Click(Find<Button>(page.View,"CreatorSignIn"));
+                PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="RefreshModeratorUploads" && b.IsEnabled),"Moderator sign-in did not render queue controls");
+                Action refresh=()=>{Click(Find<Button>(page.View,"RefreshModeratorUploads"));PumpUntil(()=>page.StatusText=="Moderation queue refreshed.","Moderation refresh did not finish");Click(Find<Button>(page.View,"ModeratorUpload"+new string('a',32)));};
+                refresh();Click(Find<Button>(page.View,"ReviewModeratorApproval"));Need(!All(page.View).OfType<Button>().Any(b=>b.Name=="ConfirmModeratorDecision") && decisions==0,"Blank note bypassed review");
+                Find<TextBox>(page.View,"ModeratorNote").Text="Reviewed original source";Click(Find<Button>(page.View,"ReviewModeratorApproval"));Need(decisions==0,"Review approved without confirmation");
+                Click(Find<Button>(page.View,"CancelModeratorDecision"));Need(decisions==0,"Back approved the package");
+                Click(Find<Button>(page.View,"ReviewModeratorApproval"));Click(Find<Button>(page.View,"ConfirmModeratorDecision"));PumpUntil(()=>page.StatusText.StartsWith("Moderation decision recorded"),"Approval did not return to UI");Need(decisions==1,"Approval duplicated requests");
+                refresh();Need(!Find<Button>(page.View,"ReviewModeratorApproval").IsEnabled,"Approved package offered another approval");Find<TextBox>(page.View,"ModeratorNote").Text="Withdraw reviewed fixture";
+                Click(Find<Button>(page.View,"ReviewModeratorRevocation"));Click(Find<Button>(page.View,"ConfirmModeratorDecision"));PumpUntil(()=>page.StatusText.StartsWith("Moderation decision recorded"),"Revocation did not return to UI");Need(decisions==2 && state=="revoked","Revocation did not use confirmed action");
+                Need(!Directory.Exists(Path.Combine(folder,"Mods")),"Moderator UI installed or enabled quarantine");
+                Click(Find<Button>(page.View,"CreatorSignOut"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignIn"),"Moderator sign-out did not finish");Need(!All(page.View).OfType<Button>().Any(b=>b.Name=="RefreshModeratorUploads"),"Signed-out UI retained moderator controls");
+            }
+        }));
         Test("creator package review validates all bytes without installing or extracting",()=>{
             string folder=Path.Combine(root,"creator-review");Directory.CreateDirectory(folder);
             string zip=LibraryPackage(folder,"creator-demo","1.0.0",1,author:"fixture-creator");var before=Directory.GetFileSystemEntries(folder);

@@ -1,3 +1,12 @@
+Native moderation in ModCreatorPage.cs adds role-gated completed-job pagination,
+strict manifest/identity checks, bounded review notes and explicit approval/revoke
+confirmation. Back sends no decision; responses bind ID/digest/state. Selections
+clear on authentication change; every request retains live root/origin checks.
+The existing API enforces roles/fresh clean scans and transactional audit. No
+quarantine source download, full scan-evidence view or public acceptance is added.
+Shared native tests inject decisions; real backend tests verify creator403 and
+moderator empty-queue access for unscanned uploads. See mod-creator-service.md.
+
 Native creator scanner acceptance adds explicit Mac --test-creator-scanner.
 It extends the same native-client/real-WSGI private-pipe fixture with actual
 ClamScanner/ScanSandbox/guardian processing. Owner-private configuration pins the

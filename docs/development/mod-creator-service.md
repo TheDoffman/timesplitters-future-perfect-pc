@@ -3,7 +3,7 @@
 The creator/moderator backend is implemented in this task branch. It is not
 exposed to the internet. The launcher now includes creator sign-in, invitation
 redemption, reviewed uploads and status history. Persistent credential-vault
-integration, native moderator screens, production supervision/backups and public host
+integration, player reports, production supervision/backups and public host
 acceptance remain required before release. The existing Caddy configuration
 still serves only approved snapshot downloads and does not proxy this API.
 
@@ -43,6 +43,30 @@ accepted bundled engine and official definitions. It checks clean-to-review,
 EICAR rejection and fail-closed scanner errors, including exhausted retry status
 in the native client. It never approves or exposes the fixture packages. This
 private-pipe acceptance is separate from public HTTPS and in-game acceptance.
+
+## Native moderation
+
+Moderator and administrator accounts see a **Moderation** section inside the
+Creator tab. Refresh lists completed scan jobs, with pages of up to100 records.
+Select a package to inspect its exact ID/version/archive digest, creator,
+description, dependencies and declared file sizes/hashes (first32 files shown).
+This metadata view does not download or execute quarantine. Review the complete
+source and contents independently before approving; in-launcher source inspection
+and scan-evidence details remain unfinished.
+
+Enter a review note, choose **Review approval** or **Review revocation**, then
+confirm the exact package and note. **Back** sends no decision. Approval is offered
+only for pending review; the server rechecks the role, active creator and fresh
+clean scan in its approval/audit transaction. Revocation withdraws repository
+availability; signed publication and client refresh must propagate it to public
+downloads and installed clients. Refresh after any interrupted or failed decision
+instead of retrying blindly. Leaving the account clears local review selections.
+
+The native client checks cursor ordering, duplicate records, strict manifests,
+manifest identity and returned decision identity/digest/state. Creator accounts
+cannot list or decide moderation. Shared native UI tests use injected responses;
+the separate real-backend check verifies creator refusal and a moderator's empty
+queue while uploads remain unscanned. Public moderator acceptance remains pending.
 
 Private snapshot/staged restore tooling and conservative publication reconciliation
 are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery

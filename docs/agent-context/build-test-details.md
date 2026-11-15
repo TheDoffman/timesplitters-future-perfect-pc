@@ -1,3 +1,9 @@
+Native moderator checks in launcher_shared_ui.cs cover strict manifest/queue and
+role/decision bindings, invalid notes/cancellation and dispatcher-driven approve/
+Back/revoke without installation. These inject HTTP responses, not scan results.
+creator_backend.cs separately verifies actual creator403 and moderator access to
+an empty real queue while uploads await scanning; no synthetic clean scan added.
+
 tests/mods/test_host_release.py covers unsafe/colliding/escaping entries, duplicate
 or noninteger metadata, root-before-identity admission and POSIX complete descriptor
 verification, tampered/extra/linked inputs, writable ancestors and exclusive copies.

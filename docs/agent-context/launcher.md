@@ -28,7 +28,7 @@ responses. Sessions remain in memory; secret inputs clear on submit/tab exit.
 Read-only InspectPackage shares installer validation. A separate developer mode
 checks real SQLite/account/upload code over pipes; player/UI runs need no Python.
 See mod-workshop.md and build-test-details.md. Native test receipts record the
-Python launcher hash/version; checked test entry points unwind fixture cleanup.
+Python identity. Native moderation contracts/tests: mod-workshop.md.
 
 Dependency install flow: ModWorkshopPage now prepares a fresh signed dependency
 plan, displays exact versions/reuse/new expanded payload size and requires an

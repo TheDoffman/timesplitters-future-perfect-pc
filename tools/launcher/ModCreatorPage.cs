@@ -58,6 +58,23 @@ namespace TimeSplitters.Launcher
         internal void Bind(CreatorPackagePlan plan)
         {Core.Require(ModId==plan.Id && Version==plan.Version && Sha256==plan.Sha256 && Size==plan.Size,"The workshop upload reservation differs from the reviewed package.");}
     }
+    public sealed class ModeratorUpload
+    {
+        public readonly string Id,ModId,Version,Sha256,State;
+        public readonly long Cursor;
+        public readonly InstalledMod Package;
+        internal ModeratorUpload(Dictionary<string,object> data)
+        {
+            ModTrust.Fields(data,"cursor id mod_id version sha256 state manifest");
+            Id=CreatorUpload.Text(data,"id",32);Sha256=CreatorUpload.Text(data,"sha256",64);
+            ModTrust.Need(Regex.IsMatch(Id,@"\A[0-9a-f]{32}\z") && Regex.IsMatch(Sha256,@"\A[0-9a-f]{64}\z"),"invalid review identity.");
+            ModId=CreatorUpload.Text(data,"mod_id",80);Version=CreatorUpload.Text(data,"version",32);
+            State=CreatorUpload.Text(data,"state",32);Cursor=ModTrust.Number(data,"cursor",1,999999999);
+            ModTrust.Need(new[]{"pending-review","approved","rejected","scan-error","revoked"}.Contains(State),"unknown review state.");
+            Package=ModLibrary.Manifest(ModTrust.Text(data,"manifest"));
+            ModTrust.Need(Package.Id==ModId && Package.Version==Version,"review manifest identity mismatch.");
+        }
+    }
     // Passwords and bearer sessions stay in memory. No cookies, redirect,
     // credential files, diagnostic payloads or automatic upload retries.
     public sealed class ModCreatorClient : IDisposable
@@ -68,6 +85,7 @@ namespace TimeSplitters.Launcher
         public string Role {get;private set;}
         public string LastTicket {get;private set;}
         public bool SignedIn {get{return token!=null && Now<expires;}}
+        public bool CanModerate {get{return SignedIn && (Role=="moderator" || Role=="admin");}}
         long Now {get{return new DateTimeOffset(clock()).ToUnixTimeSeconds();}}
         public ModCreatorClient(string root):this(root,ModWorkshopClient.Service(root),new HttpClientHandler {AllowAutoRedirect=false,UseCookies=false,UseDefaultCredentials=false},()=>DateTime.UtcNow){}
         internal ModCreatorClient(string root,string service,HttpMessageHandler handler,Func<DateTime> clock)
@@ -153,6 +171,32 @@ namespace TimeSplitters.Launcher
                 }
             }finally{gate.Release();}
         }
+        public async Task<ModeratorUpload[]> Reviews(long after,CancellationToken cancel)
+        {
+            Core.Require(after>=0 && after<=999999999,"Invalid moderation cursor.");await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanModerate,"Sign in with a moderator account to review packages.");
+                var response=await Request(HttpMethod.Get,"v1/moderation?after="+after.ToString(System.Globalization.CultureInfo.InvariantCulture),null,200,true,cancel).ConfigureAwait(false);
+                ModTrust.Fields(response,"uploads");var result=new List<ModeratorUpload>();var ids=new HashSet<string>();var hashes=new HashSet<string>();long previous=after;
+                foreach(var value in ModTrust.Array(response,"uploads",100)) {
+                    var data=value as Dictionary<string,object>;ModTrust.Need(data!=null,"invalid moderation record.");var row=new ModeratorUpload(data);
+                    ModTrust.Need(row.Cursor>previous && ids.Add(row.Id) && hashes.Add(row.Sha256),"unordered or duplicate moderation history.");previous=row.Cursor;result.Add(row);
+                }return result.ToArray();
+            }finally{gate.Release();}
+        }
+        public async Task Moderate(ModeratorUpload review,string action,string note,CancellationToken cancel)
+        {
+            Core.Require(review!=null && (action=="approve" || action=="revoke"),"Invalid moderation decision.");
+            note=(note??"").Trim();Core.Require(note.Length>0 && note.Length<=1800 && !note.Any(Char.IsControl),"Enter a review note of 1 to 1800 characters without control characters.");
+            Core.Require(action!="approve" || review.State=="pending-review","Only a package awaiting review can be approved.");
+            await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanModerate,"Sign in with a moderator account to review packages.");
+                var response=await Request(HttpMethod.Post,"v1/moderation/"+review.Id,JsonBody(new {action=action,note=note}),200,true,cancel).ConfigureAwait(false);
+                ModTrust.Fields(response,"id sha256 state");
+                ModTrust.Need(CreatorUpload.Text(response,"id",32)==review.Id && CreatorUpload.Text(response,"sha256",64)==review.Sha256 && CreatorUpload.Text(response,"state",32)==(action=="approve"?"approved":"revoked"),"moderation result differs from the reviewed decision. Refresh the review queue before retrying.");
+            }finally{gate.Release();}
+        }
         public void Dispose(){Forget();http.Dispose();}
     }
 
@@ -161,6 +205,7 @@ namespace TimeSplitters.Launcher
         public readonly StackPanel View=new StackPanel();
         readonly TextBox username=new TextBox {Name="CreatorUsername",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox package=new TextBox {Name="CreatorPackagePath",MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        readonly TextBox reviewNote=new TextBox {Name="ModeratorNote",MaxLength=1800,MinWidth=260,Margin=new Thickness(0,6,0,8)};
 #if MACOS || LINUX
         readonly TextBox password=new TextBox {Name="CreatorPassword",PasswordChar='\u25cf',Margin=new Thickness(0,6,0,8)};
         readonly TextBox invitation=new TextBox {Name="CreatorInvitation",PasswordChar='\u25cf',Margin=new Thickness(0,6,0,8)};
@@ -177,6 +222,7 @@ namespace TimeSplitters.Launcher
         readonly TextBlock status=PageTheme.Text("Sign in to submit your own packaged additions for scanning and review.",13,"#B4C7D8");
         readonly string root;readonly bool preview;ModCreatorClient client;CancellationTokenSource stop;bool disposed;
         CreatorPackagePlan reviewed;CreatorUpload[] uploads=new CreatorUpload[0];long cursor;
+        ModeratorUpload[] reviews=new ModeratorUpload[0];ModeratorUpload selectedReview;string decision,decisionNote;
         public string StatusText {get{return status.Text;}}
         public ModCreatorPage(string root,bool preview=false):this(root,preview,null){}
         internal ModCreatorPage(string root,bool preview,ModCreatorClient client){this.root=root;this.preview=preview;this.client=client;AutomationProperties.SetName(username,"Workshop username");AutomationProperties.SetName(password,"Workshop password");AutomationProperties.SetName(invitation,"Workshop invitation");AutomationProperties.SetName(package,"Mod ZIP file path");status.Margin=new Thickness(0,0,0,12);Render();}
@@ -197,7 +243,7 @@ namespace TimeSplitters.Launcher
         {var button=new Button {Name=name,Content=title,IsEnabled=stop==null && enabled,Margin=new Thickness(0,8,10,0)};button.Click+=(s,e)=>action();panel.Children.Add(button);return button;}
         void Render()
         {
-            Detach(username);Detach(password);Detach(invitation);Detach(package);View.Children.Clear();bool authenticated=SignedIn;
+            Detach(username);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);View.Children.Clear();bool authenticated=SignedIn;if(!authenticated)ClearReviews();
             View.Children.Add(status);var cancel=Button(View,"CancelCreatorOperation","Cancel request",()=>{if(stop!=null)stop.Cancel();});cancel.IsEnabled=stop!=null;Ui.Show(cancel,stop!=null);
             var account=PageTheme.Section(View,"Creator account",authenticated?"Signed in as "+client.Username+" ("+client.Role+")":"Use your workshop account or redeem an operator invitation.");
             if(!authenticated) {
@@ -207,7 +253,7 @@ namespace TimeSplitters.Launcher
                 account.Children.Add(PageTheme.Text("Invitation (for a new account or account recovery)",13));account.Children.Add(invitation);
                 Button(account,"CreatorRedeem","Redeem invitation",async()=>await Authenticate(true));
                 account.Children.Add(PageTheme.Text("Sign-in details are kept for this launcher session only.",12,"#9EB4C8"));
-            }else Button(account,"CreatorSignOut","Sign out",async()=>{reviewed=null;uploads=new CreatorUpload[0];await Run(token=>Client.SignOut(token),"Signed out. Local game files were preserved.",35);});
+            }else Button(account,"CreatorSignOut","Sign out",async()=>{reviewed=null;uploads=new CreatorUpload[0];ClearReviews();await Run(token=>Client.SignOut(token),"Signed out. Local game files were preserved.",35);});
             username.IsEnabled=password.IsEnabled=invitation.IsEnabled=stop==null;
             var submission=PageTheme.Section(View,"Submit a package","Build a ZIP with the mod SDK, enter its full file path, then review it before upload. Its author must match your creator username.");
             submission.Children.Add(package);package.IsEnabled=stop==null;
@@ -222,10 +268,48 @@ namespace TimeSplitters.Launcher
             Button(history,"RefreshCreatorUploads","Refresh uploads",async()=>{cursor=0;await History();},authenticated);
             foreach(var upload in uploads)history.Children.Add(PageTheme.Text(upload.ModId+" @ "+upload.Version+" · "+upload.State+(upload.Error.Length>0?" · "+upload.Error:""),13,"#B4C7D8"));
             if(uploads.Length==100)Button(history,"NextCreatorUploads","Next uploads",async()=>{cursor=uploads.Last().Cursor;await History();},authenticated);
+            if(client!=null && client.CanModerate)RenderModeration();
+        }
+        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;decision=null;decisionNote=null;reviewNote.Text="";}
+        async Task Reviews(long after)
+        {ClearReviews();await Run(async token=>{reviews=await Client.Reviews(after,token);},"Moderation queue refreshed.",35);}
+        void RenderModeration()
+        {
+            var panel=PageTheme.Section(View,"Moderation","Review the creator's source and package contents before deciding. This view shows the submitted manifest; it does not run or install quarantined content.");
+            Button(panel,"RefreshModeratorUploads","Refresh moderation",async()=>await Reviews(0));
+            foreach(var item in reviews) {
+                var row=item;
+                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,()=>{selectedReview=row;decision=null;decisionNote=null;reviewNote.Text="";Render();});
+            }
+            if(reviews.Length==100)Button(panel,"NextModeratorUploads","Next reviews",async()=>await Reviews(reviews.Last().Cursor));
+            if(selectedReview==null)return;
+            var review=selectedReview;
+            panel.Children.Add(PageTheme.Text(review.ModId+" @ "+review.Version+" · By "+review.Package.Author+" · "+review.State,14,"#A7D9FA"));
+            panel.Children.Add(PageTheme.Text("SHA-256: "+review.Sha256,12,"#9EB4C8"));
+            panel.Children.Add(PageTheme.Text(review.Package.Description,13));
+            panel.Children.Add(PageTheme.Text("Dependencies: "+(review.Package.Dependencies.Count==0?"None":String.Join(", ",review.Package.Dependencies.Select(p=>p.Key+" @ "+p.Value))),12));
+            foreach(var file in review.Package.Files.Take(32))panel.Children.Add(PageTheme.Text(file.Key+" · "+file.Value.Size+" bytes · "+file.Value.Sha256,12,"#9EB4C8"));
+            if(review.Package.Files.Count>32)panel.Children.Add(PageTheme.Text("Showing 32 of "+review.Package.Files.Count+" declared files. Inspect the full package independently before approval.",12));
+            if(decision==null) {
+                panel.Children.Add(PageTheme.Text("Review note",13));panel.Children.Add(reviewNote);reviewNote.IsEnabled=stop==null;
+                Button(panel,"ReviewModeratorApproval","Review approval",()=>ReviewDecision("approve"),review.State=="pending-review");
+                Button(panel,"ReviewModeratorRevocation","Review revocation",()=>ReviewDecision("revoke"),review.State!="revoked");
+            }else {
+                panel.Children.Add(PageTheme.Text((decision=="approve"?"Approve":"Revoke")+" this exact package? Note: "+decisionNote,14,"#FFDAA6"));
+                panel.Children.Add(PageTheme.Text("Approval permits signed publication. Revocation withdraws repository availability; public snapshots and installed clients must also receive the change.",12));
+                Button(panel,"ConfirmModeratorDecision","Confirm "+decision,async()=>{string action=decision,note=decisionNote;ClearReviews();await Run(token=>Client.Moderate(review,action,note,token),"Moderation decision recorded. Refresh the queue to check current status.",35);});
+                Button(panel,"CancelModeratorDecision","Back",()=>{decision=null;decisionNote=null;Render();});
+            }
+        }
+        void ReviewDecision(string action)
+        {
+            string note=(reviewNote.Text??"").Trim();
+            if(note.Length==0 || note.Length>1800 || note.Any(Char.IsControl)){status.Text="Enter a review note of 1 to 1800 characters without control characters.";return;}
+            decision=action;decisionNote=note;Render();
         }
         async Task Authenticate(bool redeem)
         {
-            string name=username.Text??"",secret=Password,invite=Invitation;ClearCredentials();
+            string name=username.Text??"",secret=Password,invite=Invitation;ClearCredentials();ClearReviews();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
             await Run(token=>redeem?Client.Redeem(invite,secret,token):Client.SignIn(name,secret,token),"Signed in. Review a ZIP to submit your addition.",45);
         }
         async Task History()
@@ -242,6 +326,6 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(!disposed)Render();}
             }
         }
-        public void Dispose(){disposed=true;ClearCredentials();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
+        public void Dispose(){disposed=true;ClearCredentials();ClearReviews();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
     }
 }

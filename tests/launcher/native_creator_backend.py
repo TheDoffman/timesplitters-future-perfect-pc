@@ -75,6 +75,7 @@ def main():
         (root / 'empty-definitions').mkdir(mode=0o700)
     emit(dict(ready=True, invitation=accounts.create_invite('native-creator'),
               other_invitation=accounts.create_invite('other-creator'),
+              reviewer_invitation=accounts.create_invite('native-reviewer', 'moderator'),
               package=package(root, 'native-creator', '1.0.0'),
               other_package=package(root, 'other-creator', '2.0.0'), scan_packages=scan_packages))
     while True:
