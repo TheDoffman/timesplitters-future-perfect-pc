@@ -284,6 +284,16 @@ rules and separate modded save namespaces explicitly.
 
 ### 3. Player mod manager in the existing launcher
 
+**Install package** first checks the current signed catalog and previews every
+exact dependency. Confirmation installs dependencies first and reuses only
+matching workshop-origin packages whose archive and extracted bytes verify.
+The preview reports expanded payload bytes, not compressed download size.
+The operation shares a512MiB package-download budget, rechecks the entire required
+set before publishing each package and leaves the active profile unchanged.
+A cancelled/failed batch keeps completed packages installed and inactive; review
+the plan again to retry. A later enable remains explicit. Automatic dependency
+activation and update/rollback previews are still unfinished.
+
 Browse offers content and creator filters, name/creator/numeric-version sorting
 and20 results per page. It shows the latest approved available release per mod
 by default; **Include older releases** exposes retained reviewed versions for

@@ -1,3 +1,20 @@
+Dependency install flow: ModWorkshopPage now prepares a fresh signed dependency
+plan, displays exact versions/reuse/new expanded payload size and requires an
+in-page install confirmation. ModWorkshopClient re-plans before execution,
+rejects changed manifests/installed state, verifies reused archive/payload bytes,
+downloads dependency-first under a shared512MiB package-transfer cap and checks
+availability of the entire closure before each publication. ModLibrary.Install
+compares the extracted strict manifest to the reviewed metadata before publishing.
+Installed archives also receive bounded ZIP preflight before manifest reads.
+Planning rejects portable case-folded payload collisions. Cancellation/failure
+keeps completed immutable packages inactive and preserves the active profile;
+UI reports partial completion honestly. No auto-enable or batch rollback implied.
+Signed public fixture vectors cover real trust verification, ZIP extraction,
+reuse/tamper, stale plan, archive/listing mismatch, revoked dependencies, scaled
+combined transfer limit and cancellation after a completed dependency. Fixture
+keys were generated in memory and discarded; these are injected HTTPS responses,
+not public connectivity or a production signing ceremony.
+
 WorkshopInstallPlan is shared, side-effect-free groundwork for dependency
 installation. It consumes a freshly verified catalog and strict package models,
 orders exact versions dependency-first, deduplicates shared dependencies and

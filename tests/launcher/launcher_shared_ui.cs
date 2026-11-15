@@ -187,10 +187,25 @@ public static class LauncherSharedUiChecks
             WorkshopReject(()=>WorkshopInstallPlan.Create(selected,new[]{selected,middle,baseOne,baseTwo},empty,origin),"Incompatible exact dependency versions accepted");
             var conflict=PlannedRelease("conflict","1.0.0","0000000000000001",new Dictionary<string,string>{{"base","1.0.0"}});
             WorkshopReject(()=>WorkshopInstallPlan.Create(conflict,new[]{conflict,baseOne},empty,origin),"Conflicting payloads accepted");
+            var upper=PlannedRelease("upper","1.0.0","0000000000000005");var lower=PlannedRelease("lower","1.0.0","0000000000000006",new Dictionary<string,string>{{"upper","1.0.0"}});
+            upper.Package.Files.Clear();upper.Package.Files.Add("maps/Arena.json",new ModPayload {Sha256=new string('a',64),Size=1});
+            lower.Package.Files.Clear();lower.Package.Files.Add("maps/arena.json",new ModPayload {Sha256=new string('b',64),Size=1});
+            WorkshopReject(()=>WorkshopInstallPlan.Create(lower,new[]{upper,lower},empty,origin),"Cross-platform case-colliding payloads accepted");
             foreach(int count in new[]{5,33}) {
                 var chain=Enumerable.Range(0,count).Select(i=>PlannedRelease("package-"+i.ToString("00"),"1.0.0",i.ToString("x16"),
                     i+1<count?new Dictionary<string,string>{{"package-"+(i+1).ToString("00"),"1.0.0"}}:null,count==5?64L*1024*1024:1)).ToArray();
                 WorkshopReject(()=>WorkshopInstallPlan.Create(chain[0],chain,empty,origin),count==5?"Expanded payload budget bypassed":"Package-count budget bypassed");
+            }
+        });
+        Test("workshop install preview shows exact dependencies and preview actions stay offline",()=>{
+            int requests=0;
+            using(var page=new ModWorkshopPage(root,true,new ModWorkshopClient(new WorkshopHandler(_=>{requests++;throw new Exception("Preview accessed network");})))) {
+                var releases=WorkshopTrustChecks.DependencyReleases();var plan=WorkshopInstallPlan.Create(releases.Single(r=>r.Id=="addon"),releases,new InstalledMod[0],WorkshopTrustChecks.Origin);
+                page.ShowInstallPlan(plan);
+                Need(All(page.View).OfType<TextBlock>().Any(text=>(text.Text??"").Contains("base @ 1.0.0")) && All(page.View).OfType<TextBlock>().Any(text=>(text.Text??"").Contains("middle @ 1.0.0")),"Exact required versions missing from confirmation");
+                Need(!page.Search.IsEnabled,"Search remained active over an install preview");
+                Click(Find<Button>(page.View,"ConfirmModInstall"));Need(requests==0 && page.StatusText.Contains("Preview only"),"Preview installed or connected");
+                Click(Find<Button>(page.View,"CancelModInstallPlan"));Need(page.Search.IsEnabled && page.VisibleCount==2,"Back did not restore browse");
             }
         });
         Test("workshop downloads verify hashes and recheck removal before fetching",()=>{

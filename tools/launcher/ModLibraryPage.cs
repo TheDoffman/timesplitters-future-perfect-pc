@@ -211,7 +211,27 @@ namespace TimeSplitters.Launcher
                 File.WriteAllText(Core.PathIn(destination,"mod.json"),json,new UTF8Encoding(false));mod.Sha256=expected;return mod;
             }
         }
-        public InstalledMod Install(string package,string expected,CancellationToken token,string expectedId=null,string expectedVersion=null,string workshopOrigin=null)
+        internal static bool SameManifest(InstalledMod left,InstalledMod right)
+        {
+            return left!=null && right!=null && left.Id==right.Id && left.Version==right.Version && left.Name==right.Name && left.Author==right.Author && left.Description==right.Description &&
+                left.Dependencies.Count==right.Dependencies.Count && left.Dependencies.All(pair=>right.Dependencies.ContainsKey(pair.Key) && right.Dependencies[pair.Key]==pair.Value) &&
+                left.Files.Count==right.Files.Count && left.Files.All(pair=>right.Files.ContainsKey(pair.Key) && right.Files[pair.Key].Sha256==pair.Value.Sha256 && right.Files[pair.Key].Size==pair.Value.Size);
+        }
+        public void VerifyInstalled(string key,string sha,string origin,InstalledMod expectedManifest,CancellationToken token)
+        {
+            using(var operation=Lock()) {
+                var mod=ReadInstalled(key);
+                Core.Require(mod.Sha256==sha && mod.WorkshopOrigin==origin && SameManifest(mod,expectedManifest),"An installed package differs from the reviewed plan. Reinstall it before continuing.");
+                CheckWorkshop(new[]{mod});
+                token.ThrowIfCancellationRequested();Core.Require(Core.Hash(Core.PathIn(mod.Directory,"package.zip"))==sha,"An installed archive was modified. Reinstall it before continuing.");
+                foreach(var pair in mod.Files) {
+                    token.ThrowIfCancellationRequested();string path=Core.PathIn(mod.Directory,"content/"+pair.Key);
+                    Core.Require(new FileInfo(path).Length==pair.Value.Size && Core.Hash(path)==pair.Value.Sha256,"An installed payload was modified. Reinstall it before continuing.");
+                    ValidatePayload(pair.Key,File.ReadAllBytes(path));
+                }
+            }
+        }
+        public InstalledMod Install(string package,string expected,CancellationToken token,string expectedId=null,string expectedVersion=null,string workshopOrigin=null,InstalledMod expectedManifest=null)
         {
             using(var operation=Lock()) {
             Core.Require(!running(),"Close the game before installing mods.");string temporary=PathIn(".install-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(temporary);
@@ -222,6 +242,7 @@ namespace TimeSplitters.Launcher
                 }
                 string content=Core.PathIn(temporary,"content");Directory.CreateDirectory(content);var mod=Extract(snapshot,content,expected,token);
                 Core.Require((expectedId==null && expectedVersion==null) || (mod.Id==expectedId && mod.Version==expectedVersion),"The mod package identity does not match its workshop listing.");
+                Core.Require(expectedManifest==null || SameManifest(mod,expectedManifest),"The package contents differ from the reviewed workshop plan.");
                 string target=PathIn("Packages/"+mod.Key);Core.Require(!Directory.Exists(target) && !File.Exists(target),"This mod version is already installed.");
                 // Dependencies are resolved again before enabling; install order is unrestricted.
                 if(workshopOrigin!=null)ModTrustStore.RequireAvailable(root,workshopOrigin,expected,clock());
@@ -253,6 +274,7 @@ namespace TimeSplitters.Launcher
             Core.Require(new FileInfo(receiptPath).Length<=8192 && new FileInfo(manifestPath).Length<=MaxManifest,"Installed mod metadata exceeds limits.");
             var receipt=ModJson.Read(File.ReadAllText(receiptPath));long schema=Number(receipt,"schema",2);string original;
             Fields(receipt,schema==1?new[]{"schema","id","version","sha256"}:new[]{"schema","id","version","sha256","origin"});
+            ValidateZipMetadata(Core.PathIn(path,"package.zip"));
             using(var archive=ZipFile.OpenRead(Core.PathIn(path,"package.zip"))) {
                 var metadata=archive.GetEntry("mod.json");Core.Require(metadata!=null,"Installed package manifest is missing.");
                 using(var input=metadata.Open())original=new UTF8Encoding(false,true).GetString(Read(input,metadata.Length,MaxManifest,CancellationToken.None));

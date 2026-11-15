@@ -58,6 +58,11 @@ namespace TimeSplitters.Launcher
         public readonly long PayloadBytes, NewPayloadBytes;
         WorkshopInstallPlan(WorkshopRelease[] ordered,WorkshopRelease[] downloads)
         {Ordered=ordered;Downloads=downloads;PayloadBytes=ordered.Sum(r=>r.PayloadBytes);NewPayloadBytes=downloads.Sum(r=>r.PayloadBytes);}
+        public bool Matches(WorkshopInstallPlan other)
+        {
+            return other!=null && Ordered.Length==other.Ordered.Length && Ordered.Zip(other.Ordered,(a,b)=>a.Id==b.Id && a.Version==b.Version && a.Sha256==b.Sha256 && ModLibrary.SameManifest(a.Package,b.Package)).All(value=>value) &&
+                Downloads.Select(r=>r.Id+"@"+r.Version+":"+r.Sha256).SequenceEqual(other.Downloads.Select(r=>r.Id+"@"+r.Version+":"+r.Sha256));
+        }
         public static WorkshopInstallPlan Create(WorkshopRelease selected,IEnumerable<WorkshopRelease> catalog,IEnumerable<InstalledMod> installed,string origin)
         {
             Core.Require(ModWorkshopClient.ServiceUri(origin).GetLeftPart(UriPartial.Authority)==origin,"Use the canonical workshop origin for installation.");
@@ -89,7 +94,7 @@ namespace TimeSplitters.Launcher
                 pending.Remove(release.Id);visited.Add(release.Id);ordered.Add(release);
             };
             visit(current);
-            var files=new HashSet<string>(StringComparer.Ordinal);long total=0;
+            var files=new HashSet<string>(StringComparer.OrdinalIgnoreCase);long total=0;
             foreach(var release in ordered)foreach(var file in release.Package.Files) {
                 Core.Require(files.Add(file.Key),"Required packages conflict on "+file.Key+".");
                 total+=file.Value.Size;Core.Require(total<=ModLibrary.MaxExpanded,"Required mods exceed the expanded payload budget.");
@@ -206,8 +211,9 @@ namespace TimeSplitters.Launcher
                 trust.Commit(metadata,catalog,accepted,now);return releases;
             }
         }
-        public async Task<string> Download(string service,WorkshopRelease selected,string root,CancellationToken token)
+        public async Task<string> Download(string service,WorkshopRelease selected,string root,CancellationToken token,long maximum=MaxPackageBytes)
         {
+            Core.Require(maximum>0 && maximum<=MaxPackageBytes,"Invalid mod download budget.");
             // Recheck the current catalog so old page state cannot bypass a removal.
             var current=await Read(service,token);
             Core.Require(current.Any(r=>r.Sha256==selected.Sha256 && r.Id==selected.Id && r.Version==selected.Version),"This mod is no longer available. Refresh the workshop.");
@@ -218,10 +224,10 @@ namespace TimeSplitters.Launcher
             try {
                 using(var response=await http.GetAsync(new Uri(ServiceUri(service),"v1/packages/"+selected.Sha256),HttpCompletionOption.ResponseHeadersRead,token)) {
                     Core.Require(response.StatusCode==System.Net.HttpStatusCode.OK,"This mod download is unavailable.");
-                    Core.Require(!response.Content.Headers.ContentLength.HasValue || response.Content.Headers.ContentLength<=MaxPackageBytes,"Mod package exceeds the download limit.");
+                    Core.Require(!response.Content.Headers.ContentLength.HasValue || response.Content.Headers.ContentLength<=maximum,"Mod package exceeds the download limit.");
                     using(var input=await response.Content.ReadAsStreamAsync())using(var output=new FileStream(partial,FileMode.CreateNew,FileAccess.Write,FileShare.None)) {
                         byte[] buffer=new byte[65536];int count;
-                        while((count=await input.ReadAsync(buffer,0,buffer.Length,token))>0){Core.Require(output.Length+count<=MaxPackageBytes,"Mod package exceeds the download limit.");await output.WriteAsync(buffer,0,count,token);}
+                        while((count=await input.ReadAsync(buffer,0,buffer.Length,token))>0){Core.Require(output.Length+count<=maximum,"Mod package exceeds the download limit.");await output.WriteAsync(buffer,0,count,token);}
                     }
                 }
                 string hash;using(var algorithm=SHA256.Create())using(var stream=File.OpenRead(partial))hash=BitConverter.ToString(algorithm.ComputeHash(stream)).Replace("-","").ToLowerInvariant();
@@ -236,6 +242,35 @@ namespace TimeSplitters.Launcher
                 }else File.Move(partial,target);
                 return target;
             } finally {if(File.Exists(partial))File.Delete(partial);}
+        }
+        public async Task<WorkshopInstallPlan> Plan(string service,WorkshopRelease selected,ModLibrary library,CancellationToken token)
+        {
+            var catalog=await Read(service,token);var installed=await Task.Run(()=>library.List(),token);
+            return WorkshopInstallPlan.Create(selected,catalog,installed,ServiceUri(service).GetLeftPart(UriPartial.Authority));
+        }
+        internal async Task Install(string service,WorkshopInstallPlan reviewed,ModLibrary library,string root,CancellationToken token,Action<string> progress=null,long maximumDownloads=512L*1024*1024)
+        {
+            Core.Require(maximumDownloads>0 && maximumDownloads<=512L*1024*1024,"Invalid combined mod download budget.");
+            Core.Require(Path.GetFullPath(root)==Path.GetFullPath(installation),"The mod plan must use its verified installation folder.");
+            Core.Require(!Core.GameRunning(),"Close the game before installing mods.");
+            var plan=await Plan(service,reviewed.Ordered.Last(),library,token);
+            Core.Require(reviewed.Matches(plan),"The required packages or installed library changed. Review the install plan again.");
+            string origin=ServiceUri(service).GetLeftPart(UriPartial.Authority);
+            foreach(var release in plan.Ordered.Except(plan.Downloads)) {
+                if(progress!=null)progress("Verifying installed "+release.Name+"…");
+                await Task.Run(()=>library.VerifyInstalled(release.Id+"@"+release.Version,release.Sha256,origin,release.Package,token),token);
+            }
+            long remaining=maximumDownloads;int number=0;
+            foreach(var release in plan.Downloads) {
+                token.ThrowIfCancellationRequested();Core.Require(remaining>0,"This install exceeds its combined download limit.");
+                if(progress!=null)progress("Downloading "+(++number)+" of "+plan.Downloads.Length+": "+release.Name+"…");
+                string path=await Download(service,release,root,token,Math.Min(MaxPackageBytes,remaining));
+                remaining-=new FileInfo(path).Length;
+                ModTrustStore.RequireAvailable(root,origin,plan.Ordered.Select(r=>r.Sha256),clock());
+                await Task.Run(()=>library.Install(path,release.Sha256,token,release.Id,release.Version,origin,release.Package),token);
+            }
+            var after=await Read(service,token);
+            Core.Require(plan.Ordered.All(release=>after.Any(r=>r.Id==release.Id && r.Version==release.Version && r.Sha256==release.Sha256 && ModLibrary.SameManifest(r.Package,release.Package))),"A required package became unavailable or changed during installation. Nothing was enabled.");
         }
         public void Dispose(){http.Dispose();}
     }
@@ -268,6 +303,7 @@ namespace TimeSplitters.Launcher
         public int PageNumber {get{return page+1;}}
         public int PageCount {get{return Math.Max(1,(MatchingCount+PageSize-1)/PageSize);}}
         CancellationTokenSource stop;WorkshopRelease[] releases=new WorkshopRelease[0];bool disposed;string service="";
+        WorkshopInstallPlan pendingPlan;
         public string StatusText {get{return status.Text;}}
         public int VisibleCount {get;private set;}
         public ModWorkshopPage(string root,bool preview=false) : this(root,preview,new ModWorkshopClient(root)) { }
@@ -281,7 +317,7 @@ namespace TimeSplitters.Launcher
             var header=PageTheme.Header("COMMUNITY WORKSHOP","Mods","Browse community creations, check their details and download packages here.");View.Children.Add(header);
             var toolbar=new WrapPanel();header.Children.Add(toolbar);
             toolbar.Children.Add(BrowseTab);toolbar.Children.Add(InstalledTab);
-            BrowseTab.Click+=(s,e)=>{installedTab=false;ResetPage();};InstalledTab.Click+=(s,e)=>{installedTab=true;ResetPage();};
+            BrowseTab.Click+=(s,e)=>{pendingPlan=null;installedTab=false;ResetPage();};InstalledTab.Click+=(s,e)=>{pendingPlan=null;installedTab=true;ResetPage();};
             var searchLabel=PageTheme.Text("Search mods",13);searchLabel.Margin=new Thickness(0,9,12,8);toolbar.Children.Add(searchLabel);
             toolbar.Children.Add(Search);toolbar.Children.Add(Refresh);toolbar.Children.Add(Cancel);
             AutomationProperties.SetName(Search,"Search mods by name, creator or description");
@@ -314,14 +350,17 @@ namespace TimeSplitters.Launcher
                 new WorkshopRelease {Id="preview-mode",Name="Example game mode",Version="1.0.0",Author="Example creator",Categories=new[]{"scripts"},Description="Interface example for a scripted game mode listing. No script is downloaded or executed.",ScanEngine="Preview example",ScannedUtc=DateTime.UtcNow}};
             Render();
         }
-        public void SetReleases(WorkshopRelease[] value){releases=value??new WorkshopRelease[0];ResetPage();}
+        public void SetReleases(WorkshopRelease[] value){pendingPlan=null;releases=value??new WorkshopRelease[0];ResetPage();}
+        internal void ShowInstallPlan(WorkshopInstallPlan value){pendingPlan=value;installedTab=false;ResetPage();}
         static TextBlock FilterLabel(string text){var label=PageTheme.Text(text,13);label.Margin=new Thickness(0,9,8,8);return label;}
         void ResetPage(){page=0;Render();if(scroll!=null)Ui.ScrollHome(scroll);}
         static string Choice(ComboBox box){var item=box.SelectedItem as ComboBoxItem;return item==null?"":(string)item.Tag;}
+        static string PayloadSize(long bytes){return bytes<1048576?bytes.ToString(CultureInfo.InvariantCulture)+" bytes":(bytes/1048576.0).ToString("0.##",CultureInfo.InvariantCulture)+" MiB";}
         void Render()
         {
             results.Children.Clear();VisibleCount=0;string query=(Search.Text??"").Trim();
-            Ui.Show(filters,!installedTab);Ui.Show(pager,!installedTab);
+            Ui.Show(filters,!installedTab && pendingPlan==null);Ui.Show(pager,!installedTab && pendingPlan==null);Search.IsEnabled=stop==null && pendingPlan==null;
+            if(pendingPlan!=null){RenderPlan();return;}
             if(installedTab){RenderInstalled(query);return;}
             var selected=WorkshopRelease.Select(releases,query,Creator.Text,Choice(Category),OlderVersions.IsChecked==true,Choice(Sort));
             MatchingCount=selected.Length;page=Math.Max(0,Math.Min(page,PageCount-1));
@@ -331,7 +370,7 @@ namespace TimeSplitters.Launcher
                 VisibleCount++;
                 var card=PageTheme.Section(results,release.Name+"  "+release.Version,release.Description);
                 card.Children.Add(PageTheme.Text("By "+release.Author,13,"#A7D9FA"));
-                string size=release.PayloadBytes<1048576?release.PayloadBytes.ToString(CultureInfo.InvariantCulture)+" bytes":(release.PayloadBytes/1048576.0).ToString("0.##",CultureInfo.InvariantCulture)+" MiB";
+                string size=PayloadSize(release.PayloadBytes);
                 string content=String.Join(" · ",release.Categories.Select(WorkshopRelease.ContentName));
                 card.Children.Add(PageTheme.Text(content+(release.PayloadBytes>0?" · Payload "+size:""),12,"#B4C7D8"));
                 if(release.Dependencies.Length>0)card.Children.Add(PageTheme.Text("Requires: "+String.Join(", ",release.Dependencies),12,"#B4C7D8"));
@@ -340,9 +379,25 @@ namespace TimeSplitters.Launcher
                 AutomationProperties.SetName(button,"Download "+release.Name+" "+release.Version);
                 button.Click+=async(s,e)=>await Download(release);card.Children.Add(button);
                 var install=new Button {Name="InstallMod",Content="Install package",IsEnabled=stop==null,Margin=new Thickness(0,8,0,0)};
-                AutomationProperties.SetName(install,"Install "+release.Name+" "+release.Version);install.Click+=async(s,e)=>await Download(release,true);card.Children.Add(install);
+                AutomationProperties.SetName(install,"Install "+release.Name+" "+release.Version);install.Click+=async(s,e)=>await PrepareInstall(release);card.Children.Add(install);
             }
             if(VisibleCount==0)results.Children.Add(PageTheme.Text(releases.Length==0?"Approved mods will appear here when the workshop is available.":"No mods match your search.",14,"#B4C7D8"));
+        }
+        void RenderPlan()
+        {
+            var plan=pendingPlan;var selected=plan.Ordered.Last();
+            var card=PageTheme.Section(results,"Install "+selected.Name+" "+selected.Version,"Review the exact required versions. Existing versions and the active mod profile are kept. Packages remain inactive until you enable them from Installed.");
+            card.Children.Add(PageTheme.Text(plan.Downloads.Length+" package(s) to download · "+PayloadSize(plan.NewPayloadBytes)+" of new payload after extraction. Download size may differ.",13));
+            foreach(var release in plan.Ordered) {
+                bool download=plan.Downloads.Contains(release);
+                card.Children.Add(PageTheme.Text(release.Name+" @ "+release.Version+" · "+(download?"Download and install":"Verify and reuse installed package"),13,"#A7D9FA"));
+                if(!release.Package.TextureOnly && !release.Package.ScriptMode)card.Children.Add(PageTheme.Text("This package can be installed, but its content cannot be activated by this build yet.",12,"#FFDAA6"));
+                else if(release.Package.ScriptMode)card.Children.Add(PageTheme.Text("Gameplay modes run offline with separate progress and require a compatible game build.",12,"#FFDAA6"));
+            }
+            var actions=new WrapPanel {Margin=new Thickness(0,12,0,0)};card.Children.Add(actions);
+            var confirm=new Button {Name="ConfirmModInstall",Content=plan.Downloads.Length==0?"Verify installed packages":"Install required packages",IsEnabled=stop==null,Margin=new Thickness(0,0,10,0)};
+            confirm.Click+=async(s,e)=>await ConfirmInstall();actions.Children.Add(confirm);
+            var back=new Button {Name="CancelModInstallPlan",Content="Back to browse",IsEnabled=stop==null};back.Click+=(s,e)=>{pendingPlan=null;ResetPage();};actions.Children.Add(back);
         }
         void RenderInstalled(string query)
         {
@@ -378,7 +433,7 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(FileBusyChanged!=null)FileBusyChanged(false);if(!disposed)Busy(false);}
             }
         }
-        void Busy(bool value){Refresh.IsEnabled=!value;Cancel.IsEnabled=value;Render();}
+        void Busy(bool value){Refresh.IsEnabled=!value;Cancel.IsEnabled=value;BrowseTab.IsEnabled=!value;InstalledTab.IsEnabled=!value;Render();}
         public async Task Load()
         {
             if(disposed||stop!=null)return;
@@ -395,20 +450,48 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(!disposed)Busy(false);}
             }
         }
-        async Task Download(WorkshopRelease release,bool install=false)
+        async Task PrepareInstall(WorkshopRelease release)
+        {
+            if(disposed || stop!=null)return;
+            if(preview){status.Text="Preview only. No installed files were read or changed.";return;}
+            using(var operation=new CancellationTokenSource(TimeSpan.FromSeconds(45))) {
+                stop=operation;Busy(true);status.Text="Checking required packages…";
+                try {service=ModWorkshopClient.Service(root);var plan=await client.Plan(service,release,library,operation.Token);if(!disposed){ShowInstallPlan(plan);status.Text="Review the required packages before installing.";}}
+                catch(OperationCanceledException){if(!disposed)status.Text="Install preview cancelled. No packages were installed.";}
+                catch(Exception error){if(!disposed)status.Text=error.Message;}
+                finally{stop=null;if(!disposed)Busy(false);}
+            }
+        }
+        async Task ConfirmInstall()
+        {
+            if(disposed || stop!=null || pendingPlan==null)return;
+            if(preview){status.Text="Preview only. No package was installed or enabled.";return;}
+            var reviewed=pendingPlan;
+            using(var operation=new CancellationTokenSource(TimeSpan.FromMinutes(15))) {
+                stop=operation;Busy(true);if(FileBusyChanged!=null)FileBusyChanged(true);
+                try {
+                    Core.Require(ServiceUriOrigin(ModWorkshopClient.Service(root))==ServiceUriOrigin(service),"The workshop address changed. Refresh and review the plan again.");
+                    await client.Install(service,reviewed,library,root,operation.Token,text=>{if(!disposed)status.Text=text;});
+                    pendingPlan=null;installedTab=true;if(!disposed)status.Text="Required packages installed and verified. Enable them from Installed when ready. The previous active profile was kept.";
+                }
+                catch(OperationCanceledException){pendingPlan=null;if(!disposed)status.Text="Install cancelled. Completed packages remain installed; no packages were enabled by this operation.";}
+                catch(Exception error){pendingPlan=null;if(!disposed)status.Text=error.Message+" Completed packages remain installed; no packages were enabled by this operation. Review the plan again to retry.";}
+                finally{stop=null;if(FileBusyChanged!=null)FileBusyChanged(false);if(!disposed)Busy(false);}
+            }
+        }
+        async Task Download(WorkshopRelease release)
         {
             if(disposed||stop!=null)return;
             if(preview){status.Text="Preview only. No package was downloaded.";return;}
             using(var operation=new CancellationTokenSource(TimeSpan.FromMinutes(10))) {
-                stop=operation;Busy(true);status.Text="Downloading "+release.Name+"…";if(install && FileBusyChanged!=null)FileBusyChanged(true);
+                stop=operation;Busy(true);status.Text="Downloading "+release.Name+"…";
                 try {
-                    string path=await client.Download(service,release,root,operation.Token);
-                    if(install){await Task.Run(()=>library.Install(path,release.Sha256,operation.Token,release.Id,release.Version,ServiceUriOrigin(service)));installedTab=true;}
-                    if(!disposed)status.Text=install?"Installed "+release.Name+". Enable supported content from Installed when ready.":"Downloaded and verified "+release.Name+". The package remains inactive.";
+                    await client.Download(service,release,root,operation.Token);
+                    if(!disposed)status.Text="Downloaded and verified "+release.Name+". The package remains inactive.";
                 }
                 catch(OperationCanceledException){if(!disposed)status.Text="Download cancelled. No mod was installed.";}
-                catch(Exception error){if(!disposed)status.Text=install?error.Message:"Could not verify this mod download. Refresh mods and try again.";}
-                finally{stop=null;if(install && FileBusyChanged!=null)FileBusyChanged(false);if(!disposed)Busy(false);}
+                catch(Exception){if(!disposed)status.Text="Could not verify this mod download. Refresh mods and try again.";}
+                finally{stop=null;if(!disposed)Busy(false);}
             }
         }
         public void Dispose(){disposed=true;if(stop!=null)stop.Cancel();client.Dispose();}

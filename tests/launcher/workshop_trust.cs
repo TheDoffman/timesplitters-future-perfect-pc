@@ -47,11 +47,79 @@ public static class WorkshopTrustChecks
         }),folder,clock??(()=>Now));
     }
     static WorkshopRelease[] Read(ModWorkshopClient client){return client.Read(Origin,CancellationToken.None).GetAwaiter().GetResult();}
+    public static WorkshopRelease[] DependencyReleases(){return ModWorkshopClient.Parse(Encoding.UTF8.GetString(Bytes("dependency_catalog1")),Now);}
+    static ModWorkshopClient DependencyClient(string folder,Func<int> version,Action<string> packageRequest=null)
+    {
+        var releases=DependencyReleases();
+        return new ModWorkshopClient(new Handler(request=>{
+            string path=request.RequestUri.AbsolutePath;
+            if(path=="/v1/catalog")return Response("dependency_catalog"+version());
+            if(path=="/v1/trust/catalog")return Response("dependency_metadata"+version());
+            var release=releases.Single(r=>path=="/v1/packages/"+r.Sha256);
+            if(packageRequest!=null)packageRequest(release.Id);
+            return Response("dependency_package_"+release.Id);
+        }),folder,()=>Now);
+    }
+    static ModLibrary DependencyLibrary(string folder)
+    {
+        Directory.CreateDirectory(Core.PathIn(folder,"Support/Mods"));File.WriteAllBytes(Core.PathIn(folder,"Support/Mods/trusted-root.json"),Bytes("dependency_root"));
+        return new ModLibrary(folder,()=>false,()=>Now);
+    }
+    static WorkshopInstallPlan DependencyPlan(ModWorkshopClient client,ModLibrary library)
+    {return client.Plan(Origin,DependencyReleases().Single(r=>r.Id=="addon"),library,CancellationToken.None).GetAwaiter().GetResult();}
     static string State(string folder){return Core.PathIn(folder,".launcher/mod-trust/"+ModTrust.Hash(Encoding.UTF8.GetBytes(Origin))+"/state.json");}
     static void Need(bool value,string message){if(!value)throw new Exception(message);}
     static void Reject(Action action,string message){bool rejected=false;try{action();}catch{rejected=true;}Need(rejected,message);}
     public static void Run(string root,Action<string,Action> test)
     {
+        test("signed dependency installation verifies archives reuses exact packages and preserves the active profile",()=>{
+            string folder=Path.Combine(root,"dependency-complete");var library=DependencyLibrary(folder);int requests=0;
+            using(var client=DependencyClient(folder,()=>1,_=>requests++)) {
+                var plan=DependencyPlan(client,library);Need(plan.Downloads.Length==3,"Required packages missing");
+                client.Install(Origin,plan,library,folder,CancellationToken.None).GetAwaiter().GetResult();
+                Need(requests==3 && library.List().Length==3 && library.Enabled().Length==0,"Install downloaded incorrectly or enabled packages");
+                library.SetEnabled(plan.Ordered.Select(r=>r.Id+"@"+r.Version),CancellationToken.None);
+                string profile=File.ReadAllText(Core.PathIn(folder,"Mods/profile.json"));
+                var reuse=DependencyPlan(client,library);Need(reuse.Downloads.Length==0,"Matching installed dependencies were not reused");
+                client.Install(Origin,reuse,library,folder,CancellationToken.None).GetAwaiter().GetResult();
+                Need(requests==3 && File.ReadAllText(Core.PathIn(folder,"Mods/profile.json"))==profile,"Reuse changed the profile or downloaded packages");
+                var baseline=library.ReadInstalled("base@1.0.0");File.WriteAllText(Path.Combine(baseline.Directory,"content/textures/1111111111111111.dds"),"changed");
+                Reject(()=>client.Install(Origin,reuse,library,folder,CancellationToken.None).GetAwaiter().GetResult(),"Tampered installed payload reused");
+                Need(File.ReadAllText(Core.PathIn(folder,"Mods/profile.json"))==profile,"Rejected reuse changed the active profile");
+            }
+        });
+        test("signed dependency cancellation and combined download bounds retain only completed inactive packages",()=>{
+            foreach(bool cancel in new[]{true,false}) {
+                string folder=Path.Combine(root,"dependency-partial-"+cancel);var library=DependencyLibrary(folder);
+                using(var client=DependencyClient(folder,()=>1))using(var stop=new CancellationTokenSource()) {
+                    var plan=DependencyPlan(client,library);
+                    long budget=Bytes("dependency_package_base").Length+Bytes("dependency_package_middle").Length-1;
+                    Reject(()=>client.Install(Origin,plan,library,folder,stop.Token,text=>{if(cancel && text.StartsWith("Downloading 2 of"))stop.Cancel();},cancel?512L*1024*1024:budget).GetAwaiter().GetResult(),"Cancelled or oversized plan completed");
+                    Need(library.List().Single().Id=="base" && library.Enabled().Length==0,"Partial install published the dependent or changed the active profile");
+                    Need(Directory.GetFiles(Core.PathIn(folder,".launcher/mod-downloads"),"*.partial").Length==0,"Partial transfer was not cleaned up");
+                }
+            }
+        });
+        test("signed dependency revocation during transfer prevents the dependent and later activation",()=>{
+            string folder=Path.Combine(root,"dependency-revoked");var library=DependencyLibrary(folder);int version=1;
+            using(var client=DependencyClient(folder,()=>version,id=>{if(id=="addon")version=2;})) {
+                var plan=DependencyPlan(client,library);
+                Reject(()=>client.Install(Origin,plan,library,folder,CancellationToken.None).GetAwaiter().GetResult(),"Revoked dependency plan completed");
+                Need(library.List().Select(m=>m.Id).OrderBy(id=>id).SequenceEqual(new[]{"base","middle"}) && library.Enabled().Length==0,"A revoked plan published the dependent or enabled packages");
+                Reject(()=>library.Enable("base@1.0.0",CancellationToken.None),"Revoked partial dependency enabled");
+            }
+        });
+        test("signed dependency metadata changes require a new preview and mismatched archives never publish",()=>{
+            foreach(bool changeBefore in new[]{true,false}) {
+                string folder=Path.Combine(root,"dependency-metadata-"+changeBefore);var library=DependencyLibrary(folder);int version=changeBefore?1:3,requests=0;
+                using(var client=DependencyClient(folder,()=>version,_=>requests++)) {
+                    var plan=DependencyPlan(client,library);version=3;
+                    Reject(()=>client.Install(Origin,plan,library,folder,CancellationToken.None).GetAwaiter().GetResult(),"Changed or misleading metadata installed");
+                    Need(!library.List().Any(m=>m.Id=="addon") && library.Enabled().Length==0,"Mismatched archive published or enabled");
+                    Need(requests==(changeBefore?0:3),"Stale plan downloaded before re-review or archive comparison did not run");
+                }
+            }
+        });
         test("native trust verifies Python signatures and rejects tampering and incomplete root thresholds",()=>{
             var first=ModTrust.Roots(Bytes("root1"),new byte[0][],Unix);
             var metadata=ModTrust.Catalog(Bytes("metadata1"),Bytes("catalog1"),first,Unix);
