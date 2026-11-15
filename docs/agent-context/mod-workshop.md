@@ -11,6 +11,8 @@ No worker/API/capsule/native game code or host HTTP contract changes; existing
 430 host API accepts these standard single-source archives. It remains a frozen
 component at430, not a claim that the new SDK is publicly deployed/stable.
 Native CI suite registers test_lua_bundle; Lua/mod.json example changes select it.
+User Mac at e01e0266 passes15 SDK packaging tests; new native-VM/game/public
+acceptance remains separate and pending. Its low disk capacity prevents builds.
 
 Native moderator report controls now list open reports and20-row complete history,
 require note/review/confirm for close/reopen, and clear selections on auth changes.

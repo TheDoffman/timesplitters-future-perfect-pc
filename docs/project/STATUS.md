@@ -10,8 +10,10 @@ kills and end the match; cache/varargs/global-escape absence and terminal budget
 command-atomicity cases pass. Final bundle+VM79 tests pass14.60s; packaging/budget
 selection102 pass3.75s; CI suite/scope contracts113 pass. New SDK tests are
 registered for Windows/Mac native suites and example Lua/manifest edits select
-them. Local Mac/Linux new-SDK checks and actual three-host in-game/public flow
-remain pending. The Mac is below1GiB free, so no local worker build is started.
+them. At source e01e0266 the user's Mac also passes all15 packaging tests (0.08s)
+using its existing Python3.12 environment; no new worker/game build was required.
+Mac/Linux native-VM checks for the new SDK and actual three-host in-game/public
+flow remain pending. The Mac has633352KiB free, so no local worker build is started.
 Existing430 host API accepts the standard produced archives; its frozen component
 revision remains explicit. Maps/audio/entity APIs/importers, stable SDK release
 and other full-goal acceptance remain unfinished.
