@@ -181,7 +181,7 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--startup") return LauncherStartupChecks.Run();
         if (args.Length == 1 && args[0] == "--news") return LauncherNewsChecks.Run();
         if (args.Length == 1 && args[0] == "--shared-ui") return LauncherSharedUiChecks.Run();
-        if (args.Length == 1 && args[0] == "--test-creator-backend") return CreatorBackendChecks.Run();
+        if (args.Length == 1 && args[0] == "--test-creator-backend") return CreatorBackendChecks.RunSafely();
         if (args.Length == 1 && args[0] == "--workshop") return LauncherSharedUiChecks.RunWorkshop();
         if (args.Length == 1 && args[0] == "--textures") return LauncherTextureChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();

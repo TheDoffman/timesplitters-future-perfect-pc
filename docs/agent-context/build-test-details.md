@@ -1581,3 +1581,5 @@ limits remain unchanged. The explicit scanner-mode pipe wait allows the existing
 180s scanner deadline plus teardown; ordinary wire checks retain their15s wait.
 The fixture decodes Repository.get's stored scan JSON before returning a report
 object; an initial live run exposed this wrapper mismatch, with inputs unchanged.
+RunSafely catches standalone fixture errors so .NET unwinds cleanup rather than
+aborting before finally; bad-config acceptance must return1 with no child/fixture.

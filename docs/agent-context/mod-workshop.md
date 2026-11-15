@@ -7,6 +7,9 @@ and empty/missing-engine errors through all3 retries->scan-error. Test account/
 retry time advances do not alter OS time, AV freshness, scanner budgets or policy.
 Every state is reread through ModCreatorClient.History; catalog stays empty and
 quarantine download stays404. No approval/publication/public TLS is implied.
+Developer mode entry points catch failures before process exit, permitting their
+fixture cleanup to unwind. A failed initial unchecked mode left an owned fixture;
+its inputs/inventory and acceptance are preserved before targeted cleanup.
 
 Native creator backend wire check: creator_backend.cs launches the real Python
 WorkshopAPI/Accounts/Uploads/SDK packager against a disposable SQLite repository

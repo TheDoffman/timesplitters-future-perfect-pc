@@ -35,9 +35,9 @@ namespace TimeSplitters.Launcher
             if(args.Length==3 && (args[0]=="--apply-game" || args[0]=="--rollback-game" || args[0]=="--test-game-helper"))
                 return NativeStartup.ApplyGame(Path.GetFullPath(args[1]),Int32.Parse(args[2]),args[0]=="--rollback-game",args[0]=="--test-game-helper");
             if(args.Length==3 && args[0]=="--extract-art") { ExtractArt(args[1],args[2]);return 0; }
-            if(args.Length==1 && args[0]=="--test-creator-backend")return CreatorBackendChecks.Run();
+            if(args.Length==1 && args[0]=="--test-creator-backend")return CreatorBackendChecks.RunSafely();
 #if MACOS
-            if(args.Length==1 && args[0]=="--test-creator-scanner")return CreatorBackendChecks.RunScanner();
+            if(args.Length==1 && args[0]=="--test-creator-scanner")return CreatorBackendChecks.RunSafely(true);
 #endif
             if(args.Length==1 && args[0]=="--test")
 #if LINUX

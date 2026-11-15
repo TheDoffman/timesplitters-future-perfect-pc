@@ -15,6 +15,8 @@ using TimeSplitters.Launcher;
 // The transport seam below belongs only to this explicit developer test mode.
 public static class CreatorBackendChecks
 {
+    public static int RunSafely(bool scanner=false)
+    {try{return scanner?RunScanner():Run();}catch(Exception error){Console.Error.WriteLine(error);return 1;}}
     static void Need(bool value,string message){if(!value)throw new Exception(message);}
     static void Reject(Action action,string marker,string message){try{action();}catch(Exception error){Need(error.Message.Contains(marker),"The real backend refusal occurred at the wrong stage.");return;}throw new Exception(message);}
     sealed class Backend : HttpMessageHandler
