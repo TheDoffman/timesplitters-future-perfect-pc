@@ -1,3 +1,8 @@
+test_definitions_service.py covers private config/plist generation, injection and
+executable permissions, preservation, lock exclusion, linked storage, failure and
+fault retention. Darwin actual native probes exercise guarded success/nonzero/
+timeout/output flood. Real official FreshClam acceptance is a separate host check.
+
 Native scanner sysctl regression uses an owned non-platform C process with a
 fabricated environment and readiness handshake: unconfined control must see its
 canary; confined scanner must receive EPERM/EACCES with no canary. /bin/sleep

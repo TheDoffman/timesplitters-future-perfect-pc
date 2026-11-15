@@ -1,3 +1,11 @@
+Definition maintenance: hosting/definitions-service-mac.py generates a six-hour
+private login-agent job and fixed official FreshClam config. No upload-controlled
+arguments, proxy, shell hooks, external mirrors or daemon mode are accepted. Native
+lifetime guardian,180s controller timeout,1MiB output limit/hash-only diagnostics,
+private non-overlapping lock and storage preflight bound maintenance. Definition
+checks never bypass scanner freshness or approve uploads. Actual host deployment
+and update acceptance must be recorded separately; see mod-scan-service.md.
+
 Worker admission now also requires exact macos-seatbelt-v3; v2 is held even with
 a healthy guardian heartbeat. Legacy approved v2 reports are withheld until rescan.
 

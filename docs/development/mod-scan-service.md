@@ -89,3 +89,34 @@ environment). The installed release includes the helper source/image/receipt; it
 on mutable development-worktree files. New upgrades must preserve verified old
 plists/data and fail closed if provenance or acceptance fails. Never restore the
 legacy group-only supervisor as an operational rollback.
+
+## Automatic official definition checks
+
+`hosting/definitions-service-mac.py` generates a separate private login agent
+with a six-hour interval and an initial check at load. Its exact JSON configuration
+contains `schema:1`, absolute `freshclam`, `database` and `state` paths. The parent,
+database and state directories must be owned and mode0700. Use a fresh private
+state directory; preserve the existing official database directory.
+
+```sh
+python tools/mods/hosting/definitions-service-mac.py --config /private/workshop/definitions.json --generate /private/workshop/new-definition-agents
+python tools/mods/hosting/definitions-service-mac.py --config /private/workshop/definitions.json --once
+```
+
+The generated FreshClam configuration selects only `database.clamav.net`, keeps
+database testing enabled and omits shell hooks, proxy settings, custom databases,
+daemon mode and persistent output logs. Changed config/status files are preserved
+and cause refusal. The updater lock prevents overlapping cycles; the existing
+FreshClam database remains its own official update store. Storage preflight admits
+at most128 regular owned entries,512MiB per file,1GiB total and requires512MiB free.
+Interrupted updater temporary directories are preserved and require inspection.
+
+The updater uses the same verified native lifetime guardian, a180-second command
+deadline and a1MiB diagnostic limit. It records only output length/hash and bounded
+status/fault metadata. This trusted network maintenance command is separate from
+the isolated upload scanner and receives no mod content. Its launchd job adds
+CPU/core/file limits; it is still a login-session mechanism. A completed update
+check does not assert that definitions are fresh: every scan keeps its independent
+two-day database age gate. Update failures retain the last fault and stale scans
+remain withheld. Source pinning, actual update/restart acceptance and current
+installed job identity must be recorded before calling the updater deployed.
