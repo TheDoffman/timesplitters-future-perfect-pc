@@ -1,5 +1,6 @@
 """Mac scanner sandbox acceptance against disposable canaries, never personal files."""
 import argparse
+from contextlib import contextmanager
 import json
 from pathlib import Path
 import socket
@@ -10,13 +11,29 @@ import threading
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/mods'))
-from mod_scan_sandbox import ScanSandbox
+from mod_scan_sandbox import ScanSandbox, sandbox_profile
+from mod_runtime_files import runtime_access
+
+
+@contextmanager
+def isolated(executable, content, database, access):
+    # Harmless system/C canaries need their own exec literal. Reuse the actual
+    # bundled scanner's verified read/map plan; production offers no such override.
+    with ScanSandbox(executable, content, database) as worker:
+        if access is not None:
+            worker.profile = sandbox_profile(Path(executable), content, database, worker.scratch, access)
+            worker.environment['CVD_CERTS_DIR'] = str(access['certificate'].parent)
+        yield worker
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--database', type=Path, required=True)
+    parser.add_argument('--runtime-executable', type=Path,
+                        help='Use this packaged scanner\'s verified library/certificate permissions for canaries')
     args = parser.parse_args()
+    access = runtime_access(args.runtime_executable) if args.runtime_executable else None
+    assert not args.runtime_executable or access is not None, 'Packaged runtime receipt is required'
     with tempfile.TemporaryDirectory(prefix='tsfp-isolation-canaries-') as temporary:
         root = Path(temporary).resolve()
         content = root / 'content'
@@ -28,13 +45,13 @@ def main():
         probe = root / 'limits-probe'
         subprocess.run(['clang','-std=c11',str(ROOT / 'tests/mods/scan_limits_probe.c'),'-o',str(probe)],
                        check=True, capture_output=True, timeout=30)
-        with ScanSandbox(str(probe), content, args.database) as worker:
+        with isolated(str(probe), content, args.database, access) as worker:
             result = worker.run([], capture_output=True, timeout=10)
             assert result.returncode == 0, result
             limits = json.loads(result.stdout)
             assert 170 <= limits.pop('alarm') <= 180, limits
             assert limits == dict(cpu=150, file=512*1024*1024, fds=128, core=0), limits
-        with ScanSandbox('/bin/cat', content, args.database) as worker:
+        with isolated('/bin/cat', content, args.database, access) as worker:
             permitted = worker.run([str(allowed)], capture_output=True, timeout=10)
             assert permitted.returncode == 0 and permitted.stdout == allowed.read_bytes(), permitted
             denied = worker.run([str(secret)], capture_output=True, timeout=10)
@@ -45,7 +62,7 @@ def main():
             assert denied.returncode != 0 and denied.stdout == b'', denied
         # macOS27 /bin/sh dispatches to /bin/bash via exec; use the actual
         # executable so the test does not request an intentionally denied exec.
-        with ScanSandbox('/bin/bash', content, args.database) as worker:
+        with isolated('/bin/bash', content, args.database, access) as worker:
             limits = worker.run(['-c', 'ulimit -t; ulimit -n; ulimit -c'],
                                 capture_output=True, timeout=10)
             assert limits.returncode == 0 and limits.stdout.splitlines() == [b'150', b'128', b'0'], limits
@@ -75,14 +92,15 @@ def main():
                     pass
             thread = threading.Thread(target=accept)
             thread.start()
-            with ScanSandbox('/usr/bin/curl', content, args.database) as worker:
+            with isolated('/usr/bin/curl', content, args.database, access) as worker:
                 denied = worker.run(['--connect-timeout', '1', '--max-time', '2', '--noproxy', '*',
                                      'http://127.0.0.1:' + str(listener.getsockname()[1])],
                                     capture_output=True, timeout=10)
                 assert denied.returncode != 0, denied
             thread.join(timeout=5)
             assert not thread.is_alive() and not connections, 'Sandbox connected to the private listener'
-        print('PASS: permitted input/temp writes; denied private read/write, child exec and network')
+        print('PASS: permitted input/temp writes; denied private read/write, child exec and network; '
+              + ('verified packaged runtime literals' if access is not None else 'unbundled runtime policy'))
     return 0
 
 

@@ -15,6 +15,10 @@ content because the signature verifier could not read its compiled cert director
 verification is never disabled. ScanSandbox keeps its no-network/no-child/
 no-process-info/temp-only-write policy.
 Native relocated-engine detection and private-read rejection remain pending.
+live_scan_isolation.py --runtime-executable selects a verified packaged scanner's
+read/map plan for harmless system/C canaries with their own exec literal. This
+tests kernel private-read/write, symlink escape, child-exec/network denial and hard
+limits without weakening the production ScanSandbox interface.
 
 Pinned application wheels: runtime-images-mac.py --wheelhouse admits exactly one
 binary wheel per package in the tracked exact/hash-pinned hosting requirements.

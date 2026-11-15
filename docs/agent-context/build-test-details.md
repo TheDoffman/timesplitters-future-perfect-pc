@@ -7,6 +7,10 @@ receipts and no packaged grants for a missing marker. No code/services execute.
 Bundled CVD certificate cases require the file and exact digest and refuse links;
 the scanner/updater receive its directory explicitly. Staging verifies the pinned
 official certificate before and after copying it; no signature checks are skipped.
+live_scan_isolation.py --runtime-executable <packaged-clamscan> reuses that verified
+bundle's read/map literals for the existing harmless canaries while substituting
+only each canary's exec literal. Explicit unbundled input is refused in this mode.
+The production ScanSandbox exposes no disable-isolation or profile-override flag.
 
 tests/mods/test_runtime_wheels.py checks exact/hash requirement parsing, complete
 wheel-set admission, metadata identity, retained licenses, pinned-byte tampering,
