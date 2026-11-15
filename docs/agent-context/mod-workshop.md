@@ -1,3 +1,16 @@
+Pinned application wheels: runtime-images-mac.py --wheelhouse admits exactly one
+binary wheel per package in the tracked exact/hash-pinned hosting requirements.
+runtime_wheels.py validates the complete offline set before creating site-packages,
+checks package metadata/license notices and rejects hooks/.data schemes, links,
+unsafe paths/modes, collisions and archive/combined expansion excess. Every file
+retains its wheel digest and original entry digest. Native wheel images join the
+same relocation/signing closure; only explicitly registered staged native images
+may resolve outside Cellar. Package metadata/licenses remain in the final inventory.
+Isolated imports must match all four pinned versions; a disposable in-memory
+Ed25519 signature round trip checks the cryptographic backend without storing keys.
+No pip, network, source builds or personal site-packages are used during staging.
+Native packaged-runtime acceptance remains pending; base-only acceptance is below.
+
 Mac server runtime preparation: hosting/runtime-images-mac.py stages a new private
 bundle as the ordinary user, never installs or starts jobs. It copies a Python
 framework without external site-packages, discovers recursive Mach-O dependencies,

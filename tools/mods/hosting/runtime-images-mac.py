@@ -1,6 +1,7 @@
 """Stage a relocatable private Mac workshop runtime; never installs or starts services."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,9 @@ MAX_BYTES = 512 * 1024**2
 MAX_FILES = 20000
 MAGIC = {b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf', b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca', b'\xca\xfe\xba\xbf'}
 LOADS = {'LC_LOAD_DYLIB', 'LC_LOAD_WEAK_DYLIB', 'LC_REEXPORT_DYLIB', 'LC_LOAD_UPWARD_DYLIB', 'LC_LAZY_LOAD_DYLIB'}
+wheel_spec = importlib.util.spec_from_file_location('runtime_wheels', Path(__file__).with_name('runtime_wheels.py'))
+wheels = importlib.util.module_from_spec(wheel_spec)
+wheel_spec.loader.exec_module(wheels)
 
 
 def require(value, message):
@@ -63,7 +67,7 @@ def source(path):
     return path
 
 
-def resolve_dependency(name, image, rpaths):
+def resolve_dependency(name, image, rpaths, approved=()):
     if system_path(name):
         return None
     if name.startswith('@loader_path/'):
@@ -78,7 +82,11 @@ def resolve_dependency(name, image, rpaths):
     else:
         require(name.startswith('/'), 'Unsupported runtime dependency: ' + name)
         candidates = [Path(name)]
-    found = {source(candidate) for candidate in candidates if candidate.exists()}
+    found = set()
+    for candidate in candidates:
+        if candidate.exists():
+            resolved = candidate.resolve(strict=True)
+            found.add(resolved if resolved in approved else source(resolved))
     require(len(found) == 1, 'Missing or ambiguous runtime dependency: ' + name)
     return found.pop()
 
@@ -178,7 +186,7 @@ class Builder:
                 dependencies, rpaths = commands(run('/usr/bin/otool', '-l', str(original)))
                 edges = []
                 for name in dependencies:
-                    resolved = resolve_dependency(name, original, rpaths)
+                    resolved = resolve_dependency(name, original, rpaths, self.images)
                     if resolved is not None and resolved not in self.images:
                         key = hashlib.sha256(str(resolved).encode()).hexdigest()[:16]
                         self.copy(resolved, Path('lib') / (key + '-' + resolved.name))
@@ -205,6 +213,25 @@ class Builder:
                     require(dependency.is_relative_to(self.output), 'Staged runtime dependency escaped bundle')
         sign_images(self.output, self.images.values())
         return inspected
+
+    def packages(self, wheelhouse, python):
+        requirements = [Path(__file__).with_name(n) for n in ('requirements.txt', 'requirements-signing.txt')]
+        pins = wheels.parse_pins([p.read_text(encoding='utf-8') for p in requirements])
+        relative = python.parent.parent / 'lib' / ('python' + python.parent.parent.name) / 'site-packages'
+        packages, records = wheels.install(wheelhouse, self.output / relative, pins)
+        for name, record in records.items():
+            path = relative / name
+            require(str(path) not in self.records, 'Wheel overwrote runtime payload')
+            self.total += record['bytes']
+            require(len(self.records) < MAX_FILES and self.total <= MAX_BYTES, 'Combined runtime exceeds budget')
+            self.records[str(path)] = record
+            target = self.output / path
+            with target.open('rb') as stream:
+                if stream.read(4) in MAGIC:
+                    self.images[target] = path
+        return dict(packages=packages,
+                    requirements={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in requirements},
+                    producer_sha256=hashlib.sha256(Path(wheels.__file__).read_bytes()).hexdigest())
 
     def licenses(self):
         formulas = set()
@@ -259,6 +286,7 @@ def build(args):
     python = builder.python(args.python)
     for name in ('clamscan', 'freshclam', 'caddy'):
         builder.copy(getattr(args, name), Path('bin') / name)
+    applications = builder.packages(args.wheelhouse, python) if args.wheelhouse else None
     builder.relocate()
     builder.licenses()
     payload_bytes = builder.audit(python)
@@ -267,12 +295,22 @@ def build(args):
     check = json.loads(run(str(output / python), '-I', '-B', '-c', script))
     require(all(Path(check[k]).resolve().is_relative_to(output) for k in ('prefix', 'base', 'executable')),
             'Python selected a runtime outside the staged bundle')
+    if applications:
+        script = '''import json,importlib.metadata,gunicorn.app.wsgiapp,cffi,pycparser
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+key=Ed25519PrivateKey.generate();message=b'runtime smoke test'
+key.public_key().verify(key.sign(message),message)
+print(json.dumps({n:importlib.metadata.version(n) for n in ('gunicorn','cryptography','cffi','pycparser')}))'''
+        package_versions = json.loads(run(str(output / python), '-I', '-B', '-c', script))
+        require(package_versions == {n: p['version'] for n, p in applications['packages'].items()},
+                'Isolated runtime package versions differ from pins')
     versions = {name: run(str(output / 'bin' / name), *(['--config-file=/dev/null'] if name == 'freshclam' else []),
                           '--version').strip()[:1000] for name in ('clamscan', 'freshclam', 'caddy')}
     result = dict(schema=1, producer='tsfp-host-runtime-v1', python=str(python), files=builder.records,
                   producer_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   copied_bytes=builder.total, payload_bytes=payload_bytes, native_images=len(builder.images), versions=versions,
                   isolated_python=check, production_installed=False, services_started=False)
+    result['applications'] = applications
     with (output / 'runtime.json').open('x') as stream:
         json.dump(result, stream, sort_keys=True, indent=2)
     (output / 'runtime.json').chmod(0o600)
@@ -283,6 +321,7 @@ def build(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--wheelhouse', help='Offline directory containing exactly the pinned binary wheels')
     for name in ('python', 'clamscan', 'freshclam', 'caddy'):
         parser.add_argument('--' + name, default='/opt/homebrew/bin/' + ('python3.12' if name == 'python' else name))
     try:

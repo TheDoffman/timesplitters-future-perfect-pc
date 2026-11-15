@@ -1,3 +1,11 @@
+tests/mods/test_runtime_wheels.py checks exact/hash requirement parsing, complete
+wheel-set admission, metadata identity, retained licenses, pinned-byte tampering,
+traversal/normalized-separator paths, hooks, links/setuid/writable modes, portable
+case collisions, exclusive installation and archive/expansion bounds. POSIX file
+admission/extraction cases skip on Windows; byte-level ZIP checks run on all hosts.
+Wheel installation executes no package code; the completed isolated runtime must
+then import all four pinned versions and perform an ephemeral Ed25519 round trip.
+
 tests/mods/test_host_runtime_images.py exercises Mach-O load/identity parsing,
 loader-environment refusal, system-path boundaries, ambiguous rpaths, Cellar
 ownership boundaries, exclusive bounded copies and root/non-Mac staging refusal.
