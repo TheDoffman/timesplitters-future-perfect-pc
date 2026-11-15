@@ -1,3 +1,15 @@
+Native activation review: installed Enable opens an exact dependency closure
+review before changing the active profile. ModEnablePlan retains copied arrays,
+profile digest and package/origin bindings; ApplyEnable repeats planning under
+the library lock, validates archive/payload bytes, and rechecks cached signed
+availability immediately before one profile publication. Up to32 packages are
+selected dependency-first; unrelated active IDs remain, replaced versions are
+shown, and incompatible retained dependents/conflicts/cycles fail without writes.
+Back, cancellation, preview-only UI, running-game refusal and stale reviews retain
+the previous profile. Gameplay supports one mode with isolated saves; installed
+older versions remain available for another reviewed switch. This does not prove
+public deployment or in-game acceptance of this new UI flow.
+
 Immutable release preparation: hosting/prepare-release-mac.py freezes clean tracked
 tools/mods/config/mods bytes from the exact Git revision plus the source-bound
 guardian into an owner-private, read-only snapshot. Its descriptor binds that

@@ -313,6 +313,71 @@ public static class LauncherSharedUiChecks
             foreach(string version in new[]{"1.0.0","2.0.0","1.0.0"}){library.Enable("versioned@"+version,System.Threading.CancellationToken.None);Need(library.Enabled().Single()=="versioned@"+version,"Version switch failed");}
             Need(library.List().Length==2 && Directory.GetDirectories(Path.Combine(folder,"Mods/Active")).Length==1,"Rollback version lost or active cache copies accumulated");
         });
+        Test("dependency enable review commits one complete profile and preserves independent mods",()=>{
+            string folder=Path.Combine(root,"enable-closure");Directory.CreateDirectory(folder);bool running=false;var library=new ModLibrary(folder,()=>running);
+            Action<string,string,string,Dictionary<string,string>,bool> install=(id,version,key,deps,script)=>{string zip=LibraryPackage(root,id,version,1,key,deps,script);library.Install(zip,Core.Hash(zip),System.Threading.CancellationToken.None);};
+            install("enable-base","1.0.0","1111111111111111",null,false);
+            install("enable-middle","1.0.0","2222222222222222",new Dictionary<string,string>{{"enable-base","1.0.0"}},false);
+            install("enable-addon","1.0.0","3333333333333333",new Dictionary<string,string>{{"enable-middle","1.0.0"}},true);
+            install("enable-independent","1.0.0","4444444444444444",null,false);
+            string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));Directory.CreateDirectory(Path.GetDirectoryName(manifest));File.WriteAllText(manifest,"{\"mod_script_version\":1}");
+            library.Enable("enable-independent@1.0.0",System.Threading.CancellationToken.None);
+            string profilePath=Path.Combine(folder,"Mods/profile.json"),before=File.ReadAllText(profilePath);
+            var plan=library.PreviewEnable("enable-addon@1.0.0",System.Threading.CancellationToken.None);
+            Need(File.ReadAllText(profilePath)==before && plan.Gameplay && plan.Removed.Length==0,"Preview changed the active profile");
+            Need(plan.Added.SequenceEqual(new[]{"enable-base@1.0.0","enable-middle@1.0.0","enable-addon@1.0.0"}),"Enable dependency order differed");
+            var exposed=plan.EnabledKeys;exposed[0]="modified";Need(plan.EnabledKeys[0]=="enable-independent@1.0.0","Review could be mutated externally");
+            using(var page=new ModWorkshopPage(folder,true,new ModWorkshopClient(new WorkshopHandler(_=>{throw new Exception("Enable review accessed network");})))) {
+                page.ShowEnablePlan(plan);Need(Find<Button>(page.View,"ConfirmModEnable").IsEnabled && !page.Search.IsEnabled,"Enable review controls missing");
+                Click(Find<Button>(page.View,"ConfirmModEnable"));Need(page.StatusText.Contains("Preview only") && File.ReadAllText(profilePath)==before,"UI preview enabled packages");
+                Click(Find<Button>(page.View,"CancelModEnablePlan"));Need(File.ReadAllText(profilePath)==before,"Back changed active mods");
+            }
+            running=true;WorkshopReject(()=>library.ApplyEnable(plan,System.Threading.CancellationToken.None),"Reviewed profile changed while game ran");running=false;
+            Need(File.ReadAllText(profilePath)==before,"Game-running refusal changed profile");
+            var cancelled=new System.Threading.CancellationTokenSource();cancelled.Cancel();try{library.ApplyEnable(plan,cancelled.Token);throw new Exception("Cancelled enable committed");}catch(OperationCanceledException){}
+            Need(File.ReadAllText(profilePath)==before,"Cancelled enable changed profile");
+            library.ApplyEnable(plan,System.Threading.CancellationToken.None);
+            Need(library.Enabled().SequenceEqual(plan.EnabledKeys),"Dependency closure was not enabled as one profile");
+            var info=new System.Diagnostics.ProcessStartInfo();info.EnvironmentVariables["RECOMP_SAVE_DIR"]=Path.Combine(folder,"Original saves");library.Configure(info);
+            Need(info.EnvironmentVariables.ContainsKey("TSFP_MOD_SCRIPT_CAPSULE"),"Reviewed gameplay closure did not produce a validated handoff");
+        });
+        Test("enable review refuses stale state and previews reversible version replacements",()=>{
+            string folder=Path.Combine(root,"enable-review-stale");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
+            foreach(string version in new[]{"1.0.0","2.0.0"}){string zip=LibraryPackage(root,"enable-versioned",version,1);library.Install(zip,Core.Hash(zip),System.Threading.CancellationToken.None);}
+            library.Enable("enable-versioned@1.0.0",System.Threading.CancellationToken.None);
+            var plan=library.PreviewEnable("enable-versioned@2.0.0",System.Threading.CancellationToken.None);
+            Need(plan.Removed.SequenceEqual(new[]{"enable-versioned@1.0.0"}) && plan.Added.SequenceEqual(new[]{"enable-versioned@2.0.0"}),"Replacement review omitted version changes");
+            library.Enable("enable-versioned@1.0.0",System.Threading.CancellationToken.None);string profile=File.ReadAllText(Path.Combine(folder,"Mods/profile.json"));
+            WorkshopReject(()=>library.ApplyEnable(plan,System.Threading.CancellationToken.None),"Stale generation was accepted");
+            Need(File.ReadAllText(Path.Combine(folder,"Mods/profile.json"))==profile,"Stale review changed profile");
+            library.ApplyEnable(library.PreviewEnable("enable-versioned@2.0.0",System.Threading.CancellationToken.None),System.Threading.CancellationToken.None);
+            library.ApplyEnable(library.PreviewEnable("enable-versioned@1.0.0",System.Threading.CancellationToken.None),System.Threading.CancellationToken.None);
+            Need(library.Enabled().Single()=="enable-versioned@1.0.0" && library.List().Length==2,"Reviewed rollback lost a retained version");
+            plan=library.PreviewEnable("enable-versioned@2.0.0",System.Threading.CancellationToken.None);
+            var mod=library.ReadInstalled("enable-versioned@2.0.0");File.WriteAllText(Path.Combine(mod.Directory,"content/textures/0123456789abcdef.dds"),"tampered");
+            profile=File.ReadAllText(Path.Combine(folder,"Mods/profile.json"));WorkshopReject(()=>library.ApplyEnable(plan,System.Threading.CancellationToken.None),"Tampered reviewed payload enabled");
+            Need(File.ReadAllText(Path.Combine(folder,"Mods/profile.json"))==profile,"Failed activation replaced profile");
+        });
+        Test("enable closure rejects missing cyclic conflicting and incompatible requirements",()=>{
+            string folder=Path.Combine(root,"enable-invalid");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
+            Action<string,string,string,Dictionary<string,string>> install=(id,version,key,deps)=>{string zip=LibraryPackage(root,id,version,1,key,deps);library.Install(zip,Core.Hash(zip),System.Threading.CancellationToken.None);};
+            install("enable-missing","1.0.0","1111111111111111",new Dictionary<string,string>{{"absent","1.0.0"}});
+            WorkshopReject(()=>library.PreviewEnable("enable-missing@1.0.0",System.Threading.CancellationToken.None),"Missing dependency enabled");
+            install("enable-cycle-a","1.0.0","2222222222222222",new Dictionary<string,string>{{"enable-cycle-b","1.0.0"}});
+            install("enable-cycle-b","1.0.0","3333333333333333",new Dictionary<string,string>{{"enable-cycle-a","1.0.0"}});
+            WorkshopReject(()=>library.PreviewEnable("enable-cycle-a@1.0.0",System.Threading.CancellationToken.None),"Dependency cycle enabled");
+            install("enable-shared","1.0.0","4444444444444444",null);install("enable-shared","2.0.0","4444444444444444",null);
+            install("enable-left","1.0.0","5555555555555555",new Dictionary<string,string>{{"enable-shared","1.0.0"}});
+            install("enable-right","1.0.0","6666666666666666",new Dictionary<string,string>{{"enable-shared","2.0.0"}});
+            install("enable-diamond","1.0.0","7777777777777777",new Dictionary<string,string>{{"enable-left","1.0.0"},{"enable-right","1.0.0"}});
+            WorkshopReject(()=>library.PreviewEnable("enable-diamond@1.0.0",System.Threading.CancellationToken.None),"Incompatible required versions enabled");
+            library.ApplyEnable(library.PreviewEnable("enable-left@1.0.0",System.Threading.CancellationToken.None),System.Threading.CancellationToken.None);
+            string profile=File.ReadAllText(Path.Combine(folder,"Mods/profile.json"));
+            WorkshopReject(()=>library.PreviewEnable("enable-shared@2.0.0",System.Threading.CancellationToken.None),"Retained dependent was silently broken");
+            install("enable-conflict","1.0.0","4444444444444444",null);
+            WorkshopReject(()=>library.PreviewEnable("enable-conflict@1.0.0",System.Threading.CancellationToken.None),"Conflicting enabled payload accepted");
+            Need(File.ReadAllText(Path.Combine(folder,"Mods/profile.json"))==profile,"Rejected preview changed profile");
+        });
         Test("native mod validation rejects archive traversal and duplicate metadata",()=>{
             string folder=Path.Combine(root,"mod-hostile");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
             foreach(string extra in new[]{"../outside.dds","scripts/payload.exe","Textures/0123456789abcdef.dds"}) {

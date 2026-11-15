@@ -63,6 +63,25 @@ namespace TimeSplitters.Launcher
     }
     public sealed class ModPayload {public string Sha256;public long Size;}
 
+    public sealed class ModEnablePlan
+    {
+        public readonly string RequestedKey,Name;
+        public readonly bool Gameplay;
+        readonly string profile;readonly string[] before,enabled,bindings;
+        public string[] EnabledKeys {get{return enabled.ToArray();}}
+        public string[] Added {get{return enabled.Except(before,StringComparer.Ordinal).ToArray();}}
+        public string[] Removed {get{return before.Except(enabled,StringComparer.Ordinal).ToArray();}}
+        internal ModEnablePlan(string key,string name,string profile,string[] before,InstalledMod[] mods)
+        {
+            RequestedKey=key;Name=name;this.profile=profile;this.before=before.ToArray();
+            enabled=mods.Select(m=>m.Key).ToArray();Gameplay=mods.Any(m=>m.ScriptMode);
+            bindings=mods.Select(m=>m.Key+"|"+m.Sha256+"|"+(m.WorkshopOrigin??"")).ToArray();
+        }
+        internal bool Same(ModEnablePlan other)
+        {return RequestedKey==other.RequestedKey && profile==other.profile && before.SequenceEqual(other.before)
+                && enabled.SequenceEqual(other.enabled) && bindings.SequenceEqual(other.bindings);}
+    }
+
     // One model for all native launchers. Original files, official textures,
     // settings and saves never enter this model's installation/cleanup roots.
     public sealed class ModLibrary
@@ -305,9 +324,9 @@ namespace TimeSplitters.Launcher
         {using(var operation=Lock())SetEnabledCore(keys,token);}
         void CheckWorkshop(InstalledMod[] mods)
         {foreach(var group in mods.Where(m=>m.WorkshopOrigin!=null).GroupBy(m=>m.WorkshopOrigin,StringComparer.Ordinal))ModTrustStore.RequireAvailable(root,group.Key,group.Select(m=>m.Sha256),clock());}
-        void SetEnabledCore(IEnumerable<string> keys,CancellationToken token)
+        InstalledMod[] ValidateSelection(string[] selected)
         {
-            Core.Require(!running(),"Close the game before changing enabled mods.");var selected=keys.ToArray();Core.Require(selected.Length<=128 && selected.Distinct(StringComparer.Ordinal).Count()==selected.Length,"Invalid enabled mod list.");
+            Core.Require(selected.Length<=128 && selected.Distinct(StringComparer.Ordinal).Count()==selected.Length,"Invalid enabled mod list.");
             var mods=selected.Select(ReadInstalled).ToArray();Core.Require(mods.Select(m=>m.Id).Distinct(StringComparer.Ordinal).Count()==mods.Length,"Only one version of each mod can be enabled.");
             CheckWorkshop(mods);
             var assets=new Dictionary<string,string>(StringComparer.Ordinal);long total=0;
@@ -319,6 +338,14 @@ namespace TimeSplitters.Launcher
             // Reject cycles even if exact versions happen to all be present.
             var visited=new HashSet<string>();var pending=new HashSet<string>();
             foreach(var mod in mods)Visit(mod,mods,visited,pending);
+            Core.Require(mods.Count(m=>m.ScriptMode)<=1,"Only one gameplay mode can be enabled at a time.");
+            Core.Require(!mods.Any(m=>m.ScriptMode) || mods.Length<=32,"Gameplay mode profiles support at most 32 packages.");
+            return mods;
+        }
+        void SetEnabledCore(IEnumerable<string> keys,CancellationToken token)
+        {
+            Core.Require(!running(),"Close the game before changing enabled mods.");
+            var mods=ValidateSelection(keys.ToArray());
             var capsule=ScriptCapsule(mods);
             string generation=Guid.NewGuid().ToString("N"),directory=PathIn("Active/"+generation),textures=Core.PathIn(directory,"textures");Directory.CreateDirectory(textures);bool published=false;
             try {
@@ -333,7 +360,7 @@ namespace TimeSplitters.Launcher
                 }
                 if(capsule!=null)File.WriteAllBytes(Core.PathIn(directory,"mode.bin"),capsule.Bytes);
                 Core.Write(Core.PathIn(directory,"manifest.json"),Json.Encode(mods.Select(m=>new {key=m.Key,sha256=m.Sha256}).ToArray()));
-                token.ThrowIfCancellationRequested();Core.Require(!running(),"Close the game before changing enabled mods.");
+                token.ThrowIfCancellationRequested();Core.Require(!running(),"Close the game before changing enabled mods.");CheckWorkshop(mods);
                 Core.Write(PathIn("profile.json"),Json.Encode(new {schema=1,generation=generation,enabled=mods.Select(m=>new {key=m.Key,sha256=m.Sha256}).ToArray()}));published=true;
                 // Versioned packages provide rollback; abandoned overlay generations
                 // are reproducible and must not accumulate another full texture copy.
@@ -346,6 +373,37 @@ namespace TimeSplitters.Launcher
         {if(visited.Contains(mod.Id))return;Core.Require(pending.Add(mod.Id),"Mod dependency cycle detected.");foreach(var dependency in mod.Dependencies)Visit(mods.Single(m=>m.Id==dependency.Key),mods,visited,pending);pending.Remove(mod.Id);visited.Add(mod.Id);}
         public void Enable(string key,CancellationToken token)
         {using(var operation=Lock()){var mod=ReadInstalled(key);SetEnabledCore(Enabled().Where(k=>k.Split('@')[0]!=mod.Id).Concat(new[]{key}),token);}}
+        ModEnablePlan PreviewEnableCore(string key,CancellationToken token)
+        {
+            Key(key);var ordered=new List<InstalledMod>();var chosen=new Dictionary<string,InstalledMod>(StringComparer.Ordinal);
+            var pending=new HashSet<string>(StringComparer.Ordinal);
+            Action<string> visit=null;visit=required=>{
+                token.ThrowIfCancellationRequested();Key(required);string id=required.Split('@')[0];InstalledMod old;
+                if(chosen.TryGetValue(id,out old)){Core.Require(old.Key==required,"Required mods need different versions of "+id+".");Core.Require(!pending.Contains(id),"Mod dependency cycle detected.");return;}
+                Core.Require(chosen.Count<32,"A mod can require at most 32 enabled packages.");
+                Core.Require(Directory.Exists(PathIn("Packages/"+required)),"Install the required package first: "+required);
+                var mod=ReadInstalled(required);chosen.Add(id,mod);pending.Add(id);
+                foreach(var dependency in mod.Dependencies.OrderBy(p=>p.Key,StringComparer.Ordinal))visit(dependency.Key+"@"+dependency.Value);
+                pending.Remove(id);ordered.Add(mod);
+            };
+            visit(key);string[] before=Enabled();
+            var selected=before.Where(k=>!chosen.ContainsKey(k.Split('@')[0])).Concat(ordered.Select(m=>m.Key)).ToArray();
+            Core.Require(selected.Length<=32,"Keep at most 32 packages enabled when using dependency activation.");
+            var mods=ValidateSelection(selected);string profile=PathIn("profile.json");
+            if(File.Exists(profile))Core.RequireUnlinked(profile,"Linked active profile refused.");
+            return new ModEnablePlan(key,chosen[key.Split('@')[0]].Name,File.Exists(profile)?Core.Hash(profile):"",before,mods);
+        }
+        public ModEnablePlan PreviewEnable(string key,CancellationToken token)
+        {using(var operation=Lock())return PreviewEnableCore(key,token);}
+        public void ApplyEnable(ModEnablePlan reviewed,CancellationToken token)
+        {
+            Core.Require(reviewed!=null,"Review the enabled mod changes first.");
+            using(var operation=Lock()) {
+                var current=PreviewEnableCore(reviewed.RequestedKey,token);
+                Core.Require(reviewed.Same(current),"The active profile or installed packages changed. Review the enabled mod changes again.");
+                SetEnabledCore(current.EnabledKeys,token);
+            }
+        }
         public void Disable(string key,CancellationToken token){using(var operation=Lock())SetEnabledCore(Enabled().Where(k=>k!=key),token);}
         public void DisableAll(CancellationToken token){SetEnabled(new string[0],token);}
         public void Uninstall(string key)

@@ -412,7 +412,7 @@ The Windows scene observer also refuses executable-only inputs without pak/xmv
 directories; a compiled game is not proof that playable data was provisioned.
 
 Windows fetch-video.ps1 pins FFmpeg autobuild2026-11-13-12-43,
-n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4â€¦699996.
+n8.1.3-35-gf1acb0a266 LGPL shared8.1, published SHA25657cb10e4Ã¢â‚¬Â¦699996.
 The versioned cache and dated URL replace the mutable latest asset; checksum
 mismatch still stops setup. The archive was downloaded and matched upstream's
 published digest; Windows Setup completed. Other host adapters/runtime pin are
@@ -1515,3 +1515,14 @@ artwork pin, then uses the existing private legacy fallback if no cached file
 exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
 executing downloaded code. -RequireArtwork checks the selected resources; normal
 local rebuilds now reuse the same verified art as release CI when cached.
+# Dependency activation review
+
+tests/launcher/launcher_shared_ui.cs exercises PreviewEnable/ApplyEnable with
+an exact texture/script closure plus independent active mod, immutable review
+arrays, offline preview confirm/back, running-game/cancellation preservation,
+capsule handoff, stale generation and payload tamper refusal, reviewed version
+replacement/rollback, missing/cyclic/diamond requirements, retained dependent
+incompatibility and duplicate payload conflicts. Use Windows PowerShell5.1
+tools/build/build-launcher.ps1 -Test (pwsh7 lacks this build's WPF drawing host),
+and native build-mac-launcher.py --test for the same shared behavior on Avalonia.
+The new tests use installed fixtures; they do not assert public connectivity.

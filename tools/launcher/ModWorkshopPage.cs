@@ -305,6 +305,7 @@ namespace TimeSplitters.Launcher
         public int PageCount {get{return Math.Max(1,(MatchingCount+PageSize-1)/PageSize);}}
         CancellationTokenSource stop;WorkshopRelease[] releases=new WorkshopRelease[0];bool disposed;string service="";
         WorkshopInstallPlan pendingPlan;
+        ModEnablePlan pendingEnable;
         public string StatusText {get{return status.Text;}}
         public int VisibleCount {get;private set;}
         public ModWorkshopPage(string root,bool preview=false) : this(root,preview,new ModWorkshopClient(root)) { }
@@ -318,7 +319,7 @@ namespace TimeSplitters.Launcher
             var header=PageTheme.Header("COMMUNITY WORKSHOP","Mods","Browse community creations, check their details and download packages here.");View.Children.Add(header);
             var toolbar=new WrapPanel();header.Children.Add(toolbar);
             toolbar.Children.Add(BrowseTab);toolbar.Children.Add(InstalledTab);
-            BrowseTab.Click+=(s,e)=>{pendingPlan=null;installedTab=false;ResetPage();};InstalledTab.Click+=(s,e)=>{pendingPlan=null;installedTab=true;ResetPage();};
+            BrowseTab.Click+=(s,e)=>{pendingEnable=null;pendingPlan=null;installedTab=false;ResetPage();};InstalledTab.Click+=(s,e)=>{pendingEnable=null;pendingPlan=null;installedTab=true;ResetPage();};
             var searchLabel=PageTheme.Text("Search mods",13);searchLabel.Margin=new Thickness(0,9,12,8);toolbar.Children.Add(searchLabel);
             toolbar.Children.Add(Search);toolbar.Children.Add(Refresh);toolbar.Children.Add(Cancel);
             AutomationProperties.SetName(Search,"Search mods by name, creator or description");
@@ -353,6 +354,7 @@ namespace TimeSplitters.Launcher
         }
         public void SetReleases(WorkshopRelease[] value){pendingPlan=null;releases=value??new WorkshopRelease[0];ResetPage();}
         internal void ShowInstallPlan(WorkshopInstallPlan value){pendingPlan=value;installedTab=false;ResetPage();}
+        internal void ShowEnablePlan(ModEnablePlan value){pendingPlan=null;pendingEnable=value;installedTab=true;ResetPage();}
         static TextBlock FilterLabel(string text){var label=PageTheme.Text(text,13);label.Margin=new Thickness(0,9,8,8);return label;}
         void ResetPage(){page=0;Render();if(scroll!=null)Ui.ScrollHome(scroll);}
         static string Choice(ComboBox box){var item=box.SelectedItem as ComboBoxItem;return item==null?"":(string)item.Tag;}
@@ -360,7 +362,8 @@ namespace TimeSplitters.Launcher
         void Render()
         {
             results.Children.Clear();VisibleCount=0;string query=(Search.Text??"").Trim();
-            Ui.Show(filters,!installedTab && pendingPlan==null);Ui.Show(pager,!installedTab && pendingPlan==null);Search.IsEnabled=stop==null && pendingPlan==null;
+            Ui.Show(filters,!installedTab && pendingPlan==null);Ui.Show(pager,!installedTab && pendingPlan==null);Search.IsEnabled=stop==null && pendingPlan==null && pendingEnable==null;
+            if(pendingEnable!=null){RenderEnablePlan();return;}
             if(pendingPlan!=null){RenderPlan();return;}
             if(installedTab){RenderInstalled(query);return;}
             var selected=WorkshopRelease.Select(releases,query,Creator.Text,Choice(Category),OlderVersions.IsChecked==true,Choice(Sort));
@@ -416,12 +419,39 @@ namespace TimeSplitters.Launcher
                     card.Children.Add(PageTheme.Text("By "+mod.Author+" · "+(active?(mod.ScriptMode?"Enabled offline gameplay mode · separate saves":"Enabled for Enhanced textures"):"Installed, disabled"),13,"#A7D9FA"));
                     var actions=new WrapPanel();card.Children.Add(actions);
                     var toggle=new Button {Name="ToggleMod",Content=active?"Disable":mod.TextureOnly?"Enable textures":library.CanEnable(mod)?"Enable gameplay mode":"Runtime unavailable",IsEnabled=stop==null && (active || library.CanEnable(mod)),Margin=new Thickness(0,12,10,0)};
-                    toggle.Click+=async(s,e)=>await ChangeLibrary(token=>{if(active)library.Disable(mod.Key,token);else library.Enable(mod.Key,token);},active?"Mod disabled. Other files were preserved.":mod.ScriptMode?"Gameplay mode enabled for offline Arcade Deathmatch. Progress uses separate saves. Start a new match to play.":"Texture mod enabled. Use Enhanced textures in a compatible game build.");actions.Children.Add(toggle);
+                    toggle.Click+=async(s,e)=>{if(active)await ChangeLibrary(token=>library.Disable(mod.Key,token),"Mod disabled. Other files were preserved.");else await PrepareEnable(mod.Key);};actions.Children.Add(toggle);
                     var remove=new Button {Name="UninstallMod",Content="Uninstall",IsEnabled=stop==null && !active,Margin=new Thickness(0,12,10,0)};
                     remove.Click+=async(s,e)=>await ChangeLibrary(token=>library.Uninstall(mod.Key),"Mod version uninstalled. Game files, settings and saves were preserved.");actions.Children.Add(remove);
                 }
                 if(VisibleCount==0)results.Children.Add(PageTheme.Text("No installed mods match this view. Browse the workshop to install a package.",14,"#B4C7D8"));
             }catch(Exception){status.Text="The installed mod library needs attention. Disable all mods or play without mods to recover.";}
+        }
+        void RenderEnablePlan()
+        {
+            var plan=pendingEnable;
+            var card=PageTheme.Section(results,"Review enabled mods",plan.Name);
+            card.Children.Add(PageTheme.Text("The selected mod and its required installed packages will be enabled together.",14,"#B4C7D8"));
+            foreach(string key in plan.Added)card.Children.Add(PageTheme.Text("Enable: "+key,14,"#A7D9FA"));
+            foreach(string key in plan.Removed)card.Children.Add(PageTheme.Text("Replace active version: "+key,14,"#FFDAA6"));
+            card.Children.Add(PageTheme.Text(plan.EnabledKeys.Length+" package(s) will be enabled. Installed versions are kept for rollback.",13,"#B4C7D8"));
+            card.Children.Add(PageTheme.Text(plan.Gameplay?"Gameplay modes run in offline Arcade Deathmatch with separate saves. Start a new match after enabling.":"Use Enhanced textures in a compatible game build to see enabled texture mods.",13,"#FFDAA6"));
+            var actions=new WrapPanel {Margin=new Thickness(0,12,0,0)};card.Children.Add(actions);
+            var confirm=new Button {Name="ConfirmModEnable",Content="Enable selected mods",IsEnabled=stop==null,Margin=new Thickness(0,0,10,0)};
+            confirm.Click+=async(s,e)=>{if(preview){status.Text="Preview only. No active profile was changed.";return;}var reviewed=pendingEnable;pendingEnable=null;await ChangeLibrary(token=>library.ApplyEnable(reviewed,token),"Selected mods and required packages enabled. Start a new match to use gameplay changes.");};actions.Children.Add(confirm);
+            var back=new Button {Name="CancelModEnablePlan",Content="Back to installed",IsEnabled=stop==null};
+            back.Click+=(s,e)=>{pendingEnable=null;ResetPage();};actions.Children.Add(back);
+        }
+        async Task PrepareEnable(string key)
+        {
+            if(disposed || stop!=null)return;
+            if(preview){status.Text="Preview only. No active profile was changed.";return;}
+            using(var operation=new CancellationTokenSource(TimeSpan.FromMinutes(2))) {
+                stop=operation;Busy(true);if(FileBusyChanged!=null)FileBusyChanged(true);
+                try {var plan=await Task.Run(()=>library.PreviewEnable(key,operation.Token));if(!disposed){ShowEnablePlan(plan);status.Text="Review the enabled mod changes before continuing.";}}
+                catch(OperationCanceledException){if(!disposed)status.Text="Enable preview cancelled. The active profile was preserved.";}
+                catch(Exception error){if(!disposed)status.Text=error.Message;}
+                finally{stop=null;if(FileBusyChanged!=null)FileBusyChanged(false);if(!disposed)Busy(false);}
+            }
         }
         async Task ChangeLibrary(Action<CancellationToken> change,string success)
         {

@@ -1,3 +1,12 @@
+Installed activation now uses ModLibrary.PreviewEnable/ApplyEnable and an in-page
+ModEnablePlan review. It resolves exact installed dependencies (32 packages),
+keeps unrelated active mods, and shows added/replaced versions before confirmation.
+It rejects missing/cyclic/incompatible requirements, payload conflicts and stale
+profile/package bindings; confirmation revalidates bytes, capability and trust
+under the library lock before publishing one profile. Back/cancel leaves the
+profile unchanged; retained versions support reviewed rollback. Gameplay remains
+one mode with isolated saves and a new match. Shared UI/model checks cover this.
+
 Canonical workshop HTTPS authorities now permit the default port or explicit
 8443/10000 only. Signed roots/catalogs/cache identities retain the exact port;
 cross-port metadata and root rotations are rejected. Python and native validators
