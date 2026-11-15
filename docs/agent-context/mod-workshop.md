@@ -1,3 +1,15 @@
+Live publication: mod_live_publication.py/hosting/live-publication-mac.py poll only
+approved availability plus cumulative revocations, withdraw old Caddy before
+refresh, sign monotonically newer immutable exports and recheck moderation after
+export. A30s scan-validity margin avoids expiry churn;30min refresh renews metadata.
+Failures/recovery barriers stop downloads; no stale-export fallback. Private
+hash-inventory receipts retain current/previous outputs, preserve unknown/changed
+files and recover complete receipts after interrupted retention. Caddy gets only
+a static tree/minimal environment and an owned parent-lifetime guardian lease.
+Guardian default210s is unchanged; trusted publication callers can explicitly
+select1..86400s leases. See [live publication](../development/mod-live-publication.md). This controller
+is not yet publicly deployed or accepted.
+
 Definition maintenance: hosting/definitions-service-mac.py generates a six-hour
 private login-agent job and fixed official FreshClam config. No upload-controlled
 arguments, proxy, shell hooks, external mirrors or daemon mode are accepted. Native

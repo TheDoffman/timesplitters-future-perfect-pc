@@ -1,6 +1,7 @@
 """Actual Darwin guardian: escaped sessions, controller death and bounded IO."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -177,3 +178,19 @@ else:raise AssertionError('Lost child exit status could be treated as a clean sc
     result = subprocess.run([sys.executable, '-c', code, str(ROOT / 'tools/mods'), str(worker.executable),
                              str(worker.content), str(worker.database)], capture_output=True, timeout=10)
     assert result.returncode == 0 and result.stdout.strip() == b'refused'
+
+
+def test_explicit_server_deadline_still_kills_escaped_owned_child(worker):
+    identity = worker.scratch / 'lease.json'
+    read, write = os.pipe()
+    try:
+        result = subprocess.run([str(worker.guardian), str(read), '--deadline-seconds', '1',
+                                 *worker.command(['escape', str(identity)])],
+                                pass_fds=(read,), env=worker.environment, cwd=worker.scratch,
+                                stdin=subprocess.DEVNULL, capture_output=True, timeout=5)
+        assert result.returncode == 137
+        value = json.loads(identity.read_text())
+        wait(lambda: gone(value['pid']))
+    finally:
+        os.close(read)
+        os.close(write)

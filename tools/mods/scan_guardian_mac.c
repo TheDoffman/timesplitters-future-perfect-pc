@@ -11,6 +11,7 @@
 #include <poll.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 extern char **environ;
@@ -26,10 +27,20 @@ static double now(void) {
     return (double)stamp.tv_sec+(double)stamp.tv_nsec/1000000000.0;
 }
 int main(int argc,char **argv) {
-    if(argc<3 || argv[2][0]!='/')return 125;
+    if(argc<3)return 125;
     char *end=NULL;errno=0;long value=strtol(argv[1],&end,10);
     if(errno || !end || *end || value<3 || value>4095)return 125;
     int parent=(int)value;
+    int command=2;long deadline=210;
+    /* Trusted publication controllers may own a longer server lease. Scanner
+       callers keep the fixed default; no upload supplies these arguments. */
+    if(strcmp(argv[2],"--deadline-seconds")==0){
+        if(argc<5)return 125;
+        errno=0;end=NULL;deadline=strtol(argv[3],&end,10);
+        if(errno || !end || *end || deadline<1 || deadline>86400)return 125;
+        command=4;
+    }
+    if(argv[command][0]!='/')return 125;
     double started=now();if(started<0)return 125;
     struct rlimit core={0,0};if(setrlimit(RLIMIT_CORE,&core))return 125;
     if(signal(SIGPIPE,SIG_IGN)==SIG_ERR)return 125;
@@ -42,7 +53,7 @@ int main(int argc,char **argv) {
     if(!error)error=posix_spawnattr_setflags(&attributes,POSIX_SPAWN_CLOEXEC_DEFAULT|POSIX_SPAWN_SETPGROUP);
     if(!error)error=posix_spawnattr_setpgroup(&attributes,0);
     pid_t child=-1;
-    if(!error)error=posix_spawn(&child,argv[2],&actions,&attributes,argv+2,environ);
+    if(!error)error=posix_spawn(&child,argv[command],&actions,&attributes,argv+command,environ);
     posix_spawn_file_actions_destroy(&actions);posix_spawnattr_destroy(&attributes);
     if(error)return 125;
     for(;;) {
@@ -50,7 +61,7 @@ int main(int argc,char **argv) {
         if(exited==child)return WIFEXITED(status)?WEXITSTATUS(status):128+WTERMSIG(status);
         if(exited<0 && errno!=EINTR)return 125;
         double current=now();
-        if(current<0 || current-started>=210)return finish(child,1);
+        if(current<0 || current-started>=(double)deadline)return finish(child,1);
         struct pollfd watch={parent,POLLIN,0};int ready=poll(&watch,1,5);
         if((ready>0 && watch.revents) || (ready<0 && errno!=EINTR))return finish(child,1);
     }

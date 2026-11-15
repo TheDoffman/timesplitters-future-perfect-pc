@@ -1,3 +1,10 @@
+test_live_publication.py covers real signed refresh/revocation, scan-error and
+review withholding, post-export moderation race, failure withdrawal, receipt-based
+retention, unknown-output preservation and recovery barriers. Native guardian
+checks also exercise an explicit server deadline against a session-escaped child;
+scanner callers retain the default210s deadline. Actual Caddy acceptance remains
+separate from test server doubles and must be recorded before deployment.
+
 test_definitions_service.py covers private config/plist generation, injection and
 executable permissions, preservation, lock exclusion, linked storage, failure and
 fault retention. Darwin actual native probes exercise guarded success/nonzero/

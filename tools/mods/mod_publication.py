@@ -17,8 +17,20 @@ MAX_RELEASES = 1000
 DEFAULT_PUBLIC_LIMIT = 512 * 1024 * 1024
 
 
-def export_snapshot(repository, destination, byte_limit=DEFAULT_PUBLIC_LIMIT, signer=None):
+def revoked_hashes(db):
+    from mod_trust import MAX_REVOKED
+    tombstones = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='recovery_revocations'").fetchone()
+    query = "SELECT sha256 FROM releases WHERE state='revoked'"
+    if tombstones:
+        query += ' UNION SELECT sha256 FROM recovery_revocations'
+    result = [r[0] for r in db.execute(query + ' ORDER BY sha256 LIMIT ?', (MAX_REVOKED + 1,))]
+    require(len(result) <= MAX_REVOKED, 'Revocation metadata budget exhausted')
+    return result
+
+
+def export_snapshot(repository, destination, byte_limit=DEFAULT_PUBLIC_LIMIT, signer=None, min_validity=0):
     repository.require_recovered()
+    require(type(min_validity) is int and 0 <= min_validity <= 300, 'Invalid publication validity margin')
     destination = Path(destination).absolute()
     require(not destination.exists() and not destination.is_symlink(),
             'Choose a new snapshot directory; existing publications are preserved')
@@ -37,7 +49,7 @@ def export_snapshot(repository, destination, byte_limit=DEFAULT_PUBLIC_LIMIT, si
                            'version INTEGER NOT NULL, origin TEXT NOT NULL)')
             # Prevent concurrent moderation changes while constructing the snapshot.
             db.execute('BEGIN IMMEDIATE')
-            releases = repository.catalog()
+            releases = [r for r in repository.catalog() if r['scan']['time'] + SCAN_TTL - time.time() >= min_validity]
             require(len(releases) <= MAX_RELEASES, 'Too many releases for the alpha catalog')
             total = 0
             for release in releases:
@@ -58,17 +70,12 @@ def export_snapshot(repository, destination, byte_limit=DEFAULT_PUBLIC_LIMIT, si
             require(len(encoded) <= MAX_CATALOG, 'Public catalog exceeds the client limit')
             (staged / 'v1/catalog').write_bytes(encoded)
             if signer is not None:
-                from mod_trust import MAX_REVOKED, MAX_VERSION
+                from mod_trust import MAX_VERSION
                 old = db.execute('SELECT version,origin FROM publication_sequence WHERE singleton=1').fetchone()
                 require(old is None or old['origin'] == root['origin'], 'Repository publication origin changed')
                 version = 1 if old is None else old['version'] + 1
                 require(version <= MAX_VERSION, 'Publication sequence exhausted')
-                tombstones = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='recovery_revocations'").fetchone()
-                revoked_query = "SELECT sha256 FROM releases WHERE state='revoked'"
-                if tombstones:
-                    revoked_query += ' UNION SELECT sha256 FROM recovery_revocations'
-                revoked = [r[0] for r in db.execute(revoked_query + ' ORDER BY sha256 LIMIT ?', (MAX_REVOKED + 1,))]
-                require(len(revoked) <= MAX_REVOKED, 'Revocation metadata budget exhausted')
+                revoked = revoked_hashes(db)
                 for name, wire in signer.publish(encoded, version, revoked, now).items():
                     path = staged / name
                     path.parent.mkdir(parents=True, exist_ok=True)
