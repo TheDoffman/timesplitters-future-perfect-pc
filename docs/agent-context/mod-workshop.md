@@ -1,3 +1,7 @@
+Scan-service config-only tests use a private inert executable: hosted CI Python
+can be group-writable and is correctly rejected by the production scanner policy.
+The fixture fix preserves that policy and never executes the fixture.
+
 Scanner controllers now require default SIGCHLD handling so another handler cannot
 steal guardian exit status and turn an engine error into apparent success. The
 native guardian resets its own SIGCHLD disposition before spawning its child.
@@ -6,30 +10,24 @@ Darwin process sampling accepts unrelated system UID -2 while enforcing the exac
 service UID throughout the managed descendant subtree; live host exposed this
 OS-format difference before agent re-enablement.
 
-Scanner containment repair is implemented pending actual adversarial host checks:
-mod_scan_sandbox.py now routes ALL run/scan calls through a verified native
-scan_guardian_mac.c, built by build-scan-guardian.py. Private parent pipe EOF/
-cancellation triggers owned-child PID kill/reap across session changes; guardian
-runs outside the managed worker group, passes only stdio to the scanner and has
-its own210s monotonic fallback. Captured version/scan streams are bounded. The
-watchdog walks bounded numeric PPID metadata, counting all descendants regardless
-of groups, and advertises guardian-descendants-v1. Installed agents remain disabled
-until escaped-scanner/root-death/resource acceptance and pinned deployment upgrade.
-
-Scan-service SECURITY HOLD: actual Seatbelt probe permits setsid/setpgid. Group-
-only RSS/launchd cleanup is insufficient. Installed private jobs are disabled and
-unloaded. admit() now requires ScanSandbox.GUARDED_PARENT_LIFETIME plus matching
-guardian-descendants-v1 health; neither legacy component advertises that capability,
-so new agents hold scan admission. Implement owned-PID lifetime guardian + complete
-process-descendant sampling and retest escape/root-death/resource cases before
-re-enabling. Parent-directed signals are denied by the existing sandbox (verified).
+Scanner containment repair is implemented and the private Mac login-agent
+installation upgraded to pinned21a60844 after actual escaped-session/root-death,
+RSS/wall cancellation and real AV acceptance. mod_scan_sandbox.py routes all
+run/scan calls through receipt-verified scan_guardian_mac.c, built by
+build-scan-guardian.py. Parent-pipe EOF/cancellation kills and reaps the owned
+scanner PID across session changes; guardian runs outside the controller group,
+passes only stdio and has its own210s fallback. Capture streams are bounded.
+The watchdog counts the numeric PPID subtree and advertises guardian-descendants-v1;
+legacy components fail admission. Historical disabled installation/evidence is
+preserved. This remains private login-only; public service operation is unfinished.
+See STATUS and the scan-service guide for evidence and deployment limits.
 
 Mac scan service: hosting/scan-service-mac.py generates a scheduled worker and
 independent launchd watchdog from private local config. Worker queue/rescan cycles
 require matching fresh health and their own process group. Initial missing health
-records a waiting state without touching repository data. Sampled group RSS/
+records a waiting state without touching repository data. Sampled descendant RSS/
 process/wall budgets cancel by owned launchd service label, never sampled PID.
-launchd owns child-group cleanup; worker/scanner alarms and CPU/fd/file limits
+The native guardian survives child-group cleanup; worker/scanner alarms and CPU/fd/file limits
 remain. Health files are bounded/atomic and retain last faults; unknown files
 are preserved. See [scan service](../development/mod-scan-service.md). Login-agent
 mechanism is separate from public deployment, boot/dedicated identity, definitions

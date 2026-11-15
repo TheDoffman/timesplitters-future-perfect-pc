@@ -1,16 +1,16 @@
 # Mac scan worker and watchdog
 
-**Containment hold:** an actual sandbox probe demonstrated that setsid/setpgid
-can escape process-group-only sampling/cleanup. Both installed private agents
-are disabled and unloaded. New worker admission is held until the new parent-liveness
-guardian and descendant-tree supervision pass actual adversarial host checks. Do not
-enable these jobs for untrusted uploads yet. The earlier normal/group probes
-remain scoped evidence, not proof against this escape.
-
+The repaired private Mac installation is pinned to source21a60844. Actual
+session/group escape, controller death, scaled RSS/wall cancellation, output
+flood and real ClamAV checks passed before re-enabling its two owned login agents.
+The former hold and old source/plists/data are preserved. This establishes private
+login-session operation; public uploads, unattended boot, service identity,
+definition updates and publication refresh still need production acceptance.
+See [status](../project/STATUS.md) for scoped evidence hashes.
 
 `tools/mods/hosting/scan-service-mac.py` generates two private launchd login-agent
 plists. The worker processes one queued upload and one due reviewed-release rescan
-each minute. The independent watchdog samples that worker process group's total
+each minute. The independent watchdog samples the worker's complete descendant-tree total
 RSS every half second, up to2GiB and eight processes, and enforces a480-second
 observed wall deadline. These are sampled limits, not a kernel memory quota.
 The worker also has a480-second alarm and launchd CPU/file/core limits; existing
@@ -83,5 +83,7 @@ changed, linked or stale helpers refuse scanning. The helper owns and reaps the
 actual scanner PID, watches a private parent pipe and a210-second fallback, and
 survives controller process-group cleanup long enough to stop escaped scanners.
 The process-tree watchdog samples numeric PID/PPID/RSS/UID metadata (no argv or
-environment). This repair must pass the new actual escape/controller-death tests
-and be included in the pinned installed release before lifting the hold.
+environment). The installed release includes the helper source/image/receipt; it does not rely
+on mutable development-worktree files. New upgrades must preserve verified old
+plists/data and fail closed if provenance or acceptance fails. Never restore the
+legacy group-only supervisor as an operational rollback.

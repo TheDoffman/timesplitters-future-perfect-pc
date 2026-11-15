@@ -1,26 +1,31 @@
-Scan-service containment HOLD (2026-11-14): actual sandbox probes successfully
-called setsid and setpgid. Group-only memory sampling/launchd cleanup can be escaped.
-Both installed private agents were disabled in gui/501 and booted out; their data,
-pinned program/runtime and evidence are preserved. No public server was started.
-New worker admission requires an owned-parent lifetime guardian capability and
-matching descendant-supervision heartbeat; legacy implementations provide neither.
-The guardian/tree repair and adversarial escape/root-death acceptance remain required.
-A separate sandbox probe could not signal its parent (SIGUSR1 returned EPERM).
-Structured escape/signal evidenceSHAfa960dfca609c5cab435eb92cac9de205c18f354980e6ceecfcb90e340eb484c.
-Earlier normal launchd acceptance passed real queue scanning, explicit review,
-periodic renewal and watchdog restart; temporary jobs were unloaded. EvidenceSHA
-cd35165db810a72a35c6e2410bcba67e06bfe72739d9c0b6f42b3d6e3153d281.
-Scaled memory/wall probes killed managed jobs and reaped ordinary children, but did
-not exercise escaped groups; evidenceSHA934817892f8b4e9803e750c2eb23708da0cbc3f13b512e5f6f0ca95290eae349.
-Private source94a87d0b was pinned into Application Support with a separate stdlib
-runtime and per-user login-agent plists. InstallationSHA55441d8f59a277a704e70081bc442d119b822e9b152413fddd64f6001be5ef82;
-auto-scheduled cycle after SSH exit passed at180s, evidenceSHA
-3dba499e87611b21b28fc57b544e4585470430eca7280b01b64163835b998601.
-Those jobs are NOW DISABLED pending repair. They were login agents, not verified
-unattended-boot/dedicated production services. Broad sourceeec75231 backend tests
-passed Mac177/Linux176+1skip; source94 service policy11 passed on both, Windows6
-passed/5POSIX skips. These checks did not cover the newly found escape.
-Full goal remains active; public hosting and production release are unfinished.
+Scanner containment repair and private deployment (2026-11-14, source21a60844):
+Actual Seatbelt probes permit setsid/setpgid; group-only cleanup was insufficient.
+The replacement signed native guardian owns the scanner PID, kills/reaps it on
+parent-pipe loss or cancellation, and survives controller group cleanup. The
+independent watchdog samples the complete numeric PPID subtree across sessions.
+No process argv/environment is sampled; cancellation targets the owned launchd label.
+Default SIGCHLD ownership is required; output capture and helper provenance are bounded.
+Mac native containment/service/IO suite25 passes; workshop/rescan/recovery96 passes.
+Live guarded queue -> manual review -> periodic renewal -> watchdog restart passes,
+evidenceSHAaf0cf2b5e9c9712f75832a05bf185b261b5999add3beacbc4d0f5a42af50dd62.
+Actual escaped-child memory/wall cancellation kills both scanner and guardian;
+limits were scaled only in private fixtures. EvidenceSHA
+a5d2332cf6e0f54d36d8e9ad576f382b3213963454e5fd0ebe02103b43ca8aaf.
+Actual ClamAV1.5.4 clean/EICAR/empty-database/missing-engine/revocation checks pass,
+evidenceSHAec57a79a172062f27428daf43807b76b24127d23687f8b850d119a29c4bf8cad.
+The private Application Support installation was upgraded from94a87d0b to pinned
+21a60844, including C source, signed helper, receipt and separate stdlib runtime.
+Old source/plists/hold evidence/data were preserved; both owned login agents now
+run the repaired release. Initial empty cycle completed under guardian-descendants-v1
+health. Upgrade evidenceSHA7643347009d9367febfa8fe537c630d104df710d892bda351313b8e501c800e4.
+Public server was not started. This is a private login-agent prototype, not verified
+unattended boot or dedicated non-administrator production hosting. Current Linux
+local verification is unavailable because WSL VM creation timed out; the prior
+ed05 native-independent suites passed18 with6 Mac-only skips. CI Linux exposed a group-writable hosted Python fixture; config-only tests now
+use a private inert executable while retaining the production permission gate.
+Latest CI pending.
+Full goal remains active; internet deployment, service identity, definition updates,
+automatic signed refresh, off-device recovery and packaged public release remain.
 
 Periodic reviewed-release scans (source6dfa2417,2026-11-14): rescan-next shares
 the queue worker lock, withholds availability during slow AV without holding a

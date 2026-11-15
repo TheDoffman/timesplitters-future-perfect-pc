@@ -81,7 +81,12 @@ def private_config(tmp_path):
     tmp_path.chmod(0o700)
     for name in ('repository', 'database', 'state'):
         (tmp_path / name).mkdir(mode=0o700)
-    value = dict(schema=1, scanner=sys.executable, **{name: str(tmp_path / name) for name in ('repository', 'database', 'state')})
+    # Hosted Python installations can be group-writable. Keep that real host
+    # policy intact and give these config-only tests their own inert executable.
+    scanner = tmp_path / 'scanner-fixture'
+    scanner.write_text('#!/bin/sh\nexit 99\n')
+    scanner.chmod(0o700)
+    value = dict(schema=1, scanner=str(scanner), **{name: str(tmp_path / name) for name in ('repository', 'database', 'state')})
     path = tmp_path / 'service.json'
     path.write_text(json.dumps(value))
     path.chmod(0o600)
