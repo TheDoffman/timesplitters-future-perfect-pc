@@ -70,7 +70,7 @@ def inspect(wire, pins):
             seen.add(key)
             mode = item.external_attr >> 16
             require(stat.S_IFMT(mode) in (0, stat.S_IFREG, stat.S_IFDIR)
-                    and not mode & 0o6022 and not item.flag_bits & 1
+                    and not mode & 0o6000 and not item.flag_bits & 1
                     and item.compress_type in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED), 'Unsafe wheel member type/mode')
             expanded += item.file_size
             require(expanded <= MAX_EXPANDED, 'Wheel expanded size exceeds budget')

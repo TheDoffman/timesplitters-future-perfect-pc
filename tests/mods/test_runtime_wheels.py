@@ -71,13 +71,18 @@ def test_pinned_wheel_checks_identity_and_retains_license():
                                       ('demo.data/scripts/hook', stat.S_IFREG | 0o644),
                                       ('demo/link', stat.S_IFLNK | 0o777),
                                       ('demo/setuid', stat.S_IFREG | 0o4755),
-                                      ('demo/writable', stat.S_IFREG | 0o666),
                                       ('DEMO/__INIT__.PY', stat.S_IFREG | 0o644),
                                       ('line\nfeed', stat.S_IFREG | 0o644)])
 def test_structural_checks_apply_even_to_a_pinned_fixture(name, mode):
     wire = wheel(extra=[(name, b'fixture', mode)])
     with pytest.raises(ValueError):
         wheels.inspect(wire, pins(wire))
+
+
+def test_archive_write_bits_are_normalized_before_installation():
+    wire = wheel(extra=[('demo/writable', b'fixture', stat.S_IFREG | 0o666)])
+    _, entries = wheels.inspect(wire, pins(wire))
+    assert next(mode for name, _, mode in entries if name == 'demo/writable') == 0o644
 
 
 @pytest.mark.skipif(os.name != 'posix', reason='POSIX owner/mode admission and extraction')

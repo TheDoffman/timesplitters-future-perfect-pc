@@ -2,7 +2,9 @@ Pinned application wheels: runtime-images-mac.py --wheelhouse admits exactly one
 binary wheel per package in the tracked exact/hash-pinned hosting requirements.
 runtime_wheels.py validates the complete offline set before creating site-packages,
 checks package metadata/license notices and rejects hooks/.data schemes, links,
-unsafe paths/modes, collisions and archive/combined expansion excess. Every file
+unsafe paths/setid modes, collisions and archive/combined expansion excess. Archive
+write bits are normalized to644/755: official wheels contain664 RECORD/source
+members, which must never become group-writable installed files. Every file
 retains its wheel digest and original entry digest. Native wheel images join the
 same relocation/signing closure; only explicitly registered staged native images
 may resolve outside Cellar. Package metadata/licenses remain in the final inventory.
