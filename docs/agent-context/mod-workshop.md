@@ -1,3 +1,8 @@
+Gateway native canaries now verify it cannot directly read the public snapshot
+tree, can connect only to fixed proxy destinations and denies source-bound TCP,
+connectx/UDP connections to other ports. Shared publication supervision is bound
+to both actual PID and repository/origin identity after extraction.
+
 Public gateway preparation: hosting/Gatewayfile and gateway-service-mac.py bind
 localhost8768, canonical HTTPS origin, fixed static8766/API8767 destinations and
 known workshop routes. Download requests strip credentials/cookies; API scheme

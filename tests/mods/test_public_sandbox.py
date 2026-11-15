@@ -122,7 +122,7 @@ int main(int argc,char **argv){
  else if(strcmp(argv[1],"bound-net")==0 || strcmp(argv[1],"connectx")==0 || strcmp(argv[1],"udp-send")==0){
   int udp=strcmp(argv[1],"udp-send")==0;int s=socket(AF_INET,udp?SOCK_DGRAM:SOCK_STREAM,0),one=1;
   setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&one,sizeof(one));setsockopt(s,SOL_SOCKET,SO_REUSEPORT,&one,sizeof(one));
-  struct sockaddr_in a={0};a.sin_family=AF_INET;a.sin_addr.s_addr=htonl(INADDR_LOOPBACK);a.sin_port=htons(8766);
+  struct sockaddr_in a={0};a.sin_family=AF_INET;a.sin_addr.s_addr=htonl(INADDR_LOOPBACK);a.sin_port=htons(argc>3?(unsigned short)atoi(argv[3]):8766);
   errno=0;action=bind(s,(void*)&a,sizeof(a));error=errno;a.sin_port=htons((unsigned short)atoi(argv[2]));
   if(action==0){errno=0;if(udp)result=sendto(s,"x",1,0,(void*)&a,sizeof(a));
    else if(strcmp(argv[1],"connectx")==0){sa_endpoints_t endpoints={0};endpoints.sae_dstaddr=(void*)&a;endpoints.sae_dstaddrlen=sizeof(a);result=connectx(s,&endpoints,SAE_ASSOCID_ANY,0,NULL,0,NULL,NULL);}
@@ -144,7 +144,8 @@ int main(int argc,char **argv){
 '''
 
 
-def test_actual_public_policy_blocks_private_aliases_network_and_children(state, guardian):
+@pytest.mark.parametrize('role', ['downloads', 'gateway'])
+def test_actual_public_policy_blocks_private_aliases_network_and_children(state, guardian, role):
     from mod_scan_sandbox import GuardedChild
     source, binary = state / 'probe.c', state / 'probe'
     source.write_text(PROBE)
@@ -157,7 +158,7 @@ def test_actual_public_policy_blocks_private_aliases_network_and_children(state,
     private = state / 'private-canary'
     private.write_text('TSFP_FAKE_KEY')
     scratch = public.acquire(state)
-    policy = public.profile(binary, approved, source, scratch.path)
+    policy = public.profile(binary, approved if role == 'downloads' else None, source, scratch.path, role)
     def run(args, confined=True):
         if not confined:
             result = subprocess.run([str(binary), *args], capture_output=True, check=True, timeout=5)
@@ -183,7 +184,7 @@ def test_actual_public_policy_blocks_private_aliases_network_and_children(state,
                 os.close(write)
     try:
         assert run(['read', str(private)], False)['seen']
-        assert run(['read', str(readable)])['seen']
+        assert run(['read', str(readable)])['seen'] is (role == 'downloads')
         assert run(['read', str(private)])['result'] == -1
         assert run(['write', str(private)])['result'] == -1 and private.read_text() == 'TSFP_FAKE_KEY'
         assert run(['write', str(scratch.path / 'output')])['result'] == 0
@@ -218,9 +219,19 @@ def test_actual_public_policy_blocks_private_aliases_network_and_children(state,
                     listener.bind(('127.0.0.1', 0))
                     if kind == socket.SOCK_STREAM:
                         listener.listen(4)
-                allowed = run([mode, str(control.getsockname()[1])], False)
+                source_port = '8766' if role == 'downloads' else '8768'
+                allowed = run([mode, str(control.getsockname()[1]), source_port], False)
                 assert allowed['action'] == 0 and allowed['result'] >= 0
-                refused = run([mode, str(denied.getsockname()[1])])
+                refused = run([mode, str(denied.getsockname()[1]), source_port])
                 assert refused['action'] == 0 and refused['result'] == -1 and refused['errno'] in (1, 13)
+        if role == 'gateway':
+            # Only the two fixed proxy destinations are permitted. These are
+            # our controlled listeners; no private API requests are sent.
+            for port in (8766, 8767):
+                with socket.socket() as backend:
+                    backend.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    backend.bind(('127.0.0.1', port))
+                    backend.listen(4)
+                    assert run(['net', str(port)])['result'] == 0
     finally:
         scratch.close()
