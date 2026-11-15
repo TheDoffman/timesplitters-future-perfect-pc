@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "name": "First to Three",
   "author": "SDK Example",
-  "description": "Original experimental API1 custom mode. Runs in the developer worker; game activation is not yet available.",
+  "description": "Experimental offline Arcade Deathmatch mode: first to three accepted kills wins. Requires a game build with gameplay mod support; uses separate saves.",
   "game": "tsfp-us-45410066",
   "api": "tsfp-mod-v1-draft",
   "dependencies": {},

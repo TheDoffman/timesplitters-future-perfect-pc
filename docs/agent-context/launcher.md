@@ -1,7 +1,8 @@
 [Script handoff](../development/mod-source-handoff.md): ModScriptLaunch.cs is a
 shared bounded encoder, compiled on Windows/Mac/Linux. Its golden wire/hash/save-
 identity vector also drives the native reader tests. Package authorization must
-precede encoding; startup/profile activation has not adopted it yet.
+precede encoding. ModLibrary now writes and revalidates a generation capsule for one
+main.lua mode, gated by BUILD.json mod_script_version=1; see mod-workshop.md.
 
 Installed display-reader capability: BUILD.json display_settings_version gates
 Crosshair Size (>=4) and Weapon FOV degrees (>=5). Missing/invalid metadata
@@ -888,7 +889,8 @@ switches retained versions and uninstalls with dependency/conflict and personal-
 file preservation guards. ModLibraryPage.cs owns the shared package/profile model.
 GameSettings.StartInfo gains a two-argument bypass for Play without mods while
 retaining the existing one-argument contract. Its normal path verifies the active
-overlay before passing TSFP_MOD_TEXTURE_DIR. Maps/audio/scripts cannot be enabled.
+overlay before passing TSFP_MOD_TEXTURE_DIR. One main.lua gameplay mode may
+activate on explicitly capable builds; maps/audio/additional Lua remain inactive.
 Internet origins require HTTPS; redirects/external URLs fail closed; downloads
 recheck fresh scans.19 workshop groups run with --workshop and shared UI suites.
 ZIP central records are bounded before ZipArchive allocation. Shared ModJson

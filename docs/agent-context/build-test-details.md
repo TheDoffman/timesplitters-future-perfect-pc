@@ -1,3 +1,10 @@
+Gameplay-mode capability: Mac/Linux native build receipts emit mod_script_version=1;
+packagers preserve that value with missing=0. Windows packaging emits1 beside
+the required compiled helper bundle. The launcher refuses unsupported, malformed
+or missing versions; this capability never comes from a mod manifest or catalog.
+launcher_shared_ui.cs covers exact capsule/source/package bindings, independent
+asset identity, single-mode rejection and original-game recovery.
+
 Main visibility integration retains positive explicit max_chunk_bytes validation and UTF8-plus-LF body accounting; defaults now use main's512KiB budget through the same shared chunk iterator. Both helper and full publisher budget tests pass.
 
 test_mod_runtime.py includes network-fresh/authority-fresh; both reproduce the

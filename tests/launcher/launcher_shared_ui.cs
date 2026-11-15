@@ -237,6 +237,34 @@ public static class LauncherSharedUiChecks
             string script=LibraryPackage(root,"script-only","1.0.0",1,script:true);library.Install(script,Core.Hash(script),System.Threading.CancellationToken.None);
             WorkshopReject(()=>library.Enable("script-only@1.0.0",System.Threading.CancellationToken.None),"A script was enabled without a sandbox");
         });
+        Test("gameplay activation binds verified packages and refuses stale capabilities and source",()=>{
+            string folder=Path.Combine(root,"mode-activation");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
+            string package=LibraryPackage(root,"gameplay","1.0.0",1,script:true);var mode=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);
+            string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));Directory.CreateDirectory(Path.GetDirectoryName(manifest));
+            foreach(string value in new[]{"0","2","true","\"1\""}) {
+                File.WriteAllText(manifest,"{\"mod_script_version\":"+value+"}");
+                Need(!library.CanEnable(mode),"Unsupported capability accepted");WorkshopReject(()=>library.Enable(mode.Key,System.Threading.CancellationToken.None),"Mode enabled for an unsupported game");
+            }
+            File.WriteAllText(manifest,"{\"mod_script_version\":1}");Need(library.CanEnable(mode),"Supported mode unavailable");
+            library.Enable(mode.Key,System.Threading.CancellationToken.None);
+            Func<System.Diagnostics.ProcessStartInfo> configured=()=>{var info=new System.Diagnostics.ProcessStartInfo();info.EnvironmentVariables["RECOMP_SAVE_DIR"]=Path.Combine(folder,"Saves");library.Configure(info);return info;};
+            var initial=configured();string path=initial.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE"];
+            var expected=ModScriptCapsule.Create(mode.Sha256,new string[0],System.Text.Encoding.UTF8.GetBytes("return true\n"));
+            Need(File.ReadAllBytes(path).SequenceEqual(expected.Bytes) && initial.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE_SHA256"]==expected.Sha256,"Mode capsule differed from authenticated source");
+            WorkshopReject(()=>library.Configure(new System.Diagnostics.ProcessStartInfo()),"Mode launched without explicit original save location");
+            string texture=LibraryPackage(root,"mode-texture","1.0.0",1);var asset=library.Install(texture,Core.Hash(texture),System.Threading.CancellationToken.None);library.Enable(asset.Key,System.Threading.CancellationToken.None);
+            var combined=configured();expected=ModScriptCapsule.Create(mode.Sha256,new[]{asset.Sha256},System.Text.Encoding.UTF8.GetBytes("return true\n"));
+            Need(combined.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE_SHA256"]==expected.Sha256,"Independent asset package was omitted from save identity");
+            string profile=File.ReadAllText(Path.Combine(folder,"Mods/profile.json"));
+            string other=LibraryPackage(root,"second-mode","1.0.0",1,script:true);var second=library.Install(other,Core.Hash(other),System.Threading.CancellationToken.None);
+            WorkshopReject(()=>library.Enable(second.Key,System.Threading.CancellationToken.None),"Two gameplay modes enabled together");
+            Need(File.ReadAllText(Path.Combine(folder,"Mods/profile.json"))==profile,"Rejected mode changed active profile");
+            File.WriteAllText(combined.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE"],"tampered");WorkshopReject(()=>configured(),"Modified capsule accepted");
+            library.Enable(mode.Key,System.Threading.CancellationToken.None);File.WriteAllText(Path.Combine(mode.Directory,"content/scripts/main.lua"),"return false\n");WorkshopReject(()=>configured(),"Modified source accepted");
+            library.DisableAll(System.Threading.CancellationToken.None);Need(library.Enabled().Length==0,"Broken source prevented recovery");
+            // Selected mode metadata never survives the explicit original-game path.
+            var plain=GameSettings.StartInfo(folder,true);Need(!plain.EnvironmentVariables.ContainsKey("TSFP_MOD_SCRIPT_CAPSULE") && !plain.EnvironmentVariables.ContainsKey("TSFP_MOD_SCRIPT_CAPSULE_SHA256"),"Original-game launch inherited a capsule");
+        });
         Test("native mod tampering, cancellation and game-running guards retain the active profile",()=>{
             string folder=Path.Combine(root,"mod-preservation");Directory.CreateDirectory(folder);bool running=false;var library=new ModLibrary(folder,()=>running);
             string package=LibraryPackage(root,"preserved","1.0.0",1);var mod=library.Install(package,Core.Hash(package),System.Threading.CancellationToken.None);library.Enable(mod.Key,System.Threading.CancellationToken.None);

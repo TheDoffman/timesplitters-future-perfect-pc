@@ -59,6 +59,7 @@ namespace TimeSplitters.Launcher
         public readonly Dictionary<string,ModPayload> Files=new Dictionary<string,ModPayload>(StringComparer.Ordinal);
         public string Key {get{return Id+"@"+Version;}}
         public bool TextureOnly {get{return Files.Count>0 && Files.Keys.All(name=>Regex.IsMatch(name,@"\Atextures/[0-9a-f]{16}\.dds\z"));}}
+        public bool ScriptMode {get{return Files.ContainsKey("scripts/main.lua") && Files.Keys.All(name=>name=="scripts/main.lua" || Regex.IsMatch(name,@"\Atextures/[0-9a-f]{16}\.dds\z"));}}
     }
     public sealed class ModPayload {public string Sha256;public long Size;}
 
@@ -75,6 +76,27 @@ namespace TimeSplitters.Launcher
         public ModLibrary(string root):this(root,Core.GameRunning){}
         internal ModLibrary(string root,Func<bool> running,Func<DateTime> clock=null){this.root=Path.GetFullPath(root);this.running=running;this.clock=clock??(()=>DateTime.UtcNow);}
         string PathIn(string name){return Core.PathIn(root,"Mods/"+name);}
+        public bool CanEnable(InstalledMod mod){return mod.TextureOnly || (mod.ScriptMode && ScriptRuntimeAvailable());}
+        bool ScriptRuntimeAvailable()
+        {
+            string path=Core.PathIn(root,LauncherPlatform.ManifestPath(root));if(!File.Exists(path) || new FileInfo(path).Length>4*1024*1024)return false;
+            try {var manifest=ModJson.Read(File.ReadAllText(path),4*1024*1024);object value;return manifest.TryGetValue("mod_script_version",out value) && value is long && (long)value==1;}
+            catch(InvalidDataException){return false;}
+        }
+        ModScriptCapsule ScriptCapsule(InstalledMod[] mods)
+        {
+            var modes=mods.Where(m=>m.ScriptMode).ToArray();Core.Require(modes.Length<=1,"Only one gameplay mode can be enabled at a time.");
+            if(modes.Length==0)return null;
+            Core.Require(ScriptRuntimeAvailable(),"Install a compatible game build before enabling gameplay modes.");
+            Core.Require(mods.Length<=32,"Gameplay mode profiles support at most 32 packages.");
+            var mode=modes[0];string path=Core.PathIn(mode.Directory,"content/scripts/main.lua");var payload=mode.Files["scripts/main.lua"];
+            Core.Require(new FileInfo(path).Length==payload.Size && Core.Hash(path)==payload.Sha256,"Installed script changed. Reinstall the mode.");
+            byte[] bytes=File.ReadAllBytes(path);using(var sha=System.Security.Cryptography.SHA256.Create())
+                Core.Require(bytes.LongLength==payload.Size && BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==payload.Sha256,"Installed script changed while reading.");
+            // Bind every selected package, including independent texture overlays,
+            // because each can change the experience associated with these saves.
+            return ModScriptCapsule.Create(mode.Sha256,mods.Where(m=>m!=mode).Select(m=>m.Sha256),bytes);
+        }
         FileStream Lock(){Directory.CreateDirectory(Core.PathIn(root,"Mods"));return new FileStream(PathIn("library.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);}
         static Dictionary<string,object> Object(Dictionary<string,object> parent,string name)
         {object value;Core.Require(parent.TryGetValue(name,out value) && value is Dictionary<string,object>,"Missing mod metadata object: "+name);return (Dictionary<string,object>)value;}
@@ -218,7 +240,7 @@ namespace TimeSplitters.Launcher
             if(full.StartsWith(active+Path.DirectorySeparatorChar,StringComparison.Ordinal))
                 foreach(string file in Directory.GetFiles(full,"*",SearchOption.AllDirectories)) {
                     string relative=file.Substring(full.Length+1).Replace('\\','/');
-                    Core.Require(relative=="manifest.json" || Regex.IsMatch(relative,@"\Atextures/[0-9a-f]{16}\.dds\z"),"Unexpected files in an old mod cache were preserved for review.");
+                    Core.Require(relative=="manifest.json" || relative=="mode.bin" || Regex.IsMatch(relative,@"\Atextures/[0-9a-f]{16}\.dds\z"),"Unexpected files in an old mod cache were preserved for review.");
                 }
             Directory.Delete(full,true);
         }
@@ -268,13 +290,14 @@ namespace TimeSplitters.Launcher
             CheckWorkshop(mods);
             var assets=new Dictionary<string,string>(StringComparer.Ordinal);long total=0;
             foreach(var mod in mods) {
-                Core.Require(mod.TextureOnly,"This build can enable texture-only mods. Other content remains installed until its runtime is available.");
+                Core.Require(CanEnable(mod),"This content needs a compatible runtime. Maps, audio and additional Lua files remain inactive.");
                 foreach(var dependency in mod.Dependencies)Core.Require(mods.Any(m=>m.Id==dependency.Key && m.Version==dependency.Value),"Enable the required dependency first: "+dependency.Key+"@"+dependency.Value);
-                foreach(var pair in mod.Files){Core.Require(!assets.ContainsKey(pair.Key),"Texture conflict: "+pair.Key+" is provided by more than one enabled mod.");assets.Add(pair.Key,mod.Key);total+=pair.Value.Size;Core.Require(total<=MaxExpanded,"Enabled texture mods exceed the memory/storage budget.");}
+                foreach(var pair in mod.Files){Core.Require(!assets.ContainsKey(pair.Key),"Payload conflict: "+pair.Key+" is provided by more than one enabled mod.");assets.Add(pair.Key,mod.Key);total+=pair.Value.Size;Core.Require(total<=MaxExpanded,"Enabled mods exceed the memory/storage budget.");}
             }
             // Reject cycles even if exact versions happen to all be present.
             var visited=new HashSet<string>();var pending=new HashSet<string>();
             foreach(var mod in mods)Visit(mod,mods,visited,pending);
+            var capsule=ScriptCapsule(mods);
             string generation=Guid.NewGuid().ToString("N"),directory=PathIn("Active/"+generation),textures=Core.PathIn(directory,"textures");Directory.CreateDirectory(textures);bool published=false;
             try {
                 foreach(var mod in mods) {
@@ -282,9 +305,11 @@ namespace TimeSplitters.Launcher
                     foreach(var pair in mod.Files) {
                         token.ThrowIfCancellationRequested();
                         string source=Core.PathIn(mod.Directory,"content/"+pair.Key);Core.Require(new FileInfo(source).Length==pair.Value.Size && Core.Hash(source)==pair.Value.Sha256,"Installed mod payload was modified; reinstall this mod.");
+                        if(pair.Key=="scripts/main.lua")continue;
                         byte[] bytes=File.ReadAllBytes(source);ValidateDds(bytes);string target=Core.PathIn(textures,Path.GetFileName(pair.Key));File.WriteAllBytes(target,bytes);
                     }
                 }
+                if(capsule!=null)File.WriteAllBytes(Core.PathIn(directory,"mode.bin"),capsule.Bytes);
                 Core.Write(Core.PathIn(directory,"manifest.json"),Json.Encode(mods.Select(m=>new {key=m.Key,sha256=m.Sha256}).ToArray()));
                 token.ThrowIfCancellationRequested();Core.Require(!running(),"Close the game before changing enabled mods.");
                 Core.Write(PathIn("profile.json"),Json.Encode(new {schema=1,generation=generation,enabled=mods.Select(m=>new {key=m.Key,sha256=m.Sha256}).ToArray()}));published=true;
@@ -323,14 +348,22 @@ namespace TimeSplitters.Launcher
             Core.Require(mods.Select(m=>m.Id).Distinct(StringComparer.Ordinal).Count()==mods.Length && mods.Sum(m=>m.Files.Sum(f=>f.Value.Size))<=MaxExpanded,"Invalid active mod set or size.");
             var visited=new HashSet<string>();var pending=new HashSet<string>();
             foreach(var mod in mods) {
-                Core.Require(mod.TextureOnly && mod.Sha256==bindings[mod.Key] && Core.Hash(Core.PathIn(mod.Directory,"package.zip"))==mod.Sha256,"Enabled mod is unsupported or has changed. Launch without mods or reinstall it.");
+                Core.Require(CanEnable(mod) && mod.Sha256==bindings[mod.Key] && Core.Hash(Core.PathIn(mod.Directory,"package.zip"))==mod.Sha256,"Enabled mod is unsupported or has changed. Launch without mods or reinstall it.");
                 foreach(var dependency in mod.Dependencies)Core.Require(mods.Any(m=>m.Id==dependency.Key && m.Version==dependency.Value),"The active mod profile is missing a required dependency.");
                 foreach(var pair in mod.Files) {
+                    if(pair.Key=="scripts/main.lua")continue;
                     string name=Path.GetFileName(pair.Key);Core.Require(expected.Add(name),"Enabled texture conflict.");string file=Core.PathIn(textures,name);
                     Core.Require(new FileInfo(file).Length==pair.Value.Size && Core.Hash(file)==pair.Value.Sha256,"Active mod data changed. Re-enable the profile or launch without mods.");
                 }
             }
             foreach(var mod in mods)Visit(mod,mods,visited,pending);
+            var capsule=ScriptCapsule(mods);string capsulePath=Core.PathIn(directory,"mode.bin");
+            if(capsule!=null) {
+                Core.Require(new FileInfo(capsulePath).Length==capsule.Bytes.Length && Core.Hash(capsulePath)==capsule.Sha256,"Active gameplay mode changed. Re-enable it or launch without mods.");
+                Core.Require(!String.IsNullOrEmpty(info.EnvironmentVariables["RECOMP_SAVE_DIR"]),"Gameplay modes require an explicit original save location.");
+                info.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE"]=capsulePath;
+                info.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE_SHA256"]=capsule.Sha256;
+            } else Core.Require(!File.Exists(capsulePath),"Unexpected active gameplay mode. Re-enable the profile.");
             Core.Require(Directory.GetFiles(textures).Select(Path.GetFileName).OrderBy(s=>s,StringComparer.Ordinal).SequenceEqual(expected.OrderBy(s=>s,StringComparer.Ordinal)),"Unexpected active texture files.");
             info.EnvironmentVariables["TSFP_MOD_TEXTURE_DIR"]=textures;
             }

@@ -1,7 +1,8 @@
-[Native preflight/CI tests](build-test-details.md); [context](investigation.md).
-[Visibility tests](fidelity-comparison.md); [batch bounds](independent.md).
+[Native checks](build-test-details.md); [context](investigation.md).
+[Visibility](fidelity-comparison.md); [bounds](independent.md).
+Scripts: build-test-details.md.
 
-Fresh-epoch and GCC fixture checks: build-test-details.md.
+Epoch/GCC checks: build-test-details.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.

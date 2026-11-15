@@ -1,3 +1,14 @@
+Launcher gameplay activation: ModLibrary accepts one scripts/main.lua mode with
+optional flat DDS textures, alongside texture packages, only when the installed
+BUILD.json advertises mod_script_version=1. It rechecks workshop availability,
+archive/profile bindings and source payload hashes, builds a canonical capsule
+binding all selected package identities, and rechecks its active-generation hash
+before each launch. GameSettings supplies the explicit ordinary save root; native
+bootstrap selects separate ModSaves and offline-only mode. Enable never runs code.
+Missing capability leaves scripts inactive; Play without mods bypasses the profile.
+Native UI/source/capability/tamper/preservation checks are in launcher_shared_ui.cs.
+Public hosting and actual launcher-to-game acceptance remain pending.
+
 ScriptRuntime adds one bounded background preflight/result and epoch-specific approval before MatchManager can bind; production startup/title/shutdown wiring is still pending. See mod-scripting.md.
 
 Native RuntimeResources now discovers OS-adjacent generated helper bundles and verifies private snapshots; PrivateDirectory creates strict-permission caches independently of saves. Bootstrap binding remains pending; see mod-scripting.md.

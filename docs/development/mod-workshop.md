@@ -29,10 +29,17 @@ Texture-only packages can now be enabled in a separate active overlay. The
 shared runtime reader loads those DDS replacements before the existing pack,
 with reader fallback and the existing Enhanced/Classic switch. Windows profile-
 menu visual loading/update/rollback/removal is verified; Story gameplay and
-other game hosts remain unverified. Maps, audio and Lua can be installed but cannot be enabled
-yet. Their formats/APIs remain drafts. This is not a general game-content loader.
-Shared game script hooks and an OS-sealed supervisor now have native component
-checks, with bootstrap/save/helper policy still unwired. No public infrastructure,
+other game hosts remain unverified. One gameplay mode containing exactly
+`scripts/main.lua` and optional textures can now be enabled when the installed
+BUILD.json advertises `mod_script_version: 1`. Additional enabled texture packages
+are included in the mode's isolated save identity. Each launch revalidates the
+packages, workshop trust and source capsule. Choose offline Arcade Deathmatch
+and start a new match; scripts cannot access online play and use separate saves.
+Only one gameplay mode can be selected. Older builds keep scripts inactive.
+Maps, audio and additional Lua files remain inactive; formats/APIs remain drafts.
+Native game bootstrap, helper confinement and gameplay hooks have been tested on
+all three hosts through developer handoffs. Actual launcher-to-game acceptance
+of this new activation path remains pending. No public infrastructure,
 production signing keys or usable scripting release has been deployed. The selected host is the owner's Mac
 mini, over the internet without a purchased domain. See the
 [Mac hosting setup](mac-mod-hosting.md) for the approved static-download alpha,

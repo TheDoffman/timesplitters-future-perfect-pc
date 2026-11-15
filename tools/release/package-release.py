@@ -191,6 +191,7 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
         'release_channel': release_identity(args.version),
         'auto_display_resolution': True,
         'display_settings_version': 5,
+        'mod_script_version': 1,
         'language_packs': True,
         'launcher_version': json.loads((stage/'Support/Launcher/manifest.json').read_text())['version'],
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),

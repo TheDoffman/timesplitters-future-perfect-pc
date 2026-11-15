@@ -229,10 +229,10 @@ namespace TimeSplitters.Launcher
                 string[] enabled=library.Enabled();
                 foreach(var mod in library.List().Where(m=>(m.Id+" "+m.Name+" "+m.Author+" "+m.Description).IndexOf(query,StringComparison.OrdinalIgnoreCase)>=0)) {
                     VisibleCount++;var card=PageTheme.Section(results,mod.Name+"  "+mod.Version,mod.Description);bool active=enabled.Contains(mod.Key);
-                    card.Children.Add(PageTheme.Text("By "+mod.Author+" · "+(active?"Enabled for Enhanced textures":"Installed, disabled"),13,"#A7D9FA"));
+                    card.Children.Add(PageTheme.Text("By "+mod.Author+" · "+(active?(mod.ScriptMode?"Enabled offline gameplay mode · separate saves":"Enabled for Enhanced textures"):"Installed, disabled"),13,"#A7D9FA"));
                     var actions=new WrapPanel();card.Children.Add(actions);
-                    var toggle=new Button {Name="ToggleMod",Content=active?"Disable":mod.TextureOnly?"Enable textures":"Runtime unavailable",IsEnabled=stop==null && (active || mod.TextureOnly),Margin=new Thickness(0,12,10,0)};
-                    toggle.Click+=async(s,e)=>await ChangeLibrary(token=>{if(active)library.Disable(mod.Key,token);else library.Enable(mod.Key,token);},active?"Mod disabled. Other files were preserved.":"Texture mod enabled. Use Enhanced textures in a compatible game build.");actions.Children.Add(toggle);
+                    var toggle=new Button {Name="ToggleMod",Content=active?"Disable":mod.TextureOnly?"Enable textures":library.CanEnable(mod)?"Enable gameplay mode":"Runtime unavailable",IsEnabled=stop==null && (active || library.CanEnable(mod)),Margin=new Thickness(0,12,10,0)};
+                    toggle.Click+=async(s,e)=>await ChangeLibrary(token=>{if(active)library.Disable(mod.Key,token);else library.Enable(mod.Key,token);},active?"Mod disabled. Other files were preserved.":mod.ScriptMode?"Gameplay mode enabled for offline Arcade Deathmatch. Progress uses separate saves. Start a new match to play.":"Texture mod enabled. Use Enhanced textures in a compatible game build.");actions.Children.Add(toggle);
                     var remove=new Button {Name="UninstallMod",Content="Uninstall",IsEnabled=stop==null && !active,Margin=new Thickness(0,12,10,0)};
                     remove.Click+=async(s,e)=>await ChangeLibrary(token=>library.Uninstall(mod.Key),"Mod version uninstalled. Game files, settings and saves were preserved.");actions.Children.Add(remove);
                 }
