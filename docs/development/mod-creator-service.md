@@ -67,6 +67,11 @@ unfinished. Report history is included in private backups and preserved by
 recovery, whose authentication/publication barriers still apply. Reports never
 appear in public catalogs or package downloads. Public abuse/load acceptance and
 operator notification/staffing remain unfinished.
+The reporting UI passes native Windows/Mac/Linux checks at source9f5b4781. The
+actual user-Mac reporting/scanner/recovery drill remains unrun because free space
+is below the enforced2GiB minimum. Free space and administrator authentication
+must be restored before public deployment; the matching46-source host bundle is
+prepared and plan-verified, without starting production services.
 
 ## Native moderation
 

@@ -19,14 +19,19 @@ The Mac has fallen below the enforced2GiB upload/scanner floor (last1.78GiB);
 real user-host report/scanner/restore acceptance is not run. The limit is intact.
 Only verified task-owned bin/obj intermediates were recycled after publishing:
 249-entry inventorySHA13f84df7434f0cfc6baca30bae9b10d849c6069f22a19f0e7a92cab024934d4a;
-actual free space rose16MiB, while app hashes/signatures stayed unchanged. Apparent
-intermediate allocation was larger because those blocks were shared. Source,
+observed free space rose15.5MiB, while app hashes/signatures stayed unchanged.
+Apparent intermediate allocation was larger than the observed free-space change. Source,
 runtime, SDK, user data and the original pending administrator probe are preserved.
 All3 launcher/normal-backend/package CI jobs pass at9f5b4781; Linux logs confirm102
 UI groups including reports. Broader9f5 CI remains in progress. Source9605bd88 full
 CI run43754535207 is complete/green. Native moderator report screens and public
-abuse/load/notification/staffing acceptance remain unfinished. Current rate-fix
-host preparation is pending; production remains inactive awaiting auth and space.
+abuse/load/notification/staffing acceptance remain unfinished. The current rate-fix
+host bundle at6c0a5caf is frozen/plan-verified:46 source files,3339 runtime files,
+150981780 installation bytes, binding the accepted runtime without duplication.
+DescriptorSHAbd2b6fe07247374103d39b1335973534afde2835ab06ff1dc7189a85ce040f2c;
+preparation receiptSHAc74939ad80d6c230a5e2cfa63249bd2b8e8e6bc101d8e4b32641f5d6d40750ab.
+Earlier30fa/9f5b preparations are preserved as history. No privileged apply was
+run; production remains inactive awaiting administrator authentication and space.
 
 Native Lua source inspection (2026-11-15):
 Moderators can request declared Lua source from completed jobs through an exact

@@ -12,7 +12,9 @@ hashless examples/local/other-origin installs offer none. Drafts clear on accoun
 changes; no automatic retry. Native moderator report-screen work remains open.
 API/UI/restore tests and actual Mac scanner mode cover another player's report,
 private status and moderator closure with the catalog unchanged. Host API/module
-source changed; prior30fa bundle is historical until a matching46-source freeze.
+source changed; matching6c0a5caf46-source bundle is frozen/plan-verified. Native UI
+passes all3 hosts; user-Mac real report/scanner/restore acceptance is not run below
+its2GiB free-space floor. Root installation still awaits native administrator auth.
 
 POST /v1/moderation/<upload>/source permits moderator/admin Lua inspection for a
 completed job, bound archive digest and declared scripts/*.lua. It rechecks the
