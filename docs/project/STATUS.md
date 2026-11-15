@@ -1,3 +1,16 @@
+Native system-monitor proof preparation (2026-11-15):
+Added an installed-release-only bounded proof with inert restricted/root system
+jobs. It checks actual identity/groups, root-health read/write protections,
+numeric sampling and successful label cancellation through the installed monitor
+core, independently observes worker/child exit and requires every temporary job
+unloaded. Only a trusted test monotonic clock triggers the wall deadline; OS time,
+production budgets/configuration and public routing remain untouched. Default
+CLI is plan-only. Windows policy/scope/runtime contracts pass159 with17 POSIX
+skips (0.80s). The prior actual Mac monitor/file suite passes all43 cases (0.06s),
+and UID501 native CLI probes reject both root-monitor and system-worker roles.
+The new privileged proof, root release installation, persistent service and boot/
+public acceptance are still pending. No root apply or production service started.
+
 System scan monitor implementation (2026-11-15):
 Added a privileged fixed-label system monitor with an immutable-installed-release
 gate, separate UID600 worker role and root-owned bound atomic heartbeat. It never

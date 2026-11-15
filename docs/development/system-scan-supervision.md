@@ -50,3 +50,28 @@ definitions and fresh isolated scanner work under the locked identity, and the
 new native system-monitor lifecycle probe passes. Only then perform the explicit
 reviewed production cutover and unattended boot tests. Public TLS/publication,
 backup/recovery and internet-to-native-game acceptance remain separate gates.
+
+## Native permission proof
+
+`probe-system-scan-monitor-mac.py` defaults to a read-only plan. Its explicit
+`--apply` requires the immutable installed release and isolated Python, matching
+the monitor's production installation gate. It creates a new root-protected
+fixture and two inert nonpersistent system jobs, with distinct derived labels.
+The restricted job reports real/effective UID/GID, supplementary groups and its
+process group, reads root health, proves it cannot overwrite that health, and
+starts one inert child. Refused identity/health checks retain numeric diagnostics.
+
+The temporary root controller executes the installed monitor core against that
+job. It first observes the actual process tree, then uses a controlled monotonic
+clock only within this trusted proof to exercise the existing wall deadline.
+It must receive successful label cancellation; the parent independently verifies
+worker and child exit and that the restricted reader rejects terminated health.
+The proof never changes the OS clock, production budgets or monitor CLI. It also
+does not allocate2GiB merely to provoke a memory fault.
+
+Cleanup attempts every owned job even after a command timeout, and acceptance
+requires that all temporary labels are absent. A120-second parent alarm bounds
+the explicit proof. Reports remain under the new root-owned fixture; existing
+production monitor state, private scan configuration and uploaded content are
+untouched. This proves the kernel permission/heartbeat path when run successfully;
+it does not replace real persistent monitor-loop, crash/restart or boot acceptance.

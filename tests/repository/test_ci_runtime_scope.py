@@ -122,6 +122,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tests/mods/test_texture_preview.py'], {'native'}),
     (['tools/mods/hosting/system-scan-monitor-mac.py'], {'native'}),
     (['tests/mods/test_system_scan_monitor.py'], {'native'}),
+    (['tools/mods/hosting/probe-system-scan-monitor-mac.py'], {'native'}),
+    (['tests/mods/test_system_monitor_probe.py'], {'native'}),
     (['tools/mods/mod_accounts.py', 'tools/mods/mod_uploads.py', 'tools/mods/mod_api.py', 'tools/mods/mod_operator.py', 'tests/mods/test_creator_api.py'], {'native'}),
     (['tools/mods/mod_trust.py', 'tools/mods/mod_signing.py', 'tests/mods/test_catalog_trust.py', 'tools/mods/hosting/requirements-signing.txt'], {'native'}),
     (['src/mods/mod_script.c', 'src/mods/mod_worker.c', 'tools/build/build-mod-worker.py', 'tests/mods/test_script_worker.py'], {'native'}),

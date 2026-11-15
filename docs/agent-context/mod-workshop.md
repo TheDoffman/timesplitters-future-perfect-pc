@@ -1,3 +1,13 @@
+Native root-monitor proof is probe-system-scan-monitor-mac.py: plan by default,
+installed-release --apply only. It creates inert UID600 target+child and temporary
+root controller, verifies real/effective/groups/PGID and root-health write denial,
+executes actual monitor core/label stop with a trusted test clock, then checks
+worker+child exit and terminated-health refusal. No OS clock/budget changes.
+Random root-owned fixture/derived labels keep production state untouched; all
+owned jobs must be unloaded before acceptance, even if a bootout times out.
+Windows contracts159 pass/17 POSIX skips; prior Mac monitor/file suite43 pass.
+Actual privileged proof and persistent boot/lifecycle remain pending. See STATUS.
+
 System-heartbeat schema rejects bool-as-integer too. The POSIX rejection test
 restores its original fixture between corruptions; writer preservation of unknown
 records must remain enabled. Mac first run exposed that fixture sequencing issue.

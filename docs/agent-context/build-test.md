@@ -1,4 +1,4 @@
-[SDK, inspection, supervision](build-test-details.md).
+[SDK, inspection, system-job proofs](build-test-details.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

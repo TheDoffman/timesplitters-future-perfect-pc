@@ -1,3 +1,9 @@
+test_system_monitor_probe.py checks default no-side-effect plan, nonce/path and
+role/executable bindings, installed-root entry gate, no arbitrary target options,
+bounded inert worker syntax/identity diagnostics, and cleanup attempting every
+owned label through timeouts while refusing success if any job remains. Native
+privileged proof must still run from the installed immutable release.
+
 test_system_scan_monitor.py covers fixed system-label control, numeric descendant
 owner/count/RSS/wall limits, denied-stop errors, restrictive generated roles/flags,
 CLI installed/argument gates, atomic root-heartbeat binding and POSIX link/mode/
