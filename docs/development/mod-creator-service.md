@@ -76,6 +76,9 @@ are restricted to moderator/admin accounts. Report history is included in privat
 recovery, whose authentication/publication barriers still apply. Reports never
 appear in public catalogs or package downloads. Public abuse/load acceptance and
 operator notification/staffing remain unfinished.
+The moderator report screen passes native Windows/Mac and all3 launcher/package
+CI jobs at source43011166. Its matching host bundle is prepared/plan-verified;
+the real user-Mac reporting/scanner/recovery drill still awaits disk space.
 The reporting UI passes native Windows/Mac/Linux checks at source9f5b4781. The
 actual user-Mac reporting/scanner/recovery drill remains unrun because free space
 is below the enforced2GiB minimum. Free space and administrator authentication

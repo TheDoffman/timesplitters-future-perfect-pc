@@ -8,7 +8,9 @@ history shows the report ID for support. Cancel text now applies to all requests
 API/UI tests cover roles/history/cursors, wrong lookup digest/version and confirmed
 close/Back/reopen/inspection without package mutations. Real Mac mode extends
 closed-history/linked-release checks, still unrun while user-host disk is low.
-Host source changed;6c candidate is historical until new matching preparation.
+Host source changed; matching4301116646-source bundle is frozen/plan-verified.
+Windows102/Mac103 UI checks and all3 native launcher/package CI jobs pass. Real
+user-Mac report/scanner/restore remains unrun below its disk floor; see STATUS.
 
 mod_reports.py adds private authenticated reports for previously approved release
 digests, including now-revoked/withheld installed versions. One/account/digest,

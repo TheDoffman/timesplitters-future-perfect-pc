@@ -7,9 +7,19 @@ clears on account changes and own history shows support reference IDs. New histo
 and digest lookup APIs enforce moderator roles; the native client rejects changed
 digest/version and binds report cursor on resolution. Windows full checks pass102
 UI groups plus real normal backend (48.18s); API checks pass26/4 POSIX skips.
-New Mac/Linux UI validation, real user-Mac report/scanner/restore acceptance and
-matching host preparation remain pending. User-host disk remains below2GiB and
-the original administrator prompt remains unanswered. Broader public/SDK/game/
+At source43011166 the Mac source build, direct --test-ui103 groups and strict
+signatures pass; clean receiptSHA
+94a1a303ed2767aa48ccde8f51770044cbf11cac7ac21e9452c2854008ea0d13.
+All3 native launcher/normal-backend and complete release-package CI jobs pass in
+run43759240678; broader runtime validation remains separate. Real user-Mac report/
+scanner/restore acceptance is unrun below2GiB; the original administrator prompt
+remains unanswered. The matching46-source/3339-runtime-file bundle is frozen and
+plan-verified,150982821 installation bytes without duplicating the runtime.
+DescriptorSHA5515ff32a257d0e8fa166d8c741e3c03d83dc4c157b29eb7ca6762fbc5c70f31;
+preparation receiptSHA86bd788a50b2eeaa1424d9a467c6aac9ed4214a4a1952e77a25e3968e17fb53e.
+Verified generated bin/obj outputs were recycled after app/hash/signature checks;
+249-entry inventorySHA4a77eca93a10e090d8d488a64991556fe78bdac4d89bd032ede73b753cf3895d.
+Production/root installation remains inactive. Broader public/SDK/game/
 recovery/release requirements are unchanged and unfinished.
 
 Private player reports (2026-11-15):
