@@ -1,3 +1,9 @@
+test_scan_service.py checks managed-label cancellation, RSS/process/wall bounds,
+identity changes, bad group/ambiguous samples, new-only private plist generation,
+virtual-environment preservation, heartbeat binding/freshness and fault/unknown
+file preservation. Pure policy runs on Windows; private-file checks use POSIX.
+Mac launchd lifecycle and real scan acceptance remain separate host evidence.
+
 test_periodic_rescan.py checks prior-review-only renewal, due/retry clocks,
 detection revocation, concurrent manual actions during the unlocked slow scan,
 changed-byte quarantine, crash reclaim and queue/periodic worker exclusion.

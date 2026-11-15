@@ -1,3 +1,13 @@
+Mac scan service: hosting/scan-service-mac.py generates a scheduled worker and
+independent launchd watchdog from private local config. Worker queue/rescan cycles
+require matching fresh health and their own process group. Sampled group RSS/
+process/wall budgets cancel by owned launchd service label, never sampled PID.
+launchd owns child-group cleanup; worker/scanner alarms and CPU/fd/file limits
+remain. Health files are bounded/atomic and retain last faults; unknown files
+are preserved. See [scan service](../development/mod-scan-service.md). Login-agent
+mechanism is separate from public deployment, boot/dedicated identity, definitions
+and signed publication refresh; actual host acceptance must be recorded in STATUS.
+
 Periodic maintenance: mod_rescan.py/rescan-next revalidates one due reviewed
 immutable package under the Uploads worker lock. Fresh clean renews the prior
 review; detection revokes; transient error withholds/retries; changed bytes need
