@@ -1,3 +1,33 @@
+Immutable host-release preparation (2026-11-15, source0338e8e0):
+prepare-release-mac.py now freezes the exact clean Git hosting source and its
+source-bound guardian into a private read-only snapshot, referencing the already
+accepted runtime by receipt SHA. The complete descriptor/inventory verifier uses
+nofollow descriptor-relative reads, digest/mode/ownership/nlink checks, component-
+contained links, path-collision checks and count/storage budgets. The installer
+defaults to plan-only; privileged apply is restricted to a new root-owned release
+directory after re-verifying the completed service identity. It neither registers
+jobs/selects an active release nor changes public routing, data or accounts.
+Native preparation produced45 source/guardian files and3339 runtime files including
+its receipt,150968851 total bytes. Current descriptorSHA
+3289afd28c8f3ad3f760d191dec7b7f4d46003c3d8389fad1f23c605a613691c.
+The installer ran from that frozen snapshot in plan-only mode and verified all
+inputs. An actual unprivileged --apply was refused before root changes. Plan
+acceptanceSHAdc1d20bd9dad8a26a7d57af8aff18fa3fd1a115b7cf29a118b558a78a87bad3a.
+An ordinary-user full copy simulation of source8f6e68f3 exercised the same copier,
+verified exact output inventories/modes and all96 signatures, then loaded copied
+source and its guardian and ran the sandboxed copied scanner/certificate. Payloads
+were unchanged afterward. The known verified disposable copy was removed; frozen
+inputs and acceptance remain. Copy acceptanceSHA
+4f6b5b42c206f7f8ad1cddce83c1ebfcdcba0a0eb739f5f542eaa33c3db082ff.
+Windows selected checks141 pass/23 host skips; native Mac164 pass. No privileged
+installation or UID600 acceptance is claimed. The intended post-copy smoke drops
+real/effective UID/GID, clears kernel supplementary groups, refuses root/admin
+access groups, checks crypto imports and the guarded scanner, then re-verifies all
+installed bytes/modes/inventory before its root-owned completion receipt. Python's
+macOS access-group reporting is accounted for. Partial/unknown targets are
+preserved/refused. Root execution still awaits native administrator authentication;
+system-domain supervision, active-service and public acceptance remain separate.
+
 Packaged Mac scanner/workflow acceptance (2026-11-15, source88ec59b0):
 The runtime now includes the official ClamAV1.5.4 CVD-verification certificate,
 SHA60200e4b4b1b1b7257bb4550487aeb142034341f3300a8526e77a3134a940e9d,
