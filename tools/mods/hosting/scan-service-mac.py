@@ -110,6 +110,15 @@ def repository_preflight(root):
                 and all(row['type'] in ('table', 'index') for row in rows), 'Unrecognized repository schema')
 
 
+def admit(data):
+    try:
+        healthy(data)
+        return True
+    except (OSError, ModError, ValueError):
+        status(data, 'worker', {'status': 'waiting', 'reason': 'Waiting for a healthy scan watchdog'})
+        return False
+
+
 def run_command(arguments):
     result = subprocess.run(arguments, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT, timeout=3, check=False)
@@ -200,9 +209,10 @@ def worker(data):
     signal.alarm(WALL_SECONDS)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     resource.setrlimit(resource.RLIMIT_NOFILE, (256, 256))
-    status(data, 'worker', {'status': 'running', 'pid': os.getpid()})
     try:
-        healthy(data)
+        if not admit(data):
+            return
+        status(data, 'worker', {'status': 'running', 'pid': os.getpid()})
         repository_preflight(data['repository'])
         repository = Repository(data['repository'])
         repository.require_recovered()

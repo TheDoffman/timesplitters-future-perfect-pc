@@ -1,6 +1,7 @@
 Mac scan service: hosting/scan-service-mac.py generates a scheduled worker and
 independent launchd watchdog from private local config. Worker queue/rescan cycles
-require matching fresh health and their own process group. Sampled group RSS/
+require matching fresh health and their own process group. Initial missing health
+records a waiting state without touching repository data. Sampled group RSS/
 process/wall budgets cancel by owned launchd service label, never sampled PID.
 launchd owns child-group cleanup; worker/scanner alarms and CPU/fd/file limits
 remain. Health files are bounded/atomic and retain last faults; unknown files

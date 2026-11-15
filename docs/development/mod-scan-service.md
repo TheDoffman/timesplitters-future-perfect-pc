@@ -37,7 +37,7 @@ python tools/mods/hosting/scan-service-mac.py --config /private/workshop/service
 The command returns the worker and watchdog labels. Inspect both plists before
 installing them in the service user's `~/Library/LaunchAgents`; preserve existing
 files/jobs. Load the watchdog and worker using `launchctl bootstrap gui/UID PLIST`
-with the actual numeric UID. The first worker may refuse admission until the
+with the actual numeric UID. The first worker records a waiting state and leaves repository data untouched until the
 watchdog has produced its healthy heartbeat; the next interval retries. The
 operator may kickstart the worker after confirming health.
 

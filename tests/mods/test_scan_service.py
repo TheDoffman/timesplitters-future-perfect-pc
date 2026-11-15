@@ -129,6 +129,15 @@ def test_unrecognized_status_is_preserved(private_config):
     assert path.read_text() == 'personal data'
 
 
+def test_admission_waits_without_touching_repository_until_supervised(private_config):
+    assert not service.admit(private_config)
+    assert list(private_config['repository'].iterdir()) == []
+    value = json.loads(service.status_file(private_config, 'worker').read_text())
+    assert value['status'] == 'waiting' and 'last_fault' not in value
+    service.status(private_config, 'watchdog', {'status': 'idle'})
+    assert service.admit(private_config)
+
+
 def test_repository_preflight_preserves_personal_and_unrecognized_data(private_config):
     import sqlite3
     root = private_config['repository']
