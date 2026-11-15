@@ -28,6 +28,17 @@ def test_original_mode_through_game_bridge(process_tools,tmp_path):
     assert result['score']==3 and result['winner']==1 and result['commits']==5
 
 
+def test_game_bridge_driver_reports_callback_failure(process_tools, tmp_path):
+    worker = process_tools['worker']
+    driver = worker.with_name('tsfp-mod-match-driver' + worker.suffix)
+    result = subprocess.run([str(driver), str(worker), str(tmp_path), 'normal', *image_pins(worker)],
+                            input=b"return {api=1,on_start=function() error('bridge-fault-canary') end}",
+                            capture_output=True, timeout=8)
+    assert result.returncode == 3, (result.returncode, result.stdout, result.stderr)
+    assert b'script fault=1' in result.stderr and b'bridge-fault-canary' in result.stderr
+    assert not list(tmp_path.iterdir())
+
+
 def test_game_compiled_pins_refuse_caller_selected_valid_helper(process_tools,tmp_path):
     worker=process_tools['worker'];driver=worker.with_name('tsfp-mod-pinned-match-driver'+worker.suffix)
     result=subprocess.run([str(driver),str(worker),str(tmp_path),'compiled-image-policy',*image_pins(worker)],

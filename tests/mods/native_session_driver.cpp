@@ -71,7 +71,11 @@ static int run(const std::string &image,const std::string &cache,const std::stri
                 if(submission!=Submission::Rejected)return 3;
                 if(!wait(SessionStatus::Faulted))return 11;
                 fault=true;
-            }else if(submission!=Submission::Accepted)return 4;
+            }else if(submission!=Submission::Accepted){
+                auto phase=poll();
+                fprintf(stderr,"Session submission failed: scenario=%.64s; submission=%d; phase=%d; stopped=%d; error=%.512s\n",scenario.c_str(),(int)submission,(int)phase,session->stopped(),error.c_str());
+                return 4;
+            }
             else if(scenario=="close")session->close();
             else {
                 busy=timed([&]{return session->dispatch(event);})==Submission::Busy;

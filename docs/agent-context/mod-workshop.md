@@ -1,3 +1,10 @@
+Native worker CI failure diagnostics: session-driver rejected submission reports
+scenario, submission/phase/stopped state and bounded Session error; match-driver
+failed checks include the bounded match fault/error. Real idle-spin and callback
+failure controls verify those diagnostics and process/cache cleanup. Runtime
+deadlines and resource limits are unchanged; prior intermittent CI causes remain
+unproven until a diagnostic reproduction is captured.
+
 Native creator flow: ModCreatorPage.cs contains the shared Creator tab and client
 for sign-in/invitation redemption, explicit ZIP review/upload, sign-out and cursor
 history. Credentials are masked and never persisted; a session is origin-bound

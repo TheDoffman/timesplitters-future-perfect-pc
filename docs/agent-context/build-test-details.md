@@ -1540,3 +1540,9 @@ Fixtures inject responses at HttpMessageHandler and use disposable public trust
 vectors; they do not prove a live API/scanner, public TLS or OS credential vault.
 The exhausted-scan regression keeps scan-error/scan-unavailable visible in history
 and rejects unknown states; this follows mod_uploads.status's release-state mapping.
+
+Worker CI diagnostics: test_script_session.py::test_rejected_submission_reports_the_worker_fault
+uses the real idle-spin child to fault before a later dispatch, checking bounded
+diagnostics and cleanup. test_mod_match.py::test_game_bridge_driver_reports_callback_failure
+uses a real Lua callback error to check the bridge fault reason and cleanup.
+Neither control increases production or test deadlines/resource limits.

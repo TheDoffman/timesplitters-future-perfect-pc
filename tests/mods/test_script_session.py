@@ -122,6 +122,17 @@ def test_allowed_idle_cpu_does_not_accumulate_across_idle_windows(process_tools,
     assert records[0] == dict(sequence=1, commands=[])
 
 
+def test_rejected_submission_reports_the_worker_fault(process_tools, tmp_path):
+    suffix = process_tools['worker'].suffix
+    driver = process_tools['worker'].with_name('tsfp-mod-session-driver' + suffix)
+    worker = driver.with_name('tsfp-mod-session-worker' + suffix)
+    result = subprocess.run([str(driver), str(worker), str(tmp_path), 'paced-idle'],
+                            input=b'idle-spin', capture_output=True, timeout=10)
+    assert result.returncode == 4, (result.returncode, result.stdout, result.stderr)
+    assert b'Session submission failed:' in result.stderr and b'budget exceeded' in result.stderr
+    assert not list(tmp_path.iterdir())
+
+
 @pytest.mark.parametrize('wire', [
     packet(version=2), packet(status=3), packet(sequence=0), packet(sequence=2),
     packet(memory=16 * 1024 * 1024 + 1), packet(error=b'bad success'),

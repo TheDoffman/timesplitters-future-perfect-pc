@@ -11,7 +11,7 @@
 #include <io.h>
 #endif
 using Clock=std::chrono::steady_clock;
-#define CHECK(x) do{if(!(x)){fprintf(stderr,"Match check failed at line %d: %s\n",__LINE__,#x);return 3;}}while(0)
+#define CHECK(x) do{if(!(x)){fprintf(stderr,"Match check failed at line %d: %s; script fault=%d; error=%.512s\n",__LINE__,#x,tsfp_mod_match_faulted(match),tsfp_mod_match_error(match));return 3;}}while(0)
 static int run(const std::string &image,const std::string &cache,const std::string &scenario,const std::string &worker_hash,const std::string &guardian_hash) {
     std::string source;char block[4096];size_t size;
     while((size=fread(block,1,sizeof(block),stdin))!=0){source.append(block,size);if(source.size()>1024u*1024)return 2;}
