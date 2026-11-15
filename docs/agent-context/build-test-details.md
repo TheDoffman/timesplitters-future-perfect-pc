@@ -8,6 +8,9 @@ personal Homebrew configuration is never needed by that check. Use a private
 non-synced staging directory to avoid FinderInfo signature rejection.
 Final runtime audit tests distinguish the two generated CodeResources files from
 unknown payloads, preserving/refusing unknowns and hashing known signature data.
+Signing-order regression requires deepest-first signatures after all rewrites,
+then strict verification of the finished set; later nested changes must not
+invalidate an already-accepted framework seal.
 POSIX path/ownership cases skip on Windows. Native staging additionally executes
 the relocated isolated interpreter and version commands and verifies signatures;
 it does not prove root deployment or production service access.

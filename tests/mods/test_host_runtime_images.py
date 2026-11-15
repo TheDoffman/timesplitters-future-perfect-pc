@@ -27,6 +27,16 @@ name /usr/lib/libSystem.B.dylib (offset 24)
     assert rpaths == ['@loader_path/../lib']
 
 
+def test_nested_code_is_signed_before_framework_and_all_verifications_run_last():
+    calls = []
+    framework = Path('Frameworks/Python.framework/Versions/3.12/Python')
+    child = framework.parent / 'lib/python3.12/lib-dynload/module.so'
+    runtime.sign_images(Path('/stage'), [framework, child], runner=lambda *args: calls.append(args))
+    assert [call[1] for call in calls] == ['--force', '--force', '--verify', '--verify']
+    assert Path(calls[0][-1]).name == 'module.so'
+    assert Path(calls[1][-1]).name == 'Python'
+
+
 @pytest.mark.parametrize('text', ['', 'not otool output', 'cmd LC_DYLD_ENVIRONMENT'])
 def test_missing_commands_and_loader_environment_refused(text):
     with pytest.raises(ValueError):

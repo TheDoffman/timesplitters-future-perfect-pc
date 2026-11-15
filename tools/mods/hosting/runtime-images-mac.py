@@ -94,6 +94,16 @@ def license_files(formula):
     return notices
 
 
+def sign_images(output, images, runner=run):
+    # Framework/app seals include nested code. Finish every rewrite, sign the
+    # deepest nested images first, then verify the entire finished set.
+    paths = sorted(set(images), key=lambda p: (-len(p.parts), str(p)))
+    for relative in paths:
+        runner('/usr/bin/codesign', '--force', '--sign', '-', str(output / relative))
+    for relative in paths:
+        runner('/usr/bin/codesign', '--verify', '--strict', str(output / relative))
+
+
 class Builder:
     def __init__(self, output):
         self.output, self.total, self.records, self.images = output, 0, {}, {}
@@ -186,7 +196,6 @@ class Builder:
             # IDs are informational; dependency edges carry explicit loader-relative paths.
             if len(args) > 1:
                 run(*args, str(target))
-                run('/usr/bin/codesign', '--force', '--sign', '-', str(target))
             actual, remaining = commands(run('/usr/bin/otool', '-l', str(target)))
             require(not remaining and all(system_path(n) or n.startswith('@loader_path/') for n in actual),
                     'Unconfined staged runtime dependency')
@@ -194,7 +203,7 @@ class Builder:
                 if not system_path(name):
                     dependency = (target.parent / name[len('@loader_path/'):]).resolve(strict=True)
                     require(dependency.is_relative_to(self.output), 'Staged runtime dependency escaped bundle')
-            run('/usr/bin/codesign', '--verify', '--strict', str(target))
+        sign_images(self.output, self.images.values())
         return inspected
 
     def licenses(self):
