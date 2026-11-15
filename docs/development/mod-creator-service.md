@@ -87,6 +87,10 @@ definitions as scanner acceptance; ordinary build tests never scan or approve.
 This acceptance passes on the actual Mac at sourcec294267c, including both audit
 trails and withdrawal after revocation. It does not establish public TLS,
 publication, downloaded installation or locked-service-account operation.
+At sourceda3e7631, the same real Mac mode also verifies the native evidence view
+against all4 actual clean/detected/error scan records before approval/revocation.
+The matching host bundle is prepared and plan-verified; privileged installation
+and public acceptance remain unfinished.
 
 Private snapshot/staged restore tooling and conservative publication reconciliation
 are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery

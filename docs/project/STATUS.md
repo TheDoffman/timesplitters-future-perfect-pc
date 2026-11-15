@@ -7,10 +7,22 @@ stale/missing evidence disables approval while preserving revocation. Server
 approval retains its transactional freshness check. Windows full launcher checks
 pass97 UI groups plus actual backend checks;43 API/service tests pass, including
 role/session/unscanned refusal, raw-output omission and stale/malformed metadata.
-Actual Mac new-evidence acceptance is pending. Hosting source changed; the older
-frozen0338 release does not contain this endpoint and must not be deployed as the
-matching launcher host. Sourcee982918d all3 native launcher and complete package
-CI jobs pass; broader runtime validation remains separate.
+At sourceda3e7631, native Mac passes98 UI groups, real backend mode and strict
+signatures. Actual native-to-WSGI-to-isolated-ClamAV moderation passes all4 bound
+evidence records plus approval/revocation and both real audit trails, exit0/9.501s.
+Runtime/definition inventories are unchanged. AcceptanceSHA
+a2dfdea8893d6a507282927ecbb7c3418a19ac0eabc5a038edbaef9a998e32d8;
+clean native build receiptSHA
+81983b86042605a7fe361d85806e7192c9e1270905b794ba6a4761898a4347cf.
+A matching45-source/3339-runtime-file host bundle is frozen and plan-verified,
+binding the existing runtime without copying it;150970624 installation bytes.
+DescriptorSHA3b9f2331c1b70b9f49dd5bb983c8d34ce66d0896b5fe95b6fe7353958678aaae;
+preparation receiptSHA6abacfd694f82b91aef52843b0a44569961d483c038ff30209c4a2a1095da455.
+The older0338 bundle lacks evidence; it is preserved as historical preparation.
+Privileged installation/services/public HTTPS remain pending the original native
+administrator diagnostic. Mac game-prerequisite failures and new Linux CI remain
+open; latestda3 CI is queued. Sourcee982918d all3 native launcher and complete
+package CI jobs pass; broader runtime validation remains separate.
 
 Native real scanner-to-moderator acceptance (2026-11-15, sourcec294267c):
 Actual Mac --test-creator-moderation passes all8 real scan observations, then

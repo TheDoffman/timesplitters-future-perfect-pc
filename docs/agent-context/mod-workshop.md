@@ -7,7 +7,8 @@ fresh clean evidence enables approval, while revocation remains available on
 stale/error evidence. Server approval still rechecks actual freshness atomically.
 Unit/API/UI adversarial checks and the opt-in real Mac moderation mode cover it.
 This changes host API source: the older frozen0338 release lacks this endpoint
-and must not be presented as the matching launcher host release.
+and must not be presented as the matching launcher host release. A matchingda3
+source bundle is prepared/plan-verified; root install remains pending; see STATUS.
 
 Explicit Mac --test-creator-moderation extends real scanner acceptance through
 ModCreatorClient.Reviews/Moderate: only the genuinely clean package is approved,
@@ -22,7 +23,7 @@ strict manifest/identity checks, bounded review notes and explicit approval/revo
 confirmation. Back sends no decision; responses bind ID/digest/state. Selections
 clear on authentication change; every request retains live root/origin checks.
 The existing API enforces roles/fresh clean scans and transactional audit. No
-quarantine source download, full scan-evidence view or public acceptance is added.
+quarantine source download or public acceptance is added.
 Shared native tests inject decisions; real backend tests verify creator403 and
 moderator empty-queue access for unscanned uploads. See mod-creator-service.md.
 
