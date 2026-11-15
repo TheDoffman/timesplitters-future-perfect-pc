@@ -210,7 +210,7 @@ def generate(data, directory):
     output.mkdir(mode=0o700)
     # Preserve the selected virtual environment instead of resolving its Python
     # symlink to the base interpreter and losing the pinned environment.
-    arguments = [str(Path(sys.executable).absolute()), str(Path(__file__).resolve()), '--config', str(data['config'])]
+    arguments = [str(Path(sys.executable).absolute()), '-I', '-B', str(Path(__file__).resolve()), '--config', str(data['config'])]
     for component in ('worker', 'watchdog'):
         label = data['label'] + ('.watchdog' if component == 'watchdog' else '')
         value = dict(Label=label, ProgramArguments=arguments + ['--' + component],

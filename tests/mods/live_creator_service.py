@@ -63,7 +63,7 @@ def main():
         origin = 'https://creator-acceptance.invalid'
         environment = {k:v for k,v in os.environ.items() if not k.startswith('TSFP_')}
         environment.update(TSFP_WORKSHOP_REPOSITORY=str(storage), TSFP_WORKSHOP_ORIGIN=origin)
-        command = [sys.executable,'-m','gunicorn','--chdir',str(ROOT / 'tools/mods'),
+        command = [sys.executable,'-I','-B','-m','gunicorn','--chdir',str(ROOT / 'tools/mods'),
                    '--config',str(ROOT / 'tools/mods/hosting/gunicorn.conf.py'),
                    '--bind','127.0.0.1:' + str(port),'mod_api:create_app()']
         client = build_opener(ProxyHandler({}))

@@ -11,6 +11,11 @@ live_scan_isolation.py --runtime-executable <packaged-clamscan> reuses that veri
 bundle's read/map literals for the existing harmless canaries while substituting
 only each canary's exec literal. Explicit unbundled input is refused in this mode.
 The production ScanSandbox exposes no disable-isolation or profile-override flag.
+test_scanner_process.py runs a positive-control poisoned sitecustomize/PYTHONPATH,
+then the actual isolated no-bytecode bootstrap and checks it executes no poison
+and creates no cache. Generated service args and creator fixture use -I -B too;
+gateway argument-position expectations follow those flags. Recheck runtime seals
+and inventory after actual use, not only immediately after staging/signing.
 
 tests/mods/test_runtime_wheels.py checks exact/hash requirement parsing, complete
 wheel-set admission, metadata identity, retained licenses, pinned-byte tampering,

@@ -132,7 +132,7 @@ class ScanSandbox:
         # The trusted child sets hard CPU/output/fd limits before exec. Unlike a
         # preexec_fn it is safe when the parent has other threads. exec preserves
         # the PID. A separate owned-child guardian also enforces parent lifetime.
-        return [sys.executable, str(Path(__file__).with_name('scan_child.py')),
+        return [sys.executable, '-I', '-B', str(Path(__file__).with_name('scan_child.py')),
                 '/usr/bin/sandbox-exec', '-p', self.profile, str(self.executable), *arguments]
 
     @contextmanager

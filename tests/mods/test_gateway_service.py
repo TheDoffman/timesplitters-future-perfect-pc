@@ -65,7 +65,8 @@ def test_gateway_agents_keep_origin_bound_health_and_correct_controller_source(d
     for path in (tmp_path / 'agents').iterdir():
         value = plistlib.loads(path.read_bytes())
         assert value['ProgramArguments'][0] == str(Path(sys.executable).absolute())
-        assert value['ProgramArguments'][1].endswith('/hosting/gateway-service-mac.py')
+        assert value['ProgramArguments'][1:3] == ['-I', '-B']
+        assert value['ProgramArguments'][3].endswith('/hosting/gateway-service-mac.py')
         assert value['KeepAlive'] and path.stat().st_mode & 0o077 == 0
     watch.status(dict(status='watching', watched_pid=os.getpid(), supervision_policy=service.POLICY), 'watchdog')
     watch.healthy()

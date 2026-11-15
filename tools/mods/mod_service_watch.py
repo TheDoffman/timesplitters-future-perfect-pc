@@ -136,7 +136,7 @@ class Supervisor:
         private_directory(output.parent)
         require(not output.exists() and not output.is_symlink(), 'Choose a new publication agent bundle')
         output.mkdir(mode=0o700)
-        arguments = [str(Path(sys.executable).absolute()), str(Path(source).resolve()), '--config', str(data['config'])]
+        arguments = [str(Path(sys.executable).absolute()), '-I', '-B', str(Path(source).resolve()), '--config', str(data['config'])]
         for component in (self.kind, 'watchdog'):
             label = data['label'] + ('.watchdog' if component == 'watchdog' else '')
             value = dict(Label=label, ProgramArguments=arguments + ['--managed' if component == self.kind else '--watchdog'],

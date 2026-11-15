@@ -69,3 +69,19 @@ def test_version_streams_and_check_semantics(tmp_path, monkeypatch):
     assert result.stdout.strip() == b'version' and result.stderr.strip() == b'warning'
     with pytest.raises(subprocess.CalledProcessError):
         worker.run([], capture_output=True, check=True, timeout=10)
+
+
+def test_real_bootstrap_ignores_poisoned_python_path_and_writes_no_bytecode(tmp_path):
+    marker = tmp_path / 'customization-executed'
+    (tmp_path / 'sitecustomize.py').write_text('from pathlib import Path\nPath(' + repr(str(marker)) + ').write_text("unexpected")\n')
+    environment = dict(os.environ, PYTHONPATH=str(tmp_path))
+    subprocess.run([sys.executable, '-B', '-c', 'pass'], env=environment, check=True, capture_output=True, timeout=10)
+    assert marker.read_text() == 'unexpected'
+    marker.unlink()
+    worker = ScanSandbox(sys.executable, tmp_path, tmp_path)
+    worker.executable = tmp_path / 'missing-scanner'
+    worker.profile = '(version 1)(deny default)'
+    result = subprocess.run(worker.command([]), env=environment, cwd=tmp_path, capture_output=True, timeout=10)
+    # The nonexistent target is intentional; only interpreter startup is under test.
+    assert result.returncode != 0
+    assert not marker.exists() and not (tmp_path / '__pycache__').exists()

@@ -19,6 +19,12 @@ live_scan_isolation.py --runtime-executable selects a verified packaged scanner'
 read/map plan for harmless system/C canaries with their own exec literal. This
 tests kernel private-read/write, symlink escape, child-exec/network denial and hard
 limits without weakening the production ScanSandbox interface.
+Python scanner bootstraps, generated scan/definitions/publication/gateway service
+arguments and the real creator HTTP fixture now explicitly pass -I -B. Parent
+interpreter flags do not carry into subprocesses: native acceptance found184 new
+pyc files and a broken framework seal after otherwise successful tests. Bootstrap
+startup rejects a real poisoned PYTHONPATH fixture and disables bytecode writes;
+completed runtime acceptance must recheck inventory/signatures after exercising it.
 
 Pinned application wheels: runtime-images-mac.py --wheelhouse admits exactly one
 binary wheel per package in the tracked exact/hash-pinned hosting requirements.

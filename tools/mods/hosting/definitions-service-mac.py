@@ -207,7 +207,7 @@ def generate(data, output):
     require(not output.exists() and not output.is_symlink(), 'Choose a new definitions bundle')
     prepared_config(data)
     output.mkdir(mode=0o700)
-    value = dict(Label=data['label'], ProgramArguments=[str(Path(sys.executable).absolute()),
+    value = dict(Label=data['label'], ProgramArguments=[str(Path(sys.executable).absolute()), '-I', '-B',
                  str(Path(__file__).resolve()), '--config', str(data['config']), '--once'],
                  RunAtLoad=True, StartInterval=INTERVAL, ProcessType='Background', Umask=0o077,
                  AbandonProcessGroup=False, HardResourceLimits=dict(Core=0, CPU=180, FileSize=512 * 1024**2),
