@@ -1,3 +1,7 @@
+Publisher faults before server construction (including key admission) are now
+recorded by the lock owner. A competing lock loser preserves the active owner
+status. Diagnostic metadata never includes signing exception/key details.
+
 Managed publication: live-publication-mac.py now generates private controller and
 independent watchdog login agents. Managed startup waits for fresh matching
 publication-descendants-v1 health bound to its actual PID before key admission.

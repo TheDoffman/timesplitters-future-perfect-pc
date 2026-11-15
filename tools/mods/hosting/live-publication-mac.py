@@ -178,11 +178,13 @@ def serve(data, managed=False):
     path = data['state'] / 'publisher.lock'
     fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     server = None
+    owner = False
     try:
         info = os.fstat(fd)
         require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and info.st_uid == os.geteuid()
                 and not info.st_mode & 0o077, 'Unsafe publisher lock')
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        owner = True
         if managed:
             import resource
             resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -217,6 +219,7 @@ def serve(data, managed=False):
         # A lock loser must not overwrite the real owner's status.
         if server is not None:
             server.stop()
+        if owner:
             status(data, {'status': 'error'})
         raise
     finally:

@@ -134,3 +134,29 @@ def test_managed_start_waits_without_loading_keys_or_public_bytes(data, monkeypa
     assert list(data['repository'].iterdir()) == []
     assert not (data['state'] / 'publications').exists()
     assert json.loads((data['state'] / 'publication.json').read_bytes())['status'] == 'waiting'
+
+
+def test_key_admission_failure_records_private_fault_without_starting_server(data, monkeypatch):
+    def fail(*_):
+        raise ModError('Fixture key admission failed')
+    monkeypatch.setattr(service, 'load_signer', fail)
+    monkeypatch.setattr(service, 'CaddyServer', lambda *_: pytest.fail('Server started before key validation'))
+    with pytest.raises(ModError):
+        service.serve(data)
+    value = json.loads((data['state'] / 'publication.json').read_bytes())
+    assert value['status'] == 'error' and 'last_fault' in value
+    assert 'Fixture key' not in json.dumps(value)
+
+
+def test_lock_loser_preserves_active_owner_status(data):
+    import fcntl
+    service.status(data, {'status': 'serving'})
+    path = data['state'] / 'publication.json'
+    original = path.read_bytes()
+    lock = data['state'] / 'publisher.lock'
+    with lock.open('wb') as owner:
+        lock.chmod(0o600)
+        fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(BlockingIOError):
+            service.serve(data)
+    assert path.read_bytes() == original
