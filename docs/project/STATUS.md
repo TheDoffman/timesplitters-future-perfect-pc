@@ -1,3 +1,19 @@
+Launcher gameplay activation (source f8e17083, 2026-11-14): shared installed
+profiles support one scripts/main.lua mode with optional textures on game builds
+advertising mod_script_version=1. Each launch rechecks signed workshop availability,
+archive bindings, source and the generated capsule. Every enabled package binds
+the isolated save identity; a second mode is refused. Original-game launch clears
+inherited mod variables and bypasses the profile. Maps/audio/additional Lua stay
+inactive. Windows launcher full checks pass (68 UI groups); native Mac69/Linux70
+UI groups and their full launcher checks pass. Mac signing passed using an owned
+cache output outside Desktop after Finder reattached forbidden root metadata in
+the standard output. Package/helper tests:67 pass/2 host skips on Windows.
+Source is pushed and fast-forwarded to clean Mac/Linux feature worktrees. Actual
+launcher-driven game acceptance and native release-package capability checks are
+still pending; earlier developer-driven game scenes are separate evidence.
+Public endpoint, trust provisioning, hosting, crash recovery and full release remain
+unfinished. The full-completion goal remains active; main is untouched.
+
 Window-thread shutdown acceptance (source4d76dbb8,2026-11-14): Windows factory/
 runtime/manager37 pass/2 skips; Mac38 pass/1 skip; Linux39 pass. Native host ASan/
 UBSan factory Mac14 pass/1 skip, Linux15 pass. All three native game builds and
