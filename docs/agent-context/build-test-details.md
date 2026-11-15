@@ -1,3 +1,7 @@
+Config-only scanner-service tests create a private inert mode0700 executable;
+hosted CI Python can be group-writable, which production correctly refuses.
+No global interpreter permissions are changed and the fixture is never run.
+
 test_scan_guardian.py builds/codesigns the actual Darwin helper and native
 adversarial probe: join guardian group + setsid + cancel alarm, timeout/flood,
 parent/group signal denial, controller SIGKILL and image/receipt tampering.
