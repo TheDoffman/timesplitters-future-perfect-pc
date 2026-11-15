@@ -1,4 +1,5 @@
-Report API tests cover prior approval/privacy/role/duplicate/cursor/rates, audit
+Report API tests cover prior approval/privacy/role/duplicate/cursor/rates (a capped
+account cannot drain global admission), audit
 rollback and nonmutation of release availability. Host backup/restore preserves
 report history behind recovery/auth barriers. Native tests bind receipt/history
 identity, explicit confirm/Back, origin-bound Installed targets and hashless

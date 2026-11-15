@@ -9,11 +9,24 @@ One/account/digest,5/account and200/global per day,10000 retained records and20-
 pages bound storage/responses. Backup inventory admits and preserves report rows
 behind normal recovery/auth barriers. Windows full launcher checks pass100 UI
 groups plus backend mode (48.45s); initial API/service/backup selection passes47
-tests with20 POSIX skips, and final API-only checks pass26/4 POSIX skips. Mac real
-report/backup acceptance is pending. Native moderator report screens, public
-abuse/load/notification/staffing acceptance remain unfinished. Source9605bd88 full
-CI run43754535207 is complete/green. New hosting source needs a matching46-file
-freeze; the older30fa candidate lacks reports. Production remains inactive.
+tests with20 POSIX skips, and final API-only checks pass26/4 POSIX skips. Account
+rate admission now runs first: repeated denials cannot drain the global quota;
+the focused final API run passes26/4 skips (17.71s).
+At source9f5b4781 Mac source build, direct --test-ui101 groups and strict signatures
+pass; its clean build receiptSHA is
+c9d8166698cb3a49cc3ee2e4062421d77508d6d54ebf4f09916085c06077bf0d.
+The Mac has fallen below the enforced2GiB upload/scanner floor (last1.78GiB);
+real user-host report/scanner/restore acceptance is not run. The limit is intact.
+Only verified task-owned bin/obj intermediates were recycled after publishing:
+249-entry inventorySHA13f84df7434f0cfc6baca30bae9b10d849c6069f22a19f0e7a92cab024934d4a;
+actual free space rose16MiB, while app hashes/signatures stayed unchanged. Apparent
+intermediate allocation was larger because those blocks were shared. Source,
+runtime, SDK, user data and the original pending administrator probe are preserved.
+All3 launcher/normal-backend/package CI jobs pass at9f5b4781; Linux logs confirm102
+UI groups including reports. Broader9f5 CI remains in progress. Source9605bd88 full
+CI run43754535207 is complete/green. Native moderator report screens and public
+abuse/load/notification/staffing acceptance remain unfinished. Current rate-fix
+host preparation is pending; production remains inactive awaiting auth and space.
 
 Native Lua source inspection (2026-11-15):
 Moderators can request declared Lua source from completed jobs through an exact

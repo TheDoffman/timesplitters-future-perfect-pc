@@ -259,6 +259,12 @@ def test_reports_fail_closed_on_audit_and_persist_rate_admission(service, tmp_pa
         assert call(api, 'POST', '/v1/reports', report, token)['status'] == 409
     restarted = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
     assert call(restarted, 'POST', '/v1/reports', report, token)['status'] == 429
+    with accounts.repository.db() as db:
+        global_count = db.execute("SELECT count FROM workshop_rate WHERE scope='report-global'").fetchone()[0]
+    for _ in range(5):
+        assert call(restarted, 'POST', '/v1/reports', report, token)['status'] == 429
+    with accounts.repository.db() as db:
+        assert db.execute("SELECT count FROM workshop_rate WHERE scope='report-global'").fetchone()[0] == global_count
     assert call(api, 'POST', '/v1/reports', dict(report, description='\U0001f600'*1000), token)['status'] == 400
     assert len(accounts.repository.catalog()) == 1
 

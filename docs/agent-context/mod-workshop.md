@@ -1,6 +1,7 @@
 mod_reports.py adds private authenticated reports for previously approved release
 digests, including now-revoked/withheld installed versions. One/account/digest,
-5/account and200/global per day,10000 retained records; cursor pages20 bound
+5/account and200/global per day; account admission runs first so capped accounts
+cannot consume global slots.10000 retained records; cursor pages20 bound
 response sizes with UTF-16-compatible1000/1800 text limits. Reporter sees only own
 history; moderator/admin sees open queue and closes/reopens with transactional
 audit. Report state never changes release approval/catalog. Backup TABLES admits

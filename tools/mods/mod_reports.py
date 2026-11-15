@@ -55,9 +55,9 @@ class Reports:
         with self.repository.db() as db:
             db.execute('BEGIN IMMEDIATE')
             actor = self.accounts.actor(db, actor)
-            allowed = self.accounts.rate(db, 'report-global', 'all', 200, 86400)
+            allowed = self.accounts.rate(db, 'report-account', str(actor.id), 5, 86400)
             if allowed:
-                allowed = self.accounts.rate(db, 'report-account', str(actor.id), 5, 86400)
+                allowed = self.accounts.rate(db, 'report-global', 'all', 200, 86400)
         demand(allowed, 429, 'Report limit reached; retry later')
         with self.repository.db() as db:
             db.execute('BEGIN IMMEDIATE')
