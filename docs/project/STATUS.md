@@ -1,3 +1,37 @@
+Static download confinement and scratch recovery (2026-11-14, source7c6d403c):
+CaddyServer now requires Mac Seatbelt with public snapshot/fixed Caddyfile/system
+runtime reads, writes only to a fresh private work directory, self-signals and
+public hardware sysctls. Explicit process-info denial blocks other-process
+environments. New outbound destinations, child processes, private reads/writes,
+private hard-link/symlink access and other binds are denied by actual native
+canaries with unconfined positive controls. Only fabricated files/env were used.
+Scratch marker/lease live outside the child-writable work directory. Guardian
+inherits the lease; server inherits only stdio. A live guardian prevents reclaim;
+recovery runs after its child is reaped. Running output budget256 entries/32MiB;
+cleanup is bounded, verifies owner and unlinks aliases without following targets.
+Unknown/incomplete/foreign-owned stores are preserved and block admission.
+The initial strict network profile cut responses after512 bytes. Actual probes
+identified Darwin sendfile's response check: the final exception permits local
+port8766 only when no remote endpoint is supplied. A local-port-only exception
+was rejected because it permitted a hostile bound outbound connection. Final
+native controls prove bound TCP connect, connectx and UDP sendto remain denied.
+Mac sandbox/live/managed/guardian suites34 pass; Windows common policy/scope100
+pass/23 POSIX skips. Source/context checks pass. Prior full identity source47bbae3b
+CI43674845729 is green; current source CI43677114580 is in progress.
+Actual confined signed Caddy flow passes revocation to HTTP404 in0.606s,
+scan-error/recovery-barrier withdrawal, CLI startup, controller SIGKILL cleanup
+and crashed scratch recovery. EvidenceSHA
+b4283deb41ec352fa8b68e885bc009b98765029e532ebc1488d38dda22e75a60.
+An original8MiB fixture transfers with exact SHA256; Range206 and HEAD pass,
+with scratch reaped. EvidenceSHAa4eba248538b7709304df2620af281a92b92e0ee9f0d7dc09dedd812aad97750.
+Actual confined temporary launchd restart, scaled memory cancellation and real15s
+heartbeat cancellation all reap guardian/Caddy and recover scratch; all test jobs
+unloaded, no8766 listener. EvidenceSHA
+bda755f29284812262e1178c381c48c703d19a663e5de13faddd86c7542e4b0b.
+These use disposable keys/synthetic scanner fixtures; public internet and
+production deployment are not established. The local administrator identity
+step remains pending; full goal active and no main merge.
+
 Dedicated service identity preparation (2026-11-14, source47bbae3b):
 provision-service-mac.py defaults to a read-only Directory Services plan; actual
 Mac plan selects unused UID/GID600 for _tsfpworkshop. Ten planner/preservation/

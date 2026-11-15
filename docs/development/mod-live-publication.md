@@ -97,3 +97,31 @@ test jobs were unloaded. These used disposable signing keys and synthetic report
 not production configuration. Fault-owner tests at54989350 additionally verify
 pre-server/key-admission errors are recorded privately and lock losers preserve
 the active owner status. See STATUS for the evidence hash and remaining gates.
+
+## Static-server confinement and temporary storage
+
+The managed and foreground CaddyServer paths now both require Mac Seatbelt;
+there is no unconfined runtime fallback. The policy allows only its current public
+snapshot, fixed configuration, executable/system runtime and private work area.
+It denies private contents, new processes and other-process information. Inbound
+binding is limited to localhost8766. A narrowly matched response exception handles
+Darwin sendfile without authorizing destination-bearing new connections, including
+calls explicitly bound to that source port. Native positive controls cover TCP,
+connectx and UDP, file/alias access and fabricated process environments.
+
+Each server receives fresh work under `caddy-runtime/units/ID/work`. Ownership
+markers and the exclusive lease remain outside that writable directory. The
+native guardian retains the lease while its child inherits only standard IO;
+recovery cannot reclaim a still-owned server's output after controller death.
+Running scratch is sampled at256 entries,32MiB and depth8. Cleanup walks at most
+4096 entries/1GiB/depth16, verifies ownership and unlinks aliases themselves without
+following targets. Unknown/incomplete markers and foreign-owned data are preserved
+and cause refusal. Treat this directory as disposable server output; store no
+personal data there. These are sampled bounds, not a filesystem quota.
+
+Actual private Mac acceptance at7c6d403c passes signed refresh/revocation,
+large-body transfer/ranges/HEAD, parent-death cleanup, crash scratch recovery and
+managed restart/memory/stall cancellation. Initial stricter rules exposed a
+512-byte sendfile failure and were corrected using native destination-denial
+controls. All test jobs are unloaded. Public internet timing, production identity,
+boot operation and deployment remain separate gates; evidence hashes are in STATUS.

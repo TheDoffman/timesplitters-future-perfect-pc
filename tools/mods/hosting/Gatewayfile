@@ -1,0 +1,105 @@
+{
+    admin off
+    auto_https off
+    servers {
+        max_header_size 16384
+        timeouts {
+            read_header 10s
+            read_body 180s
+            write 180s
+            idle 60s
+        }
+    }
+}
+
+(private_api) {
+    reverse_proxy 127.0.0.1:8767 {
+        header_up X-Forwarded-Proto https
+        header_up -Forwarded
+        header_up -X-Forwarded-For
+        header_up -X-Forwarded-Host
+        header_up -X-Forwarded-Port
+    }
+}
+
+(json_api) {
+    request_body {
+        max_size 16384
+    }
+    import private_api
+}
+
+http://:8768 {
+    bind 127.0.0.1
+    header X-Content-Type-Options nosniff
+    header Cache-Control no-store
+    header Referrer-Policy no-referrer
+    header X-Frame-Options DENY
+    route {
+        @wrong_host not host {$TSFP_WORKSHOP_HOST}
+        respond @wrong_host "Invalid workshop host" 403
+
+        @downloads {
+            method GET HEAD
+            path_regexp downloads ^/v1/(catalog|trust/(catalog|roots/[1-9][0-9]{0,15})|packages/[0-9a-f]{64})$
+        }
+        handle @downloads {
+            reverse_proxy 127.0.0.1:8766 {
+                header_up -Authorization
+                header_up -Cookie
+                header_up -Forwarded
+                header_down -Set-Cookie
+            }
+        }
+
+        @upload {
+            method PUT
+            path_regexp upload ^/v1/uploads/[0-9a-f]{32}$
+        }
+        handle @upload {
+            request_body {
+                max_size 268435456
+            }
+            import private_api
+        }
+
+        @post {
+            method POST
+            path /v1/accounts/redeem /v1/sessions /v1/account/password /v1/uploads
+        }
+        handle @post {
+            import json_api
+        }
+        @review {
+            method POST
+            path_regexp review ^/v1/moderation/[0-9a-f]{32}$
+        }
+        handle @review {
+            import json_api
+        }
+        @get {
+            method GET
+            path /healthz /v1/account /v1/uploads /v1/moderation
+        }
+        handle @get {
+            import json_api
+        }
+        @ticket {
+            method GET
+            path_regexp ticket ^/v1/uploads/[0-9a-f]{32}$
+        }
+        handle @ticket {
+            import json_api
+        }
+        @logout {
+            method DELETE
+            path /v1/sessions/current
+        }
+        handle @logout {
+            import json_api
+        }
+        handle {
+            respond "Route unavailable" 404
+        }
+    }
+}

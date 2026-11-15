@@ -16,11 +16,17 @@ MAX_FILES = 256
 MAX_BYTES = 32 * 1024**2
 
 
-def profile(executable, snapshot, configuration, work):
+def profile(executable, snapshot, configuration, work, role='downloads'):
+    require(role in ('downloads', 'gateway') and (snapshot is not None) == (role == 'downloads'),
+            'Invalid public server role/tree binding')
     quote = lambda p: json.dumps(str(p), ensure_ascii=True)
     subpaths = lambda paths: ''.join('(subpath ' + quote(p) + ')' for p in paths)
     literals = lambda paths: ''.join('(literal ' + quote(p) + ')' for p in paths)
     runtime = ['/System', '/usr/lib', '/usr/share', '/private/preboot/Cryptexes']
+    port = 8766 if role == 'downloads' else 8768
+    reads = [*runtime, work] + ([snapshot] if snapshot is not None else [])
+    proxy = ('(allow network-outbound (remote ip "localhost:8766") (remote ip "localhost:8767"))'
+             if role == 'gateway' else '')
     return ('(version 1)(deny default)(deny process-info*)'
             '(allow process-exec (literal ' + quote(executable) + '))'
             '(allow signal (target self))'
@@ -28,16 +34,17 @@ def profile(executable, snapshot, configuration, work):
             '(sysctl-name "kern.osversion")(sysctl-name "kern.osrelease")'
             '(sysctl-name "kern.ostype")(sysctl-name "kern.version")(sysctl-name "kern.argmax"))'
             '(allow file-read-metadata)(allow file-read* '
-            + subpaths([*runtime, snapshot, work]) + literals([
+            + subpaths(reads) + literals([
                 '/', executable, configuration, '/dev/null', '/dev/random', '/dev/urandom', '/private/etc/localtime']) + ')'
             '(allow file-map-executable ' + subpaths(runtime) + literals([executable]) + ')'
             '(allow file-write* (subpath ' + quote(work) + '))'
-            '(allow network-bind network-inbound (local ip "localhost:8766"))'
+            '(allow network-bind network-inbound (local ip "localhost:' + str(port) + '"))'
             # Darwin sendfile checks a connected server socket without a
             # supplied remote endpoint. Match only that response path: a new
             # connect/sendto supplies a destination and must remain denied,
             # even if a hostile caller first binds the permitted local port.
-            '(allow network-outbound (require-all (local ip "localhost:8766") (require-not (remote ip))))')
+            '(allow network-outbound (require-all (local ip "localhost:' + str(port)
+            + '") (require-not (remote ip))))' + proxy)
 
 
 def marker(path, expected, create=False):

@@ -191,9 +191,16 @@ class LivePublisher:
 
 
 class CaddyServer:
-    def __init__(self, executable, state):
+    def __init__(self, executable, state, role='downloads', origin=None):
         require(sys.platform == 'darwin' and Path('/usr/bin/sandbox-exec').is_file(),
                 'Public download confinement requires the Mac host')
+        require(role in ('downloads', 'gateway'), 'Invalid public server role')
+        if role == 'gateway':
+            from mod_trust import origin as checked_origin
+            checked_origin(origin)
+        else:
+            require(origin is None, 'Static downloads do not accept gateway origin settings')
+        self.role, self.origin = role, origin
         self.executable = Path(executable).resolve(strict=True)
         info = self.executable.stat()
         require(stat.S_ISREG(info.st_mode) and info.st_uid in (0, os.geteuid()) and not info.st_mode & 0o6022
@@ -206,22 +213,28 @@ class CaddyServer:
         require(signal.getsignal(signal.SIGCHLD) == signal.SIG_DFL, 'Publisher must own child exit status')
         require(self.child is None and self.scratch is None and type(seconds) is int and 0 < seconds <= 3600,
                 'Invalid public server lease')
+        require((snapshot is not None) == (self.role == 'downloads'), 'Invalid public role/snapshot binding')
         require(not any(c in str(snapshot) for c in '"{}\r\n'), 'Invalid public snapshot path')
         guardian = verified_guardian()
         from mod_public_sandbox import acquire, profile
         self.scratch = acquire(self.state)
         read, write = os.pipe()
         try:
-            config = Path(__file__).with_name('hosting') / 'Caddyfile'
-            policy = profile(self.executable, snapshot, config, self.scratch.path)
+            config = Path(__file__).with_name('hosting') / ('Caddyfile' if self.role == 'downloads' else 'Gatewayfile')
+            policy = profile(self.executable, snapshot, config, self.scratch.path, self.role)
+            environment = dict(PATH='/usr/bin:/bin', HOME=str(self.scratch.path), TMPDIR=str(self.scratch.path),
+                               LC_ALL='C', TZ='UTC')
+            if self.role == 'downloads':
+                environment['TSFP_MOD_PUBLIC_ROOT'] = str(snapshot)
+            else:
+                environment['TSFP_WORKSHOP_HOST'] = self.origin[len('https://'):]
             process = subprocess.Popen([str(guardian), str(read), '--deadline-seconds', str(seconds),
                                         '/usr/bin/sandbox-exec', '-p', policy, str(self.executable),
                                         'run', '--config', str(config), '--adapter', 'caddyfile'],
                                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                        close_fds=True, pass_fds=(read, self.scratch.lease), start_new_session=True,
                                        cwd=self.scratch.path,
-                                       env=dict(PATH='/usr/bin:/bin', HOME=str(self.scratch.path), TMPDIR=str(self.scratch.path),
-                                                TSFP_MOD_PUBLIC_ROOT=str(snapshot), LC_ALL='C', TZ='UTC'))
+                                       env=environment)
             self.child = GuardedChild(process, write)
             write = None
         finally:

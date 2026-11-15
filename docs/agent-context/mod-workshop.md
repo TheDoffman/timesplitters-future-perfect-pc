@@ -1,3 +1,13 @@
+Public gateway preparation: hosting/Gatewayfile and gateway-service-mac.py bind
+localhost8768, canonical HTTPS origin, fixed static8766/API8767 destinations and
+known workshop routes. Download requests strip credentials/cookies; API scheme
+headers are controlled by the trusted gateway. JSON and ZIP body bounds differ.
+CaddyServer gateway role receives no snapshot/repository/key paths and its own
+sandbox permits only those two proxy destinations. mod_service_watch.Supervisor
+shares prior publication PID/origin-or-repository health, sampled RSS, fault and
+agent generation; publication adapters preserve existing contracts. Gateway
+integration/body/header/isolation acceptance remains required before deployment.
+
 Public-server native canaries also prove process-environment denial against an
 owned ready native target with fabricated environment and a successful control.
 
@@ -10,12 +20,14 @@ connectx and UDP sendto; integrated large catalog/package acceptance is required
 Public static-server confinement: CaddyServer now requires Mac Seatbelt and
 mod_public_sandbox.profile (public tree/fixed config/system runtime reads, private
 scratch writes, self-signals, hardware sysctls, explicit process-info denial and
-localhost8766 inbound/bind only). No outbound/fork/private-data fallback. Per-server
+localhost8766 inbound/bind only). New outbound destinations/fork/private-data access stay denied. Per-server
 scratch is owner-marked and leased outside the writable work directory; guardian
 inherits its lease while the server inherits only stdio. Reclaim requires exclusive
 lease after guardian/server exit. Running scratch is sampled at256 entries/32MiB,
 bounded cleanup unlinks owned output without following links; unknown/incomplete
-stores are preserved. Actual integrated Caddy acceptance remains required.
+stores are preserved. Actual confined Caddy signed flow,8MiB/range/HEAD, crash
+recovery and managed restart/resource/stall acceptance pass with fixture keys;
+production deployment remains pending (STATUS).
 
 Service identity preparation: hosting/provision-service-mac.py defaults to a
 read-only Directory Services plan. Explicit local administrator --apply creates

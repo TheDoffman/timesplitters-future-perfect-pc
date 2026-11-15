@@ -1,3 +1,9 @@
+test_gateway_service.py covers canonical origin/injection boundaries, refusal of
+repository/key settings or a gateway snapshot tree, managed health before server
+construction, origin-bound watchdog and interpreter/source-preserving agents.
+Publication service tests also exercise the extracted shared Supervisor. Actual
+Caddy/Gunicorn routing, framing/body limits and gateway confinement need live checks.
+
 test_public_sandbox.py covers scratch ownership, live-lease exclusion, released
 lease recovery, storage withdrawal, symlink-target preservation, and unknown-root
 refusal. Actual Darwin guardian retains its lease after controller closes its FD;
