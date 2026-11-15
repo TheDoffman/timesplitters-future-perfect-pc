@@ -1,3 +1,17 @@
+System scan monitor implementation (2026-11-15):
+Added a privileged fixed-label system monitor with an immutable-installed-release
+gate, separate UID600 worker role and root-owned bound atomic heartbeat. It never
+reads worker configuration/uploads, accepts no supplied target/commands, and
+signals the owned launchd label rather than a sampled PID. Denied stop requests
+are errors; the GUI watchdog now also refuses to claim termination after failure.
+New-only generation emits root/worker plists without bootstrapping, disables
+supplementary group initialization and site imports for the privileged monitor,
+and keeps existing scanner budgets/lifetime containment. Windows policy/scope/
+runtime checks pass143 with17 POSIX skips (0.37s). Native POSIX and root/system
+permission/lifecycle/group enforcement, locked config/definition initialization,
+deployment and boot/public acceptance remain pending. This component is not yet
+deployed. See system-scan-supervision.md for its contract and remaining gates.
+
 User Mac storage and real review acceptance (2026-11-15):
 After explicit user approval, exactly two same/older Codex updater staging
 directories were removed using descriptor-anchored, symlink-safe deletion.

@@ -5,6 +5,7 @@ loads/unloads jobs automatically. Only trusted local configuration supplies path
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -89,6 +90,9 @@ def status(data, component, value):
 
 
 def healthy(data):
+    if data.get('system_monitor'):
+        system_monitor().healthy(os.geteuid())
+        return
     path = status_file(data, 'watchdog')
     regular(path, 8192)
     value = read_json(path.read_bytes())
@@ -127,7 +131,16 @@ def admit(data):
 
 
 def target(data):
+    if data.get('system_monitor'):
+        return 'system/' + system_monitor().label()
     return 'gui/' + str(os.geteuid()) + '/' + data['label']
+
+
+def system_monitor():
+    spec = importlib.util.spec_from_file_location('system_scan_monitor', Path(__file__).with_name('system-scan-monitor-mac.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def watch_once(data, observed, command=run_command, clock=time.monotonic):
@@ -147,7 +160,8 @@ def watch_once(data, observed, command=run_command, clock=time.monotonic):
     if reason:
         # Signal the launchd-owned SERVICE, not the sampled PID. If the worker
         # exited/restarted meanwhile, no unrelated process can be targeted.
-        command(['/bin/launchctl', 'kill', 'SIGKILL', target(data)])
+        code, _ = command(['/bin/launchctl', 'kill', 'SIGKILL', target(data)])
+        require(code == 0, 'Cannot stop the managed scan service')
         return {}, {'status': 'terminated', 'reason': reason, 'rss_bytes': memory}
     return {'pid': pid, 'start': start}, {'status': 'watching', 'pid': pid, 'rss_bytes': memory,
                                        'supervision_policy': SUPERVISION_POLICY}
@@ -230,18 +244,29 @@ def generate(data, directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config', type=Path, required=True)
+    parser.add_argument('--config', type=Path)
     modes = parser.add_mutually_exclusive_group(required=True)
     modes.add_argument('--worker', action='store_true')
+    modes.add_argument('--system-worker', action='store_true')
     modes.add_argument('--watchdog', action='store_true')
     modes.add_argument('--generate', type=Path)
     args = parser.parse_args()
     try:
         require(sys.platform == 'darwin', 'Run the launchd scan service on the Mac host')
-        data = config(args.config)
+        if args.system_worker:
+            require(args.config is None and os.geteuid() >= 600 and os.getuid() == os.geteuid()
+                    and os.getgid() == os.getegid() == os.geteuid()
+                    and set(os.getgroups()) <= {os.geteuid()}, 'Use the locked system worker identity')
+            monitor = system_monitor()
+            data = config(monitor.config_path())
+            require(data['label'] == monitor.label(), 'System scan identity mismatch')
+            data['system_monitor'] = True
+        else:
+            require(args.config is not None, 'A private service configuration is required')
+            data = config(args.config)
         if args.generate:
             print(json.dumps(generate(data, args.generate)))
-        elif args.worker:
+        elif args.worker or args.system_worker:
             worker(data)
         else:
             watchdog(data)

@@ -52,6 +52,14 @@ def test_wall_deadline_and_identity_change(managed):
     assert result['status'] == 'watching' and observed['start'] == 481
 
 
+def test_failed_service_stop_never_claims_termination(managed):
+    run,calls = commands(str(service.MEMORY_BYTES//1024+1))
+    def command(args):
+        return (1,'permission denied') if args[1]=='kill' else run(args)
+    with pytest.raises(ModError,match='Cannot stop'):
+        service.watch_once(managed,{},command)
+
+
 def test_idle_missing_service_and_ambiguous_identity(managed):
     assert service.watch_once(managed, {}, lambda _: (1, 'not loaded'))[1]['status'] == 'error'
     assert service.watch_once(managed, {}, lambda _: (0, 'state = idle'))[1]['status'] == 'idle'
@@ -149,6 +157,20 @@ def test_admission_waits_without_touching_repository_until_supervised(private_co
     assert value['status'] == 'waiting' and 'last_fault' not in value
     service.status(private_config, 'watchdog', {'status': 'idle', 'supervision_policy': service.SUPERVISION_POLICY})
     assert service.admit(private_config)
+
+
+def test_system_worker_ignores_worker_writable_gui_heartbeat(private_config,monkeypatch):
+    from types import SimpleNamespace
+    from mod_scan_sandbox import ScanSandbox
+    monkeypatch.setattr(ScanSandbox,'GUARDED_PARENT_LIFETIME',True)
+    service.status(private_config,'watchdog',dict(status='idle',supervision_policy=service.SUPERVISION_POLICY))
+    private_config['system_monitor']=True
+    def absent(_):raise ModError('No root-owned heartbeat')
+    monkeypatch.setattr(service,'system_monitor',lambda:SimpleNamespace(healthy=absent))
+    assert not service.admit(private_config) and list(private_config['repository'].iterdir())==[]
+    calls=[]
+    monkeypatch.setattr(service,'system_monitor',lambda:SimpleNamespace(healthy=lambda uid:calls.append(uid)))
+    assert service.admit(private_config) and calls==[os.geteuid()]
 
 
 def test_group_only_containment_is_held_until_both_components_upgrade(private_config, monkeypatch):

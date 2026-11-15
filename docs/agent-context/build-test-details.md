@@ -1,3 +1,11 @@
+test_system_scan_monitor.py covers fixed system-label control, numeric descendant
+owner/count/RSS/wall limits, denied-stop errors, restrictive generated roles/flags,
+CLI installed/argument gates, atomic root-heartbeat binding and POSIX link/mode/
+FIFO/size/duplicate protections. File-layer tests inject a verified ancestor FD;
+the real unprivileged/shared ancestor rejection is separate. test_scan_service.py
+adds failed-stop handling and system admission that ignores GUI-owned health.
+These tests do not prove native root/system permission, boot or public operation.
+
 test_creator_api.py source-preview rate regression proves repeated account-capped
 requests retain all48 global inspection slots; account admission now runs first.
 DDS preview tests: test_texture_preview.py covers original BC1/BC2/BC3/BGRA8

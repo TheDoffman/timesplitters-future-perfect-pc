@@ -1,3 +1,16 @@
+System scan monitor implementation: system-scan-monitor-mac.py fixes the privilege
+split for future system jobs. Root monitor addresses only a fixed derived scanner
+label, never accepts commands/targets/config paths, samples UID-bound descendants
+and verifies stop results. Root protected FD/nofollow atomic heartbeat and deployment
+marker bind UID/service/policy/time. New --system-worker mode ignores GUI health,
+accepts only the fixed private config and requires a restricted non-root identity.
+Generator requires immutable installed release/identity/runtime, emits new-only
+root monitor + UID600 worker plists (InitGroups=false), and never bootstraps jobs.
+GUI watchdog now also rejects failed cancellation instead of claiming termination.
+Policy/file/generator tests registered; actual root install/system-group/permission/
+lifecycle/boot acceptance and config/definitions initialization remain pending.
+See ../development/system-scan-supervision.md. No production/public job started.
+
 Actual user Mac at07f7f0a7 now passes native build106 UI+normal backend and real
 creator/isolated-ClamAV/moderation flow, including DDS pixels and private report
 closure/history/linked release plus withdrawal/audits. API/DDS/restore70 tests
