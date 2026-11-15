@@ -341,13 +341,17 @@ def test_scanner_missing_explicit_database_fails_before_execution(tmp_path, monk
     assert ClamScanner(database=tmp_path / 'missing').scan(tmp_path)['status'] == 'error'
 
 
-@pytest.mark.parametrize('policy', ['database_max_age_days', 'isolation'])
-def test_legacy_clean_scan_requires_rescan_before_approval_or_publication(tmp_path, policy):
+@pytest.mark.parametrize('policy,legacy', [('database_max_age_days', None), ('isolation', None),
+                                         ('isolation', 'macos-seatbelt-v2')])
+def test_legacy_clean_scan_requires_rescan_before_approval_or_publication(tmp_path, policy, legacy):
     repo, _, sha = approved(tmp_path)
     with repo.db() as db:
         row = db.execute('SELECT scan FROM releases WHERE sha256=?', (sha,)).fetchone()
         scan = json.loads(row['scan'])
-        del scan[policy]
+        if legacy is None:
+            del scan[policy]
+        else:
+            scan[policy] = legacy
         db.execute('UPDATE releases SET scan=? WHERE sha256=?', (json.dumps(scan), sha))
     assert repo.catalog() == []
     with pytest.raises(ModError):

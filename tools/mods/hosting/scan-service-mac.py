@@ -114,9 +114,9 @@ def repository_preflight(root):
 
 
 def admit(data):
-    from mod_scan_sandbox import ScanSandbox
-    if not getattr(ScanSandbox, 'GUARDED_PARENT_LIFETIME', False):
-        status(data, 'worker', {'status': 'held', 'reason': 'Scanner lifetime containment upgrade required'})
+    from mod_scan_sandbox import ISOLATION_POLICY, ScanSandbox
+    if ISOLATION_POLICY != 'macos-seatbelt-v3' or not getattr(ScanSandbox, 'GUARDED_PARENT_LIFETIME', False):
+        status(data, 'worker', {'status': 'held', 'reason': 'Scanner isolation/lifetime upgrade required'})
         return False
     try:
         healthy(data)

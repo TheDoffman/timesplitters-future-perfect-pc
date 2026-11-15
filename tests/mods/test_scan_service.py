@@ -177,3 +177,12 @@ def test_repository_preflight_preserves_personal_and_unrecognized_data(private_c
         service.repository_preflight(root)
     with sqlite3.connect(root / 'catalog.sqlite') as db:
         assert db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall() == [('personal',)]
+
+
+def test_legacy_process_info_policy_is_held_even_with_healthy_supervision(private_config, monkeypatch):
+    import mod_scan_sandbox
+    monkeypatch.setattr(mod_scan_sandbox, 'ISOLATION_POLICY', 'macos-seatbelt-v2')
+    service.status(private_config, 'watchdog', {'status': 'idle', 'supervision_policy': service.SUPERVISION_POLICY})
+    assert not service.admit(private_config)
+    assert json.loads(service.status_file(private_config, 'worker').read_text())['status'] == 'held'
+    assert list(private_config['repository'].iterdir()) == []

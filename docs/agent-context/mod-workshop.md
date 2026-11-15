@@ -1,3 +1,6 @@
+Worker admission now also requires exact macos-seatbelt-v3; v2 is held even with
+a healthy guardian heartbeat. Legacy approved v2 reports are withheld until rescan.
+
 Current containment HOLD: an actual native positive-control canary exposed
 same-user process environments via unrestricted sysctl-read. Both installed jobs
 were disabled/unloaded again; only fabricated test data was queried. The v3
