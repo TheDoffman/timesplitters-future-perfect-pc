@@ -32,7 +32,7 @@ class Scanner:
         assert (Path(directory) / 'mod.json').is_file()
         return {'engine': 'TEST ONLY', 'version': 'fixture', 'time': int(time.time()),
                 'status': self.status, 'detail': 'Synthetic test result',
-                'database_max_age_days': 2, 'isolation': 'macos-seatbelt-v2'}
+                'database_max_age_days': 2, 'isolation': 'macos-seatbelt-v3'}
 
 
 @pytest.fixture
@@ -323,7 +323,7 @@ def test_scanner_explicit_database_is_used_for_version_and_scan(tmp_path, monkey
     report = ClamScanner(database=tmp_path).scan(tmp_path)
     assert report['status'] == 'clean'
     assert report['database_max_age_days'] == 2
-    assert report['isolation'] == 'macos-seatbelt-v2'
+    assert report['isolation'] == 'macos-seatbelt-v3'
     assert len(commands) == 2
 
 

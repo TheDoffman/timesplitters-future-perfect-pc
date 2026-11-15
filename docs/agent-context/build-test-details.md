@@ -1,3 +1,8 @@
+Native scanner sysctl regression uses an owned non-platform C process with a
+fabricated environment and readiness handshake: unconfined control must see its
+canary; confined scanner must receive EPERM/EACCES with no canary. /bin/sleep
+cannot establish the positive control on this host. No personal environment is read.
+
 Config-only scanner-service tests create a private inert mode0700 executable;
 hosted CI Python can be group-writable, which production correctly refuses.
 No global interpreter permissions are changed and the fixture is never run.

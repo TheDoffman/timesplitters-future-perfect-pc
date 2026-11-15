@@ -1,6 +1,7 @@
 """Actual Darwin guardian: escaped sessions, controller death and bounded IO."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -23,8 +24,19 @@ PROBE = r'''
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 int main(int argc,char **argv) {
     if(argc<3)return 2;
+    if(strcmp(argv[1],"canary-target")==0){puts(getenv("TSFP_FAKE_CANARY")?"ready":"missing");fflush(stdout);sleep(30);return 0;}
+    if(strcmp(argv[1],"procargs")==0){
+        int mib[3]={CTL_KERN,KERN_PROCARGS2,atoi(argv[2])};size_t size=1024*1024;
+        char *bytes=malloc(size);if(!bytes)return 3;errno=0;
+        int result=sysctl(mib,3,bytes,&size,NULL,0),error=errno,found=0;
+        const char needle[]="TSFP_FAKE_CANARY=test-only-environment";
+        if(result==0)for(size_t i=0;i+sizeof(needle)-1<=size;i++)if(memcmp(bytes+i,needle,sizeof(needle)-1)==0)found=1;
+        printf("{\"result\":%d,\"errno\":%d,\"seen\":%s}\n",result,error,found?"true":"false");free(bytes);return 0;
+    }
     int joined=setpgid(0,getppid()),sid=(int)setsid();alarm(0);
     FILE *file=fopen(argv[2],"w");if(!file)return 3;
     fprintf(file,"{\"pid\":%d,\"guardian\":%d,\"joined\":%d,\"sid\":%d}\n",(int)getpid(),(int)getppid(),joined,sid);
@@ -88,6 +100,26 @@ def test_escaped_scanner_cannot_signal_its_guardian(worker, mode):
     identity = worker.scratch / 'identity.json'
     result = worker.scan([mode, str(identity)], timeout=5)
     assert result.returncode == 0 and result.stdout.strip() == b'-1 1'
+
+
+def test_sysctl_cannot_read_another_process_environment(worker):
+    # Positive control uses only a fabricated environment in our own native
+    # target. Platform /bin/sleep can hide its environment even unconfined.
+    target = subprocess.Popen([str(worker.executable), 'canary-target', '-'],
+                              env=dict(PATH='/usr/bin:/bin', TSFP_FAKE_CANARY='test-only-environment'),
+                              stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    try:
+        assert target.stdout.readline() == b'ready\n'
+        args = ['procargs', str(target.pid)]
+        control = subprocess.run([str(worker.executable), *args], capture_output=True, check=True, timeout=5)
+        assert json.loads(control.stdout)['seen'] is True
+        result = worker.run(args, capture_output=True, timeout=5)
+        assert result.returncode == 0
+        value = json.loads(result.stdout)
+        assert value['result'] == -1 and value['errno'] in (1, 13) and value['seen'] is False
+    finally:
+        target.kill()
+        target.communicate(timeout=5)
 
 
 def test_controller_kill_closes_private_lifetime_even_after_group_escape(worker, tmp_path):

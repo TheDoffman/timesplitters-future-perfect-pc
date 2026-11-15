@@ -1,3 +1,10 @@
+Current containment HOLD: an actual native positive-control canary exposed
+same-user process environments via unrestricted sysctl-read. Both installed jobs
+were disabled/unloaded again; only fabricated test data was queried. The v3
+Seatbelt policy permits hardware/runtime metadata only, excluding process args.
+Old v2 reports no longer satisfy current approval/availability policy. Actual
+native canary denial and real ClamAV compatibility must pass before upgrading.
+
 Scan-service config-only tests use a private inert executable: hosted CI Python
 can be group-writable and is correctly rejected by the production scanner policy.
 The fixture fix preserves that policy and never executes the fixture.

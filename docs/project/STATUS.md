@@ -1,3 +1,12 @@
+CURRENT scanner containment HOLD (2026-11-14): after the guardian upgrade,
+a native positive-control canary demonstrated unrestricted sysctl-read can expose
+another same-user process environment. Only fabricated test data was queried.
+Both private agents are disabled/unloaded again; source/data/evidence preserved.
+EvidenceSHAfcb57df94bc7048af32e420bd1d098c8103c8c163a894d7a2083bdae7ca2be62.
+The new v3 allowlist and native regression require real ClamAV acceptance and
+pinned re-deployment before re-enablement. The following earlier upgrade remains
+historical evidence, not current running-service status. Full goal remains active.
+
 Scanner containment repair and private deployment (2026-11-14, source21a60844):
 Actual Seatbelt probes permit setsid/setpgid; group-only cleanup was insufficient.
 The replacement signed native guardian owns the scanner PID, kills/reaps it on

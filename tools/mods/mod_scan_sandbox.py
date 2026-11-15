@@ -14,7 +14,7 @@ import stat
 
 from mod_package import require, read_json
 
-ISOLATION_POLICY = 'macos-seatbelt-v2'
+ISOLATION_POLICY = 'macos-seatbelt-v3'
 GUARDIAN_ROOT = Path(__file__).resolve().parents[2] / 'build/scan-guardian'
 
 
@@ -70,7 +70,13 @@ def sandbox_profile(executable, content, database, scratch):
         '/', '/dev/null', '/dev/random', '/dev/urandom', '/private/etc/localtime', executable])
     return ('(version 1)(deny default)'
             '(allow process-exec (literal ' + quote(executable) + '))'
-            '(allow sysctl-read)(allow file-read-metadata)'
+            # Process-argument sysctls expose other same-user environments even
+            # when their files are denied. Grant only public runtime metadata.
+            '(allow sysctl-read (sysctl-name-regex #"^hw\\.")'
+            '(sysctl-name "kern.osversion")(sysctl-name "kern.osrelease")'
+            '(sysctl-name "kern.ostype")(sysctl-name "kern.version")'
+            '(sysctl-name "kern.argmax"))'
+            '(allow file-read-metadata)'
             '(allow file-read* ' + reads + ')'
             '(allow file-map-executable ' + subpaths(runtime) + literals([executable]) + ')'
             '(allow file-write* (subpath ' + quote(scratch) + '))')
