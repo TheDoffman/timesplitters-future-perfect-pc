@@ -1,7 +1,8 @@
 """Disposable real WSGI backend for native-client wire checks, over private pipes.
 
 This helper opens no socket. Its explicit Mac scanner mode uses the real sealed
-engine; no mode approves/publishes. Credentials belong to a temporary repository.
+engine. Explicit native moderation can approve/revoke only this disposable
+repository; no mode publishes or opens a listener. Credentials are temporary.
 """
 import base64
 import hashlib
@@ -16,7 +17,7 @@ from urllib.parse import urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools/mods'))
 from mod_accounts import Accounts
 from mod_api import WorkshopAPI
-from mod_package import build_package
+from mod_package import ModError, build_package
 from mod_repository import ClamScanner, Repository
 from mod_runtime_files import runtime_access
 
@@ -91,6 +92,29 @@ def main():
         if scanning and request == {'advance': 301}:
             clock[0] += 301  # Test account/retry clock only; never the OS/AV clock.
             emit({'now': clock[0]})
+            continue
+        if scanning and request == {'observe_repository': True}:
+            repository = accounts.repository
+            catalog = repository.catalog()
+            for release in catalog:
+                if hashlib.sha256(repository.approved_blob(release['sha256']).read_bytes()).hexdigest() != release['sha256']:
+                    raise RuntimeError('Approved fixture blob changed')
+            with repository.db() as db:
+                digests = [row[0] for row in db.execute('SELECT sha256 FROM releases ORDER BY sha256')]
+                audit = [dict(row) for row in db.execute(
+                    "SELECT actor,action,target,note FROM workshop_audit WHERE action IN ('approve','revoke') ORDER BY sequence")]
+                events = [dict(row) for row in db.execute(
+                    "SELECT sha256,action,note FROM events WHERE action IN ('approved','revoked') ORDER BY sequence")]
+            available = []
+            for sha in digests:
+                try:
+                    repository.approved_blob(sha)
+                except ModError:
+                    continue
+                available.append(sha)
+            if set(available) != {release['sha256'] for release in catalog}:
+                raise RuntimeError('Repository catalog/blob availability differs')
+            emit({'catalog': [release['sha256'] for release in catalog], 'audit': audit, 'events': events})
             continue
         if scanning and set(request) == {'scan_next'}:
             kind = request['scan_next']

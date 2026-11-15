@@ -38,6 +38,7 @@ namespace TimeSplitters.Launcher
             if(args.Length==1 && args[0]=="--test-creator-backend")return CreatorBackendChecks.RunSafely();
 #if MACOS
             if(args.Length==1 && args[0]=="--test-creator-scanner")return CreatorBackendChecks.RunSafely(true);
+            if(args.Length==1 && args[0]=="--test-creator-moderation")return CreatorBackendChecks.RunSafely(true,true);
 #endif
             if(args.Length==1 && args[0]=="--test")
 #if LINUX

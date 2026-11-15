@@ -1,3 +1,9 @@
+Mac --test-creator-moderation opts into real isolated scanning, native approve/
+revoke, real catalog/blob guards and both SQLite audit trails in the disposable
+pipe backend. It requires the same pinned owner-private runtime configuration as
+--test-creator-scanner; ordinary build tests still never scan or approve. Its
+read-only repository observer is a private test control, not an HTTP endpoint.
+
 Native moderator checks in launcher_shared_ui.cs cover strict manifest/queue and
 role/decision bindings, invalid notes/cancellation and dispatcher-driven approve/
 Back/revoke without installation. These inject HTTP responses, not scan results.

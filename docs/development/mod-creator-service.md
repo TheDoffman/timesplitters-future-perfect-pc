@@ -68,6 +68,15 @@ cannot list or decide moderation. Shared native UI tests use injected responses;
 the separate real-backend check verifies creator refusal and a moderator's empty
 queue while uploads remain unscanned. Public moderator acceptance remains pending.
 
+The separate Mac developer mode `--test-creator-moderation` runs the real scanner
+cases first, then uses the native moderator client to approve only the genuinely
+clean fixture and revoke it again. It verifies both actual SQLite audit trails,
+creator/reviewer histories and the repository's real catalog/blob availability
+guards. Its private repository observer is not exposed through HTTP. The fixture
+never signs/publishes a catalog, opens a listener or installs/enables content.
+This check requires the same explicitly selected sealed runtime and official
+definitions as scanner acceptance; ordinary build tests never scan or approve.
+
 Private snapshot/staged restore tooling and conservative publication reconciliation
 are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery
 drill passes; production cutover and off-device recovery remain acceptance work.

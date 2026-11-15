@@ -15,8 +15,8 @@ using TimeSplitters.Launcher;
 // The transport seam below belongs only to this explicit developer test mode.
 public static class CreatorBackendChecks
 {
-    public static int RunSafely(bool scanner=false)
-    {try{return scanner?RunScanner():Run();}catch(Exception error){Console.Error.WriteLine(error);return 1;}}
+    public static int RunSafely(bool scanner=false,bool moderation=false)
+    {try{return scanner?RunScanner(moderation):Run();}catch(Exception error){Console.Error.WriteLine(error);return 1;}}
     static void Need(bool value,string message){if(!value)throw new Exception(message);}
     static void Reject(Action action,string marker,string message){try{action();}catch(Exception error){Need(error.Message.Contains(marker),"The real backend refusal occurred at the wrong stage.");return;}throw new Exception(message);}
     sealed class Backend : HttpMessageHandler
@@ -69,6 +69,7 @@ public static class CreatorBackendChecks
             return (int)ModTrust.Number(response,"status",100,599);
         }
         public Dictionary<string,object> Scan(string kind){return Exchange(new {scan_next=kind});}
+        public Dictionary<string,object> Observe(){return Exchange(new {observe_repository=true});}
         public void Advance(){Unix=ModTrust.Number(Exchange(new {advance=301}),"now",Unix+301,Unix+301);}
         protected override void Dispose(bool disposing)
         {
@@ -123,7 +124,7 @@ public static class CreatorBackendChecks
             Console.WriteLine("PASS creator backend: real invitation, exact upload, quarantine history, ownership, immutable versions and session revocation.");return 0;
         }finally{Directory.Delete(root,true);}
     }
-    public static int RunScanner()
+    public static int RunScanner(bool moderation=false)
     {
 #if !MACOS
         throw new InvalidOperationException("Real native creator scanner acceptance requires the Mac workshop host.");
@@ -158,11 +159,47 @@ public static class CreatorBackendChecks
                         if(error && attempt<3)backend.Advance();
                     }
                 }
+                if(moderation)RunModeration(root,backend,client);
                 client.SignOut(CancellationToken.None).GetAwaiter().GetResult();Need(!Directory.Exists(Core.PathIn(root,"Mods")),"Scanner acceptance installed or enabled content.");
             }
             return 0;
         }finally{Directory.Delete(root,true);}
 #endif
+    }
+    static void RunModeration(string root,Backend backend,ModCreatorClient creator)
+    {
+        Reject(()=>creator.Reviews(0,CancellationToken.None).GetAwaiter().GetResult(),"moderator account","A creator listed the real review queue.");
+        using(var reviewer=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>DateTimeOffset.FromUnixTimeSeconds(backend.Unix).UtcDateTime)) {
+            reviewer.Redeem(backend.ReviewerInvitation,"Disposable native reviewer password!",CancellationToken.None).GetAwaiter().GetResult();
+            var queue=reviewer.Reviews(0,CancellationToken.None).GetAwaiter().GetResult();
+            Need(queue.Length==4 && queue.Count(row=>row.State=="pending-review")==1 && queue.Count(row=>row.State=="rejected")==1 && queue.Count(row=>row.State=="scan-error")==2,"Real moderation queue misrepresented completed scans.");
+            Need(reviewer.Reviews(queue.Last().Cursor,CancellationToken.None).GetAwaiter().GetResult().Length==0,"Real moderation cursor repeated records.");
+            foreach(var blocked in queue.Where(row=>row.State!="pending-review"))
+                Reject(()=>reviewer.Moderate(blocked,"approve","Refuse unsafe fixture",CancellationToken.None).GetAwaiter().GetResult(),"awaiting review","A detected/error package reached native approval.");
+            var clean=queue.Single(row=>row.ModId=="native-clean");Need(clean.State=="pending-review" && clean.Package.Author==creator.Username,"The native reviewer selected a different package.");
+            var before=backend.Observe();Need(ModTrust.Array(before,"catalog",1).Length==0 && ModTrust.Array(before,"audit",1).Length==0,"Native moderation started from nonempty approved/audit state.");
+            const string approval="Reviewed original native acceptance source",revocation="Withdraw disposable native acceptance";
+            reviewer.Moderate(clean,"approve",approval,CancellationToken.None).GetAwaiter().GetResult();
+            var approved=reviewer.Reviews(0,CancellationToken.None).GetAwaiter().GetResult().Single(row=>row.Id==clean.Id);
+            Need(approved.State=="approved" && approved.Sha256==clean.Sha256,"Real approval did not reach native moderation history.");
+            Need(creator.History(0,CancellationToken.None).GetAwaiter().GetResult().Single(row=>row.Id==clean.Id).State=="approved","Creator history hid the actual moderator decision.");
+            var catalog=ModTrust.Array(backend.Observe(),"catalog",1);Need(catalog.Length==1 && catalog[0] is string && (string)catalog[0]==clean.Sha256,"Approval exposed a different/unsafe package.");
+            Need(backend.Probe("/v1/packages/"+clean.Sha256,backend.LastBearer)==404,"The private API became a package download service.");
+            Console.WriteLine("PASS native moderation: real clean scan -> native approval -> exact repository catalog/blob; no public download route.");
+            reviewer.Moderate(approved,"revoke",revocation,CancellationToken.None).GetAwaiter().GetResult();
+            Need(reviewer.Reviews(0,CancellationToken.None).GetAwaiter().GetResult().Single(row=>row.Id==clean.Id).State=="revoked","Revocation did not reach native review history.");
+            Need(creator.History(0,CancellationToken.None).GetAwaiter().GetResult().Single(row=>row.Id==clean.Id).State=="revoked","Creator history hid revocation.");
+            var after=backend.Observe();Need(ModTrust.Array(after,"catalog",1).Length==0,"Revocation retained repository availability.");
+            var audit=ModTrust.Array(after,"audit",2);var events=ModTrust.Array(after,"events",2);Need(audit.Length==2 && events.Length==2,"Real moderation did not produce both audit trails.");
+            for(int i=0;i<2;i++) {
+                var account=audit[i] as Dictionary<string,object>;var release=events[i] as Dictionary<string,object>;Need(account!=null && release!=null,"Invalid audit observation.");
+                string action=i==0?"approve":"revoke",note=i==0?approval:revocation;
+                Need(ModTrust.Text(account,"actor")=="user:native-reviewer" && ModTrust.Text(account,"action")==action && ModTrust.Text(account,"target")==clean.Sha256 && ModTrust.Text(account,"note")==note,"The account audit lost moderator/decision binding.");
+                Need(ModTrust.Text(release,"sha256")==clean.Sha256 && ModTrust.Text(release,"action")==(i==0?"approved":"revoked") && ModTrust.Text(release,"note")=="native-reviewer: "+note,"The release audit lost the decision binding.");
+            }
+            reviewer.SignOut(CancellationToken.None).GetAwaiter().GetResult();
+            Console.WriteLine("PASS native moderation: native revoke -> withdrawn catalog; creator/reviewer histories and both actual audit trails agree.");
+        }
     }
     sealed class Borrowed : HttpMessageHandler
     {

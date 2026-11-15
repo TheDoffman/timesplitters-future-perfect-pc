@@ -1,3 +1,11 @@
+Explicit Mac --test-creator-moderation extends real scanner acceptance through
+ModCreatorClient.Reviews/Moderate: only the genuinely clean package is approved,
+then revoked. A private-pipe observer reads actual SQLite account/release audits
+and calls the real catalog/approved_blob guards; creator/reviewer histories agree.
+Detected/error packages are refused, publication never runs, and normal backend/
+scanner modes retain their existing scope. Official definitions and sealed runtime
+must remain unchanged. This is UID501 private acceptance, not public/root600 proof.
+
 Native moderation in ModCreatorPage.cs adds role-gated completed-job pagination,
 strict manifest/identity checks, bounded review notes and explicit approval/revoke
 confirmation. Back sends no decision; responses bind ID/digest/state. Selections
