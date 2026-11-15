@@ -84,12 +84,14 @@ python tools/mods/mod_backup.py resume /private/workshop/recovered-001 /private/
 This records the reconciliation, preserves unknown revoked hashes as tombstones,
 updates the publication floor and removes the barrier. Subsequent signed exports
 start above that floor and include the tombstones. Reconciled revoked packages
-cannot be approved. Accounts stay suspended; review current roles/suspensions and
+cannot be approved. Keep scan/API workers stopped while restoring account access. Accounts stay
+suspended; review current roles/suspensions and
 use the existing local `recover-account` invitation workflow individually. Install
 fresh verified scanner definitions, rescan/review eligible releases, and verify a
 new signed export before changing service configuration to the recovered path.
 Old static exports and signing identities are not reactivated by this command.
 
-A restoration drill against the actual Mac, off-device recovery, supervision,
+A disposable command-line restore drill now passes on the actual Mac (see STATUS).
+Production service cutover, off-device recovery, supervision,
 retention, and service/endpoint cutover acceptance are separate release gates.
 The tests use disposable repositories and signing identities, not production data.

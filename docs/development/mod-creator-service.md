@@ -7,8 +7,8 @@ acceptance remain required before release. The existing Caddy configuration
 still serves only approved snapshot downloads and does not proxy this API.
 
 Private snapshot/staged restore tooling and conservative publication reconciliation
-are now implemented; see [host recovery](mod-host-recovery.md). Actual Mac recovery
-drills and service cutover remain acceptance work.
+are now implemented; see [host recovery](mod-host-recovery.md). A disposable Mac recovery
+drill passes; production cutover and off-device recovery remain acceptance work.
 
 ## Identity and ownership
 

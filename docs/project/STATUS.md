@@ -1,3 +1,26 @@
+Private host backup/recovery (sourcecd6ec8ab,2026-11-14): bounded private snapshots
+capture SQLite committed/WAL state and referenced release/queued bytes under a
+reserved writer lock. New-root restore revokes sessions/invitations, suspends
+accounts, expires open tickets and withholds approvals. Recovery barrier blocks
+API/approval/catalog/bytes/exports. Explicit local reconciliation preserves current
+origin/version floor and cumulative revocations, including unknown-hash tombstones
+in future signed catalogs. No signing keys, personal files or public exports are
+copied. Source repositories and existing destinations are preserved.
+Selected native tests: Mac152 pass; Linux151 pass/1 host skip. Windows common
+regression137 pass/15 host skips; final API checks18 pass/13 POSIX-operation skips.
+Runtime-scope checks98 pass; context check passes. New POSIX backup suite13 cases
+covers committed WAL, admission blocking, queued bytes/auth isolation, tampering,
+links/hardlinks/schema, output/disk budgets, barrier503 and post-recovery signed
+version13 with an unknown revoked hash. These use disposable scanner/signing data.
+Actual Mac CLI backup -> restore -> resume drill also passes against a disposable
+fixture, leaves its original database hash unchanged, disables old auth/approvals,
+and preserves the test tombstone/floor17. EvidenceSHA
+3d39429f303731ca27bb4d2ed5dea6a531a00518fa5d04dc16c55716eebf4e94.
+This is not production service cutover or off-device recovery acceptance. Backup
+scheduling/retention, capacity above4096 files, separate signing-key recovery,
+persistent service operation, crash recovery, public endpoint and release remain
+unfinished. Full goal active; main untouched.
+
 Native launcher handoff acceptance on Mac/Linux (launcher86ebbf43,2026-11-14):
 SDK build_package -> shared ModLibrary.Install/Enable -> GameSettings.StartInfo
 capsule/save/cache selection -> existing native game -> natural First to Three
