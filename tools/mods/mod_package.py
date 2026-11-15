@@ -313,7 +313,7 @@ def inspect_package(path, destination=None):
         raise ModError('Invalid ZIP package') from exc
 
 
-def build_package(source, output):
+def build_package(source, output, *, bundle_scripts=False):
     """Build a deterministic package from a creator's mod.json and content tree."""
     source, output = Path(source).resolve(), Path(output).absolute()
     require(not output.is_relative_to(source), 'Package output must be outside its source tree')
@@ -335,13 +335,19 @@ def build_package(source, output):
         data = file.read_bytes()
         validate_payload(name, data)
         entries[name] = data
+    if bundle_scripts:
+        from mod_lua_bundle import compose
+        scripts = {name: data for name, data in entries.items() if name.startswith('scripts/')}
+        linked = compose(scripts)
+        entries = {name: data for name, data in entries.items() if name not in scripts}
+        entries['scripts/main.lua'] = linked
     m['files'] = {name: {'sha256': digest(data), 'size': len(data)} for name, data in entries.items()}
     validate_manifest(m)
     manifest = json.dumps(m, sort_keys=True, separators=(',', ':')).encode()
     require(len(manifest) <= MAX_MANIFEST, 'Manifest too large')
     with output.open('xb') as stream:
         with zipfile.ZipFile(stream, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
-            for name, data in [('mod.json', manifest), *entries.items()]:
+            for name, data in [('mod.json', manifest), *((name, entries[name]) for name in sorted(entries))]:
                 info = zipfile.ZipInfo(name, (2020, 1, 1, 0, 0, 0))
                 # Canonical creator platform for identical inputs on all hosts.
                 info.create_system = 3

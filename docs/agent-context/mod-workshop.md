@@ -1,3 +1,17 @@
+Creator SDK pack --modules uses mod_lua_bundle.compose to link<=32 local Lua
+sources into existing scripts/main.lua, with exact dot-name imports, per-VM cache,
+cycle/unknown errors and unchanged1MiB generated-source budget. All sources share
+one untrusted VM; it is an authoring transformation, not a module security boundary.
+No filesystem/package/OS loader is enabled. Lone main bytes/default pack stay
+unchanged. Module/FS/case collisions and invalid bytes fail before ZIP creation.
+Payload ZIP order is now ordinal on every host. Original modular-first-to-three
+project splits config/score state/callbacks; tests pack+execute it in the actual
+VM and cover caching/varargs/absence of escape APIs/terminal budgets/atomicity.
+No worker/API/capsule/native game code or host HTTP contract changes; existing
+430 host API accepts these standard single-source archives. It remains a frozen
+component at430, not a claim that the new SDK is publicly deployed/stable.
+Native CI suite registers test_lua_bundle; Lua/mod.json example changes select it.
+
 Native moderator report controls now list open reports and20-row complete history,
 require note/review/confirm for close/reopen, and clear selections on auth changes.
 Inspect reported release uses role-gated GET /v1/moderation/by-digest/<sha>, binds

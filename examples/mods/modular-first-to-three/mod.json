@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "modular-first-to-three",
+  "version": "0.1.0",
+  "name": "Modular First to Three",
+  "author": "SDK Example",
+  "description": "Original offline Arcade Deathmatch example with packaged Lua modules. Build with pack --modules; uses separate mod saves.",
+  "game": "tsfp-us-45410066",
+  "api": "tsfp-mod-v1-draft",
+  "dependencies": {},
+  "files": {}
+}

@@ -20,7 +20,7 @@ The private creator/moderator API additionally uses a separately pinned Gunicorn
 host runtime. Accounts, ownership, quota-reserved uploads, a serial scan queue
 and authenticated review are now implemented. The native Creator tab supports
 sign-in/invitations, reviewed ZIP uploads and status history with memory-only
-sessions; persistent credential vaults, native moderation and public deployment
+sessions; native moderation/reporting are implemented. Persistent credential vaults and public deployment
 remain incomplete. See [creator service](mod-creator-service.md).
 Signed static exports, offline root rotation and monotonic publication versions
 and shared native signature/checkpoint/revocation enforcement are implemented.
@@ -46,7 +46,9 @@ a folder does not change its permissions. Helper files use this location; mode
 saves remain in their separate namespace. Missing configured folders stop modded
 launches; Play without mods still works. This preference is stored locally in
 Settings/mod-cache-location.txt and never comes from a downloaded package.
-Maps, audio and additional Lua files remain inactive; formats/APIs remain drafts.
+Maps, audio and unlinked additional Lua files remain inactive; formats/APIs remain
+drafts. Creators can link a modular Lua project into the supported single entry
+source using `pack --modules`, described below.
 Native game bootstrap, helper confinement and gameplay hooks have been tested on
 all three hosts through developer handoffs. Packaged First to Three has completed real offline matches through launcher-
 generated handoffs on all three hosts with ordinary saves preserved; public
@@ -97,6 +99,34 @@ even a corrupt profile without rewriting it. Maps and audio can be installed
 but cannot be activated yet. Gameplay modes remain inactive on older game builds.
 The CLI `install` below is an operator/testing staging command; the player UI
 uses `Mods/Packages`, `Mods/profile.json` and `Mods/Active` instead.
+
+## Package a modular Lua project
+
+The SDK can link up to32 creator-owned Lua files into one `scripts/main.lua`,
+using a package-local `require("rules.settings")` for
+`scripts/rules/settings.lua`. Build the original modular sample with:
+
+```console
+python tools/mods/mod-workshop.py pack examples/mods/modular-first-to-three build/modular-mode.zip --modules
+python tools/mods/mod-workshop.py validate build/modular-mode.zip
+```
+
+Keep the output outside your source folder and use a new filename for each build.
+Set the manifest author to your workshop username before uploading. Without the
+flag, `pack` preserves the original package layout; it does not silently link
+files. The generated source contains all modules and stays inside the existing
+1MiB source limit. It uses the existing version1 capsule and restricted VM;
+players need no extra interpreter. A lone main source retains its original bytes.
+
+Imports are exact, case-sensitive dot names relative to `scripts/`, with no
+filesystem, dependency-package, native-library or network search. Values are
+cached per VM; nil becomes true. Missing/cyclic imports fail the mode. Modules
+share one VM and its existing budgets/permissions. Names beginning `__tsfp_` are
+reserved by the linker. Packaging never executes Lua; syntax/logic still require
+VM/game validation. See the [modular sample](../../examples/mods/modular-first-to-three.md).
+Actual all-host gameplay of the new sample and the full public flow remain
+acceptance work. Maps/audio loading, richer game APIs and a stable SDK release
+remain part of the full goal.
 
 ## Try the workflow
 

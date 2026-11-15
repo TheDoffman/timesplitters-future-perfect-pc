@@ -7,10 +7,12 @@ import struct
 import subprocess
 import sys
 import time
+import zipfile
 
 import pytest
 
 from mod_package import ModError
+from mod_lua_bundle import compose
 import mod_script_protocol as protocol
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,6 +51,51 @@ def test_real_custom_mode_updates_score_and_finishes_match(worker):
         protocol.validate_commands(reply, i, [1, 2], stopping=i == 5)
     assert [reply['commands'][0]['value'] for reply in replies[2:5]] == [1, 2, 3]
     assert replies[4]['commands'][-1] == dict(kind=2, player=1, value=0, text='')
+
+
+def test_packaged_module_project_executes_in_the_actual_restricted_vm(worker, tmp_path):
+    from mod_package import build_package
+    archive = tmp_path/'modular.zip'
+    build_package(ROOT/'examples/mods/modular-first-to-three', archive, bundle_scripts=True)
+    with zipfile.ZipFile(archive) as package:
+        source = package.read('scripts/main.lua')
+        assert package.namelist() == ['mod.json','scripts/main.lua']
+    events = [protocol.event(1,1,players=PLAYERS)]
+    events += [protocol.event(i+2,3,tick=i+1,players=PLAYERS,actor=1,target=2) for i in range(3)]
+    result, replies = run(worker, source, events)
+    assert result.returncode == 0 and len(replies) == 5
+    assert [reply['commands'][0]['value'] for reply in replies[2:]] == [1,2,3]
+    assert replies[-1]['commands'][-1] == dict(kind=2,player=1,value=0,text='')
+    for sequence, reply in enumerate(replies[1:],1):
+        protocol.validate_commands(reply,sequence,[1,2])
+
+
+def test_packaged_modules_cache_values_without_enabling_global_escape_helpers(worker):
+    source = compose({'scripts/main.lua':b'''local a = require("rules")
+assert(a == require("rules") and a.count == 1)
+assert(_G.require == nil and io == nil and os == nil and package == nil and debug == nil and load == nil)
+return {api=1,on_start=function() game.message(a.text) end}''',
+        'scripts/rules.lua':b'''local name = ...
+assert(name == "rules")
+local count = 1
+return {count=count,text="Packaged module only"} -- no final newline'''})
+    result, replies = run(worker,source,[protocol.event(1,1,players=PLAYERS)])
+    assert result.returncode == 0
+    assert replies[-1]['commands'] == [dict(kind=3,player=0,value=0,text='Packaged module only')]
+
+
+@pytest.mark.parametrize('sources,error', [
+    ({'scripts/main.lua':b'require("../host"); return {api=1}','scripts/rules.lua':b'return {}'},'Unknown packaged Lua module'),
+    ({'scripts/main.lua':b'require(12); return {api=1}','scripts/rules.lua':b'return {}'},'Module name must be a string'),
+    ({'scripts/main.lua':b'require("a"); return {api=1}','scripts/a.lua':b'return require("b")','scripts/b.lua':b'return require("a")'},'Cyclic packaged Lua module'),
+    ({'scripts/main.lua':b'require("rules"); return {api=1}','scripts/rules.lua':b'while true do end'},'instruction budget'),
+    ({'scripts/main.lua':b'require("rules"); return {api=1}','scripts/rules.lua':b'local a={} while true do a[#a+1]=string.rep("x",1000000) end'},'memory budget'),
+    ({'scripts/main.lua':b'local r=require("rules"); return {api=1,on_start=r.start}','scripts/rules.lua':b'return {start=function() game.message("queued"); error("module callback failed") end}'},'module callback failed'),
+])
+def test_module_failures_keep_existing_terminal_budgets_and_command_atomicity(worker, sources, error):
+    result, replies = run(worker,compose(sources),[protocol.event(1,1,players=PLAYERS)])
+    assert result.returncode == 2 and replies[-1]['status'] != 0
+    assert error in replies[-1]['error'] and replies[-1]['commands'] == []
 
 
 @pytest.mark.parametrize('name', ['io','os','package','debug','coroutine','require','dofile','loadfile','load',

@@ -1,3 +1,21 @@
+Creator modular Lua SDK (2026-11-15):
+pack --modules now links up to32 project Lua files into the existing verified
+scripts/main.lua. Local exact-name imports cache module values, reject cycles/
+unknown imports and retain the existing1MiB source/VM memory/instruction/host-call
+budgets. No native API, capsule or OS permissions change. Default packaging and
+lone-main bytes stay unchanged; ZIP payload order is now ordinal across hosts.
+The original modular-first-to-three example separates config, score state and
+callbacks. Windows native VM tests actually execute its packed source, score3
+kills and end the match; cache/varargs/global-escape absence and terminal budget/
+command-atomicity cases pass. Final bundle+VM79 tests pass14.60s; packaging/budget
+selection102 pass3.75s; CI suite/scope contracts113 pass. New SDK tests are
+registered for Windows/Mac native suites and example Lua/manifest edits select
+them. Local Mac/Linux new-SDK checks and actual three-host in-game/public flow
+remain pending. The Mac is below1GiB free, so no local worker build is started.
+Existing430 host API accepts the standard produced archives; its frozen component
+revision remains explicit. Maps/audio/entity APIs/importers, stable SDK release
+and other full-goal acceptance remain unfinished.
+
 Native moderator report workflow (2026-11-15):
 The Creator page now shows role-gated open reports and full report history.
 Moderators inspect the exact digest-bound release through the existing scan/Lua/

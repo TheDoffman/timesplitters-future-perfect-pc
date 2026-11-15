@@ -1,5 +1,11 @@
 Native mod_bootstrap.cpp/.h joins source validation, save lease, permanent host picker lock and kernel fence before startup; commit checks the actual root before exposing immutable source. It holds the lease until process teardown. The production factory consumes this source; see below and mod-source-handoff.md for explicit developer handoff and remaining activation gates.
 
+SDK pack --modules (tools/mods/mod_lua_bundle.py) assembles creator-owned modules
+into the existing bounded main source. No native VM/wire/host permission changes.
+test_script_worker.py packs the modular example and executes it in the actual VM;
+cache/varargs, missing/cyclic imports, unchanged memory/instruction limits and
+callback command atomicity are covered. OS confinement/gameplay proof is separate.
+
 # Mod worker, process boundary and native sessions
 
 [Source handoff](../development/mod-source-handoff.md): shared C# encoder/native

@@ -62,6 +62,7 @@ RELEASE_INPUTS = {
 # silently lose coverage; only known offline scripts are exempted.
 CPU_TOOLS = {
     'tools/mods/mod_package.py', 'tools/mods/mod_repository.py',
+    'tools/mods/mod_lua_bundle.py', 'tests/mods/test_lua_bundle.py',
     'tools/mods/mod_server.py', 'tools/mods/mod-workshop.py',
     'tools/mods/mod_publication.py', 'tools/mods/hosting/host-mac.py',
     'tools/mods/hosting/run-mac-mod-host.sh', 'tools/mods/hosting/Caddyfile',
@@ -232,6 +233,8 @@ def affected(paths, *, full=False):
             path.endswith('.py') and path.startswith(
                 ('tools/textures/', 'tests/textures/'))
         ):
+            selected.add('native')
+        elif path.startswith('examples/mods/') and (path.endswith('.lua') or path.endswith('/mod.json')):
             selected.add('native')
         elif path.startswith('src/'):
             selected.update(('native', 'gpu'))

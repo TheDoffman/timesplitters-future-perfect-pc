@@ -1,3 +1,10 @@
+test_lua_bundle.py covers SDK linking/passive CLI, unchanged inputs/lone-main/default
+pack, ordinal ZIP/module order, ambiguous/case/FS paths, invalid bytes, count/source
+budgets. test_script_worker.py packs and executes the original modular mode in the
+real VM and checks cache/varargs/escape absence and terminal resource/atomicity
+failures. No game/confinement acceptance is inferred. Runtime suites register the
+new test on Windows/Mac; scope also selects native checks for Lua/mod.json examples.
+
 Moderator-report tests add role-protected full history and exact-digest completed
 release lookup. Dispatcher UI checks note/review/Back/confirm, close/history/reopen,
 inspection without package mutations and sign-out cleanup; client checks reject

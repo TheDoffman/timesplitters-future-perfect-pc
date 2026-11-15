@@ -19,6 +19,7 @@ def main(argv=None):
     build = commands.add_parser('pack', help='Build a creator package')
     build.add_argument('source')
     build.add_argument('output')
+    build.add_argument('--modules', action='store_true', help='Link packaged Lua modules into one bounded main.lua')
     validate = commands.add_parser('validate')
     validate.add_argument('package')
     install = commands.add_parser('install', help='Verify and stage a downloaded package inactive')
@@ -72,7 +73,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == 'pack':
-            result = build_package(args.source, args.output)
+            result = build_package(args.source, args.output, bundle_scripts=args.modules)
         elif args.command == 'validate':
             result = inspect_package(args.package)
         elif args.command == 'install':
