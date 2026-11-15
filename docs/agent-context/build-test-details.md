@@ -1,3 +1,9 @@
+Evidence checks cover role/session refusal, unscanned404, raw-output omission,
+current/stale freshness and malformed stored metadata. Native checks reject
+wrong digest/state/types/extra fields and gate approval on fetched fresh evidence;
+stale evidence retains revocation. Real Mac moderation mode compares evidence for
+all4 actual ClamAV clean/blocked/error reports before approval/revocation.
+
 Mac --test-creator-moderation opts into real isolated scanning, native approve/
 revoke, real catalog/blob guards and both SQLite audit trails in the disposable
 pipe backend. It requires the same pinned owner-private runtime configuration as

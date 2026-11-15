@@ -2,6 +2,7 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
 import hashlib
+import json
 import errno
 import os
 from pathlib import Path
@@ -244,6 +245,31 @@ class Uploads:
                               "FROM workshop_uploads u JOIN releases r ON u.sha256=r.sha256 "
                               "WHERE u.state='complete' AND u.rowid>? ORDER BY u.rowid LIMIT 100", (after,)).fetchall()
             return [dict(row) for row in rows]
+
+    def evidence(self, actor, upload_id):
+        """Role-gated bounded scan metadata; no raw scanner output or host paths."""
+        self._path(upload_id, '.ready')
+        with self.repository.db() as db:
+            self.accounts.actor(db, actor, ('moderator','admin'))
+            row = db.execute("SELECT u.id,u.sha256,r.state,r.scan FROM workshop_uploads u "
+                             "JOIN releases r ON u.sha256=r.sha256 WHERE u.id=? AND u.state='complete'",
+                             (upload_id,)).fetchone()
+        demand(row is not None, 404, 'Completed scan unavailable')
+        report = json.loads(row['scan'])
+        demand(isinstance(report, dict), 503, 'Invalid stored scan metadata')
+        scan = {}
+        for name, limit in (('engine',128),('version',512),('status',16),('isolation',64)):
+            value = report.get(name, '')
+            demand(isinstance(value, str) and len(value) <= limit
+                   and not any(ord(c) < 32 or 127 <= ord(c) < 160 for c in value), 503, 'Invalid stored scan metadata')
+            scan[name] = value
+        demand(scan['status'] in ('clean','blocked','error'), 503, 'Invalid stored scan status')
+        for name, maximum in (('time',253402300799),('database_max_age_days',36500)):
+            value = report.get(name)
+            demand(type(value) is int and 0 <= value <= maximum, 503, 'Invalid stored scan metadata')
+            scan[name] = value
+        scan['fresh'] = self.repository.fresh(report)
+        return {'id': row['id'], 'sha256': row['sha256'], 'state': row['state'], 'scan': scan}
 
     def assign_owner(self, mod_id, name, note):
         """Local operator-only adoption/transfer, including legacy reviewed mods."""

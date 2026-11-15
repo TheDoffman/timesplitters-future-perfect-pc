@@ -75,6 +75,22 @@ namespace TimeSplitters.Launcher
             ModTrust.Need(Package.Id==ModId && Package.Version==Version,"review manifest identity mismatch.");
         }
     }
+    public sealed class ModeratorEvidence
+    {
+        public readonly string Engine,Version,Status,Isolation;
+        public readonly long Time,DatabaseMaxAgeDays;
+        public readonly bool Fresh;
+        internal ModeratorEvidence(Dictionary<string,object> data,ModeratorUpload review)
+        {
+            ModTrust.Fields(data,"id sha256 state scan");
+            ModTrust.Need(CreatorUpload.Text(data,"id",32)==review.Id && CreatorUpload.Text(data,"sha256",64)==review.Sha256 && CreatorUpload.Text(data,"state",32)==review.State,"scan evidence changed. Refresh the moderation queue.");
+            var scan=ModTrust.Object(data,"scan");ModTrust.Fields(scan,"engine version status time isolation database_max_age_days fresh");
+            Engine=CreatorUpload.Text(scan,"engine",128);Version=CreatorUpload.Text(scan,"version",512);Status=CreatorUpload.Text(scan,"status",16);Isolation=CreatorUpload.Text(scan,"isolation",64);
+            Time=ModTrust.Number(scan,"time",0,253402300799);DatabaseMaxAgeDays=ModTrust.Number(scan,"database_max_age_days",0,36500);
+            ModTrust.Need(new[]{"clean","blocked","error"}.Contains(Status) && scan["fresh"] is bool,"invalid scan evidence.");Fresh=(bool)scan["fresh"];
+            ModTrust.Need(!Fresh || Status=="clean","inconsistent scan freshness.");
+        }
+    }
     // Passwords and bearer sessions stay in memory. No cookies, redirect,
     // credential files, diagnostic payloads or automatic upload retries.
     public sealed class ModCreatorClient : IDisposable
@@ -184,6 +200,14 @@ namespace TimeSplitters.Launcher
                 }return result.ToArray();
             }finally{gate.Release();}
         }
+        public async Task<ModeratorEvidence> Evidence(ModeratorUpload review,CancellationToken cancel)
+        {
+            Core.Require(review!=null,"Select a moderation record.");await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanModerate,"Sign in with a moderator account to inspect scans.");
+                return new ModeratorEvidence(await Request(HttpMethod.Get,"v1/moderation/"+review.Id+"/evidence",null,200,true,cancel).ConfigureAwait(false),review);
+            }finally{gate.Release();}
+        }
         public async Task Moderate(ModeratorUpload review,string action,string note,CancellationToken cancel)
         {
             Core.Require(review!=null && (action=="approve" || action=="revoke"),"Invalid moderation decision.");
@@ -223,6 +247,7 @@ namespace TimeSplitters.Launcher
         readonly string root;readonly bool preview;ModCreatorClient client;CancellationTokenSource stop;bool disposed;
         CreatorPackagePlan reviewed;CreatorUpload[] uploads=new CreatorUpload[0];long cursor;
         ModeratorUpload[] reviews=new ModeratorUpload[0];ModeratorUpload selectedReview;string decision,decisionNote;
+        ModeratorEvidence scanEvidence;
         public string StatusText {get{return status.Text;}}
         public ModCreatorPage(string root,bool preview=false):this(root,preview,null){}
         internal ModCreatorPage(string root,bool preview,ModCreatorClient client){this.root=root;this.preview=preview;this.client=client;AutomationProperties.SetName(username,"Workshop username");AutomationProperties.SetName(password,"Workshop password");AutomationProperties.SetName(invitation,"Workshop invitation");AutomationProperties.SetName(package,"Mod ZIP file path");status.Margin=new Thickness(0,0,0,12);Render();}
@@ -270,7 +295,7 @@ namespace TimeSplitters.Launcher
             if(uploads.Length==100)Button(history,"NextCreatorUploads","Next uploads",async()=>{cursor=uploads.Last().Cursor;await History();},authenticated);
             if(client!=null && client.CanModerate)RenderModeration();
         }
-        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;decision=null;decisionNote=null;reviewNote.Text="";}
+        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;decision=null;decisionNote=null;reviewNote.Text="";}
         async Task Reviews(long after)
         {ClearReviews();await Run(async token=>{reviews=await Client.Reviews(after,token);},"Moderation queue refreshed.",35);}
         void RenderModeration()
@@ -279,20 +304,25 @@ namespace TimeSplitters.Launcher
             Button(panel,"RefreshModeratorUploads","Refresh moderation",async()=>await Reviews(0));
             foreach(var item in reviews) {
                 var row=item;
-                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,()=>{selectedReview=row;decision=null;decisionNote=null;reviewNote.Text="";Render();});
+                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,async()=>{selectedReview=row;scanEvidence=null;decision=null;decisionNote=null;reviewNote.Text="";await Run(async token=>{scanEvidence=await Client.Evidence(row,token);},"Scan evidence refreshed.",35);});
             }
             if(reviews.Length==100)Button(panel,"NextModeratorUploads","Next reviews",async()=>await Reviews(reviews.Last().Cursor));
             if(selectedReview==null)return;
             var review=selectedReview;
             panel.Children.Add(PageTheme.Text(review.ModId+" @ "+review.Version+" · By "+review.Package.Author+" · "+review.State,14,"#A7D9FA"));
             panel.Children.Add(PageTheme.Text("SHA-256: "+review.Sha256,12,"#9EB4C8"));
+            if(scanEvidence!=null) {
+                panel.Children.Add(PageTheme.Text("Scan: "+scanEvidence.Status+" · "+scanEvidence.Engine+" · "+scanEvidence.Version,13,"#A7D9FA"));
+                panel.Children.Add(PageTheme.Text("Scanned "+DateTimeOffset.FromUnixTimeSeconds(scanEvidence.Time).UtcDateTime.ToString("u")+" · Isolation: "+scanEvidence.Isolation+" · Definitions age limit: "+scanEvidence.DatabaseMaxAgeDays+" days",12));
+                panel.Children.Add(PageTheme.Text(scanEvidence.Fresh?"Server reports a fresh clean scan. Approval rechecks freshness.":"No fresh clean scan. Approval is unavailable.",12,"#FFDAA6"));
+            }else panel.Children.Add(PageTheme.Text("Scan evidence unavailable. Approval requires a fresh clean scan.",12,"#FFDAA6"));
             panel.Children.Add(PageTheme.Text(review.Package.Description,13));
             panel.Children.Add(PageTheme.Text("Dependencies: "+(review.Package.Dependencies.Count==0?"None":String.Join(", ",review.Package.Dependencies.Select(p=>p.Key+" @ "+p.Value))),12));
             foreach(var file in review.Package.Files.Take(32))panel.Children.Add(PageTheme.Text(file.Key+" · "+file.Value.Size+" bytes · "+file.Value.Sha256,12,"#9EB4C8"));
             if(review.Package.Files.Count>32)panel.Children.Add(PageTheme.Text("Showing 32 of "+review.Package.Files.Count+" declared files. Inspect the full package independently before approval.",12));
             if(decision==null) {
                 panel.Children.Add(PageTheme.Text("Review note",13));panel.Children.Add(reviewNote);reviewNote.IsEnabled=stop==null;
-                Button(panel,"ReviewModeratorApproval","Review approval",()=>ReviewDecision("approve"),review.State=="pending-review");
+                Button(panel,"ReviewModeratorApproval","Review approval",()=>ReviewDecision("approve"),review.State=="pending-review" && scanEvidence!=null && scanEvidence.Fresh);
                 Button(panel,"ReviewModeratorRevocation","Review revocation",()=>ReviewDecision("revoke"),review.State!="revoked");
             }else {
                 panel.Children.Add(PageTheme.Text((decision=="approve"?"Approve":"Revoke")+" this exact package? Note: "+decisionNote,14,"#FFDAA6"));
@@ -303,6 +333,7 @@ namespace TimeSplitters.Launcher
         }
         void ReviewDecision(string action)
         {
+            if(action=="approve" && (selectedReview==null || selectedReview.State!="pending-review" || scanEvidence==null || !scanEvidence.Fresh)){status.Text="Refresh scan evidence before approval.";return;}
             string note=(reviewNote.Text??"").Trim();
             if(note.Length==0 || note.Length>1800 || note.Any(Char.IsControl)){status.Text="Enter a review note of 1 to 1800 characters without control characters.";return;}
             decision=action;decisionNote=note;Render();

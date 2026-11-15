@@ -331,6 +331,8 @@ public static class LauncherSharedUiChecks
         string manifest;using(var archive=System.IO.Compression.ZipFile.OpenRead(zip))using(var reader=new StreamReader(archive.GetEntry("mod.json").Open()))manifest=reader.ReadToEnd();
         return new Dictionary<string,object>{{"cursor",1L},{"id",new string('a',32)},{"mod_id",plan.Id},{"version",plan.Version},{"sha256",plan.Sha256},{"state",state},{"manifest",manifest}};
     }
+    static Dictionary<string,object> ModeratorScan(CreatorPackagePlan plan,string state="pending-review",bool fresh=true)
+    {return new Dictionary<string,object>{{"id",new string('a',32)},{"sha256",plan.Sha256},{"state",state},{"scan",new Dictionary<string,object>{{"engine","ClamAV"},{"version","ClamAV fixture only"},{"status","clean"},{"time",WorkshopTrustChecks.Unix},{"isolation","macos-seatbelt-v3"},{"database_max_age_days",2L},{"fresh",fresh}}}};}
     static void SetCreatorSecret(Element view,string name,string secret)
     {
 #if MACOS || LINUX
@@ -341,6 +343,24 @@ public static class LauncherSharedUiChecks
     }
     static void CreatorChecks(string root)
     {
+        Test("moderator scan evidence binds digest state types and role without exposing raw output",()=>{
+            string folder=Path.Combine(root,"moderator-evidence");CreatorConfig(folder);string zip=LibraryPackage(folder,"scan-evidence","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var review=new ModeratorUpload(ModeratorRow(zip,plan));
+            foreach(string mode in new[]{"valid","stale","digest","state","type","status","extra","creator"}) {
+                int requests=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role=mode=="creator"?"creator":"moderator"}});
+                    requests++;Need(request.RequestUri.AbsolutePath.EndsWith("/"+review.Id+"/evidence") && request.Method==System.Net.Http.HttpMethod.Get,"Scan evidence used an unexpected route");
+                    var data=ModeratorScan(plan,fresh:mode!="stale");var scan=(Dictionary<string,object>)data["scan"];
+                    if(mode=="digest")data["sha256"]=new string('f',64);if(mode=="state")data["state"]="approved";if(mode=="type")scan["fresh"]="true";if(mode=="status")scan["status"]="blocked";if(mode=="extra")scan["detail"]="private raw scanner output";
+                    return CreatorJson(data);
+                }),()=>WorkshopTrustChecks.Now)) {
+                    client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    if(mode=="valid" || mode=="stale"){var evidence=client.Evidence(review,System.Threading.CancellationToken.None).GetAwaiter().GetResult();Need(evidence.Fresh==(mode=="valid") && evidence.Engine=="ClamAV","Scan evidence lost freshness or engine");}
+                    else WorkshopReject(()=>client.Evidence(review,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Invalid/private scan evidence accepted");
+                    Need(requests==(mode=="creator"?0:1),"A creator sent a privileged evidence request");
+                }
+            }
+        });
         Test("moderator decisions bind exact digest identity state role and note",()=>{
             string folder=Path.Combine(root,"moderator-client");CreatorConfig(folder);string zip=LibraryPackage(folder,"moderator-demo","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);
             foreach(string mode in new[]{"valid","creator","duplicate","manifest","state","digest","note","cancel"}) {
@@ -369,10 +389,11 @@ public static class LauncherSharedUiChecks
             }
         });
         Test("moderator UI requires note review and confirmation and Back makes no decision",()=>WithUiContext(()=>{
-            string folder=Path.Combine(root,"moderator-ui");CreatorConfig(folder);string zip=LibraryPackage(folder,"moderator-ui","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int decisions=0;string state="pending-review";
+            string folder=Path.Combine(root,"moderator-ui");CreatorConfig(folder);string zip=LibraryPackage(folder,"moderator-ui","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int decisions=0;string state="pending-review";bool scanFresh=false;
             using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
                 if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role="moderator"}});
                 if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                if(request.RequestUri.AbsolutePath.EndsWith("/evidence"))return CreatorJson(ModeratorScan(plan,state,scanFresh));
                 if(request.Method==System.Net.Http.HttpMethod.Get)return CreatorJson(new {uploads=new[]{ModeratorRow(zip,plan,state)}});
                 decisions++;var body=ModJson.Read(request.Content.ReadAsStringAsync().GetAwaiter().GetResult());state=ModTrust.Text(body,"action")=="approve"?"approved":"revoked";
                 return CreatorJson(new {id=new string('a',32),sha256=plan.Sha256,state=state});
@@ -380,8 +401,9 @@ public static class LauncherSharedUiChecks
             using(var page=new ModCreatorPage(folder,false,client)) {
                 Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-password-not-a-real-account");Click(Find<Button>(page.View,"CreatorSignIn"));
                 PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="RefreshModeratorUploads" && b.IsEnabled),"Moderator sign-in did not render queue controls");
-                Action refresh=()=>{Click(Find<Button>(page.View,"RefreshModeratorUploads"));PumpUntil(()=>page.StatusText=="Moderation queue refreshed.","Moderation refresh did not finish");Click(Find<Button>(page.View,"ModeratorUpload"+new string('a',32)));};
-                refresh();Click(Find<Button>(page.View,"ReviewModeratorApproval"));Need(!All(page.View).OfType<Button>().Any(b=>b.Name=="ConfirmModeratorDecision") && decisions==0,"Blank note bypassed review");
+                Action refresh=()=>{Click(Find<Button>(page.View,"RefreshModeratorUploads"));PumpUntil(()=>page.StatusText=="Moderation queue refreshed.","Moderation refresh did not finish");Click(Find<Button>(page.View,"ModeratorUpload"+new string('a',32)));PumpUntil(()=>page.StatusText=="Scan evidence refreshed.","Scan evidence did not return to UI");};
+                refresh();Need(!Find<Button>(page.View,"ReviewModeratorApproval").IsEnabled && Find<Button>(page.View,"ReviewModeratorRevocation").IsEnabled,"Stale scan allowed approval or blocked revocation");
+                scanFresh=true;refresh();Click(Find<Button>(page.View,"ReviewModeratorApproval"));Need(!All(page.View).OfType<Button>().Any(b=>b.Name=="ConfirmModeratorDecision") && decisions==0,"Blank note bypassed review");
                 Find<TextBox>(page.View,"ModeratorNote").Text="Reviewed original source";Click(Find<Button>(page.View,"ReviewModeratorApproval"));Need(decisions==0,"Review approved without confirmation");
                 Click(Find<Button>(page.View,"CancelModeratorDecision"));Need(decisions==0,"Back approved the package");
                 Click(Find<Button>(page.View,"ReviewModeratorApproval"));Click(Find<Button>(page.View,"ConfirmModeratorDecision"));PumpUntil(()=>page.StatusText.StartsWith("Moderation decision recorded"),"Approval did not return to UI");Need(decisions==1,"Approval duplicated requests");

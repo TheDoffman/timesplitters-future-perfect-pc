@@ -1,3 +1,17 @@
+Native moderator scan evidence (2026-11-15):
+The role-gated completed-job evidence endpoint returns bound scan identity/state,
+engine/version/status/time/isolation/definition-age policy and current server
+freshness, omitting raw scanner output. Strict native decoding rejects changed
+digests/states/types/extra fields. Selecting a moderation row fetches evidence;
+stale/missing evidence disables approval while preserving revocation. Server
+approval retains its transactional freshness check. Windows full launcher checks
+pass97 UI groups plus actual backend checks;43 API/service tests pass, including
+role/session/unscanned refusal, raw-output omission and stale/malformed metadata.
+Actual Mac new-evidence acceptance is pending. Hosting source changed; the older
+frozen0338 release does not contain this endpoint and must not be deployed as the
+matching launcher host. Sourcee982918d all3 native launcher and complete package
+CI jobs pass; broader runtime validation remains separate.
+
 Native real scanner-to-moderator acceptance (2026-11-15, sourcec294267c):
 Actual Mac --test-creator-moderation passes all8 real scan observations, then
 native moderator approval/revocation through the real WSGI/SQLite API. The native

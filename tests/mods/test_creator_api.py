@@ -59,6 +59,44 @@ def call(api, method='GET', path='/v1/account', payload=None, token=None, raw=No
     return response
 
 
+def test_moderation_evidence_is_private_bound_and_reports_current_freshness(service, tmp_path):
+    accounts, uploads, _ = service
+    creator, token, _ = account(accounts)
+    _, reviewer, _ = account(accounts, 'reviewer', 'moderator')
+    api = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
+    data = package(tmp_path)
+    ticket = uploads.begin(creator, 'test-addon', '1.0.0', digest(data), len(data))
+    route = '/v1/moderation/' + ticket['id'] + '/evidence'
+    uploads.receive(creator, ticket['id'], io.BytesIO(data), len(data))
+    assert call(api, path=route)['status'] == 401
+    assert call(api, path=route, token=token)['status'] == 403
+    assert call(api, path=route, token=reviewer)['status'] == 404
+    uploads.process_next(Scanner())  # Explicit unit fixture, not real AV acceptance.
+    with accounts.repository.db() as db:
+        report = json.loads(db.execute('SELECT scan FROM releases').fetchone()[0])
+        report['detail'] = '/private/host/path secret scanner stdout'
+        db.execute('UPDATE releases SET scan=?', (json.dumps(report),))
+    result = call(api, path=route, token=reviewer)
+    assert result['status'] == 200
+    evidence = result['body']
+    assert set(evidence) == {'id', 'sha256', 'state', 'scan'}
+    assert evidence['id'] == ticket['id'] and evidence['sha256'] == digest(data)
+    assert evidence['state'] == 'pending-review' and evidence['scan']['fresh'] is True
+    assert set(evidence['scan']) == {'engine','version','status','time','isolation','database_max_age_days','fresh'}
+    assert 'secret' not in json.dumps(evidence) and '/private' not in json.dumps(evidence)
+    assert call(api, path=route, token=reviewer, QUERY_STRING='after=0')['status'] == 400
+    with accounts.repository.db() as db:
+        report['time'] = 1
+        db.execute('UPDATE releases SET scan=?', (json.dumps(report),))
+    assert call(api, path=route, token=reviewer)['body']['scan']['fresh'] is False
+    with accounts.repository.db() as db:
+        report['version'] = 'forged\nscanner'
+        db.execute('UPDATE releases SET scan=?', (json.dumps(report),))
+    assert call(api, path=route, token=reviewer)['status'] == 503
+    accounts.logout(accounts.authenticate(reviewer))
+    assert call(api, path=route, token=reviewer)['status'] == 401
+
+
 def test_wsgi_authentication_cookie_and_role_injection_are_rejected(service):
     accounts, uploads, _ = service
     api = WorkshopAPI(accounts, 'https://workshop.invalid')

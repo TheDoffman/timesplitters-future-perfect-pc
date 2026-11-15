@@ -1,3 +1,14 @@
+GET /v1/moderation/<upload>/evidence exposes role-gated completed-scan metadata:
+exact upload/digest/state, engine/version/status/time/isolation/definition-age
+policy and server-computed freshness. It omits raw scanner stdout/detail, paths
+and credentials; invalid bounded fields fail closed. Native ModeratorEvidence
+binds all identity/state fields and strict types. Selection fetches evidence;
+fresh clean evidence enables approval, while revocation remains available on
+stale/error evidence. Server approval still rechecks actual freshness atomically.
+Unit/API/UI adversarial checks and the opt-in real Mac moderation mode cover it.
+This changes host API source: the older frozen0338 release lacks this endpoint
+and must not be presented as the matching launcher host release.
+
 Explicit Mac --test-creator-moderation extends real scanner acceptance through
 ModCreatorClient.Reviews/Moderate: only the genuinely clean package is approved,
 then revoked. A private-pipe observer reads actual SQLite account/release audits

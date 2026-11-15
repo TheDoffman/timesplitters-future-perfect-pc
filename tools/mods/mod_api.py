@@ -116,6 +116,9 @@ class WorkshopAPI:
             return 202, self.uploads.receive(actor, match[1], environ['wsgi.input'], self._length(environ))
         if path == '/v1/moderation' and method == 'GET':
             return 200, {'uploads': self.uploads.reviews(actor, cursor)}
+        match = re.fullmatch(r'/v1/moderation/([0-9a-f]{32})/evidence', path)
+        if match and method == 'GET':
+            return 200, self.uploads.evidence(actor, match[1])
         match = re.fullmatch(r'/v1/moderation/([0-9a-f]{32})', path)
         if match and method == 'POST':
             data = self._json(environ, ('action','note'))

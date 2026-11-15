@@ -173,6 +173,12 @@ public static class CreatorBackendChecks
             reviewer.Redeem(backend.ReviewerInvitation,"Disposable native reviewer password!",CancellationToken.None).GetAwaiter().GetResult();
             var queue=reviewer.Reviews(0,CancellationToken.None).GetAwaiter().GetResult();
             Need(queue.Length==4 && queue.Count(row=>row.State=="pending-review")==1 && queue.Count(row=>row.State=="rejected")==1 && queue.Count(row=>row.State=="scan-error")==2,"Real moderation queue misrepresented completed scans.");
+            foreach(var review in queue) {
+                var evidence=reviewer.Evidence(review,CancellationToken.None).GetAwaiter().GetResult();
+                Need(evidence.Engine=="ClamAV" && evidence.Fresh==(review.State=="pending-review") && evidence.Status==(review.State=="pending-review"?"clean":review.State=="rejected"?"blocked":"error"),"Native evidence misrepresented the actual scanner result.");
+                if(evidence.Fresh)Need(evidence.Version.StartsWith("ClamAV ") && evidence.Isolation=="macos-seatbelt-v3" && evidence.DatabaseMaxAgeDays==2,"Clean evidence lost the guarded engine/freshness policy.");
+            }
+            Console.WriteLine("PASS native moderation: role-gated evidence matches all4 actual clean/detection/error scans without raw scanner output.");
             Need(reviewer.Reviews(queue.Last().Cursor,CancellationToken.None).GetAwaiter().GetResult().Length==0,"Real moderation cursor repeated records.");
             foreach(var blocked in queue.Where(row=>row.State!="pending-review"))
                 Reject(()=>reviewer.Moderate(blocked,"approve","Refuse unsafe fixture",CancellationToken.None).GetAwaiter().GetResult(),"awaiting review","A detected/error package reached native approval.");
