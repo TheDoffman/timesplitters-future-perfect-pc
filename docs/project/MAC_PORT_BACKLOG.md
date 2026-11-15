@@ -10778,3 +10778,28 @@ models during Windows-to-Mac migration. Compiled dual-host/fallback and native
 control tests cover cleanup; matching Windows/Mac builds and actual post-fix Mac orphan checks now pass: six
 bots/scores/timer and names retained, zero visible orphaned held models. Focused
 Mac checks:103 passed,4 platform skips. See [migration cleanup](../development/arcade-host-migration.md#promoted-bot-weapon-attachments).
+
+
+MAC-013 follow-up (2026-11-15, shared implementation; **Awaiting validation** on
+native Mac): Arcade guest confirmation marks owned browser destination before
+late teardown in pc_multiplayer_exit.inc; pc_multiplayer_menu.inc restores the
+original backend initialization through1CB950 after1CC360 cleanup. This prevents
+closed-session startup stage2 from suppressing discovery on rejoin. No OS adapter
+is added. Source was developed on fix/arcade-playtest-rejoin for
+feature/native-multiplayer-ui, based on afa46df7. Rebuilt Windows three-client/six-bot gameplay passes four
+automatic Deathmatch and one Capture the Bag leave/rejoins, with no Back/manual
+Refresh after departure. Original host/round/epoch and advancing clocks remain;
+admission reopens. The existing Mac clang guest-exit fixture passes, but a matching
+native Mac build, complete menu lifecycle and physical automatic rejoin acceptance
+remain pending. Windows validation does not establish Mac gameplay. See STATUS.
+
+2026-11-15 shared compiler prerequisites (included with the rejoin fix):
+**Awaiting validation** for full native Mac gameplay/build. Shared recomp_types.h
+selects integer and vector live-cell aliases before optimization, avoiding MSVC
+conditional-expression expansion; translation_batch.py bounds regular units by
+512KiB UTF-8 body text without splitting individual bodies or changing dispatch.
+No OS adapter or gameplay/clock/state policy is added. Physical Mac clang fixtures
+pass six equivalent register modes, reject both copied-cell controls and execute
+the separated batch fixture. Windows full Release build/native rejoin passes;
+full native Mac build and actual gameplay remain pending. See STATUS for exact
+toolset provenance and acceptance limits.

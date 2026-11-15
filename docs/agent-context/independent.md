@@ -969,3 +969,5 @@ Stage0247 adds read-only tsfp_thread_stack_bounds metadata queries for
 [guest stack diagnostics](guest-stack-trace.md): bootstrap regions stop at live
 worker slices; heap extents require active tracked owners. Bounds do not trust
 cloned TIB hints or pin lifetime; allocation/release policy is unchanged.
+
+Regular split batches also cap body text at512KiB, preserving oversized functions intact. test_translation_batch checks exact body/dispatch identity and compiled execution across partitions.

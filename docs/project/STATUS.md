@@ -44547,3 +44547,64 @@ Stablev0.6.2 untouched. Draft remains hidden from launcher discovery. Mac assets
 are not included. Bounded evidence retained in logs/online-beta-linux-*.log,
 *-report.json and upload-verified.json on Windows; reusable native builds and
 ZIP/checksum/BUILD remain in WSL. No personal data/game assets published.
+
+
+2026-11-15 — Arcade automatic leave/rejoin fix (developed on
+fix/arcade-playtest-rejoin for feature/native-multiplayer-ui; base afa46df7). Two lifecycle defects
+were reproduced and repaired in shared source. Guest Yes callback2EBE4E reaches
+disconnect at phase15, before the later phase18 callback; it now marks the owned
+Online browser destination immediately. The replacement browser also omitted
+the stock backend constructor: old native SDK/session were closed, but startup
+stage76B12C remained2. Rejoin then skipped discovery9999 and timed out. After
+original1CC360 cleanup, native_multiplayer_return_menu now calls original
+1CB950(parent), restoring System Link backend/startup stage1 before bridge leave.
+LAN/legacy/Story routing and host retained-lobby behavior preserve their scopes.
+
+Actual rebuilt Windows x64 gameplay passes four automatic Deathmatch rejoin
+cycles (one guest three times, the other once) and one Capture the Bag cycle.
+Three native clients at1280x720/60 and six bots used the isolated physical mini
+HTTPS/UDP relay over LAN. Departing guests returned to Community and selected
+the match directly, without Back or manual Refresh. Old membership retired;
+all three native/service peers became active and admission reopened for three
+consecutive samples after each join. The original room/host/round/epoch, six bots
+and advancing host/bystander clocks remained. These replace the earlier manual
+Back workaround as acceptance evidence. WAN and native Mac/Linux gameplay are
+not established by this same-PC Windows run.
+
+Windows Online/FOV regression selection:51 passed,2 platform skips, including
+the missing-backend-init failing control; Quit/Story/exit selection:55 passed.
+All17 required bundled/replay checks
+pass. Patch validation reports zero runtime updates; build identity/executable
+verification passes and matching crash symbols are retained locally. Earlier
+physical Mac clang guest-exit fixture passes; the new full menu lifecycle still
+needs a matching native Mac game build and actual rejoin acceptance.
+
+Rebuild prerequisites also repaired in shared source: recomp_types.h selects
+all seven integer aliases before optimization, retaining original live cells;
+five Windows register checks pass, physical Mac clang matches six modes and
+rejects two copied-cell controls. Regular translation publication bounds chunks
+by512KiB UTF-8 body text and requested function count, retaining oversized bodies
+intact. Twelve batching and21 CLI/receipt checks pass; physical Mac clang executes
+the separated batch fixture. Standard split1000 regeneration:15838/15863,
+zero failed,524 regular and912 context units. Native Release optimization stayed
+O2/Ob2. Most objects use MSVC14.44.35207; regular0096 alone needed installed
+MSVC14.38.33130 because14.44 stalled. Normal MSBuild SelectedFiles compiled it;
+14.44 linked the compatible v143 objects without GL/LTCG. Heavy units compiled
+serially to bound memory. Generated game C was not hand-edited. One build stays
+at build/windows via a local D: junction; installed launcher/game and personal
+saves/settings remain unchanged. Helldivers2 was left running as requested.
+
+Final executable SHA256:
+008fb452a5884ff7f434a2d114f85670e01aa02e58c0f08c6c99572b21e2b707.
+Compatibility:
+e07e58b20df764961a0afc1c3730a576e4bcb04fca0795fde0ba32ae48304d91.
+Private evidence:rejoin-auto-final-dm-b and rejoin-auto-final-ctb-a;
+rejoin-automatic-verification-20261115.json. This records pre-push validation;
+the installed player build has not been replaced. A saved playtest access
+violation maps to guest15E120, but its object corruption cause remains unresolved;
+no claim that latency caused it or that this fixes all reported crashes.
+Mini backend, dashboard, administrative code and diagnostics remain private,
+outside the game repository. Tests use Diagnostics only, leaving live matches
+and production history untouched. Final read-only check confirms the production
+dashboard responds, Diagnostics is stopped, all owned game processes exited and
+Helldivers2 is still running.

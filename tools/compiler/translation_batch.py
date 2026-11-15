@@ -11,6 +11,9 @@ import re
 import struct
 import sys
 
+# Match the continuation publisher: bound compiler work without splitting bodies.
+MAX_CHUNK_BODY_BYTES=512*1024
+
 from generation_output import write_if_changed
 from translation_helpers import seh, nonlocal_jumps
 from translation_names import identifier
@@ -188,7 +191,15 @@ class BatchTranslator:
             if items:
                 header+=['',f'/* {label}. */']+[f'void {items[address]}(void);  /* 0x{address:08X} */' for address in sorted(items)]
         header+=['','#endif /* RECOMP_FUNCS_H */','']
-        chunks=[records[start:start+chunk_size] for start in range(0,len(records),chunk_size)]
+        chunks=[];pending=[];pending_bytes=0
+        for record in records:
+            body_bytes=len(record[2].encode('utf-8'))
+            if pending and (len(pending)>=chunk_size or pending_bytes+body_bytes>MAX_CHUNK_BODY_BYTES):
+                chunks.append(pending);pending=[];pending_bytes=0
+            pending.append(record);pending_bytes+=body_bytes
+            if pending_bytes>=MAX_CHUNK_BODY_BYTES:
+                chunks.append(pending);pending=[];pending_bytes=0
+        if pending:chunks.append(pending)
         outputs={header_name:'\n'.join(header),**runtime_headers}
         files=[str(destination/header_name)]
         for index,chunk in enumerate(chunks):

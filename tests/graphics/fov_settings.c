@@ -109,14 +109,15 @@ int pc_online_menu_send(PcOnlineMenuRequest *request){CHECK(online_request_test)
 static PcOnlineMenuState online_poll_state;static int online_poll_fixture;
 const PcOnlineMenuState *pc_online_menu_poll(void){CHECK(online_poll_fixture);return &online_poll_state;}
 int pc_online_menu_accept(void){CHECK(0);return 0;}
-static int roster_fixture;static unsigned roster_publications;
-int pc_online_menu_active(void){return roster_fixture;}
-void pc_online_menu_leave(void){CHECK(0);}
+static int roster_fixture,native_retire_fixture;static unsigned roster_publications,native_retire_calls,native_backend_resets,native_leave_calls,native_return_factories;
+int pc_online_menu_active(void){return roster_fixture || native_retire_fixture;}
+void pc_online_menu_leave(void){CHECK(native_retire_fixture);CHECK(native_retire_calls==1 && native_backend_resets==1);native_leave_calls++;}
 int pc_online_menu_copy(const char *text){(void)text;CHECK(0);return 0;}
 int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0);return 0;}
 int pc_online_menu_publish(PcOnlineMatchInfo *info){(void)info;CHECK(0);return 0;}
 int pc_online_menu_publish_roster(struct PcOnlineRoster *info){CHECK(roster_fixture && info->count==1 && !strcmp(info->people[0].name,"Fixture player") && !strcmp(info->people[0].character_name,"Cortez") && info->people[0].portrait==528);roster_publications++;return 1;}
-PcOnlineMode pc_online_mode(void) { return PC_ONLINE_NONE; }
+PcOnlineMode pc_online_mode(void) { return native_retire_fixture?PC_ONLINE_ARCADE:PC_ONLINE_NONE; }
+static void native_retire_factory(void){CHECK(native_retire_fixture);CHECK(WORD_AT(g_esp+8u)==mp_descriptor(MP_BROWSER));native_return_factories++;g_esp+=4;}
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
 static unsigned lan_closing_requests;
 void pc_online_disconnect(void) { online_disconnects++; }
@@ -1749,6 +1750,23 @@ int main(int argc,char **argv)
         clock_ms+=1001;mp_ui.source=2;native_multiplayer_match_metadata();CHECK(roster_publications==2);
         roster_fixture=0;
     }
+    { /* The owned browser must restore the stock backend startup contract. */
+        native_retire_fixture=online_poll_fixture=online_request_test=1;
+        native_retire_calls=native_backend_resets=native_leave_calls=native_return_factories=0;
+        online_poll_state.status=PC_OM_CONNECTED;
+        mp_ui.storage=0x280000;mp_ui.source=0;mp_ui.mode=PC_ONLINE_ARCADE;
+        mp_ui.menu=mp_ui.pending=0;mp_native_passthrough=1;
+        WORD_AT(0x79094cu)=101;WORD_AT(0x76b108u)=0;WORD_AT(0x76b12cu)=2;
+        WORD_AT(0x7613e4u)=0x200000;g_esp=0x1f00;
+        WORD_AT(g_esp)=0x123456;WORD_AT(g_esp+4u)=0x200000;WORD_AT(g_esp+8u)=0x4e99d4;
+        const uint32_t frame=g_esp;
+        CHECK(native_multiplayer_return_menu(native_retire_factory));
+        CHECK(native_retire_calls==1 && native_backend_resets==1 && native_leave_calls==1);
+        CHECK(native_return_factories==1 && WORD_AT(0x76b12cu)==1 && WORD_AT(0x541cd4u)==0x541d50);
+        CHECK(g_esp==frame+4u && WORD_AT(frame+8u)==0x4e99d4);
+        CHECK(!mp_native_passthrough && mp_ui.page==MP_BROWSER && online_request.action==PC_OM_LEAVE);
+        native_retire_fixture=online_poll_fixture=online_request_test=0;
+    }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
@@ -1757,7 +1775,12 @@ int main(int argc,char **argv)
 void sub_001A4350(void){lan_closing_requests++;g_esp+=4;}
 STUB(sub_001A8CE0) STUB(sub_001A8EE0)
 
-STUB(sub_001CC360)
+void sub_001CC360(void){if(native_retire_fixture){CHECK(!WORD_AT(0x76b108u));native_retire_calls++;}g_esp+=4;}
+void sub_001CB950(void){
+ CHECK(native_retire_fixture && native_retire_calls==1 && !native_leave_calls);
+ CHECK(WORD_AT(g_esp+4u)==WORD_AT(0x7613e4u));native_backend_resets++;
+ WORD_AT(0x541cd4u)=0x541d50u;WORD_AT(0x76b12cu)=1u;g_esp+=4;
+}
 
 void sub_000D2CE0(void){}
 void sub_0015BCC0_gen(void){}

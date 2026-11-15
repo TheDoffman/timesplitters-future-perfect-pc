@@ -44,9 +44,9 @@ Discord release webhooks target #release-updates; #announcements holds team post
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
-Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
-`--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
-adapter but use the real host trap; hexadecimal additions need token boundaries.
+Exit: `test_online_menu.py`, `test_quit_menu.py`, `test_fov_settings.py`;
+native `--test`/`--online-self-test`. Clang Story fixtures use the Windows guest
+adapter with the real host trap; hexadecimal additions need token boundaries.
 
 Game0.6.0 bundles launcher1.6.0; publish the launcher first. Keep release gates:
 exact clean source on Windows/Mac/Linux, native/package/preservation checks,
@@ -62,7 +62,7 @@ self-tests use click/Escape capture, replacing retired F1. [Linux](linux-game.md
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[Build](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+[Chunking](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 

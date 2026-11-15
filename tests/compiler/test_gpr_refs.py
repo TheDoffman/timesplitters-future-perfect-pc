@@ -30,7 +30,7 @@ def gpr_runs(tmp_path_factory):
     finally:
         vars(config).clear();vars(config).update(prior)
     folder=tmp_path_factory.mktemp('gpr-refs');compiler,env=native_compiler(folder)
-    template=(RUNTIME/'templates/runtime/recomp_types.h').read_text(encoding='utf-8')
+    template=(ROOT/'src/runtime/recomp_types.h').read_text(encoding='utf-8')
     results={}
     for mode in range(8):
         target=folder/str(mode);target.mkdir()
@@ -84,7 +84,7 @@ def test_deployed_reference_scope(tmp_path):
         'for(unsigned i=0;i<sizeof(selected)/sizeof(*selected);i++)assert(RECOMP_GPR_ANCHORS(selected[i]));\n'+
         'for(unsigned i=0;i<sizeof(unchanged)/sizeof(*unchanged);i++)assert(!RECOMP_GPR_ANCHORS(unchanged[i]));\nreturn 0;}\n')
     compiler,env=native_compiler(tmp_path);exe=tmp_path/('scope.exe' if os.name=='nt' else 'scope')
-    includes=[RUNTIME/'templates/runtime',ROOT/'src']
+    includes=[ROOT/'src/runtime',RUNTIME/'templates/runtime',ROOT/'src']
     command=([compiler,'/nologo','/std:c11','/O2',*('/I'+str(p) for p in includes),str(source),'/Fe:'+str(exe)] if os.name=='nt'
              else [compiler,'-std=c11','-O2','-Wall','-Wextra','-Werror',*('-I'+str(p) for p in includes),str(source),'-lm','-o',str(exe)])
     built=subprocess.run(command,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
@@ -93,23 +93,25 @@ def test_deployed_reference_scope(tmp_path):
     assert result.returncode==0,result.stdout+result.stderr
 
 
-def test_vector_alias_scope_precedes_optimization(tmp_path):
+def test_register_alias_scope_precedes_optimization(tmp_path):
     source=tmp_path/'aliases.c'
     text='#define RECOMP_GENERATED_CODE\n#define RECOMP_GPR_REFS_SUPPORTED 1\n'
     text+='#define RECOMP_NUMERIC_POLICY_HEADER "'+(ROOT/'src/gameplay/pc_native_numeric.h').as_posix()+'"\n'
-    text+='#include "recomp_types.h"\nuint32_t before(void) { return xmm0.u[0]; }\n'
+    text+='#include "recomp_types.h"\nuint32_t before(void) { return xmm0.u[0]+eax+ecx+edx+esp+ebx+esi+edi; }\n'
     for name,site in (('selected',0x18ea90),('unchanged',0x18ea91),('selected_again',0x214c0)):
         text+=f'#define RECOMP_REGISTER_SITE 0x{site:X}u\n#include "recomp_types.h"\n'
-        text+=f'uint32_t {name}(void) {{ RECOMP_DECLARE_GPRS(0x{site:X}u); return xmm0.u[0]; }}\n'
+        text+=f'uint32_t {name}(void) {{ RECOMP_DECLARE_GPRS(0x{site:X}u); return xmm0.u[0]+eax+ecx+edx+esp+ebx+esi+edi; }}\n'
     text+='#ifdef RECOMP_REGISTER_SITE\n#error site leaked beyond its include\n#endif\n'
     source.write_text(text)
     compiler,env=native_compiler(tmp_path)
-    includes=[RUNTIME/'templates/runtime',ROOT/'src']
+    includes=[ROOT/'src/runtime',RUNTIME/'templates/runtime',ROOT/'src']
     command=([compiler,'/nologo','/EP',*('/I'+str(p) for p in includes),str(source)] if os.name=='nt'
              else [compiler,'-E','-P',*('-I'+str(p) for p in includes),str(source)])
     result=subprocess.run(command,capture_output=True,text=True,env=env,timeout=30)
     assert result.returncode==0,result.stdout+result.stderr
-    for name,wanted in (('before','g_xmm0'),('selected','(*_recomp_xmm0)'),
-                        ('unchanged','g_xmm0'),('selected_again','(*_recomp_xmm0)')):
+    for name,selected in (('before',False),('selected',True),
+                          ('unchanged',False),('selected_again',True)):
         body=result.stdout.split('uint32_t '+name+'(void)',1)[1].split('}',1)[0]
-        assert 'return '+wanted+'.u[0];' in body,body
+        alias=lambda register:'(*_recomp_'+register+')' if selected else 'g_'+register
+        wanted=alias('xmm0')+'.u[0]+'+'+'.join(alias(r) for r in ('eax','ecx','edx','esp','ebx','esi','edi'))
+        assert 'return'+wanted+';' in ''.join(body.split()),body

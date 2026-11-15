@@ -19,9 +19,9 @@ static int mode=PC_ONLINE_ARCADE,enabled=1,closed,reset,pumps,match_reset,menus,
 static uint32_t target,caption;
 static unsigned recorded,eligibility_checks;
 static int migration_requested,migration_requests,unloads;
-static int native_ui_active;
+static int native_ui_active,native_return_handled,native_return_calls;
 static int pc_online_menu_active(void){return native_ui_active;}
-static int native_multiplayer_return_menu(void (*original)(void)){(void)original;return 0;}
+static int native_multiplayer_return_menu(void (*original)(void)){(void)original;if(!native_return_handled)return 0;++native_return_calls;g_esp+=4;return 1;}
 int pc_network_arcade_request_leave(void){++migration_requests;return migration_requested;}
 int pc_network_arcade_enabled(void){return migration_requested;}
 static void sub_00065420(void){++unloads;}
@@ -54,7 +54,7 @@ static void button(void){caption=WORD_AT(g_esp+4);g_esp+=4;}
 static void setup(unsigned role){
  uint8_t heap[512];memcpy(heap,(void *)(g_xbox_mem_offset+0x6000),sizeof heap);
  memset(memory,0,sizeof memory);memcpy((void *)(g_xbox_mem_offset+0x6000),heap,sizeof heap);
- mode=PC_ONLINE_ARCADE;enabled=1;native_ui_active=0;
+ mode=PC_ONLINE_ARCADE;enabled=1;native_ui_active=native_return_handled=native_return_calls=0;
  multiplayer_destination=0;multiplayer_lobby_pending=0;multiplayer_exit_depth=0;
  closed=reset=pumps=match_reset=menus=stock=fallback=0;recorded=0;
  g_esp=0x1800;WORD_AT(0x79094c)=44;WORD_AT(0x76b108)=1;
@@ -130,6 +130,18 @@ int main(void){
  g_esp=0x1800;WORD_AT(g_esp)=0x35c360;WORD_AT(0x76b1a4)=18;
  pc_multiplayer_disconnect_exit(disconnect_original);CHECK(!multiplayer_destination && !closed);
  WORD_AT(0x79094c)=101;CHECK(!multiplayer_exit_lookup(0x1a4350));
+ /* Native Online guest confirmation must retire the owned membership and
+  * rebuild its authenticated browser; stock/LAN guest behavior stays above. */
+ setup(2);native_ui_active=1;native_return_handled=1;
+ WORD_AT(g_esp)=0x2ebe4e;pc_multiplayer_disconnect_exit(disconnect_original);
+ CHECK(multiplayer_destination==3 && !multiplayer_lobby_pending && !closed);
+ WORD_AT(0x79094c)=101;g_esp=0x1800;
+ pc_multiplayer_exit_menu(factory);
+ CHECK(native_return_calls==1 && !multiplayer_destination && !closed && mode==PC_ONLINE_ARCADE);
+ setup(2);native_ui_active=1;mode=PC_ONLINE_NONE;WORD_AT(g_esp)=0x2ebe4e;
+ pc_multiplayer_disconnect_exit(disconnect_original);CHECK(!multiplayer_destination); /* LAN can retain an idle helper. */
+ setup(2);native_ui_active=1;WORD_AT(g_esp)=0x123456;
+ pc_multiplayer_disconnect_exit(disconnect_original);CHECK(!multiplayer_destination);
  setup(2);pc_multiplayer_return_lobby(disconnect_original);
  CHECK(multiplayer_destination==1 && WORD_AT(0x6f11b4)==1 && !menus);
  build(0x4e99d4);CHECK(!closed && !reset);

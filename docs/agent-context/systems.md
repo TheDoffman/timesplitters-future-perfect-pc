@@ -30,7 +30,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-[Story](systems-details.md). [Exit/save](multiplayer-exit.md).
+[Story](systems-details.md). [Rejoin](multiplayer-exit.md).
 
 [Mech](mounted-mouse.md).
 
@@ -51,7 +51,7 @@ Aim/animation: [diagnostic limits](native-local-trace.md).
 GPU cache fixture/config: [runtime](runtime.md).
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
-Registers: [policy/tests](gpr-refs.md).
+GPRs: [scoped aliases/tests](gpr-refs.md).
 Script/audio clocks: [contracts](native-script-clocks.md).
 
 <!-- packet:start -->

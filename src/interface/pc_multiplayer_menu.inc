@@ -33,7 +33,7 @@ extern void sub_00019D70(void),sub_0001ED60(void);
 extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void),sub_00072560(void),sub_00075980(void);
 static void (*multiplayer_exit_lookup(uint32_t address))(void);
 static void multiplayer_lobby_tick(void (*original)(void));
-extern void sub_001CC360(void);
+extern void sub_001CC360(void),sub_001CB950(void);
 extern void sub_00352980(void),sub_00352990(void),sub_0007D090(void);
 extern void sub_00071CF0(void),sub_00074A00(void),sub_00071730(void);
 extern void sub_00075400(void),sub_00077140(void),sub_00077190(void),sub_00075E70(void),sub_000780E0(void),sub_000781A0(void),sub_00079710(void);
@@ -830,7 +830,13 @@ static int native_multiplayer_return_menu(void (*original)(void))
     const PcOnlineMenuState *state=pc_online_menu_poll();
     snprintf(mp_ui.return_notice,sizeof mp_ui.return_notice,"%s",state->status==PC_OM_ERROR?state->message:
         "The host closed the lobby or the connection ended. You have returned to the match browser.");
-    guest_call(sub_001CC360,0);pc_online_menu_leave();mp_native_passthrough=0;mp_ui.autojoin=0;
+    guest_call(sub_001CC360,0);
+    /* Replacing the stock browser must retain its backend-startup contract.
+       The old SDK is closed, but its ready stage survives. Reset that stage
+       through the original constructor helper so the next bridge admission
+       recreates discovery instead of reusing closed native socket handles. */
+    guest_call(sub_001CB950,1,WORD_AT(frame+4u));
+    pc_online_menu_leave();mp_native_passthrough=0;mp_ui.autojoin=0;
     mp_ui.page=MP_BROWSER;mp_ui.parent=WORD_AT(frame+4u);mp_ui.pending=0;
     restore_registers(&saved);WORD_AT(frame+8u)=mp_descriptor(MP_BROWSER);original();WORD_AT(frame+8u)=descriptor;
     save_registers(&saved);mp_request(PC_OM_LEAVE);restore_registers(&saved);return 1;

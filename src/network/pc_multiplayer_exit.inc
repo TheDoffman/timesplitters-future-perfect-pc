@@ -176,7 +176,15 @@ void pc_multiplayer_disconnect_exit(void (*original)(void))
         guest_writable(g_esp,4u)?WORD_AT(g_esp):0u,multiplayer_exit_depth,multiplayer_destination,WORD_AT(0x76b140u),WORD_AT(0x76b1a4u));
     if(multiplayer_match() && !multiplayer_exit_depth && !multiplayer_destination &&
        (WORD_AT(0x76b1a4u)==15u || WORD_AT(0x76b1a4u)==16u) &&
-       guest_writable(g_esp,4u) && WORD_AT(g_esp)==0x35c360u) {
+       guest_writable(g_esp,4u) &&
+       (WORD_AT(g_esp)==0x35c360u ||
+        /* The native Online guest's own Yes callback disconnects before the
+         * phase-18 retirement call. Mark its destination now, while the match
+         * still identifies this owned session, so the factory releases the
+         * old member and rebuilds the authenticated directory browser. */
+        (pc_online_mode()==PC_ONLINE_ARCADE && pc_online_menu_active() &&
+         WORD_AT(0x76b140u)==2u &&
+         WORD_AT(g_esp)==0x2ebe4eu))) {
         multiplayer_destination=3u;multiplayer_lobby_pending=0;
         WORD_AT(0x78ad20u)=13u;
     }

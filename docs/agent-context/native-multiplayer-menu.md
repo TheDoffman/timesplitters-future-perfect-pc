@@ -631,3 +631,16 @@ after stripping inherited TSFP variables, and has a120s subprocess bound.
 Windows/Mac bundle TLS probes import certificate from online_private, matching
 the private-directory split. The standalone companion check generates a temporary
 certificate and loads it into SSLContext to cover the exported package contract.
+
+
+Native Arcade guest rejoin also needs the stock browser's backend startup
+contract. native_multiplayer_return_menu closes the old native session with
+1CC360, then calls original1CB950(parent) before releasing its bridge and
+requesting LEAVE/BROWSE. Original1CB950 delegates352770(541D50), restoring the
+System Link backend and startup stage1. A closed SDK can otherwise retain stage2;
+a fresh bridge then binds3000/1000 but omits discovery9999 and its host never
+answers discovery. No native socket handles are fabricated or silently kept.
+The Windows production FOV/menu fixture checks cleanup -> original backend
+initialization -> bridge leave, the owned factory/guest stack, and stage reset;
+removing the initialization call is a required failing control. See STATUS for
+actual paired gameplay and remaining host acceptance.
