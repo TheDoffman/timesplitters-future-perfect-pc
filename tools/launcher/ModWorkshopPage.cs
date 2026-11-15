@@ -29,6 +29,7 @@ namespace TimeSplitters.Launcher
         public string[] Categories=new string[0];
         public string[] Dependencies=new string[0];
         public long PayloadBytes;
+        internal InstalledMod Package;
         public string SearchText { get { return Id+" "+Name+" "+Author+" "+Description; } }
         public static readonly IComparer<string> Versions=Comparer<string>.Create((left,right)=>{
             string[] a=left.Split('.'),b=right.Split('.');
@@ -47,6 +48,62 @@ namespace TimeSplitters.Launcher
             return selected.OrderBy(r=>r.Name,StringComparer.OrdinalIgnoreCase).ThenBy(r=>r.Id,StringComparer.Ordinal).ThenByDescending(r=>r.Version,Versions).ToArray();
         }
         public static string ContentName(string kind){return kind=="textures"?"Textures":kind=="scripts"?"Gameplay scripts":kind=="maps"?"Maps":kind=="audio"?"Audio":"Other content";}
+    }
+
+    // Pure planning against one freshly verified catalog. Execution must recheck
+    // availability and installed bytes; this model never downloads or activates.
+    public sealed class WorkshopInstallPlan
+    {
+        public readonly WorkshopRelease[] Ordered, Downloads;
+        public readonly long PayloadBytes, NewPayloadBytes;
+        WorkshopInstallPlan(WorkshopRelease[] ordered,WorkshopRelease[] downloads)
+        {Ordered=ordered;Downloads=downloads;PayloadBytes=ordered.Sum(r=>r.PayloadBytes);NewPayloadBytes=downloads.Sum(r=>r.PayloadBytes);}
+        public static WorkshopInstallPlan Create(WorkshopRelease selected,IEnumerable<WorkshopRelease> catalog,IEnumerable<InstalledMod> installed,string origin)
+        {
+            Core.Require(ModWorkshopClient.ServiceUri(origin).GetLeftPart(UriPartial.Authority)==origin,"Use the canonical workshop origin for installation.");
+            var available=new Dictionary<string,WorkshopRelease>(StringComparer.Ordinal);
+            foreach(var release in catalog) {
+                Core.Require(release.Package!=null && release.Id==release.Package.Id && release.Version==release.Package.Version,"Missing validated workshop package metadata.");
+                string key=release.Id+"@"+release.Version;
+                Core.Require(!available.ContainsKey(key),"Duplicate workshop release identity.");available.Add(key,release);
+            }
+            WorkshopRelease current;
+            Core.Require(selected!=null && available.TryGetValue(selected.Id+"@"+selected.Version,out current),"The selected mod is no longer available.");
+            current=available[selected.Id+"@"+selected.Version];
+            Core.Require(current.Sha256==selected.Sha256,"The selected workshop package changed. Refresh before installing.");
+            var chosen=new Dictionary<string,string>(StringComparer.Ordinal);
+            var pending=new HashSet<string>(StringComparer.Ordinal);var visited=new HashSet<string>(StringComparer.Ordinal);
+            var ordered=new List<WorkshopRelease>();
+            Action<WorkshopRelease> visit=null;
+            visit=release=>{
+                string version;
+                Core.Require(!chosen.TryGetValue(release.Id,out version) || version==release.Version,"Required mods need incompatible versions of "+release.Id+".");
+                if(visited.Contains(release.Id))return;
+                Core.Require(pending.Add(release.Id),"The required mods contain a dependency cycle.");
+                chosen[release.Id]=release.Version;Core.Require(chosen.Count<=32,"This install needs more than 32 packages.");
+                foreach(var dependency in release.Package.Dependencies.OrderBy(pair=>pair.Key,StringComparer.Ordinal)) {
+                    WorkshopRelease required;
+                    Core.Require(available.TryGetValue(dependency.Key+"@"+dependency.Value,out required),"Required release is unavailable: "+dependency.Key+" @ "+dependency.Value+".");
+                    visit(required);
+                }
+                pending.Remove(release.Id);visited.Add(release.Id);ordered.Add(release);
+            };
+            visit(current);
+            var files=new HashSet<string>(StringComparer.Ordinal);long total=0;
+            foreach(var release in ordered)foreach(var file in release.Package.Files) {
+                Core.Require(files.Add(file.Key),"Required packages conflict on "+file.Key+".");
+                total+=file.Value.Size;Core.Require(total<=ModLibrary.MaxExpanded,"Required mods exceed the expanded payload budget.");
+            }
+            var existing=installed.ToArray();var downloads=new List<WorkshopRelease>();
+            foreach(var release in ordered) {
+                var matches=existing.Where(mod=>mod.Key==release.Id+"@"+release.Version).ToArray();
+                Core.Require(matches.Length<=1,"Duplicate installed mod identity.");
+                if(matches.Length==0)downloads.Add(release);
+                else Core.Require(matches[0].Sha256==release.Sha256 && matches[0].WorkshopOrigin==origin,
+                    "An installed version differs from this workshop: "+release.Id+" @ "+release.Version+". Review it before installing.");
+            }
+            return new WorkshopInstallPlan(ordered.ToArray(),downloads.ToArray());
+        }
     }
 
     // Shared, bounded catalog/download client. Downloading never activates code.
@@ -112,6 +169,7 @@ namespace TimeSplitters.Launcher
                 release.Categories=package.Files.Keys.Select(name=>name.Split('/')[0]).Distinct().OrderBy(name=>name,StringComparer.Ordinal).ToArray();
                 release.Dependencies=package.Dependencies.OrderBy(pair=>pair.Key,StringComparer.Ordinal).Select(pair=>pair.Key+" @ "+pair.Value).ToArray();
                 release.PayloadBytes=package.Files.Values.Sum(file=>file.Size);
+                release.Package=package;
                 if(release.ScannedUtc<=now && now-release.ScannedUtc<TimeSpan.FromHours(24))result.Add(release);
             }
             return result.ToArray();

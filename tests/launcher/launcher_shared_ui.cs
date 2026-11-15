@@ -80,6 +80,13 @@ public static class LauncherSharedUiChecks
         return Json.Encode(new {schema=1,releases=available?new[]{release}:new object[0]});
     }
     static void WorkshopReject(Action action,string message){bool rejected=false;try{action();}catch{rejected=true;}Need(rejected,message);}
+    static WorkshopRelease PlannedRelease(string id,string version,string key,Dictionary<string,string> dependencies=null,long bytes=152)
+    {
+        long now=DateTimeOffset.UtcNow.ToUnixTimeSeconds();string sha=ModTrust.Hash(System.Text.Encoding.UTF8.GetBytes(id+"@"+version));
+        var manifest=new {schema=1,id=id,name=id,version=version,author="Fixture creator",description="Dependency planning fixture",game="tsfp-us-45410066",api="tsfp-mod-v1-draft",
+            dependencies=dependencies??new Dictionary<string,string>(),files=new Dictionary<string,object>{{"textures/"+key+".dds",new {sha256=new string('a',64),size=bytes}}}};
+        return ModWorkshopClient.Parse(Json.Encode(new {schema=1,releases=new[]{new {sha256=sha,download="/v1/packages/"+sha,manifest=manifest,scan=new {engine="TEST",time=now}}}}),DateTime.UtcNow).Single();
+    }
     static void WorkshopChecks(string root)
     {
         WorkshopTrustChecks.Run(root,Test);
@@ -152,6 +159,38 @@ public static class LauncherSharedUiChecks
                 page.SetReleases(releases);page.Creator.Text="OLD";page.Category.SelectedIndex=3;Need(page.VisibleCount==0,"Page ignored creator/content filters");
                 page.OlderVersions.IsChecked=true;Need(page.VisibleCount==1,"History filter did not refresh immediately");
                 page.Creator.Text="new";page.Category.SelectedIndex=2;Need(page.VisibleCount==1,"Gameplay category did not match a mixed package");
+            }
+        });
+        Test("workshop dependency plans order exact versions and reuse only origin-bound installed packages",()=>{
+            const string origin="https://workshop.example.test";
+            var baseline=PlannedRelease("base","1.0.0","0000000000000001");
+            var middle=PlannedRelease("middle","1.0.0","0000000000000002",new Dictionary<string,string>{{"base","1.0.0"}});
+            var selected=PlannedRelease("selected","1.0.0","0000000000000003",new Dictionary<string,string>{{"base","1.0.0"},{"middle","1.0.0"}});
+            var catalog=new[]{selected,middle,baseline};var installed=new InstalledMod {Id="base",Version="1.0.0",Sha256=baseline.Sha256,WorkshopOrigin=origin};
+            var plan=WorkshopInstallPlan.Create(selected,catalog,new[]{installed},origin);
+            Need(plan.Ordered.Select(r=>r.Id).SequenceEqual(new[]{"base","middle","selected"}) && plan.Downloads.Select(r=>r.Id).SequenceEqual(new[]{"middle","selected"}),"Dependencies were repeated, skipped or ordered after their dependent");
+            Need(plan.PayloadBytes==456 && plan.NewPayloadBytes==304,"Dependency payload preview is inaccurate");
+            WorkshopReject(()=>WorkshopInstallPlan.Create(selected,new[]{selected,middle},new[]{installed},origin),"An installed but unavailable dependency bypassed catalog availability");
+            installed.WorkshopOrigin=null;WorkshopReject(()=>WorkshopInstallPlan.Create(selected,catalog,new[]{installed},origin),"A local receipt silently bypassed future workshop revocation");
+            installed.WorkshopOrigin=origin;installed.Sha256=new string('b',64);WorkshopReject(()=>WorkshopInstallPlan.Create(selected,catalog,new[]{installed},origin),"A different installed archive was reused");
+            var changed=PlannedRelease("selected","1.0.0","0000000000000003");changed.Sha256=new string('c',64);
+            WorkshopReject(()=>WorkshopInstallPlan.Create(changed,catalog,new InstalledMod[0],origin),"An old selection hash bypassed the current catalog");
+        });
+        Test("workshop dependency plans reject cycles version conflicts payload conflicts and oversized closures",()=>{
+            const string origin="https://workshop.example.test";var empty=new InstalledMod[0];
+            var a=PlannedRelease("cycle-a","1.0.0","0000000000000001",new Dictionary<string,string>{{"cycle-b","1.0.0"}});
+            var b=PlannedRelease("cycle-b","1.0.0","0000000000000002",new Dictionary<string,string>{{"cycle-a","1.0.0"}});
+            WorkshopReject(()=>WorkshopInstallPlan.Create(a,new[]{a,b},empty,origin),"Cyclic download plan accepted");
+            var baseOne=PlannedRelease("base","1.0.0","0000000000000001");var baseTwo=PlannedRelease("base","2.0.0","0000000000000002");
+            var middle=PlannedRelease("middle","1.0.0","0000000000000003",new Dictionary<string,string>{{"base","2.0.0"}});
+            var selected=PlannedRelease("selected","1.0.0","0000000000000004",new Dictionary<string,string>{{"base","1.0.0"},{"middle","1.0.0"}});
+            WorkshopReject(()=>WorkshopInstallPlan.Create(selected,new[]{selected,middle,baseOne,baseTwo},empty,origin),"Incompatible exact dependency versions accepted");
+            var conflict=PlannedRelease("conflict","1.0.0","0000000000000001",new Dictionary<string,string>{{"base","1.0.0"}});
+            WorkshopReject(()=>WorkshopInstallPlan.Create(conflict,new[]{conflict,baseOne},empty,origin),"Conflicting payloads accepted");
+            foreach(int count in new[]{5,33}) {
+                var chain=Enumerable.Range(0,count).Select(i=>PlannedRelease("package-"+i.ToString("00"),"1.0.0",i.ToString("x16"),
+                    i+1<count?new Dictionary<string,string>{{"package-"+(i+1).ToString("00"),"1.0.0"}}:null,count==5?64L*1024*1024:1)).ToArray();
+                WorkshopReject(()=>WorkshopInstallPlan.Create(chain[0],chain,empty,origin),count==5?"Expanded payload budget bypassed":"Package-count budget bypassed");
             }
         });
         Test("workshop downloads verify hashes and recheck removal before fetching",()=>{

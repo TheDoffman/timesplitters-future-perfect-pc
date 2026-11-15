@@ -1,3 +1,13 @@
+WorkshopInstallPlan is shared, side-effect-free groundwork for dependency
+installation. It consumes a freshly verified catalog and strict package models,
+orders exact versions dependency-first, deduplicates shared dependencies and
+rejects missing/revoked catalog entries, cycles, incompatible versions, payload
+conflicts, more than32 packages or256MiB expanded payload. Matching installed
+packages are reusable only with the same digest and workshop-origin receipt.
+Execution must recheck installed bytes and availability. Confirmation UI and
+multi-package download/install execution are not connected yet; current Install
+still handles one package. Existing active profiles are untouched by planning.
+
 Workshop discovery (feature/mod-platform, basebc67c1c9): shared ModWorkshopPage
 adds content/creator filters, name/creator/numeric-version sorting, latest release
 per ID by default and explicit older-release browsing. Browse renders at most20

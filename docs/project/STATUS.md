@@ -1,3 +1,34 @@
+Dependency planning Windows validation (baseada7f3e9): full native launcher suite
+passes, including73 shared UI groups. Planner checks cover dependency-first
+ordering/deduplication, origin/digest-bound reuse, unavailable dependencies,
+cycles, exact-version conflicts, payload collisions and closure budgets. This
+is model groundwork; UI confirmation and execution are still pending.
+
+Completed service identity acceptance (2026-11-15, sourceada7f3e9):
+The SSH-launched normal Terminal sudo finalizer returned0 and phase complete.
+It verified disabled authentication, false shell, hidden UID/GID600, no root/admin
+group membership, matching generated user/group UUIDs and exact ownership/modes.
+Fresh independent SSH Directory Services/stat reads match the completed account,
+private data/secrets600:600 mode0700 and root-owned service/releases0755.
+Original preparing receipt and repair intent remain preserved for diagnosis.
+The native IsHidden namespace and root-only authority visibility fixes were
+required; earlier partial failures did not start services or an endpoint.
+Pinned-helper plus fresh-state acceptanceSHA
+09c1a25c6309f7671c82ec1b0b58afe1201a7ce671880ee45c8e51e556c4fdcf.
+This completes identity provisioning, not service deployment. System-domain job
+permissions, root-owned runtime/config, production trust, TLS/internet and the
+full creator-to-game public release remain unfinished.
+
+WorkshopInstallPlan is shared, side-effect-free groundwork for dependency
+installation. It consumes a freshly verified catalog and strict package models,
+orders exact versions dependency-first, deduplicates shared dependencies and
+rejects missing/revoked catalog entries, cycles, incompatible versions, payload
+conflicts, more than32 packages or256MiB expanded payload. Matching installed
+packages are reusable only with the same digest and workshop-origin receipt.
+Execution must recheck installed bytes and availability. Confirmation UI and
+multi-package download/install execution are not connected yet; current Install
+still handles one package. Existing active profiles are untouched by planning.
+
 Native Directory Services completion: IsHidden is returned under
 dsAttrTypeNative:IsHidden on the real Mac. The reader now normalizes that one
 known native attribute and rejects conflicting standard/native values. Other
