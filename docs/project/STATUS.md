@@ -1,3 +1,14 @@
+Native Directory Services completion: IsHidden is returned under
+dsAttrTypeNative:IsHidden on the real Mac. The reader now normalizes that one
+known native attribute and rejects conflicting standard/native values. Other
+attributes retain standard-only reads. The first repair created all account,
+group and directory state, then stopped at this verifier mismatch; its original
+receipt and root-owned intent remain preserved. Explicit --finalize-group-uuid
+binds that intent/hash/original receipt and the inspected user/group UUIDs,
+verifies every identity/directory invariant, then replaces only the completion
+receipt. It never mutates accounts/groups/permissions or resumes creation.
+Actual privileged finalization still needs acceptance.
+
 Actual root identity inspection: a Terminal-launched read-only sudo diagnostic,
 started over SSH, shows AuthenticationAuthority exactly DisabledUser/DisabledTags
 SecureToken. These flags were hidden from ordinary SSH reads, not missing or

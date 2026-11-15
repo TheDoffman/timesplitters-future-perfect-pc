@@ -60,7 +60,34 @@ def finish_records(receipt):
     receipt['group_uuid'] = identity.generated_uuid('Groups', receipt['group_uuid'])
 
 
-def repair(expected_uuid, apply=False):
+def finalize(receipt, wire, expected_uuid, group_uuid):
+    """Verify an explicitly identified completed repair, then publish only its receipt."""
+    root, need = identity.ROOT, identity.require
+    need({p.name for p in root.iterdir()} == {identity.MARKER, INTENT, 'data', 'secrets', 'releases'},
+         'Unexpected partial repair contents; preserving them')
+    path = root / INTENT
+    info = path.lstat()
+    need(stat.S_ISREG(info.st_mode) and info.st_uid == 0 and info.st_nlink == 1
+         and stat.S_IMODE(info.st_mode) == 0o600 and 0 < info.st_size <= 8192,
+         'Unknown repair intent')
+    intent = json.loads(path.read_bytes())
+    need(isinstance(intent, dict) and set(intent) == {'schema', 'producer', 'phase', 'original_receipt',
+         'original_sha256', 'preserved_user_uuid'} and intent['schema'] == 1
+         and intent['producer'] == 'tsfp-identity-repair-v1' and intent['phase'] == 'apply-started'
+         and intent['original_receipt'] == receipt and receipt.get('phase') == 'preparing'
+         and intent['original_sha256'] == hashlib.sha256(wire).hexdigest()
+         and intent['preserved_user_uuid'] == expected_uuid, 'Changed or unrecognized repair intent')
+    need(str(uuid.UUID(group_uuid)).upper() == group_uuid, 'Invalid final group UUID')
+    result = dict(receipt, phase='complete', user_uuid=expected_uuid, group_uuid=group_uuid)
+    identity.verify(result)
+    # No account, group, directory or permission mutation occurs in this mode.
+    temporary = root / '.identity-repaired.json'
+    identity.write_new(temporary, result)
+    os.replace(temporary, root / identity.MARKER)
+    return result
+
+
+def repair(expected_uuid, apply=False, finalize_group_uuid=None):
     need = identity.require
     need(sys.platform == 'darwin' and os.geteuid() == 0, 'Run inspection/repair locally with administrator sudo on the Mac')
     root = identity.ROOT
@@ -79,6 +106,8 @@ def repair(expected_uuid, apply=False):
     if receipt.get('phase') == 'complete':
         need(receipt.get('user_uuid') == expected_uuid, 'Completed identity differs from requested repair')
         return identity.existing()
+    if finalize_group_uuid is not None:
+        return finalize(receipt, wire, expected_uuid, finalize_group_uuid)
     need({path.name for path in root.iterdir()} == {identity.MARKER},
          'Partial repair or unknown service files exist; preserve for administrator inspection')
     user = identity.attributes('Users', *NAMES)
@@ -112,10 +141,12 @@ def repair(expected_uuid, apply=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--expected-user-uuid', required=True)
-    parser.add_argument('--apply', action='store_true')
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument('--apply', action='store_true')
+    modes.add_argument('--finalize-group-uuid', help='Verify an inspected completed repair and publish only its receipt')
     args = parser.parse_args()
     try:
-        print(json.dumps(repair(args.expected_user_uuid, args.apply), indent=2))
+        print(json.dumps(repair(args.expected_user_uuid, args.apply, args.finalize_group_uuid), indent=2))
         return 0
     except (identity.ProvisionError, OSError, ValueError, identity.subprocess.SubprocessError) as error:
         print('Service identity repair: ' + str(error), file=sys.stderr)

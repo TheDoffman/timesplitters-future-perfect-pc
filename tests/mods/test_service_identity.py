@@ -152,3 +152,66 @@ def test_repair_checks_privilege_before_reading_or_mutating_root(monkeypatch):
     monkeypatch.setattr(repair.identity, 'unlinked', lambda *_: pytest.fail('Unprivileged repair reached root inspection'))
     with pytest.raises(repair.identity.ProvisionError, match='administrator sudo'):
         repair.repair('02436ED4-9078-40C5-8658-4F13145F15B4', True)
+
+
+def test_directory_attributes_normalize_native_hidden_flag_without_general_native_fallback(monkeypatch):
+    import plistlib
+    wire = plistlib.dumps({'dsAttrTypeNative:IsHidden': ['1'], 'dsAttrTypeNative:AuthenticationAuthority': ['unknown']})
+    monkeypatch.setattr(identity, 'command', lambda *_: wire)
+    assert identity.attributes('Users', 'IsHidden', 'AuthenticationAuthority') == dict(IsHidden=['1'], AuthenticationAuthority=None)
+
+
+def test_conflicting_native_and_standard_hidden_flags_are_preserved(monkeypatch):
+    import plistlib
+    wire = plistlib.dumps({'dsAttrTypeNative:IsHidden': ['1'], 'dsAttrTypeStandard:IsHidden': ['0']})
+    monkeypatch.setattr(identity, 'command', lambda *_: wire)
+    with pytest.raises(identity.ProvisionError, match='Ambiguous'):
+        identity.attributes('Users', 'IsHidden')
+
+
+@pytest.mark.parametrize('failure', [None, 'intent', 'verification'])
+def test_finalize_only_publishes_receipt_after_bound_intent_and_complete_verification(tmp_path, partial, monkeypatch, failure):
+    import hashlib
+    import json
+    import stat
+    from types import SimpleNamespace
+    receipt, user = partial
+    wire = json.dumps(receipt).encode()
+    (tmp_path / identity.MARKER).write_bytes(wire)
+    for name in ('data', 'secrets', 'releases'):
+        (tmp_path / name).mkdir()
+    intent = dict(schema=1, producer='tsfp-identity-repair-v1', phase='apply-started', original_receipt=receipt,
+                  original_sha256=hashlib.sha256(wire).hexdigest(), preserved_user_uuid=user['GeneratedUID'][0])
+    if failure == 'intent':
+        intent['original_sha256'] = '0' * 64
+    intent_path = tmp_path / repair.INTENT
+    intent_path.write_text(json.dumps(intent))
+    original_stat = Path.lstat
+    monkeypatch.setattr(Path, 'lstat', lambda p: SimpleNamespace(st_mode=stat.S_IFREG | 0o600, st_uid=0,
+                        st_nlink=1, st_size=intent_path.stat().st_size) if p == intent_path else original_stat(p))
+    monkeypatch.setattr(repair.identity, 'ROOT', tmp_path)
+    monkeypatch.setattr(repair.identity, 'command', lambda *_: pytest.fail('Finalization mutated directory records'))
+    calls = []
+
+    def verify(value):
+        calls.append('verify')
+        assert value['user_uuid'] == user['GeneratedUID'][0] and value['phase'] == 'complete'
+        if failure == 'verification':
+            raise repair.identity.ProvisionError('fixture verification failed')
+
+    def write_new(path, value):
+        assert calls == ['verify']
+        calls.append('write')
+        path.write_text(json.dumps(value))
+
+    monkeypatch.setattr(repair.identity, 'verify', verify)
+    monkeypatch.setattr(repair.identity, 'write_new', write_new)
+    if failure:
+        with pytest.raises(repair.identity.ProvisionError):
+            repair.finalize(receipt, wire, user['GeneratedUID'][0], receipt['group_uuid'])
+        assert (tmp_path / identity.MARKER).read_bytes() == wire and 'write' not in calls
+    else:
+        result = repair.finalize(receipt, wire, user['GeneratedUID'][0], receipt['group_uuid'])
+        assert result['phase'] == 'complete' and calls == ['verify', 'write']
+        assert json.loads((tmp_path / identity.MARKER).read_bytes()) == result
+    assert intent_path.read_text() == json.dumps(intent)

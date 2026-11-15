@@ -86,7 +86,13 @@ def attributes(kind, *names):
     raw = command('/usr/bin/dscl', '-plist', '.', '-read', '/' + kind + '/' + ACCOUNT, *names)
     value = plistlib.loads(raw)
     require(isinstance(value, dict), 'Invalid service directory record')
-    return {name: value.get('dsAttrTypeStandard:' + name) for name in names}
+    result = {}
+    for name in names:
+        standard = value.get('dsAttrTypeStandard:' + name)
+        native = value.get('dsAttrTypeNative:' + name) if name == 'IsHidden' else None
+        require(standard is None or native is None or standard == native, 'Ambiguous service directory attribute')
+        result[name] = standard if standard is not None else native
+    return result
 
 
 def verify(receipt):
