@@ -68,7 +68,7 @@ def test_bad_samples_owner_changes_and_process_budget_fail_closed(managed, rows)
 
 
 def test_descendants_are_counted_without_session_or_group_membership(managed):
-    command, _ = commands(rows='456 1 1 123\n600 456 2 123\n601 600 3000 123\n999 1 9000000 888\n')
+    command, _ = commands(rows='456 1 1 123\n600 456 2 123\n601 600 3000 123\n999 1 9000000 -2\n')
     _, result = service.watch_once(managed, {}, command)
     assert result['rss_bytes'] == 3003 * 1024
     assert result['supervision_policy'] == service.SUPERVISION_POLICY

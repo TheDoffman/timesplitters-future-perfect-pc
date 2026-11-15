@@ -1,3 +1,7 @@
+Darwin process sampling accepts unrelated system UID -2 while enforcing the exact
+service UID throughout the managed descendant subtree; live host exposed this
+OS-format difference before agent re-enablement.
+
 Scanner containment repair is implemented pending actual adversarial host checks:
 mod_scan_sandbox.py now routes ALL run/scan calls through a verified native
 scan_guardian_mac.c, built by build-scan-guardian.py. Private parent pipe EOF/

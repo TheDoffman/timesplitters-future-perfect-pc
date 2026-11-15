@@ -154,7 +154,9 @@ def sample(pid, command=run_command, uid=None):
     require(len(rows) <= 8192, 'Host process metadata budget exceeded')
     processes, children = {}, {}
     for row in rows:
-        require(re.fullmatch(r'\s*[0-9]+\s+[0-9]+\s+[0-9]+\s+[0-9]+\s*', row), 'Malformed process sample')
+        # Darwin prints the unrelated system "nobody" UID as -2. Only the
+        # managed subtree must match the configured nonnegative service UID.
+        require(re.fullmatch(r'\s*[0-9]+\s+[0-9]+\s+[0-9]+\s+-?[0-9]+\s*', row), 'Malformed process sample')
         identity, parent, rss, owner = map(int, row.split())
         require(identity not in processes, 'Duplicate process sample')
         processes[identity] = (rss, owner)
