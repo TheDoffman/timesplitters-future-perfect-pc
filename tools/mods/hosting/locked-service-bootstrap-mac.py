@@ -19,6 +19,9 @@ from mod_package import ModError, require
 
 
 def arguments(release,role,nonce=None):
+    if role in ('api','publication','gateway'):
+        require(nonce is None,'Production bootstrap accepts no proof nonce')
+        return ['-I','-B',str(release/'source/tools/mods/hosting/system-host-service-mac.py'), '--role',role,'--run']
     if role in ('scan','definitions'):
         require(nonce is None,'Production bootstrap accepts no proof nonce')
         name,mode=(('scan-service-mac.py','--system-worker') if role=='scan'
@@ -74,7 +77,7 @@ def proof_start(release,nonce,uid):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--role',required=True,choices=('scan','definitions','proof-target'))
+    parser.add_argument('--role',required=True,choices=('scan','definitions','api','publication','gateway','proof-target'))
     parser.add_argument('--nonce')
     args=parser.parse_args()
     try:

@@ -16,7 +16,7 @@ from mod_host_watch import managed_pid, run_command, sample
 class Supervisor:
     def __init__(self, data, kind, binding, policy, memory_bytes=2*1024**3,
                  controller_seconds=15, health_seconds=10):
-        require((kind, binding) in (('publication', 'repository'), ('gateway', 'origin')),
+        require((kind, binding) in (('publication', 'repository'), ('gateway', 'origin'), ('api', 'origin')),
                 'Invalid managed service role')
         self.data, self.kind, self.binding, self.policy = data, kind, binding, policy
         self.memory_bytes, self.controller_seconds, self.health_seconds = memory_bytes, controller_seconds, health_seconds

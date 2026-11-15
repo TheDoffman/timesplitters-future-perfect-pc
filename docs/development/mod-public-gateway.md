@@ -45,6 +45,11 @@ policy. Existing publication adapters preserve its metadata/agent contract.
 Missing health, stalled controllers, excess sampled descendant memory or child
 exit withdraw ingress. A guardian lease is renewed by bounded restart every30min.
 
+Persistent system jobs use the separate fixed-role [system host controls](system-host-supervision.md).
+Their protected root health replaces the GUI watchdog admission; the unprivileged
+gateway/publisher cannot control system jobs. This component still requires native
+protected installation/lifecycle acceptance and does not enable public routing.
+
 Private Mac acceptance at sourcea8743bba verifies real Caddy routing, stripped
 static-download credentials, controlled API scheme headers, route/method/Host
 restrictions, a SHA-verified1MiB transfer and oversized JSON rejection. A separate

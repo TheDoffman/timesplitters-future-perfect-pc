@@ -36,6 +36,9 @@ def config(path):
 
 
 def supervisor(data):
+    if data.get('system_monitor'):
+        from mod_system_host import supervisor as system_supervisor
+        return system_supervisor(data, 'gateway', 'origin')
     return Supervisor(data, 'gateway', 'origin', POLICY)
 
 

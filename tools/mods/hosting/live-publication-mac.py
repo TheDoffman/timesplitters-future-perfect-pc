@@ -50,6 +50,9 @@ def config(path):
 
 
 def supervisor(data):
+    if data.get('system_monitor'):
+        from mod_system_host import supervisor as system_supervisor
+        return system_supervisor(data, 'publication', 'repository')
     return Supervisor(data, 'publication', 'repository', SUPERVISION_POLICY,
                       MEMORY_BYTES, CONTROLLER_SECONDS, HEALTH_SECONDS)
 

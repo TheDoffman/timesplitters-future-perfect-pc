@@ -21,6 +21,14 @@ def test_production_roles_are_fixed_and_have_no_supplied_command(role,program,mo
     with pytest.raises(ModError):bootstrap.arguments(release,'shell')
 
 
+@pytest.mark.parametrize('role', ['api','publication','gateway'])
+def test_host_bootstrap_roles_drop_before_fixed_worker_entry(role):
+    release=bootstrap.monitor.ROOT/'releases'/('a'*64)
+    assert bootstrap.arguments(release,role)==['-I','-B',str(release/'source/tools/mods/hosting/system-host-service-mac.py'),
+                                               '--role',role,'--run']
+    with pytest.raises(ModError):bootstrap.arguments(release,role,'a'*32)
+
+
 @pytest.mark.parametrize('recoverable',[False,True])
 def test_groups_are_cleared_before_gid_uid_and_no_root_can_be_restored(monkeypatch,recoverable):
     calls=[]

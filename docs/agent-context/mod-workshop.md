@@ -1,12 +1,17 @@
-Gatewayfile now routes private report creation/history/resolution, digest lookup,
-scan evidence and Lua/DDS inspection to the API, preserving exact methods/hex IDs,
-16KiB JSON limits and separate credential-stripped static downloads. Native
-test_gateway_service exercises shipped confined Caddy against recording loopback
-backends at all three supported HTTPS authorities; registered in native CI.
-Actual user Mac at2619f6f6 passes14 gateway cases2.57s; Windows API/gateway/scope
-142pass15POSIX/native skips18.73s. Both source checkouts synced; root runtime still
-f234, without this gateway change. Only existing private443 routing is configured.
-Public deployment and application authorization remain separate acceptance gates.
+Fixed api/publication/gateway system roles now use the irreversible bootstrap,
+system-host-service-mac.py and system-host-monitor-mac.py. Root monitors accept
+only fixed labels, numeric process state and bounded inert controller heartbeats;
+configs/keys/signing/network stay UID600. Root health binds role/release/PID/UID;
+GUI-writable health cannot admit system workers. Generation checks config after
+dropping credentials and writes new-only plists after scan-monitor generation.
+API uses the guardian, existing fixed Gunicorn settings and bounded renewal.
+Details: ../development/system-host-supervision.md. Tests are registered in native
+CI; protected installation/lifecycle/boot/public deployment remain pending.
+
+Actual Mac at2619f6f6 passes14 confined gateway cases2.57s: all launcher routes,
+exact methods/IDs,16KiB bodies, private bearer/HTTPS and stripped static credentials
+at all3 authorities. Windows API/gateway/scope142pass15skips18.73s. Root installed
+code remains f234; only original private443 routing is configured. See STATUS.
 
 Actual f234 native proof now passes: trusted root startup->same PID/UID/GID600,
 kernel[600], root restoration and health writes denied, root-controller label stop,
@@ -44,13 +49,10 @@ verified absent. Explicit bootstrap permission proof passes; persistent boot
 acceptance remains pending. Details: ../development/system-scan-supervision.md and STATUS. Existing
 GUI prototypes remain separate; no production/public service started.
 
-Actual user Mac at07f7f0a7 now passes native build106 UI+normal backend and real
-creator/isolated-ClamAV/moderation flow, including DDS pixels and private report
-closure/history/linked release plus withdrawal/audits. API/DDS/restore70 tests
-also pass, including POSIX protections. This is UID501/private pipes, not public/
-root600/persistent deployment; runtime+official definitions unchanged. See STATUS.
-Two approved duplicate updater caches were removed; app hashes unchanged. UID600
-cannot launchctl-kill system jobs; use the verified narrow root monitor above.
+User Mac at07 passes106 native UI checks, real isolated scanner/moderation/DDS/
+reports/withdrawal/audits and70 API/DDS/restore tests. This is UID501/private pipes;
+runtime/official definitions unchanged, not public/root600/persistent deployment.
+Two approved duplicate updater caches were removed; app hashes unchanged.
 
 Lua source-preview admission now checks the24/account bucket before48/global.
 An already capped reviewer cannot spend shared inspection capacity with denied

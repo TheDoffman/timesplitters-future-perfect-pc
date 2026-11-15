@@ -65,6 +65,8 @@ CPU_TOOLS = {
     'tools/mods/mod_lua_bundle.py', 'tests/mods/test_lua_bundle.py',
     'tools/mods/mod_texture_preview.py', 'tests/mods/test_texture_preview.py',
     'tools/mods/hosting/system-scan-monitor-mac.py', 'tests/mods/test_system_scan_monitor.py',
+    'tools/mods/mod_system_host.py', 'tools/mods/hosting/system-host-monitor-mac.py',
+    'tools/mods/hosting/system-host-service-mac.py', 'tests/mods/test_system_host.py',
     'tools/mods/hosting/probe-system-scan-monitor-mac.py', 'tests/mods/test_system_monitor_probe.py',
     'tools/mods/mod_host_identity.py', 'tests/mods/test_host_identity.py',
     'tools/mods/hosting/initialize-private-scan-mac.py', 'tests/mods/test_private_scan_init.py',
