@@ -25,6 +25,7 @@ MAX_PROCESSES = 8
 WALL_SECONDS = 480
 HEARTBEAT_SECONDS = 10
 POLL_SECONDS = 0.5
+SUPERVISION_POLICY = 'guardian-descendants-v1'
 
 
 def config(path):
@@ -93,6 +94,7 @@ def healthy(data):
     require(isinstance(value, dict), 'Invalid watchdog status')
     stamp = value.get('time')
     require(value.get('schema') == 1 and value.get('component') == 'watchdog' and value.get('service') == data['label']
+            and value.get('supervision_policy') == SUPERVISION_POLICY
             and type(stamp) is int and 0 <= time.time() - stamp <= HEARTBEAT_SECONDS
             and value.get('status') in ('watching', 'idle'), 'Scan watchdog is not healthy')
 
@@ -111,6 +113,10 @@ def repository_preflight(root):
 
 
 def admit(data):
+    from mod_scan_sandbox import ScanSandbox
+    if not getattr(ScanSandbox, 'GUARDED_PARENT_LIFETIME', False):
+        status(data, 'worker', {'status': 'held', 'reason': 'Scanner lifetime containment upgrade required'})
+        return False
     try:
         healthy(data)
         return True

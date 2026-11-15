@@ -1,3 +1,8 @@
+Scan-service capability tests reject legacy group-only heartbeats and missing
+owned-parent lifetime containment. Only explicit test doubles advertise the future
+capability while exercising the remaining health gate. Actual sandbox setsid/
+setpgid escape and denied parent-signal evidence require the guardian/tree fix.
+
 test_scan_service.py checks managed-label cancellation, RSS/process/wall bounds,
 identity changes, bad group/ambiguous samples, new-only private plist generation,
 virtual-environment preservation, heartbeat binding/freshness and fault/unknown

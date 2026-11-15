@@ -1,3 +1,27 @@
+Scan-service containment HOLD (2026-11-14): actual sandbox probes successfully
+called setsid and setpgid. Group-only memory sampling/launchd cleanup can be escaped.
+Both installed private agents were disabled in gui/501 and booted out; their data,
+pinned program/runtime and evidence are preserved. No public server was started.
+New worker admission requires an owned-parent lifetime guardian capability and
+matching descendant-supervision heartbeat; legacy implementations provide neither.
+The guardian/tree repair and adversarial escape/root-death acceptance remain required.
+A separate sandbox probe could not signal its parent (SIGUSR1 returned EPERM).
+Structured escape/signal evidenceSHAfa960dfca609c5cab435eb92cac9de205c18f354980e6ceecfcb90e340eb484c.
+Earlier normal launchd acceptance passed real queue scanning, explicit review,
+periodic renewal and watchdog restart; temporary jobs were unloaded. EvidenceSHA
+cd35165db810a72a35c6e2410bcba67e06bfe72739d9c0b6f42b3d6e3153d281.
+Scaled memory/wall probes killed managed jobs and reaped ordinary children, but did
+not exercise escaped groups; evidenceSHA934817892f8b4e9803e750c2eb23708da0cbc3f13b512e5f6f0ca95290eae349.
+Private source94a87d0b was pinned into Application Support with a separate stdlib
+runtime and per-user login-agent plists. InstallationSHA55441d8f59a277a704e70081bc442d119b822e9b152413fddd64f6001be5ef82;
+auto-scheduled cycle after SSH exit passed at180s, evidenceSHA
+3dba499e87611b21b28fc57b544e4585470430eca7280b01b64163835b998601.
+Those jobs are NOW DISABLED pending repair. They were login agents, not verified
+unattended-boot/dedicated production services. Broad sourceeec75231 backend tests
+passed Mac177/Linux176+1skip; source94 service policy11 passed on both, Windows6
+passed/5POSIX skips. These checks did not cover the newly found escape.
+Full goal remains active; public hosting and production release are unfinished.
+
 Periodic reviewed-release scans (source6dfa2417,2026-11-14): rescan-next shares
 the queue worker lock, withholds availability during slow AV without holding a
 SQLite writer lock, retains an existing review after fresh clean validation,

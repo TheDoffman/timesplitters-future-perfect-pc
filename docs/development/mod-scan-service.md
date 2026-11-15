@@ -1,5 +1,13 @@
 # Mac scan worker and watchdog
 
+**Containment hold:** an actual sandbox probe demonstrated that setsid/setpgid
+can escape process-group-only sampling/cleanup. Both installed private agents
+are disabled and unloaded. New worker admission is held until a parent-liveness
+guardian and descendant-tree supervision are implemented and verified. Do not
+enable these jobs for untrusted uploads yet. The earlier normal/group probes
+remain scoped evidence, not proof against this escape.
+
+
 `tools/mods/hosting/scan-service-mac.py` generates two private launchd login-agent
 plists. The worker processes one queued upload and one due reviewed-release rescan
 each minute. The independent watchdog samples that worker process group's total

@@ -1,3 +1,11 @@
+Scan-service SECURITY HOLD: actual Seatbelt probe permits setsid/setpgid. Group-
+only RSS/launchd cleanup is insufficient. Installed private jobs are disabled and
+unloaded. admit() now requires ScanSandbox.GUARDED_PARENT_LIFETIME plus matching
+guardian-descendants-v1 health; neither legacy component advertises that capability,
+so new agents hold scan admission. Implement owned-PID lifetime guardian + complete
+process-descendant sampling and retest escape/root-death/resource cases before
+re-enabling. Parent-directed signals are denied by the existing sandbox (verified).
+
 Mac scan service: hosting/scan-service-mac.py generates a scheduled worker and
 independent launchd watchdog from private local config. Worker queue/rescan cycles
 require matching fresh health and their own process group. Initial missing health

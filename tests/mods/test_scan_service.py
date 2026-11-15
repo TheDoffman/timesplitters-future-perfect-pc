@@ -106,7 +106,7 @@ def test_health_is_private_fresh_bound_and_preserves_fault(private_config):
     service.status(private_config, 'watchdog', {'status': 'terminated', 'reason': 'memory'})
     with pytest.raises(ModError, match='healthy'):
         service.healthy(private_config)
-    service.status(private_config, 'watchdog', {'status': 'idle'})
+    service.status(private_config, 'watchdog', {'status': 'idle', 'supervision_policy': service.SUPERVISION_POLICY})
     service.healthy(private_config)
     path = service.status_file(private_config, 'watchdog')
     value = json.loads(path.read_text())
@@ -129,13 +129,25 @@ def test_unrecognized_status_is_preserved(private_config):
     assert path.read_text() == 'personal data'
 
 
-def test_admission_waits_without_touching_repository_until_supervised(private_config):
+def test_admission_waits_without_touching_repository_until_supervised(private_config, monkeypatch):
+    from mod_scan_sandbox import ScanSandbox
+    monkeypatch.setattr(ScanSandbox, 'GUARDED_PARENT_LIFETIME', True, raising=False)
     assert not service.admit(private_config)
     assert list(private_config['repository'].iterdir()) == []
     value = json.loads(service.status_file(private_config, 'worker').read_text())
     assert value['status'] == 'waiting' and 'last_fault' not in value
-    service.status(private_config, 'watchdog', {'status': 'idle'})
+    service.status(private_config, 'watchdog', {'status': 'idle', 'supervision_policy': service.SUPERVISION_POLICY})
     assert service.admit(private_config)
+
+
+def test_group_only_containment_is_held_until_both_components_upgrade(private_config, monkeypatch):
+    from mod_scan_sandbox import ScanSandbox
+    assert not service.admit(private_config)
+    assert json.loads(service.status_file(private_config, 'worker').read_text())['status'] == 'held'
+    monkeypatch.setattr(ScanSandbox, 'GUARDED_PARENT_LIFETIME', True, raising=False)
+    service.status(private_config, 'watchdog', {'status': 'idle'})
+    assert not service.admit(private_config)
+    assert list(private_config['repository'].iterdir()) == []
 
 
 def test_repository_preflight_preserves_personal_and_unrecognized_data(private_config):
