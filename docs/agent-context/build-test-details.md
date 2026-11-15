@@ -1,3 +1,8 @@
+test_service_identity.py uses read-only planning/fake directory commands only:
+UID/GID collision selection, disabled-before-UID ordering, malformed inventories,
+unknown/partial preservation and privilege admission. It creates no system users.
+Actual Mac read-only planning and privileged administrator apply are separate gates.
+
 test_publication_service.py checks new-only private agents/runtime preservation,
 managed PID/policy/freshness health admission, startup waiting before key access,
 shared numeric-descendant RSS sampling, heartbeat cancellation and unknown/fault

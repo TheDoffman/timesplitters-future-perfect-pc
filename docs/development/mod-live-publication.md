@@ -89,3 +89,11 @@ identities. Actual launchd lifecycle, memory/stall cancellation and public uptim
 acceptance must be recorded separately. Existing `--config` without a mode keeps
 manual foreground operation for explicit private acceptance; generated agents
 always select the supervised managed mode.
+
+Temporary Mac launchd acceptance at6b245a9f passed watchdog/controller restart,
+scaled128MiB RSS cancellation (256MiB private allocation), and actual15s stalled
+heartbeat cancellation. All cases reaped guardian/Caddy and withdrew downloads;
+test jobs were unloaded. These used disposable signing keys and synthetic reports,
+not production configuration. Fault-owner tests at54989350 additionally verify
+pre-server/key-admission errors are recorded privately and lock losers preserve
+the active owner status. See STATUS for the evidence hash and remaining gates.

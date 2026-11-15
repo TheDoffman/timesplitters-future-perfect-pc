@@ -1,3 +1,27 @@
+Managed publication services (2026-11-14, managed source6b245a9f, fault handling54989350):
+The publication CLI generates private KeepAlive controller/watchdog login agents.
+Managed startup waits for fresh publication-descendants-v1 health bound to the
+actual controller PID before loading catalog keys or public bytes. Watchdog counts
+numeric PPID descendants across sessions, with2GiB/eight-process sampled bounds,
+and cancels by owned launchd label when the controller heartbeat exceeds15s.
+Controller also withdraws when watchdog health expires. Shared mod_host_watch.py
+preserves scanner sampler behavior. Pre-server/key-admission faults are recorded
+only by the lock owner; a lock loser cannot overwrite the active status.
+Mac selected managed/scan-service/live-publication/guardian/definition suites54
+pass; Windows common policy/CI-scope107 pass/24 POSIX skips. Source/context checks
+pass. Prior full sourcedf6c9eed CI43672598020 is green; new source CI is pending.
+Actual temporary launchd jobs pass watchdog restart and controller restart with
+old guardian/Caddy children reaped. Scaled128MiB sampled memory limit with a
+256MiB private allocation cancels the owned controller; real15s heartbeat expiry
+also cancels a stalled controller. Both cases withdraw HTTP downloads and reap
+native guardian/Caddy. All temporary jobs unloaded and8766 no longer listening.
+Disposable signing keys and synthetic scan reports were used; no public endpoint.
+EvidenceSHA36b23bac7599f0c24e484e9f06b3c44a9376898cf5cc8b6e565a125b5b214561.
+The generated managed service is not installed for production. Production keys,
+HTTPS identity, dedicated service isolation, boot/uptime/public acceptance and
+full creator-to-game release remain open. Installed scanner27/updater88 pins and
+private data remain preserved. Full goal active; main untouched.
+
 Live signed publication controller (2026-11-14, sourcedf6c9eed):
 Private controller polls approved availability/cumulative revocations, withdraws
 old Caddy before refresh, signs/validates a newer immutable export, rechecks

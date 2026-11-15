@@ -1,3 +1,12 @@
+Service identity preparation: hosting/provision-service-mac.py defaults to a
+read-only Directory Services plan. Explicit local administrator --apply creates
+only a new locked _tsfpworkshop user/private group and root-owned service layout.
+It starts no service/endpoint and migrates no data/secrets. Shell is false,
+authentication disabled before numeric UID assignment, no admin membership, and
+no password/token ceremony is performed. Unknown/partial installations are
+preserved; completed receipts can verify repeat invocation. Privileged application
+still needs real administrator execution and acceptance before deployment.
+
 Publisher faults before server construction (including key admission) are now
 recorded by the lock owner. A competing lock loser preserves the active owner
 status. Diagnostic metadata never includes signing exception/key details.
@@ -9,7 +18,8 @@ The watchdog samples2GiB/eight-process descendant bounds and15s controller
 heartbeat, retains the exact bounded fault reason and cancels by owned launchd label; controller also withdraws if watchdog
 health expires. mod_host_watch.py shares the existing bounded numeric sampler
 with scan-service-mac.py; scanner limits/protocol remain unchanged. Actual
-launchd resource/stall/restart acceptance remains required before deployment.
+temporary launchd memory/stall/restart acceptance passes with fixture keys and all
+test jobs unloaded. Production deployment/identity/boot/public checks remain open.
 
 Live publication: mod_live_publication.py/hosting/live-publication-mac.py poll only
 approved availability plus cumulative revocations, withdraw old Caddy before

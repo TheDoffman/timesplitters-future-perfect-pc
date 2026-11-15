@@ -78,6 +78,7 @@ CPU_TOOLS = {
     'tools/mods/hosting/definitions-service-mac.py', 'tests/mods/test_definitions_service.py',
     'tools/mods/mod_live_publication.py', 'tools/mods/hosting/live-publication-mac.py', 'tests/mods/test_live_publication.py',
     'tools/mods/mod_host_watch.py', 'tests/mods/test_publication_service.py',
+    'tools/mods/hosting/provision-service-mac.py', 'tests/mods/test_service_identity.py',
     'tests/mods/test_creator_service.py', 'tests/mods/test_creator_api.py', 'tests/mods/test_package_budgets.py',
     'tests/mods/live_creator_service.py', 'tests/mods/scan_limits_probe.c',
     'tools/mods/mod_trust.py', 'tools/mods/mod_signing.py',
