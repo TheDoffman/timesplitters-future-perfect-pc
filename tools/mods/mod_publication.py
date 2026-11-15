@@ -18,6 +18,7 @@ DEFAULT_PUBLIC_LIMIT = 512 * 1024 * 1024
 
 
 def export_snapshot(repository, destination, byte_limit=DEFAULT_PUBLIC_LIMIT, signer=None):
+    repository.require_recovered()
     destination = Path(destination).absolute()
     require(not destination.exists() and not destination.is_symlink(),
             'Choose a new snapshot directory; existing publications are preserved')
@@ -62,8 +63,11 @@ def export_snapshot(repository, destination, byte_limit=DEFAULT_PUBLIC_LIMIT, si
                 require(old is None or old['origin'] == root['origin'], 'Repository publication origin changed')
                 version = 1 if old is None else old['version'] + 1
                 require(version <= MAX_VERSION, 'Publication sequence exhausted')
-                revoked = [r[0] for r in db.execute("SELECT sha256 FROM releases WHERE state='revoked' "
-                                                    'ORDER BY sha256 LIMIT ?', (MAX_REVOKED + 1,))]
+                tombstones = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='recovery_revocations'").fetchone()
+                revoked_query = "SELECT sha256 FROM releases WHERE state='revoked'"
+                if tombstones:
+                    revoked_query += ' UNION SELECT sha256 FROM recovery_revocations'
+                revoked = [r[0] for r in db.execute(revoked_query + ' ORDER BY sha256 LIMIT ?', (MAX_REVOKED + 1,))]
                 require(len(revoked) <= MAX_REVOKED, 'Revocation metadata budget exhausted')
                 for name, wire in signer.publish(encoded, version, revoked, now).items():
                     path = staged / name

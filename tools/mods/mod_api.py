@@ -56,6 +56,9 @@ class WorkshopAPI:
         return {'username': actor.username, 'role': actor.role}
 
     def dispatch(self, environ):
+        marker = self.accounts.repository.root / '.recovery-required'
+        demand(not marker.exists() and not marker.is_symlink(), 503,
+               'Host recovery requires publication/revocation reconciliation')
         # The production server trusts scheme headers only from its loopback
         # proxy. The application never trusts forwarded headers itself.
         demand(environ.get('wsgi.url_scheme') == self.scheme

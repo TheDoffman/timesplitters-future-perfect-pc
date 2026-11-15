@@ -1,3 +1,13 @@
+Private host recovery: tools/mods/mod_backup.py captures a reserved-lock SQLite
+snapshot plus referenced immutable/queued bytes, with private ownership and bounded
+file/disk budgets. Restore only creates a fresh root, revokes auth, suspends accounts,
+expires open tickets and withholds previous approvals. .recovery-required blocks
+API/catalog/approved bytes/approval/exports. Explicit local resume consumes an
+operator reconciliation record for current origin/version floor and cumulative
+revocations; unknown hashes persist in recovery_revocations and signed exports.
+See [recovery workflow](../development/mod-host-recovery.md). No keys/secrets,
+public endpoint, scheduled retention or automatic service cutover are supplied.
+
 Installed now exposes optional gameplay mod storage through ModCacheLocation
 (ModScriptLaunch.cs). This trusted local preference validates absolute local,
 unlinked, existing UTF8 paths and is emitted only for a verified active mode.

@@ -1,3 +1,10 @@
+test_host_backup.py targets the Mac/POSIX host and is registered in runtime scope.
+It verifies database WAL capture under an admission-blocking reserved lock, queued
+bytes/auth isolation, new-only output, tamper/link/hardlink/extra/schema rejection,
+disk headroom, recovery API barriers, current publication floor and signed export
+of post-backup unknown revocations. Windows refuses the POSIX host operation;
+shared repository/API/publication regressions still run there.
+
 Gameplay-mode update/rollback checks compare complete capsule bytes, require a
 new package-derived save identity for an update and recover the original identity
 on rollback while preserving the newer installed version.

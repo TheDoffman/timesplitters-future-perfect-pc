@@ -2,9 +2,13 @@
 
 The creator/moderator backend is implemented in this task branch. It is not
 exposed to the internet. Native creator screens, credential-vault integration,
-signed public catalogs, a persistent scan supervisor, backups and public host
+a persistent scan supervisor, operational backup scheduling and public host
 acceptance remain required before release. The existing Caddy configuration
 still serves only approved snapshot downloads and does not proxy this API.
+
+Private snapshot/staged restore tooling and conservative publication reconciliation
+are now implemented; see [host recovery](mod-host-recovery.md). Actual Mac recovery
+drills and service cutover remain acceptance work.
 
 ## Identity and ownership
 

@@ -152,6 +152,10 @@ class Repository:
             self.approve_in_transaction(db, sha, reviewer_note)
 
     def approve_in_transaction(self, db, sha, reviewer_note):
+        self.require_recovered()
+        if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='recovery_revocations'").fetchone():
+            require(not db.execute('SELECT 1 FROM recovery_revocations WHERE sha256=?', (sha,)).fetchone(),
+                    'Release was revoked in recovery reconciliation')
         require(db.in_transaction, 'Approval requires an active transaction')
         require(isinstance(reviewer_note, str) and 0 < len(reviewer_note.strip()) <= 2000,
                 'Record a reviewer and review note')
@@ -194,6 +198,7 @@ class Repository:
         return {'sha256': sha, 'state': state, 'scan': report}
 
     def catalog(self, query=''):
+        self.require_recovered()
         require(isinstance(query, str) and len(query) <= 200, 'Search query too long')
         with self.db() as db:
             rows = db.execute("SELECT * FROM releases WHERE state='approved' ORDER BY mod_id,version").fetchall()
@@ -208,7 +213,13 @@ class Repository:
                                          'time': scan['time']}})
         return results
 
+    def require_recovered(self):
+        marker = self.root / '.recovery-required'
+        require(not marker.exists() and not marker.is_symlink(),
+                'Host recovery requires publication/revocation reconciliation')
+
     def approved_blob(self, sha):
+        self.require_recovered()
         row = self.get(sha)
         require(row['state'] == 'approved' and self.fresh(json.loads(row['scan'])),
                 'Release is unavailable, revoked or awaiting a fresh scan/review')
