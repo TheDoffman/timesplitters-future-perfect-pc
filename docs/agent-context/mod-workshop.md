@@ -1,3 +1,12 @@
+Mac install-flow follow-up: source60a23344 built and signed, but its native UI
+test blocked on the first dependency case when a Task.Run continuation captured
+Avalonia's non-pumping test context. Owned PID46000 was sampled, then terminated;
+the test/build failure is retained. ModWorkshopClient awaits now avoid caller
+context capture. The page uses Progress<string> to marshal updates to its UI,
+ignoring queued reports after the operation finishes. A bounded non-pumping
+context regression runs before dependency installs to detect this failure
+without an indefinite test hang. Native re-verification remains required.
+
 Dependency install flow: ModWorkshopPage now prepares a fresh signed dependency
 plan, displays exact versions/reuse/new expanded payload size and requires an
 in-page install confirmation. ModWorkshopClient re-plans before execution,

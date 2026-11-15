@@ -181,12 +181,12 @@ namespace TimeSplitters.Launcher
         }
         async Task<byte[]> Fetch(Uri origin,string path,int maximum,CancellationToken token)
         {
-            using(var response=await http.GetAsync(new Uri(origin,path),HttpCompletionOption.ResponseHeadersRead,token)) {
+            using(var response=await http.GetAsync(new Uri(origin,path),HttpCompletionOption.ResponseHeadersRead,token).ConfigureAwait(false)) {
                 Core.Require(response.StatusCode==System.Net.HttpStatusCode.OK,"The workshop is unavailable. Your installed game is still available.");
                 Core.Require(!response.Content.Headers.ContentLength.HasValue || response.Content.Headers.ContentLength<=maximum,"Workshop metadata exceeds the download limit.");
-                using(var input=await response.Content.ReadAsStreamAsync())using(var output=new MemoryStream()) {
+                using(var input=await response.Content.ReadAsStreamAsync().ConfigureAwait(false))using(var output=new MemoryStream()) {
                     byte[] buffer=new byte[16384];int count;
-                    while((count=await input.ReadAsync(buffer,0,buffer.Length,token))>0){Core.Require(output.Length+count<=maximum,"Workshop metadata exceeds the download limit.");output.Write(buffer,0,count);}
+                    while((count=await input.ReadAsync(buffer,0,buffer.Length,token).ConfigureAwait(false))>0){Core.Require(output.Length+count<=maximum,"Workshop metadata exceeds the download limit.");output.Write(buffer,0,count);}
                     return output.ToArray();
                 }
             }
@@ -195,14 +195,14 @@ namespace TimeSplitters.Launcher
         {
             var origin=ServiceUri(service);long now=new DateTimeOffset(clock()).ToUnixTimeSeconds();
             using(var trust=new ModTrustStore(installation,origin.GetLeftPart(UriPartial.Authority),now)) {
-                byte[] metadata=await Fetch(origin,"v1/trust/catalog",ModTrust.MaxMetadata,token);
+                byte[] metadata=await Fetch(origin,"v1/trust/catalog",ModTrust.MaxMetadata,token).ConfigureAwait(false);
                 long target=ModTrust.TargetVersion(metadata);
                 ModTrust.Need(target>=trust.Authority.Version && target-trust.Authority.Version<=64-trust.Updates.Count,"root rollback or rotation budget exceeded.");
                 while(trust.Authority.Version<target) {
-                    byte[] update=await Fetch(origin,"v1/trust/roots/"+(trust.Authority.Version+1).ToString(CultureInfo.InvariantCulture),ModTrust.MaxRoot,token);
+                    byte[] update=await Fetch(origin,"v1/trust/roots/"+(trust.Authority.Version+1).ToString(CultureInfo.InvariantCulture),ModTrust.MaxRoot,token).ConfigureAwait(false);
                     trust.Updates.Add(update);trust.Authority=ModTrust.Roots(trust.Pinned,trust.Updates,now,false);
                 }
-                byte[] catalog=await Fetch(origin,"v1/catalog",MaxCatalogBytes,token);
+                byte[] catalog=await Fetch(origin,"v1/catalog",MaxCatalogBytes,token).ConfigureAwait(false);
                 // Re-read wall time after transfer: metadata can expire while downloading.
                 now=new DateTimeOffset(clock()).ToUnixTimeSeconds();
                 var accepted=ModTrust.Catalog(metadata,catalog,trust.Authority,now);
@@ -215,25 +215,25 @@ namespace TimeSplitters.Launcher
         {
             Core.Require(maximum>0 && maximum<=MaxPackageBytes,"Invalid mod download budget.");
             // Recheck the current catalog so old page state cannot bypass a removal.
-            var current=await Read(service,token);
+            var current=await Read(service,token).ConfigureAwait(false);
             Core.Require(current.Any(r=>r.Sha256==selected.Sha256 && r.Id==selected.Id && r.Version==selected.Version),"This mod is no longer available. Refresh the workshop.");
             Core.Require(Path.GetFullPath(root)==Path.GetFullPath(installation),"The mod download must use its verified installation folder.");
             string folder=Core.PathIn(root,".launcher/mod-downloads");Directory.CreateDirectory(folder);
             string partial=Path.Combine(folder,Guid.NewGuid().ToString("N")+".partial");
             string target=Path.Combine(folder,selected.Sha256+".zip");
             try {
-                using(var response=await http.GetAsync(new Uri(ServiceUri(service),"v1/packages/"+selected.Sha256),HttpCompletionOption.ResponseHeadersRead,token)) {
+                using(var response=await http.GetAsync(new Uri(ServiceUri(service),"v1/packages/"+selected.Sha256),HttpCompletionOption.ResponseHeadersRead,token).ConfigureAwait(false)) {
                     Core.Require(response.StatusCode==System.Net.HttpStatusCode.OK,"This mod download is unavailable.");
                     Core.Require(!response.Content.Headers.ContentLength.HasValue || response.Content.Headers.ContentLength<=maximum,"Mod package exceeds the download limit.");
-                    using(var input=await response.Content.ReadAsStreamAsync())using(var output=new FileStream(partial,FileMode.CreateNew,FileAccess.Write,FileShare.None)) {
+                    using(var input=await response.Content.ReadAsStreamAsync().ConfigureAwait(false))using(var output=new FileStream(partial,FileMode.CreateNew,FileAccess.Write,FileShare.None)) {
                         byte[] buffer=new byte[65536];int count;
-                        while((count=await input.ReadAsync(buffer,0,buffer.Length,token))>0){Core.Require(output.Length+count<=maximum,"Mod package exceeds the download limit.");await output.WriteAsync(buffer,0,count,token);}
+                        while((count=await input.ReadAsync(buffer,0,buffer.Length,token).ConfigureAwait(false))>0){Core.Require(output.Length+count<=maximum,"Mod package exceeds the download limit.");await output.WriteAsync(buffer,0,count,token).ConfigureAwait(false);}
                     }
                 }
                 string hash;using(var algorithm=SHA256.Create())using(var stream=File.OpenRead(partial))hash=BitConverter.ToString(algorithm.ComputeHash(stream)).Replace("-","").ToLowerInvariant();
                 Core.Require(hash==selected.Sha256,"Mod download failed its integrity check.");token.ThrowIfCancellationRequested();
                 // Availability and trust can change during a large transfer.
-                var refreshed=await Read(service,token);
+                var refreshed=await Read(service,token).ConfigureAwait(false);
                 Core.Require(refreshed.Any(r=>r.Sha256==selected.Sha256 && r.Id==selected.Id && r.Version==selected.Version),"This mod became unavailable during download.");
                 // A cached package may only be reused if its bytes still match.
                 if(File.Exists(target)) {
@@ -245,7 +245,7 @@ namespace TimeSplitters.Launcher
         }
         public async Task<WorkshopInstallPlan> Plan(string service,WorkshopRelease selected,ModLibrary library,CancellationToken token)
         {
-            var catalog=await Read(service,token);var installed=await Task.Run(()=>library.List(),token);
+            var catalog=await Read(service,token).ConfigureAwait(false);var installed=await Task.Run(()=>library.List(),token).ConfigureAwait(false);
             return WorkshopInstallPlan.Create(selected,catalog,installed,ServiceUri(service).GetLeftPart(UriPartial.Authority));
         }
         internal async Task Install(string service,WorkshopInstallPlan reviewed,ModLibrary library,string root,CancellationToken token,Action<string> progress=null,long maximumDownloads=512L*1024*1024)
@@ -253,23 +253,23 @@ namespace TimeSplitters.Launcher
             Core.Require(maximumDownloads>0 && maximumDownloads<=512L*1024*1024,"Invalid combined mod download budget.");
             Core.Require(Path.GetFullPath(root)==Path.GetFullPath(installation),"The mod plan must use its verified installation folder.");
             Core.Require(!Core.GameRunning(),"Close the game before installing mods.");
-            var plan=await Plan(service,reviewed.Ordered.Last(),library,token);
+            var plan=await Plan(service,reviewed.Ordered.Last(),library,token).ConfigureAwait(false);
             Core.Require(reviewed.Matches(plan),"The required packages or installed library changed. Review the install plan again.");
             string origin=ServiceUri(service).GetLeftPart(UriPartial.Authority);
             foreach(var release in plan.Ordered.Except(plan.Downloads)) {
                 if(progress!=null)progress("Verifying installed "+release.Name+"…");
-                await Task.Run(()=>library.VerifyInstalled(release.Id+"@"+release.Version,release.Sha256,origin,release.Package,token),token);
+                await Task.Run(()=>library.VerifyInstalled(release.Id+"@"+release.Version,release.Sha256,origin,release.Package,token),token).ConfigureAwait(false);
             }
             long remaining=maximumDownloads;int number=0;
             foreach(var release in plan.Downloads) {
                 token.ThrowIfCancellationRequested();Core.Require(remaining>0,"This install exceeds its combined download limit.");
                 if(progress!=null)progress("Downloading "+(++number)+" of "+plan.Downloads.Length+": "+release.Name+"…");
-                string path=await Download(service,release,root,token,Math.Min(MaxPackageBytes,remaining));
+                string path=await Download(service,release,root,token,Math.Min(MaxPackageBytes,remaining)).ConfigureAwait(false);
                 remaining-=new FileInfo(path).Length;
                 ModTrustStore.RequireAvailable(root,origin,plan.Ordered.Select(r=>r.Sha256),clock());
-                await Task.Run(()=>library.Install(path,release.Sha256,token,release.Id,release.Version,origin,release.Package),token);
+                await Task.Run(()=>library.Install(path,release.Sha256,token,release.Id,release.Version,origin,release.Package),token).ConfigureAwait(false);
             }
-            var after=await Read(service,token);
+            var after=await Read(service,token).ConfigureAwait(false);
             Core.Require(plan.Ordered.All(release=>after.Any(r=>r.Id==release.Id && r.Version==release.Version && r.Sha256==release.Sha256 && ModLibrary.SameManifest(r.Package,release.Package))),"A required package became unavailable or changed during installation. Nothing was enabled.");
         }
         public void Dispose(){http.Dispose();}
@@ -471,7 +471,8 @@ namespace TimeSplitters.Launcher
                 stop=operation;Busy(true);if(FileBusyChanged!=null)FileBusyChanged(true);
                 try {
                     Core.Require(ServiceUriOrigin(ModWorkshopClient.Service(root))==ServiceUriOrigin(service),"The workshop address changed. Refresh and review the plan again.");
-                    await client.Install(service,reviewed,library,root,operation.Token,text=>{if(!disposed)status.Text=text;});
+                    IProgress<string> progress=new Progress<string>(text=>{if(!disposed && stop==operation)status.Text=text;});
+                    await client.Install(service,reviewed,library,root,operation.Token,text=>progress.Report(text));
                     pendingPlan=null;installedTab=true;if(!disposed)status.Text="Required packages installed and verified. Enable them from Installed when ready. The previous active profile was kept.";
                 }
                 catch(OperationCanceledException){pendingPlan=null;if(!disposed)status.Text="Install cancelled. Completed packages remain installed; no packages were enabled by this operation.";}

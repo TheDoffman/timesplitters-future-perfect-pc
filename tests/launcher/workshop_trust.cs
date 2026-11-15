@@ -70,8 +70,25 @@ public static class WorkshopTrustChecks
     static string State(string folder){return Core.PathIn(folder,".launcher/mod-trust/"+ModTrust.Hash(Encoding.UTF8.GetBytes(Origin))+"/state.json");}
     static void Need(bool value,string message){if(!value)throw new Exception(message);}
     static void Reject(Action action,string message){bool rejected=false;try{action();}catch{rejected=true;}Need(rejected,message);}
+    sealed class NonPumpingContext : SynchronizationContext
+    {
+        public int Posts;
+        public override void Post(SendOrPostCallback callback,object state){Interlocked.Increment(ref Posts);}
+    }
     public static void Run(string root,Action<string,Action> test)
     {
+        test("workshop planning completes without posting continuations to a blocked caller context",()=>{
+            string folder=Path.Combine(root,"dependency-context");var library=DependencyLibrary(folder);
+            using(var client=DependencyClient(folder,()=>1)) {
+                var prior=SynchronizationContext.Current;var blocked=new NonPumpingContext();
+                try {
+                    SynchronizationContext.SetSynchronizationContext(blocked);
+                    var task=client.Plan(Origin,DependencyReleases().Single(r=>r.Id=="addon"),library,CancellationToken.None);
+                    Need(task.Wait(TimeSpan.FromSeconds(10)),"Workshop planner depends on the caller's UI dispatcher");
+                    Need(task.Result.Downloads.Length==3 && blocked.Posts==0,"Planner captured the caller context");
+                }finally{SynchronizationContext.SetSynchronizationContext(prior);}
+            }
+        });
         test("signed dependency installation verifies archives reuses exact packages and preserves the active profile",()=>{
             string folder=Path.Combine(root,"dependency-complete");var library=DependencyLibrary(folder);int requests=0;
             using(var client=DependencyClient(folder,()=>1,_=>requests++)) {
