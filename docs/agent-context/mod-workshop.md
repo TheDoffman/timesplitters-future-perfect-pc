@@ -10,6 +10,9 @@ invocation must report a prefix/executable inside the bundle and load SSL/sqlite
 zlib/ctypes; all three server tools must report versions. Source/copy budgets and
 root refusal are tested. Pinned Python packages, production ownership/install and
 service-specific sandbox access remain separate; native staging is pending.
+FreshClam version checks explicitly use /dev/null configuration, avoiding its
+compiled Homebrew configuration path. Stage outside synced Desktop folders:
+native Python.app signing rejects FinderInfo injected into those app directories.
 
 System launchd permission diagnostic: hosting/probe-system-service-mac.py defaults
 to plan-only. Explicit privileged --apply verifies the completed locked identity,

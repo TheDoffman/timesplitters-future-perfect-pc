@@ -233,7 +233,8 @@ def build(args):
     check = json.loads(run(str(output / python), '-I', '-B', '-c', script))
     require(all(Path(check[k]).resolve().is_relative_to(output) for k in ('prefix', 'base', 'executable')),
             'Python selected a runtime outside the staged bundle')
-    versions = {name: run(str(output / 'bin' / name), '--version').strip()[:1000] for name in ('clamscan', 'freshclam', 'caddy')}
+    versions = {name: run(str(output / 'bin' / name), *(['--config-file=/dev/null'] if name == 'freshclam' else []),
+                          '--version').strip()[:1000] for name in ('clamscan', 'freshclam', 'caddy')}
     result = dict(schema=1, producer='tsfp-host-runtime-v1', python=str(python), files=builder.records,
                   copied_bytes=builder.total, native_images=len(builder.images), versions=versions,
                   isolated_python=check, production_installed=False, services_started=False)

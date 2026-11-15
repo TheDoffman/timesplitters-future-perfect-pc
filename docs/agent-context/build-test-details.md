@@ -3,6 +3,9 @@ loader-environment refusal, system-path boundaries, ambiguous rpaths, Cellar
 ownership boundaries, exclusive bounded copies and root/non-Mac staging refusal.
 SQLite header-notice fallback requires its actual disclaimer; unknown missing
 licenses fail staging.
+Native runtime checks use an empty FreshClam config for the version-only command;
+personal Homebrew configuration is never needed by that check. Use a private
+non-synced staging directory to avoid FinderInfo signature rejection.
 POSIX path/ownership cases skip on Windows. Native staging additionally executes
 the relocated isolated interpreter and version commands and verifies signatures;
 it does not prove root deployment or production service access.
