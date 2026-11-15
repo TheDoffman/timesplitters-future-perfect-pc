@@ -109,3 +109,25 @@ def test_sqlite_notice_requires_the_actual_disclaimer_not_a_missing_license(tmp_
     other.mkdir(parents=True)
     with pytest.raises(ValueError, match='No license'):
         runtime.license_files(other)
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='POSIX ownership and link audit')
+def test_final_audit_records_only_known_codesign_outputs_and_rejects_unknowns(tmp_path):
+    python = Path('Frameworks/Python.framework/Versions/3.12/bin/python3.12')
+    signature = python.parent.parent / '_CodeSignature/CodeResources'
+    path = tmp_path / signature
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b'signature')
+    path.chmod(0o644)
+    builder = runtime.Builder(tmp_path)
+    assert builder.audit(python) == len(b'signature')
+    assert builder.records[str(signature)]['generated'] == 'codesign'
+    assert len(builder.records[str(signature)]['sha256']) == 64
+    link = tmp_path / 'signature-link'
+    link.symlink_to(signature)
+    builder.records['signature-link'] = dict(symlink=str(signature))
+    assert builder.audit(python) == len(b'signature')
+    (tmp_path / 'unknown').write_bytes(b'preserve')
+    with pytest.raises(ValueError, match='Unrecorded'):
+        builder.audit(python)
+    assert (tmp_path / 'unknown').read_bytes() == b'preserve'

@@ -207,6 +207,36 @@ class Builder:
             for path in license_files(formula):
                 self.copy(path, Path('Licenses') / formula.relative_to(CELLAR) / path.relative_to(formula))
 
+    def audit(self, python):
+        framework = python.parent.parent
+        generated = {str(framework / '_CodeSignature/CodeResources'),
+                     str(framework / 'Resources/Python.app/Contents/_CodeSignature/CodeResources')}
+        actual, total = set(), 0
+        for path in self.output.rglob('*'):
+            relative = str(path.relative_to(self.output))
+            info = path.lstat()
+            require(info.st_uid == os.getuid() and (stat.S_ISLNK(info.st_mode) or not info.st_mode & 0o022),
+                    'Unsafe staged runtime ownership/mode')
+            if stat.S_ISDIR(info.st_mode):
+                continue
+            require(len(actual) < MAX_FILES, 'Runtime audit entry budget exceeded')
+            actual.add(relative)
+            if relative not in self.records:
+                require(relative in generated and stat.S_ISREG(info.st_mode), 'Unrecorded staged runtime file')
+                self.records[relative] = dict(generated='codesign')
+            record = self.records[relative]
+            if 'symlink' in record:
+                require(path.is_symlink() and str(path.readlink()) == record['symlink']
+                        and path.resolve(strict=True).is_relative_to(self.output), 'Changed staged runtime link')
+            else:
+                require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1, 'Linked or special staged runtime file')
+                total += info.st_size
+                require(total <= MAX_BYTES, 'Final runtime exceeds storage budget')
+                record.update(sha256=hashlib.sha256(path.read_bytes()).hexdigest(), bytes=info.st_size,
+                              mode=stat.S_IMODE(info.st_mode))
+        require(actual == set(self.records), 'Staged runtime file disappeared')
+        return total
+
 
 def build(args):
     require(sys.platform == 'darwin' and os.getuid() != 0, 'Stage as the ordinary Mac user, without sudo')
@@ -222,12 +252,7 @@ def build(args):
         builder.copy(getattr(args, name), Path('bin') / name)
     builder.relocate()
     builder.licenses()
-    for relative, record in builder.records.items():
-        if 'source' in record:
-            path = output / relative
-            record['sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
-            record['bytes'] = path.stat().st_size
-            record['mode'] = stat.S_IMODE(path.stat().st_mode)
+    payload_bytes = builder.audit(python)
     # A genuine isolated invocation must find the staged stdlib, not Homebrew's.
     script = 'import json,sys,ssl,sqlite3,zlib,ctypes;print(json.dumps(dict(prefix=sys.prefix,base=sys.base_prefix,executable=sys.executable)))'
     check = json.loads(run(str(output / python), '-I', '-B', '-c', script))
@@ -236,7 +261,8 @@ def build(args):
     versions = {name: run(str(output / 'bin' / name), *(['--config-file=/dev/null'] if name == 'freshclam' else []),
                           '--version').strip()[:1000] for name in ('clamscan', 'freshclam', 'caddy')}
     result = dict(schema=1, producer='tsfp-host-runtime-v1', python=str(python), files=builder.records,
-                  copied_bytes=builder.total, native_images=len(builder.images), versions=versions,
+                  producer_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                  copied_bytes=builder.total, payload_bytes=payload_bytes, native_images=len(builder.images), versions=versions,
                   isolated_python=check, production_installed=False, services_started=False)
     with (output / 'runtime.json').open('x') as stream:
         json.dump(result, stream, sort_keys=True, indent=2)
