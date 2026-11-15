@@ -233,6 +233,23 @@ class Builder:
                     requirements={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in requirements},
                     producer_sha256=hashlib.sha256(Path(wheels.__file__).read_bytes()).hexdigest())
 
+    def certificate(self, clamscan):
+        config = Path(__file__).resolve().parents[3] / 'config/mods/clamav-certificate.json'
+        pin = json.loads(config.read_bytes())
+        require(pin.get('schema') == 1 and pin.get('bytes') == 1976
+                and re.fullmatch(r'[0-9a-f]{64}', pin.get('sha256', '')), 'Invalid ClamAV certificate pin')
+        original = source(clamscan)
+        parts = original.relative_to(CELLAR).parts
+        certificate = CELLAR / parts[0] / parts[1] / '.bottle/etc/clamav/certs/clamav.crt'
+        wire = source(certificate).read_bytes()
+        require(len(wire) == pin['bytes'] and hashlib.sha256(wire).hexdigest() == pin['sha256'],
+                'Installed ClamAV certificate differs from official release pin')
+        target = self.copy(certificate, Path('Certs/clamav/clamav.crt'))
+        require(self.records['Certs/clamav/clamav.crt']['source_sha256'] == pin['sha256'],
+                'ClamAV certificate changed during staging')
+        target.chmod(0o644)
+        return dict(pin, config_sha256=hashlib.sha256(config.read_bytes()).hexdigest())
+
     def licenses(self):
         formulas = set()
         for record in self.records.values():
@@ -286,6 +303,7 @@ def build(args):
     python = builder.python(args.python)
     for name in ('clamscan', 'freshclam', 'caddy'):
         builder.copy(getattr(args, name), Path('bin') / name)
+    certificate = builder.certificate(args.clamscan)
     applications = builder.packages(args.wheelhouse, python) if args.wheelhouse else None
     builder.relocate()
     builder.licenses()
@@ -311,6 +329,7 @@ print(json.dumps({n:importlib.metadata.version(n) for n in ('gunicorn','cryptogr
                   copied_bytes=builder.total, payload_bytes=payload_bytes, native_images=len(builder.images), versions=versions,
                   isolated_python=check, production_installed=False, services_started=False)
     result['applications'] = applications
+    result['cvd_certificate'] = certificate
     with (output / 'runtime.json').open('x') as stream:
         json.dump(result, stream, sort_keys=True, indent=2)
     (output / 'runtime.json').chmod(0o600)

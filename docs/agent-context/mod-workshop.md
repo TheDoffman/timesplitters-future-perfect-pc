@@ -1,4 +1,4 @@
-Packaged scanner confinement: mod_runtime_files.native_files validates an adjacent
+Packaged scanner confinement: mod_runtime_files.runtime_access validates an adjacent
 owner-controlled runtime receipt, nonlinked/non-writable-by-others ancestors and
 regular single-link executable/library bytes, modes and digests. Bounded native
 inventory names become literal read/map permissions; unknown neighboring files,
@@ -6,7 +6,14 @@ the receipt itself, parent directories and Homebrew trees are not granted in
 bundled mode. A damaged present receipt raises before execution; missing receipt
 adds no packaged library permissions. Existing unbundled tools retain their prior
 policy. This is host configuration, never a package-supplied path/permission input.
-ScanSandbox keeps its no-network/no-child/no-process-info/temp-only-write policy.
+The CVD-verification public certificate is pinned to the official1.5.4 release
+by config/mods/clamav-certificate.json and copied from the installed formula's
+.bottle copy into Certs/clamav. Its file is hash-checked and granted read-only with
+literal directory enumeration; CVD_CERTS_DIR selects it for scanner/updater, with
+no Homebrew certificate subtree grant. The first relocated scan withheld clean
+content because the signature verifier could not read its compiled cert directory;
+verification is never disabled. ScanSandbox keeps its no-network/no-child/
+no-process-info/temp-only-write policy.
 Native relocated-engine detection and private-read rejection remain pending.
 
 Pinned application wheels: runtime-images-mac.py --wheelhouse admits exactly one

@@ -4,6 +4,9 @@ POSIX cases create an owner-private temporary directory under the test user's
 home (writable ancestors such as /tmp are intentionally refused), then check
 exact inventory, altered bytes/modes, symlink/hardlink/parent escapes, damaged
 receipts and no packaged grants for a missing marker. No code/services execute.
+Bundled CVD certificate cases require the file and exact digest and refuse links;
+the scanner/updater receive its directory explicitly. Staging verifies the pinned
+official certificate before and after copying it; no signature checks are skipped.
 
 tests/mods/test_runtime_wheels.py checks exact/hash requirement parsing, complete
 wheel-set admission, metadata identity, retained licenses, pinned-byte tampering,

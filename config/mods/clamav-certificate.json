@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "source_url": "https://raw.githubusercontent.com/Cisco-Talos/clamav/clamav-1.5.4/certs/clamav.crt",
+  "bytes": 1976,
+  "sha256": "60200e4b4b1b1b7257bb4550487aeb142034341f3300a8526e77a3134a940e9d"
+}

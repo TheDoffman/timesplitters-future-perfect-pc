@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from mod_backup import private_directory, regular
 from mod_package import ModError, read_json, require
 from mod_scan_sandbox import GuardedChild, verified_guardian
+from mod_runtime_files import runtime_access
 
 TIMEOUT = 180
 OUTPUT_LIMIT = 1024 * 1024
@@ -119,6 +120,10 @@ def command(data, configuration, timeout=TIMEOUT):
     """
     require(signal.getsignal(signal.SIGCHLD) == signal.SIG_DFL, 'Updater must own child exit status')
     guardian = verified_guardian()
+    access = runtime_access(data['freshclam'])
+    environment = dict(PATH='/usr/bin:/bin', HOME=str(data['state']), TMPDIR=str(data['state']), LC_ALL='C', TZ='UTC')
+    if access is not None:
+        environment['CVD_CERTS_DIR'] = str(access['certificate'].parent)
     read, write = os.pipe()
     process = None
     child = None
@@ -142,8 +147,7 @@ def command(data, configuration, timeout=TIMEOUT):
         process = subprocess.Popen([str(guardian), str(read), str(data['freshclam']),
                                     '--config-file=' + str(configuration), '--stdout'],
                                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                   cwd=data['state'], env=dict(PATH='/usr/bin:/bin', HOME=str(data['state']),
-                                                             TMPDIR=str(data['state']), LC_ALL='C', TZ='UTC'),
+                                   cwd=data['state'], env=environment,
                                    close_fds=True, pass_fds=(read,), start_new_session=True)
         os.close(read)
         read = None

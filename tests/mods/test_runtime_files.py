@@ -23,13 +23,16 @@ def test_manifest_rejects_ambiguous_numbers_and_duplicate_fields():
 
 def test_bundled_profile_grants_exact_literals_without_brew_or_parent_reads(monkeypatch):
     library = Path('/approved/lib/0000000000000000-library.dylib')
-    monkeypatch.setattr(sandbox, 'native_files', lambda _: [library])
+    certificate = Path('/approved/Certs/clamav/clamav.crt')
+    monkeypatch.setattr(sandbox, 'runtime_access', lambda _: dict(images=[library], certificate=certificate))
     profile = sandbox.sandbox_profile(Path('/approved/bin/clamscan'), Path('/content'), Path('/database'), Path('/scratch'))
     assert '(literal ' + json.dumps(str(library)) + ')' in profile
     assert 'Cellar' not in profile and '/opt/homebrew' not in profile
     assert '(subpath "/approved")' not in profile and '(subpath "/approved/lib")' not in profile
     assert '(deny process-info*)' in profile
     assert '(allow network' not in profile and '(allow process-fork' not in profile
+    mapping = profile.split('(allow file-map-executable ', 1)[1].split('(allow file-write*', 1)[0]
+    assert json.dumps(str(certificate)) not in mapping
 
 
 @pytest.fixture
@@ -42,7 +45,9 @@ def bundle():
         root = Path(temporary).resolve()
         (root / 'bin').mkdir()
         (root / 'lib').mkdir()
-        entries = {'bin/clamscan': b'fixture executable', 'lib/0123456789abcdef-library.dylib': b'fixture library'}
+        (root / 'Certs/clamav').mkdir(parents=True)
+        entries = {'bin/clamscan': b'fixture executable', 'lib/0123456789abcdef-library.dylib': b'fixture library',
+                   'Certs/clamav/clamav.crt': b'fixture public certificate'}
         records = {}
         for name, wire in entries.items():
             path = root / name
@@ -60,9 +65,10 @@ def test_verified_literals_do_not_include_the_manifest_or_unknown_neighbors(bund
     root, _ = bundle
     canary = root / 'lib/unrecorded-secret'
     canary.write_text('must not be granted')
-    result = runtime.native_files(root / 'bin/clamscan')
-    assert set(result) == {root / 'bin/clamscan', root / 'lib/0123456789abcdef-library.dylib'}
-    assert canary not in result and root / 'runtime.json' not in result
+    result = runtime.runtime_access(root / 'bin/clamscan')
+    assert set(result['images']) == {root / 'bin/clamscan', root / 'lib/0123456789abcdef-library.dylib'}
+    assert result['certificate'] == root / 'Certs/clamav/clamav.crt'
+    assert canary not in result['images'] and root / 'runtime.json' not in result['images']
 
 
 @pytest.mark.parametrize('change', ['bytes', 'permissions', 'symlink', 'hardlink'])
@@ -79,7 +85,7 @@ def test_changed_or_linked_library_is_withheld(bundle, change):
     else:
         os.link(library, root / 'original')
     with pytest.raises((ModError, OSError)):
-        runtime.native_files(root / 'bin/clamscan')
+        runtime.runtime_access(root / 'bin/clamscan')
     assert library.exists()
 
 
@@ -104,11 +110,26 @@ def test_damaged_bundle_never_falls_back_to_legacy_permissions(bundle, change):
         value['producer'] = 'unknown'
         marker.write_text(json.dumps(value))
     with pytest.raises((ModError, OSError)):
-        runtime.native_files(root / 'bin/clamscan')
+        runtime.runtime_access(root / 'bin/clamscan')
     assert marker.exists()
 
 
 def test_missing_receipt_adds_no_runtime_literal_permissions(bundle):
     root, _ = bundle
     (root / 'runtime.json').unlink()
-    assert runtime.native_files(root / 'bin/clamscan') is None
+    assert runtime.runtime_access(root / 'bin/clamscan') is None
+
+
+@pytest.mark.parametrize('change', ['missing', 'tampered', 'linked'])
+def test_bundled_certificate_is_required_and_digest_bound(bundle, change):
+    root, _ = bundle
+    certificate = root / 'Certs/clamav/clamav.crt'
+    if change == 'missing':
+        certificate.unlink()
+    elif change == 'tampered':
+        certificate.write_bytes(b'wrong certificate')
+    else:
+        certificate.rename(root / 'original-certificate')
+        certificate.symlink_to(root / 'original-certificate')
+    with pytest.raises((ModError, OSError)):
+        runtime.runtime_access(root / 'bin/clamscan')

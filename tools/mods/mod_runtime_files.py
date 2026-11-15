@@ -60,8 +60,8 @@ def manifest(wire):
     return value
 
 
-def native_files(executable):
-    """Return verified exact literals, or None for an existing unbundled tool.
+def runtime_access(executable):
+    """Return verified image/certificate literals, or None for an unbundled tool.
 
     The caller is trusted host configuration, never an uploaded package field.
     A present but damaged marker always fails; it cannot select legacy policy.
@@ -96,4 +96,13 @@ def native_files(executable):
         require(len(image) == record['bytes'] and stat.S_IMODE(info.st_mode) == record['mode']
                 and hashlib.sha256(image).hexdigest() == record['sha256'], 'Runtime image differs from receipt')
         result.append(path)
-    return result
+    certificate = root / 'Certs/clamav/clamav.crt'
+    record = files.get('Certs/clamav/clamav.crt')
+    require(isinstance(record, dict) and isinstance(record.get('sha256'), str) and SHA.fullmatch(record['sha256'])
+            and type(record.get('bytes')) is int and 0 < record['bytes'] <= 65536
+            and record.get('mode') == 0o644 and 'symlink' not in record,
+            'Runtime receipt omits the public CVD certificate')
+    content, info = checked_read(certificate, 65536)
+    require(len(content) == record['bytes'] and stat.S_IMODE(info.st_mode) == 0o644
+            and hashlib.sha256(content).hexdigest() == record['sha256'], 'Runtime CVD certificate differs from receipt')
+    return dict(images=result, certificate=certificate)

@@ -13,10 +13,11 @@ import threading
 import stat
 
 from mod_package import require, read_json
-from mod_runtime_files import native_files
+from mod_runtime_files import runtime_access
 
 ISOLATION_POLICY = 'macos-seatbelt-v3'
 GUARDIAN_ROOT = Path(__file__).resolve().parents[2] / 'build/scan-guardian'
+_AUTO_RUNTIME = object()
 
 
 def verified_guardian():
@@ -57,13 +58,15 @@ class GuardedChild:
         return getattr(self.process, name)
 
 
-def sandbox_profile(executable, content, database, scratch):
+def sandbox_profile(executable, content, database, scratch, access=_AUTO_RUNTIME):
     """Only public runtime files, this upload and official definitions are readable."""
     quote = lambda p: json.dumps(str(p), ensure_ascii=True)
     runtime = ['/System', '/usr/lib', '/usr/share', '/private/preboot/Cryptexes',
                '/opt/homebrew/Cellar', '/usr/local/Cellar']
     public_certs = ['/opt/homebrew/etc/clamav/certs', '/usr/local/etc/clamav/certs']
-    bundled = native_files(executable)
+    access = runtime_access(executable) if access is _AUTO_RUNTIME else access
+    bundled = access['images'] if access is not None else None
+    certificate_reads = [access['certificate'].parent, access['certificate']] if access is not None else []
     if bundled is not None:
         runtime = runtime[:4]
         public_certs = []
@@ -72,7 +75,8 @@ def sandbox_profile(executable, content, database, scratch):
     # The root directory itself is needed by the macOS27 dyld bootstrap. It does
     # not grant traversal/read access to the contents of any other directory.
     reads = subpaths([*runtime, *public_certs, content, database, scratch]) + literals([
-        '/', '/dev/null', '/dev/random', '/dev/urandom', '/private/etc/localtime', executable, *(bundled or [])])
+        '/', '/dev/null', '/dev/random', '/dev/urandom', '/private/etc/localtime', executable,
+        *(bundled or []), *certificate_reads])
     return ('(version 1)(deny default)'
             # macOS process-argument sysctls use process-info checks rather
             # than the named sysctl gate; explicit denial is necessary here.
@@ -112,13 +116,16 @@ class ScanSandbox:
         self.executable = Path(found).resolve()
         require(self.executable.is_file(), 'Scanner executable is missing')
         require(not self.executable.stat().st_mode & 0o6022, 'Unsafe scanner executable permissions')
+        access = runtime_access(self.executable)
         self.guardian = verified_guardian()
         self.temporary = tempfile.TemporaryDirectory(prefix='tsfp-scan-worker-')
         self.scratch = Path(self.temporary.name).resolve()
         os.chmod(self.scratch, 0o700)
-        self.profile = sandbox_profile(self.executable, self.content, self.database, self.scratch)
+        self.profile = sandbox_profile(self.executable, self.content, self.database, self.scratch, access)
         self.environment = dict(PATH='/usr/bin:/bin', HOME=str(self.scratch),
                                 TMPDIR=str(self.scratch), LC_ALL='C', TZ='UTC')
+        if access is not None:
+            self.environment['CVD_CERTS_DIR'] = str(access['certificate'].parent)
         return self
 
     def command(self, arguments):

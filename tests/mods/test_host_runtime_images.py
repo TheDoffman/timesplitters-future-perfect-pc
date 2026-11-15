@@ -1,6 +1,7 @@
 """Relocatable server runtime source/loader boundary tests; no system installs."""
 import importlib.util
 import os
+import stat
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -141,3 +142,40 @@ def test_final_audit_records_only_known_codesign_outputs_and_rejects_unknowns(tm
     with pytest.raises(ValueError, match='Unrecorded'):
         builder.audit(python)
     assert (tmp_path / 'unknown').read_bytes() == b'preserve'
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='POSIX controlled Cellar source copy')
+def test_public_certificate_pin_is_checked_against_the_actual_copied_bytes(tmp_path, monkeypatch):
+    import hashlib
+    cellar = tmp_path / 'cellar'
+    formula = cellar / 'clamav/1'
+    executable = formula / 'bin/clamscan'
+    certificate = formula / '.bottle/etc/clamav/certs/clamav.crt'
+    executable.parent.mkdir(parents=True)
+    executable.write_bytes(b'fixture executable')
+    executable.chmod(0o755)
+    certificate.parent.mkdir(parents=True)
+    wire = b'c' * 1976
+    certificate.write_bytes(wire)
+    certificate.chmod(0o644)
+    pin = dict(schema=1, bytes=len(wire), sha256=hashlib.sha256(wire).hexdigest())
+    monkeypatch.setattr(runtime, 'CELLAR', cellar)
+    monkeypatch.setattr(runtime.json, 'loads', lambda _: pin)
+    first = tmp_path / 'first'
+    first.mkdir()
+    builder = runtime.Builder(first)
+    builder.certificate(executable)
+    target = first / 'Certs/clamav/clamav.crt'
+    assert target.read_bytes() == wire and stat.S_IMODE(target.stat().st_mode) == 0o644
+    second = tmp_path / 'second'
+    second.mkdir()
+    builder = runtime.Builder(second)
+    copy = builder.copy
+
+    def race(source, relative):
+        certificate.write_bytes(b'd' * len(wire))
+        return copy(source, relative)
+
+    monkeypatch.setattr(builder, 'copy', race)
+    with pytest.raises(ValueError, match='changed during staging'):
+        builder.certificate(executable)
