@@ -1,3 +1,28 @@
+Native protected-bootstrap and monitor permission proof (2026-11-15):
+At sourcef234f4e2 the protected runtime installed and the actual inert system-job
+proof passed (native Terminal exit0). Root startup was observed as unhealthy;
+the same PID8887 then ran with real/effective UID/GID600, kernel groups[600], and
+denied root restoration. The worker could read healthy root metadata but could
+not overwrite it. Root controller8897 observed the restricted tree and successfully
+stopped the fixed launchd label on a trusted test wall deadline; target8887 and
+child8912 exited. A dropped reader rejected terminated health. Every temporary
+label was unloaded, and a fresh independent launchctl/ps check confirms absence.
+The root-owned0600 acceptance record is under
+releases/system-monitor-probe-3775a64c081c49d2b6afcddb9b05a3b1. Exact operator
+console reportSHA79620ea244f4452b95efd0f3ce14adbf0e0fe3618a39d1b43cb9a6aaf7446411.
+The installed release inventory and installation receipt were reverified after
+the proof and remain unchanged. DescriptorSHA
+56ceb8e6663ba49c1a3e5a4a8fb31da06da9d15d473ae1974dcbf3a34dd77b39;
+53 source/3339 runtime files,151038446 installation bytes. Preparation receiptSHA
+88a566b3c60fc25e19fa1d629ced93ee55b5e1fd168e4018ab60c0b0dfdc2f6b.
+Actual Mac private-init/bootstrap/identity/release/monitor/definition contracts
+also pass all148 cases (1.76s). This proves the explicit credential-drop and
+system-label permission path using inert jobs; it does not prove live scanning
+under the persistent system service, monitor restart/boot, public TLS or content
+delivery. Private scan initialization, official definitions under UID600 and
+production plists have not been applied/generated/loaded. Production/public
+services remain disabled; the full completion matrix remains open.
+
 Explicit service bootstrap and private setup (2026-11-15):
 The63d36ffa runtime installed successfully, but the direct InitGroups=true
 launchd target still retained kernel groups[600,12,61,702,701,100] and was correctly

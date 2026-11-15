@@ -1,6 +1,11 @@
 # System-domain scan supervision
 
 This is an implemented deployment component, not a running production service.
+The actual f234f4e2 inert system-job proof passes, including root startup, explicit
+drop to UID600/kernel group600, denied root restoration/health writes, successful
+root-controller cancellation and worker/child cleanup. The installed files remain
+unchanged. Persistent service scanning, initialization/definitions, restart/boot
+and public operation are still separate gates; see STATUS.
 The native permission probe proved that `_tsfpworkshop` can inspect a system job
 but cannot signal it through `launchctl`. The existing GUI scan prototype remains
 separate. Root installation, permission/lifecycle acceptance of the new monitor,

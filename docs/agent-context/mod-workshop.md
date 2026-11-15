@@ -1,3 +1,9 @@
+Actual f234 native proof now passes: trusted root startup->same PID/UID/GID600,
+kernel[600], root restoration and health writes denied, root-controller label stop,
+worker+child exit and all temporary jobs unloaded. Root receipt is0600; post-proof
+installed inventory/receipt unchanged. Mac contracts148 pass. This is inert-job
+permission proof, not persistent scanning/boot/public operation; see STATUS.
+
 System scan deployment uses locked-service-bootstrap-mac.py: fixed installed
 roles clear supplementary groups, set GID/UID600, verify real/effective/kernel and
 directory credentials, prove root cannot be restored, then exec worker code with
