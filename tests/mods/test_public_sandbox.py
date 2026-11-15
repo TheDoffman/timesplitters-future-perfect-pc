@@ -111,6 +111,16 @@ PROBE = r'''
 int main(int argc,char **argv){
  if(argc<3)return 2;int action=0,result=-1,error=0,seen=0;
  if(strcmp(argv[1],"fds")==0){result=0;for(int fd=3;fd<256;fd++)if(fcntl(fd,F_GETFD)>=0)result++;}
+ else if(strcmp(argv[1],"bound-net")==0 || strcmp(argv[1],"connectx")==0 || strcmp(argv[1],"udp-send")==0){
+  int udp=strcmp(argv[1],"udp-send")==0;int s=socket(AF_INET,udp?SOCK_DGRAM:SOCK_STREAM,0),one=1;
+  setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&one,sizeof(one));setsockopt(s,SOL_SOCKET,SO_REUSEPORT,&one,sizeof(one));
+  struct sockaddr_in a={0};a.sin_family=AF_INET;a.sin_addr.s_addr=htonl(INADDR_LOOPBACK);a.sin_port=htons(8766);
+  errno=0;action=bind(s,(void*)&a,sizeof(a));error=errno;a.sin_port=htons((unsigned short)atoi(argv[2]));
+  if(action==0){errno=0;if(udp)result=sendto(s,"x",1,0,(void*)&a,sizeof(a));
+   else if(strcmp(argv[1],"connectx")==0){sa_endpoints_t endpoints={0};endpoints.sae_dstaddr=(void*)&a;endpoints.sae_dstaddrlen=sizeof(a);result=connectx(s,&endpoints,SAE_ASSOCID_ANY,0,NULL,0,NULL,NULL);}
+   else result=connect(s,(void*)&a,sizeof(a));error=errno;}
+  close(s);
+ }
  else if(strcmp(argv[1],"net")==0 || strcmp(argv[1],"bind")==0){
   int s=socket(AF_INET,SOCK_STREAM,0);struct sockaddr_in a={0};a.sin_family=AF_INET;a.sin_addr.s_addr=htonl(INADDR_LOOPBACK);a.sin_port=htons((unsigned short)atoi(argv[2]));
   errno=0;result=s<0?-1:(strcmp(argv[1],"net")==0?connect(s,(void*)&a,sizeof(a)):bind(s,(void*)&a,sizeof(a)));error=errno;if(s>=0)close(s);
@@ -180,5 +190,18 @@ def test_actual_public_policy_blocks_private_aliases_network_and_children(state,
             listener.listen(4)
             args = ['net', str(listener.getsockname()[1])]
             assert run(args, False)['result'] == 0 and run(args)['result'] == -1
+        for mode in ('bound-net', 'connectx', 'udp-send'):
+            kind = socket.SOCK_DGRAM if mode == 'udp-send' else socket.SOCK_STREAM
+            # Separate destination ports avoid TCP TIME_WAIT masquerading as
+            # sandbox denial when the positive control reuses source8766.
+            with socket.socket(type=kind) as control, socket.socket(type=kind) as denied:
+                for listener in (control, denied):
+                    listener.bind(('127.0.0.1', 0))
+                    if kind == socket.SOCK_STREAM:
+                        listener.listen(4)
+                allowed = run([mode, str(control.getsockname()[1])], False)
+                assert allowed['action'] == 0 and allowed['result'] >= 0
+                refused = run([mode, str(denied.getsockname()[1])])
+                assert refused['action'] == 0 and refused['result'] == -1 and refused['errno'] in (1, 13)
     finally:
         scratch.close()

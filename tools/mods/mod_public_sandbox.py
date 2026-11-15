@@ -32,7 +32,12 @@ def profile(executable, snapshot, configuration, work):
                 '/', executable, configuration, '/dev/null', '/dev/random', '/dev/urandom', '/private/etc/localtime']) + ')'
             '(allow file-map-executable ' + subpaths(runtime) + literals([executable]) + ')'
             '(allow file-write* (subpath ' + quote(work) + '))'
-            '(allow network-bind network-inbound (local ip "localhost:8766"))')
+            '(allow network-bind network-inbound (local ip "localhost:8766"))'
+            # Darwin sendfile checks a connected server socket without a
+            # supplied remote endpoint. Match only that response path: a new
+            # connect/sendto supplies a destination and must remain denied,
+            # even if a hostile caller first binds the permitted local port.
+            '(allow network-outbound (require-all (local ip "localhost:8766") (require-not (remote ip))))')
 
 
 def marker(path, expected, create=False):

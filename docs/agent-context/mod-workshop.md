@@ -1,3 +1,9 @@
+Darwin large-file responses need a narrow network-outbound exception for local
+server port8766 with NO supplied remote endpoint (sendfile response context).
+Plain local-port allowance would also permit hostile source-bound connections;
+the new rule requires NOT remote-ip. Native controls cover bound connect,
+connectx and UDP sendto; integrated large catalog/package acceptance is required.
+
 Public static-server confinement: CaddyServer now requires Mac Seatbelt and
 mod_public_sandbox.profile (public tree/fixed config/system runtime reads, private
 scratch writes, self-signals, hardware sysctls, explicit process-info denial and
