@@ -1,3 +1,51 @@
+Packaged Mac scanner/workflow acceptance (2026-11-15, source88ec59b0):
+The runtime now includes the official ClamAV1.5.4 CVD-verification certificate,
+SHA60200e4b4b1b1b7257bb4550487aeb142034341f3300a8526e77a3134a940e9d,
+matched byte-for-byte to the pinned upstream release. Bundled scanner permissions
+verify the receipt, executable, exact library bytes/modes and public certificate;
+they grant literal reads/maps and certificate-directory enumeration, without
+Homebrew or parent-directory subtrees. The scanner/updater select that certificate
+directory explicitly. Signature verification remains enabled. The initial bundled
+scan withheld clean content because its compiled Homebrew certificate directory
+was denied; that diagnostic and stopped failure evidence are preserved.
+Actual packaged ClamAV with official daily28184 definitions now passes clean
+pending-review, EICAR rejection, empty-database/missing-engine error and revocation
+checks. The actual engine cannot read a private canary or an unrecorded neighbor
+inside runtime/lib (both exit2; permitted input exit0). Harmless kernel canaries
+using the bundled read/map plan also pass private read/write, symlink escape,
+child-exec/network denial and CPU/output/fd/core/alarm limits.
+The real Gunicorn creator fixture passes authenticated upload, queued quarantine,
+clean/EICAR decisions, creator self-approval denial, moderator fixture approval,
+credential-free snapshot export and revocation. The listener stopped afterward.
+Packaged FreshClam completed an official update check against six isolated APFS
+copy-on-write definition files (175613293 logical bytes); original hashes/inodes/
+times remained unchanged. The temporary cloned database was then recycled after
+bounded ownership/type/hash inventory checks; receipt/status/inventory remain.
+The existing UID501 prototype updater independently completed its second actual
+six-hour scheduled cycle: runs2, last-exit0,21600-second interval and21611 seconds
+between completion receipts. This is elapsed scheduler evidence, not boot or
+dedicated-account acceptance.
+Post-use verification caught184 new Python bytecode files and a broken framework
+seal: parent -I/-B flags were absent from child commands. Scanner bootstraps,
+generated service arguments and the creator fixture now pass them explicitly.
+Only identified generated caches were removed after every original payload hash
+was verified; the framework seal restored without modifying signed payload bytes.
+All real tests then passed again, and the final inventory has zero extras and all
+96 signatures still verify. A real poisoned PYTHONPATH positive/control test
+confirms isolated bootstrap startup and no cache writes. The earlier runtime was
+recycled with its receipt/bytecode evidence preserved; one accepted runtime remains.
+Final runtime:3338 recorded files/links,149024972 payload bytes. ReceiptSHA
+a0aed054dc52660b9591f70a5483ea10bd3362fe747f483041dc7dfef44df8f0;
+post-use/relocation acceptanceSHA35d7c4332af9869837a262058b1cbed22c82108fab9834750b83cc42173f10a6;
+combined evidenceSHA5cce371a9cb86f222bd1b932078c37b569ad18fd898f2c80c2f0a2cce710f85f.
+Windows selected checks180 pass/68 host skips. Mac245 pass/3 optional Caddy skips,
+then packaged-Caddy gateway checks14 pass including those cases. Full code CI
+43699251219 is green, as is9d1008ed run43698180916. No game/launcher rebuild was
+needed for these hosting changes. All actual host checks here ran as UID501;
+the system-job diagnostic still awaits native administrator authentication.
+Root-owned install, UID600/system supervision, production keys/accounts, public
+creator-to-native-game acceptance and the full release remain open.
+
 Mac packaged runtime/API acceptance (2026-11-15, source8e887eb4):
 Offline application-wheel integration now includes exact/hash-pinned Gunicorn
 27.0.1, cryptography50.0.2, cffi2.1.1 and pycparser3.12 with their license metadata.

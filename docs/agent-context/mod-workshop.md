@@ -14,7 +14,13 @@ no Homebrew certificate subtree grant. The first relocated scan withheld clean
 content because the signature verifier could not read its compiled cert directory;
 verification is never disabled. ScanSandbox keeps its no-network/no-child/
 no-process-info/temp-only-write policy.
-Native relocated-engine detection and private-read rejection remain pending.
+Native packaged-engine acceptance passed with official28184 definitions: clean
+review, EICAR rejection, empty/missing-engine errors and revocation. Actual engine
+reads of private input and an unrecorded neighbor in runtime/lib were denied;
+canaries were removed. Bundled-policy kernel canaries and the complete loopback
+creator/upload/scan/manual-fixture-review/export/revoke flow also pass. All96
+signatures and the complete inventory still verify after no-bytecode reruns.
+This is UID501 staging, not dedicated-account/system/public acceptance; see STATUS.
 live_scan_isolation.py --runtime-executable selects a verified packaged scanner's
 read/map plan for harmless system/C canaries with their own exec literal. This
 tests kernel private-read/write, symlink escape, child-exec/network denial and hard

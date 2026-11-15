@@ -16,6 +16,15 @@ then the actual isolated no-bytecode bootstrap and checks it executes no poison
 and creates no cache. Generated service args and creator fixture use -I -B too;
 gateway argument-position expectations follow those flags. Recheck runtime seals
 and inventory after actual use, not only immediately after staging/signing.
+Source88ec59b0 native acceptance passes the real packaged Clam clean/EICAR/error
+suite, bundled-policy kernel canaries, creator HTTP/review/revocation and actual
+FreshClam maintenance against an isolated copy-on-write database. Original data
+remained unchanged and the temporary cloned database was recycled. Native selected
+tests245 pass/3 optional Caddy skips; rerunning gateway with packaged Caddy resolves
+those cases (14 pass). Windows180 pass/68 host skips. Code CI43699251219 is green.
+Final runtime recheck after all real tests:96 strict signatures,3338 recorded
+files/links, zero extras. The prototype GUI updater also completed its second
+six-hour scheduled cycle, runs2/last-exit0; this does not prove UID600 or boot.
 
 tests/mods/test_runtime_wheels.py checks exact/hash requirement parsing, complete
 wheel-set admission, metadata identity, retained licenses, pinned-byte tampering,
