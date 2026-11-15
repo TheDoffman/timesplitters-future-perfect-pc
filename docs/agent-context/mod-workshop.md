@@ -1,3 +1,14 @@
+Packaged scanner confinement: mod_runtime_files.native_files validates an adjacent
+owner-controlled runtime receipt, nonlinked/non-writable-by-others ancestors and
+regular single-link executable/library bytes, modes and digests. Bounded native
+inventory names become literal read/map permissions; unknown neighboring files,
+the receipt itself, parent directories and Homebrew trees are not granted in
+bundled mode. A damaged present receipt raises before execution; missing receipt
+adds no packaged library permissions. Existing unbundled tools retain their prior
+policy. This is host configuration, never a package-supplied path/permission input.
+ScanSandbox keeps its no-network/no-child/no-process-info/temp-only-write policy.
+Native relocated-engine detection and private-read rejection remain pending.
+
 Pinned application wheels: runtime-images-mac.py --wheelhouse admits exactly one
 binary wheel per package in the tracked exact/hash-pinned hosting requirements.
 runtime_wheels.py validates the complete offline set before creating site-packages,

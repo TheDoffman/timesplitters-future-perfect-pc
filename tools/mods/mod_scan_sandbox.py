@@ -13,6 +13,7 @@ import threading
 import stat
 
 from mod_package import require, read_json
+from mod_runtime_files import native_files
 
 ISOLATION_POLICY = 'macos-seatbelt-v3'
 GUARDIAN_ROOT = Path(__file__).resolve().parents[2] / 'build/scan-guardian'
@@ -62,12 +63,16 @@ def sandbox_profile(executable, content, database, scratch):
     runtime = ['/System', '/usr/lib', '/usr/share', '/private/preboot/Cryptexes',
                '/opt/homebrew/Cellar', '/usr/local/Cellar']
     public_certs = ['/opt/homebrew/etc/clamav/certs', '/usr/local/etc/clamav/certs']
+    bundled = native_files(executable)
+    if bundled is not None:
+        runtime = runtime[:4]
+        public_certs = []
     subpaths = lambda paths: ''.join('(subpath ' + quote(p) + ')' for p in paths)
     literals = lambda paths: ''.join('(literal ' + quote(p) + ')' for p in paths)
     # The root directory itself is needed by the macOS27 dyld bootstrap. It does
     # not grant traversal/read access to the contents of any other directory.
     reads = subpaths([*runtime, *public_certs, content, database, scratch]) + literals([
-        '/', '/dev/null', '/dev/random', '/dev/urandom', '/private/etc/localtime', executable])
+        '/', '/dev/null', '/dev/random', '/dev/urandom', '/private/etc/localtime', executable, *(bundled or [])])
     return ('(version 1)(deny default)'
             # macOS process-argument sysctls use process-info checks rather
             # than the named sysctl gate; explicit denial is necessary here.
@@ -81,7 +86,7 @@ def sandbox_profile(executable, content, database, scratch):
             '(sysctl-name "kern.argmax"))'
             '(allow file-read-metadata)'
             '(allow file-read* ' + reads + ')'
-            '(allow file-map-executable ' + subpaths(runtime) + literals([executable]) + ')'
+            '(allow file-map-executable ' + subpaths(runtime) + literals([executable, *(bundled or [])]) + ')'
             '(allow file-write* (subpath ' + quote(scratch) + '))')
 
 
