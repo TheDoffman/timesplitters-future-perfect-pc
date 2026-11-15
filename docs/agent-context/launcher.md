@@ -27,7 +27,8 @@ request to the configured live pinned root/origin, rejects redirects and bounds
 responses. Sessions remain in memory; secret inputs clear on submit/tab exit.
 Read-only InspectPackage shares installer validation. A separate developer mode
 checks real SQLite/account/upload code over pipes; player/UI runs need no Python.
-See mod-workshop.md and build-test-details.md. Workshop awaits avoid UI capture.
+See mod-workshop.md and build-test-details.md. Native test receipts record the
+Python launcher hash/version; Workshop awaits avoid UI capture.
 
 Dependency install flow: ModWorkshopPage now prepares a fresh signed dependency
 plan, displays exact versions/reuse/new expanded payload size and requires an

@@ -1562,3 +1562,8 @@ interpreter. Normal launcher/UI modes remain Python-free. Test source root and
 interpreter are scoped to the helper; source/helper/Python identity participate
 in build validation receipts/cache. All helper credentials belong to a discarded
 private fixture and never enter command-line arguments or build logs.
+Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
+interpreter executable, version and launcher-file SHA256 when --test is used.
+This identifies the developer test launcher, not a fully sealed Python runtime;
+Python is not included in the player package. Windows records its interpreter
+path/version/hash through the existing validation-cache fingerprint.

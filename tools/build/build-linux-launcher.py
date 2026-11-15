@@ -116,6 +116,10 @@ def main():
                'working_tree_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                'source_sha256': {p.relative_to(ROOT).as_posix(): digest(p) for p in sources},
                'sdk': pin, 'files': files}
+    if args.test:
+        receipt['creator_backend_python'] = {'executable': str(Path(sys.executable).resolve()),
+                                           'version': sys.version,
+                                           'launcher_sha256': digest(Path(sys.executable).resolve())}
     (output / 'BUILD-launcher.json').write_text(json.dumps(receipt, indent=2) + '\n')
     if args.test:
         env['TSFP_TEST_REQUIRE_ICON'] = '1' if (args.artwork_dir / 'launcher.ico').is_file() else '0'
