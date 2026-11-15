@@ -1,3 +1,29 @@
+Periodic reviewed-release scans (source6dfa2417,2026-11-14): rescan-next shares
+the queue worker lock, withholds availability during slow AV without holding a
+SQLite writer lock, retains an existing review after fresh clean validation,
+revokes detections, and withholds/retries scanner failures. Changed bytes require
+manual repair/review. Lease/state checks preserve concurrent moderation and allow
+interrupted-scan reclaim. Backup refuses active periodic leases; restore removes
+historical renewal authority. No new upload gets automatic approval.
+Native selected backend suites pass: Mac167, Linux166/1 host skip. Windows broad
+regressions244/17 host skips; final periodic/freshness suite13 pass. These include
+4 additional stale/isolation/database-age/timestamp cases. Source/context checks
+pass. The new worker and tests are in CI runtime scope.
+Actual Mac ClamAV1.5.4 with official databases, max age2days, and Seatbelt policy
+verified clean renewal -> missing-database scan-error/unavailable -> valid retry
+approved, retaining exactly one original manual-review event. Due/retry clocks
+were forced only in a disposable fixture. EvidenceSHA
+f7c22475543afc7f000ff3d917ba60aa525102329b9819e1d8e9e9a0065d4085.
+Real periodic EICAR detection/revocation also passes in an unserved private fixture.
+Initial real scan rejected it; a deliberately inconsistent historical approval
+flag was simulated while the blocked report remained catalog-ineligible. The
+periodic command revoked it and later rescan was refused. Never executed/served.
+EvidenceSHA791e6d4d6db51307627f77d7835d7d009a8cbc157cc34cd887752bfc997d34fe.
+Persistent supervisor/RSS monitoring, definition updates, service identity,
+automatic signed publication/invalidation, scheduling, restart acceptance and
+internet deployment are still incomplete. Database changes alone cannot invalidate
+an existing static snapshot. Full goal active; main untouched.
+
 Private host backup/recovery (sourcecd6ec8ab,2026-11-14): bounded private snapshots
 capture SQLite committed/WAL state and referenced release/queued bytes under a
 reserved writer lock. New-root restore revokes sessions/invitations, suspends

@@ -41,3 +41,8 @@ database revocation alone does not remove bytes from an already exported tree.
 The host/public workshop is not production ready until this is automated and
 verified. See [creator service](mod-creator-service.md),
 [Mac hosting](mac-mod-hosting.md) and [recovery](mod-host-recovery.md).
+
+Native Mac acceptance now includes actual ClamAV clean renewal, missing-database
+failure/retry, and harmless EICAR detection/revocation in private fixtures. The
+EICAR test explicitly simulates an inconsistent old approval flag; it never
+creates a publicly eligible release. See STATUS for evidence and remaining gates.
