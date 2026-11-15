@@ -1,3 +1,23 @@
+Native launcher handoff acceptance on Mac/Linux (launcher86ebbf43,2026-11-14):
+SDK build_package -> shared ModLibrary.Install/Enable -> GameSettings.StartInfo
+capsule/save/cache selection -> existing native game -> natural First to Three
+winner/ordinary-save preservation/clean exit0 all pass. Both hosts use a private
+installed-layout fixture, an explicitly local capability receipt and the existing
+native game/helper bundle; input/display/data fixtures are supplied separately.
+The native launcher classes are called through a local .NET driver referencing
+the actual host-built launcher assembly. No uploaded path/helper policy is used.
+ArchiveSHA65e6ed6d53ccd2ef658ab27f0eccc5c216b49a2b92c0e8cb397dc3a346038d42 and
+profile b057afad041f29692dc98454fd8e31503ecacf7f03bc319f81bf7079c6f18130 match Windows.
+Mac bot3 wins score3/rank1/raw kills3; gameSHAeea069b54ab6a8b59d2e458c783b291966edb7b373a0f570eb14067450426858;
+evidenceSHAdb43dc556b20d97352703dd5e054612274e50b4a976e81d54d4225aa1e678fc4.
+Linux software Vulkan bot3 wins score3/rank1/raw kills3;
+gameSHA18b80d4e4a139a1aa627b25bf92135c1da5132e3a23b057cdd5bd24d3334b809;
+evidenceSHA52f78b148f0a31c02d1cf2cec7e40cbd85f860d6d8370fdeef561f6475b95abf.
+This establishes private launcher-to-game activation on all three hosts. Public
+creator-to-player acceptance, gameplay after update/rollback/removal, native
+release packages, operational backups, crash recovery and internet hosting remain
+unfinished. The full-completion goal stays active; main remains untouched.
+
 Launcher-selected script/cache acceptance (source1bdc81dc,2026-11-14): real
 Windows game consumed the native launcher's package-derived First to Three
 capsule and local ModCacheLocation preference. A natural bot reached score3,

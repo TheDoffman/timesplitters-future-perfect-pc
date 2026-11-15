@@ -1,3 +1,7 @@
+Gameplay-mode update/rollback checks compare complete capsule bytes, require a
+new package-derived save identity for an update and recover the original identity
+on rollback while preserving the newer installed version.
+
 launcher_shared_ui.cs clicks the real Installed storage field/Save button to test
 local cache selection, Unicode preference persistence,
 missing/invalid path refusal, blank/default reset and Play without mods bypass.

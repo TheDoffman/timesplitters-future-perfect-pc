@@ -255,6 +255,11 @@ public static class LauncherSharedUiChecks
             string texture=LibraryPackage(root,"mode-texture","1.0.0",1);var asset=library.Install(texture,Core.Hash(texture),System.Threading.CancellationToken.None);library.Enable(asset.Key,System.Threading.CancellationToken.None);
             var combined=configured();expected=ModScriptCapsule.Create(mode.Sha256,new[]{asset.Sha256},System.Text.Encoding.UTF8.GetBytes("return true\n"));
             Need(combined.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE_SHA256"]==expected.Sha256,"Independent asset package was omitted from save identity");
+            string updatePackage=LibraryPackage(root,"gameplay","1.0.1",1,script:true);var update=library.Install(updatePackage,Core.Hash(updatePackage),System.Threading.CancellationToken.None);
+            library.Enable(update.Key,System.Threading.CancellationToken.None);var updated=ModScriptCapsule.Create(update.Sha256,new[]{asset.Sha256},System.Text.Encoding.UTF8.GetBytes("return true\n"));
+            Need(updated.ProfileSha256!=expected.ProfileSha256 && File.ReadAllBytes(configured().EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE"]).SequenceEqual(updated.Bytes),"Mode update reused its old source or save identity");
+            library.Enable(mode.Key,System.Threading.CancellationToken.None);combined=configured();
+            Need(combined.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE_SHA256"]==expected.Sha256 && library.List().Any(m=>m.Key==update.Key),"Mode rollback lost its original identity or retained update");
             string profile=File.ReadAllText(Path.Combine(folder,"Mods/profile.json"));
             string other=LibraryPackage(root,"second-mode","1.0.0",1,script:true);var second=library.Install(other,Core.Hash(other),System.Threading.CancellationToken.None);
             WorkshopReject(()=>library.Enable(second.Key,System.Threading.CancellationToken.None),"Two gameplay modes enabled together");

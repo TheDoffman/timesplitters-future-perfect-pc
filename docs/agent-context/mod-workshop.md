@@ -15,20 +15,22 @@ before each launch. GameSettings supplies the explicit ordinary save root; nativ
 bootstrap selects separate ModSaves and offline-only mode. Enable never runs code.
 Missing capability leaves scripts inactive; Play without mods bypasses the profile.
 Native UI/source/capability/tamper/preservation checks are in launcher_shared_ui.cs.
-Public hosting and actual launcher-to-game acceptance remain pending.
+Actual packaged-mode launcher handoffs now finish native offline matches on all
+three hosts with ordinary saves preserved; evidence is in STATUS.md. These are
+private fixtures, not public upload-to-play or release-package acceptance.
 
-ScriptRuntime adds one bounded background preflight/result and epoch-specific approval before MatchManager can bind; production startup/title/shutdown wiring is still pending. See mod-scripting.md.
+ScriptRuntime uses bounded background preflight and epoch-specific approval before MatchManager binds. Production startup/title/shutdown are wired; see mod-scripting.md.
 
-Native RuntimeResources now discovers OS-adjacent generated helper bundles and verifies private snapshots; PrivateDirectory creates strict-permission caches independently of saves. Bootstrap binding remains pending; see mod-scripting.md.
+Native RuntimeResources discovers OS-adjacent helper bundles and verifies private snapshots; strict private caches and bootstrap binding are wired. See mod-scripting.md.
 
 Preflight also consumes unsupported fresh identities before any worker admission;
 restoring their flags cannot start a mid-round script. See mod-scripting.md.
 
-MatchManager now owns one active/retiring native match with reap-before-successor and no stale epoch reopen. Game auto-binding/resource discovery is still pending; see mod-scripting.md.
+MatchManager owns one active/retiring match with reap-before-successor and no stale epoch reopen. Game auto-binding/resource discovery are wired; see mod-scripting.md.
 
 Bootstrap reads Windows handoff/root environment through the wide CRT and strict UTF8 conversion; empty/oversized pairs fail closed. Native fixtures cover Unicode capsule and save paths. See mod-source-handoff.md.
 
-Native mod_bootstrap now consumes an explicit developer capsule before kernel init and publishes source only after isolated storage commits. The launcher still emits no scripts and no custom-mode manager starts yet. tests/mods/test_mod_bootstrap.py covers real capsule/lease plus shared storage state; see mod-source-handoff.md.
+Native mod_bootstrap now consumes an explicit developer capsule before kernel init and publishes source only after isolated storage commits. The launcher now emits verified generation capsules and the production manager auto-binds. tests/mods/test_mod_bootstrap.py covers real capsule/lease plus shared storage state; see mod-source-handoff.md.
 
 # Mod workshop foundation
 
@@ -49,8 +51,8 @@ Shared launcher ModWorkshopPage.cs owns browsing/search/verified download and
 installed controls. ModLibraryPage.cs owns immutable Packages, strict JSON/ZIP/
 DDS validation, dependency/cycle/conflict guards, profile hashes and active
 texture generations. Mutations reject a running game. Old versions support
-rollback; unknown personal files and links are preserved. Only texture-only
-mods can be enabled. Maps/audio/scripts can be installed but never executed.
+rollback; unknown personal files and links are preserved. Texture-only mods and one main.lua mode can be enabled on capable builds.
+Maps/audio/additional Lua remain inactive.
 GameSettings.StartInfo(root,withoutMods) verifies the overlay for normal play
 and bypasses even a broken profile for recovery, without changing that profile.
 

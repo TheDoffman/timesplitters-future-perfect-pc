@@ -4,12 +4,20 @@ The selected deployment target is the owner's Mac mini, accessible over the
 internet, with no purchased domain. **Mods are browsed and searched inside the
 existing launcher.** A separate public website is optional.
 
-This work prepares a download-only hosting alpha. SSH access to the Mac is now
-verified; public access has not been enabled. Creator scanning/review stays private;
-authenticated public uploads and isolated scan workers remain future work.
-Downloads remain inactive until explicitly installed/enabled. Texture-only
-activation is implemented in the native library and shared reader, with live
-game acceptance pending. Maps/audio/scripts cannot be enabled yet.
+The local prototype now includes authenticated creator uploads, isolated scanning,
+private review, signed catalogs and native launcher enforcement. Public access has
+not been enabled. The current Caddy configuration serves approved downloads only;
+proxying the creator API, persistent operation, recovery and public acceptance
+remain required for the complete system. This download-only hosting milestone is
+not the full requested workshop.
+
+Texture overlays and one restricted gameplay mode can be enabled by compatible
+native launchers. The packaged First to Three example has completed real matches
+through launcher-generated handoffs on Windows, Mac and Linux, with ordinary saves
+preserved. These tests use private installed-layout fixtures and existing native
+builds; they do not establish a published release or public upload-to-play flow.
+Maps, audio and additional Lua files remain inactive. See [workshop scope](mod-workshop.md)
+and [acceptance evidence](../project/STATUS.md).
 
 ## Layout and public address
 
@@ -50,8 +58,8 @@ scanner daemon was started. Tailscale1.104.7 is installed in /Applications; its
 official ZIP checksum, strict/deep Developer ID signature and Apple notarization
 were verified (Tailscale Inc., team W5364U7YZB). The app was opened in the
 background, but the CLI reports Failed to save preferences. An older1.94.1
-network extension is activated/enabled. Working sign-in/public access is still
-unverified; complete the [official setup](https://tailscale.com/docs/install/mac).
+network extension is activated/enabled. A later status query did not respond and was stopped without stopping the app
+or network service. Working sign-in/public access remains unverified; complete the [official setup](https://tailscale.com/docs/install/mac).
 
 On this FileProvider-managed Desktop, the generated app acquired FinderInfo and
 code signing failed despite the builder's existing metadata cleanup. The same
