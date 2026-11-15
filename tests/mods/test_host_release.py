@@ -82,7 +82,9 @@ def bundle():
         (runtime / 'runtime.json').chmod(0o600)
         source_files = {}
         keys = ['tools/mods/mod_api.py', 'tools/mods/mod_runtime_files.py', 'tools/mods/scan_guardian_mac.c',
-                'tools/mods/scan_child.py', 'build/scan-guardian/scan-guardian-mac']
+                'tools/mods/scan_child.py', 'build/scan-guardian/scan-guardian-mac',
+                'tools/mods/mod_host_identity.py', 'tools/mods/hosting/locked-service-bootstrap-mac.py',
+                'tools/mods/hosting/initialize-private-scan-mac.py', 'tools/mods/hosting/system-scan-monitor-mac.py']
         for key in keys:
             wire = ('fixture ' + key).encode()
             path = source / key
@@ -113,6 +115,16 @@ def test_real_input_plan_verifies_all_components_without_writing_root(bundle):
     plan = release.plan(descriptor, hashlib.sha256(descriptor.read_bytes()).hexdigest())
     assert plan['uid'] == os.getuid() and len(plan['components']) == 2
     assert not (base / 'target').exists()
+
+
+@pytest.mark.parametrize('missing',['tools/mods/mod_host_identity.py','tools/mods/hosting/locked-service-bootstrap-mac.py',
+                                    'tools/mods/hosting/initialize-private-scan-mac.py','tools/mods/hosting/system-scan-monitor-mac.py'])
+def test_incomplete_privilege_boundary_component_refused_before_copy(bundle,missing):
+    base,descriptor,data=bundle
+    del data['source_files'][missing]
+    descriptor.write_text(json.dumps(data))
+    with pytest.raises(ValueError,match='Incomplete'):release.plan(descriptor,hashlib.sha256(descriptor.read_bytes()).hexdigest())
+    assert not (base/'target').exists()
 
 
 @pytest.mark.parametrize('change', ['tamper', 'unrecorded', 'symlink', 'hardlink', 'writable-parent'])

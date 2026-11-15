@@ -46,8 +46,18 @@ if not value['identity_ok']:
  value['phase']='identity-refused'
  if role=='target':write()
  sys.exit(2)
-try:m.healthy(value['uid']);value['healthy']=True
-except (OSError,ValueError):value['healthy']=False
+try:os.seteuid(0);value['root_restore_denied']=False
+except PermissionError:value['root_restore_denied']=True
+if not value['root_restore_denied']:
+ value['phase']='root-restoration-permitted'
+ if role=='target':write()
+ sys.exit(2)
+deadline=time.monotonic()+5
+while True:
+ try:m.healthy(value['uid']);value['healthy']=True;break
+ except (OSError,ValueError):value['healthy']=False
+ if role=='reader' or time.monotonic()>=deadline:break
+ time.sleep(0.05)
 if role=='reader':print(json.dumps(value));sys.exit(0)
 if not value['healthy']:value['phase']='heartbeat-refused';write();sys.exit(2)
 try:
@@ -81,16 +91,15 @@ def job(role, release, fixture, python):
     identity.require(fixture == fixture_path(nonce),'Invalid monitor proof scope')
     target = monitor.label()
     code = release/'source/tools/mods/hosting'
-    args = ([str(fixture/'worker.py'),'target',str(fixture/'state'),str(code/'system-scan-monitor-mac.py'),str(fixture)]
+    args = ([str(code/'locked-service-bootstrap-mac.py'),'--role','proof-target','--nonce',nonce]
             if role=='target' else [str(code/'probe-system-scan-monitor-mac.py'),'--controller',nonce])
     return dict(Label=target+('.proof-monitor' if role=='controller' else ''),
-                UserName='root' if role=='controller' else identity.ACCOUNT,
-                GroupName='wheel' if role=='controller' else identity.ACCOUNT,InitGroups=role=='target',
+                UserName='root',GroupName='wheel',InitGroups=False,
                 ProgramArguments=[str(python),'-I','-S','-B',*args],RunAtLoad=True,KeepAlive=False,
                 AbandonProcessGroup=False,ProcessType='Background',ExitTimeOut=5,Umask=0o077,
                 EnvironmentVariables=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(fixture),TMPDIR='/private/tmp'),
                 HardResourceLimits=dict(Core=0,CPU=30,FileSize=8192,NumberOfFiles=64),
-                StandardOutPath='/dev/null',StandardErrorPath='/dev/null')
+                StandardOutPath='/dev/null',StandardErrorPath=str(fixture/(role+'-stderr.txt')))
 
 
 def ready(path, uid):
@@ -130,6 +139,21 @@ def cleanup(attempted):
     identity.require(not remaining,'Owned system proof jobs not confirmed unloaded: '+','.join(remaining))
 
 
+def diagnostics(fixture):
+    import stat
+    messages=[]
+    for role in ('target','controller'):
+        try:
+            fd=os.open(fixture/(role+'-stderr.txt'),os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+            with os.fdopen(fd,'rb') as stream:
+                info=os.fstat(stream.fileno())
+                if stat.S_ISREG(info.st_mode) and info.st_uid==0 and info.st_nlink==1 and not info.st_mode&0o022:
+                    text=stream.read(4096).decode('utf-8','replace').strip()
+                    if text:messages.append(role+': '+text)
+        except OSError:pass
+    return '; '.join(messages)
+
+
 def controller(nonce):
     release,account=monitor.installed()
     fixture=fixture_path(nonce)
@@ -137,16 +161,29 @@ def controller(nonce):
     monitor.ROOT=fixture
     identity.require(marker.get('producer')=='tsfp-system-monitor-proof-v1' and marker.get('uid')==account['uid']
                      and marker.get('release')==str(release) and marker.get('service')==monitor.label(),'Unknown monitor proof')
-    state,watching=monitor.watch_once(account['uid'],{},clock=lambda:1000)
-    identity.require(watching['status']=='watching','Native controller did not observe the worker')
-    monitor.write_health(account['uid'],watching)
+    state={};saw_starting=False;deadline=time.monotonic()+10
+    while True:
+        state,watching=monitor.watch_once(account['uid'],state)
+        identity.require(watching['status'] in ('starting','watching'),'Native controller lost the expected worker phase')
+        saw_starting=saw_starting or watching['status']=='starting'
+        monitor.write_health(account['uid'],watching)
+        if watching['status']=='watching':
+            try:
+                target=ready(fixture/'state/target.json',account['uid'])
+                identity.require(target.get('phase')=='ready' and target.get('pid')==state['pid'],
+                                 'Restricted target did not finish readiness')
+                break
+            except FileNotFoundError:pass
+        identity.require(time.monotonic()<deadline,'Native controller startup/readiness deadline exceeded')
+        time.sleep(0.05)
+    identity.require(saw_starting,'Native controller did not observe the trusted root bootstrap phase')
     # Only the trusted inert proof controls its clock; no OS or production clock changes.
-    _,stopped=monitor.watch_once(account['uid'],dict(pid=state['pid'],start=0),clock=lambda:481)
+    _,stopped=monitor.watch_once(account['uid'],dict(pid=state['pid'],start=0,restricted=True),clock=lambda:481)
     identity.require(stopped.get('status')=='terminated' and stopped.get('reason')=='wall-time',
                      'Native controller could not stop its fixed system job')
     monitor.write_health(account['uid'],stopped)
     result=dict(schema=1,phase='controller-complete',uid=os.getuid(),euid=os.geteuid(),pid=os.getpid(),
-                target_pid=state['pid'],watching=watching,stopped=stopped)
+                target_pid=state['pid'],saw_root_startup=saw_starting,watching=watching,stopped=stopped)
     identity.write_new(fixture/'.controller.json',result)
     os.replace(fixture/'.controller.json',fixture/'controller.json')
 
@@ -189,21 +226,23 @@ def apply():
             attempted.append(label)
             identity.require(launchctl('bootstrap','system',str(path)).returncode==0,'System proof job bootstrap failed')
             if role=='target':
+                bootstrap=await_ready(fixture/'bootstrap.json',0)
+                identity.require(bootstrap.get('uid')==bootstrap.get('euid')==0 and type(bootstrap.get('pid')) is int,
+                                 'Trusted bootstrap identity changed')
+            else:
+                controlled=await_ready(fixture/'controller.json',0)
                 target=await_ready(fixture/'state/target.json',account['uid'])
                 identity.require(target.get('phase')=='ready' and target.get('uid')==target.get('euid')==target.get('gid')==target.get('egid')==account['uid']
                                  and target.get('pid')==target.get('pgid') and set(target.get('kernel_groups',[]))<={account['uid']}
                                  and not {0,80}.intersection(target.get('groups',[]))
-                                 and target.get('healthy') is True and target.get('heartbeat_write_denied') is True,
+                                 and target.get('healthy') is True and target.get('heartbeat_write_denied') is True
+                                 and target.get('root_restore_denied') is True,
                                  'Native locked job identity or root heartbeat enforcement failed: '+json.dumps(target)[:500])
                 identity.require(type(target.get('child_pid')) is int and target['child_pid']>1
                                  and type(target.get('pid')) is int and target['pid']>1,'Invalid native proof process identity')
-                printed=launchctl('print','system/'+label)
-                identity.require(printed.returncode==0 and monitor.managed_pid(printed.stdout.decode())==target['pid'],
-                                 'Native target identity changed')
-            else:
-                controlled=await_ready(fixture/'controller.json',0)
                 identity.require(controlled.get('uid')==controlled.get('euid')==0
-                                 and controlled.get('target_pid')==target['pid'],'Native root controller identity changed')
+                                 and controlled.get('target_pid')==target['pid']==bootstrap['pid']
+                                 and controlled.get('saw_root_startup') is True,'Native root controller identity changed')
         deadline=time.monotonic()+10
         while True:
             printed=launchctl('print','system/'+monitor.label())
@@ -218,6 +257,9 @@ def apply():
                    controller=controlled,root_heartbeat_write_denied=True,terminated_heartbeat_rejected=True,
                    target_and_child_exited=True,controlled_test_clock_only=True,network_started=False,
                    production_services_deployed=False)
+    except (OSError,ValueError,subprocess.SubprocessError) as error:
+        detail=diagnostics(fixture)
+        raise identity.ProvisionError(str(error)+('; '+detail if detail else '')) from error
     finally:
         try:
             cleanup(attempted)

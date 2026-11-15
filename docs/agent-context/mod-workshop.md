@@ -1,46 +1,32 @@
-Native dd9d root installation also completed; its smoke kernel groups are[600].
-The InitGroups=false launchd target actually retained kernel[600,12,61,702,701,100],
-so its strict proof correctly refused. Both fixture job labels are absent. Worker
-plists now enable InitGroups to initialize account credentials (root monitor stays
-false); kernel/service-GID and directory root/admin checks are unchanged. Native
-proof of this setting is still required. Untracked private-initializer work is
-separate and not included in the frozen proof component.
+System scan deployment uses locked-service-bootstrap-mac.py: fixed installed
+roles clear supplementary groups, set GID/UID600, verify real/effective/kernel and
+directory credentials, prove root cannot be restored, then exec worker code with
+minimal environment. Root prelude uses -I-S-B and reads no worker configuration or
+uploads. launchd InitGroups true/false both retained extra kernel groups on this
+Mac; explicit subprocess dropping yielded[600]. Strict admission is unchanged.
+System monitor policy root-system-bootstrap-v2 allows a new PID a bounded10s root
+startup, emits unhealthy starting, then requires UID600; root cannot reappear after
+the restricted phase. Same ps snapshot supplies owner+RSS; cancellation uses only
+the fixed launchd label, with checked results. Worker waits boundedly for health.
+Root heartbeat/marker use protected nofollow stable descriptors and atomic writes.
 
-Native b6fd root installation completed, including sealed-runtime/UID600 smoke;
-its inert system proof refused Python's directory-membership list as if it were
-kernel credentials. Both test labels are verified absent. mod_host_identity.py
-now reads bounded fixed libSystem getgroups credentials on Mac; kernel groups
-must be empty/service GID and directory memberships must still exclude root/admin.
-Scanner admission, installed smoke and native proof share this distinction.
-Direct UID501 comparison and local getgroups(2)/Python docs verify the API issue;
-corrected UID600 native proof remains required. No production/public jobs started.
+initialize-private-scan-mac.py creates only data/scan as UID600: empty repository/
+database/state dirs, exact scanner/updater configs and preparing->complete marker.
+Unchanged completed layout is reusable without writes; partial/foreign/linked/
+changed/different-generation state is preserved and refused. No network/jobs or
+repository initialization. Both system worker/update modes require completed
+matching initialization. Root generator checks it in a dropped child, then emits
+new-only monitor/scan/6-hour definition plists without loading them. Root entry
+points require immutable installed release/runtime/identity; no supplied commands,
+users, executables or configuration paths. Release admission requires these helpers.
 
-Native root-monitor proof is probe-system-scan-monitor-mac.py: plan by default,
-installed-release --apply only. It creates inert UID600 target+child and temporary
-root controller, verifies real/effective/groups/PGID and root-health write denial,
-executes actual monitor core/label stop with a trusted test clock, then checks
-worker+child exit and terminated-health refusal. No OS clock/budget changes.
-Random root-owned fixture/derived labels keep production state untouched; all
-owned jobs must be unloaded before acceptance, even if a bootout times out.
-Windows contracts159 pass/17 POSIX skips; prior Mac monitor/file suite43 pass.
-Actual privileged proof and persistent boot/lifecycle remain pending. See STATUS.
-
-System-heartbeat schema rejects bool-as-integer too. The POSIX rejection test
-restores its original fixture between corruptions; writer preservation of unknown
-records must remain enabled. Mac first run exposed that fixture sequencing issue.
-
-System scan monitor implementation: system-scan-monitor-mac.py fixes the privilege
-split for future system jobs. Root monitor addresses only a fixed derived scanner
-label, never accepts commands/targets/config paths, samples UID-bound descendants
-and verifies stop results. Root protected FD/nofollow atomic heartbeat and deployment
-marker bind UID/service/policy/time. New --system-worker mode ignores GUI health,
-accepts only the fixed private config and requires a restricted non-root identity.
-Generator requires immutable installed release/identity/runtime, emits new-only
-root monitor + UID600 worker plists (InitGroups=false), and never bootstraps jobs.
-GUI watchdog now also rejects failed cancellation instead of claiming termination.
-Policy/file/generator tests registered; actual root install/system-group/permission/
-lifecycle/boot acceptance and config/definitions initialization remain pending.
-See ../development/system-scan-supervision.md. No production/public job started.
+Native probe now exercises protected root bootstrap->UID600, denied root restore,
+root-health write refusal, same-PID/PGID and child containment, root controller's
+label stop using a test-only wall clock, exited processes and all labels unloaded.
+Both prior direct-launchd attempts correctly refused extra groups; their jobs are
+verified absent. Explicit bootstrap native permission/boot acceptance remains
+pending. Details: ../development/system-scan-supervision.md and STATUS. Existing
+GUI prototypes remain separate; no production/public service started.
 
 Actual user Mac at07f7f0a7 now passes native build106 UI+normal backend and real
 creator/isolated-ClamAV/moderation flow, including DDS pixels and private report

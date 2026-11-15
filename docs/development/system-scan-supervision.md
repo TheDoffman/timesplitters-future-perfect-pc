@@ -29,14 +29,26 @@ its completed installation receipt, matching locked-account identity and install
 Python. `--generate` writes new root-owned plists and a deployment marker under
 the fixed `monitor` directory. It refuses existing state and does not load jobs.
 The generated Python path is canonical, inside the installed runtime. The monitor
-uses `-I -S -B` and a minimal environment; the scanner uses `-I -B` under
-`_tsfpworkshop`. The scanner specifies `InitGroups=true` to initialize credentials
-for that account; the root monitor uses false. Both disable core dumps and retain
-launchd process-group cleanup. Native testing with initialization disabled showed
-extra kernel groups for the restricted job, while explicit subprocess group
-clearing produced only600. The host getgroups(2) manual documents initgroups
-opting into account membership with a single returned primary GID. The corrected
-launchd setting must still pass the unchanged strict native credential check.
+and a short protected bootstrap start with `-I -S -B` and a minimal environment.
+The bootstrap accepts only fixed scan/definition roles, or a nonce-bound inert
+proof role; it accepts no command, executable, user or configuration path. It
+clears groups, sets real/effective GID and UID, checks kernel credentials and
+root/admin directory membership, and proves root cannot be restored before exec.
+No worker module, private configuration, repository or uploaded content is loaded
+as root. The same PID then runs worker code as the restricted account with `-I -B`.
+The drop uses setgroups/setregid/setreuid, matching Python's
+[subprocess credential primitives](https://docs.python.org/3.12/library/subprocess.html#subprocess.Popen),
+whose explicit group clearing succeeded in the installer smoke on this Mac.
+
+Real launchd tests with both InitGroups values retained extra kernel groups on
+this Mac, while the installer's explicit subprocess drop produced only600.
+The bootstrap uses an explicit drop rather than relying on that plist setting.
+The monitor permits a new PID a maximum10-second root startup; its `starting`
+heartbeat is unhealthy. Once the PID is restricted, a return to root fails closed.
+Owner and RSS come from one numeric process snapshot. The system worker waits
+boundedly for the monitor to observe its restricted phase before admitting work.
+The label-based cancellation,480-second lifetime and independent native scanner
+containment remain in force. Native bootstrap enforcement is still required.
 
 The worker's `--system-worker` mode accepts no configuration argument: it reads the
 fixed private scan configuration and requires a non-root identity without root or
@@ -49,12 +61,30 @@ and the host getgroups(2) manual. Kernel groups must be empty or the service GID
 directory membership separately must exclude root/admin. Both lists are retained
 in smoke/proof reports. The native launchd and subprocess privilege-drop paths
 must satisfy these checks independently.
-Instead it checks a root-owned, bounded, single-link, non-writable-by-others
+It checks a root-owned, bounded, single-link, non-writable-by-others
 heartbeat through held nofollow descriptors. Service/UID/policy/status/time must
 match. The root directory chain is also verified. Health is published atomically
 at most every5 seconds or on state changes. Its readable metadata contains no
 credentials or upload paths; worker-owned directories are not privileged write
 targets. Unknown root monitor records are preserved rather than adopted.
+
+## Private initialization
+
+`initialize-private-scan-mac.py` defaults to a read-only plan. Its installed
+`--apply` entry runs only as the locked account with the installed runtime.
+It creates the fixed private data/scan tree, empty repository/database/state
+directories, exact scanner/updater configs and an initialization marker. The marker
+becomes complete only after all writes finish. An unchanged complete layout is
+reusable without rewriting config or application data. Incomplete/foreign/changed/
+linked state and different source generations are preserved and refused.
+It never downloads definitions, creates/migrates a repository or starts services.
+Both system worker and system updater modes require matching completed state.
+
+Root plist generation checks that state through a subprocess with UID/GID600 and
+cleared groups. It emits three private artifacts: monitor, scan bootstrap and a
+six-hour official-definition bootstrap. Generation does not register/load them.
+Host upgrades still need generation/config migration with preservation of existing
+repository/database/state, rather than automatic adoption of an unknown layout.
 
 Do not bootstrap these plists until the fixed private configuration, official
 definitions and fresh isolated scanner work under the locked identity, and the
@@ -68,7 +98,9 @@ backup/recovery and internet-to-native-game acceptance remain separate gates.
 `--apply` requires the immutable installed release and isolated Python, matching
 the monitor's production installation gate. It creates a new root-protected
 fixture and two inert nonpersistent system jobs, with distinct derived labels.
-The restricted job reports real/effective UID/GID, supplementary groups and its
+The target uses the actual protected bootstrap. The controller observes an unhealthy
+root startup, then the restricted job reports real/effective UID/GID, kernel and
+directory groups, denied root restoration and its
 process group, reads root health, proves it cannot overwrite that health, and
 starts one inert child. Refused identity/health checks retain numeric diagnostics.
 

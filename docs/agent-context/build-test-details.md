@@ -1,6 +1,12 @@
-Generated-job contracts now require InitGroups=true for the restricted target/
-worker and false for the root monitor, matching the native group diagnostic.
-Strict effective credential checks remain enabled; a real launchd rerun is required.
+Explicit bootstrap tests cover group->GID->UID ordering, failure short-circuiting,
+denied root restoration, fixed role/nonce args and immutable entry gates. Native
+probe now observes root startup then restricted same-PID execution before the
+wall-clock fault. Monitor tests cover bounded unhealthy startup, prohibited root
+return and health waiting. sample_state returns owner+RSS from one snapshot while
+sample retains its numeric API. Private-init tests use actual POSIX fd/mode/link/
+FIFO checks, preserve changed/unknown/live data and withhold interrupted setup.
+Generation checks private state in a dropped child and emits a 6-hour updater.
+These are contracts, not a substitute for native bootstrap/system/boot proof.
 
 test_host_identity.py covers bounded native gid arrays/failures/size changes,
 separate directory versus kernel membership, partial UID/GID drops and rejection

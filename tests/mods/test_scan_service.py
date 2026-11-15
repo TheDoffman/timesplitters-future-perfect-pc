@@ -173,6 +173,21 @@ def test_system_worker_ignores_worker_writable_gui_heartbeat(private_config,monk
     assert service.admit(private_config) and calls==[os.geteuid()]
 
 
+def test_system_worker_health_wait_is_bounded_and_handles_bootstrap_transition(monkeypatch):
+    now=[0.0];calls=[]
+    def sleeping(delay):now[0]+=delay
+    def healthy(_):
+        calls.append(now[0])
+        if now[0]<0.2:raise ModError('starting')
+    monkeypatch.setattr(service,'healthy',healthy)
+    assert service.await_system_health({},timeout=1,clock=lambda:now[0],sleep=sleeping)
+    assert len(calls)==3
+    def unavailable(_):raise ModError('unavailable')
+    monkeypatch.setattr(service,'healthy',unavailable)
+    assert not service.await_system_health({},timeout=0.2,clock=lambda:now[0],sleep=sleeping)
+    assert now[0]>=0.4
+
+
 def test_group_only_containment_is_held_until_both_components_upgrade(private_config, monkeypatch):
     from mod_scan_sandbox import ScanSandbox
     monkeypatch.setattr(ScanSandbox, 'GUARDED_PARENT_LIFETIME', False)

@@ -34,11 +34,11 @@ def test_roles_are_nonpersistent_isolated_and_bound_to_the_fixture(role,monkeypa
     python=release/'runtime/bin/python3.12'
     value=probe.job(role,release,fixture,python)
     assert value['Label']==probe.monitor.label()+('.proof-monitor' if role=='controller' else '')
-    assert value['UserName']==('root' if role=='controller' else '_tsfpworkshop')
-    assert value['InitGroups'] is (role=='target') and value['KeepAlive'] is False and value['AbandonProcessGroup'] is False
+    assert value['UserName']=='root'
+    assert value['InitGroups'] is False and value['KeepAlive'] is False and value['AbandonProcessGroup'] is False
     assert value['ProgramArguments'][:4]==[str(python),'-I','-S','-B']
     assert value['HardResourceLimits']==dict(Core=0,CPU=30,FileSize=8192,NumberOfFiles=64)
-    assert value['StandardOutPath']==value['StandardErrorPath']=='/dev/null'
+    assert value['StandardOutPath']=='/dev/null' and value['StandardErrorPath']==str(fixture/(role+'-stderr.txt'))
     assert '--system-worker' not in value['ProgramArguments'] and '--watchdog' not in value['ProgramArguments']
     for bad in [('other',release,fixture,python),(role,release,fixture,Path('/untrusted/python')),
                 (role,Path('/untrusted/release'),fixture,python)]:

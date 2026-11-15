@@ -19,7 +19,7 @@ def managed_pid(output):
     return int(values[0]) if values else None
 
 
-def sample(pid, command=run_command, uid=None, max_processes=8):
+def sample_state(pid, command=run_command, uid=None, max_processes=8):
     # Numeric process metadata only: no argv/environment or personal file names.
     # Session/group changes do not alter this parent-child relationship.
     code, output = command(['/bin/ps', '-axo', 'pid=,ppid=,rss=,uid='])
@@ -47,4 +47,9 @@ def sample(pid, command=run_command, uid=None, max_processes=8):
         require(owner == expected_uid, 'Managed scan owner changed')
         total += rss * 1024
         pending.extend(children.get(current, ()))
-    return total
+    return total, expected_uid
+
+
+def sample(pid, command=run_command, uid=None, max_processes=8):
+    value = sample_state(pid, command, uid, max_processes)
+    return None if value is None else value[0]

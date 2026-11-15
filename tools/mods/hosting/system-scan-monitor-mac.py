@@ -19,13 +19,14 @@ import time
 import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from mod_host_watch import managed_pid, run_command, sample
+from mod_host_watch import managed_pid, run_command, sample_state
 from mod_package import ModError, read_json, require
 
 ROOT = Path('/Library/Application Support/TSFP Mod Workshop')
 ROOT_UID = 0
-POLICY = 'root-system-label-v1'
+POLICY = 'root-system-bootstrap-v2'
 MEMORY_BYTES, WALL_SECONDS, MAX_PROCESSES = 2 * 1024**3, 480, 8
+STARTUP_SECONDS = 10
 
 
 def config_path():
@@ -132,14 +133,24 @@ def watch_once(uid, observed, command=run_command, clock=time.monotonic):
             return {}, dict(status='idle')
         now = clock()
         start = observed['start'] if observed.get('pid') == pid else now
-        memory = sample(pid, command, uid, MAX_PROCESSES)
-        if memory is None:
+        snapshot = sample_state(pid, command, None, MAX_PROCESSES)
+        if snapshot is None:
             return {}, dict(status='idle')
+        memory,owner = snapshot
+        restricted = observed.get('restricted',False) if observed.get('pid')==pid else False
+        if owner==0:
+            require(not restricted,'Restricted worker regained root')
+            reason = 'startup-timeout' if now-start > STARTUP_SECONDS else 'memory' if memory > MEMORY_BYTES else None
+            if reason:
+                stop(command)
+                return {},dict(status='terminated',reason=reason,rss_bytes=memory)
+            return dict(pid=pid,start=start,restricted=False),dict(status='starting',pid=pid,rss_bytes=memory)
+        require(owner==uid,'System worker owner changed')
         reason = 'memory' if memory > MEMORY_BYTES else 'wall-time' if now-start > WALL_SECONDS else None
         if reason:
             stop(command)
             return {}, dict(status='terminated', reason=reason, rss_bytes=memory)
-        return dict(pid=pid,start=start), dict(status='watching',pid=pid,rss_bytes=memory)
+        return dict(pid=pid,start=start,restricted=True), dict(status='watching',pid=pid,rss_bytes=memory)
     except (OSError, ValueError, ModError, subprocess.SubprocessError):
         # No healthy heartbeat after losing observation or stop permission.
         # Address the launchd label, never a sampled/reusable PID.
@@ -184,13 +195,13 @@ def installed():
 def plists(release, account, python):
     require(type(account.get('uid')) is int and account['uid'] >= 600
             and account.get('gid') == account['uid'], 'Invalid system worker account')
-    worker = release/'source/tools/mods/hosting/scan-service-mac.py'
+    bootstrap = release/'source/tools/mods/hosting/locked-service-bootstrap-mac.py'
     monitor = release/'source/tools/mods/hosting/system-scan-monitor-mac.py'
     common = dict(RunAtLoad=True, ProcessType='Background', AbandonProcessGroup=False,
                   Umask=0o077, StandardOutPath='/dev/null', StandardErrorPath='/dev/null',
                   EnvironmentVariables=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(ROOT/'data'),TMPDIR=str(ROOT/'data')))
-    scan = dict(common,Label=label(),UserName='_tsfpworkshop',GroupName='_tsfpworkshop',InitGroups=True,
-                ProgramArguments=[str(python),'-I','-B',str(worker),'--system-worker'],
+    scan = dict(common,Label=label(),UserName='root',GroupName='wheel',InitGroups=False,
+                ProgramArguments=[str(python),'-I','-S','-B',str(bootstrap),'--role','scan'],
                 StartInterval=60,HardResourceLimits=dict(Core=0,CPU=420,FileSize=512*1024**2,NumberOfFiles=256))
     watch = dict(common,Label=label()+'.monitor',UserName='root',GroupName='wheel',InitGroups=False,
                  ProgramArguments=[str(python),'-I','-S','-B',str(monitor),'--watchdog'],
@@ -198,6 +209,32 @@ def plists(release, account, python):
     # Root monitor never imports the worker or reads repository/scan configuration.
     watch['EnvironmentVariables'] = dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(ROOT),TMPDIR='/private/tmp')
     return scan, watch
+
+
+def definitions_plist(release, python):
+    path = ROOT/'data/scan/definitions.json'
+    name = 'org.timesplitters.workshop.definitions.'+hashlib.sha256(str(path).encode()).hexdigest()[:24]
+    state = ROOT/'data/scan/definitions-state'
+    return dict(Label=name,UserName='root',GroupName='wheel',InitGroups=False,
+                ProgramArguments=[str(python),'-I','-S','-B',str(release/'source/tools/mods/hosting/locked-service-bootstrap-mac.py'),'--role','definitions'],
+                RunAtLoad=True,StartInterval=21600,ProcessType='Background',Umask=0o077,AbandonProcessGroup=False,
+                EnvironmentVariables=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(state),TMPDIR=str(state)),
+                HardResourceLimits=dict(Core=0,CPU=180,FileSize=512*1024**2,NumberOfFiles=256),
+                StandardOutPath='/dev/null',StandardErrorPath='/dev/null')
+
+
+def check_private(release,account):
+    result = subprocess.run([str(Path(sys.executable).resolve()),'-I','-B',
+                             str(release/'source/tools/mods/hosting/initialize-private-scan-mac.py'),'--check'],
+                            user=account['uid'],group=account['gid'],extra_groups=[],stdin=subprocess.DEVNULL,
+                            capture_output=True,timeout=30,cwd=release,
+                            env=dict(PATH='/usr/bin:/bin',HOME=str(ROOT/'data'),TMPDIR=str(ROOT/'data')))
+    require(result.returncode==0 and len(result.stdout)<=8192 and len(result.stderr)<=8192,
+            'Complete private scan initialization as the locked account first')
+    ready = read_json(result.stdout)
+    require(isinstance(ready,dict) and ready.get('phase')=='ready' and ready.get('release')==release.name
+            and ready.get('services_started') is False and ready.get('network_started') is False,
+            'Private scan initialization differs from this release')
 
 
 def main():
@@ -209,11 +246,14 @@ def main():
     try:
         release, account = installed()
         if args.generate:
+            check_private(release,account)
             directory = ROOT/'monitor'
             require(not directory.exists() and not directory.is_symlink(), 'Preserving existing monitor state')
             directory.mkdir(mode=0o700)
             directory.chmod(0o755)
-            for name,value in zip(('scan.plist','monitor.plist'),plists(release,account,Path(sys.executable).resolve())):
+            python = Path(sys.executable).resolve()
+            values = (*plists(release,account,python),definitions_plist(release,python))
+            for name,value in zip(('scan.plist','monitor.plist','definitions.plist'),values):
                 with os.fdopen(os.open(directory/name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600),'wb') as output:
                     plistlib.dump(value,output)
             with os.fdopen(os.open(directory/'monitor.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600),'w') as output:

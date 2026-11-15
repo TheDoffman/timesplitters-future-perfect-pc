@@ -143,6 +143,17 @@ def system_monitor():
     return module
 
 
+def await_system_health(data,timeout=10,clock=time.monotonic,sleep=time.sleep):
+    deadline=clock()+timeout
+    while True:
+        try:
+            healthy(data)
+            return True
+        except (OSError,ValueError,ModError):
+            if clock()>=deadline:return False
+            sleep(0.1)
+
+
 def watch_once(data, observed, command=run_command, clock=time.monotonic):
     code, output = command(['/bin/launchctl', 'print', target(data)])
     if code != 0:
@@ -257,6 +268,10 @@ def main():
             from mod_host_identity import require_locked_process
             require(args.config is None,'The system worker uses its fixed configuration')
             require_locked_process()
+            spec = importlib.util.spec_from_file_location('private_scan_initializer', Path(__file__).with_name('initialize-private-scan-mac.py'))
+            initializer = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(initializer)
+            initializer.check(initializer.installed_release())
             monitor = system_monitor()
             data = config(monitor.config_path())
             require(data['label'] == monitor.label(), 'System scan identity mismatch')
@@ -267,6 +282,7 @@ def main():
         if args.generate:
             print(json.dumps(generate(data, args.generate)))
         elif args.worker or args.system_worker:
+            if args.system_worker:await_system_health(data)
             worker(data)
         else:
             watchdog(data)

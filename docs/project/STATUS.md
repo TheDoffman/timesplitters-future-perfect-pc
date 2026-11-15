@@ -1,3 +1,21 @@
+Explicit service bootstrap and private setup (2026-11-15):
+The63d36ffa runtime installed successfully, but the direct InitGroups=true
+launchd target still retained kernel groups[600,12,61,702,701,100] and was correctly
+refused. Explicit installer subprocess drops produce only[600]. The replacement
+therefore uses a small immutable root bootstrap: fixed role args, explicit groups/
+GID/UID drop, strict credentials and denied root restoration before worker exec.
+No worker config/content is opened as root. The monitor's new policy allows only
+a bounded unhealthy startup, requires UID600 afterward and rejects a return to
+root. Owner/RSS use one snapshot; workers wait boundedly for healthy observation.
+The native probe now exercises that same protected bootstrap and transition.
+Private initialization creates only the fixed new UID600 scan tree and exact
+configs, withholding incomplete/changed/unknown state; unchanged complete setup
+preserves live data and file identities. System worker/updater gates require it.
+Root generation checks initialization in a dropped child and emits scan/monitor/
+six-hour updater plists without loading them. Release planning requires the new
+privilege-boundary helpers. Windows source/policy/CI checks pass221 with52 POSIX
+skips (0.76s); actual Mac/bootstrap proof and production deployment remain pending.
+
 Native launchd group initialization repair (2026-11-15):
 The dd9d9862 protected runtime installed successfully under descriptorSHA
 9d70b9497d374f7411364271b807ce15c7f54e0ef257de4d2f70b87a4031046b.

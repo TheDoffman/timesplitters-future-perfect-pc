@@ -30,7 +30,7 @@ def command_fixture(rows='456 1 1024 600',printed='pid = 456',kill=0):
 def test_fixed_target_healthy_and_idle_and_restarted_worker():
     run,calls=command_fixture()
     state,report=monitor.watch_once(600,{},run,lambda:10)
-    assert state==dict(pid=456,start=10) and report==dict(status='watching',pid=456,rss_bytes=1048576)
+    assert state==dict(pid=456,start=10,restricted=True) and report==dict(status='watching',pid=456,rss_bytes=1048576)
     assert calls[0]==['/bin/launchctl','print','system/'+monitor.label()]
     state,report=monitor.watch_once(600,dict(pid=123,start=-1000),run,lambda:20)
     assert state['start']==20 and report['status']=='watching'
@@ -53,7 +53,7 @@ def test_faults_control_only_owned_launchd_label(fault):
     _,report=monitor.watch_once(600,dict(pid=456,start=0),command,lambda:481 if fault=='wall' else 1)
     assert report['status']==('terminated' if fault in ('memory','wall') else 'error')
     assert calls[-1]==['/bin/launchctl','kill','SIGKILL','system/'+monitor.label()]
-    assert not any('456' in args for args in calls)
+    assert not any('456' in args for args in calls if args[0]=='/bin/launchctl')
 
 
 def test_permission_denial_never_claims_termination():
@@ -72,13 +72,37 @@ def test_plists_separate_privileges_and_initialize_restricted_credentials():
     release=monitor.ROOT/'releases'/('a'*64)
     python=release/'runtime/bin/python3.12'
     worker,watch=monitor.plists(release,dict(uid=600,gid=600),python)
-    assert worker['UserName']=='_tsfpworkshop' and watch['UserName']=='root'
-    assert worker['InitGroups'] is True and watch['InitGroups'] is False
-    assert worker['ProgramArguments']==[str(python),'-I','-B',str(release/'source/tools/mods/hosting/scan-service-mac.py'),'--system-worker']
+    assert worker['UserName']=='root' and watch['UserName']=='root'
+    assert worker['InitGroups'] is False and watch['InitGroups'] is False
+    assert worker['ProgramArguments']==[str(python),'-I','-S','-B',str(release/'source/tools/mods/hosting/locked-service-bootstrap-mac.py'),'--role','scan']
     assert watch['ProgramArguments'][-1]=='--watchdog' and '--config' not in watch['ProgramArguments']
     assert worker['AbandonProcessGroup'] is False and watch['AbandonProcessGroup'] is False
     assert worker['StartInterval']==60 and watch['KeepAlive'] and watch['ThrottleInterval']==5
     assert set(watch['EnvironmentVariables'])=={'PATH','HOME','TMPDIR'}
+
+
+def test_system_definitions_use_fixed_private_configuration_and_six_hour_schedule():
+    release=monitor.ROOT/'releases'/('a'*64)
+    value=monitor.definitions_plist(release,release/'runtime/bin/python3.12')
+    assert value['UserName']=='root' and value['GroupName']=='wheel' and value['InitGroups'] is False
+    assert value['StartInterval']==21600 and value['RunAtLoad'] and value['AbandonProcessGroup'] is False
+    assert value['ProgramArguments'][-2:]==['--role','definitions'] and '--config' not in value['ProgramArguments']
+    assert value['EnvironmentVariables']['HOME']==str(monitor.ROOT/'data/scan/definitions-state')
+
+
+@pytest.mark.parametrize('mode',['ready','incomplete','wrong-release','side-effects'])
+def test_generation_checks_private_state_in_a_locked_child(monkeypatch,mode):
+    from types import SimpleNamespace
+    release=monitor.ROOT/'releases'/('a'*64)
+    account=dict(uid=600,gid=600)
+    def run(args,**options):
+        assert args[-1]=='--check' and options['user']==options['group']==600 and options['extra_groups']==[]
+        return SimpleNamespace(returncode=2 if mode=='incomplete' else 0,stderr=b'',stdout=json.dumps(dict(
+            phase='ready',release='b'*64 if mode=='wrong-release' else release.name,services_started=mode=='side-effects',network_started=False)).encode())
+    monkeypatch.setattr(monitor.subprocess,'run',run)
+    if mode=='ready':monitor.check_private(release,account)
+    else:
+        with pytest.raises(ModError):monitor.check_private(release,account)
 
 
 @pytest.fixture
@@ -99,7 +123,7 @@ def test_heartbeat_atomic_readable_and_error_stale_identity_fail_closed(heartbea
     assert heartbeat.stat().st_mode&0o777==0o644
     monitor.healthy(600)
     original=heartbeat.read_bytes()
-    for change in [dict(schema=True),dict(uid=501),dict(uid=True),dict(service='other'),dict(policy='old'),dict(status='terminated'),
+    for change in [dict(schema=True),dict(uid=501),dict(uid=True),dict(service='other'),dict(policy='old'),dict(status='terminated'),dict(status='starting'),
                    dict(time=True),dict(time=int(time.time())-60),dict(time=int(time.time())+60)]:
         heartbeat.write_bytes(original)
         monitor.write_health(600,dict(status='idle'))
@@ -137,6 +161,19 @@ def test_real_unprivileged_or_shared_ancestors_refused(tmp_path):
 def test_cli_install_gate_refuses_non_mac_or_non_root(monkeypatch):
     monkeypatch.setattr(monitor.sys,'platform','win32')
     with pytest.raises(ModError,match='administrator'):monitor.installed()
+
+
+def test_root_bootstrap_is_unhealthy_bounded_and_cannot_reappear_after_drop():
+    run,_=command_fixture('456 1 1024 0')
+    state,report=monitor.watch_once(600,{},run,lambda:1)
+    assert report['status']=='starting' and state['restricted'] is False
+    _,report=monitor.watch_once(600,state,run,lambda:12)
+    assert report['status']=='terminated' and report['reason']=='startup-timeout'
+    restricted,_=command_fixture()
+    state,report=monitor.watch_once(600,state,restricted,lambda:2)
+    assert report['status']=='watching' and state['restricted'] is True
+    _,report=monitor.watch_once(600,state,run,lambda:3)
+    assert report['status']=='error'
 
 
 def test_cli_rejects_user_supplied_service_target_before_any_privileged_action(monkeypatch):

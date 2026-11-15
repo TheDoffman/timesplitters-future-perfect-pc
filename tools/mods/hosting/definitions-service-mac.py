@@ -1,6 +1,7 @@
 """Private scheduled official FreshClam checks; never accepts uploaded options."""
 import argparse
 import hashlib
+import importlib.util
 from itertools import islice
 import json
 import os
@@ -218,14 +219,25 @@ def generate(data, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config', type=Path, required=True)
+    parser.add_argument('--config', type=Path)
     modes = parser.add_mutually_exclusive_group(required=True)
     modes.add_argument('--once', action='store_true')
+    modes.add_argument('--system-once', action='store_true')
     modes.add_argument('--generate', type=Path)
     args = parser.parse_args()
     try:
         require(sys.platform == 'darwin', 'Run definition maintenance on the Mac host')
-        data = config(args.config)
+        if args.system_once:
+            from mod_host_identity import require_locked_process
+            require(args.config is None,'System definition updates use their fixed configuration')
+            require_locked_process()
+            spec = importlib.util.spec_from_file_location('private_scan_initializer',Path(__file__).with_name('initialize-private-scan-mac.py'))
+            initializer = importlib.util.module_from_spec(spec);spec.loader.exec_module(initializer)
+            initializer.check(initializer.installed_release())
+            data = config(initializer.ROOT/'data/scan/definitions.json')
+        else:
+            require(args.config is not None,'A private definition configuration is required')
+            data = config(args.config)
         if args.generate:
             print(json.dumps(generate(data, args.generate)))
         else:
