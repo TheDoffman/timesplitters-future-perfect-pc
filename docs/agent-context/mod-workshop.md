@@ -49,11 +49,8 @@ creator/isolated-ClamAV/moderation flow, including DDS pixels and private report
 closure/history/linked release plus withdrawal/audits. API/DDS/restore70 tests
 also pass, including POSIX protections. This is UID501/private pipes, not public/
 root600/persistent deployment; runtime+official definitions unchanged. See STATUS.
-Approved deletion of exactly2 duplicate updater caches restored space above the
-guards; app hashes unchanged. The original root diagnostic finished: UID600 can
-print but cannot launchctl-kill a system job. All temporary jobs unloaded. Do not
-reuse the GUI watchdog unchanged for system production; privileged narrow control
-still needs implementation/native acceptance. No production job/public route.
+Two approved duplicate updater caches were removed; app hashes unchanged. UID600
+cannot launchctl-kill system jobs; use the verified narrow root monitor above.
 
 Lua source-preview admission now checks the24/account bucket before48/global.
 An already capped reviewer cannot spend shared inspection capacity with denied
@@ -74,10 +71,8 @@ package selections. Every declared texture is selectable. Sampling is a review a
 not a safety verdict or complete-detail/runtime-use proof. Audio/maps still open.
 All3 launcher/normal-backend and complete-package CI jobs pass at3cc247f2;
 Mac/Linux logs confirm the actual native preview/color/alpha/render/logout tests.
-User Mac pure decoder18 tests pass; newer real-scanner acceptance is separate.
-Native real-scanner moderation fixture now includes original red DDS and reads it;
-new actual user-Mac scanner/preview acceptance awaits space. A newer matching host
-bundle is required; old430 lacks this endpoint. Production remains inactive.
+User Mac decoder18 tests and newer07 real-scanner/DDS acceptance pass (above).
+Production remains inactive; installed f234 supersedes the older430 component.
 
 Creator SDK pack --modules uses mod_lua_bundle.compose to link<=32 local Lua
 sources into existing scripts/main.lua, with exact dot-name imports, per-VM cache,
