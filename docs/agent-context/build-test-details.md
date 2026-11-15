@@ -4,6 +4,11 @@ verification, tampered/extra/linked inputs, writable ancestors and exclusive cop
 POSIX fixtures use a private new directory under HOME and never modify accounts,
 system folders or jobs. Real prepare-release/install plan verification precedes
 any privileged callback; actual root-owned copy and UID600 smoke are separate gates.
+Source8f6e68f3 native selected tests164 pass (Windows141/23 host skips). A full
+ordinary-user copy simulation verifies the descriptor-relative copier, output
+inventories/modes, all96 signatures and copied source/guardian/sandboxed scanner
+layout. No system directory/account/job is changed. The known verified disposable
+copy is recycled after recording acceptance; the immutable inputs are retained.
 
 tests/mods/test_runtime_files.py verifies receipt ambiguity/number rejection and
 literal-only bundled Seatbelt grants without Homebrew/parent/network/fork access.

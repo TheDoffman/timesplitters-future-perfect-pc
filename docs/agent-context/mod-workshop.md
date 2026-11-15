@@ -16,6 +16,13 @@ modes and inventories are rechecked before the root-owned completion receipt.
 macOS getgroups reports directory-service access groups, so it must not be assumed
 empty after setgroups([]); see Python3.12 os.getgroups documentation. Privileged
 installation and actual dropped-account acceptance remain pending.
+Native preparation/plan and an ordinary-user full copy-layout acceptance now pass:
+45 source/guardian files,3339 runtime files including its receipt,150968756 bytes.
+The copied layout retains all96 signatures and runs the copied guardian/isolated
+scanner with the copied certificate. It is removed after exact re-verification;
+input runtime and frozen source remain. This does not prove root ownership or
+UID600 access. Failed privileged smoke emits bounded diagnostic stderr, preserving
+the partial release for inspection rather than replacing/deleting existing state.
 
 Packaged scanner confinement: mod_runtime_files.runtime_access validates an adjacent
 owner-controlled runtime receipt, nonlinked/non-writable-by-others ancestors and

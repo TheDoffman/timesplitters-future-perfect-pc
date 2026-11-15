@@ -98,7 +98,8 @@ def install(plan):
                             env=dict(PATH='/usr/bin:/bin', HOME=str(identity.ROOT / 'data'),
                                      TMPDIR=str(identity.ROOT / 'data'), LC_ALL='C', TZ='UTC'))
     release.require(result.returncode == 0 and len(result.stdout) <= 8192 and len(result.stderr) <= 8192,
-                    'Locked-account smoke failed; preserve the staged release for inspection')
+                    'Locked-account smoke failed (exit ' + str(result.returncode)
+                    + '); preserve the staged release: ' + result.stderr.decode('utf-8', 'replace')[-512:])
     smoke = release.decode(result.stdout, 8192)
     release.require(smoke.get('uid') == account['uid'] and smoke.get('gid') == account['gid']
                     and isinstance(smoke.get('groups'), list) and all(type(g) is int and g not in (0, 80) for g in smoke['groups'])
