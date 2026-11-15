@@ -1579,3 +1579,5 @@ history read must agree; nothing is approved, installed, enabled or published.
 The account retry clock advances301s in the fixture; OS/AV clocks and resource
 limits remain unchanged. The explicit scanner-mode pipe wait allows the existing
 180s scanner deadline plus teardown; ordinary wire checks retain their15s wait.
+The fixture decodes Repository.get's stored scan JSON before returning a report
+object; an initial live run exposed this wrapper mismatch, with inputs unchanged.

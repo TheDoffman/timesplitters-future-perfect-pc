@@ -102,7 +102,7 @@ def main():
                 raise RuntimeError('No queued scanner acceptance job')
             with accounts.repository.db() as db:
                 sha = db.execute('SELECT sha256 FROM workshop_uploads WHERE id=?', (job['id'],)).fetchone()[0]
-            emit({'job': job, 'scan': accounts.repository.get(sha)['scan'],
+            emit({'job': job, 'scan': json.loads(accounts.repository.get(sha)['scan']),
                   'catalog_count': len(accounts.repository.catalog())})
             continue
         body = base64.b64decode(request['body'], validate=True)
