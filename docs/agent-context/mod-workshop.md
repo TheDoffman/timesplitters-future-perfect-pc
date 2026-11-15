@@ -1,3 +1,14 @@
+Actual user Mac at07f7f0a7 now passes native build106 UI+normal backend and real
+creator/isolated-ClamAV/moderation flow, including DDS pixels and private report
+closure/history/linked release plus withdrawal/audits. API/DDS/restore70 tests
+also pass, including POSIX protections. This is UID501/private pipes, not public/
+root600/persistent deployment; runtime+official definitions unchanged. See STATUS.
+Approved deletion of exactly2 duplicate updater caches restored space above the
+guards; app hashes unchanged. The original root diagnostic finished: UID600 can
+print but cannot launchctl-kill a system job. All temporary jobs unloaded. Do not
+reuse the GUI watchdog unchanged for system production; privileged narrow control
+still needs implementation/native acceptance. No production job/public route.
+
 Lua source-preview admission now checks the24/account bucket before48/global.
 An already capped reviewer cannot spend shared inspection capacity with denied
 requests; regression first failed on the previous order, then passes with all48

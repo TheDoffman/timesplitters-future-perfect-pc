@@ -9,6 +9,13 @@ still serves only approved snapshot downloads and does not proxy this API.
 
 ## Native creator workflow
 
+At source07f7f0a7, the user's Mac passes the real private-pipe scanner/moderation
+flow including DDS preview, player report closure/history and revocation, plus
+all70 API/DDS/backup-recovery tests. This uses UID501 and a disposable repository;
+it is separate from public HTTPS and production operation under the locked account.
+The system-domain permission diagnostic shows UID600 cannot stop a system job,
+so the existing GUI watchdog still needs a production control design. See STATUS.
+
 Open **Mods → Creator** in a launcher built from this branch. Sign in with your
 workshop username/password, or redeem an operator invitation with a new password.
 Passwords and invitations are masked and cleared after submission or leaving the

@@ -1,3 +1,43 @@
+User Mac storage and real review acceptance (2026-11-15):
+After explicit user approval, exactly two same/older Codex updater staging
+directories were removed using descriptor-anchored, symlink-safe deletion.
+Installed application plist/executable hashes remain unchanged. Observed free
+space rose from193060864 to3572920320 bytes (about3.15GiB reclaimed); this differs
+from the3.38GiB summed cache allocation. No game/save/workshop data was removed.
+At clean source07f7f0a7, the native Mac launcher build and full tests pass106 UI
+groups plus actual normal backend acceptance. Build receiptSHA
+2b91d4ce68efa0ac123f21626911f2e43a43f68f4f05e890292e356eab1a0e11;
+binarySHA05af946077781dc4e0f9879138420ceff52ff1f72e64973b5f95badbb5a64352.
+The real native creator/scanner/moderation mode then passes (9.888s): actual
+isolated ClamAV clean/EICAR/empty-definitions/missing-engine states; bound scan
+evidence and exact Lua/DDS preview pixels; native approval/revocation, both
+SQLite audit trails and catalog/blob withdrawal; another player's private report,
+moderator closure/history/linked-release inspection and reporter status.
+Official definition files and the sealed3339-file runtime inventory remain
+unchanged. AcceptanceSHA
+c8b4c4022596fc0cdbeba59ac9c26d7b3f30fa31a71683348967542767b4bbbe;
+logSHA0f5ad9c0115ce6d2b3a5d49c665f3200589ae36c7a212a06b1b470098f746bc3.
+This is private-pipe UID501 acceptance, without TLS/publication/install/game or
+production-service changes. Separately, actual Mac API/DDS/backup-recovery tests
+pass all70 cases (11.45s), including POSIX blob protections and report restoration.
+Verified249-entry bin/obj cleanup preserves app bytes/signatures; inventorySHA
+2e53579e888b6775e8eb435133e8cb5e8261c280366d41935124fab14ce955a9.
+
+The original administrator diagnostic also completed (exit0): real system-domain
+target/watchdog jobs run as UID/GID600, but launchctl kill returns1 with
+"Not privileged to signal service." Both temporary jobs were unloaded and their
+processes exited. Probe sourceSHA
+e213fb59e88cb6d3254e211ace0e424d07668137d249f343eb0c4404b8134a3b;
+root-owned receipt is in releases/system-permission-probe-bd098cab9820493ca43754a027e1f12d.
+This proves the restricted account cannot control a system job; the GUI watchdog
+cannot be copied unchanged to production. A narrowly privileged monitor design,
+its native enforcement checks and actual persistent production deployment remain
+required. No production job or public endpoint started. The matching prepared
+host component remains07f7f0a7, descriptorSHA
+2099bbb70ce7d6287d68e8ab3246ceac96c1711d380180ccc614efa03cc0e103,
+48 source/3339 runtime files,150991475 bytes. Frozen installer plan only passed;
+preparation receiptSHA0adaf61348e552fb7be141259795cee3f0571c8bf92325c6e1066a2592fd88bd.
+
 Source inspection admission repair (2026-11-15):
 An account already at its24/minute Lua-inspection limit previously consumed the
 48/minute shared inspection quota when receiving429 responses. A regression
