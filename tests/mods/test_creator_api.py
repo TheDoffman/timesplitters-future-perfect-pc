@@ -1,6 +1,7 @@
 """WSGI contract and actual loopback HTTP creator-to-review workflow."""
 import io
 import json
+import os
 from pathlib import Path
 import sys
 import threading
@@ -16,7 +17,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools/mods'))
 from mod_api import WorkshopAPI
 from mod_accounts import ServiceError
-from mod_package import digest
+from mod_package import build_package, digest
 from mod_publication import export_snapshot, validate_snapshot
 from test_creator_service import service, account, package, Scanner, PASSWORD
 
@@ -95,6 +96,94 @@ def test_moderation_evidence_is_private_bound_and_reports_current_freshness(serv
     assert call(api, path=route, token=reviewer)['status'] == 503
     accounts.logout(accounts.authenticate(reviewer))
     assert call(api, path=route, token=reviewer)['status'] == 401
+
+
+def test_lua_source_preview_binds_archive_role_payload_and_utf8_pages(service, tmp_path):
+    accounts, uploads, _ = service
+    creator, token, _ = account(accounts)
+    _, reviewer, _ = account(accounts, 'reviewer', 'moderator')
+    api = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
+    package(tmp_path)
+    source = tmp_path / 'test-addon-1.0.0-alice'
+    text = '--' + 'a' * 65533 + '\u00e9\nreturn {label="x\u202ey"}\n'
+    (source / 'scripts/main.lua').write_bytes(text.encode())
+    archive = tmp_path / 'preview.zip'
+    build_package(source, archive)
+    data = archive.read_bytes()
+    ticket = uploads.begin(creator, 'test-addon', '1.0.0', digest(data), len(data))
+    uploads.receive(creator, ticket['id'], io.BytesIO(data), len(data))
+    route = '/v1/moderation/' + ticket['id'] + '/source'
+    request = dict(sha256=digest(data), path='scripts/main.lua', offset=0)
+    assert call(api, 'POST', route, request)['status'] == 401
+    assert call(api, 'POST', route, request, token)['status'] == 403
+    assert call(api, 'POST', route, request, reviewer)['status'] == 404
+    uploads.process_next(Scanner())  # Explicit unit fixture; native real AV is separate.
+    first = call(api, 'POST', route, request, reviewer)
+    assert first['status'] == 200 and first['body']['next_offset'] == 65535
+    page = first['body']
+    assert page['sha256'] == digest(data) and page['payload_sha256'] == digest(text.encode())
+    assert page['size'] == len(text.encode()) and page['offset'] == 0
+    second = call(api, 'POST', route, dict(request, offset=page['next_offset']), reviewer)
+    assert second['status'] == 200
+    assert page['text'] + second['body']['text'] == text
+    assert second['body']['next_offset'] == len(text.encode())
+    for patch, status in [({'sha256':'f'*64},409), ({'path':'../secret.lua'},400),
+                          ({'path':'mod.json'},400), ({'path':'scripts/missing.lua'},400),
+                          ({'offset':True},400), ({'offset':-1},400), ({'offset':len(text.encode())},400),
+                          ({'offset':65536},409)]:
+        assert call(api, 'POST', route, dict(request, **patch), reviewer)['status'] == status
+    blob = accounts.repository.blob(digest(data))
+    blob.write_bytes(b'corrupted private fixture')
+    assert call(api, 'POST', route, request, reviewer)['status'] == 409
+    assert accounts.repository.catalog() == []
+
+
+def test_source_preview_limits_are_persistent_and_do_not_publish(service, tmp_path):
+    accounts, uploads, _ = service
+    creator, _, _ = account(accounts)
+    reviewer, token, _ = account(accounts, 'reviewer', 'moderator')
+    data = package(tmp_path)
+    ticket = uploads.begin(creator, 'test-addon', '1.0.0', digest(data), len(data))
+    uploads.receive(creator, ticket['id'], io.BytesIO(data), len(data))
+    uploads.process_next(Scanner())
+    api = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
+    route = '/v1/moderation/' + ticket['id'] + '/source'
+    request = dict(sha256=digest(data), path='scripts/main.lua', offset=0)
+    with accounts.repository.db() as db:
+        for _ in range(24):
+            assert accounts.rate(db, 'source-preview-account', str(reviewer.id), 24, 60)
+    assert call(api, 'POST', route, request, token)['status'] == 429
+    assert call(api, 'POST', route, request, token)['status'] == 429
+    assert accounts.repository.catalog() == []
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='Actual POSIX nofollow/ownership/mode contract')
+@pytest.mark.parametrize('damage', ['symlink', 'hardlink', 'writable', 'fifo'])
+def test_source_preview_refuses_unsafe_stored_blob(service, tmp_path, damage):
+    accounts, uploads, _ = service
+    creator, _, _ = account(accounts)
+    _, token, _ = account(accounts, 'reviewer', 'moderator')
+    data = package(tmp_path)
+    ticket = uploads.begin(creator, 'test-addon', '1.0.0', digest(data), len(data))
+    uploads.receive(creator, ticket['id'], io.BytesIO(data), len(data))
+    uploads.process_next(Scanner())
+    blob = accounts.repository.blob(digest(data))
+    other = tmp_path / 'original-private-fixture.zip'
+    if damage == 'symlink':
+        other.write_bytes(blob.read_bytes())
+        blob.unlink()
+        blob.symlink_to(other)
+    elif damage == 'hardlink':
+        os.link(blob, other)
+    elif damage == 'fifo':
+        blob.unlink()
+        os.mkfifo(blob, 0o600)
+    else:
+        blob.chmod(0o666)
+    api = WorkshopAPI(accounts, 'https://workshop.invalid', uploads=uploads)
+    response = call(api, 'POST', '/v1/moderation/' + ticket['id'] + '/source',
+                    dict(sha256=digest(data), path='scripts/main.lua', offset=0), token)
+    assert response['status'] == 503 and 'text' not in response['body']
 
 
 def test_wsgi_authentication_cookie_and_role_injection_are_rejected(service):

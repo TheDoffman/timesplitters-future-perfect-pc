@@ -302,9 +302,9 @@ public static class LauncherSharedUiChecks
             Array.Copy(BitConverter.GetBytes(pair.Value),0,bytes,pair.Key,4);
         for(int i=128;i<bytes.Length;i++)bytes[i]=marker;return bytes;
     }
-    static string LibraryPackage(string root,string id,string version,byte marker,string key="0123456789abcdef",Dictionary<string,string> dependencies=null,bool script=false,string extra=null,string author="Test creator")
+    static string LibraryPackage(string root,string id,string version,byte marker,string key="0123456789abcdef",Dictionary<string,string> dependencies=null,bool script=false,string extra=null,string author="Test creator",string sourceText=null)
     {
-        string file=script?"scripts/main.lua":"textures/"+key+".dds";byte[] data=script?System.Text.Encoding.UTF8.GetBytes("return true\n"):WorkshopDds(marker);string hash;
+        string file=script?"scripts/main.lua":"textures/"+key+".dds";byte[] data=script?System.Text.Encoding.UTF8.GetBytes(sourceText??"return true\n"):WorkshopDds(marker);string hash;
         using(var sha=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(sha.ComputeHash(data)).Replace("-","").ToLowerInvariant();
         string json=Json.Encode(new {schema=1,id=id,version=version,name=id,author=author,description="Synthetic original fixture",game="tsfp-us-45410066",api="tsfp-mod-v1-draft",dependencies=dependencies??new Dictionary<string,string>(),files=new Dictionary<string,object>{{file,new {sha256=hash,size=data.Length}}}});
         string package=Path.Combine(root,Guid.NewGuid().ToString("N")+".zip");
@@ -333,6 +333,12 @@ public static class LauncherSharedUiChecks
     }
     static Dictionary<string,object> ModeratorScan(CreatorPackagePlan plan,string state="pending-review",bool fresh=true)
     {return new Dictionary<string,object>{{"id",new string('a',32)},{"sha256",plan.Sha256},{"state",state},{"scan",new Dictionary<string,object>{{"engine","ClamAV"},{"version","ClamAV fixture only"},{"status","clean"},{"time",WorkshopTrustChecks.Unix},{"isolation","macos-seatbelt-v3"},{"database_max_age_days",2L},{"fresh",fresh}}}};}
+    static Dictionary<string,object> ModeratorSource(string zip,CreatorPackagePlan plan)
+    {
+        string text;using(var archive=System.IO.Compression.ZipFile.OpenRead(zip))using(var reader=new StreamReader(archive.GetEntry("scripts/main.lua").Open()))text=reader.ReadToEnd();
+        var payload=ModLibrary.Manifest((string)ModeratorRow(zip,plan)["manifest"]).Files["scripts/main.lua"];
+        return new Dictionary<string,object>{{"id",new string('a',32)},{"sha256",plan.Sha256},{"path","scripts/main.lua"},{"payload_sha256",payload.Sha256},{"size",payload.Size},{"offset",0L},{"next_offset",payload.Size},{"text",text}};
+    }
     static void SetCreatorSecret(Element view,string name,string secret)
     {
 #if MACOS || LINUX
@@ -343,6 +349,26 @@ public static class LauncherSharedUiChecks
     }
     static void CreatorChecks(string root)
     {
+        Test("moderator source preview binds bytes path offsets manifest and role",()=>{
+            string folder=Path.Combine(root,"moderator-source");CreatorConfig(folder);string zip=LibraryPackage(folder,"source-demo","1.0.0",1,script:true);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var review=new ModeratorUpload(ModeratorRow(zip,plan));
+            foreach(string mode in new[]{"valid","digest","path","offset","body","creator","cancel"}) {
+                int requests=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role=mode=="creator"?"creator":"moderator"}});
+                    requests++;Need(request.Method==System.Net.Http.HttpMethod.Post && request.RequestUri.AbsolutePath.EndsWith("/source"),"Source preview used an unexpected route");
+                    var row=ModeratorSource(zip,plan);if(mode=="digest")row["payload_sha256"]=new string('f',64);if(mode=="path")row["path"]="../private.lua";if(mode=="offset")row["offset"]=1L;if(mode=="body")row["text"]="return evil\n";
+                    return CreatorJson(row);
+                }),()=>WorkshopTrustChecks.Now))using(var stop=new System.Threading.CancellationTokenSource()) {
+                    client.SignIn("fixture-creator","fixture-password-not-a-real-account",System.Threading.CancellationToken.None).GetAwaiter().GetResult();if(mode=="cancel")stop.Cancel();
+                    if(mode=="valid"){var page=client.Source(review,"scripts/main.lua",0,stop.Token).GetAwaiter().GetResult();Need(page.Text=="return true\n" && page.NextOffset==page.Size,"Source preview changed fixture bytes");}
+                    else WorkshopReject(()=>client.Source(review,"scripts/main.lua",0,stop.Token).GetAwaiter().GetResult(),"Invalid source preview accepted");
+                    Need(requests==(mode=="creator" || mode=="cancel"?0:1),"Forbidden source request reached the transport");
+                    WorkshopReject(()=>client.Source(review,"../private.lua",0,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Undeclared source path accepted");
+                }
+            }
+            string hiddenZip=LibraryPackage(folder,"hidden-source","1.0.0",1,script:true,sourceText:"return {text=\"x\u202ey\"}\n");var hiddenPlan=CreatorPackagePlan.Review(hiddenZip,System.Threading.CancellationToken.None);var hiddenReview=new ModeratorUpload(ModeratorRow(hiddenZip,hiddenPlan));var hiddenPage=new ModeratorSourcePage(ModeratorSource(hiddenZip,hiddenPlan),hiddenReview,"scripts/main.lua",0);
+            Need(hiddenPage.DisplayText().Contains("\\u202e") && !hiddenPage.DisplayText().Contains("\u202e"),"Hidden source direction character was rendered invisibly");
+        });
         Test("moderator scan evidence binds digest state types and role without exposing raw output",()=>{
             string folder=Path.Combine(root,"moderator-evidence");CreatorConfig(folder);string zip=LibraryPackage(folder,"scan-evidence","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var review=new ModeratorUpload(ModeratorRow(zip,plan));
             foreach(string mode in new[]{"valid","stale","digest","state","type","status","extra","creator"}) {
@@ -389,11 +415,12 @@ public static class LauncherSharedUiChecks
             }
         });
         Test("moderator UI requires note review and confirmation and Back makes no decision",()=>WithUiContext(()=>{
-            string folder=Path.Combine(root,"moderator-ui");CreatorConfig(folder);string zip=LibraryPackage(folder,"moderator-ui","1.0.0",1,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int decisions=0;string state="pending-review";bool scanFresh=false;
+            string folder=Path.Combine(root,"moderator-ui");CreatorConfig(folder);string zip=LibraryPackage(folder,"moderator-ui","1.0.0",1,script:true,author:"fixture-creator");var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int decisions=0;string state="pending-review";bool scanFresh=false;
             using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
                 if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role="moderator"}});
                 if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
                 if(request.RequestUri.AbsolutePath.EndsWith("/evidence"))return CreatorJson(ModeratorScan(plan,state,scanFresh));
+                if(request.RequestUri.AbsolutePath.EndsWith("/source"))return CreatorJson(ModeratorSource(zip,plan));
                 if(request.Method==System.Net.Http.HttpMethod.Get)return CreatorJson(new {uploads=new[]{ModeratorRow(zip,plan,state)}});
                 decisions++;var body=ModJson.Read(request.Content.ReadAsStringAsync().GetAwaiter().GetResult());state=ModTrust.Text(body,"action")=="approve"?"approved":"revoked";
                 return CreatorJson(new {id=new string('a',32),sha256=plan.Sha256,state=state});
@@ -404,6 +431,7 @@ public static class LauncherSharedUiChecks
                 Action refresh=()=>{Click(Find<Button>(page.View,"RefreshModeratorUploads"));PumpUntil(()=>page.StatusText=="Moderation queue refreshed.","Moderation refresh did not finish");Click(Find<Button>(page.View,"ModeratorUpload"+new string('a',32)));PumpUntil(()=>page.StatusText=="Scan evidence refreshed.","Scan evidence did not return to UI");};
                 refresh();Need(!Find<Button>(page.View,"ReviewModeratorApproval").IsEnabled && Find<Button>(page.View,"ReviewModeratorRevocation").IsEnabled,"Stale scan allowed approval or blocked revocation");
                 scanFresh=true;refresh();Click(Find<Button>(page.View,"ReviewModeratorApproval"));Need(!All(page.View).OfType<Button>().Any(b=>b.Name=="ConfirmModeratorDecision") && decisions==0,"Blank note bypassed review");
+                Click(Find<Button>(page.View,"InspectModeratorSource"));PumpUntil(()=>page.StatusText.StartsWith("Lua source loaded"),"Source inspection did not return to UI");Need(Find<TextBox>(page.View,"ModeratorSourceText").IsReadOnly && Find<TextBox>(page.View,"ModeratorSourceText").Text=="return true\n" && decisions==0,"Source inspection changed bytes or sent a decision");
                 Find<TextBox>(page.View,"ModeratorNote").Text="Reviewed original source";Click(Find<Button>(page.View,"ReviewModeratorApproval"));Need(decisions==0,"Review approved without confirmation");
                 Click(Find<Button>(page.View,"CancelModeratorDecision"));Need(decisions==0,"Back approved the package");
                 Click(Find<Button>(page.View,"ReviewModeratorApproval"));Click(Find<Button>(page.View,"ConfirmModeratorDecision"));PumpUntil(()=>page.StatusText.StartsWith("Moderation decision recorded"),"Approval did not return to UI");Need(decisions==1,"Approval duplicated requests");

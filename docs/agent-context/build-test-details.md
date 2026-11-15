@@ -1,3 +1,9 @@
+Source-preview API tests verify role/unscanned/hash/path refusal, UTF-8 page
+boundaries and reassembly, corrupted stored archives and persistent rate limits.
+Native checks bind exact source metadata/bytes and render hidden bidi escapes;
+dispatcher UI reads only, without a decision/install. Real Mac moderation mode
+reads the archived original Lua before approving/revoking. No Lua is executed.
+
 Evidence checks cover role/session refusal, unscanned404, raw-output omission,
 current/stale freshness and malformed stored metadata. Native checks reject
 wrong digest/state/types/extra fields and gate approval on fetched fresh evidence;

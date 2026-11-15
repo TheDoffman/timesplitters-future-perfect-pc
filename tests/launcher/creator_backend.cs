@@ -183,6 +183,9 @@ public static class CreatorBackendChecks
             foreach(var blocked in queue.Where(row=>row.State!="pending-review"))
                 Reject(()=>reviewer.Moderate(blocked,"approve","Refuse unsafe fixture",CancellationToken.None).GetAwaiter().GetResult(),"awaiting review","A detected/error package reached native approval.");
             var clean=queue.Single(row=>row.ModId=="native-clean");Need(clean.State=="pending-review" && clean.Package.Author==creator.Username,"The native reviewer selected a different package.");
+            var source=reviewer.Source(clean,"scripts/main.lua",0,CancellationToken.None).GetAwaiter().GetResult();
+            Need(source.Text=="return {api=1}\n" && source.Offset==0 && source.NextOffset==source.Size,"Actual source inspection differed from the immutable original script.");
+            Console.WriteLine("PASS native moderation: role-gated Lua preview matches exact archived original bytes without extraction/execution.");
             var before=backend.Observe();Need(ModTrust.Array(before,"catalog",1).Length==0 && ModTrust.Array(before,"audit",1).Length==0,"Native moderation started from nonempty approved/audit state.");
             const string approval="Reviewed original native acceptance source",revocation="Withdraw disposable native acceptance";
             reviewer.Moderate(clean,"approve",approval,CancellationToken.None).GetAwaiter().GetResult();

@@ -1,3 +1,19 @@
+Native Lua source inspection (2026-11-15):
+Moderators can request declared Lua source from completed jobs through an exact
+archive-digest binding. The backend uses a nonblocking/nofollow regular-file open,
+single-link/owner/mode checks, bounded streaming archive hash, payload hash/size,
+stable file metadata and UTF-8 byte-boundary paging (64KiB portions/1MiB maximum).
+It never extracts or executes source. Persistent limits are24/account and48/global
+per minute. Native validation binds identity/path/digests/size/offset/text bytes;
+the read-only UI wraps/scrolls text and makes control/bidi characters visible.
+API checks pass23 tests on Windows with4 POSIX-only cases skipped; the preceding
+creator API/service run passes45 tests. Final Windows launcher validation passes
+98 UI groups plus actual backend checks (47.96s). Mac source inspection/unsafe-file
+acceptance remains pending. Sourceca6f5605 all3 native
+launcher and complete release-package CI jobs pass. Matching host source needs
+a new frozen bundle; da3 lacks the source-preview endpoint. Asset previews,
+public moderation/hosting, reports and full creator-to-game release remain open.
+
 Native moderator scan evidence (2026-11-15):
 The role-gated completed-job evidence endpoint returns bound scan identity/state,
 engine/version/status/time/isolation/definition-age policy and current server

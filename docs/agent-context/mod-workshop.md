@@ -1,3 +1,16 @@
+POST /v1/moderation/<upload>/source permits moderator/admin Lua inspection for a
+completed job, bound archive digest and declared scripts/*.lua. It rechecks the
+regular single-link owned blob with nofollow, bounded streaming archive hash,
+manifest/payload size+hash and stable open-file metadata. UTF-8 portions are<=64KiB
+of a<=1MiB script, with validated byte-boundary offset/next; no extract/eval/write.
+Persistent preview limits are24/account and48/global per minute, separate from
+approval. Native SourcePage binds identity/path/file digest/size/offset/text bytes
+and verifies a complete single-page digest. UI offers all declared Lua scripts,
+read-only portions and visible control/bidi escapes. Asset previews remain open.
+Tests cover access/unscanned/path/digest/offset/UTF-8 boundaries/corruption/rates,
+native bindings and UI; real Mac moderation mode reads the original script too.
+Host API changed again: da3 is historical preparation until a matching new freeze.
+
 GET /v1/moderation/<upload>/evidence exposes role-gated completed-scan metadata:
 exact upload/digest/state, engine/version/status/time/isolation/definition-age
 policy and server-computed freshness. It omits raw scanner stdout/detail, paths

@@ -1,4 +1,4 @@
-[Native scans/evidence](build-test-details.md).
+[Native source/review](build-test-details.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

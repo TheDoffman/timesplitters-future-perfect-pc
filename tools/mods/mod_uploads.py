@@ -10,9 +10,10 @@ import re
 import secrets
 import shutil
 import stat
+import zipfile
 
 from mod_accounts import ServiceError, demand, username
-from mod_package import ID, VERSION, SHA, MAX_ARCHIVE, ModError, inspect_package
+from mod_package import ID, VERSION, SHA, MAX_ARCHIVE, MAX_SCRIPT, ModError, inspect_package, validate_manifest
 
 UPLOAD_ID = re.compile(r'[0-9a-f]{32}\Z')
 CHARGED = "('open','receiving','queued','processing','retry','complete','held')"
@@ -270,6 +271,63 @@ class Uploads:
             scan[name] = value
         scan['fresh'] = self.repository.fresh(report)
         return {'id': row['id'], 'sha256': row['sha256'], 'state': row['state'], 'scan': scan}
+
+    def source_preview(self, actor, upload_id, sha, path, offset):
+        """Bounded read-only UTF-8 Lua inspection; never extract or execute it."""
+        self._path(upload_id, '.ready')
+        demand(isinstance(sha, str) and SHA.fullmatch(sha) and isinstance(path, str)
+               and 0 < len(path) <= 180 and type(offset) is int and 0 <= offset < MAX_SCRIPT,
+               400, 'Invalid source preview request')
+        with self.repository.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            actor = self.accounts.actor(db, actor, ('moderator','admin'))
+            row = db.execute("SELECT u.sha256,r.manifest FROM workshop_uploads u JOIN releases r ON u.sha256=r.sha256 "
+                             "WHERE u.id=? AND u.state='complete'", (upload_id,)).fetchone()
+            demand(row is not None, 404, 'Completed scan unavailable')
+            demand(row['sha256'] == sha, 409, 'Reviewed package changed')
+            manifest = validate_manifest(json.loads(row['manifest']))
+            entry = manifest['files'].get(path)
+            demand(entry is not None and path.startswith('scripts/') and path.lower().endswith('.lua'),
+                   400, 'Select a declared Lua source file')
+            demand(0 < entry['size'] <= MAX_SCRIPT and offset < entry['size'], 400, 'Invalid source preview offset')
+            allowed = self.accounts.rate(db, 'source-preview-global', 'all', 48, 60)
+            if allowed:
+                allowed = self.accounts.rate(db, 'source-preview-account', str(actor.id), 24, 60)
+        demand(allowed, 429, 'Source preview request limit reached')
+        blob = self.repository.blob(sha)
+        demand(not blob.is_symlink(), 503, 'Stored source archive unavailable')
+        flags = os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0) | getattr(os, 'O_BINARY', 0)
+        with os.fdopen(os.open(blob, flags), 'rb') as stream:
+            before = os.fstat(stream.fileno())
+            demand(stat.S_ISREG(before.st_mode) and before.st_nlink == 1 and before.st_size <= MAX_ARCHIVE,
+                   503, 'Stored source archive unavailable')
+            if os.name == 'posix':
+                demand(before.st_uid == os.geteuid() and not before.st_mode & 0o022, 503, 'Stored source archive unavailable')
+            hasher, count = hashlib.sha256(), 0
+            while block := stream.read(65536):
+                count += len(block)
+                demand(count <= MAX_ARCHIVE, 503, 'Stored archive exceeds limit')
+                hasher.update(block)
+            demand(hasher.hexdigest() == sha, 409, 'Stored archive changed')
+            stream.seek(0)
+            try:
+                with zipfile.ZipFile(stream) as archive:
+                    info = archive.getinfo(path)
+                    demand(info.file_size == entry['size'], 409, 'Stored source size changed')
+                    with archive.open(info) as payload:
+                        data = payload.read(MAX_SCRIPT + 1)
+                demand(len(data) == entry['size'] and hashlib.sha256(data).hexdigest() == entry['sha256'],
+                       409, 'Stored source changed')
+                data.decode('utf-8')
+                data[:offset].decode('utf-8')
+            except (zipfile.BadZipFile, KeyError, UnicodeError) as exc:
+                raise ServiceError(409, 'Stored Lua source unavailable') from exc
+            after = os.fstat(stream.fileno())
+            demand((before.st_ino,before.st_size,before.st_mtime_ns,before.st_ctime_ns)
+                   == (after.st_ino,after.st_size,after.st_mtime_ns,after.st_ctime_ns), 409, 'Stored source changed')
+        text = data[offset:offset + 65536].decode('utf-8', errors='ignore')  # Only a final partial codepoint can be omitted.
+        return dict(id=upload_id, sha256=sha, path=path, payload_sha256=entry['sha256'], size=len(data),
+                    offset=offset, next_offset=offset + len(text.encode('utf-8')), text=text)
 
     def assign_owner(self, mod_id, name, note):
         """Local operator-only adoption/transfer, including legacy reviewed mods."""

@@ -57,10 +57,20 @@ selected upload, digest and state. Raw scanner output, private paths and credent
 are omitted. Missing/stale evidence disables approval; revocation stays available.
 Approval rechecks actual scan freshness on the server at commit time.
 
-This view does not download or execute quarantine. Review the complete source and
-contents independently before approving; in-launcher source inspection remains
-unfinished. An older host without the evidence endpoint needs the matching host
-release before this launcher can show evidence or offer approval.
+For Lua, choose a declared script and **Read Lua source**. The launcher displays
+read-only text, with hidden control/direction characters shown as Unicode escapes.
+**Next source portion** reads the next64KiB or less; use **Read Lua source** to
+start again. All declared Lua scripts are selectable, including those beyond the
+first32 manifest rows. Scripts are limited to1MiB each. No code is executed and
+no archive is installed or extracted. Asset previews remain unfinished; inspect
+other content independently before approving.
+
+The role-gated source endpoint binds the reviewed archive digest and declared
+file, rechecks the stored archive/payload hashes and size, and returns UTF-8 byte
+offsets plus the file digest. Requests are limited to24/account and48/global per
+minute. It supports completed scans, including rejected/error states for manual
+investigation; source access never approves a package. Interrupted reads can be
+retried explicitly. Older hosts need the matching API release for these views.
 
 Enter a review note, choose **Review approval** or **Review revocation**, then
 confirm the exact package and note. **Back** sends no decision. Approval is offered

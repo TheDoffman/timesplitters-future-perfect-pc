@@ -91,6 +91,29 @@ namespace TimeSplitters.Launcher
             ModTrust.Need(!Fresh || Status=="clean","inconsistent scan freshness.");
         }
     }
+    public sealed class ModeratorSourcePage
+    {
+        public readonly string Path,Text,PayloadSha256;
+        public readonly long Offset,NextOffset,Size;
+        internal ModeratorSourcePage(Dictionary<string,object> data,ModeratorUpload review,string path,long offset)
+        {
+            ModTrust.Fields(data,"id sha256 path payload_sha256 size offset next_offset text");
+            ModTrust.Need(CreatorUpload.Text(data,"id",32)==review.Id && CreatorUpload.Text(data,"sha256",64)==review.Sha256 && CreatorUpload.Text(data,"path",180)==path,"source preview identity mismatch.");
+            ModPayload entry;ModTrust.Need(review.Package.Files.TryGetValue(path,out entry),"undeclared source preview.");Path=path;
+            PayloadSha256=CreatorUpload.Text(data,"payload_sha256",64);Size=ModTrust.Number(data,"size",1,1024*1024);Offset=ModTrust.Number(data,"offset",offset,offset);NextOffset=ModTrust.Number(data,"next_offset",offset+1,Size);
+            ModTrust.Need(Size==entry.Size && PayloadSha256==entry.Sha256,"source preview differs from the manifest.");
+            Text=ModTrust.Text(data,"text");byte[] bytes=new UTF8Encoding(false,true).GetBytes(Text);
+            ModTrust.Need(bytes.Length<=65536 && bytes.LongLength==NextOffset-Offset,"invalid source preview length.");
+            if(Offset==0 && NextOffset==Size)using(var hash=System.Security.Cryptography.SHA256.Create())ModTrust.Need(BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()==PayloadSha256,"source preview digest mismatch.");
+        }
+        public string DisplayText()
+        {
+            var output=new StringBuilder();foreach(char c in Text) {
+                bool hidden=(Char.IsControl(c) && c!='\n' && c!='\t') || c=='\u061c' || c=='\u200e' || c=='\u200f' || (c>='\u202a' && c<='\u202e') || (c>='\u2066' && c<='\u2069');
+                if(hidden)output.Append("\\u").Append(((int)c).ToString("x4"));else output.Append(c);
+            }return output.ToString();
+        }
+    }
     // Passwords and bearer sessions stay in memory. No cookies, redirect,
     // credential files, diagnostic payloads or automatic upload retries.
     public sealed class ModCreatorClient : IDisposable
@@ -208,6 +231,15 @@ namespace TimeSplitters.Launcher
                 return new ModeratorEvidence(await Request(HttpMethod.Get,"v1/moderation/"+review.Id+"/evidence",null,200,true,cancel).ConfigureAwait(false),review);
             }finally{gate.Release();}
         }
+        public async Task<ModeratorSourcePage> Source(ModeratorUpload review,string path,long offset,CancellationToken cancel)
+        {
+            ModPayload entry;Core.Require(review!=null && path!=null && path.StartsWith("scripts/",StringComparison.Ordinal) && path.EndsWith(".lua",StringComparison.OrdinalIgnoreCase) && review.Package.Files.TryGetValue(path,out entry) && entry.Size<=1024*1024 && offset>=0 && offset<entry.Size,"Select a declared Lua source file and valid offset.");
+            await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanModerate,"Sign in with a moderator account to inspect source.");
+                return new ModeratorSourcePage(await Request(HttpMethod.Post,"v1/moderation/"+review.Id+"/source",JsonBody(new {sha256=review.Sha256,path=path,offset=offset}),200,true,cancel).ConfigureAwait(false),review,path,offset);
+            }finally{gate.Release();}
+        }
         public async Task Moderate(ModeratorUpload review,string action,string note,CancellationToken cancel)
         {
             Core.Require(review!=null && (action=="approve" || action=="revoke"),"Invalid moderation decision.");
@@ -230,6 +262,7 @@ namespace TimeSplitters.Launcher
         readonly TextBox username=new TextBox {Name="CreatorUsername",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox package=new TextBox {Name="CreatorPackagePath",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reviewNote=new TextBox {Name="ModeratorNote",MaxLength=1800,MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        readonly ComboBox sourceFiles=new ComboBox {Name="ModeratorSourceFile",MinWidth=260,Margin=new Thickness(0,6,0,8)};
 #if MACOS || LINUX
         readonly TextBox password=new TextBox {Name="CreatorPassword",PasswordChar='\u25cf',Margin=new Thickness(0,6,0,8)};
         readonly TextBox invitation=new TextBox {Name="CreatorInvitation",PasswordChar='\u25cf',Margin=new Thickness(0,6,0,8)};
@@ -248,6 +281,7 @@ namespace TimeSplitters.Launcher
         CreatorPackagePlan reviewed;CreatorUpload[] uploads=new CreatorUpload[0];long cursor;
         ModeratorUpload[] reviews=new ModeratorUpload[0];ModeratorUpload selectedReview;string decision,decisionNote;
         ModeratorEvidence scanEvidence;
+        ModeratorSourcePage sourcePage;
         public string StatusText {get{return status.Text;}}
         public ModCreatorPage(string root,bool preview=false):this(root,preview,null){}
         internal ModCreatorPage(string root,bool preview,ModCreatorClient client){this.root=root;this.preview=preview;this.client=client;AutomationProperties.SetName(username,"Workshop username");AutomationProperties.SetName(password,"Workshop password");AutomationProperties.SetName(invitation,"Workshop invitation");AutomationProperties.SetName(package,"Mod ZIP file path");status.Margin=new Thickness(0,0,0,12);Render();}
@@ -268,7 +302,7 @@ namespace TimeSplitters.Launcher
         {var button=new Button {Name=name,Content=title,IsEnabled=stop==null && enabled,Margin=new Thickness(0,8,10,0)};button.Click+=(s,e)=>action();panel.Children.Add(button);return button;}
         void Render()
         {
-            Detach(username);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);View.Children.Clear();bool authenticated=SignedIn;if(!authenticated)ClearReviews();
+            Detach(username);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);Detach(sourceFiles);View.Children.Clear();bool authenticated=SignedIn;if(!authenticated)ClearReviews();
             View.Children.Add(status);var cancel=Button(View,"CancelCreatorOperation","Cancel request",()=>{if(stop!=null)stop.Cancel();});cancel.IsEnabled=stop!=null;Ui.Show(cancel,stop!=null);
             var account=PageTheme.Section(View,"Creator account",authenticated?"Signed in as "+client.Username+" ("+client.Role+")":"Use your workshop account or redeem an operator invitation.");
             if(!authenticated) {
@@ -295,7 +329,7 @@ namespace TimeSplitters.Launcher
             if(uploads.Length==100)Button(history,"NextCreatorUploads","Next uploads",async()=>{cursor=uploads.Last().Cursor;await History();},authenticated);
             if(client!=null && client.CanModerate)RenderModeration();
         }
-        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;decision=null;decisionNote=null;reviewNote.Text="";}
+        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;sourcePage=null;decision=null;decisionNote=null;reviewNote.Text="";sourceFiles.ItemsSource=null;}
         async Task Reviews(long after)
         {ClearReviews();await Run(async token=>{reviews=await Client.Reviews(after,token);},"Moderation queue refreshed.",35);}
         void RenderModeration()
@@ -304,7 +338,7 @@ namespace TimeSplitters.Launcher
             Button(panel,"RefreshModeratorUploads","Refresh moderation",async()=>await Reviews(0));
             foreach(var item in reviews) {
                 var row=item;
-                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,async()=>{selectedReview=row;scanEvidence=null;decision=null;decisionNote=null;reviewNote.Text="";await Run(async token=>{scanEvidence=await Client.Evidence(row,token);},"Scan evidence refreshed.",35);});
+                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,async()=>{selectedReview=row;scanEvidence=null;sourcePage=null;sourceFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";await Run(async token=>{scanEvidence=await Client.Evidence(row,token);},"Scan evidence refreshed.",35);});
             }
             if(reviews.Length==100)Button(panel,"NextModeratorUploads","Next reviews",async()=>await Reviews(reviews.Last().Cursor));
             if(selectedReview==null)return;
@@ -320,6 +354,23 @@ namespace TimeSplitters.Launcher
             panel.Children.Add(PageTheme.Text("Dependencies: "+(review.Package.Dependencies.Count==0?"None":String.Join(", ",review.Package.Dependencies.Select(p=>p.Key+" @ "+p.Value))),12));
             foreach(var file in review.Package.Files.Take(32))panel.Children.Add(PageTheme.Text(file.Key+" · "+file.Value.Size+" bytes · "+file.Value.Sha256,12,"#9EB4C8"));
             if(review.Package.Files.Count>32)panel.Children.Add(PageTheme.Text("Showing 32 of "+review.Package.Files.Count+" declared files. Inspect the full package independently before approval.",12));
+            var scripts=review.Package.Files.Keys.Where(path=>path.StartsWith("scripts/",StringComparison.Ordinal) && path.EndsWith(".lua",StringComparison.OrdinalIgnoreCase)).OrderBy(path=>path,StringComparer.Ordinal).ToArray();
+            if(scripts.Length>0) {
+                string chosen=sourceFiles.SelectedItem as string;sourceFiles.ItemsSource=scripts;sourceFiles.SelectedItem=scripts.Contains(chosen)?chosen:scripts[0];sourceFiles.IsEnabled=stop==null;panel.Children.Add(sourceFiles);
+                Button(panel,"InspectModeratorSource","Read Lua source",async()=>await ReadSource(review,(string)sourceFiles.SelectedItem,0));
+                if(sourcePage!=null) {
+                    var page=sourcePage;panel.Children.Add(PageTheme.Text(page.Path+" · bytes "+page.Offset+"–"+page.NextOffset+" of "+page.Size+" · SHA-256: "+page.PayloadSha256,12));
+                    panel.Children.Add(PageTheme.Text("Read-only text. Hidden control and direction characters are shown as Unicode escapes.",12));
+                    var sourceView=new TextBox {Name="ModeratorSourceText",Text=page.DisplayText(),IsReadOnly=true,AcceptsReturn=true,MinHeight=120,MaxHeight=360};Ui.ScrollBars(sourceView);
+#if MACOS || LINUX
+                    sourceView.TextWrapping=Avalonia.Media.TextWrapping.Wrap;
+#else
+                    sourceView.TextWrapping=System.Windows.TextWrapping.Wrap;
+#endif
+                    panel.Children.Add(sourceView);
+                    if(page.NextOffset<page.Size)Button(panel,"NextModeratorSource","Next source portion",async()=>await ReadSource(review,page.Path,page.NextOffset));
+                }
+            }
             if(decision==null) {
                 panel.Children.Add(PageTheme.Text("Review note",13));panel.Children.Add(reviewNote);reviewNote.IsEnabled=stop==null;
                 Button(panel,"ReviewModeratorApproval","Review approval",()=>ReviewDecision("approve"),review.State=="pending-review" && scanEvidence!=null && scanEvidence.Fresh);
@@ -338,6 +389,8 @@ namespace TimeSplitters.Launcher
             if(note.Length==0 || note.Length>1800 || note.Any(Char.IsControl)){status.Text="Enter a review note of 1 to 1800 characters without control characters.";return;}
             decision=action;decisionNote=note;Render();
         }
+        async Task ReadSource(ModeratorUpload review,string path,long offset)
+        {sourcePage=null;await Run(async token=>{sourcePage=await Client.Source(review,path,offset,token);},"Lua source loaded for inspection. Nothing was executed or installed.",45);}
         async Task Authenticate(bool redeem)
         {
             string name=username.Text??"",secret=Password,invite=Invitation;ClearCredentials();ClearReviews();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
