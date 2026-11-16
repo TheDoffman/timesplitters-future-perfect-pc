@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
+from types import SimpleNamespace
 
 import pytest
 
@@ -47,6 +48,29 @@ def test_stage_preserves_partial_existing_release(layout):
     root,_,plan,binding=layout;plan['target'].mkdir(parents=True);unknown=plan['target']/'unknown';unknown.write_bytes(b'preserve')
     with pytest.raises((ValueError,OSError)):install.stage(plan,binding)
     assert unknown.read_bytes()==b'preserve'
+
+
+def test_base_binding_requires_complete_runtime_and_locked_identity(layout,monkeypatch):
+    root,_,plan,binding=layout;base=root/'releases'/binding['base_release'];python=Path(binding['python']);python.chmod(0o555)
+    marker=dict(producer='tsfp-installed-host-v1',phase='complete',descriptor_sha256=base.name,release=str(base),uid=600)
+    (base/'installation.json').write_bytes(release.wire(marker));metadata=base/'runtime/runtime.json'
+    metadata.write_bytes(release.wire(dict(python='python')))
+    monkeypatch.setattr(install,'load_helper',lambda path:SimpleNamespace(existing=lambda:dict(uid=600,gid=600)))
+    assert install.base_binding(plan)==binding
+    metadata.write_bytes(release.wire(dict(python='../outside')))
+    with pytest.raises(ValueError,match='path'):install.base_binding(plan)
+    metadata.write_bytes(release.wire(dict(python='python')));marker['phase']='preparing'
+    (base/'installation.json').write_bytes(release.wire(marker))
+    with pytest.raises(ValueError,match='incomplete'):install.base_binding(plan)
+
+
+def test_private_parent_creates_only_new_owned_directory_and_preserves_unknown(layout):
+    root,_,_,_=layout;data=root/'data';data.mkdir(mode=0o700);data.chmod(0o700)
+    install.private_parent(os.getuid(),os.getgid())
+    parent=data/'backups';assert parent.stat().st_mode&0o777==0o700
+    original=parent/'unknown';original.write_bytes(b'preserve');parent.chmod(0o755)
+    with pytest.raises(ValueError,match='unknown private'):install.private_parent(os.getuid(),os.getgid())
+    assert original.read_bytes()==b'preserve' and parent.stat().st_mode&0o777==0o755
 
 
 class Jobs:
