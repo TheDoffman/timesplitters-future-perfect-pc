@@ -197,6 +197,12 @@ directory. Role, label, UID, release, actual controller PID, policy, status and 
 health does not admit a host worker. Gateway/publication adapters ignore their
 older writable GUI watchdog files in system mode and cannot generate/control jobs.
 The older login-session prototypes retain their separate behavior.
+The role directory is explicitly set0755 after exclusive creation. Merely passing
+0755 to mkdir is insufficient under the setup/launchd077 umask: the actual native
+cutover exposed0700 directories that correctly prevented unprivileged health
+reads. Marker/plists stay0600, health stays0644 and no non-root writes are granted.
+A regression exercises generation under077. Existing sealed code is preserved;
+correcting already-created root-owned directory modes is an explicit setup repair.
 
 The API controller waits for root health, owns a checked private lock and starts
 the installed Python/Gunicorn child through the verified native lifetime guardian.

@@ -14,6 +14,7 @@ Only afterward generate root monitor plists and an exclusive protected admission
 record. No job registration/start/Funnel. Strict fixed child commands, cleared
 groups and source/UID gates; native CI tests refusal/order/file protections.
 Protected installed execution remains pending, not proved by fixture engines.
+Health dirs explicitly chmod0755 despite umask077; marker/plists remain0600.
 Strict fixtures use private HOME; writable-ancestor refusal remains enforced.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony
@@ -38,7 +39,7 @@ recovery still needs independent portable/profile backup acceptance.
 Host preparation permits only exact Git bytes or exact HEAD-declared CRLF checkout
 rendering; mixed endings/text changes/local filter substitutions remain refused.
 Production roots/recovery and3 online Mac inputs verified; source/installed
-provenance is in STATUS. Root runtime remains f234, no production jobs.
+provenance is in STATUS. No production jobs remain loaded.
 
 Fixed host roles use system-host-service-mac.py/system-host-monitor-mac.py:
 root controls fixed labels/numeric metadata/bounded inert heartbeats; configs/
@@ -46,10 +47,8 @@ keys/network stay600. Health binds role/release/PID/UID, ignoring GUI health.
 API uses guardian group cleanup, no control socket and bounded renewal. Actual
 f099 checks258 Mac/271 Windows; protected deployment/boot/public remains pending.
 
-Actual f234 inert proof passes root->same PID/UID/GID600/kernel[600], denied root
-restore/health writes, root-controller label stop and worker/child exit. Temporary
-jobs unloaded; installed seal unchanged. Persistent scanning/boot/public remains
-pending; see STATUS for the protected0600 receipt and148 native contracts.
+f234 inert root->600/kernel600/denied-root/label-stop proof passed; see STATUS.
+Installed601 passed AV controls; health-dir setup failed and jobs rolled back.
 
 locked-service-bootstrap-mac.py clears groups, sets/verifies GID/UID600/kernel
 credentials and irreversible drop, then execs fixed roles. Both launchd InitGroups

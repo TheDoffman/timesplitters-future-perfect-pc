@@ -186,6 +186,24 @@ def test_generator_private_checks_drop_privileges_and_refuse_bad_results(monkeyp
     with pytest.raises(ModError):monitor.generate('gateway',release,dict(uid=600,gid=600))
 
 
+def test_generated_health_directory_is_traversable_under_private_umask(private_posix_path,monkeypatch):
+    root=private_posix_path
+    monkeypatch.setattr(host,'ROOT',root);monkeypatch.setattr(monitor,'ROOT',root)
+    monkeypatch.setattr(monitor.scan,'ROOT_UID',os.geteuid())
+    monkeypatch.setattr(monitor.scan,'root_directory',lambda p:os.open(p,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW))
+    release=root/'releases'/('a'*64)
+    parent=root/'monitor';parent.mkdir(mode=0o755)
+    (parent/'monitor.json').write_text(json.dumps(dict(schema=1,producer='tsfp-system-scan-monitor-v1',uid=600,release=str(release))))
+    ready=dict(schema=1,role='gateway',release=str(release),phase='ready',services_started=False,network_started=False)
+    monkeypatch.setattr(monitor.subprocess,'run',lambda *_a,**_k:SimpleNamespace(returncode=0,stdout=json.dumps(ready).encode(),stderr=b''))
+    previous=os.umask(0o077)
+    try:monitor.generate('gateway',release,dict(uid=600,gid=600))
+    finally:os.umask(previous)
+    directory=host.paths('gateway')['monitor']
+    assert directory.stat().st_mode&0o777==0o755
+    assert all(p.stat().st_mode&0o777==0o600 for p in directory.iterdir())
+
+
 def test_api_controller_withholds_process_creation_without_root_health(layout,monkeypatch):
     data=dict(host.paths('api'),origin='https://workshop.example.test',system_monitor=True,system_release='/release')
     monkeypatch.setattr(worker,'wait_healthy',lambda *_:(_ for _ in ()).throw(ModError('no root health')))

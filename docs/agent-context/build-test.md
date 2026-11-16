@@ -1,4 +1,4 @@
-[Service proofs](build-test-details.md). Strict POSIX fixtures use private HOME dirs.
+[Service proofs](build-test-details.md). Private HOME/umask077 generation regressions.
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

@@ -176,6 +176,9 @@ def generate(role, release, account):
     directory = paths(role)['monitor']
     require(not directory.exists() and not directory.is_symlink(), 'Preserving existing host monitor generation')
     directory.mkdir(mode=0o755)
+    # launchd and the setup shell use umask077. The worker must traverse this
+    # root-owned directory to read public0644 health; marker/plists stay0600.
+    directory.chmod(0o755)
     for name, value in zip(('worker.plist', 'monitor.plist'), plists(role, release, Path(sys.executable).resolve())):
         with os.fdopen(os.open(directory/name, os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW, 0o600), 'wb') as output:
             plistlib.dump(value, output); output.flush(); os.fsync(output.fileno())
