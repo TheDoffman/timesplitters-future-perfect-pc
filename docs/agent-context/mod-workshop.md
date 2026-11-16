@@ -5,7 +5,7 @@ source-pinned private readiness and7 restarts precede boot-file installation.
 Invites/PCM/Pulse listening: ../development/mod-creator-service.md; deployment pending.
 Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged.
 Public native3->4->3 gameplay/lifecycle and withdrawal pass on all3 hosts (STATUS).
-Mac had one pre-match signal11; retry passed, cause/stability remains open.
+Native exit diagnostics: mod-scripting.md; Mac/CI stability remains open.
 Signedv31 retains5 revocations; downloads404. Backup custody/clone restore pass;
 Journal v2: ../development/mod-workshop-operations.md.
 

@@ -183,7 +183,8 @@ void Session::work(std::shared_ptr<State> state,std::string image,std::string ca
         uint64_t rate_cpu=usage.cpu_microseconds,idle_cpu=usage.cpu_microseconds;
         auto inspect=[&](uint64_t cpu_base,uint64_t budget) {
             if(state->cancel.load() || state->invalid.load())throw std::runtime_error("Script session cancelled");
-            if(!child->usage(usage) || usage.exited)throw std::runtime_error("Script worker terminated");
+            if(!child->usage(usage))throw std::runtime_error("Cannot inspect script worker");
+            if(usage.exited)throw std::runtime_error("Script worker exited (status "+std::to_string(usage.exit_code)+")");
             if(usage.resident_bytes>128u*1024*1024 || usage.cpu_microseconds<cpu_base || usage.cpu_microseconds-cpu_base>budget)
                 throw std::runtime_error("Script worker resource budget exceeded");
             if(usage.cpu_microseconds<rate_cpu || usage.cpu_microseconds-rate_cpu>1000000)throw std::runtime_error("Script session CPU rate exceeded");

@@ -133,7 +133,8 @@ def test_invalid_sources_never_start_a_worker(process_tools, tmp_path, source):
 @pytest.mark.parametrize('source', ['hang', 'load-hang', 'partial', 'diagnostic', 'crash'])
 def test_native_faults_are_independently_stopped_without_blocking_host(process_tools, tmp_path, source):
     records = run(process_tools, tmp_path, source, hostile=True)
-    fault(records)
+    reason=fault(records)
+    if source=='crash':assert reason=='Script worker exited (status 99)'
     assert records[-1]['polls'] > 1
 
 

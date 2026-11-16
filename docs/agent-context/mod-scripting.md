@@ -607,3 +607,15 @@ during a live script and from script-ended results both exit0, preserve ordinary
 save hashes, leave no owned worker and create no additional private cache folder.
 The four earlier unmarked test caches stay untouched. CI43654874944 completes
 23 successful jobs/2 intentional skips. Abrupt-crash recovery remains separate.
+
+Native worker failure diagnostics (2026-11-16): Session::inspect distinguishes
+failure to query its owned process from an observed exit. Exit faults include
+the native ProcessUsage exit_code, without copying worker stderr or payloads.
+POSIX adapter statuses preserve exit values or128+signal; Windows preserves its
+owned process exit value. The hostile crash fixture must report status99. This
+does not change startup/request/CPU/memory budgets or accept a terminated worker.
+CI d9a4c509 Linux resource-cache recovery fails once with the earlier generic
+worker-terminated message; the targeted local recovery/run cases pass afterward.
+That is not a cause or repair proof. Exact status on recurrence is needed before
+changing confinement, reaping, resource limits or deadlines. The older Mac
+pre-match signal11 likewise remains a separate unresolved stability observation.
