@@ -1,3 +1,41 @@
+Cutover observations and preserved-backup compatibility (2026-11-16; sourceedbc588f):
+Read-only mod_host_cutover.py binds all10 fixed job labels to expected top-level
+launchctl path/type/program/arguments/PID, observes them twice around numeric
+PID/parent/group/UID sampling, and conservatively tracks descendant/group exit
+plus all dedicated service-identity processes. It refuses malformed/ambiguous
+bindings, duplicate job PIDs, changing jobs and unknown owners. It does not stop
+jobs, attest root file bytes, issue admission, change routing or activate code.
+Focused cutover/CI-selection tests pass186 on Windows0.30s, Mac0.11s and Linux0.15s.
+Actual Mac UID501 read-only acceptance matches all9 currently installed job
+factories, including their staging launch paths, and observes7 running roots,
+15 tracked processes/13 groups with stable second observations. No production
+modification. Logs: cutover-observation-{mac,linux,live}.txt under ignored logs.
+
+Correction to earlier backup-migration assumptions: the frozen backup release
+independently binds its own code/runtime, not the active host initialization.
+Preserve its exact binding/job and old7be runtime during host migration; do not
+require a new binding solely because the active host changes. Actual frozen
+8-file backup code c29aeabf...e783d (sourcef6a649eb) with the staged verified
+Python captures/verifies the newer disposable repository twice and respects
+normal cadence between forced captures. First attempt correctly refuses the
+original fixture's0755 directory; successful acceptance uses a separate0700 copy
+with0600 files and leaves the original fixture unchanged. ReceiptSHA256
+6348d71a4c260160e8b158817e1daa7a2cde9b6fb55e14b3dc16ff45c7bff362;
+copy: logs/preserved-backup-private-acceptance.json. This is UID501 library/schema
+compatibility, not production scheduled-job or root cutover acceptance. A trusted
+forced capture after quiescence, backup-job admission and preservation across
+actual upgrade remain required. The root coordinator is still incomplete.
+
+Exact62fdae87 CI43961358647 is now terminal:23 successful jobs/2 intentional skips,
+including all selected runtime/patch checks, three launcher packages, combined
+three-platform artifact verification and aggregate PR validation. The older
+4530 run remains failed; its Vulkan download/browser causes are not established
+by the later success. No pin weakening, timeout increase or CI rerun was used.
+Sourceedbc588f is synchronized through Git to both native task checkouts;
+the earlier frozen candidate and live601/7be service are unchanged. Same Mac
+backup zsh29800/sudo29803 and Windows WorkshopSignIn45300 remain live, with no
+sign-in result. No duplicate prompts, password/vault reads or public role bypass.
+
 Private configuration migration component (2026-11-16; sourceb4158060, not deployed):
 mod_host_migration.py derives only six generation-bound config/marker records
 from the existing v1 initializers. It verifies both immutable origin/root profiles,
@@ -9,7 +47,7 @@ root-owned quiescence admission binding plan/nonce, all9 jobs plus backup stoppe
 and backup verification after quiescence, bound to the native boot session so a
 reboot invalidates prior admission. Installed locked-account CLI defaults
 to plan-only; it cannot issue that authority or activate a service. Root cutover
-coordination/backup binding migration and actual UID600 admission remain pending.
+coordination/backup preservation and actual UID600 admission remain pending.
 Final migration/initializer/CI scope checks pass159 with67 POSIX skips on Windows
 (1.53s), actual Mac226 pass7.08s and Linux226 pass10.16s. These use private HOME
 filesystem fixtures with test authority owners, not live UID600 admission.
@@ -46,8 +84,8 @@ Copies: logs/upgrade-candidate-4fc86283*.txt and corresponding receipt JSONs.
 Mac private artifacts: TSFP-Mod-Host-Runtime-1a59fca0/{release-bundle-4fc86283,
 upgrade-acceptance-4fc86283,upgrade-failclosed-4fc86283} under Library/Caches.
 Existing initializer/registrar deliberately refuse changed generations/existing
-jobs. A preserving active-generation migration and backup-binding migration are
-still required; see mod-workshop-operations.md. Existing backup admin-auth and
+jobs. A preserving active-generation migration and backup-job preservation are
+still required; see the newer correction above and mod-workshop-operations.md. Existing backup admin-auth and
 Windows owner sign-in windows remain pending. Production601/7be is unchanged.
 
 Linux desktop audio follow-up (2026-11-16; source3a555fb4, deployment pending):
