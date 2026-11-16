@@ -1723,6 +1723,13 @@ arbitrary executables/scripts/nested names and an uploaded mod carrying a helper
 The actual package --verify-game-package gate remains required after rebuilding
 the native launchers; the initially failed archives are preserved for diagnosis.
 
+Creator tools (mod_creator.py): ../development/mod-creator-tools.md.
+test_creator_projects.py covers CLI new/import/pack/validate, decoded PNG budgets,
+mips/channels/source preservation, DDS byte preservation, output collisions and
+links, including imported content through the actual native DDS reader.
+test_script_worker.py executes packaged gameplay/mixed templates in the real VM.
+Both are native-suite CPU tests; player runtime/trust and live acceptance stay separate.
+
 Native module capture: ../development/native-crash-images.md. The existing native
 crash suite now faults in a library loaded after reporter startup, including a
 Unicode/space path. Portable registry boundaries run inside test_crash_capture.py;

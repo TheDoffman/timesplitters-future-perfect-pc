@@ -53,10 +53,16 @@ def test_real_custom_mode_updates_score_and_finishes_match(worker):
     assert replies[4]['commands'][-1] == dict(kind=2, player=1, value=0, text='')
 
 
-def test_packaged_module_project_executes_in_the_actual_restricted_vm(worker, tmp_path):
+@pytest.mark.parametrize('project_kind', ['modular', 'gameplay', 'mixed'])
+def test_packaged_module_project_executes_in_the_actual_restricted_vm(worker, tmp_path, project_kind):
     from mod_package import build_package
+    from mod_creator import create_project
     archive = tmp_path/'modular.zip'
-    build_package(ROOT/'examples/mods/modular-first-to-three', archive, bundle_scripts=True)
+    project = ROOT/'examples/mods/modular-first-to-three'
+    if project_kind != 'modular':
+        project = tmp_path/'creator project'
+        create_project(project, mod_id='my-mode', name='My mode', author='creator', template=project_kind)
+    build_package(project, archive, bundle_scripts=True)
     with zipfile.ZipFile(archive) as package:
         source = package.read('scripts/main.lua')
         assert package.namelist() == ['mod.json','scripts/main.lua']

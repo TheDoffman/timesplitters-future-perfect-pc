@@ -397,6 +397,13 @@ Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Wind
 Mac build passes using supported --output under the owned Library/Caches folder.
 No public workshop service, production trust activation or release is claimed.
 
+Creator project/import follow-up (2026-11-16, local source): shared mod_creator.py
+adds new gameplay/textures/mixed templates and bounded PNG/exact DDS import through
+the existing texture encoder. No new OS adapter or game permission is needed.
+Windows creator/native-reader/packed-template VM/scope selection passes172 cases.
+Actual Mac/Linux creator-tool runs are pending; final SDK/game/public acceptance
+remains open. Contract: docs/development/mod-creator-tools.md; evidence in STATUS.
+
 Mod workshop (local/uncommitted, base1375e144): shared Python3.12 operator tools
 plus shared WPF/Avalonia Mods page and HTTP client. Mac/Linux NativeWindow has
 Mods navigation and offline preview; no separate policy implementation. Windows

@@ -110,6 +110,14 @@ but cannot be activated yet. Gameplay modes remain inactive on older game builds
 The CLI `install` below is an operator/testing staging command; the player UI
 uses `Mods/Packages`, `Mods/profile.json` and `Mods/Active` instead.
 
+## Create a project and import artwork
+
+The creator CLI now provides `new` gameplay/texture/mixed templates and
+`import-texture` for bounded authored PNG or compatible DDS input. Import produces
+keyed mipmapped DDS using the existing encoder, preserving source artwork and
+refusing existing outputs. See [creator tools](mod-creator-tools.md) for commands,
+limits, channel semantics and the current draft SDK's remaining release work.
+
 ## Package a modular Lua project
 
 The SDK can link up to32 creator-owned Lua files into one `scripts/main.lua`,

@@ -63,6 +63,7 @@ RELEASE_INPUTS = {
 CPU_TOOLS = {
     'tools/mods/mod_package.py', 'tools/mods/mod_repository.py',
     'tools/mods/mod_lua_bundle.py', 'tests/mods/test_lua_bundle.py',
+    'tools/mods/mod_creator.py', 'tests/mods/test_creator_projects.py',
     'tools/mods/mod_texture_preview.py', 'tests/mods/test_texture_preview.py',
     'tools/mods/hosting/system-scan-monitor-mac.py', 'tests/mods/test_system_scan_monitor.py',
     'tools/mods/mod_system_host.py', 'tools/mods/hosting/system-host-monitor-mac.py',

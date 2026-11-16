@@ -16,6 +16,20 @@ from mod_operator import issue_invitation
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
+    new = commands.add_parser('new', help='Create a gameplay, texture or mixed creator project')
+    new.add_argument('destination')
+    new.add_argument('--id', required=True)
+    new.add_argument('--name', required=True)
+    new.add_argument('--author', required=True, help='Your workshop username')
+    new.add_argument('--template', choices=('gameplay', 'textures', 'mixed'), default='gameplay')
+    texture = commands.add_parser('import-texture', help='Import authored PNG/DDS into a creator project')
+    texture.add_argument('project')
+    texture.add_argument('source')
+    texture.add_argument('--key', required=True)
+    texture.add_argument('--format', choices=('DXT1', 'DXT5', 'RGBA8'))
+    texture.add_argument('--width', type=int)
+    texture.add_argument('--height', type=int)
+    texture.add_argument('--channels', choices=('color', 'luminance', 'alpha'), default='color')
     build = commands.add_parser('pack', help='Build a creator package')
     build.add_argument('source')
     build.add_argument('output')
@@ -72,7 +86,15 @@ def main(argv=None):
             command.add_argument('--port', type=int, default=8765)
     args = parser.parse_args(argv)
     try:
-        if args.command == 'pack':
+        if args.command == 'new':
+            from mod_creator import create_project
+            result = create_project(args.destination, mod_id=args.id, name=args.name,
+                                    author=args.author, template=args.template)
+        elif args.command == 'import-texture':
+            from mod_creator import import_texture
+            result = import_texture(args.project, args.source, key=args.key, pixel_format=args.format,
+                                    width=args.width, height=args.height, channels=args.channels)
+        elif args.command == 'pack':
             result = build_package(args.source, args.output, bundle_scripts=args.modules)
         elif args.command == 'validate':
             result = inspect_package(args.package)

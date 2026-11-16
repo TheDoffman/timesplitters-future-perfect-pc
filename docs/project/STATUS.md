@@ -1,3 +1,17 @@
+Creator project/import tools (2026-11-16, local source):
+mod-workshop.py now has new gameplay/textures/mixed templates and import-texture.
+mod_creator.py validates metadata before creating a new-only project, copies the
+original API1 First to Three source for gameplay, and imports bounded PNG or exact
+compatible DDS into keyed texture payloads. PNG uses the existing texture encoder
+for full mips/channel semantics; decoded dimensions, output bytes and aspect ratio
+are checked. Sources/manifests and existing/case-colliding outputs are preserved;
+linked paths are refused. No player, upload, decoder or trust capability changes.
+
+Windows creator/actual native reader plus packed-template VM and scope selection
+passes172 cases; an earlier creator/linker/scope selection passes181. Native Mac/
+Linux tool acceptance, new live-game/public creator acceptance and final SDK
+distribution remain pending. Details: docs/development/mod-creator-tools.md.
+
 Native fault-image capture checkpoint (2026-11-16):
 POSIX reports now associate PC with its actual recorded executable mapping instead
 of always asking the main game binary to symbolize it. A shared bounded registry
