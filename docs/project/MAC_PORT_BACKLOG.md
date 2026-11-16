@@ -1,3 +1,14 @@
+Current-source SDK/game/public defaults (2026-11-16): **In progress**.
+At2196da14 game consumer linkage fix and full native builds pass all3; consumer/
+runtime/identity/scope checks pass180/5 Windows,181/4 Mac,180/5 Linux. Rebuilt
+launchers pass114/115/116 UI groups. Exported SDK creates/imports independent PCM,
+packs/validates and passes actual native launcher-installed six-bot matches on
+all3; audio controls, isolated-save preservation and empty shutdown caches pass.
+Fresh clients read production signed40 twice without local service/root files.
+SDK independent exports and authored ZIPs match across hosts. Earlier Mac crash
+and Linux backpressure causes remain unresolved; final release/ops/physical and
+broader content/multiplayer acceptance remain pending. Exact pins in STATUS.
+
 Full-game identity linkage (2026-11-16): **In progress**.
 Actual Windows/Mac/Linux game links at03473783 missed the shared process-identity
 source despite passing standalone/native helper checks. Shared game.cmake now

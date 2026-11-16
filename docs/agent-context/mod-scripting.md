@@ -9,7 +9,12 @@ Only surrounding title storage/network/audio callbacks are stubs; they abort if
 called. No worker, fake replacement source list or game assets are needed. It
 also rejects leaked TSFP_MOD_PROCESS_TESTING. Native CI routes both the test and
 native_game_link_driver.cpp. Windows initial consumer check passes11.89s;
-expanded checks and exact-source full game rebuilds follow. Duplicate Windows
+expanded checks pass180/5 skips Windows,181/4 Mac,180/5 Linux. Exact2196da14
+full game rebuilds pass all3; exported SDK new/import-audio/pack/validate then
+real launcher-installed six-bot audio matches pass all3, normal shutdown leaves
+no worker-cache contents and ordinary isolated saves/fixtures stay unchanged.
+Fresh native clients read signed production40 twice on each host without local
+service/root files. SDK hashes, game binaries and acceptance limits are in STATUS. Duplicate Windows
 macro guards and checked explicit ASCII encoding of GUID/SID remove warnings
 seen in the real build; compiler flags, pins, VM API and gameplay are unchanged.
 

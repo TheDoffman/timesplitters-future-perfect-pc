@@ -1,11 +1,45 @@
-Full-game process identity linkage (2026-11-16, fix under validation):
+Exact-source creator SDK -> launcher -> game (2026-11-16):
+At2196da14 full native game rebuilds now pass on Windows, Mac and Linux. Windows
+build checks also pass. Actual-consumer/production-runtime/identity/scope tests
+pass180/5 skips Windows39.03s,181/4 Mac16.39s,180/5 Linux24.05s. Current native
+launcher build/tests pass114 Windows/115 Mac/116 Linux UI groups; all3 creator
+backend invitation/upload/quarantine/ownership/session checks pass. Linux native
+package install/corruption/repair/restart/render checks pass with saves retained.
+Each host then used a dedicated EXPORTED SDK directory under isolated Python -I:
+new audio project, import independently authored660Hz PCM, pack and
+validate. The rebuilt native launcher installed/enabled that ZIP and generated
+the actual handoff; newly rebuilt games ran six-bot offline matches, exiting0.
+Read-only native observers verify accepted one-shot/loop, pause/resume, half-pitch
+11025Hz and volume-2602, with44100-byte/22050-frame mono clips. Ordinary isolated
+saves and canonical fixtures retain their hashes; each worker-cache is empty
+after normal game shutdown. Windows gameplay.png was reviewed: real Temple
+gameplay shows the custom audio-mode overlay. Mac/Linux renderer-owned BMPs
+also show actual Temple gameplay/player death. No injected score/state writes.
+All three independently exported SDK ZIPs match107219 bytes/20 files, SHA256
+658d92e2443546e9462bc554fa7c402ce8790e5a2657f0e323ddc441dcf8f78c. Their authored
+mod ZIPs are byte-identical, SHA467394f8333e950428a18b21826bce999a9137297695cec948c4646c28b271b6.
+Authored WAV SHAf741a16a2eccbb581d79ddb758cab5d51dc0f5d0298a0a19adb24484365a6178.
+Fresh rebuilt native clients on all3 hosts read signed production catalog40
+twice via default HTTPS and compiled origin/root, without local Support/Mods
+service/root files. Approved count0. Public client/SDK releases are not published.
+Local receipts: private/test-saves/sdk-launcher-2196-{win,mac,linux}/evidence.json
+and creator-sdk-evidence.json; logs/sdk-integration-2196-summary.json contains
+binary pins (Mac/Linux summaries copied privately to Windows). POSIX games reuse
+previous hash-verified GPU/media companions; this is genuine installed-layout
+model/game acceptance, not final same-source release packaging. Synthetic input
+and configured-host evidence do not establish clean-machine/physical acceptance.
+The earlier Mac MoltenVK signal11 and Linux backpressure events did not recur in
+these runs; their causes are not resolved by a passing run. Multiplayer agreement,
+broader content, operational backup/boot and final publication remain outstanding.
+
+Full-game process identity linkage (2026-11-16, resolved at2196da14):
 Actual full Windows, Mac and Linux builds at03473783 failed linking the new
 process identity APIs: the separate game.cmake consumer omitted their source.
 Standalone/native tests were insufficient evidence for this target. The shared
 game target now includes mod_process_identity.cpp under its existing strict
 flags. New asset-free consumer smoke compiles/links actual game.cmake modules,
 uses real native identity queries and aborting surrounding title stubs; initial
-Windows check passes11.89s. Expanded and full-game rebuild validation follows.
+Windows check passes11.89s. Expanded and full-game validation is recorded above.
 Windows duplicate macro definitions and implicit wchar-to-char GUID/SID warnings
 are corrected with guards and checked explicit ASCII conversion. No compiler/
 dependency pin, optimization, Lua API or game behavior changes.
