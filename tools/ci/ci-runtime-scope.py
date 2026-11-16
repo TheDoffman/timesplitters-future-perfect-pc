@@ -127,6 +127,7 @@ CPU_TOOLS = {
     'tools/mods/hosting/upgrade-installed-host-mac.py',
     'tools/mods/hosting/upgrade-job-specs-mac.py', 'tools/mods/mod_host_upgrade_process.py', 'tests/mods/test_upgrade_process.py',
     'tools/mods/hosting/force-upgrade-backup-mac.py', 'tests/mods/test_upgrade_backup.py',
+    'tests/mods/upgrade_backup_driver.py',
     'config/mods/clamav-certificate.json',
     'tests/mods/test_creator_service.py', 'tests/mods/test_creator_api.py', 'tests/mods/test_package_budgets.py',
     'tests/mods/live_creator_service.py', 'tests/mods/scan_limits_probe.c',

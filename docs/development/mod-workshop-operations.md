@@ -164,6 +164,14 @@ closures before launching this child through a bounded supervisor, after job
 quiescence, and check the receipt before issuing migration admission. That root
 integration and actual UID600 capture admission remain unfinished.
 
+The forced-backup core tests use `upgrade_backup_driver.py` in fresh `-I -S -B`
+interpreters, matching the production closure boundary. A larger pytest process
+can legitimately have other test/helper modules loaded; the production guard
+must still reject that ambient state. The fresh driver tests actual capture,
+policy refusal and verification failure, and deliberately inserts a foreign
+module for the rejection case. Do not remove modules from pytest's global cache
+or weaken the production closure guard to accommodate in-process fixtures.
+
 `mod_host_cutover.py` implements job/process attestation for that
 coordinator. Its `job_files` checks twenty generated/boot plists against the
 immutable factory bytes, requiring root ownership, single-link regular files,

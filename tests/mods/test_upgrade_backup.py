@@ -40,15 +40,24 @@ def private_pool(private_posix_path,host,monkeypatch):
     for name in ('data','data/scan','data/backups'):(root/name).mkdir(mode=0o700)
     target=root/'data/scan/repository';shutil.copytree(repository.root,target)
     parent=root/'data/backups';managed=parent/'managed';pool.initialize(target,managed)
-    monkeypatch.setattr(force,'ROOT',root)
+    # Model modules left loaded by other suites. Only the isolated driver may
+    # run the forced core; the parent must not sanitize or bypass its guard.
+    monkeypatch.setitem(sys.modules,'mod_parent_ambient_fixture',SimpleNamespace(__file__=str(root/'parent-helper.py')))
     return managed,dict(identity='c'*64,base_release='a'*64),target
+
+
+def isolated_capture(managed,action):
+    result=subprocess.run([sys.executable,'-I','-S','-B',str(SOURCE/'tests/mods/upgrade_backup_driver.py'),
+                           str(managed.parents[2]),action],capture_output=True,text=True,timeout=20)
+    assert not result.stderr,result.stderr
+    return result.returncode,json.loads(result.stdout)
 
 
 def test_force_captures_another_verified_snapshot_when_normal_run_is_not_due(private_pool):
     managed,binding,target=private_pool
     first=pool.run(managed,force=True)
     assert pool.run(managed)['status']=='not-due'
-    report=force.force_capture(SOURCE/'tools/mods',binding,os.geteuid())
+    code,report=isolated_capture(managed,'force');assert code==0,report
     assert report['forced'] and report['verified'] and report['status']=='captured'
     assert report['backup']!=first['backup'] and report['identity']==binding['identity']
     assert report['started']<=report['created']<=report['finished']
@@ -62,24 +71,24 @@ def test_changed_policy_refuses_before_fresh_capture_and_preserves_previous_back
     first=pool.run(managed,force=True)
     path=managed/pool.POLICY;value=json.loads(path.read_bytes());value['interval']=3600
     path.write_text(json.dumps(value))
-    with pytest.raises(ValueError,match='policy differs'):force.force_capture(SOURCE/'tools/mods',binding,os.geteuid())
+    code,report=isolated_capture(managed,'policy')
+    assert code==2 and 'policy differs' in report['error']
     assert len(pool.entries(managed,pool.policy(managed)[1])[0])==1
     assert mod_backup.verify_snapshot(managed/first['backup'])
 
 
-def test_mixed_module_closure_is_refused_before_any_capture(private_pool,monkeypatch):
+def test_mixed_module_closure_is_refused_before_any_capture(private_pool):
     managed,binding,_=private_pool
-    monkeypatch.setitem(sys.modules,'mod_foreign_fixture',SimpleNamespace(__file__=str(managed/'foreign.py')))
-    with pytest.raises(ValueError,match='closure differs'):force.force_capture(SOURCE/'tools/mods',binding,os.geteuid())
+    code,report=isolated_capture(managed,'mixed')
+    assert code==2 and 'closure differs' in report['error']
     assert not pool.entries(managed,pool.policy(managed)[1])[0]
 
 
-def test_failed_independent_verification_keeps_both_snapshots_for_inspection(private_pool,monkeypatch):
+def test_failed_independent_verification_keeps_both_snapshots_for_inspection(private_pool):
     managed,binding,_=private_pool
     first=pool.run(managed,force=True)
-    with monkeypatch.context() as patch:
-        patch.setattr(mod_backup,'verify_snapshot',lambda _:(_ for _ in ()).throw(ValueError('injected verification failure')))
-        with pytest.raises(ValueError,match='injected'):force.force_capture(SOURCE/'tools/mods',binding,os.geteuid())
+    code,report=isolated_capture(managed,'verification')
+    assert code==2 and report['error']=='injected verification failure'
     snapshots,_=pool.entries(managed,pool.policy(managed)[1])
     assert len(snapshots)==2 and (managed/first['backup']).is_dir()
     for snapshot in snapshots:assert mod_backup.verify_snapshot(snapshot['path'])

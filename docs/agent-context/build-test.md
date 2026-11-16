@@ -1,5 +1,5 @@
 Game link/lease checks: mod-scripting.md; backups/SDK: [details](build-test-details.md).
-Upgrade child/backup tests: test_upgrade_process.py, test_upgrade_backup.py.
+Upgrade/backup subprocess fixtures: test_upgrade_process.py, test_upgrade_backup.py.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.
