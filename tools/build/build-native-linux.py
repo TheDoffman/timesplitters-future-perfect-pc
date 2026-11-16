@@ -47,6 +47,7 @@ def main():
     parser.add_argument('--generate',action='store_true',help='Generate current guest C from the verified XBE')
     parser.add_argument('--test',action='store_true',help='Run protected-MMIO regression after building')
     parser.add_argument('--release-media',action='store_true',help='Compile/link against the verified decoder-only media build for packaging')
+    parser.add_argument('--media-root',type=Path,help='Read-only decoder reuse from another checkout with the same verified pin; requires --release-media')
     parser.add_argument('--host-optimization',choices=('optimized','debug'),default='optimized',
                         help='Optimize host libraries while retaining assertions/symbols; debug restores unoptimized host code')
     args=parser.parse_args()
@@ -54,6 +55,7 @@ def main():
         parser.error('Requires Linux x64 and a Linux Python environment')
     if sys.version_info<(3,12):parser.error('Use Python 3.12+ with the shared requirements')
     if not 1<=args.jobs<=8:parser.error('--jobs must be 1â€“8')
+    if args.media_root and not args.release_media:parser.error('--media-root requires --release-media')
     pins=(ROOT/'tsfp.ps1').read_text()
     revision=re.search(r"\$revision = '([a-f0-9]{40})'",pins)[1]
     expected=re.search(r"\$expectedHash = '([A-F0-9]{64})'",pins)[1].lower()
@@ -98,7 +100,7 @@ def main():
     media=None;configure_env=dict(os.environ)
     command.append('-U*XMV_FFMPEG*')
     if args.release_media:
-        media_root,media=linux_ffmpeg.verify_install(ROOT)
+        media_root,media=linux_ffmpeg.verify_install(ROOT,source_root=args.media_root)
         configure_env['PKG_CONFIG_PATH']=str(media_root/'install/lib/pkgconfig')+(':'+configure_env['PKG_CONFIG_PATH'] if configure_env.get('PKG_CONFIG_PATH') else '')
     run(*command,env=configure_env)
     run(cmake,'--build',build,'--target','futureperfect_recomp','tsfp_native_mmio_test','--parallel',args.jobs)

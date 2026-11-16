@@ -195,6 +195,8 @@ def write_release_assets(manifest,archive_path):
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--version',required=True)
     parser.add_argument('--output',type=Path,default=ROOT/'build/releases');parser.add_argument('--launcher',type=Path,default=ROOT/'build/linux-launcher/package')
+    parser.add_argument('--sdk-root',type=Path,help='Read-only SDK reuse from another checkout with the same verified pin')
+    parser.add_argument('--media-root',type=Path,help='Read-only decoder reuse from another checkout with the same verified pin')
     args=parser.parse_args()
     if platform.system()!='Linux' or platform.machine()!='x86_64':parser.error('Package on the Linux x64 build host')
     if run('git','status','--porcelain'):parser.error('Commit source changes before preparing a release candidate')
@@ -206,6 +208,10 @@ def main():
     for name,sha in native['source_sha256'].items():
         if digest(ROOT/name)!=sha:parser.error('Runtime source changed; rebuild: '+name)
     if not all(native['capabilities'].get(k) for k in ('movie_decode','settings_dialog','debug_dialog')):parser.error('Build the complete desktop/media runtime first')
+    # Refuse changed/re-pinned dependencies before creating any package output.
+    media,media_receipt=linux_ffmpeg.verify_install(ROOT,source_root=args.media_root)
+    if native.get('release_media')!=media_receipt:raise ValueError('Rebuild the game with --release-media before packaging')
+    sdk=linux_vulkan_sdk.verify_install(ROOT,source_root=args.sdk_root)
     name='TimeSplitters-Future-Perfect-PC-'+args.version+'-linux-x64';stage=args.output.resolve()/name
     if stage.exists() or stage.with_name(stage.name+'.zip').exists():parser.error('Use a new output directory; existing packages are preserved')
     stage.mkdir(parents=True);game=copy(executable,stage,'Bin/futureperfect_recomp');game.chmod(0o755)
@@ -244,8 +250,6 @@ def main():
         shutil.copy2(mime,database/'packages/freedesktop.org.xml')
         subprocess.run(['update-mime-database',str(database)],check=True)
         copy(database/'mime.cache',stage,'Support/Desktop/share/mime/mime.cache')
-    media,media_receipt=linux_ffmpeg.verify_install(ROOT)
-    if native.get('release_media')!=media_receipt:raise ValueError('Rebuild the game with --release-media before packaging')
     for stem in media_receipt['pin']['libraries']:
         path=(media/'install/lib'/stem).resolve()
         soname=run('patchelf','--print-soname',path);dynamic.append((path,copy(path,stage,'Bin/'+soname)))
@@ -254,7 +258,6 @@ def main():
     copy(ROOT/'config/build/ffmpeg-linux.json',stage,'Source/FFmpeg/pin.json')
     for name in ('COPYING.LGPLv2.1','LICENSE.md'):
         copy(media/media_receipt['pin']['archive_prefix']/name,stage,'Licenses/FFmpeg-'+name+'.txt')
-    sdk=linux_vulkan_sdk.verify_install(ROOT)
     dxc=sdk/'lib/libdxcompiler.so'
     dynamic.append((dxc,copy(dxc,stage,'Bin/libdxcompiler.so')))
     copy(sdk.parent/'LICENSE.txt',stage,'Support/Runtime/Vulkan-SDK-LICENSE.txt')

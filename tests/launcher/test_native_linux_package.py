@@ -4,10 +4,40 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import pytest
 ROOT=Path(__file__).resolve().parents[2]
 spec=importlib.util.spec_from_file_location('linux_package',ROOT/'tools/release/package-native-linux.py')
 package=importlib.util.module_from_spec(spec);spec.loader.exec_module(package)
+
+
+@pytest.mark.parametrize('failure',['media','sdk'])
+def test_changed_reused_dependencies_refuse_before_creating_output(tmp_path,monkeypatch,failure):
+    build=tmp_path/'build/linux/game';build.mkdir(parents=True)
+    executable=build/'futureperfect_recomp';executable.write_bytes(b'fixture')
+    receipt=dict(executable_sha256=package.digest(executable),source_sha256={},
+                 capabilities=dict(movie_decode=True,settings_dialog=True,debug_dialog=True),release_media={'verified':True})
+    (build/'BUILD.json').write_text(json.dumps(receipt))
+    monkeypatch.setattr(package,'ROOT',tmp_path)
+    monkeypatch.setattr(package.platform,'system',lambda:'Linux')
+    monkeypatch.setattr(package.platform,'machine',lambda:'x86_64')
+    monkeypatch.setattr(package,'run',lambda *args:'')
+    monkeypatch.setattr(package.shutil,'which',lambda name:'/usr/bin/patchelf')
+    monkeypatch.setattr(package,'release_identity',lambda *args,**kw:{})
+    def media(root,*,source_root=None):
+        assert source_root==tmp_path/'reused'
+        if failure=='media':raise ValueError('Changed media dependency')
+        return tmp_path/'reused',receipt['release_media']
+    def sdk(root,*,source_root=None):
+        assert source_root==tmp_path/'reused'
+        raise ValueError('Changed SDK dependency')
+    monkeypatch.setattr(package.linux_ffmpeg,'verify_install',media)
+    monkeypatch.setattr(package.linux_vulkan_sdk,'verify_install',sdk)
+    output=tmp_path/'output'
+    monkeypatch.setattr(sys,'argv',['package-native-linux.py','--version','0.6.3-mod-workshop.1',
+        '--output',str(output),'--media-root',str(tmp_path/'reused'),'--sdk-root',str(tmp_path/'reused')])
+    with pytest.raises(ValueError,match='Changed'):package.main()
+    assert not output.exists()
 
 def payload(root):
     names=['Bin/libdxcompiler.so','Bin/futureperfect_recomp','TimeSplitters.Launcher','Launch.sh','Settings/pc-controls.json',

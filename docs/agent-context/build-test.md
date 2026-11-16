@@ -2,7 +2,7 @@ Service/vault/recovery/WAV/audio-source/OS bounds: [checks](build-test-details.m
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
-Epoch/GCC checks: build-test-details.md.
+Epoch/GCC/Linux dependency reuse: build-test-details.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.

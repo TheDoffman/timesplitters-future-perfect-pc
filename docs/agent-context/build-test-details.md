@@ -1694,3 +1694,14 @@ The fixture decodes Repository.get's stored scan JSON before returning a report
 object; an initial live run exposed this wrapper mismatch, with inputs unchanged.
 RunSafely catches standalone fixture errors so .NET unwinds cleanup rather than
 aborting before finally; bad-config acceptance must return1 with no child/fixture.
+
+Linux build/package dependency reuse: build-native-linux.py --media-root requires
+--release-media; package-native-linux.py accepts --media-root and --sdk-root.
+The media helper compares the complete source checkout pin first, then applies
+normal archive/library/receipt/license verification to the existing installation.
+It creates no dependency copy or target checkout files. Package preflight verifies
+both reused dependency sets and exact native release_media receipt before creating
+any staging output. Tests in test_linux_media.py cover unchanged bytes/no copied
+installation, altered libraries and mismatched checkout pins; native package
+fixtures verify media/SDK failure leaves no output directory. Linux source SDK
+reuse retains the existing same-pin verifier. No system dependency is upgraded.

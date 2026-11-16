@@ -220,3 +220,19 @@ not a performance guarantee. It resets only its disposable timing preference,
 checks the observed startup mode, and records child CPU seconds. Validation
 runs remain the default; `--performance` is separately labeled validation-off
 measurement. Keep personal preferences and the shared fixture unchanged.
+
+## Reusing verified local build dependencies
+
+A task checkout may reuse another same-host checkout's existing pinned SDK and
+movie decoder without copying them or modifying that checkout. Build the game
+with `--sdk-root /path/to/dependencies --release-media --media-root /path/to/dependencies`.
+Use the same `--sdk-root` and `--media-root` when running
+`tools/release/package-native-linux.py`. The media flag on the builder requires
+`--release-media`; it cannot silently change a development build's media mode.
+
+Reuse compares the current checkout's full dependency pin, then checks the
+original archive, receipt, library hashes and decoder license policy. Packaging
+also matches the exact decoder receipt recorded by the native build and refuses
+invalid dependencies before creating package output. Runtime, generated code,
+builds and task outputs stay local; original game assets and personal settings
+remain separate. These options do not substitute system FFmpeg or a different SDK.

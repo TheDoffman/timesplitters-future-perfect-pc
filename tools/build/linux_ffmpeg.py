@@ -15,7 +15,12 @@ def digest(path):
 def pin(root=ROOT):return json.loads((root/'config/build/ffmpeg-linux.json').read_text())
 def location(root=ROOT):return root/'external/ffmpeg-linux'/pin(root)['version']
 
-def verify_install(root=ROOT):
+def verify_install(root=ROOT, *, source_root=None):
+    if source_root is not None:
+        source_root=Path(source_root).resolve()
+        if pin(root)!=pin(source_root):
+            raise ValueError('Reused Linux FFmpeg source differs from the current shared pin')
+        return verify_install(source_root)
     spec=pin(root);base=location(root);receipt=json.loads((base/'BUILD.json').read_text())
     if receipt.get('pin')!=spec:raise ValueError('Linux FFmpeg pin/receipt mismatch; rebuild media')
     if digest(base/spec['archive'])!=spec['sha256']:raise ValueError('Linux FFmpeg source archive changed')
