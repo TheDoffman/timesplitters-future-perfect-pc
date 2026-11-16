@@ -278,7 +278,7 @@ def _state(fd, plan, phase):
     current, stamp = _read(fd, 'state.json');value = read_json(current)
     def valid(value):return (isinstance(value, dict) and set(value) == {'schema','producer','plan_sha256','phase'}
             and type(value['schema']) is int and value['schema'] == 1 and value['producer'] == PRODUCER
-            and value['plan_sha256'] == plan['sha256'] and value['phase'] in PHASES)
+            and value['plan_sha256'] == plan['sha256'] and isinstance(value['phase'], str) and value['phase'] in PHASES)
     require(valid(value), 'Unknown migration state; preserving it')
     try:pending, pending_stamp = _read(fd, '.state-next')
     except FileNotFoundError:pass

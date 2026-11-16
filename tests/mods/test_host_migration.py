@@ -252,3 +252,12 @@ def test_replaced_private_directory_stops_migration_and_preserves_replacement(pr
     with pytest.raises(ModError,match='replaced'):migration.migrate(before,after,nonce)
     assert (root/'data/host/unrelated').read_bytes()==b'preserve replacement'
     assert (root/'data/preserved-host/catalog-1.pem').read_bytes()==guards['host/catalog-1.pem']
+
+
+def test_malformed_journal_state_is_preserved_without_rollback_writes(private_tree):
+    root,before,after,nonce,plan,_,_,_=private_tree
+    migration.migrate(before,after,nonce)
+    state=root/'data/host-migrations'/nonce/'state.json'
+    value=json.loads(state.read_bytes());value['phase']=['unexpected'];state.write_bytes(migration.wire(value));saved=state.read_bytes()
+    with pytest.raises(ModError,match='Unknown migration state'):migration.migrate(before,after,nonce,rollback=True)
+    assert members(root)==plan['after'] and state.read_bytes()==saved
