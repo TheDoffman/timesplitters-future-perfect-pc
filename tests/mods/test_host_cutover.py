@@ -189,3 +189,62 @@ def test_protected_jobs_refuse_directory_links_writable_ancestors_and_unknown_pa
     generated.parent.unlink();saved.rename(generated.parent)
     generated.parent.chmod(0o777)
     with pytest.raises(ModError):cutover.job_files(entries)
+
+
+@pytest.mark.parametrize('outcome', ['success','timeout-success','error-success','timeout-live',
+                                    'escaped-process','restarted','foreign-binding','reappeared'])
+def test_label_shutdown_uses_durable_intents_and_requires_observed_quiescence(protected_jobs, outcome):
+    import subprocess
+    import mod_host_cutover_journal as storage
+    entries = protected_jobs
+    labels = cutover.jobs()
+    loaded = dict.fromkeys(labels, True)
+    calls = []
+    arguments = dict(before='a'*64, after='b'*64, uid=600, nonce='c'*64, plan_sha256='d'*64,
+                     preflight_sha256='e'*64, tracked=dict(pids=list(range(123,133)),groups=list(range(123,133))))
+    ticks = iter(range(1000))
+
+    def command(arguments):
+        calls.append(arguments)
+        if arguments[0] == '/bin/ps':
+            return 0, '1 0 1 0\n'+('999 1 999 600\n' if outcome == 'escaped-process' else '')
+        label = arguments[-1].removeprefix('system/')
+        if arguments[1] == 'bootout':
+            assert state.state()['pending'] == label
+            if outcome != 'timeout-live':loaded[label]=False
+            if outcome == 'reappeared' and label == storage.stop_order()[-1]:loaded[storage.stop_order()[0]]=True
+            if outcome.startswith('timeout'):raise subprocess.TimeoutExpired(arguments,3)
+            return (5 if outcome == 'error-success' else 0), ''
+        if not loaded[label]:return 113, 'Bad request.\nCould not find service "'+label+'" in domain for system\n'
+        path, spec = next(v for v in entries if v[1]['Label']==label)
+        pid = 999 if outcome == 'restarted' else 123+labels.index(label)
+        program = '/foreign/python' if outcome == 'foreign-binding' else spec['ProgramArguments'][0]
+        return 0, ('system/'+label+' = {\n\tpath = '+str(path)+'\n\ttype = LaunchDaemon\n\tprogram = '+program
+                   +'\n\targuments = {\n'+''.join('\t\t'+v+'\n' for v in spec['ProgramArguments'])
+                   +'\t}\n\tpid = '+str(pid)+'\n}\n')
+
+    with storage.transaction(**arguments) as state:
+        if outcome in ('success','timeout-success','error-success'):
+            assert cutover.quiesce(entries,600,state,command,clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)['quiescent']
+            stopped = [v[-1].removeprefix('system/') for v in calls if v[1]=='bootout']
+            assert stopped == storage.stop_order()
+            # Reopening a quiescent observation must observe absence again, not
+            # issue another stop or infer success from the stored phase.
+            cutover.quiesce(entries,600,state,command,clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)
+            assert len([v for v in calls if v[1]=='bootout']) == 10
+        else:
+            with pytest.raises(ModError):
+                cutover.quiesce(entries,600,state,command,clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)
+            assert not state.state()['quiescent']
+            if outcome == 'timeout-live':
+                assert state.state()['pending'] == storage.stop_order()[0]
+                assert len([v for v in calls if v[1]=='bootout']) == 1
+            if outcome in ('timeout-live','escaped-process'):
+                outcome='success'
+                assert cutover.quiesce(entries,600,state,command,clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)['quiescent']
+
+
+@pytest.mark.parametrize('code,output', [(1,'permission denied'), (113,''), (113,'Bad request.\nother service\n'), (127,'command not found')])
+def test_nonzero_utility_exit_is_not_proof_of_label_absence(job,code,output):
+    _,path,spec=job
+    with pytest.raises(ModError):cutover.label_state(path,spec,lambda _:(code,output))

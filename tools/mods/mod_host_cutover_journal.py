@@ -56,13 +56,14 @@ def replay(events, clock):
 def checked(data, clock):
     value = read_json(data)
     require(isinstance(value, dict) and set(value) == {'schema','producer','before','after','uid','nonce',
-            'plan_sha256','preflight_sha256','boot_id','events'} and type(value['schema']) is int
+            'plan_sha256','preflight_sha256','boot_id','tracked','events'} and type(value['schema']) is int
             and value['schema'] == 1 and value['producer'] == 'tsfp-root-cutover-stop-v1'
             and type(value['uid']) is int and value['uid'] >= 600 and value['before'] != value['after']
             and all(isinstance(value[k], str) and SHA.fullmatch(value[k]) for k in
                     ('before','after','nonce','plan_sha256','preflight_sha256','boot_id'))
             and data == wire(value), 'Preserving unknown cutover history')
     replay(value['events'], clock)
+    cutover.checked_tracking(value['tracked'])
     return value
 
 
@@ -135,10 +136,11 @@ class Journal:
 
 
 @contextmanager
-def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, *, clock=time.time):
+def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracked, *, clock=time.time):
     require(os.geteuid() == cutover.ROOT_UID, 'Cutover journal requires root')
     require(all(isinstance(v, str) and SHA.fullmatch(v) for v in (before,after,nonce,plan_sha256,preflight_sha256))
             and before != after and type(uid) is int and uid >= 600, 'Invalid cutover transaction identity')
+    cutover.checked_tracking(tracked)
     import fcntl
     parent = cutover.protected_directory(cutover.ROOT)
     try:
@@ -167,7 +169,8 @@ def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, *, clo
             require(history['nonce']+'.json' == other and replay(history['events'], clock)['settled'],
                     'Existing cutover requires recovery before another transaction')
         base = dict(schema=1,producer='tsfp-root-cutover-stop-v1',before=before,after=after,uid=uid,
-                    nonce=nonce,plan_sha256=plan_sha256,preflight_sha256=preflight_sha256,boot_id=boot_identity())
+                    nonce=nonce,plan_sha256=plan_sha256,preflight_sha256=preflight_sha256,
+                    tracked=tracked,boot_id=boot_identity())
         yield Journal(directory, fd, lock, name, base, clock)
     finally:
         if lock is not None:os.close(lock)

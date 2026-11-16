@@ -21,7 +21,8 @@ def transaction(private_posix_path, monkeypatch):
     monkeypatch.setattr(cutover, 'ROOT_UID', os.geteuid())
     monkeypatch.setattr(journal, 'boot_identity', lambda:'f'*64)
     return dict(before='a'*64, after='b'*64, uid=600, nonce='c'*64,
-                plan_sha256='d'*64, preflight_sha256='e'*64, clock=lambda:1000)
+                plan_sha256='d'*64, preflight_sha256='e'*64,
+                tracked=dict(pids=[123],groups=[123]),clock=lambda:1000)
 
 
 def test_stop_intent_survives_reopen_and_blocks_new_transaction(transaction):

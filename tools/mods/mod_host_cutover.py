@@ -1,7 +1,8 @@
-"""Read-only identity checks for the fixed Mac workshop cutover job set.
+"""Fixed-job attestation and journaled Mac workshop quiescence.
 
 The caller supplies job specifications derived from verified immutable releases.
-These observations do not authorize migration, stop jobs or issue admission.
+The root coordinator must verify sealed releases and suspend ingress before
+shutdown. This module does not issue migration admission or activate services.
 """
 from pathlib import Path
 import hashlib
@@ -9,6 +10,8 @@ import os
 import plistlib
 import re
 import stat
+import subprocess
+import time
 
 from mod_host_migration import jobs
 from mod_package import require
@@ -183,10 +186,21 @@ def processes_gone(tracked, rows, uid):
     A reused PID/group conservatively delays admission. No sampled PID is ever
     signalled. All fixed launchd labels must also be confirmed absent separately.
     """
+    checked_tracking(tracked)
     require(type(uid) is int and uid >= 600, 'Invalid cutover service identity')
     return (not set(tracked['pids']).intersection(rows)
             and not set(tracked['groups']).intersection(group for _, group, _ in rows.values())
             and all(owner != uid for _, _, owner in rows.values()))
+
+
+def checked_tracking(value):
+    require(isinstance(value, dict) and set(value) == {'pids','groups'}
+            and all(isinstance(value[k], list) and len(value[k]) <= 128
+                    and all(type(v) is int and 0 < v < 2**31 for v in value[k])
+                    and value[k] == sorted(set(value[k])) for k in value)
+            and bool(value['pids']) == bool(value['groups']) and len(value['groups']) <= len(value['pids']),
+            'Invalid cutover process tracking')
+    return value
 
 
 def observe(entries, uid, command):
@@ -223,3 +237,76 @@ def preflight(entries, uid, command):
     observation = observe(entries, uid, command)
     job_files(entries, files)
     return dict(files=files, observation=observation)
+
+
+def label_state(generated, spec, command):
+    code, output = command(['/bin/launchctl', 'print', 'system/'+spec['Label']])
+    if code == 0:return loaded_job(output, generated, spec)
+    require(code == 113 and output == 'Bad request.\nCould not find service "'+spec['Label']+'" in domain for system\n',
+            'Cannot establish fixed cutover label absence')
+    return None
+
+
+def quiesce(entries, uid, journal, command, *, clock=time.monotonic, sleep=time.sleep, timeout=60):
+    """Stop only attested labels, preserving pending intents on uncertainty.
+
+    The root coordinator must first seal-check both releases and suspend public
+    ingress. This callable has no CLI and issues no backup/migration authority.
+    A new process identity after preflight requires explicit recovery; it is not
+    silently added to the original snapshot. No sampled PID is ever signalled.
+    """
+    from mod_host_cutover_journal import stop_order
+    from mod_host_migration import boot_identity
+    require(os.geteuid() == ROOT_UID and journal.base['uid'] == uid
+            and journal.base['boot_id'] == boot_identity()
+            and type(timeout) is int and 1 <= timeout <= 120, 'Invalid root quiescence context')
+    validate_entries(entries)
+    files = job_files(entries)
+    tracked = checked_tracking(journal.base['tracked'])
+    by_label = {spec['Label']:(path,spec) for path,spec in entries}
+    state = journal.state()
+    require(not state['settled'], 'Cutover transaction is already settled')
+    for label in stop_order():
+        path, spec = by_label[label]
+        current = label_state(path, spec, command)
+        if label in state['stopped']:
+            require(current is None, 'A stopped cutover job reappeared')
+            continue
+        require(current is not None or state['pending'] == label,
+                'Cutover job vanished without a durable stop intent')
+        if current is not None:
+            require(current['pid'] is None or current['pid'] in tracked['pids'],
+                    'Cutover process changed after preflight; explicit recovery required')
+        job_files(entries, files)
+        if state['pending'] is None:state = journal.record('stop-intent', label)
+        require(state['pending'] == label, 'Cutover pending intent differs')
+        if current is not None:
+            try:command(['/bin/launchctl', 'bootout', 'system/'+label])
+            except subprocess.TimeoutExpired:pass
+            # The exit code or timeout cannot prove the OS operation's outcome.
+            # Observe this same label, without retrying bootout in this call.
+        deadline = clock()+timeout
+        while True:
+            remaining = label_state(path, spec, command)
+            if remaining is None:break
+            require(remaining['pid'] is None or remaining['pid'] in tracked['pids'],
+                    'Cutover job restarted while stopping; explicit recovery required')
+            require(clock() < deadline, 'Cutover stop remains unconfirmed; preserving intent')
+            sleep(.1)
+        state = journal.record('stop-observed', label)
+
+    deadline = clock()+timeout
+    while True:
+        require(all(label_state(path,spec,command) is None for path,spec in entries),
+                'A cutover label reappeared before quiescence')
+        code, output = command(['/bin/ps','-axo','pid=,ppid=,pgid=,uid='])
+        require(code == 0, 'Cannot establish cutover descendant exit')
+        gone = processes_gone(tracked, process_rows(output), uid)
+        if gone:break
+        require(clock() < deadline, 'Cutover descendants remain; preserving stop history')
+        sleep(.1)
+    job_files(entries, files)
+    require(all(label_state(path,spec,command) is None for path,spec in entries),
+            'A cutover label reappeared after process observation')
+    if not state['quiescent']:state = journal.record('quiescent')
+    return state

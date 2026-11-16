@@ -100,7 +100,7 @@ stop services, change the backup binding or activate a release. The root
 coordinator producing and validating that admission remains to be implemented;
 this component must not be used as a standalone live upgrade procedure.
 
-`mod_host_cutover.py` implements read-only job/process observations for that
+`mod_host_cutover.py` implements job/process attestation for that
 coordinator. Its `job_files` checks twenty generated/boot plists against the
 immutable factory bytes, requiring root ownership, single-link regular files,
 exact modes (host staging0600, backup staging0444, boot0644), safe ancestors and
@@ -115,14 +115,13 @@ changed binding. Nested coalition fields cannot supply a top-level process ID.
 It tracks descendants and groups without command-line/environment inspection;
 exit requires those identities/groups and every dedicated UID600 process to be
 gone, catching escaped or reparented descendants. Reused identities conservatively
-refuse admission; these samples are never signal targets. These primitives do
-not stop jobs, check label absence, change routing,
-write a root proof or activate a generation. Those coordinator steps remain open.
+refuse admission; these samples are never signal targets.
 
 `mod_host_cutover_journal.py` holds a nonblocking root-only global lease and
 records bounded canonical stop history under root-owned0700 `upgrades`, outside
 the monitor directory that an upgrade will replace. It binds before/after,
-plan/preflight hashes, UID, nonce and native boot session. Every stop intent
+plan/preflight hashes, UID, the original numeric PID/group snapshot, nonce and
+native boot session. Every stop intent
 precedes its observation; four monitors must precede backup and the remaining
 workers. A pending intent survives reopening and cannot be counted as a stop.
 Unsettled prior transactions block new nonces; settled history remains bounded
@@ -132,8 +131,24 @@ that those actions occurred. Replaced leases/directories, malformed/foreign or
 noncanonical histories, wrong boot identities and unknown/partial pending writes
 are preserved and refused. A crash during journal replacement requires explicit
 recovery; do not delete the pending file or start a new nonce to bypass it.
-This journal does not execute shutdown, establish process/label absence, suspend
-ingress, force a backup or issue migration authority. No deployed job uses it yet.
+This journal stores the coordinator's observations; it does not perform them or
+issue migration authority. No deployed job uses it yet.
+
+The root-only `quiesce` primitive attests those job files, checks the journal's
+UID/boot and addresses only the fixed `system/<label>` targets. It durably writes
+each intent before `launchctl bootout`, then observes that same label. Neither
+exit0, a nonzero exit nor a timeout establishes successful shutdown; absence
+requires the exact native exit113/missing-label response. This response was
+observed read-only on the user's Mac. Other observation errors preserve the
+pending intent. It does not reissue bootout while polling an uncertain outcome.
+Resume rechecks the known label binding; a changed PID outside the original
+snapshot or a reappearing stopped label requires explicit recovery. Once all ten
+labels are absent it checks numeric descendant/group exit and absence of all
+UID600 processes, rechecks files and label absence, then records quiescence.
+This primitive has no CLI and has not stopped production jobs. The root entry
+point must still verify sealed code and suspend ingress before invoking it;
+forced fresh backup, admission proof, configuration/monitor migration, rollback,
+private scanner/readiness/restart acceptance and public restoration remain open.
 
 The current public8443 route is Funnel-enabled HTTPS proxying127.0.0.1:8768;
 private443 exists with Funnel disabled. Thus starting new private gateway jobs
