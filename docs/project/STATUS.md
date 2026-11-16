@@ -1,4 +1,4 @@
-Owner creator invitations (2026-11-16; source, deployment pending):
+Owner creator invitations (2026-11-16; source8d289fc2, deployment pending):
 Shared launcher/API now let an authenticated admin issue a one-use24-hour
 creator-only invitation and confirm cancellation by username. Creator/moderator
 roles cannot issue invitations; privileged/recovery invitations remain local
@@ -8,10 +8,23 @@ auto-copies/saves them and clears them on sign-out. Invitation responses bind
 username, expiry, exact trusted service and strict secret format. Python API/
 service checks pass61 with4 skips on Windows (72.32s). Windows native build/test
 passes116 UI groups and the expanded real account/API backend (54.27s); its
-isolated updater/settings/maintenance checks also pass. Mac/Linux pending.
+isolated updater/settings/maintenance checks also pass. Actual Mac/Linux native
+build/test/package checks pass117/118 UI groups plus the expanded real backend;
+Linux packaged install/corruption/repair/restart/render retains saves/metadata.
+API/service checks pass65 on Mac15.21s and Linux22.09s. Source synchronized by
+fast-forward to both dedicated checkouts; production code remains unchanged.
+Logs: creator-invitations-{windows-test,mac-test,linux-test,mac-api,linux-api}.txt
+under the respective checkout's ignored logs directory.
 Production remains at its previously recorded601/7be deployment. Public owner
 sign-in is pending in the existing Windows sign-in window; the same Mac backup
 setup remains at its existing sudo prompt. Neither window has been restarted.
+
+CI at precedingaf7ef668 run43939999299 finished with required gate failure:
+Runtime Mac2/3 job133554937535 and native Mac launcher133556473118 were cancelled.
+Both actual check annotations state hosted runner acquisition failed after
+multiple attempts and report macOS arm64 capacity constraints. Other selected
+checks passed; no required check, architecture or acceptance assertion was relaxed.
+Source8d289fc2 is pushed; its exact new CI result remains pending.
 
 Exact-source creator SDK -> launcher -> game (2026-11-16):
 At2196da14 full native game rebuilds now pass on Windows, Mac and Linux. Windows
