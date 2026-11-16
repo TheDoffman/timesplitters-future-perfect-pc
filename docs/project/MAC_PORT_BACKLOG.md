@@ -1,3 +1,11 @@
+Full-game identity linkage (2026-11-16): **In progress**.
+Actual Windows/Mac/Linux game links at03473783 missed the shared process-identity
+source despite passing standalone/native helper checks. Shared game.cmake now
+includes it; asset-free actual-consumer smoke is registered in native CI, with
+surrounding title callbacks that abort if ordinary startup calls them. Initial
+Windows smoke passes; actual Mac/Linux and full game rebuilds follow. Source
+also guards Windows defines and explicitly checks ASCII GUID/SID conversion.
+
 Bounded committed-cache recovery (2026-11-16): **In progress**.
 Shared RuntimeResources/recover_private_caches now admits leased, current-pin,
 complete journals with proven native worker death before deleting known helpers.

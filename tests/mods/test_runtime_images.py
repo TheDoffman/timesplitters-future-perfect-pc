@@ -28,6 +28,32 @@ def production(tmp_path_factory):
     return root
 
 
+def test_real_game_cmake_links_all_parent_modules_without_game_assets(tmp_path):
+    """Compile the actual consumer, not the standalone helper-library target."""
+    local=Path(sys.executable).with_name('cmake.exe' if os.name=='nt' else 'cmake')
+    cmake=str(local) if local.is_file() else shutil.which('cmake')
+    assert cmake,'Install the repository-pinned CMake for game integration checks'
+    project=tmp_path/'game-link';project.mkdir();build=tmp_path/'build';(build/'generated').mkdir(parents=True)
+    worker='tsfp-mod-worker.exe' if os.name=='nt' else 'tsfp-mod-worker'
+    definitions=dict(TSFP_MOD_RUNTIME_SUBDIR='ModRuntime/'+'0'*64,TSFP_MOD_RUNTIME_WORKER=worker,
+        TSFP_MOD_RUNTIME_WORKER_SHA256='0'*64,TSFP_MOD_RUNTIME_GUARDIAN_SHA256='0'*64 if sys.platform=='darwin' else '')
+    (build/'generated/mod-runtime-images.h').write_text(''.join('#define '+key+' '+json.dumps(value)+'\n' for key,value in definitions.items()))
+    (project/'hle.c').write_text('int game_link_hle_placeholder;\n')
+    (project/'CMakeLists.txt').write_text('cmake_minimum_required(VERSION 3.20)\nproject(game_link C CXX)\n'
+        'add_library(xbox_hle STATIC hle.c)\n'
+        'add_executable(game_link "'+(ROOT/'tests/mods/native_game_link_driver.cpp').as_posix()+'")\n'
+        'set(TSFP_SHARED_SOURCE "'+(ROOT/'src').as_posix()+'")\n'
+        'include("'+(ROOT/'src/mods/game.cmake').as_posix()+'")\n')
+    configured=subprocess.run([cmake,'-S',str(project),'-B',str(build),'-DCMAKE_BUILD_TYPE=Release'],capture_output=True,timeout=45)
+    assert configured.returncode==0,(configured.stdout[-6000:],configured.stderr[-3000:])
+    compiled=subprocess.run([cmake,'--build',str(build),'--config','Release','--parallel','2'],capture_output=True,timeout=120)
+    assert compiled.returncode==0,(compiled.stdout[-8000:],compiled.stderr[-6000:])
+    exe=build/('Release/game_link.exe' if os.name=='nt' else 'game_link')
+    result=subprocess.run([str(exe)],capture_output=True,timeout=8)
+    assert result.returncode==0 and not result.stderr,(result.returncode,result.stdout,result.stderr)
+    assert b'production game target linked' in result.stdout
+
+
 def clone_build(source,destination):
     _,_,files=producer.validate_build(source)
     for file in [source/'BUILD-worker.json',source/'cmake/CMakeCache.txt',*files.values()]:

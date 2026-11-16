@@ -134,6 +134,7 @@ CPU_TOOLS = {
     'src/mods/mod_process_identity.hpp', 'src/mods/mod_process_identity.cpp',
     'src/mods/mod_process_stamp_wire.h',
     'tests/mods/test_process_identity.py', 'tests/mods/native_process_identity_driver.cpp',
+    'tests/mods/test_runtime_images.py', 'tests/mods/native_game_link_driver.cpp',
     'src/mods/mod_runner.cpp', 'src/mods/mod_seal.c', 'src/mods/mod_seal.h',
     'tests/mods/test_script_process.py', 'tests/mods/native_process_probe.c',
     'src/mods/mod_guardian_mac.c', 'tests/mods/native_lifetime_probe.cpp',

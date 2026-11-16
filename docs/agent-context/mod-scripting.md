@@ -1,3 +1,18 @@
+Actual game consumer link (2026-11-16): full Windows/Mac/Linux game builds at
+03473783 failed because game.cmake omitted mod_process_identity.cpp; standalone
+src/mods/CMakeLists.txt already included it, so helper/native checks had not
+covered the real consumer. The shared game target now compiles that source under
+the existing strict compiler/security flags. A new asset-free test in
+test_runtime_images.py includes the ACTUAL game.cmake, compiles/links every parent
+module, queries a real native birth stamp and verifies ordinary no-mode startup.
+Only surrounding title storage/network/audio callbacks are stubs; they abort if
+called. No worker, fake replacement source list or game assets are needed. It
+also rejects leaked TSFP_MOD_PROCESS_TESTING. Native CI routes both the test and
+native_game_link_driver.cpp. Windows initial consumer check passes11.89s;
+expanded checks and exact-source full game rebuilds follow. Duplicate Windows
+macro guards and checked explicit ASCII encoding of GUID/SID remove warnings
+seen in the real build; compiler flags, pins, VM API and gameplay are unchanged.
+
 Committed-cache recovery (source01e497f3; native checks pass):
 recover_private_caches in mod_saves.cpp runs from RuntimeResources::create before
 fresh allocation, using compiled helper pins. It scans at most8192 parent entries,

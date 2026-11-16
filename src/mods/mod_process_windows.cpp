@@ -1,6 +1,10 @@
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include "mod_process.hpp"
 #include "mod_private.hpp"
 #include "mod_files.hpp"
@@ -28,6 +32,11 @@ std::wstring wide(const std::string &text) {
     return result;
 }
 std::string last_error(const char *operation){return std::string(operation)+" (Windows error "+std::to_string(GetLastError())+")";}
+std::string ascii(const std::wstring &text) {
+    std::string result;result.reserve(text.size());
+    for(wchar_t c:text){if(c<33 || c>126)return {};result.push_back(static_cast<char>(c));}
+    return result;
+}
 void close(HANDLE &handle){if(handle && handle!=INVALID_HANDLE_VALUE)CloseHandle(handle);handle=nullptr;}
 bool plain_local_path(const std::wstring &text,bool directory) {
     std::filesystem::path path(text);
@@ -218,7 +227,8 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
     wchar_t id[40];if(!StringFromGUID2(guid,id,40)){error="Cannot format worker identity";return {};}
     std::wstring unique=id;unique.erase(std::remove(unique.begin(),unique.end(),L'{'),unique.end());unique.erase(std::remove(unique.begin(),unique.end(),L'}'),unique.end());
     child->profile=L"TSFP.Mod."+unique;
-    child->artifacts.cache_leaf=std::string(unique.begin(),unique.end());
+    child->artifacts.cache_leaf=ascii(unique);
+    if(child->artifacts.cache_leaf.empty()){error="Cannot encode worker identity";return {};}
     child->artifacts.profile="TSFP.Mod."+child->artifacts.cache_leaf;
     HRESULT created=CreateAppContainerProfile(child->profile.c_str(),L"TimeSplitters script worker",L"Temporary confined mod worker",nullptr,0,&child->sid);
     if(FAILED(created)){error="Cannot create worker AppContainer (HRESULT "+std::to_string((unsigned)created)+")";return {};}
@@ -234,7 +244,7 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
     // Block the otherwise-writable per-profile filesystem. Only the broker owns it.
     LPWSTR sid_text=nullptr,profile_folder=nullptr;
     if(!ConvertSidToStringSidW(child->sid,&sid_text)){error="Cannot inspect worker SID";return {};}
-    child->artifacts.sid=std::string(sid_text,sid_text+wcslen(sid_text));
+    child->artifacts.sid=ascii(sid_text);
     HRESULT folder_result=GetAppContainerFolderPath(sid_text,&profile_folder);LocalFree(sid_text);
     if(FAILED(folder_result) || !profile_folder){error="Cannot locate isolated worker profile";return {};}
     child->profile_root=profile_folder;

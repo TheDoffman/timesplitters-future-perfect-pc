@@ -1,3 +1,15 @@
+Full-game process identity linkage (2026-11-16, fix under validation):
+Actual full Windows, Mac and Linux builds at03473783 failed linking the new
+process identity APIs: the separate game.cmake consumer omitted their source.
+Standalone/native tests were insufficient evidence for this target. The shared
+game target now includes mod_process_identity.cpp under its existing strict
+flags. New asset-free consumer smoke compiles/links actual game.cmake modules,
+uses real native identity queries and aborting surrounding title stubs; initial
+Windows check passes11.89s. Expanded and full-game rebuild validation follows.
+Windows duplicate macro definitions and implicit wchar-to-char GUID/SID warnings
+are corrected with guards and checked explicit ASCII conversion. No compiler/
+dependency pin, optimization, Lua API or game behavior changes.
+
 Public workshop observation (2026-11-16): normal certificate/SNI/TLS and pinned
 root verification pass independently over public peer199.38.181.54:8443. Signed
 catalog39 retains5 revocations; all5 withdrawn package URLs return404. Approved

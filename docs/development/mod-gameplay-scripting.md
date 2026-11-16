@@ -6,12 +6,16 @@ correct winners/results and ordinary saves preserved. An explicit local develope
 capsule selects the integrated bootstrap, compiled helpers, isolated saves and
 asynchronous title adapter; ordinary startup keeps NULL binding. See
 [source handoff](mod-source-handoff.md) for this developer interface.
-Public launcher Lua activation remains unavailable. Windows window-thread quit
-now drains the helper and releases staging resources, with live-match and results
-checks. Abrupt-crash recovery, public package/launcher/workshop acceptance and
-multiplayer agreement remain release requirements.
+Public launcher Lua activation is implemented. The public initial/update/rollback/
+withdrawal lifecycle has completed actual offline matches on all three hosts;
+see the current [acceptance table](../project/mod-workshop-acceptance.md) and STATUS
+for exact source and scope. Normal window-thread shutdown drains helpers, and
+verified committed crash caches now have bounded native recovery. Current full
+game rebuilds are validating the newer process-identity/recovery integration.
+The final public client/SDK release, multiplayer agreement and remaining acceptance
+requirements are unfinished. Legacy and uncertain cache state is preserved.
 VM library restrictions alone are not a security boundary against a native engine
-bug. There is no public upload-to-game scripting claim from the tests below.
+bug; OS isolation and the trusted supervisor remain necessary.
 
 ## Engine and build provenance
 
@@ -45,8 +49,9 @@ Lua's native integer width is asserted to be64 bits. Do not force
 silently reduce Lua integers to32 bits on Windows. Tick values up to2^53-1 must
 remain exact on every host. `BUILD-worker.json` binds worker binary/source/fix
 hashes and the repository revision. Release packaging must include the Lua license
-and corresponding project source/build information; it is not yet wired into the
-game release packagers.
+and corresponding project source/build information. The native builders stage
+hash-bound ModRuntime companions and package validators cover their inventory;
+final same-source public release acceptance remains required.
 
 ## Draft API1
 
@@ -69,8 +74,9 @@ cannot repeat a tick. After a script requests match end, only Stop is allowed.
 Player IDs are opaque integers1..32, not guest pointers. Actor/target/winner IDs
 must refer to the current event roster (except world/draw ID0). Roster IDs must
 be unique; positions must be finite and bounded. The worker cannot certify the
-host's authority itself: the future game bridge must enforce local/host ownership
-and multiplayer mod-hash agreement before spawning/dispatching.
+host's authority itself: the game bridge enforces offline ownership and current
+world identity before spawning/dispatching. Multiplayer mod-hash agreement remains
+unimplemented, so scripted modes stay offline.
 
 | Call | Behavior |
 | --- | --- |
