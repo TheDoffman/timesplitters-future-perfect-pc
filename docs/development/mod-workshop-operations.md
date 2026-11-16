@@ -123,6 +123,21 @@ It does not stop jobs, create a journal, suspend routing, force a backup, migrat
 private state or activate the candidate. There is no apply action yet, and no
 current production ceremony invokes this new entry point.
 
+`force-upgrade-backup-mac.py` is the locked-account capture phase for a future
+quiescent upgrade. Its default is plan-only. Active use requires a root-owned
+immutable step, isolated `-I -S -B` Mac Python, the locked identity and the exact
+preserved backup descriptor/runtime binding. A fresh interpreter imports only the
+preserved backup folder's modules; ambient mixed-generation modules are refused.
+It checks the fixed repository/pool policy, forces a new capture despite cadence,
+independently verifies the exact returned snapshot under the pool lease and
+returns a bounded hash/time/identity receipt. It does not overwrite the scheduled
+worker's status or change its runtime binding. Failed captures/verification leave
+existing and incomplete artifacts for inspection; exception text from private
+data does not become the operator report. Root must verify both immutable code
+closures before launching this child through a bounded supervisor, after job
+quiescence, and check the receipt before issuing migration admission. That root
+integration and actual UID600 capture admission remain unfinished.
+
 `mod_host_cutover.py` implements job/process attestation for that
 coordinator. Its `job_files` checks twenty generated/boot plists against the
 immutable factory bytes, requiring root ownership, single-link regular files,
