@@ -1,3 +1,36 @@
+Native Mac/Linux launcher and public trust acceptance at bbed037f (2026-11-16):
+The clean Linux task checkout was fast-forwarded from ed05f978 through an
+incremental Git bundle to bbed037f. This avoids Windows worktree Git pointers
+being interpreted as Linux paths. No OS/VM reset or reboot was needed. Actual
+Linux source/WAV/HLE tests now pass157 cases in13.45s. An initial run preceded
+runtime patch application and failed23 fixture compiles; the patched-runtime
+rerun passes without a source change.
+
+Fresh native launchers build, test and package at clean bbed037f on both hosts:
+112 shared UI groups on Linux and111 on Mac, plus real creator invitation/upload,
+quarantine/ownership/immutable-version/session-revocation backend checks. Linux
+also passes package install/corruption refusal/repair/restart/render acceptance.
+These are local packages, not a published client release.
+
+Actual native client Read calls twice per host verify public HTTPS catalogs and
+reload persisted trust. Linux accepts signed catalog v12; Mac accepts v13. Both
+contain zero approved test releases and retain all three test archive revocations.
+A bounded loopback CONNECT relay per host connects to public199.38.181.54 with
+default end-to-end TLS hostname/certificate checks; both relays stop in finally.
+Existing WSL UID0 and Mac UID501 execute these checks. No owner credentials or
+session transfer is involved. Ignored proofs are
+logs/mod-public-read-bbed-{linux,mac}-proof.json. Native launcher DLL SHA256s:
+Linux ddf5eed1e36afc6d6e72957d70cad7b22949605dc8ca9a2c3139c68186ea5557;
+Mac 28790ad692398f57e29923d764689f094bc562ab52e24b41e12d115fcb06669b.
+This establishes public native catalog/trust reads, not public install/gameplay.
+
+The clean bbed Linux game rebuild is still running with one compiler, using the
+existing original data and verified SDK read-only. Guest generation completes
+with zero failures; game/audio-hook scene and genuine packaged public lifecycle
+acceptance remain pending. Mac game rebuild, full asset/SDK, operational backups/
+boot and release remain open. Live601/7be installation, accounts, routing and
+signing authority are unchanged. No user input is pending.
+
 Native audio attribution build/scene acceptance at0ece5ff0 (2026-11-16):
 The final normal Windows build now completes EXIT0, including full native checks
 and matching crash symbols. One compiler plus UseMultiToolTask and global process

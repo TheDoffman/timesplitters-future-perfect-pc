@@ -130,3 +130,10 @@ loop/stop/packet lifetime and source identity remains a prerequisite for replace
 The full source0ece CI run passes Windows/Mac runtime and patch shards, Linux
 Vulkan, GPU, native launcher and package checks; actual Mac/Linux audio-hook
 scenes remain separate acceptance work.
+
+Actual Ubuntu-24.04/WSL checks at bbed037f now pass the same157 source/WAV/HLE
+cases in13.45s after applying the current runtime patch stack. The first run
+started before patch application and failed fixture compilation; the rerun on
+the patched runtime passes without a product change. Linux game compilation and
+an actual audio-hook scene remain pending; the native test pass does not enable
+replacement playback.

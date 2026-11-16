@@ -6,6 +6,8 @@ Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged
 Native public Windows search/play/update/rollback/withdrawal and off-device
 restore/key recovery pass; see STATUS. Other-host public game, backup operations,
 boot/full SDK/release remain open.
+Fresh bbed Mac/Linux launchers pass111/112 UI groups/backend and public signed
+v13/v12 trust reads. Their public game lifecycle remains pending (STATUS).
 
 prepare-installed-host-mac.py reads3 owned online inputs, matches the source
 pin, copies600 privately and drops credentials for init/updater/scanner controls.
@@ -32,8 +34,8 @@ preserving migration. Details: ../development/system-host-supervision.md.
 
 Trust recovery: Windows ceremony uses DPAPI/NTFS ACLs; portable export/check/
 new-account import uses passphrase scrypt/AES-GCM with exact bounded inventory,
-independent pin and both-root proof. Local prompt only; production custody/drill
-remain open. See ../development/mod-host-recovery.md. Preparation permits exact
+independent pin and both-root proof. Local prompt only; production custody/clone restore pass; automated retention,
+boot/live cutover remain open. See ../development/mod-host-recovery.md. Preparation permits exact
 Git or HEAD-declared CRLF only; installed provenance is in STATUS.
 Creator sign-in optionally uses ModSessionVault (Credential Manager/Keychain/
 Linux Secret Service); explicit restore rechecks pinned root and server identity,
