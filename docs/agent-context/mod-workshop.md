@@ -14,7 +14,7 @@ pin, copies600 privately and drops credentials for init/updater/scanner controls
 Only then generate protected monitors/admission; no startup/Funnel. Actual601
 scanner passes4 controls. Health dirs chmod0755 under077; markers/plists0600;
 private-HOME fixtures retain writable-ancestor rejection.
-AudioAssets/capsules: ../development/mod-audio-assets.md.
+AudioAssets/capsules/game.cmake: ../development/mod-audio-assets.md.
 TSFPAUD1 binds source owners; staged WAVs load before save commit.
 Playback/capability off; source PCM/clocks unchanged.
 

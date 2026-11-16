@@ -144,3 +144,9 @@ invalidation. These checks do not establish custom playback.
 Resource/mixer binding, script audio API, playback clocks/pitch/loop/stop and
 voice budgets remain open. No audio capability or replacement permission is
 advertised by production builds yet.
+
+The actual game source list is `src/mods/game.cmake`, separate from the helper/
+component CMakeLists. It includes the store, capsule and WAV parser with strict
+source warnings. The initial Windows startup build exposed missing loader symbols;
+adding these common sources corrects the link on all game hosts. Normal native
+game builds verify this integration independently of the component drivers.

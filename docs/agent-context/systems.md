@@ -1,5 +1,5 @@
 Crashes: [contract](../development/native-crash-images.md).
-[Runtime](mod-scripting.md); [audio boot](../development/mod-audio-assets.md).
+[Runtime](mod-scripting.md); [audio game build](../development/mod-audio-assets.md).
 
 Preflight also rejects restored flags on a previously unsupported fresh epoch.
 
