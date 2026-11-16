@@ -1,3 +1,43 @@
+Public workshop-to-game and withdrawal acceptance on Windows (2026-11-15/16):
+Fresh source d6e3990229a3da797e6975798dc0fd3870bbfd87 builds through tsfp.ps1,
+including its native checks. The normal package-release.py pipeline passes with
+verified artwork,110 shared launcher UI groups, bundled runtime/TLS checks and
+real compiled-helper receipts. Local acceptance archive v0.6.3-mod-workshop.1 is
+159572887 bytes, SHA256
+340006ddcb88f034145a93216c073a66f44c264ba442080ca1ee953b56f692a5.
+It is not a published release. The executable SHA256 is
+502f2f52f3face49626094ed6c6be8af37ad407c419c6e7ff0f80ee2e564805b.
+
+From the extracted package, actual shared native client APIs fetched the approved
+SDK release over public HTTPS, installed it, reviewed/applied activation and
+produced GameSettings.StartInfo. The game consumed that capsule, separate saves
+and compiled helpers. A real offline match with six stock bots ended naturally:
+bot3 scored3/rank1/raw kills3, results stage8, clean exit0; ordinary test-save
+hashes were preserved. Gameplay evidence SHA256
+f90f7fd5901324f4ad00a4be68cc4d516a4420b37aa62cd835d1faba5752a117,
+ignored private/test-saves/pub2-d6e3/first-three-evidence.json. The harness supplies
+isolated input/display/original-data paths; it does not replace capsule/save/cache
+choices. This exercises native APIs plus the game, not manual launcher navigation.
+No capability metadata was fabricated: BUILD.json comes from the normal packager.
+
+The owner then revoked this temporary test release. Native public refresh received
+the signed withdrawal, active launch was refused, Play without mods remained
+available, and disable/uninstall passed. Independent public TLS requests verify
+catalog v5 with cumulative revocation and package HTTP404. The sample is no longer
+publicly downloadable. Only the temporary local transport relay was stopped;
+persistent Mac services and Funnel remain running. Canonical original XBE hash
+still matches the supported US executable. Normal source defaults remain blank
+and the acceptance-only profile remains private. Mac/Linux public-to-game,
+update/rollback gameplay, backup/restore/boot and full SDK/release remain open.
+
+Fixture corrections: the first nested extraction exceeded .NET Framework path
+limits; a shorter owned test path resolved it. The next fixture inherited a
+foreign writable SID and correctly failed native isolated-save admission. A new
+private NTFS fixture and cache passed with checks intact. Package setup recovered
+checksum-pinned artwork and used a process-local Windows PowerShell5.1 module
+path; inherited PowerShell7 modules otherwise hid Get-FileHash in Python children.
+No global ACL/module path, personal saves or game files were changed.
+
 Protected private deployment and public HTTPS acceptance (2026-11-15/16):
 The native repair14642b44 completed EXIT0 after local administrator authentication.
 Installed immutable source601c63c6/descriptor7be977f9d2eda22f5f412db8139096ccc5db52241af8cdc26155516f8a3ad825
@@ -49,7 +89,7 @@ Native public transport used a process-local CONNECT proxy forwarding opaque
 TLS bytes to public relay199.38.181.54 with normal hostname/certificate checks.
 No global DNS/proxy or certificate validation changed. Independent public curl
 also verified the approved signed catalog and exact downloaded archive hash.
-The test package remains approved publicly until gameplay/withdrawal checks.
+The test package was subsequently revoked after gameplay; see the newer proof above.
 Normal compiled defaults remain blank, source profile pending-public-acceptance;
 these tests used an explicit private acceptance profile. Public download-to-game,
 update/rollback/removal/revocation, backup/restore, physical boot, remaining SDK

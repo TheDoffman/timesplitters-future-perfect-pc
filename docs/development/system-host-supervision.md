@@ -238,6 +238,6 @@ The separate public8443 cutover now preserves the original private443 mapping
 and passes Windows public-relay HTTPS/normal certificate and pinned catalog
 verification, then native owner enrollment and SDK upload, isolated scan,
 operator approval, signed download and inactive install; see STATUS. Root
-registration itself never changes routing. Public gameplay acceptance remains
-open. Do not interpret configuration persistence or controlled service restarts
+registration itself never changes routing. Packaged Windows public-to-game and
+signed withdrawal/launch refusal pass; other-host acceptance remains open. Do not interpret configuration persistence or controlled service restarts
 as physical boot acceptance.

@@ -3,8 +3,9 @@ source-pinned private readiness and7 restarts precede boot-file installation.
 Known-only rollback/journals preserve foreign state. Actual601 repair now PASSES
 all private checks,9 persistent jobs and post-seal verification (see STATUS).
 Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged.
-Owner/sign-in and native public upload/scan/approval/download/inactive install
-pass; see STATUS. Public game/backup/boot/release gates remain open.
+Owner/sign-in, native public SDK pipeline and packaged Windows match pass.
+Signed withdrawal blocks launch; disable/uninstall pass. See STATUS; other-host
+public game, update/rollback, backup/boot/SDK/release gates remain open.
 
 prepare-installed-host-mac.py reads3 owned online inputs, matches the source
 pin, copies600 privately and drops credentials for init/updater/scanner controls.
