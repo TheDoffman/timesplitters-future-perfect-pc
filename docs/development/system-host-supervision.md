@@ -61,6 +61,39 @@ requires completed matching host setup. This is additional to scan initializatio
 The input directory remains private and is preserved; it can be retired through a
 separate verified operator step after recovery copies are checked.
 
+## Off-server Windows trust ceremony
+
+`prepare-workshop-trust-windows.py --directory <new-private-folder> --origin
+<canonical-HTTPS-origin>` defaults to a plan; `--apply` creates a new store and
+`--check` verifies it without rewriting files. Choose a Windows folder outside
+cloud-synced/workshop directories. The tool creates two RSA3072 root keys with
+separate random32-byte PKCS8 encryption passwords and a separate online catalog
+key. The root requires both root signatures, while catalog signing uses only its
+distinct online role. Only host-input/origin.json, trusted-root.json and
+catalog-1.pem belong on the Mac. Root-a/root-b and recovery.dpapi remain off-server.
+
+`mod_windows_recovery.py` uses current-account DPAPI with application entropy and
+UI forbidden; it does not enable machine-wide decryption. Its fixed PowerShell
+helper creates directories atomically with protected ACLs allowing only the
+current user and SYSTEM, and verifies inherited private file access. Existing
+ACLs are never relaxed/replaced. Aliased paths, hard links, changed files and
+unknown/incomplete stores are refused. See Microsoft's
+[DPAPI interface](https://learn.microsoft.com/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)
+and [directory ACL creation](https://learn.microsoft.com/dotnet/api/system.io.directory.createdirectory?view=netframework-4.8.1).
+
+Ceremony verification checks every payload digest, public root and online key,
+decrypts the capsule and both encrypted roots in memory, then proves their root
+threshold signatures over a fresh challenge. No root plaintext, passwords or
+capsule contents enter CLI arguments, output, logs or Mac inputs. The CLI returns
+public identities/fingerprint and its verification result. Expired public metadata
+can still be checked for root recovery; it is not considered ready for deployment.
+The private host initializer separately requires a currently live root.
+
+This recovery depends on the Windows account's DPAPI profile/key material. Copying
+the store alone to an unrelated computer is not a portable recovery backup.
+Independent encrypted export and Windows-profile recovery still require explicit
+operational backup/restore acceptance before the full workshop goal is complete.
+
 `system-host-monitor-mac.py --role <api|publication|gateway> --generate` validates
 configuration in a child with explicitly dropped credentials. It reads no worker
 configuration or signing material as root. It requires the matching scan monitor

@@ -10,6 +10,14 @@ No keys are generated, repository initialized, network/jobs started or root keys
 accepted. Root updates require explicit preserving migration. Native CI registers
 test_private_host_init; details: ../development/system-host-supervision.md.
 
+prepare-workshop-trust-windows.py creates new-only off-server root-a/root-b
+encrypted PKCS8 keys, account-DPAPI-protected random passwords and host-input
+containing only catalog-1.pem/public root/origin pin. Strict atomic private NTFS
+ACLs allow current user+SYSTEM; check decrypts and proves both recovered root
+signatures without plaintext root export. DPAPI integrity/wrong entropy, ACL,
+tamper and complete ceremony tests pass on Windows. This account/profile-bound
+recovery is not a portable backup; portable export/profile backup remains needed.
+
 Fixed api/publication/gateway roles use system-host-service-mac.py and protected
 system-host-monitor-mac.py. Root accepts fixed labels, numeric process metadata
 and bounded inert heartbeats; configs/keys/signing/network remain UID600. Health
@@ -88,12 +96,8 @@ unchanged. Module/FS/case collisions and invalid bytes fail before ZIP creation.
 Payload ZIP order is now ordinal on every host. Original modular-first-to-three
 project splits config/score state/callbacks; tests pack+execute it in the actual
 VM and cover caching/varargs/absence of escape APIs/terminal budgets/atomicity.
-No worker/API/capsule/native game code or host HTTP contract changes; existing
-430 host API accepts these standard single-source archives. It remains a frozen
-component at430, not a claim that the new SDK is publicly deployed/stable.
-Native CI suite registers test_lua_bundle; Lua/mod.json example changes select it.
-User Mac at e01e0266 passes15 SDK packaging tests; new native-VM/game/public
-acceptance remains separate and pending. Its low disk capacity prevents builds.
+Native CI registers test_lua_bundle; Lua/mod.json changes select it. User Mac e01
+passes15 packaging checks. Public SDK/game acceptance remains separate.
 
 Native moderator report controls now list open reports and20-row complete history,
 require note/review/confirm for close/reopen, and clear selections on auth changes.
@@ -103,11 +107,8 @@ package decision. GET /v1/moderation/report-history includes closed reports for
 moderator/admin only. Native resolution binds immutable cursor too; own report
 history shows the report ID for support. Cancel text now applies to all requests.
 API/UI tests cover roles/history/cursors, wrong lookup digest/version and confirmed
-close/Back/reopen/inspection without package mutations. Real Mac mode extends
-closed-history/linked-release checks, still unrun while user-host disk is low.
-Host source changed; matching4301116646-source bundle is frozen/plan-verified.
-Windows102/Mac103 UI checks and all3 native launcher/package CI jobs pass. Real
-user-Mac report/scanner/restore remains unrun below its disk floor; see STATUS.
+close/Back/reopen/inspection without package mutations. Newer07 actual Mac and
+all3-host launcher acceptance are recorded above and in STATUS.
 
 mod_reports.py adds private authenticated reports for previously approved release
 digests, including now-revoked/withheld installed versions. One/account/digest,
@@ -123,9 +124,7 @@ hashless examples/local/other-origin installs offer none. Drafts clear on accoun
 changes; no automatic retry. Moderator report UI is described above.
 API/UI/restore tests and actual Mac scanner mode cover another player's report,
 private status and moderator closure with the catalog unchanged. Host API/module
-source changed; matching6c0a5caf46-source bundle is frozen/plan-verified. Native UI
-passes all3 hosts; user-Mac real report/scanner/restore acceptance is not run below
-its2GiB free-space floor. Root installation still awaits native administrator auth.
+source and native UI acceptance are recorded above; protected deployment is separate.
 
 POST /v1/moderation/<upload>/source permits moderator/admin Lua inspection for a
 completed job, bound archive digest and declared scripts/*.lua. It rechecks the
