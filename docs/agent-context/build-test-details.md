@@ -1723,6 +1723,12 @@ arbitrary executables/scripts/nested names and an uploaded mod carrying a helper
 The actual package --verify-game-package gate remains required after rebuilding
 the native launchers; the initially failed archives are preserved for diagnosis.
 
+Authored audio snapshot: native_audio_source.c/test_audio_source.py cover fresh
+RAM/OS guards on event metadata, denied/readonly/unaligned records, selector and
+pinned-Q12 rejection, copying/nested masks/thread isolation. HLE layout/format
+fixtures verify successful metadata binding, failed-bind clearing and retention
+through rate/play/stop followed by clearing at retirement. No PCM/wire change.
+
 Audio lifetime: test_audio_timing.py adds4 actual HLE format-fixture cases for
 TSFP_MOD_AUDIO_LIFETIME_TRACE exact opt-in and512-row cap, bind/play/rate/loop/
 pause/stop/retire/unknown generations and unchanged model/PCM. Existing all-host

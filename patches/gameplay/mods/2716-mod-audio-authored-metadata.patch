@@ -1,0 +1,39 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -94,6 +94,7 @@
+     uint32_t iface;              /* the IDirectSoundBuffer the game holds */
+     uint64_t generation;         /* distinguish reentrant slot/address reuse */
+     uint32_t mod_audio_event;    /* verified US request scope; UNKNOWN outside it */
++    uint32_t mod_audio_authored_rate,mod_audio_channels,mod_audio_looping;
+     uint32_t data, size, format, rate, align;
+     int      output;             /* samples we can send to the host */
+     /* IDirectSoundBuffer_Pause: the model is stopped with its cursor kept,
+@@ -140,11 +141,12 @@
+     if(enabled<0){const char *value=getenv("TSFP_MOD_AUDIO_LIFETIME_TRACE");enabled=value && value[0]=='1' && !value[1];}
+     if(!enabled || !b || !b->iface || lines>=512u)return;
+     ++lines;
+-    fprintf(stderr,"[mod-audio-lifetime] op=%s event=%u iface=%08X generation=%llu raw=%u pcm=%u base=%u rate=%u align=%u loop=%u:%u flags=%u playing=%u paused=%u requested=%u result=%08X\n",
++    fprintf(stderr,"[mod-audio-lifetime] op=%s event=%u iface=%08X generation=%llu raw=%u pcm=%u base=%u rate=%u align=%u loop=%u:%u flags=%u playing=%u paused=%u requested=%u result=%08X authored=%u channels=%u looping=%u\n",
+         operation,(unsigned)b->mod_audio_event,b->iface,(unsigned long long)b->generation,
+         b->size,b->model.size_bytes,b->model.original_sample_rate,b->model.sample_rate,
+         b->model.block_align,b->model.loop_start_bytes,b->model.loop_end_bytes,
+-        b->model.play_flags,(unsigned)b->model.playing,(unsigned)b->paused,requested,result);
++        b->model.play_flags,(unsigned)b->model.playing,(unsigned)b->paused,requested,result,
++        b->mod_audio_authored_rate,b->mod_audio_channels,b->mod_audio_looping);
+ }
+ 
+ static Buffer g_buffers[SLOTS];
+@@ -1469,7 +1471,12 @@
+         HLE_MEM32(object + SET_LOOP_LEN) = 0u;
+     }
+     Buffer *bound=model_for(iface, now);
+-    if(bound)bound->mod_audio_event=result==RECOMP_DSOUND_OK?tsfp_mod_audio_source_current(g_esp):TSFP_MOD_AUDIO_UNKNOWN;
++    if(bound) {
++        TsfpModAudioSource source={TSFP_MOD_AUDIO_UNKNOWN,0,0,0};
++        if(result==RECOMP_DSOUND_OK)source=tsfp_mod_audio_source_snapshot(g_esp);
++        bound->mod_audio_event=source.event;bound->mod_audio_authored_rate=source.authored_rate;
++        bound->mod_audio_channels=source.channels;bound->mod_audio_looping=source.looping;
++    }
+     mod_audio_source_trace(bound);
+     mod_audio_lifetime_trace("bind",bound,bytes,result);
+     unlock();

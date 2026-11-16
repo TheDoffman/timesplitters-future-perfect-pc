@@ -81,13 +81,16 @@ int main(int argc,char **argv) {
     Buffer *b=find(iface);CHECK(b && b->data==data && b->size==size);
     b->model.last_ms=b->output_model.last_ms=1000;
     if(!strcmp(mode,"native-source-error")) {
-        unsigned token=tsfp_mod_audio_source_enter(40,g_esp+256);
+        const TsfpModAudioSource source={40,16007,2,1};
+        unsigned token=tsfp_mod_audio_source_enter_metadata(&source,g_esp+256);
         hle_IDirectSoundBuffer_SetBufferData();tsfp_mod_audio_source_leave(token);
         CHECK(g_eax==0 && b->mod_audio_event==40);
+        CHECK(b->mod_audio_authored_rate==16007 && b->mod_audio_channels==2 && b->mod_audio_looping==1);
         native_forced_error=0x8007000eu;
         token=tsfp_mod_audio_source_enter(41,g_esp+256);
         hle_IDirectSoundBuffer_SetBufferData();tsfp_mod_audio_source_leave(token);
         CHECK(g_eax==0x8007000eu && b->mod_audio_event==TSFP_MOD_AUDIO_UNKNOWN);
+        CHECK(!b->mod_audio_authored_rate && !b->mod_audio_channels && !b->mod_audio_looping);
         CHECK(b->data==data && b->size==size); /* failure never gains a new source ID */
         CHECK(g_esp==0x18000 && g_ecx==0x1234 && g_edx==0x5678);
     }

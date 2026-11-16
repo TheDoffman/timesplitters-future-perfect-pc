@@ -42,9 +42,12 @@ int main(int argc, char **argv) {
     if(!strcmp(argv[1],"mod-lifetime")) {
         unsigned char before[64];memcpy(before,memory+0x20000,sizeof(before));
         HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+8)=0x20000;HLE_MEM32(g_esp+12)=raw;
-        unsigned token=tsfp_mod_audio_source_enter(42,g_esp+256);
+        const TsfpModAudioSource source={42,22042,1,1};
+        unsigned token=tsfp_mod_audio_source_enter_metadata(&source,g_esp+256);
         hle_IDirectSoundBuffer_SetBufferData();tsfp_mod_audio_source_leave(token);
-        b=find(iface);CHECK(b && b->mod_audio_event==42);uint64_t generation=b->generation;
+        b=find(iface);CHECK(b && b->mod_audio_event==42 && b->mod_audio_authored_rate==22042 &&
+                           b->mod_audio_channels==1 && b->mod_audio_looping==1);
+        uint64_t generation=b->generation;
         HLE_MEM32(0x12000+SET_LOOP_START)=8;HLE_MEM32(0x12000+SET_LOOP_LEN)=16;
         CHECK(model_for(iface,1000)==b && b->model.loop_start_bytes==8 && b->model.loop_end_bytes==24);
         HLE_MEM32(g_esp+8)=24000;hle_IDirectSoundBuffer_SetFrequency();
@@ -58,6 +61,7 @@ int main(int argc, char **argv) {
            Observe it; do not transfer a guessed event to a new voice. */
         HLE_MEM32(0x13000+SET_RATE)=22050;
         b=model_for(iface,1000);CHECK(b && b->generation!=generation && b->mod_audio_event==TSFP_MOD_AUDIO_UNKNOWN);
+        CHECK(!b->mod_audio_authored_rate && !b->mod_audio_channels && !b->mod_audio_looping);
         HLE_MEM32(g_esp+16)=0;hle_IDirectSoundBuffer_Play();CHECK(g_eax==0);
         Buffer snapshot=*b;
         for(unsigned i=0;i<600;i++)mod_audio_lifetime_trace("probe",b,0u,0u);

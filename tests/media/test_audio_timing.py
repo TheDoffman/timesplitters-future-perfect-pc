@@ -160,8 +160,10 @@ def test_audio_lifetime_observer_preserves_native_model_and_pcm(format_test, ena
         assert any(row['op'] == operation and row['event'] == '42' for row in rows)
     known = next(row for row in rows if row['op'] == 'play' and row['event'] == '42')
     assert (known['base'], known['rate'], known['loop'], known['playing']) == ('48000', '24000', '8:24', '1')
+    assert (known['authored'], known['channels'], known['looping']) == ('22042', '1', '1')
     unknown = next(row for row in rows if row['op'] == 'play' and row['event'] == '4294967295')
     assert unknown['base'] == unknown['rate'] == '22050' and unknown['generation'] != known['generation']
+    assert (unknown['authored'], unknown['channels'], unknown['looping']) == ('0', '0', '0')
 
 def test_independent_ambience_and_environment(buffer_test):
     result=subprocess.run([str(buffer_test),'feature-gates'],capture_output=True,text=True,timeout=10)

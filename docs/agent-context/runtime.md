@@ -1,3 +1,10 @@
+Patch2716 carries private authored rate/channels/loop flags from guarded US event
+metadata through the existing TLS scope to successful buffer binding. Selected
+Q12 values must match the supported XBE's35-entry table. Unavailable metadata
+keeps valid ID-only attribution but zeroes all metadata; failures and retirement
+cannot lend metadata to another binding. It changes no PCM, clocks or permissions.
+Contract/tests: ../development/mod-audio-input.md.
+
 Patch2715 adds opt-in TSFP_MOD_AUDIO_LIFETIME_TRACE=1 (512 metadata records) at
 bind/play/frequency/loop/pause/stop/retire under the existing audio lock. It reads
 only host buffer/model fields; it never queries guest memory, changes clocks/PCM

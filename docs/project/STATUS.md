@@ -1,3 +1,15 @@
+Authored audio metadata binding (2026-11-16, local source):
+TsfpModAudioSource privately carries authored rate/channels/whole-source-loop
+beside the verified event ID. Fresh RAM/OS queries guard the live event record,
+selector and selected Q12 value; that value must match the supported XBE's
+original35-entry table. Missing metadata stays zero without inventing a base.
+The existing bounded thread scope copies metadata; successful buffer binds retain
+it through pitch/play/stop, failed binds clear it, and retirement clears it.
+Samples, clocks, script API, package permissions and replacement activation are
+unchanged. Actual guarded-source/HLE/WAV161 Windows checks pass6.21s; the final
+seven affected guard/scope/lifetime cases also pass2.79s. Actual Mac/Linux and
+normal game validation remain pending. Contract: mod-audio-input.md.
+
 Audio lifetime evidence hook (2026-11-16, source48465dd9):
 Patch2715 adds opt-in512-row bind/play/frequency/loop/pause/stop/retire metadata,
 including unknown identities and actual original/current rates. It reads existing

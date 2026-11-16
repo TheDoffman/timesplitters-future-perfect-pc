@@ -397,6 +397,13 @@ Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Wind
 Mac build passes using supported --output under the owned Library/Caches folder.
 No public workshop service, production trust activation or release is claimed.
 
+Authored audio binding follow-up (2026-11-16, local source): shared request/TLS
+snapshot and patch2716 preserve verified authored rate/channels/loop flags in
+successful buffer bindings, with guarded reads and pinned Q12 values. Failures/
+retirement clear metadata; clocks/PCM and script permissions stay unchanged.
+No OS adapter is needed. Windows161 checks plus seven affected final checks pass;
+native Mac/Linux/game acceptance remains pending. See STATUS/mod-audio-input.md.
+
 Audio lifetime follow-up (2026-11-16, source48465dd9): shared patch2715 observes
 buffer identity/generation, actual pitch/loops and retirement without changing
 samples, clocks or source attribution. No OS adapter is introduced. Actual HLE/

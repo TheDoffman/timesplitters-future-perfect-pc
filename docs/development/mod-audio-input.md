@@ -1,5 +1,33 @@
 # Custom audio input boundary
 
+## Authored source snapshot
+
+`TsfpModAudioSource` privately carries event ID, authored rate, channel count and
+whole-source loop flag. The supported-US request adapter reads the event record
+through fresh guest-RAM/OS span checks, bounds the35-entry rate selector and
+compares the selected live Q12 value with the supported XBE's original table.
+The authored rate uses the original integer48000/4096 conversion. Channels and
+looping come from the already audited event flags. These are host binding metadata,
+not a new script command, resource permission, package format or audio activation.
+
+A zero authored rate means unavailable metadata; ID-only attribution can remain
+valid. Invalid IDs mask the whole snapshot. Copies are held in the existing
+eight-deep guest-thread scope, with the same overflow/unwind rules. The original
+callee still runs once with unchanged register/stack effects. A successful native
+buffer bind copies the snapshot; failed binds clear it, stops retain it, and model
+retirement clears it. A later pitch change never rewrites the authored base.
+The optional lifetime observer includes `authored`, `channels` and `looping`.
+
+Native fixtures exercise valid22042Hz stereo/loop metadata and5859Hz mono
+metadata, an unaligned/read-only event record, denied event/global pages,
+guest-RAM bounds, overflow, invalid selectors and changed live Q12 values.
+Separate scope cases cover copied values, nested masking and thread isolation.
+Actual HLE fixtures verify preservation through pitch/play/stop, clearing at
+retirement and clearing every field after native bind failure. Windows's full
+audio/source/WAV selection passes161 cases; seven affected cases pass again
+after the final guard/scope additions. Matching native host/game validation
+remains pending at this source checkpoint. No replacement playback is enabled.
+
 ## Playback lifetime observation
 
 Patch2715 adds a separate opt-in `TSFP_MOD_AUDIO_LIFETIME_TRACE=1`, capped at512
