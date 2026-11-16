@@ -86,7 +86,7 @@ def bundle():
                 'tools/mods/mod_host_identity.py', 'tools/mods/hosting/locked-service-bootstrap-mac.py',
                 'tools/mods/hosting/initialize-private-scan-mac.py', 'tools/mods/hosting/system-scan-monitor-mac.py',
                 'tools/mods/mod_system_host.py', 'tools/mods/hosting/system-host-service-mac.py',
-                'tools/mods/hosting/system-host-monitor-mac.py']
+                'tools/mods/hosting/system-host-monitor-mac.py', 'tools/mods/hosting/initialize-private-host-mac.py']
         for key in keys:
             wire = ('fixture ' + key).encode()
             path = source / key
@@ -122,7 +122,7 @@ def test_real_input_plan_verifies_all_components_without_writing_root(bundle):
 @pytest.mark.parametrize('missing',['tools/mods/mod_host_identity.py','tools/mods/hosting/locked-service-bootstrap-mac.py',
                                     'tools/mods/hosting/initialize-private-scan-mac.py','tools/mods/hosting/system-scan-monitor-mac.py',
                                     'tools/mods/mod_system_host.py','tools/mods/hosting/system-host-service-mac.py',
-                                    'tools/mods/hosting/system-host-monitor-mac.py'])
+                                    'tools/mods/hosting/system-host-monitor-mac.py','tools/mods/hosting/initialize-private-host-mac.py'])
 def test_incomplete_privilege_boundary_component_refused_before_copy(bundle,missing):
     base,descriptor,data=bundle
     del data['source_files'][missing]

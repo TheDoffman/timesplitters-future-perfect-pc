@@ -133,6 +133,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/mods/hosting/initialize-private-scan-mac.py'], {'native'}),
     (['tools/mods/hosting/locked-service-bootstrap-mac.py'], {'native'}),
     (['tests/mods/test_private_scan_init.py'], {'native'}),
+    (['tools/mods/hosting/initialize-private-host-mac.py'], {'native'}),
+    (['tests/mods/test_private_host_init.py'], {'native'}),
     (['tests/mods/test_locked_service_bootstrap.py'], {'native'}),
     (['tools/mods/mod_accounts.py', 'tools/mods/mod_uploads.py', 'tools/mods/mod_api.py', 'tools/mods/mod_operator.py', 'tests/mods/test_creator_api.py'], {'native'}),
     (['tools/mods/mod_trust.py', 'tools/mods/mod_signing.py', 'tests/mods/test_catalog_trust.py', 'tools/mods/hosting/requirements-signing.txt'], {'native'}),

@@ -19,7 +19,7 @@ from mod_trust import origin as checked_origin, trusted_root
 
 
 def helper(name):
-    require(name in ('initialize-private-scan-mac.py','gateway-service-mac.py','live-publication-mac.py','gunicorn.conf.py'),
+    require(name in ('initialize-private-scan-mac.py','initialize-private-host-mac.py','gateway-service-mac.py','live-publication-mac.py','gunicorn.conf.py'),
             'Invalid fixed host helper')
     spec = importlib.util.spec_from_file_location('host_'+name.replace('-', '_').replace('.', '_'), Path(__file__).with_name(name))
     result = importlib.util.module_from_spec(spec)
@@ -35,6 +35,7 @@ def installed_release():
     require(Path(__file__).absolute() == release/'source/tools/mods/hosting/system-host-service-mac.py',
             'Use the immutable installed host worker')
     initializer.check(release)
+    helper('initialize-private-host-mac.py').check(release)
     return release
 
 

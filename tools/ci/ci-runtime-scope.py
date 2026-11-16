@@ -70,6 +70,7 @@ CPU_TOOLS = {
     'tools/mods/hosting/probe-system-scan-monitor-mac.py', 'tests/mods/test_system_monitor_probe.py',
     'tools/mods/mod_host_identity.py', 'tests/mods/test_host_identity.py',
     'tools/mods/hosting/initialize-private-scan-mac.py', 'tests/mods/test_private_scan_init.py',
+    'tools/mods/hosting/initialize-private-host-mac.py', 'tests/mods/test_private_host_init.py',
     'tools/mods/hosting/locked-service-bootstrap-mac.py', 'tests/mods/test_locked_service_bootstrap.py',
     'tools/mods/mod_server.py', 'tools/mods/mod-workshop.py',
     'tools/mods/mod_publication.py', 'tools/mods/hosting/host-mac.py',

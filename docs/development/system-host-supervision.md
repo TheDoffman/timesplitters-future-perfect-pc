@@ -24,9 +24,42 @@ Public server executables must be the installed runtime Caddy; publication uses
 trusted-root.json and catalog-1.pem through catalog-4.pem in data/host, with
 optional root updates in its root-updates subdirectory. Only authorized catalog
 keys may be loaded. Offline root private keys do not belong on this host.
-These files must be provisioned before generation; this component creates none.
+These files must be provisioned before generation. The private initializer below
+creates the fixed layout only from explicitly staged online inputs.
 Completed matching private scan initialization is also required. A changed source
 generation needs explicit preserving migration rather than rewriting live data.
+
+## Private configuration initialization
+
+`initialize-private-host-mac.py` defaults to a read-only plan. Its installed
+`--apply` runs as the locked identity after matching scan setup. The fixed private
+data/host-input directory must contain exactly three0600 single-link regular files:
+origin.json, trusted-root.json and catalog-1.pem. The origin file contains only
+schema1, the canonical HTTPS origin and trusted_root_sha256. The fingerprint must
+come from the operator's off-server ceremony and also be checked by the protected
+cutover driver against its frozen input receipt; an internet response never
+establishes this pin. No offline root private keys belong in this input directory.
+
+All inputs are bounded and read through held nofollow/nonblocking descriptors.
+Before writing anything, initialization verifies the root fingerprint, current
+threshold signatures, matching origin and an unencrypted RSA3072 catalog-role
+private key with threshold1. Root-role, foreign and encrypted offline keys are
+refused. It generates no keys and performs no network access. Directory enumeration
+has a fixed entry budget rather than reading an unbounded set of names.
+
+New-only data/host setup creates the three exact configurations, copied online
+inputs, separate0700 role states, an empty root-updates directory and a0600 marker
+that becomes complete only after all writes. It does not initialize a repository
+or register/start jobs. The marker binds source generation, origin, public pin and
+all payload digests. Unchanged completed setup is reusable without staged inputs
+and without rewriting files or live role state. Partial/foreign/changed/aliased
+state is preserved and refused. Rotation/new source generations require explicit
+preserving migration rather than automatic adoption or reset.
+
+Every installed host worker, including the API child and generator's private check,
+requires completed matching host setup. This is additional to scan initialization.
+The input directory remains private and is preserved; it can be retired through a
+separate verified operator step after recovery copies are checked.
 
 `system-host-monitor-mac.py --role <api|publication|gateway> --generate` validates
 configuration in a child with explicitly dropped credentials. It reads no worker

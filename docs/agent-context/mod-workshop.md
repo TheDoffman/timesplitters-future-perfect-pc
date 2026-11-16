@@ -1,15 +1,23 @@
-Fixed api/publication/gateway system roles now use the irreversible bootstrap,
-system-host-service-mac.py and system-host-monitor-mac.py. Root monitors accept
-only fixed labels, numeric process state and bounded inert controller heartbeats;
-configs/keys/signing/network stay UID600. Root health binds role/release/PID/UID;
-GUI-writable health cannot admit system workers. Generation checks config after
-dropping credentials and writes new-only plists after scan-monitor generation.
-API uses explicit guardian group cleanup, control socket off and bounded renewal.
-Details: ../development/system-host-supervision.md. Native child/auth/cleanup and
-file/control tests are registered in native
-CI; protected installation/lifecycle/boot/public deployment remain pending.
-Actual f099 Mac258pass8.73s, Windows271pass104skips1.64s. Matching56-source release
-is prepared only; protected runtime remains f234. See STATUS for provenance.
+initialize-private-host-mac.py consumes only fixed UID600 host-input files:
+origin.json (canonical origin + root SHA256 pin), trusted-root.json, catalog-1.pem.
+It verifies the pin, live signed root and distinct catalog-role private key before
+creating data/host configs/separate states. Preparing->complete marker binds every
+payload and source generation. Exact completed setup is reused without input or
+state rewrites; partial/foreign/changed/linked/new-generation setups are preserved
+and refused. Bounded entries/reads, nofollow held FDs, private modes and stable
+metadata protect keys/configs. Workers require completed host and scan setup.
+No keys are generated, repository initialized, network/jobs started or root keys
+accepted. Root updates require explicit preserving migration. Native CI registers
+test_private_host_init; details: ../development/system-host-supervision.md.
+
+Fixed api/publication/gateway roles use system-host-service-mac.py and protected
+system-host-monitor-mac.py. Root accepts fixed labels, numeric process metadata
+and bounded inert heartbeats; configs/keys/signing/network remain UID600. Health
+binds role/release/PID/UID; GUI health cannot admit system jobs. Generation checks
+config after dropping credentials; new-only plists follow scan-monitor generation.
+API uses guardian group cleanup, control socket off and bounded renewal. Actual
+f099 Mac258pass8.73s, Windows271pass104skips1.64s; source bundle prepared only.
+Protected new-role installation/lifecycle/boot/public deployment remain pending.
 
 Actual Mac at2619f6f6 passes14 confined gateway cases2.57s: all launcher routes,
 exact methods/IDs,16KiB bodies, private bearer/HTTPS and stripped static credentials
@@ -22,17 +30,13 @@ worker+child exit and all temporary jobs unloaded. Root receipt is0600; post-pro
 installed inventory/receipt unchanged. Mac contracts148 pass. This is inert-job
 permission proof, not persistent scanning/boot/public operation; see STATUS.
 
-System scan deployment uses locked-service-bootstrap-mac.py: fixed installed
-roles clear supplementary groups, set GID/UID600, verify real/effective/kernel and
-directory credentials, prove root cannot be restored, then exec worker code with
-minimal environment. Root prelude uses -I-S-B and reads no worker configuration or
-uploads. launchd InitGroups true/false both retained extra kernel groups on this
-Mac; explicit subprocess dropping yielded[600]. Strict admission is unchanged.
-System monitor policy root-system-bootstrap-v2 allows a new PID a bounded10s root
-startup, emits unhealthy starting, then requires UID600; root cannot reappear after
-the restricted phase. Same ps snapshot supplies owner+RSS; cancellation uses only
-the fixed launchd label, with checked results. Worker waits boundedly for health.
-Root heartbeat/marker use protected nofollow stable descriptors and atomic writes.
+locked-service-bootstrap-mac.py clears groups, sets real/effective GID/UID600,
+checks kernel/directory credentials and denied root restoration, then execs fixed
+worker roles. Root -I-S-B prelude reads no worker config/uploads. Both launchd
+InitGroups values retained extra groups; explicit dropping yielded[600]. Scan
+policy root-system-bootstrap-v2 permits10s unhealthy root startup, requires600
+thereafter, rejects return to root; numeric owner/RSS share a snapshot. Only fixed
+labels are stopped; root atomic health uses protected nofollow stable descriptors.
 
 initialize-private-scan-mac.py creates only data/scan as UID600: empty repository/
 database/state dirs, exact scanner/updater configs and preparing->complete marker.
@@ -44,13 +48,9 @@ new-only monitor/scan/6-hour definition plists without loading them. Root entry
 points require immutable installed release/runtime/identity; no supplied commands,
 users, executables or configuration paths. Release admission requires these helpers.
 
-Native probe now exercises protected root bootstrap->UID600, denied root restore,
-root-health write refusal, same-PID/PGID and child containment, root controller's
-label stop using a test-only wall clock, exited processes and all labels unloaded.
-Both prior direct-launchd attempts correctly refused extra groups; their jobs are
-verified absent. Explicit bootstrap permission proof passes; persistent boot
-acceptance remains pending. Details: ../development/system-scan-supervision.md and STATUS. Existing
-GUI prototypes remain separate; no production/public service started.
+Details: ../development/system-scan-supervision.md and STATUS. Native inert probe
+proves credential/health denial, label stop and child exit; temporary jobs unloaded.
+Persistent boot/public operation remains pending; GUI prototypes stay separate.
 
 User Mac at07 passes106 native UI checks, real isolated scanner/moderation/DDS/
 reports/withdrawal/audits and70 API/DDS/restore tests. This is UID501/private pipes;
