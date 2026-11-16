@@ -5,8 +5,15 @@ post-fork self-query sends a72-byte birth record before exec; the old exec EOF
 fence remains mandatory. Mac's trusted guardian clears SIGCHLD auto-reaping and
 captures guardian/worker creation stamps before reaping, then reports both over
 the private startup pipe. Legacy/malformed messages fail closed. Sealed workers
-inherit only stdio. Windows22 process/identity checks pass/5 host skips33.38s;
-actual Mac/Linux expanded checks follow. No cache/profile deletion is added.
+inherit only stdio. At eb73c190 Windows22 process/identity checks pass/5 host
+skips33.38s, plus147 scope checks. Actual Mac/Linux identity/process/scope
+selections pass168/6 skips17.77s and167/7 skips23.07s. Windows staged resources
+pass24/1 skip17.22s. Mac host-ASan/UBSan identity/process/resources pass45/7
+skips30.83s and Linux44/8 skips52.00s, with ordinary sealed child binaries.
+Windows production testing:false build passes; dumpbin probe-symbol absence has
+a same-revision testing-library positive control. Receipts live under
+build/mod-owned-production-eb73c190; logs/owned-stamp-{windows,resources-windows,
+production-windows}.txt retain Windows checks. No cache/profile deletion is added.
 
 Native recovery identity primitive (2026-11-16, no cleanup yet):
 Shared typed queries distinguish a live native creation stamp, exited original

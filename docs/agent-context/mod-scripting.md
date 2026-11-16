@@ -7,8 +7,11 @@ SIGCHLD auto-reaping, snapshots itself and its unreaped child before waitpid,
 and sends both stamps over private FD4. mod_process_stamp_wire.h fixes size/kind/
 count/reserved rules; old/invalid startup messages fail closed. Worker stdio-only
 inheritance is preserved. Native owned-stamp checks retain evidence after stop;
-Darwin legacy/invalid wire refusals are added. Windows22 pass/5 host skips; other
-hosts follow. Disk journals and orphan removal remain unimplemented.
+Darwin legacy/invalid wire refusals pass. At eb73c190 Windows native22/5 skips
+and resources24/1 skip pass; Mac/Linux identity/process/scope168/6 and167/7 pass.
+Host ASan/UBSan identity/process/resources45/7 Mac and44/8 Linux pass. Windows
+no-test production build/probe exclusion passes. Disk journals and orphan removal
+remain unimplemented; exact timings/receipts are in STATUS.
 
 Process identity queries (mod_process_identity.hpp/.cpp) distinguish alive/exited/
 unknown using native PID+creation stamps: Windows FILETIME (including borrowed
