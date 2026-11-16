@@ -1,3 +1,11 @@
+Backup installer source (2026-11-16, not installed):
+The new-only registrar seals the small code bundle against the existing runtime,
+then performs privilege-drop/initial-capture/read-only verification and two staged
+job runs before adding/testing one persistent startup plist. Failures preserve
+backup data and remove only owned label/inode/content artifacts; foreign files
+and existing host jobs/routing remain untouched. Transaction tests simulate
+launchd while exercising actual POSIX files. Protected host acceptance follows.
+
 Backup worker source (2026-11-16, not installed):
 Small content-addressed backup-only bundles bind their committed source and the
 existing immutable Mac runtime. The fixed root prelude verifies protected code,

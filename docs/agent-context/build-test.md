@@ -1,4 +1,4 @@
-Backup worker164 Mac/Linux; SDK/defaults: [details](build-test-details.md).
+Backup installer/worker; SDK/defaults: [details](build-test-details.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

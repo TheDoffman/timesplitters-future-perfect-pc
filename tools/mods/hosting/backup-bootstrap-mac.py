@@ -22,7 +22,7 @@ def main():
         sys.path.insert(0,str(folder))
         from mod_backup_release import installed,read
         _,binding=installed(folder)
-        if sys.argv[1:] not in (['--once'],['--initialize'],['--probe'],['--status']):raise ValueError('Invalid fixed backup operation')
+        if sys.argv[1:] not in (['--once'],['--initialize'],['--probe'],['--status'],['--verify']):raise ValueError('Invalid fixed backup operation')
         python=Path(sys.executable).resolve()
         if str(python)!=binding['python']:raise ValueError('Use the bound protected Python')
         base=ROOT/'releases'/binding['base_release']

@@ -1,3 +1,7 @@
+Backup installer: test_backup_install checks new-only sealed code, staging twice
+before boot-file persistence and known inode/content-only rollback (partial IO,
+foreign replacement, label/file collisions and failed admission). POSIX files are
+real; launchd is simulated. Actual protected deployment remains pending.
 Backup worker: test_backup_service checks descriptor/code/runtime binding,
 no-follow reads, private status preservation and actual child timeout/output/reaping.
 Windows154/10 POSIX skips; actual Mac/Linux164 each atf1cc1676 (0.81/0.70s).

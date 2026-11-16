@@ -85,7 +85,7 @@ def atomic_status(parent,value):
 def main():
     try:
         mode=sys.argv[1:]
-        if len(mode)!=1 or mode[0] not in ('--once','--initialize','--probe','--status','--capture','--initialize-capture'):raise ValueError('Invalid backup worker operation')
+        if len(mode)!=1 or mode[0] not in ('--once','--initialize','--probe','--status','--verify','--capture','--initialize-capture','--verify-capture'):raise ValueError('Invalid backup worker operation')
         uid=require_locked_process();folder=Path(__file__).absolute().parent
         _,binding=installed(folder)
         if binding['uid']!=uid or str(Path(sys.executable).resolve())!=binding['python']:raise ValueError('Backup worker binding changed')
@@ -99,14 +99,23 @@ def main():
             except PermissionError:denied=True
             if not denied:raise ValueError('Locked backup worker can read root-only metadata')
             result=dict(status='probe',root_metadata_denied=True)
-        elif mode in (['--capture'],['--initialize-capture']):
+        elif mode in (['--capture'],['--initialize-capture'],['--verify-capture']):
             for limit,value in ((resource.RLIMIT_CPU,600),(resource.RLIMIT_CORE,0),(resource.RLIMIT_NOFILE,64),(resource.RLIMIT_DATA,1024**3)):
                 resource.setrlimit(limit,(value,value))
             from mod_backup_pool import initialize,policy,run
             if mode==['--initialize-capture'] and not pool.exists():initialize(repository,pool)
             _,settings=policy(pool)
             if settings['repository']!=str(repository) or (settings['keep'],settings['interval'],settings['maximum_bytes'])!=(7,86400,8*1024**3):raise ValueError('Installed backup policy differs')
-            result=run(pool)
+            if mode==['--verify-capture']:
+                from mod_backup_pool import entries,locked
+                from mod_backup import verify_snapshot
+                with locked(pool):
+                    current,total=entries(pool,settings)
+                    if not current:raise ValueError('No managed backup to verify')
+                    verified=verify_snapshot(current[-1]['path'])
+                result=dict(status='verified',snapshots=len(current),bytes=total,backup=current[-1]['path'].name,
+                            verified_manifest_sha256=verified['manifest_sha256'])
+            else:result=run(pool)
         elif mode==['--status']:
             status=load_status(parent)
             if status['identity']!=folder.name or status['base_release']!=binding['base_release'] or status['uid']!=uid:raise ValueError('Backup status binding differs')
@@ -114,7 +123,7 @@ def main():
         else:
             def interrupted(signum,frame):raise InterruptedError('Backup supervisor interrupted')
             signal.signal(signal.SIGTERM,interrupted);signal.signal(signal.SIGINT,interrupted)
-            action='--initialize-capture' if mode==['--initialize'] else '--capture'
+            action='--initialize-capture' if mode==['--initialize'] else '--verify-capture' if mode==['--verify'] else '--capture'
             status=dict(schema=1,producer='tsfp-backup-status-v1',identity=folder.name,base_release=binding['base_release'],uid=uid,time=int(time.time()))
             try:
                 code,output,error=capture(sys.executable,Path(__file__).absolute(),action)
@@ -124,7 +133,7 @@ def main():
                     or report.get('uid')!=uid or report.get('gid')!=uid or not isinstance(report.get('kernel_groups'),list)
                     or any(type(group) is not int or group!=uid for group in report['kernel_groups'])
                     or not isinstance(report.get('result'),dict)
-                    or report['result'].get('status') not in ('captured','not-due')):raise ValueError('Invalid backup capture report')
+                    or report['result'].get('status') not in (('verified',) if mode==['--verify'] else ('captured','not-due'))):raise ValueError('Invalid backup capture report')
                 status.update(status='ok',result=report['result']);atomic_status(parent,status)
                 print(json.dumps(report));return 0
             except (OSError,ValueError,TimeoutError) as error:

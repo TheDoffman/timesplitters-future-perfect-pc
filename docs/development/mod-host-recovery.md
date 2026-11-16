@@ -147,7 +147,7 @@ The tests use disposable repositories and signing identities, not production dat
 
 ## Backup-only protected worker source
 
-`mod_backup_release.py` prepares a seven-file content-addressed bundle from a
+`mod_backup_release.py` prepares an eight-file content-addressed bundle from a
 clean committed checkout. Each file must equal its Git blob; the descriptor
 binds the source revision, operator UID, payload hashes and an existing protected
 host release. `hosting/prepare-backups-mac.py` runs as the ordinary Mac user and
@@ -176,8 +176,27 @@ plist runs hourly and at load; due-time policy determines whether capture is nee
 `tests/mods/test_backup_service.py` checks descriptor/runtime/code bindings,
 committed preparation, refusal/preservation paths and real POSIX timeout/output
 cleanup. These source checks do not prove protected installation or persistence.
-The protected installer, job registration and production capture acceptance remain
-pending; this source alone does not enable scheduled backups or off-device copies.
+`hosting/install-backups-mac.py --bundle PRIVATE_BUNDLE --sha256 RECORDED_SHA256`
+prints an unprivileged plan. Adding `--apply` requires local Mac administrator
+authentication and the matching preparing operator UID. It verifies the existing
+sealed host/runtime/locked identity, exclusively copies the eight hashed files
+and binding into a new root-owned read-only release, then re-execs its protected
+`mod_backup_install.py` using that runtime. Existing unknown/partial code is
+preserved; only an exact completed matching release can be reused.
+
+The registrar checks that the fixed backup label/startup filename are absent,
+creates the new UID-owned private parent and admits the privilege-drop probe,
+initial capture and independent read-only verification. It then runs the hourly
+job from protected staging twice, checks successful exit/status and only then
+creates its startup plist and tests that persistent copy. A private root-owned
+journal records admission and rollback. Failure unloads only the known job whose
+reported path still matches, and removes only its newly created boot file when
+inode/content still match (including a partial write). Replaced/unknown artifacts
+and all captured backup data are preserved. Existing API/scanner jobs and routing
+are never selected. `test_backup_install.py` exercises the new-only code and job
+transactions with real POSIX files and simulated launchd outcomes; actual Mac
+protected installation and startup acceptance remain separate required checks.
+This does not supply off-device copies.
 
 ## Portable recovery of the signing authority
 

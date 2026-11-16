@@ -103,6 +103,8 @@ CPU_TOOLS = {
     'tools/mods/mod_backup_release.py', 'tools/mods/mod_backup_service.py',
     'tools/mods/hosting/backup-bootstrap-mac.py', 'tools/mods/hosting/prepare-backups-mac.py',
     'tests/mods/test_backup_service.py',
+    'tools/mods/mod_backup_install.py', 'tools/mods/hosting/install-backups-mac.py',
+    'tests/mods/test_backup_install.py',
     'tools/mods/mod_rescan.py', 'tests/mods/test_periodic_rescan.py',
     'tools/mods/hosting/scan-service-mac.py', 'tests/mods/test_scan_service.py',
     'tools/mods/hosting/definitions-service-mac.py', 'tests/mods/test_definitions_service.py',

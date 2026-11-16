@@ -13,7 +13,7 @@ LABEL='org.timesplitters.workshop.backup'
 PRODUCER='tsfp-backup-code-v1'
 FILES={name:'tools/mods/'+name for name in
        ('mod_backup.py','mod_backup_pool.py','mod_package.py','mod_host_identity.py',
-        'mod_backup_release.py','mod_backup_service.py')}
+        'mod_backup_release.py','mod_backup_service.py','mod_backup_install.py')}
 FILES['backup-bootstrap-mac.py']='tools/mods/hosting/backup-bootstrap-mac.py'
 MAX_FILE=1024*1024
 
