@@ -76,6 +76,27 @@ def test_windows_owned_handle_snapshot_does_not_require_reopening_pid(process_to
     assert record['state']=='alive' and record['valid'] and record['kind']==1
 
 
+@pytest.mark.skipif(os.name!='nt',reason='Windows owned process query-denial control')
+def test_denied_query_preserves_record_as_unknown_while_original_process_is_alive(process_tools):
+    import ctypes
+    security=ctypes.WinDLL('advapi32',use_last_error=True);kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+    security.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes=[ctypes.c_wchar_p,ctypes.c_uint,ctypes.POINTER(ctypes.c_void_p),ctypes.c_void_p]
+    security.ConvertStringSecurityDescriptorToSecurityDescriptorW.restype=ctypes.c_int
+    security.SetKernelObjectSecurity.argtypes=[ctypes.c_void_p,ctypes.c_uint,ctypes.c_void_p]
+    security.SetKernelObjectSecurity.restype=ctypes.c_int
+    kernel.LocalFree.argtypes=[ctypes.c_void_p];kernel.LocalFree.restype=ctypes.c_void_p
+    with held_python() as child:
+        record=call(process_tools,'read',child.pid);assert record['state']=='alive'
+        descriptor=ctypes.c_void_p()
+        # Only this newly-created fixture process changes. Its original owned
+        # handle retains exit/control rights; no account/file ACL is modified.
+        assert security.ConvertStringSecurityDescriptorToSecurityDescriptorW('D:(D;;0x00101000;;;WD)',1,ctypes.byref(descriptor),None)
+        try:assert security.SetKernelObjectSecurity(ctypes.c_void_p(int(child._handle)),4,descriptor),ctypes.get_last_error()
+        finally:kernel.LocalFree(descriptor)
+        assert call(process_tools,'read',child.pid)['state']=='unknown'
+        assert state(process_tools,record)['state']=='unknown' and child.poll() is None
+
+
 @pytest.mark.skipif(sys.platform!='linux',reason='Actual Linux proc comm parser')
 def test_linux_process_name_with_parentheses_and_newline_cannot_shift_birth_field(process_tools):
     setup='import ctypes\nlib=ctypes.CDLL(None)\nassert lib.prctl(15,ctypes.c_char_p(b"odd ) (\\nname"),0,0,0)==0\n'

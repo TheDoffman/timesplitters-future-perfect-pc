@@ -5,9 +5,13 @@ Foreign/invalid schemes and query/access/format failures are unknown. PID reuse
 with a different stamp proves only the recorded task exited; no process is killed.
 Missing POSIX records require a signal0 ESRCH existence check; zombies are exited.
 Native test_process_identity covers held/exited tasks, malformed/foreign records,
-Windows borrowed handles and Linux unusual comm/zombies; native CI selects it.
+Windows borrowed handles, actual process-query denial and Linux unusual comm/
+zombies; native CI selects it. At9fe57a16 identity/scope checks pass156/3 skips
+on Mac7.94s and158/1 skip on Linux10.97s. Expanded Windows identity/process/scope
+checks pass167/3 skips35.55s, including a real suspended LPAC child stamp before
+resume and a live owned fixture whose query ACL is denied (unknown, not dead).
 This is a read-only primitive: cache journal custody, owned-child snapshot capture
-and actual removal remain separate work. Windows/other-host checks follow.
+and actual removal remain separate work. Expanded other-host checks follow.
 
 Windows job admission now uses PROC_THREAD_ATTRIBUTE_JOB_LIST in CreateProcessW;
 IsProcessInJob verifies the exact job before ResumeThread. This closes the

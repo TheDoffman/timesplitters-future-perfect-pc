@@ -1,6 +1,7 @@
 // Test-only parent. Exposes the trusted canary PID then waits to be killed,
 // proving the production Process lifetime boundary without a worker watchdog.
 #include "mod_process.hpp"
+#include "mod_process_identity.hpp"
 #include <cstdio>
 #include <chrono>
 #include <thread>
@@ -13,7 +14,11 @@
 static void before_resume(uint64_t pid,uintptr_t process,uintptr_t job) {
     BOOL in_job=FALSE;
     bool assigned=IsProcessInJob(reinterpret_cast<HANDLE>(process),reinterpret_cast<HANDLE>(job),&in_job)!=FALSE && in_job;
-    std::printf("{\"pid\":%llu,\"in_job\":%s,\"before_resume\":true}\n",static_cast<unsigned long long>(pid),assigned?"true":"false");
+    tsfp::mods::ProcessStamp stamp;
+    bool identified=tsfp::mods::read_owned_process_stamp(process,stamp)==tsfp::mods::ProcessState::alive && stamp.valid() && stamp.pid==pid;
+    std::printf("{\"pid\":%llu,\"in_job\":%s,\"before_resume\":true,\"stamp_valid\":%s,\"stamp_kind\":%u,\"stamp_start\":%llu}\n",
+        static_cast<unsigned long long>(pid),assigned?"true":"false",identified?"true":"false",
+        static_cast<unsigned>(stamp.kind),static_cast<unsigned long long>(stamp.start_a));
     std::fflush(stdout);(void)std::getchar();
 }
 #endif

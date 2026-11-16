@@ -175,7 +175,9 @@ def test_abrupt_parent_death_terminates_native_worker(process_tools, tmp_path,ph
         try:
             value=identity.get(timeout=5)
             if phase=='before-resume':
-                report=json.loads(value);assert report['in_job'] and report['before_resume'];worker_pid=report['pid']
+                report=json.loads(value);assert report['in_job'] and report['before_resume']
+                assert report['stamp_valid'] and report['stamp_kind']==1 and report['stamp_start']>0
+                worker_pid=report['pid']
             else:worker_pid=int(value)
             assert worker_pid > 0 and worker_pid != parent.pid
             if os.name == 'nt':

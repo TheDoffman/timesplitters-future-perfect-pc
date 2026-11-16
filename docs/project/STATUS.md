@@ -5,8 +5,14 @@ Linux reads a bounded proc/stat record with parentheses/newline-safe comm parsin
 Mac uses BSD creation seconds/useconds. Invalid/foreign records, denied queries
 and malformed evidence fail to unknown. POSIX missing-task results are checked
 with signal0; zombies count as exited. These operations never terminate tasks.
-New native process-identity tests and CI scope registration are present; named
-host results follow. No cache journal is adopted and no orphan cleanup is enabled.
+At9fe57a16 identity/scope checks pass156/3 skips on Mac7.94s and158/1 skip on
+Linux10.97s. Expanded Windows identity/process/scope checks pass167/3 skips35.55s,
+including actual query denial on a new fixture process and a creation stamp read
+from the suspended confined child's owned handle before resume/parent-kill.
+Only the fixture kernel-object ACL changes; no account or file ACL is modified.
+Expanded other-host checks follow. No cache journal is adopted and no orphan
+cleanup is enabled. Initial Windows harness errors (missing NOMINMAX; text-mode
+readiness CRLF) were corrected before these successful checks.
 
 Windows script-worker creation-time containment (2026-11-16):
 The native adapter assigns its existing non-inherited kill-on-close job inside
