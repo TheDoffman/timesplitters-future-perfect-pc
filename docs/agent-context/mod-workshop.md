@@ -31,15 +31,15 @@ aliased state is preserved/refused. Bounded held-FD reads protect private files.
 Workers require host+scan completion; no DBinit/jobs/network. Rotation requires
 preserving migration. Details: ../development/system-host-supervision.md.
 
-prepare-workshop-trust-windows.py creates encrypted off-server roots/passwords
-protected by account DPAPI and atomic private user+SYSTEM NTFS ACLs; recovery proves
-both signatures without plaintext root export. Only catalog key/public pin enter
-host-input. Actual Windows tests/production ceremony pass; account/profile-bound
-recovery still needs independent portable/profile backup acceptance.
-Host preparation permits only exact Git bytes or exact HEAD-declared CRLF checkout
-rendering; mixed endings/text changes/local filter substitutions remain refused.
-Production roots/recovery and3 online Mac inputs verified; source/installed
-provenance is in STATUS. No production jobs remain loaded.
+Trust recovery: prepare-workshop-trust-windows.py uses account DPAPI/NTFS ACLs;
+only catalog inputs enter the Mac. portable-workshop-recovery.py exports/checks/
+imports independently passphrase-encrypted authority (fixed scrypt/AES-GCM,
+bounded exact inventory, out-of-band pin, both-root proof, new-only private IO).
+Check works across OSes; Windows import rebinds DPAPI. Local hidden prompt only,
+no password arguments/pipes. See ../development/mod-host-recovery.md. Production
+export/passphrase custody/off-device drill remain open. Preparation permits exact
+Git or HEAD-declared CRLF only; mixed/changed/filter bytes remain refused.
+Installed provenance/production ceremony evidence is in STATUS; jobs rolled back.
 
 Fixed host roles use system-host-service-mac.py/system-host-monitor-mac.py:
 root controls fixed labels/numeric metadata/bounded inert heartbeats; configs/

@@ -166,8 +166,9 @@ and physical boot remain unverified until the native cutover executes.
 
 This recovery depends on the Windows account's DPAPI profile/key material. Copying
 the store alone to an unrelated computer is not a portable recovery backup.
-Independent encrypted export and Windows-profile recovery still require explicit
-operational backup/restore acceptance before the full workshop goal is complete.
+The separate passphrase-encrypted portable export/check/new-Windows import is
+implemented; see mod-host-recovery.md. Production export, independent passphrase
+custody, off-device restore and operational backup acceptance remain incomplete.
 
 `system-host-monitor-mac.py --role <api|publication|gateway> --generate` validates
 configuration in a child with explicitly dropped credentials. It reads no worker

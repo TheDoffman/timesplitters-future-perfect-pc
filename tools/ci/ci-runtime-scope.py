@@ -79,6 +79,8 @@ CPU_TOOLS = {
     'tools/mods/hosting/prepare-launcher-workshop-profile.py', 'tests/mods/test_public_host_profile.py',
     'tools/mods/mod_windows_recovery.py', 'tools/mods/hosting/private-recovery-windows.ps1',
     'tools/mods/hosting/prepare-workshop-trust-windows.py', 'tests/mods/test_windows_recovery.py',
+    'tools/mods/mod_portable_recovery.py', 'tools/mods/hosting/portable-workshop-recovery.py',
+    'tests/mods/test_portable_recovery.py',
     'tools/mods/hosting/locked-service-bootstrap-mac.py', 'tests/mods/test_locked_service_bootstrap.py',
     'tools/mods/mod_server.py', 'tools/mods/mod-workshop.py',
     'tools/mods/mod_publication.py', 'tools/mods/hosting/host-mac.py',

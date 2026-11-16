@@ -95,3 +95,52 @@ A disposable command-line restore drill now passes on the actual Mac (see STATUS
 Production service cutover, off-device recovery, supervision,
 retention, and service/endpoint cutover acceptance are separate release gates.
 The tests use disposable repositories and signing identities, not production data.
+
+## Portable recovery of the signing authority
+
+The Windows root ceremony's `recovery.dpapi` depends on that Windows account's
+profile keys. `tools/mods/hosting/portable-workshop-recovery.py` adds a separate
+passphrase-encrypted export for losing the original account or computer. This is
+an operator tool, not part of a player installation. It contains both encrypted
+root keys, their recovery passwords, the online catalog key and exact public
+origin/root bytes inside one authenticated encrypted envelope. Never place it on
+the public host, in Git, or in a served/download directory. Keep the passphrase
+separately from the encrypted file and record the public root SHA256 independently.
+
+Use a new private export directory outside the checkout and cloud-sync folders.
+On Windows, create it with `hosting/private-recovery-windows.ps1 -Mode Create`;
+on a POSIX verification machine, use a private directory owned by the operator
+with mode0700 and file mode0600. Existing files/stores are never replaced. Run
+these commands in an interactive local terminal, substituting the actual private
+paths and independently recorded pin:
+
+```text
+python tools/mods/hosting/portable-workshop-recovery.py export --store ORIGINAL_STORE --file PRIVATE_EXPORT/recovery.bin --trusted-root-sha256 RECORDED_SHA256
+python tools/mods/hosting/portable-workshop-recovery.py check --file PRIVATE_EXPORT/recovery.bin --trusted-root-sha256 RECORDED_SHA256
+python tools/mods/hosting/portable-workshop-recovery.py import --store NEW_WINDOWS_STORE --file PRIVATE_EXPORT/recovery.bin --trusted-root-sha256 RECORDED_SHA256
+```
+
+Export/import use Windows private ACLs and current-account DPAPI. `check` also
+runs on macOS/Linux and proves recovery without the original Windows profile.
+All operations prompt locally with hidden input; no password argument, pipe or
+environment variable is accepted. Export confirms the passphrase and decrypts
+its newly created envelope before committing the output. The 16-256 character
+passphrase protects AES256-GCM using a random32-byte salt, random12-byte nonce
+and fixed scrypt parameters N131072/r8/p1 (about128MiB); untrusted parameters
+cannot request more work. Envelope/plaintext budgets are64/32KiB.
+
+Recovery verifies the supplied out-of-band public pin, exact inventory, public
+root signatures, both distinct root keys and threshold signatures, online signer
+and origin before creating a new store. Private key PEM files remain encrypted;
+their passwords exist only in memory or inside DPAPI/the encrypted envelope.
+No archive paths are extracted. Errors and proof JSON contain no secret values.
+Expired roots may be recovered for a later signed rotation; `root_valid_now:false`
+does not authorize serving with expired trust. Import rebinds the recovery capsule
+to the new Windows account and preserves incomplete output for inspection on IO
+failure. It starts no services and changes no launcher or public routing.
+
+The format and Windows account rebinding have disposable-key tests. Production
+export, independent custody of its passphrase, off-device storage and a restore
+drill must still be performed before claiming disaster-recovery acceptance.
+This export does not include the workshop database/packages or post-backup
+revocations; retain and reconcile those using the workflow above.
