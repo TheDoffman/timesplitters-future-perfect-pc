@@ -1801,6 +1801,8 @@ Quiescence admission also binds a native boot identity (Mac boot-session UUID or
 Linux kernel boot UUID), so a recent pre-reboot record cannot authorize writes
 after launchd reloads the old boot files. Actual native tests read this identity;
 wrong-boot admission is refused before journal/config writes.
+The installed step returns its controlled refusal for native metadata command
+failures/timeouts too; it never treats unavailable boot identity as admission.
 Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
 interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;

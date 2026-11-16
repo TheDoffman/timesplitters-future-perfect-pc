@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import stat
+import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -39,7 +40,7 @@ def main():
             else:
                 value = migration.migrate(before, after, args.nonce, rollback=args.rollback)
         print(json.dumps(value, indent=2));return 0
-    except (OSError, ValueError, ModError) as error:
+    except (OSError, ValueError, ModError, subprocess.SubprocessError) as error:
         print('Private generation migration: '+str(error)[:1000], file=sys.stderr);return 2
 
 
