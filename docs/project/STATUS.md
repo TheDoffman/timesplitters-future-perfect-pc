@@ -1,3 +1,9 @@
+Public workshop observation (2026-11-16): normal certificate/SNI/TLS and pinned
+root verification pass independently over public peer199.38.181.54:8443. Signed
+catalog39 retains5 revocations; all5 withdrawn package URLs return404. Approved
+release count remains0. Receipt logs/public-workshop-current.json observed1794853647.
+This is reachability/trust/withdrawal evidence, not publication or backup admission.
+
 Bounded committed-cache recovery (2026-11-16, native validation in progress):
 RuntimeResources now checks abandoned current-pin caches before allocating a new
 one. Complete ownership/layout/hash/native creation-death admission precedes any
@@ -15,7 +21,11 @@ build01e497f3 passes; identical-source testing-library probe positive control an
 production symbol absence pass (local build/mod-recovery-production-01e497f3/
 probe-exclusion-proof.json). At24365271 host ASan/UBSan resources/recovery53/3 skips pass on each host
 (Mac15.63s/Linux19.97s). A final lease unlink anchoring adjustment passes Windows
-resource/save88/12 skips (36.89s); actual Mac/Linux checks follow. Early no-record
+resource/save88/12 skips (36.89s). At exactff126487 actual host ASan/UBSan
+resource/save checks pass91/9 skips on Mac25.61s and Linux38.78s. Windows
+production testing-OFF buildff126487 and identical-source test-probe exclusion
+pass (local build/mod-recovery-production-ff126487/probe-exclusion-proof.json).
+Early no-record
 recovery and uncertain interrupted-profile cases remain separate work. No public host/routing or client publication changes.
 
 Shared native cache startup journal (2026-11-16, implementation in progress):

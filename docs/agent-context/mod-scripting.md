@@ -42,7 +42,10 @@ identity remains unchanged on Windows refusal paths. Production testing-OFF
 Windows build01e and identical-source test-probe exclusion pass. Sanitizer checks
 at24365271 pass53/3 skips on each host (Mac15.63s/Linux19.97s). A final lease
 unlink anchoring adjustment passes Windows resource/save88/12 skips (36.89s);
-actual Mac/Linux checks follow. No full game/client release claim follows.
+at ff126487 actual host ASan/UBSan resource/save checks pass91/9 skips on Mac
+(25.61s) and Linux (38.78s). Windows production testing-OFF buildff126487 and
+identical-source positive-control probe exclusion pass. No full game/client
+release claim follows.
 
 Shared startup journal (source; full stale recovery still pending):
 CacheJournal in mod_private.hpp/mod_saves.cpp binds to a bounded process-wide

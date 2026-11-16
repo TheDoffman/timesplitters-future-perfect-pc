@@ -7,8 +7,9 @@ Windows resource/process55/8 skips and updated recovery17 pass; earlier resource
 save85/12 skips pass. At01e497f3 actual Mac resource/save/process99/11 skips pass (30.75s); Linux98/12
 skips pass (35.64s). Outside-link byte/native-identity assertions added (Windows
 9/1 skip); host ASan/UBSan recovery53/3 skips pass on both at24365271. Final lease
-unlink anchoring source passes Windows resource/save88/12 skips; actual Mac/Linux
-checks follow. Early/incomplete and uncertain profile states preserve
+unlink anchoring sourceff126487 passes Windows resource/save88/12 skips; actual
+host ASan/UBSan resource/save91/9 skips pass on Mac25.61s and Linux38.78s.
+Windows testing-OFF build/probe exclusion also pass. Early/incomplete and uncertain profile states preserve
 evidence; broader runtime/game/release acceptance remains pending. See STATUS.
 
 Shared startup journal (2026-11-16): **In progress**.
