@@ -1,12 +1,24 @@
-Linux desktop audio follow-up (2026-11-16; source, deployment pending):
+Linux desktop audio follow-up (2026-11-16; source3a555fb4, deployment pending):
 Actual sourceaaa310ea Mac/Linux native builds/test/packages pass123/124 UI groups
 plus real creator backend; Linux package repair/restart retains saves/metadata.
 Mac actual AudioQueue silent8/48kHz mono/stereo finish/cancel/release also passes.
 WSL native ALSA-only test fails with Unknown PCM default/card0 missing (confirmed
 native exit1). Pulse service/libraries are present. Source now uses a nonblocking
 Pulse context/stream/drain first, with ALSA fallback only before any PCM has been
-submitted. No daemon spawn or sound replay after submission. Actual updated
-Linux device/build checks remain pending; the ALSA-only failure is not a pass.
+submitted. No daemon spawn or sound replay after submission. Updated Linux
+native build/test/package passes124 UI groups plus backend/package install,
+corruption/repair/restart/render with saves/metadata retained. The actual existing
+WSLg Pulse service passes silent8/48kHz mono/stereo finish/cancel/release. Forcing
+an unavailable Pulse endpoint safely falls through to unavailable ALSA and
+returns native exit1; no output success is fabricated. ALSA fallback playback
+with a configured hardware default remains unverified. Mac rebuilt at3a555fb4
+and actual AudioQueue tests pass; Windows current product rebuild passes (its
+semantic device/UI tests are ataaa310ea; the follow-up changes only Linux code
+and error text). No audio device configuration or user volume was changed.
+Logs audio-listen-{windows-test,windows-native,mac-test,mac-native,linux-test,
+linux-native,linux-pulse-test,linux-pulse-native,linux-unavailable}.txt retain
+the initial failed ALSA-only result and later Pulse success. Host logs copied
+to Windows. Physical hearing/stop-latency and public workflow remain pending.
 
 Explicit moderator PCM listening (2026-11-16; sourceaaa310ea, deployment pending):
 ModPreviewAudio plays only the owned validated <=2-second PCM portion, at quarter

@@ -2,8 +2,13 @@ Moderator PCM listening (2026-11-16): **In progress**.
 Shared bounded playback controller/UI with thin Windows waveOut, Mac AudioQueue
 and Linux nonblocking ALSA adapters. Native source/build inclusion updated for
 all3 hosts; explicit Listen/Stop and disposal cancellation preserve system volume.
-Windows122 UI groups and actual silent device tests pass; Mac/Linux actual native
-checks, public deployment and physical listening remain pending (STATUS).
+Ataaa310ea Windows/Mac/Linux native checks pass122/123/124 UI groups plus real
+creator backend; actual Windows waveOut and Mac AudioQueue silent tests pass.
+Linux ALSA-only default fails on WSL; at3a555fb4 Pulse-first output passes actual
+native silent8/48kHz mono/stereo completion/cancel/release on existing WSLg, plus
+124 UI/backend/package lifecycle checks. Mac current rebuild/device tests pass.
+Unavailable Pulse+ALSA reports failure; configured ALSA fallback playback, public
+deployment and physical listening/stop-latency remain pending (STATUS).
 
 Moderator audio inspection (2026-11-16): **In progress**.
 Shared ModCreatorPage/client implements private bounded PCM waveform inspection
