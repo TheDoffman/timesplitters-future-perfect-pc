@@ -6,7 +6,8 @@ through the launcher. Both assets and gameplay scripting are in scope.
 
 ## Current implementation
 
-This branch contains a **local developer prototype**, not a released mod system.
+This branch contains the integrated mod system under development; a final public
+client/SDK release is still pending.
 It provides creator packaging, bounded archive validation, a ClamAV adapter,
 quarantine/review states, a searchable catalog, a local browser, downloads,
 revocation and atomic inactive installation. The existing launcher now has a
@@ -49,8 +50,11 @@ a folder does not change its permissions. Helper files use this location; mode
 saves remain in their separate namespace. Missing configured folders stop modded
 launches; Play without mods still works. This preference is stored locally in
 Settings/mod-cache-location.txt and never comes from a downloaded package.
-Maps, audio and unlinked additional Lua files remain inactive; formats/APIs remain
-drafts. Creators can link a modular Lua project into the supported single entry
+Maps and unlinked additional Lua files remain unsupported. New source game builds
+with `mod_audio_version:1` support bounded original PCM audio and Lua audio
+commands; actual launcher-to-game checks pass on all three hosts. See
+[audio scripting](mod-audio-scripting.md) for the supported contract and remaining
+acceptance. Creators can link a modular Lua project into the supported single entry
 source using `pack --modules`, described below.
 Native game bootstrap, helper confinement and gameplay hooks have been tested on
 all three hosts through developer handoffs. Packaged First to Three has completed real offline matches through launcher-

@@ -1,4 +1,4 @@
-Creator CLI/SDK: [contract](../development/mod-creator-tools.md).
+SDK: ../development/mod-creator-tools.md; ops: ../development/mod-workshop-operations.md.
 register-installed-host-mac.py derives9 protected jobs: staging bootstrap,
 source-pinned private readiness and7 restarts precede boot-file installation.
 Known-only rollback/journals preserve foreign state. Actual601 repair now PASSES
@@ -7,7 +7,7 @@ Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged
 Public native3->4->3 gameplay/lifecycle and withdrawal pass on all3 hosts (STATUS).
 Mac had one pre-match signal11; retry passed, cause/stability remains open.
 Signedv31 retains5 revocations; downloads404. Backup custody/clone restore pass;
-Backup registrar181 Mac/Linux; ../development/mod-host-recovery.md; setup pending.
+Backup181 Mac/Linux; ../development/mod-host-recovery.md; setup pending.
 
 prepare-installed-host-mac.py reads3 owned online inputs, matches the source
 pin, copies600 privately and drops credentials for init/updater/scanner controls.
@@ -17,8 +17,7 @@ private-HOME fixtures retain writable-ancestor rejection.
 Audio store/boot: ../development/mod-audio-assets.md.
 Lua audio: ../development/mod-audio-scripting.md; new build capability1, public unchanged.
 
-Public source config/mods/public-workshop.json/root pins the verified ceremony
-origin and exact signed public root; status is active after public acceptance.
+config/mods/public-workshop.json/root pins the accepted origin and signed root.
 Fresh launchers use compiled defaults, pinning production by exact HTTPS origin;
 custom authorities still require their explicit local root. Mutable root files
 cannot override production. Native checks and a real fresh Windows read pass;

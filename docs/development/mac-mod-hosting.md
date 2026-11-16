@@ -4,45 +4,46 @@ The selected deployment target is the owner's Mac mini, accessible over the
 internet, with no purchased domain. **Mods are browsed and searched inside the
 existing launcher.** A separate public website is optional.
 
-Private-host integration includes authenticated creator uploads, isolated scanning,
-manual review, signed publication/revocation and native launcher enforcement.
-A separate confined gateway routes approved downloads and creator API requests.
-A temporary public HTTPS marker probe passed through the confined gateway;
-it was removed and the existing private routing restored. The production
-workshop service is not deployed. See the scoped acceptance in STATUS.
+The production workshop is deployed through a confined gateway, with authenticated
+creator uploads, isolated scanning, manual review, signed publication/revocation
+and native launcher enforcement. The public origin is
+`https://dans-mac-mini.tail7e8ab8.ts.net:8443`; separate private443 routing remains
+private. Public native installed-game lifecycle checks pass on Windows/Mac/Linux.
+Use the [operator checklist](mod-workshop-operations.md) for the live host and
+[STATUS](../project/STATUS.md) for exact deployed identities and remaining gates.
 
 The production public root and origin are source-pinned in
 `config/mods/public-workshop-root.json` and `public-workshop.json`. The profile is
-still pending public acceptance. To stage the existing native launcher settings
-for a private deployment test, use:
+active after public acceptance. Fresh native clients use the compiled origin and
+root without local Support/Mods files. To stage an explicit isolated profile, use:
 
 ```sh
-python tools/mods/hosting/prepare-launcher-workshop-profile.py --output /new/private/client-profile --apply --acceptance-only
+python tools/mods/hosting/prepare-launcher-workshop-profile.py --output /new/private/client-profile --apply
 ```
 
 The tool verifies the public fingerprint, threshold signatures, origin and current
 root lifetime, then writes service.json and trusted-root.json for Support/Mods,
 plus an operator receipt. It refuses an existing output. These are public data;
-no signing keys are included. Release-profile staging is refused while acceptance
-is pending; normal launcher defaults remain disconnected. Activating the source
-profile still requires the actual public deployment and native end-to-end checks.
+no signing keys are included. Pending profiles require the separate private
+acceptance mode; the current active profile does not. Published client artifacts
+containing these verified defaults remain a release gate.
 
 Texture overlays and one restricted gameplay mode can be enabled by compatible
 native launchers. The packaged First to Three example has completed real matches
 through launcher-generated handoffs on Windows, Mac and Linux, with ordinary saves
-preserved. These tests use private installed-layout fixtures and existing native
-builds; they do not establish a published release or public upload-to-play flow.
-Maps, audio and additional Lua files remain inactive. See [workshop scope](mod-workshop.md)
+preserved. Public upload/review/install/update/rollback/withdrawal gameplay also
+passes on all three hosts. Original PCM audio and Lua audio commands pass native
+launcher-to-game checks with the new audio capability; see
+[audio scripting](mod-audio-scripting.md). Maps and unlinked additional Lua files
+remain unsupported. See [workshop scope](mod-workshop.md)
 and [acceptance evidence](../project/STATUS.md).
 
-Private scan worker/watchdog and a separate six-hour official definition updater
-are installed as pinned login agents under the owner's Application Support.
-Actual guarded scan/review/rescan, process-isolation canaries and the first
-FreshClam check pass. The six-hour interval has not elapsed; these agents need
-the user's login session. The dedicated locked production identity and private
-folder layout are now verified. Production jobs/root-owned runtime, unattended
-boot and internet access remain incomplete. Private live publication invalidation
-and refresh pass; that controller is not yet the production service.
+The current production runtime is root-owned and uses the locked UID/GID600
+identity through nine system jobs. Private readiness, fresh scanner controls and
+seven restarts pass; physical unattended boot and continued operational acceptance
+remain open. Earlier owner-login agents and temporary download wrappers are
+development history, not the current production service. Scheduled backups are
+prepared and still awaiting protected admission; off-device automation is pending.
 See [scanner operation](mod-scan-service.md) and [current status](../project/STATUS.md).
 
 ## Layout and public address
@@ -73,6 +74,12 @@ If the Mac is off or a publication expires, the launcher shows an unavailable
 workshop while the installed game remains available.
 
 ## Prepare the Mac
+
+The preparation/export/wrapper sections below describe isolated development or
+new-host staging. They are not commands to rerun against the installed production
+repository. Do not replace its sealed runtime, start duplicate owner-login agents
+or change its routing using these earlier fixtures. See the operator checklist
+and protected hosting/recovery contracts for the live installation.
 
 Source is synchronized through Git into a separate `.nosync` task worktree. The
 native Mac launcher build/sign/package/tests passed at f6770b2b, as did package/
@@ -230,8 +237,10 @@ Do not expose the operator preview, quarantine, source checkout or personal apps
 
 ## Connect the launcher
 
-The shared Mods page reads `Support/Mods/service.json` relative to the chosen
-installation root. This contains a public URL only, with no secrets:
+Current source clients use the compiled production origin/root by default. An
+explicit custom service can use `Support/Mods/service.json` relative to the chosen
+installation root, with its own explicitly configured trusted root. This public
+URL contains no secrets:
 
 ```json
 {"service":"https://ACTUAL-MAC-NAME.ACTUAL-TAILNET.ts.net:8443"}
@@ -245,17 +254,18 @@ another server. The client refuses HTTP redirects, bounds every response,
 verifies signed metadata and saved trust state, filters expired/future scans,
 rechecks availability before/after download, and verifies completed package hashes.
 
-For development, create that file inside the isolated launcher build directory
-and open **Mods → Refresh mods**. For the eventual public release, set
-`ModWorkshopClient.DefaultService` to the verified endpoint and rebuild/package
-the launchers through the normal three-host release workflow. Players will then
+For development, create that file inside an isolated launcher build directory
+and open **Mods → Refresh mods**. Production defaults are already source-pinned;
+final publication must package the verified source through the normal three-host
+release workflow. Players will then
 open **Mods** and browse without entering a server address or installing Python,
 Caddy, ClamAV or Tailscale. Only the Mac host needs those hosting tools.
 
 The page searches names, creators and descriptions, shows scan/review context,
 and downloads to `.launcher/mod-downloads/<sha256>.zip`. Install package writes
 an immutable version under Mods/Packages, initially disabled. Installed view
-can enable texture-only overlays; scripts cannot be enabled. Existing downloads
+can enable texture overlays and one restricted gameplay mode on capable game
+builds; audio also requires `mod_audio_version:1`. Existing downloads
 with a mismatched digest are preserved
 and reported; cancelled/failed downloads remove only their own partial file.
 HTTPS and a hash do not establish publisher authorship. Signed catalog metadata
@@ -264,23 +274,20 @@ or automatic activation is enabled.
 
 ## Updating and revoking a publication
 
-1. Stop the hosting wrapper or disable its specific Funnel mapping.
-2. Revoke affected releases in the **private** repository, or rescan/review
-   releases for a fresh publication. Revoking in SQLite alone does not update
-   an already exported static snapshot.
-3. Export to a new snapshot path, preflight it, and restart the wrapper against
-   that new path. Re-enable the mapping if it was disabled.
-4. Check from outside the home network that removed releases are absent from
-   `/v1/catalog` and their package URLs return unavailable.
+Use authenticated moderation to withdraw a release. The deployed publication
+controller invalidates/rebuilds the signed approved snapshot; verify the new
+signed catalog and package404 from outside the home network. Do not manually
+edit the static snapshot or restart the earlier development wrapper on production.
+See [withdrawal and incidents](mod-workshop-operations.md#review-reports-and-withdrawal).
 
 Keep old snapshots outside all served roots for operator recovery. Previously
-downloaded files cannot be recalled; a future active-mod manager must enforce
-revocations separately before loading code. Do not mount old snapshots at
+downloaded files cannot be recalled; the native active-mod manager enforces
+signed revocations before modded launch. Do not mount old snapshots at
 alternate public paths. Backup the private repository and event history without
 making them public.
 
-Before opening public creator submissions, implement ownership/authentication,
-upload quotas, memory/concurrency limits for scan workers, scheduled database updates/rescans, moderation
-and report handling. The download-only server supplies none of those endpoints.
-The full [workshop implementation plan](mod-workshop.md#full-product-implementation-plan)
-tracks these remaining milestones.
+Ownership/authentication, quotas, confined scanning, periodic updates/rescans and
+moderation/reporting are implemented in the full service. The old download-only
+development wrapper supplies none of those API endpoints. The
+[full completion evidence](../project/mod-workshop-acceptance.md) tracks remaining
+operational, content and release acceptance.
