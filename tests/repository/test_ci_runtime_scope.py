@@ -148,6 +148,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/mods/hosting/initialize-private-host-mac.py'], {'native'}),
     (['tests/mods/test_private_host_init.py'], {'native'}),
     (['tools/mods/mod_host_migration.py'], {'native'}),
+    (['tools/mods/mod_host_cutover.py'], {'native'}),
+    (['tests/mods/test_host_cutover.py'], {'native'}),
     (['tools/mods/hosting/migrate-private-generation-mac.py','tests/mods/test_host_migration.py'], {'native'}),
     (['tools/mods/hosting/prepare-installed-host-mac.py'], {'native'}),
     (['tests/mods/test_prepare_installed_host.py'], {'native'}),

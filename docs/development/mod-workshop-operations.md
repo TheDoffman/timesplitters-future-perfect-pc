@@ -63,11 +63,22 @@ reads. Preserve the origin/root keys, accounts, uploads, audit, catalog version
 floor and revocations throughout. A cutover journal must distinguish safe
 rollback from uncertain partial state; never clear state to force admission.
 
-The pending backup installation is bound to the old7be generation. Finish its
-existing ceremony first, then explicitly account for that backup job/binding in
-the upgrade. Installing a new host generation does not automatically migrate the
-backup job. Keep the separate private443 routing unchanged. No active-generation
-switch or new administrator prompt has been performed for this candidate.
+The pending backup installation independently binds its sealed code to the old7be
+runtime, not to the active host initialization marker. Finish its existing ceremony
+first. Preserve that exact backup binding/job and sealed runtime during the host
+upgrade. Its frozen code has captured and independently verified two snapshots of
+the newer disposable repository schema; this is library compatibility evidence,
+not scheduled UID600 admission. The first attempt refused the original fixture's
+0755 repository; the successful run uses a separate private copy. Do not weaken
+the backup directory checks or change the original evidence.
+
+The scheduled worker respects cadence even for its initialization operation.
+A quiescent upgrade needs an explicitly forced and verified fresh capture through
+trusted locked-account code, rather than accepting a normal `not-due` response.
+Preserving the old backup binding avoids changing its identity-bound status, but
+does not waive that capture or subsequent job acceptance. Keep the separate
+private443 routing unchanged. No active-generation switch or new administrator
+prompt has been performed for this candidate.
 
 The new private migration component (`mod_host_migration.py` and the installed
 `migrate-private-generation-mac.py` step) implements only the locked-account
@@ -85,9 +96,33 @@ binding the exact plan/nonce, all nine host jobs plus backup stopped, and a back
 verified after quiescence. Admission also binds the native boot identity so that
 a pre-reboot record cannot authorize migration after boot jobs reload. The
 private worker does not create that authority,
-stop services, migrate the backup binding or activate a release. The root
+stop services, change the backup binding or activate a release. The root
 coordinator producing and validating that admission remains to be implemented;
 this component must not be used as a standalone live upgrade procedure.
+
+`mod_host_cutover.py` implements read-only job/process observations for that
+coordinator. The caller must first verify generated and boot plist bytes against
+the sealed release. The observer binds all ten fixed labels to the exact program
+and argument sequence and accepts only the expected protected staging path or
+installed boot-file path. Actual current jobs were loaded from staging paths;
+requiring only the boot-file path would incorrectly reject them. It observes all
+jobs twice around bounded PID/parent/process-group/UID sampling and refuses a
+changed binding. Nested coalition fields cannot supply a top-level process ID.
+It tracks descendants and groups without command-line/environment inspection;
+exit requires those identities/groups and every dedicated UID600 process to be
+gone, catching escaped or reparented descendants. Reused identities conservatively
+refuse admission; these samples are never signal targets. These primitives do
+not stop jobs, verify root plist ownership, check label absence, change routing,
+write a root proof or activate a generation. Those coordinator steps remain open.
+
+The current public8443 route is Funnel-enabled HTTPS proxying127.0.0.1:8768;
+private443 exists with Funnel disabled. Thus starting new private gateway jobs
+while that route remains enabled exposes them publicly. The coordinator must
+suspend only8443 before admission and restore it after acceptance, verifying the
+unrelated configuration unchanged. A read-only current routing observation binds
+the unrelated canonical configuration SHA256
+`58f73772bcfc9eb3aa55d2ca29d970044a0194054b8ed3764e6258db06edd0a6`;
+this is an observation, not a completed routing cutover or future expected pin.
 
 ## Routine checks
 
