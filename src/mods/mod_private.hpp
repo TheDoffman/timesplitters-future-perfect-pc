@@ -2,11 +2,15 @@
 #define TSFP_MOD_PRIVATE_HPP
 #include <memory>
 #include <string>
+#include <cstddef>
 namespace tsfp { namespace mods {
 struct ImagePins;
 class Process;
 class CacheJournal;
 bool cache_process_start_allowed(const std::string &)noexcept;
+// Best-effort bounded recovery under a trusted parent; ambiguous roots survive.
+struct CacheRecovery {std::size_t examined=0,removed=0,preserved=0;};
+CacheRecovery recover_private_caches(const std::string &,const ImagePins &)noexcept;
 // Fresh private directory under a trusted existing per-user parent. Unlike save
 // namespaces, executable caches require native permissions; no exFAT fallback.
 // No existing directory is adopted. New caches hold an exclusive, non-inherited

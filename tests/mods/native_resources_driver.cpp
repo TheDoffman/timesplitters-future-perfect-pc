@@ -29,6 +29,10 @@ static int run(const std::string &mode,const std::string &parent,const std::stri
     const char *name="tsfp-mod-worker";
 #endif
     tsfp::mods::ImagePins pins{pin,guardian=="-"?"":guardian};
+    if(mode=="recover") {
+        auto result=tsfp::mods::recover_private_caches(parent,pins);
+        std::printf("{\"examined\":%zu,\"removed\":%zu,\"preserved\":%zu}\n",result.examined,result.removed,result.preserved);return 0;
+    }
     auto resources=tsfp::mods::RuntimeResources::create(subdir,name,pins,parent,error);
     record("accepted",!!resources,resources?resources->cache():"");if(!resources)return 0;
     if(mode=="hold"){(void)std::getchar();record("rechecked",resources->recheck(error),resources->cache());return 0;}

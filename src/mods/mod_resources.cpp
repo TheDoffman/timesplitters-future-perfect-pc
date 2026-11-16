@@ -67,6 +67,7 @@ std::unique_ptr<RuntimeResources> RuntimeResources::create(const std::string &su
         need(name=="tsfp-mod-worker");
 #endif
         auto image=checked_path((executable().parent_path()/subdir/name).u8string(),false);
+        (void)recover_private_caches(parent,pins);
         auto result=std::unique_ptr<RuntimeResources>(new RuntimeResources);
         result->cache_=PrivateDirectory::create(parent,error);if(!result->cache_)return nullptr;
         result->images_=ImageStage::create(image.u8string(),result->cache_->root(),pins,nullptr,error);

@@ -1,3 +1,16 @@
+Bounded committed-cache recovery (2026-11-16, native validation in progress):
+RuntimeResources now checks abandoned current-pin caches before allocating a new
+one. Complete ownership/layout/hash/native creation-death admission precedes any
+mutation. Existing-only leases and held handles/descriptors preserve active,
+unknown, altered, linked, incomplete and legacy roots. Windows profile removal
+requires actual GUID/SID/scope file identity and the supported Userenv API.
+Windows resource/process55/8 skips pass (37.26s), including canonical negative
+records and direct native profile-scope preservation. Added nested unknown,
+outside hardlink and helper-link refusal controls pass in recovery17 selection
+(17.71s). Earlier resource/save85/12 skips pass (36.20s); scope147 pass (0.46s).
+Mac/Linux acceptance, early no-record recovery and uncertain interrupted-profile
+cases remain pending. No public host/routing or client publication changes.
+
 Shared native cache startup journal (2026-11-16, implementation in progress):
 Session now writes private new-only intent before native creation and commits
 owned birth stamps before Lua source transmission. A live lease registry and

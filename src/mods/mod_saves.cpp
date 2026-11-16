@@ -6,6 +6,9 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#include <chrono>
+#include <charconv>
+#include <set>
 #include <array>
 #include <filesystem>
 #include <stdexcept>
@@ -30,6 +33,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/file.h>
+#include <dirent.h>
 #ifdef __APPLE__
 #include <sys/mount.h>
 #else
@@ -181,19 +185,20 @@ void tree(const fs::path &root,Security &security,bool leased) {
 }
 struct Lease {
     File file;
-    explicit Lease(const fs::path &path,Security &security,bool fresh=false) {
+    explicit Lease(const fs::path &path,Security &security,bool fresh=false,bool existing=false) {
 #ifdef _WIN32
-        file.value=CreateFileW(path.c_str(),GENERIC_READ|GENERIC_WRITE|(fresh?DELETE:0),0,&security.attributes,
-            fresh?CREATE_NEW:OPEN_ALWAYS,FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+        file.value=CreateFileW(path.c_str(),GENERIC_READ|GENERIC_WRITE|((fresh || existing)?DELETE:0),0,&security.attributes,
+            fresh?CREATE_NEW:(existing?OPEN_EXISTING:OPEN_ALWAYS),FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
         need(file.value!=INVALID_HANDLE_VALUE);BY_HANDLE_FILE_INFORMATION info{};
         need(GetFileType(file.value)==FILE_TYPE_DISK && GetFileInformationByHandle(file.value,&info) && info.nNumberOfLinks==1 && !info.nFileSizeHigh && !info.nFileSizeLow &&
             !(info.dwFileAttributes&(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_REPARSE_POINT)));
 #else
-        file.value=open(path.c_str(),O_RDWR|O_CREAT|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW|(fresh?O_EXCL:0),0600);need(file.value>=0);
+        file.value=open(path.c_str(),O_RDWR|(existing?0:O_CREAT)|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW|(fresh?O_EXCL:0),0600);need(file.value>=0);
         struct stat s{};need(fstat(file.value,&s)==0 && S_ISREG(s.st_mode) && s.st_nlink==1 && !s.st_size);
         need(flock(file.value,LOCK_EX|LOCK_NB)==0);
+        need(!existing || (s.st_mode&0777)==0600);
 #endif
-        security.check(path,false);
+        security.check(path,existing);
     }
     void check(const fs::path &path,Security &security)const {
         security.check(path,false);
@@ -386,6 +391,28 @@ namespace {
 // the already-owned root descriptor, then matched to the original inode/content.
 struct JournalFile {
     File file;std::string name,bytes;uint64_t device=0,inode=0;
+    void load(PrivateOwner &owner,const fs::path &root,const std::string &leaf) {
+        name=leaf;
+#ifdef _WIN32
+        (void)owner;file.value=CreateFileW((root/fs::u8path(name)).c_str(),GENERIC_READ|DELETE,FILE_SHARE_READ,nullptr,
+            OPEN_EXISTING,FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+        need(file.value!=INVALID_HANDLE_VALUE);BY_HANDLE_FILE_INFORMATION info{};
+        need(GetFileType(file.value)==FILE_TYPE_DISK && GetFileInformationByHandle(file.value,&info) && !info.nFileSizeHigh && info.nFileSizeLow<=4096 &&
+            info.nNumberOfLinks==1 && !(info.dwFileAttributes&(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_REPARSE_POINT)));
+        device=info.dwVolumeSerialNumber;inode=(uint64_t(info.nFileIndexHigh)<<32)|info.nFileIndexLow;
+        bytes.resize(info.nFileSizeLow);DWORD got=0;
+        need(ReadFile(file.value,bytes.data(),static_cast<DWORD>(bytes.size()),&got,nullptr) && got==bytes.size());
+#else
+        (void)root;file.value=openat(owner.directory.value,name.c_str(),O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW);need(file.value>=0);
+        struct stat info{};need(fstat(file.value,&info)==0 && S_ISREG(info.st_mode) && info.st_size>=0 && info.st_size<=4096);
+        device=info.st_dev;inode=info.st_ino;bytes.resize(static_cast<size_t>(info.st_size));size_t at=0;
+        while(at<bytes.size()) {
+            ssize_t n=read(file.value,bytes.data()+at,bytes.size()-at);if(n<0 && errno==EINTR)continue;
+            need(n>0);at+=static_cast<size_t>(n);
+        }
+#endif
+        check(owner,root);
+    }
     void create(PrivateOwner &owner,const fs::path &root,const std::string &leaf,const std::string &body) {
         need(body.size()<=4096);name=leaf;bytes=body;
 #ifdef _WIN32
@@ -543,5 +570,290 @@ void CacheJournal::finish(bool artifacts_cleaned)noexcept {
         state.intent.check(owner,root);state.committed.check(owner,root);
         state.committed.remove(owner,root);state.intent.remove(owner,root);
     }catch(...){} // Ambiguous startup, changed evidence or live/unknown child: preserve.
+}
+namespace {
+using RecoveryClock=std::chrono::steady_clock;
+std::vector<std::string> recovery_children(const File &directory,const fs::path &path,size_t maximum,RecoveryClock::time_point deadline) {
+    std::vector<std::string> names;
+#ifdef _WIN32
+    (void)directory;
+    for(const auto &entry:fs::directory_iterator(path)) {
+        need(names.size()<maximum && RecoveryClock::now()<deadline);names.push_back(entry.path().filename().u8string());
+    }
+#else
+    (void)path;int copy=openat(directory.value,".",O_RDONLY|O_DIRECTORY|O_CLOEXEC);need(copy>=0);
+    DIR *raw=fdopendir(copy);if(!raw){close(copy);need(false);}
+    struct CloseDirectory {void operator()(DIR *value)const noexcept{closedir(value);}};
+    std::unique_ptr<DIR,CloseDirectory> stream(raw);
+    for(;;) {
+        need(RecoveryClock::now()<deadline);errno=0;auto *entry=readdir(stream.get());
+        if(!entry){need(errno==0);break;}
+        std::string name=entry->d_name;if(name=="." || name=="..")continue;
+        need(names.size()<maximum);names.push_back(std::move(name));
+    }
+#endif
+    return names;
+}
+uint64_t recovery_number(const std::string &text) {
+    need(!text.empty() && text.size()<=20 && (text.size()==1 || text[0]!='0'));uint64_t value=0;
+    auto parsed=std::from_chars(text.data(),text.data()+text.size(),value);
+    need(parsed.ec==std::errc{} && parsed.ptr==text.data()+text.size());return value;
+}
+std::vector<std::string> recovery_lines(const std::string &bytes) {
+    need(!bytes.empty() && bytes.back()=='\n');std::vector<std::string> result;size_t at=0;
+    while(at<bytes.size()) {
+        size_t end=bytes.find('\n',at);need(end!=std::string::npos && end-at<=256 && result.size()<16);
+        auto line=bytes.substr(at,end-at);for(unsigned char c:line)need(c>=32 && c<=126);
+        result.push_back(std::move(line));at=end+1;
+    }
+    return result;
+}
+std::vector<uint64_t> recovery_numbers(const std::string &line,size_t count) {
+    std::vector<uint64_t> result;size_t at=0;
+    for(size_t i=0;i<count;++i) {
+        size_t end=line.find(' ',at);if(i+1==count)need(end==std::string::npos);else need(end!=std::string::npos);
+        result.push_back(recovery_number(line.substr(at,end==std::string::npos?end:end-at)));at=end+1;
+    }
+    return result;
+}
+bool recovery_stage_leaf(const std::string &name) {
+    if(name.rfind("images-",0)!=0)return false;
+#ifdef _WIN32
+    if(name.size()!=45 || name[7]!='{' || name.back()!='}')return false;
+    for(size_t i=8;i<44;++i) {
+        size_t n=i-8;char c=name[i];if(n==8 || n==13 || n==18 || n==23){if(c!='-')return false;}
+        else if(!((c>='0' && c<='9') || (c>='A' && c<='F')))return false;
+    }
+#else
+    if(name.size()!=13)return false;
+    for(size_t i=7;i<name.size();++i){char c=name[i];if(!((c>='0' && c<='9') || (c>='A' && c<='Z') || (c>='a' && c<='z')))return false;}
+#endif
+    return true;
+}
+struct RecoveryNode {
+    File file;fs::path path;std::string leaf;bool directory=false;uint64_t device=0,inode=0,size=0;
+#ifndef _WIN32
+    struct stat original{};int parent=-1;
+#endif
+    void open(const fs::path &name,bool is_directory,int parent_descriptor=-1) {
+        path=name;leaf=path.filename().u8string();directory=is_directory;Security security(false);
+        checked_path(path.u8string(),directory);security.check(path,false);
+#ifdef _WIN32
+        (void)parent_descriptor;file.value=CreateFileW(path.c_str(),FILE_READ_ATTRIBUTES|DELETE|(directory?0:GENERIC_READ|FILE_WRITE_ATTRIBUTES),
+            FILE_SHARE_READ|(directory?FILE_SHARE_WRITE:0),nullptr,OPEN_EXISTING,
+            FILE_FLAG_OPEN_REPARSE_POINT|(directory?FILE_FLAG_BACKUP_SEMANTICS:0),nullptr);
+        need(file.value!=INVALID_HANDLE_VALUE);BY_HANDLE_FILE_INFORMATION info{};
+        need(GetFileType(file.value)==FILE_TYPE_DISK && GetFileInformationByHandle(file.value,&info) &&
+            !(info.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT) && !!(info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)==directory &&
+            (directory || info.nNumberOfLinks==1));
+        device=info.dwVolumeSerialNumber;inode=(uint64_t(info.nFileIndexHigh)<<32)|info.nFileIndexLow;
+        size=(uint64_t(info.nFileSizeHigh)<<32)|info.nFileSizeLow;
+#else
+        parent=parent_descriptor;need(parent>=0);
+        file.value=openat(parent,leaf.c_str(),O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW|(directory?O_DIRECTORY:0));need(file.value>=0);
+        need(fstat(file.value,&original)==0 && (directory?S_ISDIR(original.st_mode):S_ISREG(original.st_mode)) &&
+            original.st_uid==geteuid() && !(original.st_mode&0022) && (directory || original.st_nlink==1));
+        device=original.st_dev;inode=original.st_ino;size=original.st_size;
+#endif
+        recheck();
+    }
+    uintptr_t descriptor()const noexcept {
+#ifdef _WIN32
+        return reinterpret_cast<uintptr_t>(file.value);
+#else
+        return static_cast<uintptr_t>(file.value);
+#endif
+    }
+    void recheck()const {
+#ifdef _WIN32
+        BY_HANDLE_FILE_INFORMATION info{};
+        need(GetFileInformationByHandle(file.value,&info) && !(info.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT) &&
+            !!(info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)==directory && info.dwVolumeSerialNumber==device &&
+            ((uint64_t(info.nFileIndexHigh)<<32)|info.nFileIndexLow)==inode && (directory || (info.nNumberOfLinks==1 &&
+            ((uint64_t(info.nFileSizeHigh)<<32)|info.nFileSizeLow)==size)));
+#else
+        struct stat held{},named{};need(fstat(file.value,&held)==0 && fstatat(parent,leaf.c_str(),&named,AT_SYMLINK_NOFOLLOW)==0 &&
+            uint64_t(held.st_dev)==device && uint64_t(held.st_ino)==inode && held.st_dev==named.st_dev && held.st_ino==named.st_ino &&
+            held.st_uid==geteuid() && !(held.st_mode&0022) && (directory?S_ISDIR(held.st_mode):(S_ISREG(held.st_mode) && held.st_nlink==1 && uint64_t(held.st_size)==size)));
+        if(!directory) {
+#ifdef __APPLE__
+            need(held.st_ctimespec.tv_sec==original.st_ctimespec.tv_sec && held.st_ctimespec.tv_nsec==original.st_ctimespec.tv_nsec);
+#else
+            need(held.st_ctim.tv_sec==original.st_ctim.tv_sec && held.st_ctim.tv_nsec==original.st_ctim.tv_nsec);
+#endif
+        }
+#endif
+    }
+    void remove() {
+        recheck();
+#ifdef _WIN32
+        if(!directory) {
+            FILE_BASIC_INFO info{};need(GetFileInformationByHandleEx(file.value,FileBasicInfo,&info,sizeof(info))!=FALSE);
+            info.FileAttributes&=~FILE_ATTRIBUTE_READONLY;if(!info.FileAttributes)info.FileAttributes=FILE_ATTRIBUTE_NORMAL;
+            need(SetFileInformationByHandle(file.value,FileBasicInfo,&info,sizeof(info))!=FALSE);
+        }
+        FILE_DISPOSITION_INFO disposition{};disposition.DeleteFile=TRUE;
+        need(SetFileInformationByHandle(file.value,FileDispositionInfo,&disposition,sizeof(disposition))!=FALSE);
+        CloseHandle(file.value);file.value=INVALID_HANDLE_VALUE;
+#else
+        need(unlinkat(parent,leaf.c_str(),directory?AT_REMOVEDIR:0)==0);
+#endif
+    }
+};
+void recover_cache(const fs::path &root,const ImagePins &pins,RecoveryClock::time_point deadline,uint64_t &bytes_left) {
+    need(RecoveryClock::now()<deadline);Security security(false);security.check(root,true);PrivateOwner owner;
+#ifdef _WIN32
+    owner.directory.value=CreateFileW(root.c_str(),DELETE|FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,
+        OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+    need(owner.directory.value!=INVALID_HANDLE_VALUE);BY_HANDLE_FILE_INFORMATION identity{};
+    need(GetFileInformationByHandle(owner.directory.value,&identity) && (identity.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) && !(identity.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT));
+    uint64_t device=identity.dwVolumeSerialNumber,inode=(uint64_t(identity.nFileIndexHigh)<<32)|identity.nFileIndexLow;
+#else
+    owner.parent.value=open(root.parent_path().c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);need(owner.parent.value>=0);
+    owner.directory.value=openat(owner.parent.value,root.filename().c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);need(owner.directory.value>=0);
+    struct stat identity{},named{};need(fstat(owner.directory.value,&identity)==0 && fstatat(owner.parent.value,root.filename().c_str(),&named,AT_SYMLINK_NOFOLLOW)==0 &&
+        S_ISDIR(identity.st_mode) && identity.st_dev==named.st_dev && identity.st_ino==named.st_ino);
+    uint64_t device=identity.st_dev,inode=identity.st_ino;
+#endif
+    owner.lease=std::make_unique<Lease>(root/".runtime-lock",security,false,true);
+    JournalFile ownership;ownership.load(owner,root,".tsfp-runtime-owner");
+    need(ownership.bytes=="TSFP mod runtime cache v2\n"+root.filename().u8string()+"\n");
+    std::set<std::string> names;std::vector<std::string> directories,intents;
+    for(const auto &name:recovery_children(owner.directory,root,64,deadline)) {
+        need(names.insert(name).second);
+        if(name==".runtime-lock" || name==".tsfp-runtime-owner")continue;
+        if(name.rfind(".spawn-",0)==0) {
+            auto dot=name.find('.',7);need(dot!=std::string::npos && recovery_number(name.substr(7,dot-7))>0);
+            auto suffix=name.substr(dot);need(suffix==".intent" || suffix==".commit");if(suffix==".intent")intents.push_back(name);
+        }else directories.push_back(name);
+    }
+    need(!intents.empty() && intents.size()<=16); // Unjournaled/legacy roots are not adopted.
+    std::set<std::string> admitted={".runtime-lock",".tsfp-runtime-owner"},profiles;
+    std::vector<std::unique_ptr<JournalFile>> records;std::vector<ProcessStamp> stamps;std::vector<ProcessArtifacts> artifacts;
+    for(const auto &name:intents) {
+        need(RecoveryClock::now()<deadline);auto intent=std::make_unique<JournalFile>();intent->load(owner,root,name);
+        auto lines=recovery_lines(intent->bytes);need(lines.size()==7 && lines[0]=="TSFP mod spawn intent v1" && lines[1]==root.filename().u8string() && lines[2]+".intent"==name);
+        auto root_id=recovery_numbers(lines[3],2);need(root_id[0]==device && root_id[1]==inode && lines[5]==pins.worker && lines[6]==pins.guardian);
+        auto relative=fs::u8path(lines[4]);need(std::distance(relative.begin(),relative.end())==2 && recovery_stage_leaf(relative.begin()->u8string()));
+#ifdef _WIN32
+        need(relative.generic_u8string()==relative.begin()->u8string()+"/tsfp-mod-worker.exe");
+#else
+        need(relative.generic_u8string()==relative.begin()->u8string()+"/tsfp-mod-worker");
+#endif
+        auto committed=std::make_unique<JournalFile>();auto commit_name=name.substr(0,name.size()-7)+".commit";
+        committed->load(owner,root,commit_name);auto birth=recovery_lines(committed->bytes);
+        need(birth.size()>=5 && birth[0]=="TSFP mod spawn commit v1" && birth[1]==lines[1] && birth[2]==name);
+        auto count=recovery_number(birth[3]);need(count>0 && count<=2 && birth.size()>=4+count);ProcessStamps created;created.count=static_cast<size_t>(count);
+        for(size_t i=0;i<created.count;++i) {
+            auto values=recovery_numbers(birth[4+i],4);need(values[0]<=UINT32_MAX);
+            created.values[i]={static_cast<ProcessStampKind>(values[0]),values[1],values[2],values[3]};
+        }
+        need(created.valid());for(size_t i=0;i<created.count;++i){need(process_stamp_state(created.values[i])==ProcessState::exited);stamps.push_back(created.values[i]);}
+#ifdef _WIN32
+        need(birth.size()==8+count);auto ids=recovery_numbers(birth[7+count],2);
+        ProcessArtifacts artifact{birth[4+count],birth[5+count],birth[6+count],ids[0],ids[1]};
+        need(profiles.insert(artifact.cache_leaf).second && recover_process_artifacts(artifact,false));artifacts.push_back(std::move(artifact));
+#else
+        need(birth.size()==4+count);
+#endif
+        admitted.insert(name);admitted.insert(commit_name);records.push_back(std::move(intent));records.push_back(std::move(committed));
+    }
+    std::vector<std::unique_ptr<RecoveryNode>> folders,files;
+    for(const auto &name:directories) {
+        need(RecoveryClock::now()<deadline);bool stage=recovery_stage_leaf(name);need(stage || profiles.count(name));
+        auto folder=std::make_unique<RecoveryNode>();folder->open(root/fs::u8path(name),true,
+#ifdef _WIN32
+            -1
+#else
+            owner.directory.value
+#endif
+        );size_t count=0;
+        for(const auto &leaf:recovery_children(folder->file,folder->path,2,deadline)) {
+            need(++count<=2 && files.size()<64 && RecoveryClock::now()<deadline);std::string expected;
+#ifdef _WIN32
+            need(leaf==(stage?"tsfp-mod-worker.exe":"worker.exe"));expected=pins.worker;
+#else
+            need(stage);if(leaf=="tsfp-mod-worker")expected=pins.worker;
+#ifdef __APPLE__
+            else if(leaf=="tsfp-mod-guardian")expected=pins.guardian;
+#endif
+            else need(false);
+#endif
+            auto file=std::make_unique<RecoveryNode>();file->open(folder->path/fs::u8path(leaf),false,
+#ifdef _WIN32
+                -1
+#else
+                folder->file.value
+#endif
+            );need(file->size && file->size<=bytes_left && file->size<=32u*1024*1024);
+            need(verify_pinned_descriptor(file->descriptor(),expected,file->size,deadline));bytes_left-=file->size;file->recheck();files.push_back(std::move(file));
+        }
+        admitted.insert(name);folders.push_back(std::move(folder));
+    }
+    need(admitted==names && RecoveryClock::now()<deadline);
+    auto recheck_root=[&] {
+#ifndef _WIN32
+        struct stat current{};need(fstatat(owner.parent.value,root.filename().c_str(),&current,AT_SYMLINK_NOFOLLOW)==0 &&
+            S_ISDIR(current.st_mode) && uint64_t(current.st_dev)==device && uint64_t(current.st_ino)==inode);
+#endif
+        ownership.check(owner,root);owner.lease->check(root/".runtime-lock",security);
+    };
+    recheck_root();
+    for(const auto &record:records)record->check(owner,root);
+    for(const auto &file:files)file->recheck();
+    for(const auto &folder:folders) {
+        folder->recheck();std::set<std::string> expected;
+        for(const auto &file:files)if(file->path.parent_path()==folder->path)expected.insert(file->leaf);
+        auto current=recovery_children(folder->file,folder->path,2,deadline);
+        need(std::set<std::string>(current.begin(),current.end())==expected);
+    }
+    auto current=recovery_children(owner.directory,root,64,deadline);need(std::set<std::string>(current.begin(),current.end())==names);
+    for(const auto &stamp:stamps)need(process_stamp_state(stamp)==ProcessState::exited);
+    // Complete admission precedes every mutation. Unknown layout, active tasks,
+    // altered hashes or profile identities cannot cause partial foreign deletion.
+    for(const auto &artifact:artifacts)need(recover_process_artifacts(artifact,true));
+    for(auto &file:files)file->remove();
+    for(auto &folder:folders)folder->remove();
+    recheck_root();
+    // Once admitted, finish the finite removal plan rather than deliberately
+    // interrupting after an OS profile deletion because its call took time.
+    auto remaining=recovery_children(owner.directory,root,64,RecoveryClock::time_point::max());
+    std::set<std::string> metadata={".runtime-lock",".tsfp-runtime-owner"};
+    for(const auto &record:records)metadata.insert(record->name);
+    need(std::set<std::string>(remaining.begin(),remaining.end())==metadata);
+    for(auto &record:records)record->remove(owner,root);
+    recheck_root();
+    remaining=recovery_children(owner.directory,root,2,RecoveryClock::time_point::max());need(remaining.size()==2);
+    ownership.remove(owner,root);owner.lease->remove_fresh(root/".runtime-lock",security);
+#ifdef _WIN32
+    FILE_DISPOSITION_INFO disposition{};disposition.DeleteFile=TRUE;
+    need(SetFileInformationByHandle(owner.directory.value,FileDispositionInfo,&disposition,sizeof(disposition))!=FALSE);
+#else
+    need(unlinkat(owner.parent.value,root.filename().c_str(),AT_REMOVEDIR)==0);
+#endif
+}
+}
+CacheRecovery recover_private_caches(const std::string &parent_name,const ImagePins &pins)noexcept {
+    CacheRecovery result;
+    try {
+        need(pins.valid());auto parent=checked_path(parent_name,true);Security security(false);security.check(parent,false);
+        auto deadline=RecoveryClock::now()+std::chrono::milliseconds(250);uint64_t bytes_left=64u*1024*1024;
+        std::vector<fs::path> candidates;size_t entries=0;
+        for(const auto &entry:fs::directory_iterator(parent)) {
+            if(++entries>8192 || RecoveryClock::now()>=deadline)break;
+            if(entry.path().filename().u8string().rfind(".tsfp-runtime-",0)==0)candidates.push_back(entry.path());
+        }
+        // Rotate admission order between launches; an uncertain early root does
+        // not permanently monopolize the bounded candidate allowance.
+        if(!candidates.empty()) {
+            size_t start=static_cast<size_t>(RecoveryClock::now().time_since_epoch().count())%candidates.size();
+            for(size_t i=0;i<candidates.size() && result.examined<16 && RecoveryClock::now()<deadline;++i) {
+                ++result.examined;
+                try{recover_cache(checked_path(candidates[(start+i)%candidates.size()].u8string(),true),pins,deadline,bytes_left);++result.removed;}
+                catch(...){++result.preserved;}
+            }
+        }
+    }catch(...){} // Recovery is best effort; uncertain caches never block a fresh one.
+    return result;
 }
 }}

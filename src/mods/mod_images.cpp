@@ -192,6 +192,30 @@ std::string sha256_bytes(const std::string &bytes) {
     }
     return hash.finish();
 }
+bool verify_pinned_descriptor(uintptr_t descriptor,const std::string &expected,uint64_t maximum,
+    std::chrono::steady_clock::time_point deadline)noexcept {
+    try {
+        require(digest(expected) && maximum && maximum<=image_limit,"Invalid recovery digest policy");
+        Hash hash;std::array<unsigned char,32768> bytes{};uint64_t total=0;
+#ifdef _WIN32
+        auto handle=reinterpret_cast<HANDLE>(descriptor);LARGE_INTEGER zero{};
+        require(SetFilePointerEx(handle,zero,nullptr,FILE_BEGIN)!=FALSE,"Cannot seek recovered image");
+#endif
+        for(;;) {
+            require(std::chrono::steady_clock::now()<deadline,"Recovery hash deadline");size_t count;
+#ifdef _WIN32
+            DWORD got=0;require(ReadFile(handle,bytes.data(),static_cast<DWORD>(bytes.size()),&got,nullptr)!=FALSE,"Cannot read recovered image");count=got;
+#else
+            ssize_t got=pread(static_cast<int>(descriptor),bytes.data(),bytes.size(),static_cast<off_t>(total));
+            if(got<0 && errno==EINTR)continue;
+            require(got>=0,"Cannot read recovered image");count=static_cast<size_t>(got);
+#endif
+            if(!count)break;
+            require(count<=maximum-total,"Recovery image size budget");hash.update(bytes.data(),count);total+=count;
+        }
+        return total && hash.finish()==expected;
+    }catch(...){return false;}
+}
 static std::string read_pinned_input(const std::string &name,const std::string &expected,size_t maximum,
                                     uint64_t ceiling,bool single_link,const std::atomic<bool> *cancel) {
     require(digest(expected) && maximum && maximum<=ceiling,"Invalid pinned input policy");

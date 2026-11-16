@@ -1,3 +1,12 @@
+Bounded committed-cache recovery (2026-11-16): **In progress**.
+Shared RuntimeResources/recover_private_caches now admits leased, current-pin,
+complete journals with proven native worker death before deleting known helpers.
+Windows thin adapter validates actual profile identity before OS deletion. POSIX
+enumeration/unlink is relative to held descriptors with inode/content checks.
+Windows resource/process55/8 skips and updated recovery17 pass; earlier resource/
+save85/12 skips pass. Actual Mac/Linux acceptance follows. Early/incomplete and uncertain profile states preserve
+evidence; broader runtime/game/release acceptance remains pending. See STATUS.
+
 Shared startup journal (2026-11-16): **In progress**.
 CacheJournal uses the same live-cache registry, exclusive bounded intent/commit
 records and pre-Lua Session admission on all hosts; native adapters supply owned

@@ -1,3 +1,38 @@
+Committed-cache recovery (source; native host acceptance in progress):
+recover_private_caches in mod_saves.cpp runs from RuntimeResources::create before
+fresh allocation, using compiled helper pins. It scans at most8192 parent entries,
+rotates candidate order, admits at most16 roots,64 root members,16 journal pairs,
+64 helper files and64MiB of hashes per invocation. Admission cooperatively stops
+at250ms; once admitted, the finite deletion plan completes without an intentional
+clock cutoff between profile deletion and metadata removal. Native OS calls are
+not hard real-time bounded. Budget/error/unknown cases preserve state and allow
+a fresh cache. Only current v2 roots with complete canonical intent/commit pairs,
+matching held root identity and helper pins, and all recorded creation identities
+proven exited qualify. Roots without committed records, legacy/unmarked roots,
+unknown files, links/hardlinks, invalid/oversize metadata, changed helper hashes,
+active tasks and uncertain native queries are never adopted for removal.
+Recovery acquires the EXISTING nofollow/noninherited runtime lease without creating
+or truncating it. Windows held handles exclude write/delete sharing; POSIX opens,
+enumerates and unlinks relative to held directory descriptors, with inode/owner/
+link/mode and file-ctime checks. verify_pinned_descriptor in mod_images.cpp reuses
+the shared digest adapter on borrowed handles, with size/deadline limits and no
+path opens/handle closing. Complete root/child layouts are checked again before
+any mutation. Marked-cache custody and native child-death admission stay shared.
+The Windows recover_process_artifacts adapter validates GUID/name, derives and
+compares SID, obtains the user-context profile path, then matches native scope
+volume/file identity before the supported DeleteAppContainerProfile call. Missing
+or uncertain profile scope identity preserves the cache; it is not an absence
+proof. S_OK is the supported deletion result, not an independent enumeration of
+all internal registration/storage resources. Close profile storage handles first:
+https://learn.microsoft.com/en-us/windows/win32/api/userenv/nf-userenv-deleteappcontainerprofile
+Only held, hash-verified helper files and empty known directories are removed.
+Journal records and ownership metadata come last; changed/unknown remnants are
+preserved on failure. A crash inside native profile deletion or incomplete startup
+can leave an uncertain root for inspection rather than a guessed cleanup retry.
+No-record early-crash cache recovery and interrupted-profile cleanup remain
+separate work. Actual crash-to-next-launch and refusal tests are in
+test_mod_resources.py; no full game/client release claim follows from them.
+
 Shared startup journal (source; full stale recovery still pending):
 CacheJournal in mod_private.hpp/mod_saves.cpp binds to a bounded process-wide
 registry of actual live PrivateDirectory leases. New roots carry marker v2;
@@ -28,8 +63,8 @@ Linux171/15 skips pass (61.66/70.13s). Host ASan/UBSan resources36/2 skips pass
 on each (13.75/17.23s). Windows resource/process40/8 skips pass (35.82s); earlier
 expanded save/session147/12 skips pass (70.52s); scope147 pass. Windows production
 testing-OFF build and identical-source positive-control probe exclusion pass.
-Automatic stale-cache scanning/admission/removal and profile recovery are still
-required; this change writes evidence and performs normal cleanup only.
+Bounded committed-cache recovery is implemented above; early/incomplete startup
+and uncertain profile recovery remain pending.
 
 Windows query-denial CI control: the test driver now uses ImpersonateSelf and a
 private thread token with SeDebugPrivilege disabled and independently verified.

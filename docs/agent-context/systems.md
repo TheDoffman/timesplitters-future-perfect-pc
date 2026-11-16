@@ -1,5 +1,5 @@
 Crash: ../development/native-crash-images.md.
-Spawn journal: mod-scripting.md; Lua: ../development/mod-audio-scripting.md.
+Cache recovery: mod-scripting.md; Lua: ../development/mod-audio-scripting.md.
 
 Preflight also rejects restored flags on a previously unsupported fresh epoch.
 

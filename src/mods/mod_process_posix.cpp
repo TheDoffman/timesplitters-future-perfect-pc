@@ -29,6 +29,9 @@
 #include <mach/mach_time.h>
 #endif
 namespace tsfp { namespace mods {
+bool recover_process_artifacts(const ProcessArtifacts &artifacts,bool)noexcept {
+    return artifacts.cache_leaf.empty() && artifacts.profile.empty() && artifacts.sid.empty() && !artifacts.volume && !artifacts.file;
+}
 namespace {
 void close_fd(int &fd){if(fd>=0)close(fd);fd=-1;}
 class PosixProcess final:public Process {

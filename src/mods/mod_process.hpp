@@ -10,6 +10,9 @@
 // verified game/SDK installation, never from an uploaded mod manifest.
 namespace tsfp { namespace mods {
 struct ProcessUsage { uint64_t resident_bytes=0,cpu_microseconds=0;bool exited=false;int exit_code=0; };
+// Recovery adapter: validate the actual profile identity; apply only after shared
+// journal/layout/death admission. No process search or termination is performed.
+bool recover_process_artifacts(const ProcessArtifacts &,bool apply)noexcept;
 #if defined(_WIN32) && defined(TSFP_MOD_PROCESS_TESTING)
 // Test builds only: observe the owned suspended child after kernel job admission,
 // before ResumeThread. Production builds contain neither this API nor a gate.

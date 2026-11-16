@@ -360,3 +360,110 @@ def test_abrupt_broker_death_retains_committed_records_and_child_exits(runtime,p
         api=ctypes.WinDLL('userenv');api.DeleteAppContainerProfile.argtypes=[ctypes.c_wchar_p]
         api.DeleteAppContainerProfile.restype=ctypes.c_long
         assert api.DeleteAppContainerProfile(profile)==0
+
+
+def delete_fixture_profile(fields):
+    if os.name!='nt':return
+    import ctypes
+    leaf,profile,_,_=fields[4+int(fields[3]):]
+    assert profile=='TSFP.Mod.'+str(uuid.UUID(leaf)).upper()
+    api=ctypes.WinDLL('userenv');api.DeleteAppContainerProfile.argtypes=[ctypes.c_wchar_p]
+    api.DeleteAppContainerProfile.restype=ctypes.c_long
+    assert api.DeleteAppContainerProfile(profile)==0
+
+
+def fixture_profile_scope(fields):
+    import ctypes
+    leaf,profile,sid,identity=fields[4+int(fields[3]):]
+    assert profile=='TSFP.Mod.'+str(uuid.UUID(leaf)).upper()
+    api=ctypes.WinDLL('userenv');api.GetAppContainerFolderPath.argtypes=[ctypes.c_wchar_p,ctypes.POINTER(ctypes.c_void_p)]
+    api.GetAppContainerFolderPath.restype=ctypes.c_long;pointer=ctypes.c_void_p()
+    assert api.GetAppContainerFolderPath(sid,ctypes.byref(pointer))==0 and pointer.value
+    try:path=Path(ctypes.wstring_at(pointer))
+    finally:
+        ole=ctypes.WinDLL('ole32');ole.CoTaskMemFree.argtypes=[ctypes.c_void_p];ole.CoTaskMemFree(pointer)
+    if path.name.lower()=='ac' and path.parent.name.casefold()==profile.casefold():path=path.parent
+    assert directory_identity(path)==tuple(map(int,identity.split()))
+    return path
+
+
+@contextlib.contextmanager
+def crashed_runtime(runtime,tools):
+    with held(runtime,'journal-hold') as (p,root):
+        assert next_record(p)['ready'];_,_,stamps,fields=journal_records(root,runtime[2]);p.kill();p.communicate(timeout=8)
+    deadline=time.monotonic()+5
+    while any(stamp_state(tools,s)!='exited' for s in stamps):
+        assert time.monotonic()<deadline,'Fixture children must be dead before recovery'
+        time.sleep(.02)
+    try:yield root,fields
+    finally:delete_fixture_profile(fields)
+
+
+def cache_snapshot(root):
+    result={}
+    for path in root.rglob('*'):
+        key=path.relative_to(root).as_posix()
+        if path.is_symlink():result[key]=('link',os.readlink(path))
+        elif path.is_file():result[key]=('file',path.read_bytes())
+        else:result[key]=('directory',None)
+    return result
+
+
+@pytest.mark.parametrize('mode',['recover','run'])
+def test_verified_dead_cache_is_recovered_explicitly_and_before_fresh_session(runtime,process_tools,mode):
+    with crashed_runtime(runtime,process_tools) as (root,_):
+        records=call(runtime,mode=mode)
+        if mode=='recover':assert records==[dict(examined=1,removed=1,preserved=0)]
+        else:assert records[0]['accepted'] and records[1]['ran']
+        assert not root.exists() and not list(runtime[1].iterdir())
+
+
+def test_recovery_preserves_an_actual_live_leased_session(runtime):
+    with held(runtime,'journal-hold') as (p,root):
+        assert next_record(p)['ready'];before=[x.name for x in root.iterdir()]
+        assert call(runtime,mode='recover')==[dict(examined=1,removed=0,preserved=1)]
+        assert p.poll() is None and sorted(x.name for x in root.iterdir())==sorted(before)
+        out,err=p.communicate(b'x',timeout=10);assert p.returncode==0 and not err and json.loads(out)['ran']
+    assert not root.exists()
+
+
+@pytest.mark.parametrize('change',['unknown','nested-unknown','hash','hardlink','helper-hardlink','helper-link','missing-commit','bad-count','root-id','alive','bad-kind','pin','old-marker','oversize','profile-id'])
+def test_recovery_refuses_uncertain_roots_without_mutating_any_cache_file(runtime,process_tools,change):
+    if change=='profile-id' and os.name!='nt':pytest.skip('Windows AppContainer profile identity')
+    with crashed_runtime(runtime,process_tools) as (root,original_fields):
+        intent=next(root.glob('.spawn-*.intent'));commit=next(root.glob('.spawn-*.commit'));pins=None
+        if os.name=='nt':profile_scope=fixture_profile_scope(original_fields);profile_identity=directory_identity(profile_scope)
+        if change=='unknown':(root/'foreign.txt').write_bytes(b'preserve this unknown content')
+        elif change=='nested-unknown':next(root.glob('images-*')).joinpath('foreign.txt').write_bytes(b'unknown nested file')
+        elif change in ('helper-hardlink','helper-link'):
+            worker=next(root.glob('images-*/tsfp-mod-worker*'));outside=runtime[1]/'outside-helper'
+            if change=='helper-hardlink':os.link(worker,outside)
+            else:
+                worker.rename(outside)
+                try:worker.symlink_to(outside)
+                except OSError as error:pytest.skip('Host cannot create links: '+str(error))
+        elif change=='hash':
+            worker=next(root.glob('images-*/tsfp-mod-worker*'));worker.chmod(0o600);worker.write_bytes(b'foreign executable bytes')
+        elif change=='hardlink':os.link(commit,runtime[1]/'outside-hardlink')
+        elif change=='missing-commit':commit.unlink()
+        elif change=='root-id':
+            lines=intent.read_text().splitlines();device,inode=map(int,lines[3].split());lines[3]=f'{device} {inode+1}';intent.write_bytes(('\n'.join(lines)+'\n').encode('ascii'))
+        elif change=='pin':pins=['0'*64,runtime[2][1]]
+        elif change=='old-marker':(root/'.tsfp-runtime-owner').write_bytes(('TSFP mod runtime cache v1\n'+root.name+'\n').encode('ascii'))
+        elif change=='oversize':commit.write_bytes(b'x'*4097)
+        else:
+            lines=commit.read_text().splitlines()
+            if change=='bad-count':lines[3]='3'
+            elif change=='profile-id':
+                volume,inode=map(int,lines[-1].split());lines[-1]=f'{volume} {inode+1}'
+            elif change=='bad-kind':lines[4]='0 '+lines[4].split(' ',1)[1]
+            else:
+                driver=process_tools['worker'].with_name('tsfp-mod-process-identity-driver'+process_tools['worker'].suffix)
+                result=subprocess.run([str(driver),'read',str(os.getpid())],capture_output=True,timeout=5)
+                assert result.returncode==0 and not result.stderr;record=json.loads(result.stdout);assert record['state']=='alive'
+                lines[4]=' '.join(str(record[k]) for k in ('kind','pid','start_a','start_b'))
+            commit.write_bytes(('\n'.join(lines)+'\n').encode('ascii'))
+        before=cache_snapshot(root)
+        assert call(runtime,mode='recover',pins=pins)==[dict(examined=1,removed=0,preserved=1)]
+        assert cache_snapshot(root)==before
+        if os.name=='nt':assert directory_identity(profile_scope)==profile_identity

@@ -3,6 +3,7 @@
 #define NOMINMAX
 #include "mod_process.hpp"
 #include "mod_private.hpp"
+#include "mod_files.hpp"
 #include <windows.h>
 #include <userenv.h>
 #include <sddl.h>
@@ -183,6 +184,29 @@ public:
 #ifdef TSFP_MOD_PROCESS_TESTING
 void set_suspended_process_probe(SuspendedProcessProbe probe){suspended_probe=probe;}
 #endif
+bool recover_process_artifacts(const ProcessArtifacts &artifact,bool apply)noexcept {
+    try {
+        if(artifact.cache_leaf.size()!=36 || artifact.profile!="TSFP.Mod."+artifact.cache_leaf || !artifact.file)return false;
+        auto profile=wide(artifact.profile);auto guid=wide("{"+artifact.cache_leaf+"}");GUID parsed{};
+        if(FAILED(CLSIDFromString(guid.c_str(),&parsed)))return false;
+        PSID sid=nullptr;if(FAILED(DeriveAppContainerSidFromAppContainerName(profile.c_str(),&sid)))return false;
+        LPWSTR text=nullptr;bool converted=ConvertSidToStringSidW(sid,&text)!=FALSE;FreeSid(sid);
+        if(!converted)return false;
+        auto expected=wide(artifact.sid);bool same=expected==text;LocalFree(text);if(!same)return false;
+        PWSTR folder=nullptr;if(FAILED(GetAppContainerFolderPath(expected.c_str(),&folder)) || !folder)return false;
+        std::filesystem::path scope(folder);CoTaskMemFree(folder);
+        if(_wcsicmp(scope.filename().c_str(),L"AC")==0 && _wcsicmp(scope.parent_path().filename().c_str(),profile.c_str())==0)scope=scope.parent_path();
+        scope=checked_path(scope.u8string(),true,false);
+        HANDLE handle=CreateFileW(scope.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,
+            OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+        BY_HANDLE_FILE_INFORMATION info{};
+        same=handle!=INVALID_HANDLE_VALUE && GetFileType(handle)==FILE_TYPE_DISK && GetFileInformationByHandle(handle,&info) &&
+            (info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) && !(info.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT) &&
+            info.dwVolumeSerialNumber==artifact.volume && ((uint64_t(info.nFileIndexHigh)<<32)|info.nFileIndexLow)==artifact.file;
+        if(handle!=INVALID_HANDLE_VALUE)CloseHandle(handle);
+        return same && (!apply || SUCCEEDED(DeleteAppContainerProfile(profile.c_str())));
+    }catch(...){return false;}
+}
 std::unique_ptr<Process> Process::start(const std::string &executable,const std::string &cache,std::string &error) {
     if(!cache_process_start_allowed(cache)){error="Owned cache requires its startup journal";return {};}
     auto child=std::make_unique<WindowsProcess>();auto source=wide(executable),root=wide(cache);
