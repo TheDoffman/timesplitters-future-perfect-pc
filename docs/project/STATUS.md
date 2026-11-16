@@ -1,3 +1,24 @@
+Native fault-image capture checkpoint (2026-11-16):
+POSIX reports now associate PC with its actual recorded executable mapping instead
+of always asking the main game binary to symbolize it. A shared bounded registry
+has immutable published payloads and atomic unload state. Darwin uses dyld
+notifications outside the fault handler; Linux's separate reporter reads proc maps
+and checks ELF64 load bias. Unknown/truncated/unavailable images remain explicit;
+Windows retains its existing minidump module information. No privileges or crash
+report schema are changed. See docs/development/native-crash-images.md.
+
+The Windows registry boundary test passes. Actual Mac/Linux capture selections
+pass12 cases each at610390dd, including a library loaded after startup under a
+Unicode/space path, fatal/hang/focus/modal behavior and linked-root rejection.
+Affected tests at c67 additionally pass3 Linux cases and2 Mac cases with one
+ELF-only skip; the new Linux PIE-main case resolves the real fault function.
+A compiled f3 reporter control reproduces the gap on both hosts: controlled
+library fatal exits occur, but neither the actual PC image nor its exported
+function is recorded. New native tests record both. Native game integration and
+reproduction of the earlier Mac menu signal11 remain pending; this diagnostic
+improvement does not claim to fix that fault. Source is committed locally for
+native handoff; remote publication/checks follow validation.
+
 Public installed Mac/Linux mod lifecycle acceptance (2026-11-16):
 Both hosts now use persistent installations created by actual Core.Unpack/
 InstallPending from genuine v0.6.3-mod-workshop.2 packages, preserving their

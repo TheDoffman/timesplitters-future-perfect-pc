@@ -1733,8 +1733,10 @@ for this Windows contention policy; existing entry acceptance remains separate.
   proc maps/ELF load bias. `crash_posix.c` resolves PC against its recorded image,
   keeps LR image context and refuses guessed main-image attribution. Windows
   already has module information in its minidump. Portable boundaries pass on
-  Windows; late-loaded-library crash, native Mac/Linux and game acceptance remain
-  pending. See [image contract](../development/native-crash-images.md) and STATUS.
+  Windows; actual Mac/Linux selections pass12 cases each, including late-library
+  image/function resolution. The old f3 reporter fails that controlled attribution
+  on both hosts. Linux PIE main-image normalization also passes. Real game
+  integration and the original menu-crash investigation remain pending. See [image contract](../development/native-crash-images.md) and STATUS.
 
 - **Status:** Awaiting validation
 - **Launcher release preparation:** v1.2.16 packages the Windows report UI and

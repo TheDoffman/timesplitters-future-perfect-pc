@@ -32,7 +32,11 @@ guest-memory permission checks and report schema remain unchanged.
 portable boundary cases. `tests/gameplay/test_native_crash.py` additionally
 loads a Unicode/space-named test library after reporter startup and faults inside
 its exported function, checking the actual image and symbol in the report.
-Native Mac/Linux checks and real game reproduction are required separately.
+The native suite passes12 cases on both Mac and Linux at the implementation
+checkpoint. Additional affected tests pass on each host, including an explicit
+PIE main-image fault on Linux. The previous f3 reporter fails to record the actual
+library/function in the controlled fault on both hosts. Real game integration and
+reproduction of the original menu crash remain separate acceptance steps.
 
 The public lifecycle's earlier Mac menu signal11 remains undetermined. This
 change improves future evidence; it does not claim to fix that crash.
