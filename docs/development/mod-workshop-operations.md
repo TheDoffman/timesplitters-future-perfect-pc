@@ -171,6 +171,10 @@ must still reject that ambient state. The fresh driver tests actual capture,
 policy refusal and verification failure, and deliberately inserts a foreign
 module for the rejection case. Do not remove modules from pytest's global cache
 or weaken the production closure guard to accommodate in-process fixtures.
+The publication configuration test also respects the machine's credentials:
+ordinary-user runs exercise the real catalog-key contract; root-run WSL tests
+assert the signing layer's mandatory non-root refusal. The production guard is
+unchanged. A successful root-run test is not locked UID600 signer admission.
 
 `mod_host_cutover.py` implements job/process attestation for that
 coordinator. Its `job_files` checks twenty generated/boot plists against the
@@ -230,6 +234,15 @@ unrelated configuration unchanged. A read-only current routing observation binds
 the unrelated canonical configuration SHA256
 `58f73772bcfc9eb3aa55d2ca29d970044a0194054b8ed3764e6258db06edd0a6`;
 this is an observation, not a completed routing cutover or future expected pin.
+
+For the pending route phase, the [official Funnel CLI reference](https://tailscale.com/docs/reference/tailscale-cli/funnel)
+requires the original configuration flags when appending `off`; the target can
+be omitted. Always select8443 explicitly and preserve its background mode. A
+global reset is unsuitable because this Mac also serves unrelated private443.
+The coordinator must verify the actual post-command configuration and unrelated
+state, rather than treating an exit code as routing proof. No off/on command has
+been executed for the candidate; exact selective suspension/restoration remains
+an implementation and acceptance gate.
 
 ## Routine checks
 

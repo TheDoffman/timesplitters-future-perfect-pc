@@ -243,6 +243,11 @@ def test_fixed_host_configuration_checks_actual_catalog_key_and_shared_origin(la
     value=dict(schema=1,repository=str(repository),state=str(host.paths('publication')['state']),
                caddy=str(release/'runtime/bin/caddy'),trusted_root=str(pinned),catalog_keys=[str(private)],root_updates=[])
     write(host.paths('publication')['config'],value)
+    if role=='publication' and os.geteuid()==0:
+        # Signing deliberately refuses root, including on root-run WSL test
+        # hosts. Ordinary-user runs below still exercise the full key contract.
+        with pytest.raises(ModError,match='non-root Unix operator'):worker.config(role,release)
+        return
     data=worker.config(role,release)
     assert data['system_monitor'] is True and data['system_release']==str(release)
     if role=='publication':
