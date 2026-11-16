@@ -92,7 +92,8 @@ def test_plists_have_only_fixed_root_prelude_and_fixed_root_monitor(role):
 
 
 @pytest.fixture
-def layout(tmp_path,monkeypatch):
+def layout(private_posix_path,monkeypatch):
+    tmp_path=private_posix_path
     if os.name!='posix':pytest.skip('Actual POSIX nofollow/owner/mode/FIFO protections')
     tmp_path.chmod(0o700)
     monkeypatch.setattr(host,'ROOT',tmp_path)
@@ -150,6 +151,11 @@ def test_worker_heartbeat_is_only_bounded_inert_data(layout,damage):
     if damage=='oversized':path.write_bytes(b'x'*8193)
     if damage=='duplicate':path.write_text('{"schema":1,"schema":1}')
     with pytest.raises((OSError,ModError)):monitor.worker_heartbeat(role,uid,456)
+
+
+def test_worker_heartbeat_rejects_writable_ancestor_before_parsing(layout):
+    layout.chmod(0o770)
+    with pytest.raises(ModError,match='ancestor'):monitor.worker_heartbeat('api',os.geteuid(),456)
 
 
 def test_system_adapter_ignores_worker_writable_gui_watchdog(layout,monkeypatch):

@@ -14,7 +14,7 @@ Only afterward generate root monitor plists and an exclusive protected admission
 record. No job registration/start/Funnel. Strict fixed child commands, cleared
 groups and source/UID gates; native CI tests refusal/order/file protections.
 Protected installed execution remains pending, not proved by fixture engines.
-Actual Mac policy/files/profile/release78pass;65-sourcecb49 bundle prepared only.
+Strict fixtures use private HOME; writable-ancestor refusal remains enforced.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony
 origin and exact signed public root; status remains pending-public-acceptance.

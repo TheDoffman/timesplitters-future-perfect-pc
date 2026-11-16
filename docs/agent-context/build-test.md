@@ -1,4 +1,4 @@
-[Service proofs](build-test-details.md). Job rollback/restarts/private readiness/AV.
+[Service proofs](build-test-details.md). Strict POSIX fixtures use private HOME dirs.
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

@@ -75,7 +75,8 @@ def test_private_children_clear_groups_and_use_minimal_environment(monkeypatch):
 
 
 @pytest.fixture
-def inputs(tmp_path,monkeypatch):
+def inputs(private_posix_path,monkeypatch):
+    tmp_path=private_posix_path
     if os.name!='posix':pytest.skip('Actual POSIX private directories/nofollow files/fchown')
     monkeypatch.setattr(prepare,'ROOT',tmp_path)
     tmp_path.chmod(0o700);(tmp_path/'data').mkdir(mode=0o700)
@@ -111,3 +112,9 @@ def test_online_input_aliases_and_unknown_state_are_preserved(inputs,damage):
     before={p.name:p.lstat().st_ino for p in source.iterdir()}
     with pytest.raises((OSError,ModError)):prepare.read_inputs(source,os.geteuid())
     assert before=={p.name:p.lstat().st_ino for p in source.iterdir()}
+
+
+def test_real_input_ancestor_write_protection_remains_enforced(inputs):
+    source,_,_=inputs
+    source.parent.chmod(0o770)
+    with pytest.raises(ValueError,match='ancestor'):prepare.read_inputs(source,os.geteuid())
