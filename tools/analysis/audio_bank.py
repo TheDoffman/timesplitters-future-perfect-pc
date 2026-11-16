@@ -2,7 +2,8 @@
 
 US27700 reads filename and event lists; US27290 converts platform extensions;
 US350C70 resolves language paths; US1504F0 hashes names with standard CRC32.
-US27FA0/US28528 derive frequency from the event's index and the original table.
+The US28240 path derives frequency from the event index and original table;
+US27FA0 uses that data in the original duration calculation.
 US28890/US350C40 select music paths/rates. Do not infer codecs from extensions.
 """
 from collections import defaultdict

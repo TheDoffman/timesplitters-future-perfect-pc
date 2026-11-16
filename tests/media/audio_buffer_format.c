@@ -22,6 +22,23 @@ int main(int argc, char **argv) {
     uint32_t iface = setup_buffer(raw,adpcm);
     Buffer *b = model_for(iface, 1000);
     CHECK(b);
+    if(!strcmp(argv[1],"mod-source")) {
+        unsigned char before[64];memcpy(before,memory+0x20000,sizeof(before));
+        CHECK(b->mod_audio_event==TSFP_MOD_AUDIO_UNKNOWN);
+        HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+8)=0x20000;HLE_MEM32(g_esp+12)=raw;
+        unsigned token=tsfp_mod_audio_source_enter(42,g_esp+256);
+        hle_IDirectSoundBuffer_SetBufferData();tsfp_mod_audio_source_leave(token);
+        b=find(iface);CHECK(b && b->mod_audio_event==42);
+        CHECK(b->data==0x20000 && b->size==raw && b->model.size_bytes==raw);
+        CHECK(b->model.sample_rate==48000 && b->model.block_align==2);
+        CHECK(!memcmp(before,memory+0x20000,sizeof(before)));
+        hle_IDirectSoundBuffer_Stop();CHECK(b->mod_audio_event==42);
+        HLE_MEM32(g_esp+4)=iface;HLE_MEM32(g_esp+8)=0x20000;HLE_MEM32(g_esp+12)=raw;
+        hle_IDirectSoundBuffer_SetBufferData();
+        CHECK(b->mod_audio_event==TSFP_MOD_AUDIO_UNKNOWN);
+        CHECK(!memcmp(before,memory+0x20000,sizeof(before)));
+        puts("PASS: mod-source");return 0;
+    }
     if(!strcmp(argv[1],"speech-tail")) {
         fake_device=1;g_lead_ms=40;fake_now=0;
         PcAudioMixOptions mix=PC_AUDIO_MIX_DEFAULTS;mix.ducking=1;

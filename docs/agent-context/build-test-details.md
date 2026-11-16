@@ -1,3 +1,5 @@
+test_audio_source.py compiles the real thread-local attribution and guarded guest wrapper for both platform defines and inactive mode. Actual HLE mod-source tests verify buffer binding/rebinding and unchanged source bytes; runtime native CI includes both routes. Native game trace/build acceptance is separate.
+
 test_wave_input.py compiles/calls actual mod_wave.c on all native hosts. Exact
 PCM, format/chunk/size/duration limits, failed-output clearing and200000 native
 mutations are checked; TSFP_MOD_SANITIZE=1 instruments the standalone mutation

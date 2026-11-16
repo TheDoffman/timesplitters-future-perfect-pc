@@ -1,0 +1,75 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -57,6 +57,9 @@
+ #define PC_AUDIO_MIX_IMPLEMENTATION
+ #include "gameplay/pc_audio_mix.h"
+ #undef PC_AUDIO_MIX_IMPLEMENTATION
++#define TSFP_MOD_AUDIO_SOURCE_IMPLEMENTATION
++#include "mods/mod_audio_source.h"
++#undef TSFP_MOD_AUDIO_SOURCE_IMPLEMENTATION
+ #define PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+ #include "interface/pc_audio_mix_settings.h"
+ #undef PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+@@ -90,6 +93,7 @@
+ typedef struct Buffer {
+     uint32_t iface;              /* the IDirectSoundBuffer the game holds */
+     uint64_t generation;         /* distinguish reentrant slot/address reuse */
++    uint32_t mod_audio_event;    /* verified US request scope; UNKNOWN outside it */
+     uint32_t data, size, format, rate, align;
+     int      output;             /* samples we can send to the host */
+     /* IDirectSoundBuffer_Pause: the model is stopped with its cursor kept,
+@@ -114,6 +118,19 @@
+     PcAudioDynamics dynamics;
+     float obstruction,room;
+ } Buffer;
++
++/* Developer-only attribution, bounded per process; never dumps asset bytes. */
++static void mod_audio_source_trace(const Buffer *b)
++{
++    static int enabled=-1;static unsigned lines;
++    if(enabled<0){const char *value=getenv("TSFP_MOD_AUDIO_TRACE");enabled=value && value[0]=='1' && !value[1];}
++    if(!enabled || !b || b->mod_audio_event==TSFP_MOD_AUDIO_UNKNOWN || lines>=128u)return;
++    ++lines;
++    fprintf(stderr,"[mod-audio-source] event=%u iface=%08X generation=%llu raw=%u pcm=%u rate=%u align=%u loop=%u:%u\n",
++        (unsigned)b->mod_audio_event,b->iface,(unsigned long long)b->generation,b->size,
++        b->model.size_bytes,b->model.sample_rate,b->model.block_align,
++        b->model.loop_start_bytes,b->model.loop_end_bytes);
++}
+ 
+ static Buffer g_buffers[SLOTS];
+ static uint64_t g_buffer_generation;
+@@ -813,6 +830,7 @@
+                 return NULL;
+             b->iface = iface;
+             b->generation = ++g_buffer_generation;
++            b->mod_audio_event = TSFP_MOD_AUDIO_UNKNOWN;
+             b->data = data;
+             b->size = raw_size;
+             b->format = format;
+@@ -1429,7 +1447,9 @@
+         HLE_MEM32(object + SET_LOOP_START) = 0u;
+         HLE_MEM32(object + SET_LOOP_LEN) = 0u;
+     }
+-    (void)model_for(iface, now);
++    Buffer *bound=model_for(iface, now);
++    if(bound)bound->mod_audio_event=tsfp_mod_audio_source_current(g_esp);
++    mod_audio_source_trace(bound);
+     unlock();
+     HLE_RETURN(result);
+ }
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -2317,6 +2317,13 @@
+ #include "interface/pc_audio_settings.h"
+ #endif
+ #include "gameplay/pc_audio_mix_guest.inc"
++#include "mods/pc_mod_audio_guest.inc"
++
++extern void sub_00028240_gen(void);
++void sub_00028240(void)
++{
++    pc_mod_audio_request(sub_00028240_gen);
++}
+ 
+ extern void sub_00046D80_gen(void);
+ void sub_00046D80(void)

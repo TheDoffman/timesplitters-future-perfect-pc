@@ -49,8 +49,8 @@ controls optional mix. Default effects lead is40->90ms, with immediate refill
 past stale hitch data; explicit lead stays fixed. Final Release frees host slots.
 XAudio/SDL lifetime counters enter DSOUND health/normal-exit summaries; WM_QUIT
 runs registered cleanup like SDL. [Tail drain](audio-buffers.md).
-Native custom WAV input validates PCM16 without allocation/IO/playback; audio
-activation stays off. [Contract and hooks](../development/mod-audio-input.md).
+WAV/source attribution preserve PCM/clocks; replacement stays off.
+[Audio input/hooks](../development/mod-audio-input.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their

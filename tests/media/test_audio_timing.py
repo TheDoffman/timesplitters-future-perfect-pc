@@ -131,7 +131,7 @@ def format_test(tmp_path_factory):
     return compile_audio('format', tmp_path_factory)
 
 
-@pytest.mark.parametrize('scenario', ['rate', 'align', 'frequency', 'tail-pcm', 'tail-adpcm', 'bus', 'mix-gain', 'ducking', 'speech-tail', 'impact-range'])
+@pytest.mark.parametrize('scenario', ['rate', 'align', 'frequency', 'tail-pcm', 'tail-adpcm', 'bus', 'mix-gain', 'ducking', 'speech-tail', 'impact-range', 'mod-source'])
 def test_buffer_format(format_test, scenario):
     result = subprocess.run([str(format_test), scenario], capture_output=True,
                             text=True, timeout=10)

@@ -12,9 +12,8 @@ pin, copies600 privately and drops credentials for init/updater/scanner controls
 Only then generate protected monitors/admission; no startup/Funnel. Actual601
 scanner passes4 controls. Health dirs chmod0755 under077; markers/plists0600;
 private-HOME fixtures retain writable-ancestor rejection.
-Native mod_wave.c validates exact bounded PCM16 RIFF snapshots, returns borrowed
-bytes/typed errors, and clears failed output. No playback/activation yet. See
-../development/mod-audio-input.md for original loader evidence and timing gates.
+Native WAV parsing and patch2713 source attribution preserve original PCM/clocks.
+No replacement yet: ../development/mod-audio-input.md describes scopes/tests.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony
 origin and exact signed public root; status remains pending-public-acceptance.

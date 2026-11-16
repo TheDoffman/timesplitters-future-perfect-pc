@@ -1,3 +1,24 @@
+Audio source attribution foundation (2026-11-16, validation in progress):
+Patch2713 observes the verified supported-US28240 request route and stamps source
+IDs on buffer data binding. Thread-local bounded scopes mask invalid IDs and
+expire returned/skipped frames. Unknown/direct-stream sources remain unknown;
+PCM, format, frequency, loops and completion clocks are not replaced. Opt-in
+metadata tracing is capped at128 records. New native tests cover original call
+side effects, range guards, unaligned requests, masking, overflow, longjmp cleanup
+and actual thread isolation; the real HLE fixture checks rebinding/stop/PCM bytes.
+Windows source/WAV/audio lifecycle selection passes156 cases5.70s. Repository
+scope/shard/patch-upgrade checks and the full native Windows build are still
+running; the normal tool regenerated1440 C units (~741MB). No audio replacement
+or native game observation is claimed yet. Mac/source CI checks remain pending.
+
+Backup work: actual Mac backup/restore regressions pass16 cases3.57s and the
+installed module matches that source. A private operator snapshot/clone drill is
+prepared; its existing Mac sudo prompt still awaits local administrator input.
+The Windows portable production-authority recovery window also awaits a new
+locally entered passphrase and independent-custody confirmation. No production
+backup/export or protected drill has completed at this checkpoint. Services and
+public routing remain unchanged. Passwords are never requested through chat.
+
 Public workshop-to-game and withdrawal acceptance on Windows (2026-11-15/16):
 Fresh source d6e3990229a3da797e6975798dc0fd3870bbfd87 builds through tsfp.ps1,
 including its native checks. The normal package-release.py pipeline passes with

@@ -2158,6 +2158,15 @@
       ]
     },
     {
+      "name": "2713-mod-audio-source-attribution.patch",
+      "path": "patches/gameplay/mods/2713-mod-audio-source-attribution.patch",
+      "sha256": "0390b8555415761eea18e42142313e7333da6d14fdea38c829f3732627b41670",
+      "targets": [
+        "src/hle/hle_dsound.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "2720-viewmodel-shoulder-visibility.patch",
       "path": "patches/graphics/rendering/2720-viewmodel-shoulder-visibility.patch",
       "sha256": "3fa1241997be6bdc22fbed01c638376fcd1b68a4b065224633196595c897cf46",

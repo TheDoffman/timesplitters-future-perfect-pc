@@ -34,8 +34,8 @@ for container and frame-size conventions; the smaller supported subset is ours.
 The earlier original-asset audit in `tools/analysis/audio_bank.py` establishes
 5703 sound events, filename/language conversion and CRC32 bank lookup from the
 supported US loader. US27700 reads lists; US27290 converts extensions;
-US350C70 resolves language paths; US1504F0 hashes names. US27FA0/US28528 derive
-frequency from event/table data. These are verified audit entry points, not a
+US350C70 resolves language paths; US1504F0 hashes names. US27FA0 computes an original duration using event/table data; the frequency path
+in US28240 is not a codec inference. These are verified audit entry points, not a
 new mod patch or permission to redistribute original assets.
 
 Existing `pc_audio_mix_guest.inc`/patch0060 observes sound identity before
@@ -62,3 +62,29 @@ Windows38 cases pass; the actual Mac also passes the selected200 parser/scope/
 suite/shard checks with the standalone mutation harness under ASan/UBSan. Linux
 remains unverified until CI records its new source results. This proves an input parser, not
 asset replacement, sound quality, decoder coverage or a released audio SDK.
+
+## Source attribution before replacement
+
+Patch2713 wraps verified US28240 once, reading its request pointer at entry ESP+4
+and the event word at request+0 through guest-range guards. The pinned US XBE
+was inspected before choosing this ABI. Direct music/stream paths remain unknown.
+`mod_audio_source.h` tracks at most eight scopes per guest thread; invalid IDs
+mask a parent's identity, overflow clears attribution, and returned/skipped guest
+frames expire even when guest exceptions skip the normal wrapper leave. A valid
+ID is0..5702; unknown is UINT32_MAX. This diagnostic identity is not a public
+mod filename contract or a package permission.
+
+SetBufferData stamps the buffer after the existing model update; new slots and
+unattributed rebinds are unknown. Stop retains the bound source identity. The
+optional TSFP_MOD_AUDIO_TRACE=1 emits at most128 metadata records per process
+(event, interface/generation, byte/rate/alignment/loop bounds), under the existing
+audio lock. It never dumps audio bytes. Source samples, decoding, frequency,
+voice ownership, play/loop boundaries and completion clocks are unchanged.
+
+The native source fixture checks both platform defines and the inactive path,
+original-callee count/register/ESP effects, malformed and unaligned requests,
+invalid IDs, nested masking, overflow, skipped leave via longjmp and actual thread
+isolation. The real HLE buffer fixture also checks binding/rebinding, stop and
+unchanged PCM/rate/alignment. Windows selected source/WAV/audio lifecycle checks
+pass156 cases. Runtime build, controlled native source traces and other-host
+checks remain required; no replacement/audio activation is claimed here.
