@@ -1,5 +1,6 @@
 /* Actual immutable data loader, no guest/game/OS audio device needed. */
 #include "mod_audio_assets.hpp"
+#include "mod_audio_capsule.hpp"
 #include "mod_files.hpp"
 #include <atomic>
 #include <cstdlib>
@@ -22,6 +23,15 @@ static int run(int argc,char **argv) {
     try {
         using namespace tsfp::mods;
         if(argc<4)return 2;std::string mode=argv[1];size_t at=2;
+        if(mode=="capsule" || mode=="capsule-cancel") {
+            if(argc<6)return 2;std::vector<std::string> owners;
+            for(int i=5;i<argc;++i)owners.push_back(argv[i]);
+            std::string error;std::atomic<bool> cancelled{mode=="capsule-cancel"};
+            auto store=read_audio_capsule(argv[2],argv[3],argv[4],owners,error,&cancelled);
+            if(!store){std::cout<<"{\"accepted\":false,\"error_set\":"<<(!error.empty()?"true":"false")<<"}\n";return 0;}
+            if(!error.empty())return 3;
+            std::cout<<"{\"accepted\":true,\"count\":"<<store->count()<<",\"bytes\":"<<store->bytes()<<"}\n";return 0;
+        }
         size_t count=std::stoul(argv[at++]);std::vector<std::string> packages;
         for(size_t i=0;i<count;++i){if(at>=(size_t)argc)return 2;packages.push_back(argv[at++]);}
         if(at>=(size_t)argc)return 2;count=std::stoul(argv[at++]);std::vector<AudioAssetPin> pins;

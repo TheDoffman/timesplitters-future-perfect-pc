@@ -14,9 +14,9 @@ pin, copies600 privately and drops credentials for init/updater/scanner controls
 Only then generate protected monitors/admission; no startup/Funnel. Actual601
 scanner passes4 controls. Health dirs chmod0755 under077; markers/plists0600;
 private-HOME fixtures retain writable-ancestor rejection.
-Audio sources preserve PCM/clocks. AudioAssets owns pinned WAVs;
-no callback IO; replacement stays off. Contracts:
-../development/mod-audio-assets.md, ../development/mod-audio-input.md.
+AudioAssets/capsules: ../development/mod-audio-assets.md.
+TSFPAUD1 has no paths; exact independent owners gate loading.
+Startup/playback remain off; source PCM/clocks unchanged.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony
 origin and exact signed public root; status remains pending-public-acceptance.

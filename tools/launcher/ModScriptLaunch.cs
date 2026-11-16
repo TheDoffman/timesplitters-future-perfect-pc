@@ -31,6 +31,49 @@ namespace TimeSplitters.Launcher
             Core.Write(Preference(root),String.IsNullOrWhiteSpace(path)?"":Validate(path));
         }
     }
+    internal sealed class ModAudioPin
+    {
+        public uint Key;
+        public string Package,Sha256;
+        public ulong Bytes;
+    }
+    // Data-only handoff after the caller verifies catalog, active profile and
+    // package contents. No uploaded paths or executable payloads enter this wire.
+    internal sealed class ModAudioCapsule
+    {
+        public readonly byte[] Bytes;
+        public readonly string Sha256;
+        ModAudioCapsule(byte[] bytes){Bytes=bytes;Sha256=ModTrust.Hash(bytes);}
+        static void Need(bool value){if(!value)throw new InvalidDataException("Invalid mod audio handoff.");}
+        static byte[] Digest(string text)
+        {
+            Need(text!=null && text.Length==64);
+            foreach(char c in text)Need((c>='0' && c<='9') || (c>='a' && c<='f'));
+            var bytes=new byte[32];for(int i=0;i<32;i++)bytes[i]=Convert.ToByte(text.Substring(i*2,2),16);return bytes;
+        }
+        public static ModAudioCapsule Create(IEnumerable<string> authorizedPackages,IEnumerable<ModAudioPin> assets)
+        {
+            Need(authorizedPackages!=null && assets!=null);
+            var packages=new List<string>();
+            foreach(string package in authorizedPackages){Need(packages.Count<32);Digest(package);packages.Add(package);}
+            packages.Sort(StringComparer.Ordinal);Need(packages.Count>0);
+            for(int i=1;i<packages.Count;i++)Need(packages[i]!=packages[i-1]);
+            var pins=new List<ModAudioPin>();ulong total=0;
+            foreach(var pin in assets) {
+                Need(pin!=null && pins.Count<8192 && pin.Key!=UInt32.MaxValue && packages.Contains(pin.Package));
+                Digest(pin.Sha256);Need(pin.Bytes>0 && pin.Bytes<=64UL*1024*1024 && pin.Bytes<=256UL*1024*1024-total);total+=pin.Bytes;
+                pins.Add(new ModAudioPin{Key=pin.Key,Package=pin.Package,Sha256=pin.Sha256,Bytes=pin.Bytes});
+            }
+            pins.Sort((a,b)=>a.Key.CompareTo(b.Key));Need(pins.Count>0);
+            for(int i=1;i<pins.Count;i++)Need(pins[i].Key!=pins[i-1].Key);
+            using(var stream=new MemoryStream())using(var writer=new BinaryWriter(stream)) {
+                writer.Write(Encoding.ASCII.GetBytes("TSFPAUD1"));writer.Write((uint)packages.Count);writer.Write((uint)pins.Count);
+                foreach(string package in packages)writer.Write(Digest(package));
+                foreach(var pin in pins){writer.Write(pin.Key);writer.Write((uint)packages.IndexOf(pin.Package));writer.Write(pin.Bytes);writer.Write(Digest(pin.Sha256));}
+                return new ModAudioCapsule(stream.ToArray());
+            }
+        }
+    }
     // Source handoff only. The caller authenticates packages/catalog and verifies
     // the source against its package BEFORE creating a capsule. No paths, helper
     // hashes, policy assertions or executable/native payloads belong in this wire.

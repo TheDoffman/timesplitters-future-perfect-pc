@@ -146,6 +146,27 @@ public static class LauncherSharedUiChecks
             WorkshopReject(()=>ModScriptCapsule.Create(new string('A',64),new string[0],new byte[]{32}),"Uppercase digest accepted");
             WorkshopReject(()=>ModScriptCapsule.Create(new string('a',64),Enumerable.Range(0,32).Select(i=>i.ToString("x64")),new byte[]{32}),"Dependency budget exceeded");
         });
+        Test("audio capsules match native vectors and reject ambiguous resource authority",()=>{
+            Dictionary<string,object> corpus;
+            using(var input=typeof(LauncherSharedUiChecks).Assembly.GetManifestResourceStream("mod-launch-vectors.json"))
+            using(var memory=new MemoryStream()){input.CopyTo(memory);corpus=ModJson.Read(System.Text.Encoding.UTF8.GetString(memory.ToArray()));}
+            foreach(Dictionary<string,object> vector in (object[])corpus["audioVectors"]) {
+                var owners=((object[])vector["packages"]).Cast<string>().ToArray();
+                var pins=((object[])vector["assets"]).Cast<Dictionary<string,object>>().Select(a=>new ModAudioPin{
+                    Key=Convert.ToUInt32(a["key"]),Package=(string)a["package"],Sha256=(string)a["sha256"],Bytes=Convert.ToUInt64(a["bytes"])}).ToArray();
+                var capsule=ModAudioCapsule.Create(owners.Reverse(),pins.Reverse());
+                Need(Convert.ToBase64String(capsule.Bytes)==(string)vector["wire"] && capsule.Sha256==(string)vector["sha256"],"Audio wire differs from native contract");
+                WorkshopReject(()=>ModAudioCapsule.Create(new[]{owners[0]},pins),"Foreign audio owner accepted");
+                WorkshopReject(()=>ModAudioCapsule.Create(new[]{owners[0],owners[0]},pins),"Repeated audio authority accepted");
+                WorkshopReject(()=>ModAudioCapsule.Create(new[]{new string('A',64)},pins),"Noncanonical audio authority accepted");
+                WorkshopReject(()=>ModAudioCapsule.Create(owners,new[]{pins[0],pins[0]}),"Repeated audio key accepted");
+                WorkshopReject(()=>ModAudioCapsule.Create(owners,new ModAudioPin[0]),"Empty audio handoff accepted");
+                foreach(ulong size in new[]{0UL,64UL*1024*1024+1,UInt64.MaxValue})
+                    WorkshopReject(()=>ModAudioCapsule.Create(owners,new[]{new ModAudioPin{Key=0,Package=owners[0],Sha256=pins[0].Sha256,Bytes=size}}),"Invalid audio length accepted");
+                WorkshopReject(()=>ModAudioCapsule.Create(owners,new[]{new ModAudioPin{Key=UInt32.MaxValue,Package=owners[0],Sha256=pins[0].Sha256,Bytes=1}}),"Reserved audio key accepted");
+                WorkshopReject(()=>ModAudioCapsule.Create(owners,Enumerable.Range(0,5).Select(i=>new ModAudioPin{Key=(uint)i,Package=owners[0],Sha256=pins[0].Sha256,Bytes=64UL*1024*1024})),"Aggregate audio budget exceeded");
+            }
+        });
         long now=DateTimeOffset.UtcNow.ToUnixTimeSeconds();string sha=new string('a',64);
         Test("workshop catalog validates identities and freshness",()=>{
             var entries=ModWorkshopClient.Parse(WorkshopCatalog(sha,now-1),DateTime.UtcNow);

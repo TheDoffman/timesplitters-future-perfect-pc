@@ -1,3 +1,8 @@
+Private audio capsule handoff (2026-11-16): **In progress**.
+Shared ModAudioCapsule encoder and native read_audio_capsule use the same wire
+on all hosts. Windows native227 and launcher checks pass; Mac/Linux validation
+and startup/render activation remain pending. See mod-audio-assets.md and STATUS.
+
 Creator session vault (2026-11-15, source1a135c18): **In progress**.
 Shared opt-in/resume/forget UI and account-role revalidation use thin OS stores:
 Windows Credential Manager, Mac Security.framework Keychain, Linux Secret Service.

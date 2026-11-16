@@ -1,3 +1,10 @@
+Private audio capsule handoff (2026-11-16): shared C# encoder and native
+reader use bounded TSFPAUD1 wire. Paths never enter the capsule; exact independent
+active owners gate the immutable WAV store. Windows native capsule/store/source/
+scope selection227 passes46.58s; Windows launcher build/shared checks pass.
+Cross-host component validation follows. No startup staging/render binding or
+audio capability activated. Contract: docs/development/mod-audio-assets.md.
+
 Immutable native audio asset store (2026-11-16, sourceef78a73c):
 AudioAssets now preflights trusted package/asset pins and loads a complete,
 hash-checked PCM WAV set into owned snapshots. It refuses duplicate/reserved keys,

@@ -55,6 +55,40 @@ case is excluded from sanitizer runs and passes normally on all three hosts.
 These are actual loader/parent-build checks, not custom game-audio acceptance.
 CI43857620225 at that source completes23 successful jobs/two intentional issue skips.
 
-Startup handoff/launcher staging, resource binding and actual custom playback are
-still integration work. Audio packages remain inactive in the launcher. No new
-audio capability or replacement permission is advertised by this component.
+## Private launcher capsule
+
+`ModAudioCapsule` in `tools/launcher/ModScriptLaunch.cs` encodes the data-only
+handoff. `src/mods/mod_audio_capsule.cpp/.hpp` reads it and calls the actual
+immutable loader above. This is an internal format, not a public mod manifest.
+The trusted caller must authenticate packages and resolve the active profile
+first. The native reader requires that independent active package set; capsule
+contents cannot authorize themselves. Neither hashes nor this wire authenticate
+a publisher by themselves.
+
+All integers are unsigned little endian. The header is eight ASCII bytes
+`TSFPAUD1`, a four-byte package count (1..32) and a four-byte asset count
+(1..8192). Exactly that many 32-byte package digests follow in strictly ascending
+byte order. Each asset is exactly48 bytes: resource key u32, package index u32,
+exact WAV byte count u64 and payload SHA256 (32 bytes). Assets are strictly
+ascending by key; UINT32_MAX is reserved. No trailing bytes are permitted.
+The maximum capsule is394256 bytes (16+32*32+8192*48). Per-file and aggregate
+limits match the loader; repeated payloads still count per resource snapshot.
+
+No record contains paths. From the separately supplied absolute private cache
+root, the native reader derives only `<payload-sha256>.wav`. It checks the root
+with `checked_path`, verifies a single-link capsule snapshot against the expected
+hash, matches the exact sorted independent owner set, then validates all records
+before the loader reads any WAV. The capsule itself uses the cancellable data
+reader. Malformed/truncated/overlarge capsules, duplicate/out-of-order keys,
+unknown owners, mismatched digests, aliases and cancellation publish no assets.
+The C# encoder owns its serialized bytes and copies input records before sorting.
+
+`tests/launcher/mod-launch-vectors.json` carries the same original synthetic WAV
+and exact capsule bytes/hash for the C# launcher and native tests. The shared UI
+suite checks the actual encoder; `tests/mods/test_audio_capsule.py` checks the
+actual native capsule-to-store path, malformed policy, independent authority,
+links and Unicode paths. CI registers this native suite alongside the store.
+
+Launcher cache staging/startup wiring, resource binding and actual custom
+playback remain integration work. Audio packages remain inactive in the launcher.
+No new audio capability or replacement permission is advertised by this component.
