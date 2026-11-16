@@ -8,7 +8,14 @@ identities/contents and every child's death before removing evidence; ambiguous,
 live, changed or collided state remains intact. Windows actual resource/
 process checks pass40 with8 skips (35.82s), including root identity and confirmed
 profile-scope cleanup checks. Earlier expanded resource/save/session selection
-passes147 with12 skips (70.52s); scope147 pass. Actual Mac/Linux checks follow. Stale scanning/profile recovery, full game/release acceptance
+passes147 with12 skips (70.52s); scope147 pass. Exact fab2c761 actual Mac resource/
+save/session/process/identity checks pass172/14 skips (61.66s); Linux171/15 skips
+(70.13s). Host ASan/UBSan resource/journal checks pass36/2 skips on each host
+(Mac13.75s, Linux17.23s), including real process death, file/inode/link tamper and
+private descriptor handling. Windows production testing-OFF build passes at fab2;
+dumpbin proves test probe absent, with an identical-source testing-library
+positive control. Receipt: build/mod-journal-production-fab2c761/BUILD-worker.json
+and probe-exclusion-proof.json (local/ignored). Stale scanning/profile recovery, full game/release acceptance
 and public client publication remain pending. No production host/routing change.
 
 Windows query-denial CI control (2026-11-16):

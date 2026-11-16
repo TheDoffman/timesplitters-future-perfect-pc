@@ -23,6 +23,11 @@ The tests use actual Session/LPAC/guardian/Linux children: intent-before-start,
 birth/provenance, normal cleanup, live-record preservation, changed file/link/
 inode refusal, immutable Windows handles, foreign commit collision and abrupt
 broker death. test_mod_resources.py and existing native CI route cover them.
+At fab2c761 actual Mac resource/save/session/process/identity172/14 skips and
+Linux171/15 skips pass (61.66/70.13s). Host ASan/UBSan resources36/2 skips pass
+on each (13.75/17.23s). Windows resource/process40/8 skips pass (35.82s); earlier
+expanded save/session147/12 skips pass (70.52s); scope147 pass. Windows production
+testing-OFF build and identical-source positive-control probe exclusion pass.
 Automatic stale-cache scanning/admission/removal and profile recovery are still
 required; this change writes evidence and performs normal cleanup only.
 
