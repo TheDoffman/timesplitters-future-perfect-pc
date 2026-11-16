@@ -1795,6 +1795,8 @@ Separate-process lease and replaced-private-directory cases also exercise real
 POSIX locking/namespace behavior; they do not rely on an in-process lock mock.
 Malformed journal phase values are rejected as unknown state before writes,
 including non-string JSON, leaving that state and generation records intact.
+Capacity tests refuse a33rd journal while permitting explicit existing-journal
+recovery; unknown/partial history is never deleted to create room.
 Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
 interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;

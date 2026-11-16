@@ -261,3 +261,14 @@ def test_malformed_journal_state_is_preserved_without_rollback_writes(private_tr
     value=json.loads(state.read_bytes());value['phase']=['unexpected'];state.write_bytes(migration.wire(value));saved=state.read_bytes()
     with pytest.raises(ModError,match='Unknown migration state'):migration.migrate(before,after,nonce,rollback=True)
     assert members(root)==plan['after'] and state.read_bytes()==saved
+
+
+def test_journal_capacity_refuses_new_transaction_but_keeps_recovery_available(private_tree):
+    root,before,after,nonce,plan,_,_,admit=private_tree
+    migration.migrate(before,after,nonce);migration.migrate(before,after,nonce,rollback=True)
+    journals=root/'data/host-migrations'
+    for i in range(31):(journals/format(i,'064x')).mkdir(mode=0o700)
+    new_nonce='f'*64;admit(nonce=new_nonce)
+    with pytest.raises(ModError,match='capacity'):migration.migrate(before,after,new_nonce)
+    assert not (journals/new_nonce).exists() and members(root)==plan['before']
+    admit();assert migration.migrate(before,after,nonce)['phase']=='applied'
