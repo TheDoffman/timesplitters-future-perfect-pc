@@ -6,7 +6,11 @@ preserves unknown content. Windows resource/save checks pass63 with6 host skips,
 including a real abrupt-parent kill leaving a marked cache for later recovery.
 Existing save leases are preserved. No stale directory is swept/adopted, and
 closed-layout/process-death admission plus Windows profile recovery remain open.
-Mac/Linux checks follow; installed host services and public releases are unchanged.
+Actual Mac62 pass/7 skips at e87cfb96. Linux61 pass/7 skips and1 resource execution
+failure after successful cache admission; isolated rerun passes1. The resource
+driver gains bounded native failure diagnostics; this remains an unresolved
+Linux acceptance issue, not a passing full selection. Installed host services
+and public releases are unchanged.
 
 Backup installer source (2026-11-16, protected setup awaiting local authentication):
 The new-only registrar seals the small code bundle against the existing runtime,

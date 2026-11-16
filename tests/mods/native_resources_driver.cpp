@@ -44,6 +44,12 @@ static int run(const std::string &mode,const std::string &parent,const std::stri
         if(status>0){int32_t score=0;accepted=tsfp_mod_match_score(match,&world,1,&score) && score==4;break;}
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
+    // Keep real supervisor/transaction failures inspectable; a bare exit3 does
+    // not distinguish confinement refusal from a deadline or bad committed score.
+    if(!accepted) {
+        const char *reason=tsfp_mod_match_error(match);
+        std::fprintf(stderr,"Resource execution failed: %.400s\n",reason && *reason?reason:"No expected score transaction before deadline");
+    }
     manager->close();end=std::chrono::steady_clock::now()+std::chrono::seconds(3);
     while(!manager->stopped() && std::chrono::steady_clock::now()<end)std::this_thread::sleep_for(std::chrono::milliseconds(1));
     bool stopped=manager->stopped();if(!stopped)std::abort();manager.reset();

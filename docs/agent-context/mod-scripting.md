@@ -4,7 +4,9 @@ write .tsfp-runtime-owner bound to their generated leaf and hold an exclusive
 both. Normal teardown removes metadata only after all other contents are gone;
 changed markers/unknown contents preserve the namespace. SaveNamespace's existing
 session-lock semantics are unchanged. Windows resources/saves63 pass/6 skips;
-Mac/Linux follow. Real kill tests leave marked caches and release the kernel lock.
+Mac62 pass/7 skips. Linux61 pass/7 skips/1 real transaction failure; its isolated
+rerun passes. The resource driver now retains bounded native fault diagnostics;
+Linux acceptance remains under investigation. Kill tests release the kernel lock.
 This does not sweep or adopt any old directory: inactive process/layout admission,
 actual stale removal and Windows AppContainer profile recovery remain required.
 
