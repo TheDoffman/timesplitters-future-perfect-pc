@@ -1,9 +1,17 @@
+Production launcher defaults (2026-11-16): **In progress**.
+The accepted source profile is active; compiled production origin/root enable
+fresh launchers without Support/Mods. Exact-origin pin cannot be replaced locally;
+custom authorities keep explicit roots. Windows native/Python/live signedv31
+checks pass. Actual Mac/Linux new launcher builds/reads follow; no public update,
+server/routing change or main merge. See STATUS for the precise scope.
+
 Standalone creator SDK/WAV import (2026-11-16): **In progress**.
 Shared creator-only commands and deterministic source export need no game/source
 checkout or server; Python3.12+ and optional PNG Pillow are explicit. Bounded WAV
 import preflight is compared with actual native parsing, preserves source and
-refuses malformed content/collisions. Windows combined checks pass316; actual
-native SDK exports and publication follow. No native runtime or public changes.
+refuses malformed content/collisions. Combined checks pass316 on each native host.
+At9c415226 all3 exports match107219 bytes/SHA1c552851...5538d1. Local SDK candidate
+is ready; publication remains pending. No native runtime or public changes.
 
 Audio capability metadata (2026-11-16): **In progress**.
 New native receipts declare1 after actual3-host audio gameplay. Mac/Linux packages

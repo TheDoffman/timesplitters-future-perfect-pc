@@ -18,10 +18,14 @@ Audio store/boot: ../development/mod-audio-assets.md.
 Lua audio: ../development/mod-audio-scripting.md; new build capability1, public unchanged.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony
-origin and exact signed public root; status remains pending-public-acceptance.
+origin and exact signed public root; status is active after public acceptance.
+Fresh launchers use compiled defaults, pinning production by exact HTTPS origin;
+custom authorities still require their explicit local root. Mutable root files
+cannot override production. Native checks and a real fresh Windows read pass;
+current signedv31 retains5 revocations. Existing settings are not rewritten.
 prepare-launcher-workshop-profile.py validates signatures/pin/origin/lifetime and
-stages existing service.json/trusted-root.json settings only for explicit private
-acceptance until active. It never replaces output, fetches a root or starts jobs.
+stages release settings when active; pending profiles need private acceptance mode.
+It never replaces output, fetches a root or starts jobs.
 Profile/source changes select native CI; test_public_host_profile covers refusal.
 
 initialize-private-host-mac.py verifies fixed UID600 origin.json/root pin/public
@@ -44,12 +48,8 @@ failure is visible without plaintext fallback. See ../development/mod-creator-se
 Fixed host roles use system-host-service-mac.py/system-host-monitor-mac.py:
 root controls fixed labels/numeric metadata/bounded inert heartbeats; configs/
 keys/network stay600. Health binds role/release/PID/UID, ignoring GUI health.
-API uses guardian group cleanup, no control socket and bounded renewal. Actual
-f099 checks258 Mac/271 Windows; protected deployment/boot/public remains pending.
-
-f234 inert root->600/kernel600/denied-root/label-stop proof passed; see STATUS.
-Installed601 passed AV controls; health-dir setup failed and jobs rolled back.
-Mutable-dir repair awaits OS authentication; latest780 CI passes all platforms.
+Installed601 uses guardian cleanup, no control socket and bounded renewal.
+Current private/public evidence is in STATUS; physical boot remains unverified.
 
 locked-service-bootstrap-mac.py clears groups, sets/verifies GID/UID600/kernel
 credentials and irreversible drop, then execs fixed roles. Both launchd InitGroups

@@ -1,7 +1,9 @@
 """The production public pin can stage launcher settings but cannot imply release."""
 import importlib.util
+import base64
 import json
 from pathlib import Path
+import re
 
 import pytest
 
@@ -28,11 +30,28 @@ def test_source_pinned_production_root_has_expected_live_authority(files):
     assert settings['trusted_root_sha256']=='b52e5d499648b84e8f5e84bb7b0a539426e6ff706f396d94baf7dfee19f73d27'
     root=root_document(wire)
     assert root['roles']['root']['threshold']==2 and root['roles']['catalog']['threshold']==1
-    assert settings['status']=='pending-public-acceptance'
+    assert settings['status']=='active'
+
+
+def test_compiled_production_defaults_match_the_accepted_profile(files):
+    public,_,now=files
+    settings,_=profile.validate(now)
+    source=(ROOT/'tools/launcher/ModTrustPage.cs').read_text(encoding='utf-8')
+    origin=re.search(r'internal const string DefaultOrigin="([^"]+)";',source).group(1)
+    wire=base64.b64decode(re.search(r'internal const string DefaultRootBase64="([^"]+)";',source).group(1),validate=True)
+    assert origin==settings['origin'] and wire==public.read_bytes()
+
+
+def test_active_profile_stages_a_release_profile_without_acceptance_override(files,tmp_path):
+    _,_,now=files
+    result=profile.prepare(tmp_path/'release-profile',now=now)
+    assert result['phase']=='release-profile' and result['public_acceptance_complete']
 
 
 def test_pending_profile_only_stages_for_private_acceptance_and_never_overwrites(files,tmp_path):
-    _,_,now=files
+    _,settings,now=files
+    value=json.loads(settings.read_bytes());value['status']='pending-public-acceptance'
+    settings.write_text(json.dumps(value))
     output=tmp_path/'profile'
     with pytest.raises(ModError,match='incomplete'):profile.prepare(output,now=now)
     assert not output.exists()

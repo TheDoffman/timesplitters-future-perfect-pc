@@ -1,3 +1,9 @@
+Public defaults: test_public_host_profile compares compiled origin/root bytes to
+the accepted profile; pending/active staging, mismatch/expiry/new-only guards stay
+covered. Native workshop_trust checks fresh defaults, file-override refusal and
+explicit custom authorities. Fresh Windows client reads real signedv31 twice
+without Support/Mods files, under normal launcher TLS setup. Mac/Linux follow.
+
 Creator SDK: test_creator_sdk exports the real explicit source inventory, verifies
 deterministic bytes/hash receipt and runs detached new/import/pack/validate/module
 commands with -I -S (PNG separately uses Pillow). CLI contains no server/operator

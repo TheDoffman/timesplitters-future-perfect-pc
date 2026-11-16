@@ -1,3 +1,23 @@
+Production launcher defaults (2026-11-16):
+New source launchers now use the accepted public Mac origin and compiled signed
+bootstrap root without local Support/Mods files. The production pin is bound to
+the exact HTTPS authority/8443 port and cannot be replaced by a mutable local
+root file. Explicit custom authorities keep their own required bootstrap root;
+production trust never crosses authorities. Source profile status is active after
+the existing all3 public lifecycle/withdrawal proof and a fresh independent TLS/
+signature read of signed catalog31 with all5 test revocations. No server keys,
+jobs/routing, existing settings or public downloads change in this source step.
+
+Windows native launcher build/tests pass116 core and114 shared UI groups plus
+backend/platform suites. The new native trust case covers fresh defaults,
+production file-override refusal and explicit/missing custom roots. Python public
+profile tests pass11, including compiled-byte equality and pending/active staging.
+A fresh Windows native client reads real signedv31 twice without local service/
+root settings, preserves its pin/high-water and uses normal launcher TLS setup.
+Its first private helper omitted normal startup TLS setup and failed before a
+successful read; using the real ReleaseClient startup matches the launcher.
+Actual Mac/Linux candidate builds/public reads follow; publication stays pending.
+
 Standalone creator SDK and WAV import (2026-11-16):
 The creator-only mod-creator.py CLI now shares its parser/commands with the source
 workshop CLI, without server/account imports. A small deterministic source SDK
@@ -13,11 +33,17 @@ Its bounded Python preflight is compared with the independently compiled native
 parser over valid metadata/PCM, truncations, header mutations and malformed
 containers. The native boundary remains authoritative and unchanged.
 Windows combined SDK/creator/importer/real-reader/native-WAV/CLI/scope checks pass
-316 cases10.96s; final SDK export/link checks follow the documentation adjustment.
-Native SDK exports/publication remain pending. No production runtime, routing,
+316 cases10.96s; final SDK export/link checks pass9 cases3.77s.
+At clean9c415226 actual Mac/Linux combined selections each pass316 cases4.38/4.05s.
+All3 independently exported SDKs match exactly:107219 bytes,20 files, SHA256
+1c552851e0f1198458779cf302f282f57cc84679adcc212a0e197fe74d5538d1.
+This is a ready local source SDK candidate; publication remains pending.
+No production runtime, routing,
 catalog or public downloads changed; no additional game replay is needed for
-these authoring-only changes. Earlier f981 CI has passed selected checks so far,
-with the native Mac launcher job still queued at the last observation.
+these authoring-only changes. Earlier f981 CI was superseded: selected completed
+jobs passed, the queued Mac launcher/final package checks were cancelled and the
+PR gate consequently failed. Current9c CI43885824128 follows the SDK source;
+do not interpret the superseded run as an implementation failure or rerun it.
 
 Audio build capability (2026-11-16):
 Following real generated-template gameplay on all3 hosts, new native Mac/Linux

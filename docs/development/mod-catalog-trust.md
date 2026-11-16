@@ -4,18 +4,21 @@ cross-port metadata and root rotations are rejected. Python and native validator
 reject explicit443/leading-zero aliases, paths, credentials and unapproved ports
 for signed origins. Transport URLs normalize through Uri before root matching.
 Caddy's Host matcher gets only the validated hostname; API Host/Origin retain the
-port. Existing private443 routing must stay private; separate8443 is planned.
+port. Existing private443 routing stays private; public8443 is deployed.
 Golden port-bound signatures and actual Caddy transport/API tests cover this.
 
 
 # Workshop publication trust
 
-The producer and shared native launcher implement this protocol. It is not a
-released public service. `mod_trust.py` and `ModTrustPage.cs` verify real signatures;
+The producer and shared native launcher implement this protocol. The Mac public
+service is deployed; updated launcher publication remains a separate release.
+`mod_trust.py` and `ModTrustPage.cs` verify real signatures;
 the launcher requires signed catalogs and saves their verified root chain and
-catalog checkpoint. Release-pinned production roots, public deployment and
-internet acceptance are still required. DefaultRootBase64/DefaultService remain
-blank until the real offline ceremony and endpoint verification.
+catalog checkpoint. The offline ceremony, independent internet verification and
+three-host public lifecycle checks have passed. New source launchers contain the
+accepted production origin/root, so fresh installations need no local service or
+trust files. The compiled root applies only to that exact HTTPS authority; explicit
+custom authorities retain their own locally installed bootstrap roots.
 
 ## Wire contract
 
@@ -89,11 +92,12 @@ there is no claim of instantaneous revocation from an offline static snapshot.
 `ModTrustPage.cs` contains the verifier/store shared by WPF and Avalonia. RSA uses
 the platform .NET implementation with fixed RSA3072/PKCS1/SHA256 parameters. The
 Page suffix includes this model in the existing shared-source build pattern;
-there is no separate trust policy in OS adapters. Before release, set the compiled
-`ModTrustStore.DefaultRootBase64` from the independently verified production root.
-While that pin is blank, developers/operators may explicitly install a public
-root at `Support/Mods/trusted-root.json`. It is never fetched as an initial pin.
-A compiled pin takes precedence over that file. Changing a configured pin cannot
+there is no separate trust policy in OS adapters. The compiled
+`ModTrustStore.DefaultRootBase64` matches the independently verified public root
+in config/mods/public-workshop-root.json. It takes precedence over a local root
+file for `DefaultOrigin`, including its port. A custom origin requires its explicit
+root at `Support/Mods/trusted-root.json`; production trust never crosses authorities.
+An initial pin is never fetched from the network. Changing a configured pin cannot
 silently reset an existing checkpoint. No private key goes into a launcher.
 
 `ModWorkshopClient` is bound to an installation folder. Read first validates its

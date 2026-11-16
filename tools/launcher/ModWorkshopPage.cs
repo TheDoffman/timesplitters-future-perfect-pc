@@ -123,7 +123,7 @@ namespace TimeSplitters.Launcher
     // Shared, bounded catalog/download client. Downloading never activates code.
     public sealed class ModWorkshopClient : IDisposable
     {
-        public const string DefaultService = ""; // Fill after the Mac's HTTPS endpoint is verified.
+        public const string DefaultService = ModTrustStore.DefaultOrigin;
         public const int MaxCatalogBytes = 4 * 1024 * 1024;
         public const long MaxPackageBytes = 256L * 1024 * 1024;
         readonly HttpClient http;readonly string installation;readonly Func<DateTime> clock;
@@ -353,7 +353,7 @@ namespace TimeSplitters.Launcher
             var footer=new StackPanel {Margin=new Thickness(0,12,0,0)};Grid.SetRow(footer,2);View.Children.Add(footer);
             pager.Children.Add(Previous);pager.Children.Add(Next);pager.Children.Add(pageLabel);footer.Children.Add(pager);
             Previous.Click+=(s,e)=>{page--;Render();Ui.ScrollHome(scroll);};Next.Click+=(s,e)=>{page++;Render();Ui.ScrollHome(scroll);};
-            footer.Children.Add(PageTheme.Text("Textures and offline gameplay modes require a compatible game build. Map and audio packages can be installed but cannot be activated yet.",12,"#FFDAA6"));
+            footer.Children.Add(PageTheme.Text("Textures, sounds and offline gameplay need a compatible game build. Maps and compressed audio cannot be activated yet.",12,"#FFDAA6"));
             var recovery=new WrapPanel();footer.Children.Add(recovery);
             var disableAll=new Button {Name="DisableAllMods",Content="Disable all mods",Margin=new Thickness(0,8,10,8)};
             disableAll.Click+=async(s,e)=>await ChangeLibrary(token=>library.DisableAll(token),"All mods disabled. Installed packages were preserved.");recovery.Children.Add(disableAll);

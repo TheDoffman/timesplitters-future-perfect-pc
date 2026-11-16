@@ -77,6 +77,27 @@ public static class WorkshopTrustChecks
     }
     public static void Run(string root,Action<string,Action> test)
     {
+        test("production defaults pin the accepted authority while custom workshops remain explicit",()=>{
+            string folder=Path.Combine(root,"compiled-workshop-default");Directory.CreateDirectory(folder);
+            string origin=ModWorkshopClient.Service(folder);
+            Need(origin=="https://dans-mac-mini.tail7e8ab8.ts.net:8443","Fresh launcher has no production endpoint");
+            long now=DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            using(var store=new ModTrustStore(folder,origin,now)) {
+                Need(ModTrust.Hash(store.Pinned)=="b52e5d499648b84e8f5e84bb7b0a539426e6ff706f396d94baf7dfee19f73d27","Wrong production bootstrap pin");
+                Need(store.Authority.Origin==origin,"Production root lost its port/authority");
+            }
+            // A mutable settings file must not replace the production release pin.
+            Pin(folder);
+            using(var store=new ModTrustStore(folder,origin,now)) {
+                Need(ModTrust.Hash(store.Pinned)=="b52e5d499648b84e8f5e84bb7b0a539426e6ff706f396d94baf7dfee19f73d27","Local file replaced compiled production trust");
+                Reject(()=>ModTrust.Catalog(Bytes("metadata1"),Bytes("catalog1"),store.Authority,now),"Fixture signing keys authorized production");
+            }
+            File.WriteAllText(Core.PathIn(folder,"Support/Mods/service.json"),Json.Encode(new {service=Origin}));
+            Need(ModWorkshopClient.Service(folder)==Origin,"Explicit custom service was discarded");
+            using(var store=new ModTrustStore(folder,Origin,Unix))Need(store.Authority.Origin==Origin,"Custom bootstrap root was replaced");
+            string missing=Path.Combine(root,"missing-custom-workshop");Directory.CreateDirectory(missing);
+            Reject(()=>{using(var store=new ModTrustStore(missing,Origin,Unix)){}},"Custom authority silently borrowed production trust");
+        });
         test("native trust binds supported HTTPS ports across catalog verification transport and rotation",()=>{
             foreach(string port in new[]{"8443","10000"}) {
                 var authority=ModTrust.Roots(Bytes("port_root"+port),new byte[0][],Unix);

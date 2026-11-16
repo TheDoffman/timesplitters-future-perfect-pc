@@ -2,5 +2,5 @@
   "schema": 1,
   "origin": "https://dans-mac-mini.tail7e8ab8.ts.net:8443",
   "trusted_root_sha256": "b52e5d499648b84e8f5e84bb7b0a539426e6ff706f396d94baf7dfee19f73d27",
-  "status": "pending-public-acceptance"
+  "status": "active"
 }
