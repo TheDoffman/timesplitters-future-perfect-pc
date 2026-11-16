@@ -8,9 +8,11 @@ runs and applies daily due-time/budget/keep rules. A fully verified replacement
 precedes exact fixed-layout removal; last-good/manual backups survive a failed
 capture. Complete interrupted captures finish rotation; incomplete/unknown output
 is preserved and blocks growth. No recursive deletion is used. Windows collection/
-scope checks pass143 with29 intentional POSIX skips. Actual Mac/Linux tests and
-scheduled protected deployment/off-device automation remain pending; installed
-601/7be services and public routing are unchanged.
+scope checks pass143 with30 intentional POSIX skips. At7923d777 actual Mac/Linux
+combined capture/restore/pool/scope selections each pass172 cases6.56/10.58s.
+An additional actual CLI init/run/not-due check follows; no production data is
+used in these tests. Scheduled protected deployment/off-device automation remain
+pending; installed601/7be services and public routing are unchanged.
 
 Production launcher defaults (2026-11-16):
 New source launchers now use the accepted public Mac origin and compiled signed

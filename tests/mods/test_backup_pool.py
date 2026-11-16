@@ -41,6 +41,18 @@ def test_readonly_verification_preserves_snapshot_and_live_authentication(host,t
     assert json.loads(result.stdout)['manifest_sha256']==report['manifest_sha256']
 
 
+def test_operator_cli_creates_pool_captures_once_and_reports_next_due(host,tmp_path):
+    repository,*_=host;folder=tmp_path/'managed'
+    tool=[sys.executable,str(ROOT/'tools/mods/mod_backup_pool.py')]
+    for arguments,status in [(['init',str(repository.root),str(folder)],None),
+                             (['run',str(folder)],'captured'),(['run',str(folder)],'not-due')]:
+        result=subprocess.run(tool+arguments,capture_output=True,text=True,timeout=20)
+        assert result.returncode==0,result.stderr
+        report=json.loads(result.stdout)
+        if status:assert report['status']==status and report['next_due']>0
+    assert len(list(folder.glob('snapshot-*')))==1
+
+
 def test_due_ticks_capture_and_rotate_only_owned_backups_after_verification(host,tmp_path,monkeypatch):
     repository,_,_,_,_,_,_=host
     manual=tmp_path/'manual';mod_backup.snapshot(repository.root,manual);before=files(manual)
