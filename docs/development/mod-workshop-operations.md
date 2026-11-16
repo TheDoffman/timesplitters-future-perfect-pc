@@ -82,7 +82,9 @@ explicit migration contract.
 Its default command is plan-only. Actual migration requires an immutable installed
 step, locked UID/groups and a fresh root-owned `monitor/upgrade-quiescence.json`
 binding the exact plan/nonce, all nine host jobs plus backup stopped, and a backup
-verified after quiescence. The private worker does not create that authority,
+verified after quiescence. Admission also binds the native boot identity so that
+a pre-reboot record cannot authorize migration after boot jobs reload. The
+private worker does not create that authority,
 stop services, migrate the backup binding or activate a release. The root
 coordinator producing and validating that admission remains to be implemented;
 this component must not be used as a standalone live upgrade procedure.

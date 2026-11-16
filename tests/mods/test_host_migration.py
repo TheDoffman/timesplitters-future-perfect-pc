@@ -97,6 +97,7 @@ def private_tree(monkeypatch, trust_keys):
         now = int(time.time())
         value = dict(schema=1,producer='tsfp-upgrade-quiescence-v1',before=before.name,after=after.name,
                      uid=os.geteuid(),nonce=nonce,plan_sha256=plan['sha256'],backup_sha256='d'*64,
+                     boot_id=migration.boot_identity(),
                      time=now,quiesced_at=now-10,backup_verified_at=now-5,stopped_jobs=migration.jobs())
         value.update(changes);path=root/'monitor/upgrade-quiescence.json';path.write_bytes(migration.wire(value));path.chmod(0o644)
     admission()
@@ -125,7 +126,7 @@ def test_apply_idempotent_resume_and_rollback_preserve_keys_api_and_repository(p
     assert all(value not in path.read_bytes() for path in journal.iterdir() for name,value in guards.items() if name.endswith('.pem'))
 
 
-@pytest.mark.parametrize('change',[dict(time=0),dict(time=True),dict(backup_verified_at=0),dict(backup_sha256='bad'),dict(uid=-1),dict(nonce='e'*64),dict(plan_sha256='e'*64),dict(stopped_jobs=[]),dict(extra='unknown')])
+@pytest.mark.parametrize('change',[dict(time=0),dict(time=True),dict(backup_verified_at=0),dict(backup_sha256='bad'),dict(uid=-1),dict(nonce='e'*64),dict(plan_sha256='e'*64),dict(stopped_jobs=[]),dict(extra='unknown'),dict(boot_id='f'*64)])
 def test_root_admission_denial_precedes_any_journal_or_config_change(private_tree,change):
     root,before,after,nonce,plan,_,_,admit=private_tree;admit(**change)
     with pytest.raises(ModError):migration.migrate(before,after,nonce)

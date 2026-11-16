@@ -4,6 +4,7 @@ This never controls launchd, installs a release, reads repository contents or
 changes signing keys. The root cutover coordinator must supply fresh admission.
 """
 from contextlib import contextmanager
+from functools import lru_cache
 import hashlib
 import importlib.util
 from itertools import islice
@@ -12,6 +13,8 @@ import os
 from pathlib import Path
 import re
 import stat
+import subprocess
+import sys
 import time
 
 from mod_package import read_json, require
@@ -32,6 +35,19 @@ def wire(value):
 
 def digest(value):
     return hashlib.sha256(value).hexdigest()
+
+
+@lru_cache(maxsize=1)
+def boot_identity():
+    if sys.platform == 'darwin':
+        value = subprocess.check_output(['/usr/sbin/sysctl','-n','kern.bootsessionuuid'],
+                                        stdin=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3)
+    elif sys.platform.startswith('linux'):
+        with open('/proc/sys/kernel/random/boot_id','rb') as stream:value = stream.read(128)
+    else:raise ValueError('Migration requires a native Unix boot identity')
+    require(len(value) <= 128 and re.fullmatch(rb'[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}',value.strip()),
+            'Native boot identity is unavailable')
+    return digest(sys.platform.encode()+b':'+value.strip().lower())
 
 
 def helpers():
@@ -219,11 +235,12 @@ def _admission(plan, nonce, clock):
     try:value, _ = _read(fd, 'upgrade-quiescence.json', owner=ROOT_UID, mode=0o644)
     finally:os.close(fd)
     data = read_json(value)
-    require(isinstance(data, dict) and set(data) == {'schema','producer','before','after','uid','nonce','plan_sha256','backup_sha256','time','stopped_jobs','quiesced_at','backup_verified_at'}
+    require(isinstance(data, dict) and set(data) == {'schema','producer','before','after','uid','nonce','plan_sha256','backup_sha256','time','stopped_jobs','quiesced_at','backup_verified_at','boot_id'}
             and type(data['schema']) is int and data['schema'] == 1 and data['producer'] == 'tsfp-upgrade-quiescence-v1'
             and data['before'] == plan['manifest']['before'] and data['after'] == plan['manifest']['after']
             and type(data['uid']) is int and data['uid'] == os.geteuid() and data['nonce'] == nonce
             and data['plan_sha256'] == plan['sha256'] and isinstance(data['backup_sha256'], str) and SHA.fullmatch(data['backup_sha256'])
+            and data['boot_id'] == boot_identity()
             and type(data['time']) is int and type(data['quiesced_at']) is int and type(data['backup_verified_at']) is int
             and 0 <= data['quiesced_at'] <= data['backup_verified_at'] <= data['time']
             and 0 <= clock()-data['time'] <= 30 and 0 <= clock()-data['backup_verified_at'] <= 300
