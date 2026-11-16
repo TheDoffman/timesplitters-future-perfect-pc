@@ -2201,6 +2201,14 @@
       ]
     },
     {
+      "name": "2718-mod-audio-host-build-guard.patch",
+      "path": "patches/gameplay/mods/2718-mod-audio-host-build-guard.patch",
+      "sha256": "42b397a28593d74e918bb596bf0153fd996a4f3d766663aad1b8495834e31690",
+      "targets": [
+        "src/hle/hle_dsound.c"
+      ]
+    },
+    {
       "name": "2720-viewmodel-shoulder-visibility.patch",
       "path": "patches/graphics/rendering/2720-viewmodel-shoulder-visibility.patch",
       "sha256": "3fa1241997be6bdc22fbed01c638376fcd1b68a4b065224633196595c897cf46",

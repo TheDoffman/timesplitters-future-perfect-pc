@@ -1,0 +1,28 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -60,7 +60,7 @@
+ #define TSFP_MOD_AUDIO_SOURCE_IMPLEMENTATION
+ #include "mods/mod_audio_source.h"
+ #undef TSFP_MOD_AUDIO_SOURCE_IMPLEMENTATION
+-#ifdef TSFP_MOD_GAME
++#ifdef TSFP_MOD_AUDIO_HOST
+ static void pc_mod_audio_tick_locked(uint64_t now);
+ #endif
+ #define PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+@@ -1612,7 +1612,7 @@
+                 pump(b, now);
+         }
+     }
+-#ifdef TSFP_MOD_GAME
++#ifdef TSFP_MOD_AUDIO_HOST
+     pc_mod_audio_tick_locked(now);
+ #endif
+     report(now);
+@@ -1840,6 +1840,6 @@
+     g_stat.commits_3d++;
+ }
+ 
+-#ifdef TSFP_MOD_GAME
++#ifdef TSFP_MOD_AUDIO_HOST
+ #include "mods/pc_mod_audio_host.inc"
+ #endif

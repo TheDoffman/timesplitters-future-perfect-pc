@@ -31,5 +31,5 @@ if(TSFP_SHARED_SOURCE)
     target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_MOD_GAME=1)
     # HLE is a separate static-library target, so executable PRIVATE definitions
     # do not compile its custom voice implementation.
-    target_compile_definitions(xbox_hle PRIVATE TSFP_MOD_GAME=1)
+    target_compile_definitions(xbox_hle PRIVATE TSFP_MOD_AUDIO_HOST=1)
 endif()

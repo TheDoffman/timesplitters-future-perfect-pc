@@ -63,3 +63,8 @@ actual Lua playback, device recovery under load and full release acceptance.
 `xbox_hle` static-library target. An executable PRIVATE definition alone does not
 compile the HLE implementation; the normal Windows game link exposed that gap.
 Component HLE fixtures and asset-free standalone builds retain their own flags.
+
+Patch2718 uses the dedicated `TSFP_MOD_AUDIO_HOST` guard on that HLE target,
+leaving unrelated `TSFP_MOD_GAME` display-menu branches unchanged. The initial
+broad HLE flag exposed a missing menu include; the audio guard avoids expanding
+that unrelated compilation path.

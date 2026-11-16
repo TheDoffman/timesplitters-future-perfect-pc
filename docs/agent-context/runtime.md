@@ -1,3 +1,6 @@
+Patch2718 gives HLE custom audio its dedicated TSFP_MOD_AUDIO_HOST guard,
+so enabling it does not change unrelated display-menu TSFP_MOD_GAME paths.
+
 Patch2717 adds fixed32 custom voices under the shared HLE audio lock, reusing
 existing buffer clocks/output. Stock slots/clocks remain unchanged; slots273..304
 are private mod output. Runtime stops them on epoch/failure/shutdown. Lua commands
