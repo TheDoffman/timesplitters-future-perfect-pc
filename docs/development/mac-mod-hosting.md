@@ -11,6 +11,22 @@ A temporary public HTTPS marker probe passed through the confined gateway;
 it was removed and the existing private routing restored. The production
 workshop service is not deployed. See the scoped acceptance in STATUS.
 
+The production public root and origin are source-pinned in
+`config/mods/public-workshop-root.json` and `public-workshop.json`. The profile is
+still pending public acceptance. To stage the existing native launcher settings
+for a private deployment test, use:
+
+```sh
+python tools/mods/hosting/prepare-launcher-workshop-profile.py --output /new/private/client-profile --apply --acceptance-only
+```
+
+The tool verifies the public fingerprint, threshold signatures, origin and current
+root lifetime, then writes service.json and trusted-root.json for Support/Mods,
+plus an operator receipt. It refuses an existing output. These are public data;
+no signing keys are included. Release-profile staging is refused while acceptance
+is pending; normal launcher defaults remain disconnected. Activating the source
+profile still requires the actual public deployment and native end-to-end checks.
+
 Texture overlays and one restricted gameplay mode can be enabled by compatible
 native launchers. The packaged First to Three example has completed real matches
 through launcher-generated handoffs on Windows, Mac and Linux, with ordinary saves

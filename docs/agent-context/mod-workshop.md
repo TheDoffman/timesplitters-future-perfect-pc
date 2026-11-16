@@ -1,3 +1,10 @@
+Public source config/mods/public-workshop.json/root pins the verified ceremony
+origin and exact signed public root; status remains pending-public-acceptance.
+prepare-launcher-workshop-profile.py validates signatures/pin/origin/lifetime and
+stages existing service.json/trusted-root.json settings only for explicit private
+acceptance until active. It never replaces output, fetches a root or starts jobs.
+Profile/source changes select native CI; test_public_host_profile covers refusal.
+
 initialize-private-host-mac.py consumes only fixed UID600 host-input files:
 origin.json (canonical origin + root SHA256 pin), trusted-root.json, catalog-1.pem.
 It verifies the pin, live signed root and distinct catalog-role private key before
@@ -33,10 +40,8 @@ API uses guardian group cleanup, control socket off and bounded renewal. Actual
 f099 Mac258pass8.73s, Windows271pass104skips1.64s; source bundle prepared only.
 Protected new-role installation/lifecycle/boot/public deployment remain pending.
 
-Actual Mac at2619f6f6 passes14 confined gateway cases2.57s: all launcher routes,
-exact methods/IDs,16KiB bodies, private bearer/HTTPS and stripped static credentials
-at all3 authorities. Windows API/gateway/scope142pass15skips18.73s. Root installed
-code remains f234; only original private443 routing is configured. See STATUS.
+Actual Mac2619 gateway14pass verifies launcher routes/framing/credentials at all3
+authorities. Original private443 routing remains; current provenance is in STATUS.
 
 Actual f234 native proof now passes: trusted root startup->same PID/UID/GID600,
 kernel[600], root restoration and health writes denied, root-controller label stop,
@@ -52,15 +57,11 @@ policy root-system-bootstrap-v2 permits10s unhealthy root startup, requires600
 thereafter, rejects return to root; numeric owner/RSS share a snapshot. Only fixed
 labels are stopped; root atomic health uses protected nofollow stable descriptors.
 
-initialize-private-scan-mac.py creates only data/scan as UID600: empty repository/
-database/state dirs, exact scanner/updater configs and preparing->complete marker.
-Unchanged completed layout is reusable without writes; partial/foreign/linked/
-changed/different-generation state is preserved and refused. No network/jobs or
-repository initialization. Both system worker/update modes require completed
-matching initialization. Root generator checks it in a dropped child, then emits
-new-only monitor/scan/6-hour definition plists without loading them. Root entry
-points require immutable installed release/runtime/identity; no supplied commands,
-users, executables or configuration paths. Release admission requires these helpers.
+initialize-private-scan-mac.py creates fixed UID600 scan dirs/configs and a complete
+generation marker; unknown/changed/partial/linked state is preserved/refused. No
+network/jobs/DBinit. Root generator checks readiness after dropping credentials,
+then emits new-only scan/monitor/6h definition plists without loading. Installed
+release/runtime/identity and completed initialization are mandatory for workers.
 
 Details: ../development/system-scan-supervision.md and STATUS. Native inert probe
 proves credential/health denial, label stop and child exit; temporary jobs unloaded.

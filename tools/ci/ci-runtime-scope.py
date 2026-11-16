@@ -71,6 +71,8 @@ CPU_TOOLS = {
     'tools/mods/mod_host_identity.py', 'tests/mods/test_host_identity.py',
     'tools/mods/hosting/initialize-private-scan-mac.py', 'tests/mods/test_private_scan_init.py',
     'tools/mods/hosting/initialize-private-host-mac.py', 'tests/mods/test_private_host_init.py',
+    'config/mods/public-workshop.json', 'config/mods/public-workshop-root.json',
+    'tools/mods/hosting/prepare-launcher-workshop-profile.py', 'tests/mods/test_public_host_profile.py',
     'tools/mods/mod_windows_recovery.py', 'tools/mods/hosting/private-recovery-windows.ps1',
     'tools/mods/hosting/prepare-workshop-trust-windows.py', 'tests/mods/test_windows_recovery.py',
     'tools/mods/hosting/locked-service-bootstrap-mac.py', 'tests/mods/test_locked_service_bootstrap.py',
