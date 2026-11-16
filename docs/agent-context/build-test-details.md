@@ -1,3 +1,11 @@
+Creator SDK: test_creator_sdk exports the real explicit source inventory, verifies
+deterministic bytes/hash receipt and runs detached new/import/pack/validate/module
+commands with -I -S (PNG separately uses Pillow). CLI contains no server/operator
+imports. test_creator_audio compares the Python preflight to actual native WAV
+parsing, metadata/PCM and mutated containers; imports preserve source/refuse keys.
+New CPU tools select native tests, not GPU contracts. Full SDK/receipt contract:
+../development/mod-creator-tools.md. Actual host exports/publication are separate.
+
 Lua audio: script_worker/session/game_runtime tests cover explicit API1 addon,
 v2 reply/canonical fields, budgets, unknown-resource atomic refusal, owner-thread
 dispatch and retained manager callback. Creator/audio-assets tests cover the

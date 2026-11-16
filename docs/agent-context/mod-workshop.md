@@ -1,4 +1,4 @@
-Creator tools: [contract](../development/mod-creator-tools.md).
+Creator CLI/SDK: [contract](../development/mod-creator-tools.md).
 register-installed-host-mac.py derives9 protected jobs: staging bootstrap,
 source-pinned private readiness and7 restarts precede boot-file installation.
 Known-only rollback/journals preserve foreign state. Actual601 repair now PASSES

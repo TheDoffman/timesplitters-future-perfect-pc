@@ -1,7 +1,11 @@
 # Custom audio input boundary
 
 [Immutable asset loading](mod-audio-assets.md) now owns hash-pinned validated
-WAV snapshots. Startup/launcher wiring and actual playback remain unfinished.
+WAV snapshots. Current startup/launcher wiring and scripted audio playback pass
+on all3 native hosts; see mod-audio-scripting.md and STATUS for exact acceptance.
+`import-audio` now provides creator-side PCM preflight and exact copying. Its
+Python parser is checked against this independent native parser, including
+mutated headers, truncations, unsupported formats and metadata/PCM equality.
 
 ## Authored source snapshot
 

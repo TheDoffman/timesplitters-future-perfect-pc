@@ -120,6 +120,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['examples/mods/modular-first-to-three/mod.json'], {'native'}),
     (['tools/mods/mod_texture_preview.py'], {'native'}),
     (['tools/mods/mod_creator.py', 'tests/mods/test_creator_projects.py'], {'native'}),
+    (['tools/mods/mod-creator.py','tools/mods/mod_creator_cli.py','tools/mods/mod_wave_input.py',
+      'tools/release/package-creator-sdk.py','tests/mods/test_creator_audio.py','tests/mods/test_creator_sdk.py'], {'native'}),
     (['tests/mods/test_audio_assets.py'], {'native'}),
     (['tests/mods/test_texture_preview.py'], {'native'}),
     (['tools/mods/hosting/system-scan-monitor-mac.py'], {'native'}),

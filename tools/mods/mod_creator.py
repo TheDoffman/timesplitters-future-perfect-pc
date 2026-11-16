@@ -98,6 +98,30 @@ def output_size(width, height, pixel_format):
     return size
 
 
+def import_audio(project, source, *, key):
+    """Copy creator-owned PCM exactly; no conversion, decoding or execution."""
+    from mod_wave_input import MAX_BYTES, inspect_wave
+    require(isinstance(key, str) and re.fullmatch(r'[0-9a-f]{8}', key)
+            and key != 'ffffffff', 'Audio key must be8 lowercase hexadecimal digits below ffffffff')
+    project, source = local_path(project), local_path(source)
+    require(project.is_dir(), 'Creator project does not exist')
+    validate_project_manifest(read_json(bounded_input(project/'mod.json', MAX_MANIFEST)))
+    require(not source.is_relative_to(project), 'Keep authored audio outside the package project')
+    folder = local_path(project/'audio')
+    require(not folder.exists() or folder.is_dir(), 'Audio path is not a directory')
+    destination = folder/(key+'.wav')
+    if folder.exists():
+        require(not any(p.name.lower() == destination.name for p in folder.iterdir()),
+                'This audio key already exists; choose a new key or project version')
+    data = bounded_input(source, MAX_BYTES)
+    metadata = inspect_wave(data)
+    folder.mkdir(exist_ok=True)
+    with destination.open('xb') as stream:
+        stream.write(data)
+    return dict(path=str(destination), key=key, sha256=digest(data), bytes=len(data),
+                source_preserved=True, **metadata)
+
+
 def import_texture(project, source, *, key, pixel_format=None, width=None, height=None, channels='color'):
     require(isinstance(key, str) and KEY.fullmatch(key), 'Texture key must be 16 lowercase hexadecimal characters')
     require(pixel_format in (None, 'DXT1', 'DXT5', 'RGBA8'), 'Unsupported texture format')
@@ -126,7 +150,7 @@ def import_texture(project, source, *, key, pixel_format=None, width=None, heigh
         try:
             from PIL import Image, UnidentifiedImageError
         except ImportError as exc:
-            raise ModError('PNG import needs the pinned Pillow dependency from requirements.txt') from exc
+            raise ModError('PNG import needs pinned Pillow from requirements-sdk.txt (SDK) or requirements.txt (source)') from exc
         try:
             with Image.open(io.BytesIO(data), formats=('PNG',)) as image:
                 require(0 < image.width <= 4096 and 0 < image.height <= 4096,

@@ -3,8 +3,10 @@
 Run these commands from the source checkout with its pinned Python dependencies
 installed (`requirements.txt`). Windows can use `.venv/Scripts/python.exe`;
 macOS/Linux use `.venv/bin/python`. Players use the launcher and need none of
-these tools. The creator tools currently run from the source tree; a standalone
-SDK distribution remains release work.
+these tools. A standalone source SDK can now be built without the game or server:
+[SDK quick start and API reference](../sdk/README.md). Its creator-only command is
+`python tools/mods/mod-creator.py`; the source workshop command below uses the
+same parser/implementation. Publishing the SDK archive remains a release step.
 
 Create a new project in an existing parent folder:
 
@@ -63,6 +65,22 @@ for uploads: this local authoring command uses pinned Pillow only for the creato
 chosen PNG. Hosting keeps its existing structural checks, scanner, review and
 publication gates.
 
+## Import authored audio
+
+```console
+python tools/mods/mod-creator.py import-audio build/my-mode private/my-sound.wav --key 00000003
+```
+
+The key is8 lowercase hexadecimal digits below `ffffffff`, independent of original
+game sound-event IDs. The importer preserves the exact WAV and source, refusing
+links, existing/case-colliding keys and inputs inside the project. It checks the
+complete RIFF container using the same PCM contract independently enforced by the
+native game: PCM16, mono/stereo,8..48kHz, <=600 seconds/64MiB/64 chunks, exactly one
+format followed by one nonempty aligned data chunk. No decoding/resampling or
+playback occurs. Use `audio_api=1` and the key in your script; see
+[sound commands](mod-audio-scripting.md). Native game audio acceptance now passes
+through the actual launcher on all3 hosts. Older games without audio1 stay gated.
+
 ## Build and try the addition
 
 ```console
@@ -76,7 +94,8 @@ For package-local Lua modules, use `pack --modules` as described in
 Upload through the launcher's creator page, complete scanning and moderation,
 then install the approved release through Mods. Validation alone does not approve
 or activate a mod. Current launcher/game capability and trust checks still apply.
-Audio/map files remain staged content until their runtime integrations are ready.
+Keyed PCM WAVs now run in audio1 games through the script addon. Map/OGG payloads
+remain staged content without a playable integration.
 
 `test_creator_projects.py` exercises new/import/pack/validate on all templates,
 exact source preservation, PNG alpha/channel/mips, malformed/oversized/animated
@@ -99,6 +118,25 @@ CI43843861954 at that source completes23 successful jobs/two intentional issue s
 
 The `audio` template creates a complete original sound-lab script plus two
 deterministic PCM16 WAVs. See [sound scripting](mod-audio-scripting.md) for its
-new/pack/validate commands and explicit audio_api=1 declaration. Native game
-activation remains gated until playback acceptance; creating a package does not
-bypass that gate.
+new/pack/validate commands and explicit audio_api=1 declaration. Current native
+builds advertise audio1 after real launcher-to-game acceptance on all3 hosts;
+creating a package does not bypass capability, scanning or moderation gates.
+
+## Build the standalone SDK
+
+From clean committed source, choose a new ZIP filename in an existing directory:
+
+```console
+python tools/release/package-creator-sdk.py --output build/TimeSplitters-Mod-Creator-SDK-v0.1.0.zip
+```
+
+The small deterministic source archive uses an explicit inventory, canonical LF,
+fixed timestamps/permissions and uncompressed ZIP entries, keeping its identity
+independent of zlib versions. `SDK.json` binds source/API versions and every input
+hash; the adjacent `.zip.sha256` detects transfer corruption. The build refuses
+dirty/untracked inputs, linked source and existing outputs. No game data, host
+code, keys, private configuration or installed third-party dependencies enter it.
+The SDK needs Python3.12+. Only PNG import needs pinned Pillow, listed separately
+in `requirements-sdk.txt`. Detached CLI tests run standard-library commands under
+`-I -S` from outside the repository, and separately exercise pinned PNG import.
+The ZIP is a source SDK, not a bundled Python interpreter or a public release.

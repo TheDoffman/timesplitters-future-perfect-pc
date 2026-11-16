@@ -1,3 +1,24 @@
+Standalone creator SDK and WAV import (2026-11-16):
+The creator-only mod-creator.py CLI now shares its parser/commands with the source
+workshop CLI, without server/account imports. A small deterministic source SDK
+exports an explicit committed inventory, GPL source/license, complete creator/API
+instructions, original templates and pinned optional Pillow requirement. It needs
+Python3.12+, no game/Git/CMake/server for authoring; players still need none of it.
+Clean-source/hash receipts and new-only ZIP/checksum paths protect publication.
+Stored entries, canonical LF and fixed metadata avoid cross-host zlib differences.
+
+import-audio preserves exact creator-owned PCM WAVs and refuses invalid keys,
+collisions, links and malformed/unsupported format before writing payloads.
+Its bounded Python preflight is compared with the independently compiled native
+parser over valid metadata/PCM, truncations, header mutations and malformed
+containers. The native boundary remains authoritative and unchanged.
+Windows combined SDK/creator/importer/real-reader/native-WAV/CLI/scope checks pass
+316 cases10.96s; final SDK export/link checks follow the documentation adjustment.
+Native SDK exports/publication remain pending. No production runtime, routing,
+catalog or public downloads changed; no additional game replay is needed for
+these authoring-only changes. Earlier f981 CI has passed selected checks so far,
+with the native Mac launcher job still queued at the last observation.
+
 Audio build capability (2026-11-16):
 Following real generated-template gameplay on all3 hosts, new native Mac/Linux
 build receipts and Windows package manifests declare mod_audio_version=1.

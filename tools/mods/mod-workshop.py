@@ -1,41 +1,23 @@
-"""Developer/operator CLI for the mod platform prototype (no game activation)."""
+"""Creator and operator CLI; scanning and moderation never execute uploaded Lua."""
 import argparse
 import json
 import sqlite3
 import sys
 
-from mod_package import ModError, build_package, inspect_package
+from mod_package import ModError
 from mod_repository import ClamScanner, Repository, stage_install
 from mod_server import fetch_install, make_server
 from mod_publication import export_snapshot, validate_snapshot
 from mod_accounts import Accounts, ServiceError
 from mod_uploads import Uploads
 from mod_operator import issue_invitation
+from mod_creator_cli import COMMANDS, add_commands, execute
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    new = commands.add_parser('new', help='Create a gameplay, texture or mixed creator project')
-    new.add_argument('destination')
-    new.add_argument('--id', required=True)
-    new.add_argument('--name', required=True)
-    new.add_argument('--author', required=True, help='Your workshop username')
-    new.add_argument('--template', choices=('gameplay', 'textures', 'mixed', 'audio'), default='gameplay')
-    texture = commands.add_parser('import-texture', help='Import authored PNG/DDS into a creator project')
-    texture.add_argument('project')
-    texture.add_argument('source')
-    texture.add_argument('--key', required=True)
-    texture.add_argument('--format', choices=('DXT1', 'DXT5', 'RGBA8'))
-    texture.add_argument('--width', type=int)
-    texture.add_argument('--height', type=int)
-    texture.add_argument('--channels', choices=('color', 'luminance', 'alpha'), default='color')
-    build = commands.add_parser('pack', help='Build a creator package')
-    build.add_argument('source')
-    build.add_argument('output')
-    build.add_argument('--modules', action='store_true', help='Link packaged Lua modules into one bounded main.lua')
-    validate = commands.add_parser('validate')
-    validate.add_argument('package')
+    add_commands(commands)
     install = commands.add_parser('install', help='Verify and stage a downloaded package inactive')
     install.add_argument('package')
     install.add_argument('--sha256', required=True)
@@ -86,18 +68,8 @@ def main(argv=None):
             command.add_argument('--port', type=int, default=8765)
     args = parser.parse_args(argv)
     try:
-        if args.command == 'new':
-            from mod_creator import create_project
-            result = create_project(args.destination, mod_id=args.id, name=args.name,
-                                    author=args.author, template=args.template)
-        elif args.command == 'import-texture':
-            from mod_creator import import_texture
-            result = import_texture(args.project, args.source, key=args.key, pixel_format=args.format,
-                                    width=args.width, height=args.height, channels=args.channels)
-        elif args.command == 'pack':
-            result = build_package(args.source, args.output, bundle_scripts=args.modules)
-        elif args.command == 'validate':
-            result = inspect_package(args.package)
+        if args.command in COMMANDS:
+            result = execute(args)
         elif args.command == 'install':
             result = stage_install(args.package, args.sha256, args.mods)
         elif args.command == 'fetch-install':

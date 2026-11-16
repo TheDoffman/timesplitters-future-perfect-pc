@@ -1,3 +1,10 @@
+Standalone creator SDK/WAV import (2026-11-16): **In progress**.
+Shared creator-only commands and deterministic source export need no game/source
+checkout or server; Python3.12+ and optional PNG Pillow are explicit. Bounded WAV
+import preflight is compared with actual native parsing, preserves source and
+refuses malformed content/collisions. Windows combined checks pass316; actual
+native SDK exports and publication follow. No native runtime or public changes.
+
 Audio capability metadata (2026-11-16): **In progress**.
 New native receipts declare1 after actual3-host audio gameplay. Mac/Linux packages
 preserve native mod_audio_version (absent=>0); Windows compiled packages declare1.
