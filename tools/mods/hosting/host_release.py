@@ -188,7 +188,8 @@ def plan(bundle, expected):
                 'tools/mods/mod_host_identity.py', 'tools/mods/hosting/locked-service-bootstrap-mac.py',
                 'tools/mods/hosting/initialize-private-scan-mac.py', 'tools/mods/hosting/system-scan-monitor-mac.py',
                 'tools/mods/mod_system_host.py', 'tools/mods/hosting/system-host-service-mac.py',
-                'tools/mods/hosting/system-host-monitor-mac.py', 'tools/mods/hosting/initialize-private-host-mac.py'}
+                'tools/mods/hosting/system-host-monitor-mac.py', 'tools/mods/hosting/initialize-private-host-mac.py',
+                'tools/mods/hosting/prepare-installed-host-mac.py', 'tools/mods/hosting/accept-installed-scanner-mac.py'}
     require(required.issubset(source_files), 'Incomplete server source/guardian component')
     require(source_files['build/scan-guardian/scan-guardian-mac']['mode'] == 0o755,
             'Guardian must remain an executable regular file')

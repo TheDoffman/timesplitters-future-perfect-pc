@@ -1,3 +1,12 @@
+prepare-installed-host-mac.py is an immutable root-only setup/admission component:
+read exactly3 owned online inputs, match source public pin, copy600 privately,
+run scan/host init and official updater as600, then accept-installed-scanner-mac.py
+requires real clean/EICAR/empty-DB/missing-engine outcomes with disposable files.
+Only afterward generate root monitor plists and an exclusive protected admission
+record. No job registration/start/Funnel. Strict fixed child commands, cleared
+groups and source/UID gates; native CI tests refusal/order/file protections.
+Protected installed execution remains pending, not proved by fixture engines.
+
 Public source config/mods/public-workshop.json/root pins the verified ceremony
 origin and exact signed public root; status remains pending-public-acceptance.
 prepare-launcher-workshop-profile.py validates signatures/pin/origin/lifetime and
@@ -5,25 +14,18 @@ stages existing service.json/trusted-root.json settings only for explicit privat
 acceptance until active. It never replaces output, fetches a root or starts jobs.
 Profile/source changes select native CI; test_public_host_profile covers refusal.
 
-initialize-private-host-mac.py consumes only fixed UID600 host-input files:
-origin.json (canonical origin + root SHA256 pin), trusted-root.json, catalog-1.pem.
-It verifies the pin, live signed root and distinct catalog-role private key before
-creating data/host configs/separate states. Preparing->complete marker binds every
-payload and source generation. Exact completed setup is reused without input or
-state rewrites; partial/foreign/changed/linked/new-generation setups are preserved
-and refused. Bounded entries/reads, nofollow held FDs, private modes and stable
-metadata protect keys/configs. Workers require completed host and scan setup.
-No keys are generated, repository initialized, network/jobs started or root keys
-accepted. Root updates require explicit preserving migration. Native CI registers
-test_private_host_init; details: ../development/system-host-supervision.md.
+initialize-private-host-mac.py verifies fixed UID600 origin.json/root pin/public
+root/catalog-1.pem before creating configs/states and a generation/payload-bound
+complete marker. Exact reuse needs no inputs/rewrites; changed/partial/foreign/
+aliased state is preserved/refused. Bounded held-FD reads protect private files.
+Workers require host+scan completion; no DBinit/jobs/network. Rotation requires
+preserving migration. Details: ../development/system-host-supervision.md.
 
-prepare-workshop-trust-windows.py creates new-only off-server root-a/root-b
-encrypted PKCS8 keys, account-DPAPI-protected random passwords and host-input
-containing only catalog-1.pem/public root/origin pin. Strict atomic private NTFS
-ACLs allow current user+SYSTEM; check decrypts and proves both recovered root
-signatures without plaintext root export. DPAPI integrity/wrong entropy, ACL,
-tamper and complete ceremony tests pass on Windows. This account/profile-bound
-recovery is not a portable backup; portable export/profile backup remains needed.
+prepare-workshop-trust-windows.py creates encrypted off-server roots/passwords
+protected by account DPAPI and atomic private user+SYSTEM NTFS ACLs; recovery proves
+both signatures without plaintext root export. Only catalog key/public pin enter
+host-input. Actual Windows tests/production ceremony pass; account/profile-bound
+recovery still needs independent portable/profile backup acceptance.
 Host preparation permits only exact Git bytes or exact HEAD-declared CRLF checkout
 rendering; mixed endings/text changes/local filter substitutions remain refused.
 Actual production root ceremony/recovery proof completed on Windows; only3 online
@@ -43,19 +45,17 @@ Protected new-role installation/lifecycle/boot/public deployment remain pending.
 Actual Mac2619 gateway14pass verifies launcher routes/framing/credentials at all3
 authorities. Original private443 routing remains; current provenance is in STATUS.
 
-Actual f234 native proof now passes: trusted root startup->same PID/UID/GID600,
-kernel[600], root restoration and health writes denied, root-controller label stop,
-worker+child exit and all temporary jobs unloaded. Root receipt is0600; post-proof
-installed inventory/receipt unchanged. Mac contracts148 pass. This is inert-job
-permission proof, not persistent scanning/boot/public operation; see STATUS.
+Actual f234 inert proof passes root->same PID/UID/GID600/kernel[600], denied root
+restore/health writes, root-controller label stop and worker/child exit. Temporary
+jobs unloaded; installed seal unchanged. Persistent scanning/boot/public remains
+pending; see STATUS for the protected0600 receipt and148 native contracts.
 
-locked-service-bootstrap-mac.py clears groups, sets real/effective GID/UID600,
-checks kernel/directory credentials and denied root restoration, then execs fixed
-worker roles. Root -I-S-B prelude reads no worker config/uploads. Both launchd
-InitGroups values retained extra groups; explicit dropping yielded[600]. Scan
-policy root-system-bootstrap-v2 permits10s unhealthy root startup, requires600
-thereafter, rejects return to root; numeric owner/RSS share a snapshot. Only fixed
-labels are stopped; root atomic health uses protected nofollow stable descriptors.
+locked-service-bootstrap-mac.py clears groups, sets/verifies GID/UID600/kernel
+credentials and irreversible drop, then execs fixed roles. Both launchd InitGroups
+values retained extra groups; explicit dropping yielded[600]. Root -I-S-B reads no
+worker config/uploads. Scan policy root-system-bootstrap-v2 permits10s unhealthy
+root startup, requires600 thereafter and fixed-label stops; owner/RSS share a
+snapshot, and root atomic health uses protected nofollow descriptors.
 
 initialize-private-scan-mac.py creates fixed UID600 scan dirs/configs and a complete
 generation marker; unknown/changed/partial/linked state is preserved/refused. No

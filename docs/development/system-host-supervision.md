@@ -93,6 +93,35 @@ public identities/fingerprint and its verification result. Expired public metada
 can still be checked for root recovery; it is not considered ready for deployment.
 The private host initializer separately requires a currently live root.
 
+## Protected setup and scanner admission
+
+`prepare-installed-host-mac.py` defaults to a read-only plan. Its installed root-only
+`--apply --input <private-operator-inbox>` accepts only three bounded0600 single-link
+online inputs owned by the administrator identified by sudo. It matches their
+origin/public root to the immutable source profile before creating the fixed
+UID600 data/host-input directory. Existing exact inputs are reusable; changed,
+aliased or unknown state is preserved and refused. Only fixed output names and
+fixed child programs/modes are allowed; no generic command or UID is supplied.
+
+The preparer runs both initializers and the official FreshClam updater after
+explicit group/GID/UID dropping, using installed Python with isolated startup.
+The root process does not parse online private keys or execute worker code.
+`accept-installed-scanner-mac.py` then runs as the locked identity with installed
+source/runtime provenance and matching private scan setup. It creates disposable
+owned files and requires all four real-engine outcomes: benign content clean,
+standard harmless EICAR test blocked, empty official database error and missing
+engine error. The positive/detection controls must report actual ClamAV identity
+and the required isolation policy; temporary files must be removed.
+
+Only after scanner admission succeeds does preparation invoke the fixed root
+scan/definition and three host-monitor generators. A final exclusive0600 protected
+monitor/admission.json records release/UID/public pin/time and scanner admission.
+The preparer neither registers/starts the jobs nor changes internet routing.
+Generator outputs/partial state are new-only and preserved on failure. Job
+registration, lifecycle acceptance, protected scanner execution and boot/public
+verification remain distinct steps. Fixture tests establish policy/order/file
+protections, not actual privileged engine operation.
+
 This recovery depends on the Windows account's DPAPI profile/key material. Copying
 the store alone to an unrelated computer is not a portable recovery backup.
 Independent encrypted export and Windows-profile recovery still require explicit

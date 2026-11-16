@@ -1,4 +1,4 @@
-[Service proofs](build-test-details.md). Host/profile/DPAPI/ACL/EOL/API/guardian.
+[Service proofs](build-test-details.md). Host/profile/scanner admission/DPAPI/guardian.
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
