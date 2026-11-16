@@ -1,4 +1,4 @@
-Private moderator audio inspection (2026-11-16; source, deployment pending):
+Private moderator audio inspection (2026-11-16; sourcef1d6c699, deployment pending):
 New role-gated audio preview route verifies completed upload/package/payload and
 the exact WAV before returning a bounded two-second PCM16 segment. Shared native
 moderation UI shows rate/channels/duration/hash and per-channel waveform with
@@ -8,7 +8,17 @@ Windows native build/test passes119 UI groups including waveform bounds,
 identity/format/size/offset refusals and logout clearing; existing DDS checks and
 the real creator backend also pass (53.98s). Python audio/texture/preflight/CI
 selection checks pass191 with7 skips, including the final vector rerun (14.10s).
-Mac/Linux and deployed service acceptance remain pending.
+Actual Mac/Linux native build/test/package checks pass120/121 UI groups and
+the real creator backend; Linux copied-package install/corruption/repair/restart/
+render preserves saves and game metadata. Python audio/texture/preflight/CI
+selection checks pass198 on Mac5.88s and Linux8.06s. Source is committed/pushed
+and fast-forward synchronized across all3 dedicated checkouts. Evidence logs:
+audio-preview-{windows-test,windows-api,mac-test,mac-api,linux-test,linux-api}.txt
+under each checkout's ignored logs; host logs also copied to Windows. Shared
+code/native fixtures pass; public PCM inspection and actual listening remain
+unverified/unimplemented respectively. Production601/7be is unchanged.
+Exact source CI43948026840 was in progress at the latest check; preceding
+1a16/8d runs43945995886/43945735793 are terminal cancelled, not passes.
 
 Owner creator invitations (2026-11-16; source8d289fc2, deployment pending):
 Shared launcher/API now let an authenticated admin issue a one-use24-hour
