@@ -1,3 +1,24 @@
+Lua sound addon integration (2026-11-16):
+API1 scripts may explicitly declare audio_api=1 and use bounded game.audio play,
+pause, pitch, volume, stop and stop_all. Legacy-only replies retain wire1; audio
+batches use canonical wire2 numeric fields. Parent session checks shapes/event
+order; match preflights trusted resource callbacks before publishing any score/
+end model. The manager retains that callback; factory dispatch requires active,
+selected, nonfailed source and the simulation owner thread. Guest dispatch now
+applies sound before stock score/end transitions. No worker file/network/native
+permissions are added, and existing budgets remain enforced.
+
+The creator audio template generates two original deterministic WAVs plus a
+complete script sequence. Actual CLI pack/validate, VM sequence and native-store
+acceptance pass. Windows combined VM/session/factory/match/manager/runtime/
+creator/assets/original-score checks pass292/two intentional skips156.89s.
+Final mixed/maximum-reply/stop cases pass3 (93 deselected)14.36s; independent
+native authority absence passes1 (22 deselected)15.12s. Mac/Linux and normal game
+builds follow. Public audio capability remains off until actual in-game playback
+acceptance. Contract: docs/development/mod-audio-scripting.md.
+Earlier5968 CI43868305742 now completes23 successes/two intentional issue skips;
+its Linux SDK download truncation passed on the targeted retry (no pin changes).
+
 Private custom voice engine (2026-11-16, implementationf321e661/guard7c743ae8):
 Patch2717 services32 custom voices under the existing HLE audio lock, using shared
 buffer clocks and separate output slots273..304. It consumes committed bootstrap

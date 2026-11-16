@@ -21,7 +21,7 @@ def main(argv=None):
     new.add_argument('--id', required=True)
     new.add_argument('--name', required=True)
     new.add_argument('--author', required=True, help='Your workshop username')
-    new.add_argument('--template', choices=('gameplay', 'textures', 'mixed'), default='gameplay')
+    new.add_argument('--template', choices=('gameplay', 'textures', 'mixed', 'audio'), default='gameplay')
     texture = commands.add_parser('import-texture', help='Import authored PNG/DDS into a creator project')
     texture.add_argument('project')
     texture.add_argument('source')

@@ -163,5 +163,5 @@ disabled. No custom playback or game-audio sanitizer injection is claimed.
 Sourceaf18d689 is pushed and synchronized; CI43863701975 completes23 successful jobs/two intentional issue skips.
 
 The next host playback component is described in [custom audio voices](mod-audio-player.md).
-Its private native controls are integrated; Lua commands/activation and actual
-in-game custom sound acceptance remain pending.
+Its private native controls and validated Lua sound commands are integrated.
+Production activation and actual in-game sound acceptance remain pending.

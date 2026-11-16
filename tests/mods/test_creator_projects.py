@@ -31,7 +31,7 @@ def png(tmp_path, size=(8, 4), color=(80, 120, 160, 128)):
     return source
 
 
-@pytest.mark.parametrize('template', ['gameplay', 'textures', 'mixed'])
+@pytest.mark.parametrize('template', ['gameplay', 'textures', 'mixed', 'audio'])
 def test_cli_new_import_pack_validate_workflow(tmp_path, template):
     target = tmp_path/'Creator project'
     tool = [sys.executable, str(ROOT/'tools/mods/mod-workshop.py')]
@@ -39,7 +39,7 @@ def test_cli_new_import_pack_validate_workflow(tmp_path, template):
         '--author', 'creator', '--template', template], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout)['needs_texture_import'] == (template == 'textures')
-    if template != 'gameplay':
+    if template in ('textures','mixed'):
         result = subprocess.run(tool+['import-texture', str(target), str(png(tmp_path)),
             '--key', KEY, '--format', 'RGBA8'], capture_output=True, text=True)
         assert result.returncode == 0, result.stderr
@@ -50,12 +50,20 @@ def test_cli_new_import_pack_validate_workflow(tmp_path, template):
     assert result.returncode == 0, result.stderr
     manifest = json.loads(result.stdout)
     assert manifest['author'] == 'creator'
-    expected = ({'scripts/main.lua'} if template != 'textures' else set()) | ({'textures/'+KEY+'.dds'} if template != 'gameplay' else set())
+    expected = ({'scripts/main.lua'} if template != 'textures' else set()) | ({'textures/'+KEY+'.dds'} if template in ('textures','mixed') else set())
+    if template=='audio':expected|={'audio/00000001.wav','audio/00000002.wav'}
     assert set(manifest['files']) == expected
     with zipfile.ZipFile(archive) as packed:
         assert set(packed.namelist()) == {'mod.json'} | expected
         if template != 'textures':
-            assert packed.read('scripts/main.lua') == (ROOT/'examples/mods/first-to-three/scripts/main.lua').read_bytes()
+            example='audio-lab' if template=='audio' else 'first-to-three'
+            assert packed.read('scripts/main.lua') == (ROOT/f'examples/mods/{example}/scripts/main.lua').read_bytes()
+        if template=='audio':
+            import io,struct,wave
+            for key,first in [('00000001',(-8000,-7360,-6720)),('00000002',(-8000,-6720,-5440))]:
+                with wave.open(io.BytesIO(packed.read('audio/'+key+'.wav'))) as tone:
+                    assert (tone.getframerate(),tone.getnchannels(),tone.getsampwidth(),tone.getnframes())==(22050,1,2,22050)
+                    assert struct.unpack('<3h',tone.readframes(3))==first
     assert json.loads((target/'mod.json').read_text())['files'] == {}  # Source manifest stays editable.
 
 

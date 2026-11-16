@@ -96,3 +96,9 @@ The proof ZIP is1847 bytes, SHA256
 These checks neither install nor publish the test package. STATUS records exact
 launcher provenance and the remaining acceptance work.
 CI43843861954 at that source completes23 successful jobs/two intentional issue skips.
+
+The `audio` template creates a complete original sound-lab script plus two
+deterministic PCM16 WAVs. See [sound scripting](mod-audio-scripting.md) for its
+new/pack/validate commands and explicit audio_api=1 declaration. Native game
+activation remains gated until playback acceptance; creating a package does not
+bypass that gate.

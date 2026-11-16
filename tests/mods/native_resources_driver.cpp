@@ -32,7 +32,7 @@ static int run(const std::string &mode,const std::string &parent,const std::stri
     if(mode=="hold"){(void)std::getchar();record("rechecked",resources->recheck(error),resources->cache());return 0;}
     if(mode!="run")return 0;
     const char source[]="return {api=1,on_start=function() game.set_score(1,4) end}";
-    TsfpModMatchConfig config{resources->worker().c_str(),resources->cache().c_str(),source,sizeof(source)-1,17,15,pin.c_str(),pins.guardian.c_str()};
+    TsfpModMatchConfig config{resources->worker().c_str(),resources->cache().c_str(),source,sizeof(source)-1,17,15,pin.c_str(),pins.guardian.c_str(),nullptr};
     auto manager=tsfp::mods::MatchManager::create(config,error);if(!manager)return 3;
     TsfpModWorld world{};world.epoch=1;world.authoritative=world.offline=1;world.tick_rate=60;world.player_count=1;
     world.players[0]={1,0,0,100,0,0,0};world.identities[0]=9;

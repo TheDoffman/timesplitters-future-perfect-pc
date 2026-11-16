@@ -1,5 +1,6 @@
 // Test-only integration driver: real Session/Process/OS workers, synthetic events.
 #include "mod_session.hpp"
+#include "mod_audio_command.h"
 #include <cstdio>
 #include <chrono>
 #include <thread>
@@ -18,7 +19,9 @@ template<class F> auto timed(F function){auto start=Clock::now();auto result=fun
 static void hex(const char *text,size_t size){for(size_t i=0;i<size;++i)printf("%02x",(unsigned char)text[i]);}
 static void output(uint64_t seq,const tsfp_script_result &result) {
     printf("{\"sequence\":%llu,\"commands\":[",(unsigned long long)seq);
-    for(uint32_t i=0;i<result.count;++i){const auto &c=result.commands[i];if(i)putchar(',');printf("{\"kind\":%u,\"player\":%u,\"value\":%d,\"text_hex\":\"",c.kind,c.player,c.value);hex(c.text,c.text_size);printf("\"}");}
+    for(uint32_t i=0;i<result.count;++i){const auto &c=result.commands[i];if(i)putchar(',');printf("{\"kind\":%u,\"player\":%u,\"value\":%d,\"text_hex\":\"",c.kind,c.player,c.value);hex(c.text,c.text_size);printf("\"");
+        if(tsfp_script_is_audio(c.kind))printf(",\"resource\":%u,\"pitch\":%u,\"flags\":%u,\"volume\":%d",c.resource,c.pitch,c.flags,c.volume);
+        printf("}");}
     puts("]}");
 }
 static int run(const std::string &image,const std::string &cache,const std::string &scenario) {

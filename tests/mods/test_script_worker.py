@@ -19,6 +19,81 @@ ROOT = Path(__file__).resolve().parents[2]
 PLAYERS = [(1, 0, 0, 100, 0., 1., 2.), (2, 1, 0, 100, 2., 3., 4.)]
 
 
+def test_versioned_audio_commands_share_the_atomic_gameplay_batch(worker):
+    source='''return {api=1,audio_api=1,on_start=function()
+game.set_score(1,4); game.audio.play(31,0xfffffffe,4,0,true)
+game.audio.pause(31); game.audio.pause(31,false); game.audio.pitch(31)
+game.audio.volume(31,0.5); game.audio.stop(31); game.message("sound ready")
+game.end_match(1); game.audio.stop_all()
+end,on_stop=function() game.audio.stop_all() end}'''
+    result, replies=run(worker,source,[protocol.event(1,1,players=PLAYERS),protocol.event(2,4,tick=1,players=PLAYERS)])
+    assert result.returncode==0 and len(replies)==3
+    commands=protocol.validate_commands(replies[1],1,[1,2],audio_resources={2**32-2})
+    assert [c['kind'] for c in commands]==[1,4,6,6,7,8,5,3,2,9]
+    assert commands[1]==dict(kind=4,player=31,value=0,text='',resource=2**32-2,pitch=262144,flags=1,volume=-10000)
+    assert commands[2]['flags']==1 and commands[3]['flags']==0 and commands[4]['pitch']==0 and commands[5]['volume']==-602
+    assert protocol.validate_commands(replies[2],2,[1,2],stopping=True,audio_resources=set())[0]['kind']==9
+    with pytest.raises(ModError):protocol.validate_commands(replies[1],1,[1,2])
+    with pytest.raises(ModError):protocol.validate_commands(replies[1],1,[1,2],audio_resources=set())
+
+
+@pytest.mark.parametrize('statement',[
+    'game.audio.play(-1,0)','game.audio.play(32,0)','game.audio.play(0,0xffffffff)',
+    'game.audio.play(0,4294967296)','game.audio.play(0,1.5)','game.audio.play(0,"1")',
+    'game.audio.play(0,0,0/0)','game.audio.play(0,0,math.huge)','game.audio.play(0,0,0.24)',
+    'game.audio.play(0,0,4.01)','game.audio.play(0,0,1,-0.1)','game.audio.play(0,0,1,1.1)',
+    'game.audio.play(0,0,1,0/0)','game.audio.play(0,0,1,"0.5")','game.audio.play(0,0,1,1,1)',
+    'game.audio.play(0,0,1,1,true,4)','game.audio.pause(0,1)','game.audio.stop(0,1)',
+    'game.audio.stop_all(1)','game.end_match(1);game.audio.play(0,0)',
+    'game.end_match(1);game.audio.volume(0,0.5)',
+])
+def test_invalid_audio_cannot_publish_earlier_score_or_sound_commands(worker,statement):
+    source='return {api=1,audio_api=1,on_start=function() game.set_score(1,9);game.audio.play(0,0);'+statement+' end}'
+    _,replies=run(worker,source,[protocol.event(1,1,players=PLAYERS)])
+    assert replies[-1]['status']!=0 and not replies[-1]['commands'] and replies[-1]['error']
+
+
+@pytest.mark.parametrize('declaration',['','audio_api=2,','audio_api=true,','audio_api="1",','audio_api=1.0,'])
+def test_sound_api_requires_exact_explicit_version(worker,declaration):
+    _,replies=run(worker,'return {api=1,'+declaration+'on_start=function() game.audio.stop_all() end}',[protocol.event(1,1,players=PLAYERS)])
+    assert replies[-1]['status']!=0 and not replies[-1]['commands']
+
+
+def test_audio_respects_host_call_budget_and_extended_reply_bound(worker):
+    source='return {api=1,audio_api=1,on_start=function() for i=1,63 do game.message(string.rep("x",512)) end;game.audio.stop_all() end}'
+    result,replies=run(worker,source,[protocol.event(1,1,players=PLAYERS)])
+    assert result.returncode==0 and len(replies[-1]['commands'])==64
+    assert len(result.stdout)>32+64*(20+512)
+    _,replies=run(worker,'return {api=1,audio_api=1,on_start=function() for i=1,65 do game.audio.stop_all() end end}',[protocol.event(1,1,players=PLAYERS)])
+    assert replies[-1]['status']!=0 and not replies[-1]['commands'] and 'budget' in replies[-1]['error']
+
+
+def test_stop_callback_cannot_start_a_new_sound(worker):
+    _,replies=run(worker,'return {api=1,audio_api=1,on_stop=function() game.audio.play(0,0) end}',[protocol.event(1,1,players=PLAYERS),protocol.event(2,4,tick=1,players=PLAYERS)])
+    assert replies[-1]['status']!=0 and not replies[-1]['commands']
+
+
+def test_creator_audio_template_packages_and_executes_the_complete_voice_sequence(worker,tmp_path):
+    from mod_creator import create_project
+    from mod_package import build_package
+    project=tmp_path/'Audio project';archive=tmp_path/'audio.zip'
+    create_project(project,mod_id='audio-lab',name='Audio lab',author='creator',template='audio')
+    build_package(project,archive)
+    with zipfile.ZipFile(archive) as package:
+        assert set(package.namelist())=={'mod.json','scripts/main.lua','audio/00000001.wav','audio/00000002.wav'}
+        source=package.read('scripts/main.lua')
+    events=[protocol.event(1,1,tick=900,players=PLAYERS)]
+    events += [protocol.event(i+1,2,tick=900+i*60,players=PLAYERS) for i in range(1,6)]
+    events += [protocol.event(7,4,tick=1200,players=PLAYERS)]
+    result,replies=run(worker,source,events)
+    assert result.returncode==0 and len(replies)==8
+    commands=[]
+    for seq,reply in enumerate(replies[1:],1):commands+=protocol.validate_commands(reply,seq,[1,2],stopping=seq==7,audio_resources={1,2})
+    assert [c['kind'] for c in commands if c['kind']!=3]==[4,4,6,6,7,8,9,9]
+    assert [c['resource'] for c in commands if c['kind']==4]==[1,2]
+    assert [c['pitch'] for c in commands if c['kind']==7]==[32768]
+
+
 @pytest.fixture(scope='session')
 def worker(tmp_path_factory):
     spec = importlib.util.spec_from_file_location('build_mod_worker', ROOT / 'tools/build/build-mod-worker.py')

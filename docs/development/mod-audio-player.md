@@ -45,9 +45,10 @@ shutdown; ordinary runtime shutdown does not initialize mod audio.
 
 These functions are private native entry points. Their caller must enforce
 offline match authority, validate resources and preserve callback transaction
-rules. The confined VM has no direct native access. The versioned Lua/worker
-audio-command route is still pending, so no production audio capability is
-advertised and these controls alone do not establish in-game custom playback.
+rules. The confined VM has no direct native access. The explicit versioned
+[Lua sound route](mod-audio-scripting.md) now validates commands before native
+dispatch. Production capability and actual in-game playback acceptance remain
+pending; these host controls alone do not establish that acceptance.
 
 `tests/media/test_mod_audio_player.py` compiles the actual player plus the shared
 buffer clock. It mocks only committed resource lookup, serialized host lock/time
@@ -80,3 +81,8 @@ disabled; this uses the actual player/clock and fake host device, not sanitizer
 injection into the running game. The initial Linux shell loop stopped before
 running cases; an explicit bounded Python subprocess harness verifies all nine.
 No device audibility or Lua-triggered gameplay is inferred from these checks.
+
+[Lua sound scripting](mod-audio-scripting.md) now routes validated commits to
+these controls on the owning simulation thread. Resource validation precedes
+model commit; sound dispatch precedes stock score/end transitions. Actual
+gameplay acceptance and production capability activation remain pending.

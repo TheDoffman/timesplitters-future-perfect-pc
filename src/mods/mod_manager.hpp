@@ -24,6 +24,7 @@ private:
     MatchManager()=default;
     std::string worker_,cache_,source_,worker_pin_,guardian_pin_,error_;
     uint32_t seed_=0,verified_=0;
+    int (*audio_resource_)(uint32_t)=nullptr;
     uint64_t last_epoch_=0;
     TsfpModMatch *match_=nullptr;
     bool retiring_=false,closed_=false;

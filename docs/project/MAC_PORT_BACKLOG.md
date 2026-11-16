@@ -1,3 +1,11 @@
+Lua sound addon integration (2026-11-16): **In progress**.
+Common VM/wire/session/match/factory/title code routes explicit audio_api=1
+commands through canonical fields, trusted resource preflight and owner-thread
+dispatch. Audio creator template packages generated WAVs and complete controls.
+Windows292/two skips plus4 focused checks pass; Mac/Linux/game acceptance follows.
+Current production audio capability remains off. Earlier5968 CI passes23/two
+issue skips after a truncated SDK download retry. See mod-audio-scripting.md.
+
 Private custom voice engine (2026-11-16, implementationf321e661/guard7c743ae8): **In progress**.
 Shared HLE player reuses buffer clocks/reserved slots273..304/common backends;
 epoch/failure/shutdown stops clear voices. Actual component checks pass299/two

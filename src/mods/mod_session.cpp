@@ -1,5 +1,6 @@
 #include "mod_session.hpp"
 #include "mod_images.hpp"
+#include "mod_audio_command.h"
 #include "mod_process.hpp"
 #include <array>
 #include <atomic>
@@ -15,7 +16,7 @@
 namespace tsfp { namespace mods {
 namespace {
 using Clock=std::chrono::steady_clock;
-constexpr size_t reply_max=32u+TSFP_SCRIPT_COMMAND_MAX*(20u+TSFP_SCRIPT_TEXT_MAX);
+constexpr size_t reply_max=TSFP_SCRIPT_REPLY_MAX;
 bool player(const tsfp_script_event &event,uint32_t id) {
     for(uint32_t i=0;i<event.player_count;++i)if(event.players[i].id==id)return true;
     return false;
@@ -63,14 +64,18 @@ std::vector<unsigned char> encode(const tsfp_script_event &event) {
 bool decode(const unsigned char *data,size_t size,uint64_t sequence,const tsfp_script_event *event,tsfp_script_result &result,std::string &error) {
     Reader r{data,size};tsfp_script_result pending{};
     uint32_t version=r.u32(),status=r.u32();uint64_t received=r.u64();uint32_t memory=r.u32();pending.count=r.u32();
-    if(!r.valid || version!=1 || status>2 || received!=sequence || memory>TSFP_SCRIPT_MEMORY_MAX || pending.count>TSFP_SCRIPT_COMMAND_MAX ||
+    if(!r.valid || (version!=1 && version!=2) || (version==2 && !pending.count) || status>2 || received!=sequence || memory>TSFP_SCRIPT_MEMORY_MAX || pending.count>TSFP_SCRIPT_COMMAND_MAX ||
         (!event && pending.count) || (status && pending.count))return false;
     bool ended=false;
     for(uint32_t i=0;i<pending.count;++i) {
         auto &c=pending.commands[i];c.kind=r.u32();c.player=r.u32();c.value=r.i32();c.text_size=r.u32();
+        if(version==2){c.resource=r.u32();c.pitch=r.u32();c.flags=r.u32();c.volume=r.i32();}
         if(!r.valid || c.text_size>TSFP_SCRIPT_TEXT_MAX || r.size-r.at<c.text_size || !text_ok(r.data+r.at,c.text_size))return false;
         std::memcpy(c.text,r.data+r.at,c.text_size);r.at+=c.text_size;
-        if(c.kind==TSFP_SCRIPT_MESSAGE) {if(c.player || c.value || !c.text_size)return false;}
+        if(tsfp_script_is_audio(c.kind)) {
+            if(version!=2 || !event || !tsfp_script_audio_shape(&c,ended || event->kind==TSFP_SCRIPT_STOP))return false;
+        }else if(tsfp_script_audio_data(&c))return false;
+        else if(c.kind==TSFP_SCRIPT_MESSAGE) {if(c.player || c.value || !c.text_size)return false;}
         else {
             if(!event || event->kind==TSFP_SCRIPT_STOP || ended || c.text_size)return false;
             if(c.kind==TSFP_SCRIPT_SCORE) {

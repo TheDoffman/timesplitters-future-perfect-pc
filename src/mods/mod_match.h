@@ -24,6 +24,9 @@ typedef struct TsfpModMatchConfig {
     size_t source_size;
     uint32_t seed,verified;
     const char *worker_sha256,*guardian_sha256;
+    /* Trusted in-memory resource check. NULL refuses every sound command.
+       Never supplied by a mod/worker; must do no IO or allocation. */
+    int (*audio_resource)(uint32_t);
 } TsfpModMatchConfig;
 typedef struct TsfpModCommit {
     uint64_t epoch,sequence;

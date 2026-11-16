@@ -1,4 +1,5 @@
 #include "mod_game_runtime.h"
+#include "mod_bootstrap.h"
 #include "mod_saves.hpp"
 #include <atomic>
 #include <chrono>
@@ -22,6 +23,19 @@ static std::atomic<bool> verified{true};
 static std::atomic<unsigned> probes{0};
 static std::atomic<unsigned> audio_stops{0};
 extern "C" void pc_mod_audio_stop_all(void){++audio_stops;}
+static bool audio_available=false;
+static unsigned audio_plays=0;
+static unsigned char audio_pcm[2]={0,0};
+static TsfpModWave audio_wave{audio_pcm,2,1,22050,1};
+extern "C" const TsfpModWave *pc_mod_bootstrap_audio(uint32_t key){return audio_available && verified.load() && key==70000?&audio_wave:nullptr;}
+extern "C" int pc_mod_audio_play(uint32_t voice,uint32_t resource,uint32_t pitch,int32_t volume,int loop) {
+    if(voice!=3 || resource!=70000 || pitch!=131072 || volume!=-602 || loop!=1)std::abort();
+    ++audio_plays;return 1;
+}
+extern "C" void pc_mod_audio_stop(uint32_t){}
+extern "C" int pc_mod_audio_pause(uint32_t,int){return 1;}
+extern "C" int pc_mod_audio_pitch(uint32_t,uint32_t){return 1;}
+extern "C" int pc_mod_audio_volume(uint32_t,int32_t){return 1;}
 static std::atomic<bool> probe_gate{true},probe_inside{false};
 static bool requested=true,network_locked=false;
 static int (*overlay_extension)(char *,size_t);
@@ -56,6 +70,11 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
         for(size_t i=0;i<ballast.size();i+=4096)pages[i]=0x5a;
     }
     source="return {api=1,on_start=function() game.set_score(1,4) end}";
+    if(mode=="audio-api" || mode=="audio-unknown") {
+        audio_available=mode=="audio-api";
+        source="return {api=1,audio_api=1,on_start=function() game.set_score(1,4); game.audio.play(3,70000,2,0.5,true) end}";
+    }
+    if(mode=="audio-budget")source="return {api=1,audio_api=1,on_start=function() for i=1,63 do game.message(string.rep('x',512)) end; game.audio.stop_all() end}";
     if(mode=="fault")source="return {api=1,on_start=function() error('fixture mode stopped') end}";
     if(mode=="ordinary") {
         requested=false;CHECK(pc_mod_runtime_prepare(cache.c_str()));CHECK(!pc_mod_runtime_selected() && !network_locked && !overlay_extension);
@@ -109,13 +128,27 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
     CHECK(match && probes.load()==1);
     CHECK(audio_stops.load()>0); // First binding clears voices from any previous epoch.
     int status=0;end=Clock::now()+std::chrono::seconds(3);
-    while(!status && Clock::now()<end){TsfpModCommit commit{};status=tsfp_mod_match_pump(match,&world,&commit);if(!status)std::this_thread::sleep_for(std::chrono::milliseconds(1));}
-    if(mode=="fault") {
+    TsfpModCommit transaction{};
+    while(!status && Clock::now()<end){status=tsfp_mod_match_pump(match,&world,&transaction);if(!status)std::this_thread::sleep_for(std::chrono::milliseconds(1));}
+    if(mode=="fault" || mode=="audio-unknown") {
+        CHECK(!audio_plays && !transaction.transaction.count);
         CHECK(status==-1);CHECK(!pc_mod_runtime_update(&world,1));CHECK(pc_mod_runtime_faulted() && !verified.load());
         CHECK(*pc_mod_runtime_error());std::puts("PASS fault");return 0;
     }
-    CHECK(status==1);int32_t score=0;CHECK(tsfp_mod_match_score(match,&world,1,&score) && score==4);
+    CHECK(status==1);int32_t score=0;CHECK(tsfp_mod_match_score(match,&world,1,&score) && score==(mode=="audio-budget"?0:4));
     CHECK(pc_mod_runtime_update(&world,0)==match); // Existing result model retained.
+    if(mode=="audio-budget") {
+        CHECK(transaction.transaction.count==64 && transaction.transaction.commands[63].kind==TSFP_SCRIPT_AUDIO_STOP_ALL);
+        unsigned before=audio_stops.load();pc_mod_runtime_audio(&transaction.transaction.commands[63]);CHECK(audio_stops.load()>before);
+    }
+    if(mode=="audio-api") {
+        CHECK(transaction.transaction.count==2 && transaction.transaction.commands[1].kind==TSFP_SCRIPT_AUDIO_PLAY && !audio_plays);
+        auto *sound=&transaction.transaction.commands[1];
+        std::thread other([&]{pc_mod_runtime_audio(sound);});other.join();CHECK(!audio_plays);
+        pc_mod_runtime_audio(sound);CHECK(audio_plays==1);
+        verified.store(false);pc_mod_runtime_audio(sound);CHECK(audio_plays==1);
+        std::puts("PASS factory audio dispatch");return 0;
+    }
     if(mode=="audio-epoch") {
         unsigned before=audio_stops.load();++world.epoch;
         CHECK(!pc_mod_runtime_update(&world,0) && audio_stops.load()>before);

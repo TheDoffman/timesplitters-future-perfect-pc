@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import re
+import struct
 
 from mod_package import (MAX_MANIFEST, ModError, digest, read_json, require,
                          validate_dds, validate_manifest)
@@ -43,8 +44,16 @@ def validate_project_manifest(manifest):
     validate_manifest(probe)
 
 
+def example_wave(period):
+    """Small creator-owned integer triangle tone, identical on all hosts."""
+    pcm=b''.join(struct.pack('<h',-8000+32000*min(i%period,period-i%period)//period) for i in range(22050))
+    fmt=struct.pack('<HHIIHH',1,1,22050,44100,2,16)
+    body=b'WAVEfmt '+struct.pack('<I',16)+fmt+b'data'+struct.pack('<I',len(pcm))+pcm
+    return b'RIFF'+struct.pack('<I',len(body))+body
+
+
 def create_project(destination, *, mod_id, name, author, template='gameplay'):
-    require(template in ('gameplay', 'textures', 'mixed'), 'Unknown creator template')
+    require(template in ('gameplay', 'textures', 'mixed', 'audio'), 'Unknown creator template')
     destination = local_path(destination)
     manifest = dict(schema=1, id=mod_id, version='0.1.0', name=name, author=author,
         description='A community addition for TimeSplitters Future Perfect.',
@@ -55,7 +64,8 @@ def create_project(destination, *, mod_id, name, author, template='gameplay'):
     # Read the original SDK example before creating anything. No recovered game code.
     script = None
     if template != 'textures':
-        script = bounded_input(ROOT/'examples/mods/first-to-three/scripts/main.lua', 1024*1024)
+        example='audio-lab' if template=='audio' else 'first-to-three'
+        script = bounded_input(ROOT/f'examples/mods/{example}/scripts/main.lua', 1024*1024)
     destination.mkdir()
     with (destination/'mod.json').open('xb') as stream:
         stream.write((json.dumps(manifest, indent=2, ensure_ascii=False)+'\n').encode('utf-8'))
@@ -63,8 +73,13 @@ def create_project(destination, *, mod_id, name, author, template='gameplay'):
         (destination/'scripts').mkdir()
         with (destination/'scripts/main.lua').open('xb') as stream:
             stream.write(script)
-    if template != 'gameplay':
+    if template in ('textures','mixed'):
         (destination/'textures').mkdir()
+    if template=='audio':
+        (destination/'audio').mkdir()
+        for key,period in [('00000001',50),('00000002',25)]:
+            with (destination/'audio'/f'{key}.wav').open('xb') as stream:
+                stream.write(example_wave(period))
     return dict(project=str(destination), template=template, id=mod_id,
                 needs_texture_import=template == 'textures')
 

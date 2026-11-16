@@ -1,5 +1,5 @@
 Crashes: [contract](../development/native-crash-images.md).
-[Runtime](mod-scripting.md); [HLE voice guard](../development/mod-audio-player.md).
+[Runtime](mod-scripting.md); [Lua sound](../development/mod-audio-scripting.md).
 
 Preflight also rejects restored flags on a previously unsupported fresh epoch.
 

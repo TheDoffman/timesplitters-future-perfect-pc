@@ -23,6 +23,11 @@ def run(tools, tmp_path, scenario, source='return {api=1}'):
     return json.loads(p.stdout)
 
 
+def test_audio_requires_independent_native_authority_even_for_stop_commands(process_tools,tmp_path):
+    source='return {api=1,audio_api=1,on_start=function() game.set_score(1,99);game.audio.stop_all() end}'
+    assert run(process_tools,tmp_path,'audio-no-validator',source)=={'invalid':True}
+
+
 def test_original_mode_through_game_bridge(process_tools,tmp_path):
     result=run(process_tools,tmp_path,'normal',(ROOT/'examples/mods/first-to-three/scripts/main.lua').read_text())
     assert result['score']==3 and result['winner']==1 and result['commits']==5

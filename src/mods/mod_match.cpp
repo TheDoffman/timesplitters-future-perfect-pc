@@ -1,6 +1,7 @@
 #include "mod_match.h"
 #include "mod_session.hpp"
 #include "mod_images.hpp"
+#include "mod_audio_command.h"
 #ifdef TSFP_MOD_GAME
 #include "mod-runtime-images.h"
 #endif
@@ -44,7 +45,9 @@ struct TsfpModMatch {
     size_t head=0,count=0;uint64_t sequence=0,last_tick=0,last_tick_event=0;
     bool pending=false,fault=false,closing=false,stop_queued=false,tick_seen=false,ended=false;
     uint32_t winner=0;
+    uint32_t pending_kind=0;
     std::array<int32_t,32> scores{};char error[256]{};
+    int (*audio_resource)(uint32_t)=nullptr;
     int fail(const char *message) {
         fault=true;count=0;pending=false;
         size_t size=std::min(std::strlen(message),sizeof(error)-1);std::memcpy(error,message,size);error[size]=0;
@@ -65,7 +68,7 @@ extern "C" TsfpModMatch *tsfp_mod_match_open(const TsfpModMatchConfig *config,co
 #endif
         match->session=Session::open_verified(config->worker,config->cache,pins,std::string(config->source,config->source_size),config->seed,error);
         if(!match->session)return nullptr;
-        match->initial=*world;match->last_tick=world->tick;
+        match->initial=*world;match->last_tick=world->tick;match->audio_resource=config->audio_resource;
         for(uint32_t i=0;i<world->player_count;++i)match->scores[world->players[i].id-1]=world->players[i].score;
         match->queue[0]={*world,TSFP_SCRIPT_START,0,0};match->count=1;
         return match.release();
@@ -107,6 +110,10 @@ extern "C" int tsfp_mod_match_pump(TsfpModMatch *match,const TsfpModWorld *world
                 }else if(c.kind==TSFP_SCRIPT_END) {
                     if(next_ended || (c.player && !has(*world,c.player)))return match->fail("Winner target changed");
                     next_ended=true;next_winner=c.player;
+                }else if(tsfp_script_is_audio(c.kind)) {
+                    if(!match->audio_resource || !tsfp_script_audio_shape(&c,next_ended || match->pending_kind==TSFP_SCRIPT_STOP) ||
+                       (c.kind==TSFP_SCRIPT_AUDIO_PLAY && !match->audio_resource(c.resource)))
+                        return match->fail("Unapproved sound transaction");
                 }else if(c.kind!=TSFP_SCRIPT_MESSAGE)return match->fail("Unknown game transaction");
             }
             match->scores=next_scores;match->ended=next_ended;match->winner=next_winner;match->pending=false;
@@ -127,7 +134,7 @@ extern "C" int tsfp_mod_match_pump(TsfpModMatch *match,const TsfpModWorld *world
             for(uint32_t i=0;i<event.player_count;++i)event.players[i].score=match->scores[event.players[i].id-1];
             auto accepted=match->session->dispatch(event);
             if(accepted==Submission::Accepted) {
-                match->pending=true;match->pending_world=item.world;match->sequence=event.sequence;
+                match->pending=true;match->pending_world=item.world;match->pending_kind=event.kind;match->sequence=event.sequence;
                 match->head=(match->head+1)%match->queue.size();--match->count;
             }else if(accepted!=Submission::Busy) {
                 match->fail("Script event dispatch failed");

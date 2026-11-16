@@ -9,7 +9,7 @@ import unicodedata
 from mod_package import ModError, require
 
 SOURCE_MAX = 1024 * 1024
-REPLY_MAX = 32 + 64 * (20 + 512)
+REPLY_MAX = 32 + 64 * (36 + 512)
 INTEGER_MAX = 2**53 - 1
 
 
@@ -45,7 +45,7 @@ def replies(data):
         wire = data[at:at + size]
         at += size
         version, status, sequence, memory, count = struct.unpack_from('<IIQII', wire)
-        require(version == 1 and status in (0, 1, 2) and sequence <= INTEGER_MAX
+        require(version in (1, 2) and (version != 2 or count > 0) and status in (0, 1, 2) and sequence <= INTEGER_MAX
                 and memory <= 16 * 1024 * 1024 and count <= 64, 'Invalid worker reply header')
         offset = 24
         commands = []
@@ -53,7 +53,12 @@ def replies(data):
             require(len(wire) - offset >= 16, 'Truncated worker command')
             kind, player, value, length = struct.unpack_from('<IIiI', wire, offset)
             offset += 16
-            require(kind in (1, 2, 3) and length <= 512 and len(wire) - offset >= length,
+            resource = pitch = flags = volume = 0
+            if version == 2:
+                require(len(wire) - offset >= 16, 'Truncated sound fields')
+                resource, pitch, flags, volume = struct.unpack_from('<IIIi', wire, offset)
+                offset += 16
+            require(kind in range(1, 10) and length <= 512 and len(wire) - offset >= length,
                     'Invalid worker command')
             try:
                 text = wire[offset:offset + length].decode('utf-8')
@@ -61,13 +66,19 @@ def replies(data):
                 raise ModError('Invalid worker text encoding') from exc
             offset += length
             require(not any(unicodedata.category(c) == 'Cc' for c in text), 'Invalid worker message controls')
-            if kind == 1:
+            if kind <= 3:
+                require(not (resource or pitch or flags or volume), 'Unexpected sound fields')
+            if kind >= 4:
+                require(version == 2 and value == 0 and not text, 'Invalid sound wire')
+                audio = dict(kind=kind, player=player, value=value, text=text, resource=resource, pitch=pitch, flags=flags, volume=volume)
+                require(audio_shape(audio), 'Invalid sound command')
+            elif kind == 1:
                 require(1 <= player <= 32 and -1000000 <= value <= 1000000 and not text, 'Invalid score command')
             elif kind == 2:
                 require(player <= 32 and value == 0 and not text, 'Invalid match command')
             else:
                 require(player == value == 0 and text, 'Invalid message command')
-            commands.append({'kind': kind, 'player': player, 'value': value, 'text': text})
+            commands.append(audio if kind >= 4 else {'kind': kind, 'player': player, 'value': value, 'text': text})
         require(len(wire) - offset >= 4, 'Missing worker diagnostic length')
         length, = struct.unpack_from('<I', wire, offset)
         offset += 4
@@ -82,12 +93,16 @@ def replies(data):
     return result
 
 
-def validate_commands(reply, sequence, player_ids, stopping=False):
+def validate_commands(reply, sequence, player_ids, stopping=False, audio_resources=None):
     """Validate the entire transaction before the host changes any gameplay state."""
     require(reply['status'] == 0 and reply['sequence'] == sequence, 'Worker failed or replied to another event')
     ids = set(player_ids)
     ended = False
     for command in reply['commands']:
+        if command['kind'] >= 4:
+            require(audio_resources is not None and audio_shape(command, stopping or ended), 'Unapproved sound command')
+            if command['kind'] == 4:
+                require(command['resource'] in audio_resources, 'Unknown sound resource')
         if command['kind'] in (1, 2):
             require(not stopping and not ended, 'Gameplay command after match end')
             require(command['player'] in ids or (command['kind'] == 2 and command['player'] == 0),
@@ -95,3 +110,25 @@ def validate_commands(reply, sequence, player_ids, stopping=False):
             if command['kind'] == 2:
                 ended = True
     return reply['commands']
+
+
+def audio_shape(command, stopping=False):
+    kind = command['kind']
+    if command['value'] or command['text']:
+        return False
+    resource, pitch, flags, volume = (command[n] for n in ('resource', 'pitch', 'flags', 'volume'))
+    if kind == 9:
+        return command['player'] == 0 and not (resource or pitch or flags or volume)
+    if not 0 <= command['player'] < 32:
+        return False
+    if kind == 5:
+        return not (resource or pitch or flags or volume)
+    if stopping:
+        return False
+    if kind == 4:
+        return resource != 2**32-1 and (pitch == 0 or 16384 <= pitch <= 262144) and -10000 <= volume <= 0 and flags <= 1
+    if kind == 6:
+        return not (resource or pitch or volume) and flags <= 1
+    if kind == 7:
+        return not (resource or volume or flags) and (pitch == 0 or 16384 <= pitch <= 262144)
+    return kind == 8 and not (resource or pitch or flags) and -10000 <= volume <= 0

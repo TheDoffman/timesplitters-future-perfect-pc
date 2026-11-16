@@ -21,7 +21,7 @@ struct Drain {
 static int run(const std::string &image,const std::string &cache,const std::string &mode,const std::string &pin,const std::string &guardian) {
     std::string source="return {api=1,on_start=function() game.set_score(1,4) end}";
     if(mode=="callback-fail")source="return {api=1,on_start=function() error('mode failed') end}";
-    TsfpModMatchConfig config{image.c_str(),cache.c_str(),source.data(),source.size(),19,15,pin.c_str(),guardian=="-"?"":guardian.c_str()};
+    TsfpModMatchConfig config{image.c_str(),cache.c_str(),source.data(),source.size(),19,15,pin.c_str(),guardian=="-"?"":guardian.c_str(),nullptr};
     std::atomic<bool> release{false},entered{false},on_main{false};std::atomic<unsigned> calls{0};auto main=std::this_thread::get_id();
     auto probe=[&] {
         if(std::this_thread::get_id()==main)on_main.store(true);

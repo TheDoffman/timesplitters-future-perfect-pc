@@ -24,7 +24,7 @@ std::unique_ptr<MatchManager> MatchManager::create(const TsfpModMatchConfig &con
         result->guardian_pin_=(config.guardian_sha256 && *config.guardian_sha256)?bounded(config.guardian_sha256,64):"";
         if(!ImagePins{result->worker_pin_,result->guardian_pin_}.valid())throw std::runtime_error("Invalid compiled helper pins");
         result->source_.assign(config.source,config.source_size);
-        result->seed_=config.seed;result->verified_=config.verified;return result;
+        result->seed_=config.seed;result->verified_=config.verified;result->audio_resource_=config.audio_resource;return result;
     }catch(...){error="Script match manager configuration was refused";return nullptr;}
 }
 void MatchManager::retire() noexcept {
@@ -47,7 +47,7 @@ TsfpModMatch *MatchManager::update(const TsfpModWorld *world) {
     // or transient unsupported/networked world cannot resurrect the same epoch.
     if(!world->epoch || world->epoch<=last_epoch_)return nullptr;
     last_epoch_=world->epoch;
-    TsfpModMatchConfig config{worker_.c_str(),cache_.c_str(),source_.data(),source_.size(),seed_,verified_,worker_pin_.c_str(),guardian_pin_.c_str()};
+    TsfpModMatchConfig config{worker_.c_str(),cache_.c_str(),source_.data(),source_.size(),seed_,verified_,worker_pin_.c_str(),guardian_pin_.c_str(),audio_resource_};
     match_=tsfp_mod_match_open(&config,world);
     if(!match_)error_="Script match startup was refused";
     return match_;

@@ -41,10 +41,41 @@ def fault(records):
 
 def packet(*, version=1, status=0, sequence=1, memory=0, commands=(), error=b'', trailing=b''):
     body = struct.pack('<IIQII', version, status, sequence, memory, len(commands))
-    for kind, player, value, text in commands:
-        body += struct.pack('<IIiI', kind, player, value, len(text)) + text
+    for command in commands:
+        kind, player, value, text = command[:4]
+        body += struct.pack('<IIiI', kind, player, value, len(text))
+        if version == 2:
+            body += struct.pack('<IIIi', *(command[4:] if len(command) == 8 else (0,0,0,0)))
+        body += text
     body += struct.pack('<I', len(error)) + error + trailing
     return struct.pack('<I', len(body)) + body
+
+
+def test_native_parent_decodes_mixed_audio_and_legacy_fields_exactly(process_tools,tmp_path):
+    commands=[(1,1,4,b''),(4,31,0,b'',2**32-2,262144,1,-10000),(3,0,0,b'asset ready'),(2,1,0,b''),(9,0,0,b'')]
+    records=run(process_tools,tmp_path,'wire:'+packet(version=2,commands=commands).hex(),'backpressure',hostile=True)
+    assert records[0]['commands'][0]['value']==4
+    assert records[0]['commands'][1]==dict(kind=4,player=31,value=0,text_hex='',resource=2**32-2,pitch=262144,flags=1,volume=-10000)
+    assert records[0]['commands'][2]['text_hex']==b'asset ready'.hex()
+    assert records[-1]['busy'] is True
+
+
+@pytest.mark.parametrize('commands',[
+    [(4,32,0,b'',0,0,0,0)],[(4,0,0,b'',2**32-1,0,0,0)],
+    [(4,0,0,b'',0,16383,0,0)],[(4,0,0,b'',0,262145,0,0)],
+    [(4,0,0,b'',0,0,0,1)],[(4,0,0,b'',0,0,0,-10001)],
+    [(4,0,0,b'',0,0,2,0)],[(4,0,1,b'',0,0,0,0)],[(4,0,0,b'x',0,0,0,0)],
+    [(5,0,0,b'',1,0,0,0)],[(6,0,0,b'',0,1,0,0)],
+    [(7,0,0,b'',0,0,0,-1)],[(8,0,0,b'',0,0,1,0)],[(9,1,0,b'')],
+    [(1,1,4,b'',1,0,0,0)],[(3,0,0,b'hello',0,65536,0,0)],
+    [(2,1,0,b''),(4,0,0,b'',0,0,0,0)],
+])
+def test_native_parent_refuses_noncanonical_or_post_end_audio_fields(process_tools,tmp_path,commands):
+    fault(run(process_tools,tmp_path,'wire:'+packet(version=2,commands=commands).hex(),hostile=True))
+
+
+def test_audio_cannot_be_smuggled_in_the_legacy_wire(process_tools,tmp_path):
+    fault(run(process_tools,tmp_path,'wire:'+packet(commands=[(9,0,0,b'')]).hex(),hostile=True))
 
 
 def test_persistent_original_custom_mode_survives_batch_time_limit(process_tools, tmp_path):

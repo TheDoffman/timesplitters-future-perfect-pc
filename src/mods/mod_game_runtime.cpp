@@ -1,6 +1,7 @@
 #include "mod_game_runtime.h"
 #include "mod_bootstrap.h"
 #include "mod_audio_player.h"
+#include "mod_audio_command.h"
 #include "mod_resources.hpp"
 #include "mod_runtime.hpp"
 #include "mod-runtime-images.h"
@@ -73,6 +74,7 @@ void fail(const char *message) noexcept {
     if(context && context->runtime)context->runtime->close();
 }
 void at_exit(){(void)pc_mod_runtime_shutdown();}
+int audio_resource(uint32_t key){return pc_mod_bootstrap_audio(key)!=nullptr;}
 }
 extern "C" int pc_mod_runtime_prepare(const char *parent) {
     std::lock_guard<std::mutex> lock(facade);
@@ -92,7 +94,7 @@ extern "C" int pc_mod_runtime_prepare(const char *parent) {
         if(!context->resources){fail("Compiled helpers or private cache were unavailable");return 0;}
         constexpr uint32_t policy=TSFP_MOD_IMAGES_VERIFIED|TSFP_MOD_SOURCE_VERIFIED|TSFP_MOD_SEPARATE_SAVES|TSFP_MOD_OFFLINE;
         TsfpModMatchConfig config{context->resources->worker().c_str(),context->resources->cache().c_str(),source,length,
-            0x54534650u,policy,TSFP_MOD_RUNTIME_WORKER_SHA256,TSFP_MOD_RUNTIME_GUARDIAN_SHA256};
+            0x54534650u,policy,TSFP_MOD_RUNTIME_WORKER_SHA256,TSFP_MOD_RUNTIME_GUARDIAN_SHA256,audio_resource};
         context->runtime=tsfp::mods::ScriptRuntime::create(config,[]{
             std::string reason;return pc_mod_bootstrap_probe() && context->resources->recheck(reason);
         },error);
@@ -120,6 +122,19 @@ extern "C" TsfpModMatch *pc_mod_runtime_update(const TsfpModWorld *world,int can
     }catch(...){fail("Script frame admission failed");return nullptr;}
 }
 extern "C" int pc_mod_runtime_faulted(void){return failed.load()?1:0;}
+extern "C" void pc_mod_runtime_audio(const tsfp_script_command *command) {
+    if(!command || !selected.load() || failed.load() || closing.load() || !active_match.load() ||
+       !pc_mod_bootstrap_source(nullptr) || !tsfp_script_audio_shape(command,0))return;
+    if(!context || context->owner!=std::this_thread::get_id())return;
+    switch(command->kind) {
+        case TSFP_SCRIPT_AUDIO_PLAY:(void)pc_mod_audio_play(command->player,command->resource,command->pitch,command->volume,(int)command->flags);break;
+        case TSFP_SCRIPT_AUDIO_STOP:pc_mod_audio_stop(command->player);break;
+        case TSFP_SCRIPT_AUDIO_PAUSE:(void)pc_mod_audio_pause(command->player,(int)command->flags);break;
+        case TSFP_SCRIPT_AUDIO_PITCH:(void)pc_mod_audio_pitch(command->player,command->pitch);break;
+        case TSFP_SCRIPT_AUDIO_VOLUME:(void)pc_mod_audio_volume(command->player,command->volume);break;
+        case TSFP_SCRIPT_AUDIO_STOP_ALL:pc_mod_audio_stop_all();break;
+    }
+}
 extern "C" const char *pc_mod_runtime_error(void){return failed.load()?diagnostic:"";}
 extern "C" void pc_mod_runtime_message(const char *text,size_t size) {
     if(!selected.load() || !text || !size || size>TSFP_SCRIPT_TEXT_MAX)return;

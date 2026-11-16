@@ -20,6 +20,8 @@ const char *pc_mod_runtime_error(void);
 /* Latest validated message, displayed for8s through the shared native overlay.
  * Rendering shows a bounded UTF8 preview; no script text is a format string. */
 void pc_mod_runtime_message(const char *,size_t);
+/* Simulation-thread only, after a complete validated match transaction. */
+void pc_mod_runtime_audio(const tsfp_script_command *);
 int pc_mod_runtime_overlay(char *,size_t);
 /* Signal-only across threads. Shutdown from the simulation thread (or before
  * any frame) drains up to5s. A different-thread exit cancels/drains background

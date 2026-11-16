@@ -1,4 +1,4 @@
-Runtime/mod voice/creator checks: [details](build-test-details.md).
+Runtime/Lua audio/creator checks: [details](build-test-details.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

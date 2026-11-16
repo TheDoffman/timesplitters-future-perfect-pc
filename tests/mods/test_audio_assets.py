@@ -52,6 +52,18 @@ def test_unsorted_resources_have_exact_owned_pcm_and_allocation_free_lookup(proc
     assert (result['views'][0]['rate'],result['views'][0]['channels'],result['views'][0]['frames'])==(48000,2,4)
 
 
+def test_creator_audio_template_waves_load_through_the_actual_native_store(process_tools,tmp_path):
+    from mod_creator import create_project
+    project=tmp_path/'Creator audio';create_project(project,mod_id='audio-lab',name='Audio lab',author='creator',template='audio')
+    pins=[]
+    for key in (1,2):
+        path=project/'audio'/f'{key:08x}.wav';data=path.read_bytes()
+        pins.append(dict(key=key,package=PACKAGE,path=str(path),sha256=hashlib.sha256(data).hexdigest(),bytes=len(data)))
+    result=load(process_tools,pins)
+    assert result['accepted'] and result['count']==2
+    assert all((v['rate'],v['channels'],v['frames'])==(22050,1,22050) for v in result['views'])
+
+
 @pytest.mark.parametrize('kind',['untrusted-owner','bad-package','duplicate-package','no-packages','many-packages',
     'duplicate-key','unknown-key','bad-hash','wrong-hash','zero-size','wrong-size','oversize','empty','malformed','cancel'])
 def test_invalid_handoff_never_publishes_partial_assets(process_tools,tmp_path,kind):

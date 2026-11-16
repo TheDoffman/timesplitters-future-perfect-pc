@@ -2,6 +2,7 @@
    Production self-seals before protocol input. Launcher activation stays
    unavailable until the asynchronous game supervisor and game adapters exist. */
 #include "mod_script.h"
+#include "mod_audio_command.h"
 #include "mod_watchdog.h"
 #include "mod_seal.h"
 #include <stdio.h>
@@ -12,7 +13,7 @@
 #include <io.h>
 #endif
 #define INPUT_MAX (TSFP_SCRIPT_SOURCE_MAX+8u)
-#define OUTPUT_MAX (32u+TSFP_SCRIPT_COMMAND_MAX*(20u+TSFP_SCRIPT_TEXT_MAX))
+#define OUTPUT_MAX TSFP_SCRIPT_REPLY_MAX
 static unsigned char input[INPUT_MAX],output[OUTPUT_MAX];
 typedef struct reader { const unsigned char *data;size_t size,at;int valid; } reader;
 static uint32_t read32(reader *r) {
@@ -25,11 +26,13 @@ static int32_t read_signed(reader *r){uint32_t bits=read32(r);int32_t value;memc
 static void write32(unsigned char *data,uint32_t value){unsigned i;for(i=0;i<4;i++)data[i]=(unsigned char)(value>>(8*i));}
 static size_t put32(size_t at,uint32_t value){write32(output+at,value);return at+4;}
 static int reply(uint32_t status,uint64_t sequence,tsfp_script_vm *vm,const tsfp_script_result *result,const char *error) {
-    size_t at=0,length;uint32_t i,count=status?0:result->count;
-    at=put32(at,1);at=put32(at,status);at=put32(at,(uint32_t)sequence);at=put32(at,(uint32_t)(sequence>>32));
+    size_t at=0,length;uint32_t i,count=status?0:result->count,version=1;
+    for(i=0;i<count;i++)if(tsfp_script_is_audio(result->commands[i].kind))version=2;
+    at=put32(at,version);at=put32(at,status);at=put32(at,(uint32_t)sequence);at=put32(at,(uint32_t)(sequence>>32));
     at=put32(at,(uint32_t)tsfp_script_memory(vm));at=put32(at,count);
     for(i=0;i<count;i++) {
         const tsfp_script_command *c=&result->commands[i];at=put32(at,c->kind);at=put32(at,c->player);at=put32(at,(uint32_t)c->value);at=put32(at,c->text_size);
+        if(version==2){at=put32(at,c->resource);at=put32(at,c->pitch);at=put32(at,c->flags);at=put32(at,(uint32_t)c->volume);}
         memcpy(output+at,c->text,c->text_size);at+=c->text_size;
     }
     length=error?strlen(error):0;if(length>255)length=255;

@@ -1,3 +1,9 @@
+Lua audio_api=1 explicitly enables bounded game.audio controls. New batches use
+reply v2 fields; legacy batches keep v1. Parent resource callbacks are retained
+through manager/match and checked before model commit. Owner-thread dispatch
+precedes stock score/end; stop-only after End/Stop. Capability stays off pending
+gameplay. SDK/wire/test contract: ../development/mod-audio-scripting.md.
+
 Audio boot: mod_bootstrap optionally loads a source-owner-bound audio capsule
 before the save lease, exposes PCM only after commit, and retains snapshots on
 invalidation. No playback capability yet. Contract: ../development/mod-audio-assets.md.

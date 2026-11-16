@@ -17,7 +17,7 @@ static int run(const std::string &image,const std::string &cache,const std::stri
     while((size=fread(block,1,sizeof(block),stdin))!=0){source.append(block,size);if(source.size()>1024u*1024)return 2;}
     TsfpModWorld world{};world.epoch=123;world.authoritative=world.offline=1;world.tick_rate=60;world.player_count=2;
     world.players[0]={1,0,0,100,0,0,0};world.players[1]={2,1,0,100,1,2,3};world.identities[0]=71;world.identities[1]=72;
-    TsfpModMatchConfig config{image.c_str(),cache.c_str(),source.data(),source.size(),123,15,worker_hash.c_str(),guardian_hash=="-"?"":guardian_hash.c_str()};
+    TsfpModMatchConfig config{image.c_str(),cache.c_str(),source.data(),source.size(),123,15,worker_hash.c_str(),guardian_hash=="-"?"":guardian_hash.c_str(),nullptr};
     if(scenario=="policy")config.verified=14;
     if(scenario=="image-policy")config.worker_sha256=nullptr;
     if(scenario=="image-digest")config.worker_sha256="0000000000000000000000000000000000000000000000000000000000000000";
@@ -39,7 +39,7 @@ static int run(const std::string &image,const std::string &cache,const std::stri
         }
         return false;
     };
-    if(scenario=="image-digest") {CHECK(!wait() && tsfp_mod_match_faulted(match) && !commits);puts("{\"invalid\":true}");return 0;}
+    if(scenario=="image-digest" || scenario=="audio-no-validator") {CHECK(!wait() && tsfp_mod_match_faulted(match) && !commits);puts("{\"invalid\":true}");return 0;}
     if(scenario=="overflow") {
         for(unsigned i=0;i<63;++i)CHECK(tsfp_mod_match_enqueue(match,&world,TSFP_SCRIPT_DEATH,1,2)==1);
         CHECK(tsfp_mod_match_enqueue(match,&world,TSFP_SCRIPT_DEATH,1,2)==-1);

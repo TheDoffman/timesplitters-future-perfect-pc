@@ -1,3 +1,9 @@
+Lua audio: script_worker/session/game_runtime tests cover explicit API1 addon,
+v2 reply/canonical fields, budgets, unknown-resource atomic refusal, owner-thread
+dispatch and retained manager callback. Creator/audio-assets tests cover the
+new audio template: actual CLI pack/validate, VM sequence and native PCM store.
+Contract: ../development/mod-audio-scripting.md.
+
 Mod voices: tests/media/test_mod_audio_player.py runs actual player/shared clocks
 with fake committed resources/device. Output-gain fixtures check actual backend
 slots273/304 and refusal305. Factory test_game_runtime.py adds epoch/shutdown

@@ -20,7 +20,7 @@ static int run(const std::string &image,const std::string &cache,const std::stri
     std::string source="local n=0; return {api=1,on_start=function() n=n+1;assert(n==1);game.set_score(1,4) end}";
     if(scenario=="fault")source="return {api=1,on_start=function() error('mode failed') end}";
     if(scenario=="in-flight")source="return {api=1,on_start=function(e) if e.tick==3 then while true do end end;game.set_score(1,4) end}";
-    TsfpModMatchConfig config{image.c_str(),cache.c_str(),source.data(),source.size(),11,15,worker_hash.c_str(),guardian_hash=="-"?"":guardian_hash.c_str()};
+    TsfpModMatchConfig config{image.c_str(),cache.c_str(),source.data(),source.size(),11,15,worker_hash.c_str(),guardian_hash=="-"?"":guardian_hash.c_str(),nullptr};
     if(scenario=="policy")config.verified=14;
     if(scenario=="pin")config.worker_sha256="invalid";
     std::string error;auto manager=tsfp::mods::MatchManager::create(config,error);

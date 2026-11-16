@@ -149,6 +149,11 @@ void pc_mod_game_frame(void (*original)(void)) {
     TsfpModCommit commit;
     int status=tsfp_mod_match_pump(pc_mod_bound,&world,&commit);
     if(status>0) {
+#ifdef TSFP_MOD_GAME
+        // Apply validated sound controls before stock score/end routines can
+        // transition the title out of this match. No worker-owned pointers.
+        for(uint32_t i=0;i<commit.transaction.count;++i)pc_mod_runtime_audio(&commit.transaction.commands[i]);
+#endif
         /* Refresh through the real stock score pass; its adapter applies the
            committed model and preserves raw statistics. No worker pointers. */
         guest_call(sub_00064810,1,0u);

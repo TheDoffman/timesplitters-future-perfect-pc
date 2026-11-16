@@ -13,7 +13,7 @@ typedef union allocation { LUAI_MAXALIGN; size_t size; } allocation;
 _Static_assert(sizeof(lua_Integer)==8,"Mod API requires64-bit Lua integers on every host");
 struct tsfp_script_vm {
     lua_State *lua; size_t used; uint32_t random,remaining,calls;
-    int failed,loaded,phase,ended,end_queued,module,tick_seen;
+    int failed,loaded,phase,ended,end_queued,module,tick_seen,audio_api;
     uint64_t sequence,tick,last_tick_callback;
     char error[256]; const char *source; size_t source_size;
     const tsfp_script_event *event; tsfp_script_result pending;
@@ -106,6 +106,55 @@ static int message(lua_State *L) {
     if(!length || length>TSFP_SCRIPT_TEXT_MAX || !valid_text((const unsigned char *)text,length))return reject(L,"invalid message text");
     out=command(L,vm,TSFP_SCRIPT_MESSAGE);out->text_size=(uint32_t)length;memcpy(out->text,text,length);return 0;
 }
+static tsfp_script_vm *audio_call(lua_State *L,int stopping_ok) {
+    tsfp_script_vm *vm=host_call(L);
+    if(vm->audio_api!=1){reject(L,"declare audio_api=1 before using sound commands");return NULL;}
+    if(!stopping_ok && (vm->end_queued || vm->event->kind==TSFP_SCRIPT_STOP)) {
+        reject(L,"sound update after match end");return NULL;
+    }
+    return vm;
+}
+static uint32_t audio_pitch_value(lua_State *L,int index) {
+    if(lua_isnoneornil(L,index))return 0;
+    if(lua_type(L,index)!=LUA_TNUMBER){reject(L,"sound pitch must be a number");return 0;}
+    double value=lua_tonumber(L,index);
+    if(!isfinite(value) || (value!=0 && (value<0.25 || value>4))){reject(L,"sound pitch is out of range");return 0;}
+    return (uint32_t)(value*65536.0+0.5);
+}
+static int32_t audio_volume_value(lua_State *L,int index) {
+    if(lua_isnoneornil(L,index))return 0;
+    if(lua_type(L,index)!=LUA_TNUMBER){reject(L,"sound gain must be a number");return 0;}
+    double value=lua_tonumber(L,index);
+    if(!isfinite(value) || value<0 || value>1){reject(L,"sound gain is out of range");return 0;}
+    if(value==0)return -10000;
+    double level=2000.0*log10(value);return level< -10000?-10000:(int32_t)level;
+}
+static int audio_boolean(lua_State *L,int index,int default_value) {
+    if(lua_isnoneornil(L,index))return default_value;
+    if(lua_type(L,index)!=LUA_TBOOLEAN)return reject(L,"sound flag must be boolean");
+    return lua_toboolean(L,index);
+}
+static int audio_play(lua_State *L) {
+    tsfp_script_vm *vm=audio_call(L,0);uint32_t voice=(uint32_t)integer(L,1,0,31),resource=(uint32_t)integer(L,2,0,UINT32_MAX-1u);
+    uint32_t pitch=audio_pitch_value(L,3);int32_t volume=audio_volume_value(L,4);int looping=audio_boolean(L,5,0);
+    if(lua_gettop(L)>5)return reject(L,"too many sound arguments");
+    tsfp_script_command *out=command(L,vm,TSFP_SCRIPT_AUDIO_PLAY);out->player=voice;out->resource=resource;out->pitch=pitch;out->volume=volume;out->flags=(uint32_t)looping;return 0;
+}
+static int audio_control(lua_State *L,uint32_t kind) {
+    tsfp_script_vm *vm=audio_call(L,kind==TSFP_SCRIPT_AUDIO_STOP || kind==TSFP_SCRIPT_AUDIO_STOP_ALL);
+    uint32_t voice=kind==TSFP_SCRIPT_AUDIO_STOP_ALL?0:(uint32_t)integer(L,1,0,31),pitch=0,flags=0;int32_t volume=0;
+    if(kind==TSFP_SCRIPT_AUDIO_PAUSE)flags=(uint32_t)audio_boolean(L,2,1);
+    if(kind==TSFP_SCRIPT_AUDIO_PITCH)pitch=audio_pitch_value(L,2);
+    if(kind==TSFP_SCRIPT_AUDIO_VOLUME)volume=audio_volume_value(L,2);
+    int maximum=kind==TSFP_SCRIPT_AUDIO_STOP_ALL?0:kind==TSFP_SCRIPT_AUDIO_STOP?1:2;
+    if(lua_gettop(L)>maximum)return reject(L,"too many sound arguments");
+    tsfp_script_command *out=command(L,vm,kind);out->player=voice;out->pitch=pitch;out->volume=volume;out->flags=flags;return 0;
+}
+static int audio_stop(lua_State *L){return audio_control(L,TSFP_SCRIPT_AUDIO_STOP);}
+static int audio_pause(lua_State *L){return audio_control(L,TSFP_SCRIPT_AUDIO_PAUSE);}
+static int audio_pitch(lua_State *L){return audio_control(L,TSFP_SCRIPT_AUDIO_PITCH);}
+static int audio_volume(lua_State *L){return audio_control(L,TSFP_SCRIPT_AUDIO_VOLUME);}
+static int audio_stop_all(lua_State *L){return audio_control(L,TSFP_SCRIPT_AUDIO_STOP_ALL);}
 static void field_integer(lua_State *L,const char *name,lua_Integer value){lua_pushinteger(L,value);lua_setfield(L,-2,name);}
 static void field_number(lua_State *L,const char *name,lua_Number value){lua_pushnumber(L,value);lua_setfield(L,-2,name);}
 static int players(lua_State *L) {
@@ -131,7 +180,9 @@ static int bootstrap(lua_State *L) {
     for(i=0;removed[i];i++){lua_pushnil(L);lua_setglobal(L,removed[i]);}
     lua_getglobal(L,"string");lua_pushnil(L);lua_setfield(L,-2,"dump");lua_pop(L,1);
     lua_getglobal(L,"math");lua_pushnil(L);lua_setfield(L,-2,"random");lua_pushnil(L);lua_setfield(L,-2,"randomseed");lua_pop(L,1);
-    luaL_newlib(L,functions);field_integer(L,"api",1);lua_setglobal(L,"game");return 0;
+    luaL_newlib(L,functions);field_integer(L,"api",1);
+    static const luaL_Reg sounds[]={{"play",audio_play},{"stop",audio_stop},{"pause",audio_pause},{"pitch",audio_pitch},{"volume",audio_volume},{"stop_all",audio_stop_all},{NULL,NULL}};
+    luaL_newlib(L,sounds);field_integer(L,"api",1);lua_setfield(L,-2,"audio");lua_setglobal(L,"game");return 0;
 }
 tsfp_script_vm *tsfp_script_create(uint32_t seed) {
     tsfp_script_vm *vm=(tsfp_script_vm *)calloc(1,sizeof(*vm));int status;if(!vm)return NULL;
@@ -146,10 +197,16 @@ static int load_module(lua_State *L) {
     lua_call(L,0,1);
     if(lua_type(L,-1)!=LUA_TTABLE)return reject(L,"script must return an API1 callback table");
     lua_getfield(L,-1,"api");if(!lua_isinteger(L,-1) || lua_tointeger(L,-1)!=1)return reject(L,"unsupported script API");lua_pop(L,1);
+    lua_getfield(L,-1,"audio_api");
+    if(!lua_isnil(L,-1)) {
+        if(!lua_isinteger(L,-1) || lua_tointeger(L,-1)!=1)return reject(L,"unsupported sound API");
+        vm->audio_api=1;
+    }
+    lua_pop(L,1);
     lua_pushnil(L);
     while(lua_next(L,-2)) {
         const char *name;if(lua_type(L,-2)!=LUA_TSTRING)return reject(L,"invalid callback key");name=lua_tostring(L,-2);
-        if(strcmp(name,"api")) {
+        if(strcmp(name,"api") && strcmp(name,"audio_api")) {
             if(strcmp(name,"on_start") && strcmp(name,"on_tick") && strcmp(name,"on_player_death") && strcmp(name,"on_stop"))return reject(L,"unknown callback name");
             if(lua_type(L,-1)!=LUA_TFUNCTION)return reject(L,"callback must be a function");
         }
