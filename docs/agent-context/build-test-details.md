@@ -1,3 +1,9 @@
+Audio startup: test_mod_bootstrap.py exercises source/audio owner matching,
+incomplete/changed/malformed requests, storage commit gating and retained PCM
+after invalidation. Shared launcher UI tests exercise actual install/staging/
+configure/disable with a fixture-only audio capability, Unicode roots, tampering
+and preservation of unknown cache files. No production playback capability.
+
 Private audio handoff: tests/mods/test_audio_capsule.py uses the shared launcher
 mod-launch-vectors.json, actual native capsule reader and immutable WAV store.
 C# encoder checks run in the shared launcher UI suite. Wire/limits/authority:

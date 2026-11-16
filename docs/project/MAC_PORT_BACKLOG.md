@@ -1,7 +1,17 @@
-Private audio capsule handoff (2026-11-16): **In progress**.
-Shared ModAudioCapsule encoder and native read_audio_capsule use the same wire
-on all hosts. Windows native227 and launcher checks pass; Mac/Linux validation
-and startup/render activation remain pending. See mod-audio-assets.md and STATUS.
+Audio profile staging/startup integration (2026-11-16): **In progress**.
+Shared launcher stages/hash-checks a deduplicated audio cache and exact capsule;
+native bootstrap binds it to source owners before save creation, gates PCM on
+commit and retains it after invalidation. Windows257 native checks and launcher
+113 UI groups pass. Mac/Linux verification follows. Production audio capability
+and actual playback remain off. See mod-audio-assets.md and STATUS.
+
+Private audio capsule handoff (2026-11-16, source809bba7d): **In progress**.
+Common ModAudioCapsule/read_audio_capsule encode/validate the same path-free
+wire. Native227 checks pass on each actual host, including32 owners/8192 clips.
+All three native launchers build/pass shared UI and fixture backend checks.
+Mac/Linux native ASan/UBSan31 checks each pass (no leak detection). Source is
+pushed/synchronized; CI43861454203 pending. Launcher staging/startup wiring and
+actual custom playback remain open. See mod-audio-assets.md and STATUS.
 
 Creator session vault (2026-11-15, source1a135c18): **In progress**.
 Shared opt-in/resume/forget UI and account-role revalidation use thin OS stores:

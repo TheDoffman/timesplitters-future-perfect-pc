@@ -3,6 +3,7 @@
 #endif
 #include "mod_bootstrap.h"
 #include "mod_capsule.hpp"
+#include "mod_audio_capsule.hpp"
 #include "mod_saves.hpp"
 #include <cstdio>
 #include <cstdlib>
@@ -27,6 +28,7 @@ std::atomic<Phase> phase{Phase::Fresh};
 struct Context {
     std::unique_ptr<tsfp::mods::SourceCapsule> capsule;
     std::unique_ptr<tsfp::mods::SaveNamespace> saves;
+    std::unique_ptr<const tsfp::mods::AudioAssets> audio;
 };
 // Process-lifetime ownership is intentional: guest background storage may still
 // be live during C++ static destruction. The OS releases the lock on final exit.
@@ -70,7 +72,10 @@ extern "C" int pc_mod_bootstrap_prepare(const char *original_saves) {
     phase=Phase::Preparing;
     try {
         auto path=environment("TSFP_MOD_SCRIPT_CAPSULE",4095),pin=environment("TSFP_MOD_SCRIPT_CAPSULE_SHA256",64);
-        if(!path.present && !pin.present){phase=Phase::Ordinary;return 1;}
+        auto audio=environment("TSFP_MOD_AUDIO_CAPSULE",4095),audio_pin=environment("TSFP_MOD_AUDIO_CAPSULE_SHA256",64),
+             audio_cache=environment("TSFP_MOD_AUDIO_CACHE",4095);
+        bool has_audio=audio.present || audio_pin.present || audio_cache.present;
+        if(!path.present && !pin.present && !has_audio){phase=Phase::Ordinary;return 1;}
         if(!path.present || path.value.empty() || !pin.present || pin.value.empty())return fail("Incomplete source handoff");
         std::string original=original_saves?original_saves:environment("RECOMP_SAVE_DIR",4095).value;
         if(original.empty())return fail("An explicit original save root is required");
@@ -78,6 +83,13 @@ extern "C" int pc_mod_bootstrap_prepare(const char *original_saves) {
         std::string error;
         context->capsule=tsfp::mods::SourceCapsule::read(path.value,pin.value,error);
         if(!context->capsule)return fail("Source verification failed");
+        if(has_audio) {
+            if(!audio.present || audio.value.empty() || !audio_pin.present || audio_pin.value.empty() ||
+               !audio_cache.present || audio_cache.value.empty())return fail("Incomplete audio handoff");
+            context->audio=tsfp::mods::read_audio_capsule(audio.value,audio_pin.value,audio_cache.value,
+                context->capsule->packages(),error);
+            if(!context->audio)return fail("Audio verification failed");
+        }
         char selected[4096];
         int preference=pc_storage_resolve_root(original.c_str(),selected,sizeof selected);
         if(preference<0)return fail("Selected original save drive is unavailable");
@@ -105,6 +117,9 @@ extern "C" const char *pc_mod_bootstrap_source(size_t *length) {
     return ready()?context->capsule->source().data():nullptr;
 }
 extern "C" const char *pc_mod_bootstrap_profile(void) {return ready()?context->capsule->profile().c_str():nullptr;}
+extern "C" const TsfpModWave *pc_mod_bootstrap_audio(uint32_t key) {
+    return ready() && context->audio?context->audio->find(key):nullptr;
+}
 extern "C" int pc_mod_bootstrap_recheck(void) {
     if(!ready())return 0;
     try {std::string error;if(context->saves->recheck(error))return 1;}

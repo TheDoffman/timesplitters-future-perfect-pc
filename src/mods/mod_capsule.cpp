@@ -38,9 +38,10 @@ std::unique_ptr<SourceCapsule> SourceCapsule::read(const std::string &path,const
         uint32_t count=word(bytes,8),size=word(bytes,12);
         need(count && count<=32 && size && size<=source_limit && bytes.size()==16u+count*32u+size);
         auto result=std::unique_ptr<SourceCapsule>(new SourceCapsule());
-        result->package_=hex(bytes,16);std::string previous;
+        result->package_=hex(bytes,16);result->packages_.push_back(result->package_);std::string previous;
         for(uint32_t i=1;i<count;++i) {
             auto digest=hex(bytes,16+i*32);need(digest!=result->package_ && (previous.empty() || previous<digest));previous=digest;
+            result->packages_.push_back(digest);
         }
         result->source_=bytes.substr(16+count*32);need(source_text(result->source_));
         result->profile_=sha256_bytes(std::string("TSFP isolated mode saves v1\n")+bytes.substr(8,4)+bytes.substr(16,count*32));

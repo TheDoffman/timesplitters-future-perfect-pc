@@ -2,6 +2,7 @@
 #define TSFP_MOD_CAPSULE_HPP
 #include <memory>
 #include <string>
+#include <vector>
 namespace tsfp { namespace mods {
 // A source handoff from the trusted launcher, never a mod's own manifest.
 // Launcher authenticates packages/catalog and supplies the expected capsule hash.
@@ -15,9 +16,11 @@ public:
     const std::string &source()const noexcept{return source_;}
     const std::string &profile()const noexcept{return profile_;}
     const std::string &package()const noexcept{return package_;}
+    const std::vector<std::string> &packages()const noexcept{return packages_;}
 private:
     SourceCapsule()=default;
     std::string source_,profile_,package_;
+    std::vector<std::string> packages_;
 };
 }}
 #endif

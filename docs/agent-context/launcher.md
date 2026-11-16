@@ -1,4 +1,4 @@
-Audio wire: ../development/mod-audio-assets.md; startup/playback off.
+Audio stage/boot: ../development/mod-audio-assets.md; playback off.
 DDS/dependency/public flow: mod-workshop.md.
 Core.Allowed admits only five named game helpers under Bin/ModRuntime/<64 lowercase
 hex>/; uploaded mod admission stays separate. Package regression: build-test-details.md.

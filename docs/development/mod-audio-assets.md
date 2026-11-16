@@ -89,6 +89,58 @@ suite checks the actual encoder; `tests/mods/test_audio_capsule.py` checks the
 actual native capsule-to-store path, malformed policy, independent authority,
 links and Unicode paths. CI registers this native suite alongside the store.
 
-Launcher cache staging/startup wiring, resource binding and actual custom
-playback remain integration work. Audio packages remain inactive in the launcher.
-No new audio capability or replacement permission is advertised by this component.
+At source809bba7d, the native capsule/store/source/scope selection passes227
+cases on each actual host (Windows46.58s, Mac22.54s, Linux30.98s). This includes
+loading the maximum32-package/8192-resource capsule and refusing an extra byte.
+Native launcher builds and shared checks pass on all three hosts (112 Windows,
+113 Mac,114 Linux UI groups), with the actual fixture creator backend. Native
+parent ASan/UBSan capsule checks pass31 each on Mac9.31s/Linux16.42s, with leak
+detection disabled. CI43861454203 is still pending at this evidence checkpoint.
+
+## Profile staging and startup
+
+`ModLibrary` stages audio in the same unpublished generation as the script and
+texture overlay. In this private integration, a script mode may include flat
+`audio/<eight-lowercase-hex-key>.wav` inputs; these keys are mount-local resources,
+not original-event replacement IDs. Ogg, nested names and standalone audio-only
+packages remain inactive. The stable creator API and original-event bindings are
+separate work; this naming rule does not establish those bindings.
+
+`StageAudio` creates `audio/<payload-sha256>.wav` with CreateNew, hashing the same
+bounded byte snapshot it writes, and deduplicates equal payloads. `audio.bin`
+binds all selected package identities, including texture dependencies. The
+profile is published only after the whole generation is staged and trust is
+rechecked. Cancellation/failure retains the old profile. Known obsolete cache
+files can be recycled; unknown files survive refusal. At launch,
+`ConfigureAudio` recomputes the expected capsule, rechecks exact capsule/cache
+bytes and the flat cache inventory, and emits only the explicit three-variable
+handoff: `TSFP_MOD_AUDIO_CAPSULE`, `TSFP_MOD_AUDIO_CAPSULE_SHA256`,
+`TSFP_MOD_AUDIO_CACHE`. Ordinary recovery clears inherited TSFP variables.
+
+`mod_bootstrap` accepts these three variables only together with a verified
+script capsule. It obtains the independent package set from that source capsule,
+not from the audio capsule. It loads the complete immutable store before opening
+the save namespace or starting the guest. Incomplete, extra-owner, changed,
+unsupported-WAV or mismatched requests fail startup and poison the storage fence;
+they cannot fall back to original saves. Both script and audio requests absent
+keep ordinary startup. This initial bootstrap route requires a script profile;
+standalone audio mounting is still integration work.
+
+`pc_mod_bootstrap_audio(key)` is unavailable before a successful isolated-storage
+commit and after runtime invalidation. Lookup is allocation/IO-free. Previously
+borrowed PCM remains owned until process exit so draining voices cannot access
+freed storage. It does not start any voice or select an original event.
+
+The shared launcher requires both script capability1 and `mod_audio_version:1`
+in the installed game manifest before enabling a script/audio package. Current
+production game builds deliberately do not advertise the audio capability until
+renderer integration and actual playback are verified. The launcher tests use a
+fixture-only capability to exercise real install, stage, configure, tamper
+refusal, disable and unknown-file preservation. Native bootstrap tests exercise
+actual source/audio readers, PCM snapshots and storage commit with narrow host
+storage adapters, including source-owner binding and retained views after
+invalidation. These checks do not establish custom playback.
+
+Resource/mixer binding, script audio API, playback clocks/pitch/loop/stop and
+voice budgets remain open. No audio capability or replacement permission is
+advertised by production builds yet.

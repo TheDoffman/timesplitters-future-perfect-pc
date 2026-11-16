@@ -336,16 +336,19 @@ public static class LauncherSharedUiChecks
             Array.Copy(BitConverter.GetBytes(pair.Value),0,bytes,pair.Key,4);
         for(int i=128;i<bytes.Length;i++)bytes[i]=marker;return bytes;
     }
-    static string LibraryPackage(string root,string id,string version,byte marker,string key="0123456789abcdef",Dictionary<string,string> dependencies=null,bool script=false,string extra=null,string author="Test creator",string sourceText=null)
+    static string LibraryPackage(string root,string id,string version,byte marker,string key="0123456789abcdef",Dictionary<string,string> dependencies=null,bool script=false,string extra=null,string author="Test creator",string sourceText=null,Dictionary<string,byte[]> additionalPayloads=null)
     {
         string file=script?"scripts/main.lua":"textures/"+key+".dds";byte[] data=script?System.Text.Encoding.UTF8.GetBytes(sourceText??"return true\n"):WorkshopDds(marker);string hash;
         using(var sha=System.Security.Cryptography.SHA256.Create())hash=BitConverter.ToString(sha.ComputeHash(data)).Replace("-","").ToLowerInvariant();
-        string json=Json.Encode(new {schema=1,id=id,version=version,name=id,author=author,description="Synthetic original fixture",game="tsfp-us-45410066",api="tsfp-mod-v1-draft",dependencies=dependencies??new Dictionary<string,string>(),files=new Dictionary<string,object>{{file,new {sha256=hash,size=data.Length}}}});
+        var files=new Dictionary<string,object>{{file,new {sha256=hash,size=data.Length}}};
+        foreach(var pair in additionalPayloads??new Dictionary<string,byte[]>())files.Add(pair.Key,new {sha256=ModTrust.Hash(pair.Value),size=pair.Value.Length});
+        string json=Json.Encode(new {schema=1,id=id,version=version,name=id,author=author,description="Synthetic original fixture",game="tsfp-us-45410066",api="tsfp-mod-v1-draft",dependencies=dependencies??new Dictionary<string,string>(),files=files});
         string package=Path.Combine(root,Guid.NewGuid().ToString("N")+".zip");
         using(var archive=System.IO.Compression.ZipFile.Open(package,System.IO.Compression.ZipArchiveMode.Create)) {
             using(var output=archive.CreateEntry("mod.json").Open()){byte[] text=System.Text.Encoding.UTF8.GetBytes(json);output.Write(text,0,text.Length);}
             using(var output=archive.CreateEntry(file).Open())output.Write(data,0,data.Length);
             if(extra!=null)using(var output=archive.CreateEntry(extra).Open())output.Write(data,0,data.Length);
+            foreach(var pair in additionalPayloads??new Dictionary<string,byte[]>())using(var output=archive.CreateEntry(pair.Key).Open())output.Write(pair.Value,0,pair.Value.Length);
         }
         return package;
     }
@@ -933,6 +936,38 @@ public static class LauncherSharedUiChecks
                 Need(library.Enabled().SequenceEqual(new[]{"ui-base@1.0.0","ui-root@1.0.0"}) && page.StatusText.Contains("enabled"),"UI confirmation did not enable the closure");
             }
         }));
+        Test("audio staging binds verified profile bytes and waits for playback capability",()=>{
+            string folder=Path.Combine(root,"audio-staging-\u03a9");Directory.CreateDirectory(folder);
+            Dictionary<string,object> corpus;
+            using(var input=typeof(LauncherSharedUiChecks).Assembly.GetManifestResourceStream("mod-launch-vectors.json"))
+            using(var memory=new MemoryStream()){input.CopyTo(memory);corpus=ModJson.Read(System.Text.Encoding.UTF8.GetString(memory.ToArray()));}
+            var vector=(Dictionary<string,object>)((object[])corpus["audioVectors"])[0];byte[] wav=Convert.FromBase64String((string)vector["wav"]);
+            var library=new ModLibrary(folder,()=>false);var token=System.Threading.CancellationToken.None;
+            var payloads=new Dictionary<string,byte[]>{{"audio/00000000.wav",wav},{"audio/00011170.wav",wav}};
+            string package=LibraryPackage(root,"audio-mode","1.0.0",1,script:true,additionalPayloads:payloads);
+            var mode=library.Install(package,Core.Hash(package),token);
+            string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));Directory.CreateDirectory(Path.GetDirectoryName(manifest));
+            File.WriteAllText(manifest,"{\"mod_script_version\":1}");
+            Need(mode.ScriptMode && mode.HasAudio && !library.CanEnable(mode),"Audio capability gate was bypassed");
+            WorkshopReject(()=>library.Enable(mode.Key,token),"Audio enabled before playback support");
+            // Fixture-only capability: production game builds do not advertise it yet.
+            File.WriteAllText(manifest,"{\"mod_script_version\":1,\"mod_audio_version\":1}");library.Enable(mode.Key,token);
+            var info=GameSettings.StartInfo(folder);string cache=info.EnvironmentVariables["TSFP_MOD_AUDIO_CACHE"],path=info.EnvironmentVariables["TSFP_MOD_AUDIO_CAPSULE"];
+            var pins=new[]{new ModAudioPin{Key=0,Package=mode.Sha256,Sha256=ModTrust.Hash(wav),Bytes=(ulong)wav.Length},new ModAudioPin{Key=70000,Package=mode.Sha256,Sha256=ModTrust.Hash(wav),Bytes=(ulong)wav.Length}};
+            var capsule=ModAudioCapsule.Create(new[]{mode.Sha256},pins);
+            Need(File.ReadAllBytes(path).SequenceEqual(capsule.Bytes) && info.EnvironmentVariables["TSFP_MOD_AUDIO_CAPSULE_SHA256"]==capsule.Sha256,"Staged audio capsule differs from selected profile");
+            string clip=Directory.GetFiles(cache).Single();Need(Path.GetFileName(clip)==ModTrust.Hash(wav)+".wav" && File.ReadAllBytes(clip).SequenceEqual(wav),"Flat audio cache did not deduplicate exact verified bytes");
+            Need(!GameSettings.StartInfo(folder,true).EnvironmentVariables.ContainsKey("TSFP_MOD_AUDIO_CAPSULE"),"Original recovery inherited audio activation");
+            File.WriteAllText(path,"changed");WorkshopReject(()=>GameSettings.StartInfo(folder),"Tampered audio capsule accepted");
+            library.Enable(mode.Key,token);info=GameSettings.StartInfo(folder);cache=info.EnvironmentVariables["TSFP_MOD_AUDIO_CACHE"];
+            File.WriteAllText(Directory.GetFiles(cache).Single(),"changed");WorkshopReject(()=>GameSettings.StartInfo(folder),"Tampered cached audio accepted");
+            library.Enable(mode.Key,token);info=GameSettings.StartInfo(folder);File.WriteAllText(Path.Combine(info.EnvironmentVariables["TSFP_MOD_AUDIO_CACHE"],"foreign.wav"),"keep");
+            WorkshopReject(()=>GameSettings.StartInfo(folder),"Foreign audio cache files accepted");
+            // Preserve unknown files rather than trying to repair that generation.
+            string foreign=Path.Combine(info.EnvironmentVariables["TSFP_MOD_AUDIO_CACHE"],"foreign.wav");
+            library.DisableAll(token);Need(library.Enabled().Length==0 && !GameSettings.StartInfo(folder).EnvironmentVariables.ContainsKey("TSFP_MOD_AUDIO_CACHE"),"Disabled audio remained active");
+            Need(File.ReadAllText(foreign)=="keep","Unknown audio cache files were deleted during disable");
+        });
         Test("native mod validation rejects archive traversal and duplicate metadata",()=>{
             string folder=Path.Combine(root,"mod-hostile");Directory.CreateDirectory(folder);var library=new ModLibrary(folder,()=>false);
             foreach(string extra in new[]{"../outside.dds","scripts/payload.exe","Textures/0123456789abcdef.dds"}) {

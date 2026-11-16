@@ -1,9 +1,33 @@
-Private audio capsule handoff (2026-11-16): shared C# encoder and native
-reader use bounded TSFPAUD1 wire. Paths never enter the capsule; exact independent
-active owners gate the immutable WAV store. Windows native capsule/store/source/
-scope selection227 passes46.58s; Windows launcher build/shared checks pass.
-Cross-host component validation follows. No startup staging/render binding or
-audio capability activated. Contract: docs/development/mod-audio-assets.md.
+Audio profile staging/startup integration (2026-11-16):
+ModLibrary now stages exact verified WAV snapshots in a flat hash-named cache,
+binds their capsule to every selected package, and rechecks it at Configure.
+Native bootstrap loads audio against the source capsule's independent package
+set before opening isolated saves. PCM appears only after storage commit and
+remains owned for draining voices after invalidation. Invalid/partial/changed/
+malformed-wave requests abort before creating the save namespace. Known obsolete
+cache files can be removed; unknown files are preserved. Windows native capsule/
+bootstrap/store/source/scope257 checks pass62.65s; the Windows launcher build and
+113 shared UI groups plus fixture backend pass with unchanged inputs. The first
+launcher run correctly rejected a receipt after inputs changed during validation;
+the final unchanged-input rerun passes. Mac/Linux and normal game builds follow.
+No production mod_audio_version capability is advertised; the staging acceptance
+uses a fixture-only capability. Actual custom playback remains open.
+
+Private audio capsule handoff (2026-11-16, source809bba7d):
+The shared C# encoder and native reader use bounded TSFPAUD1 wire with no paths.
+The reader matches exact independently authorized active package identities and
+loads hash-pinned WAVs through the immutable store. Native capsule/store/source/
+scope selection passes227 cases on Windows46.58s, Mac22.54s and Linux30.98s.
+The exact maximum394256-byte capsule loads32 owners/8192 real PCM resources;
+trailing data, mismatched authority and linked inputs are refused. All three
+native launcher builds/tests pass:112 Windows,113 Mac and114 Linux shared UI
+groups, including encoder golden vectors, plus the real fixture creator backend.
+Actual native parent ASan/UBSan capsule suites pass31 each on Mac9.31s and
+Linux16.42s (leak detection disabled). Source809bba7d is pushed and synchronized
+on all three hosts. CI43861454203 remains in progress; no final CI claim yet.
+No startup staging/render binding or audio capability is activated. These are
+handoff/component checks, not in-game audio acceptance or a public release.
+Contract: docs/development/mod-audio-assets.md.
 
 Immutable native audio asset store (2026-11-16, sourceef78a73c):
 AudioAssets now preflights trusted package/asset pins and loads a complete,

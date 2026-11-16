@@ -1,3 +1,7 @@
+Audio boot: mod_bootstrap optionally loads a source-owner-bound audio capsule
+before the save lease, exposes PCM only after commit, and retains snapshots on
+invalidation. No playback capability yet. Contract: ../development/mod-audio-assets.md.
+
 Native mod_bootstrap.cpp/.h joins source validation, save lease, permanent host picker lock and kernel fence before startup; commit checks the actual root before exposing immutable source. It holds the lease until process teardown. The production factory consumes this source; see below and mod-source-handoff.md for explicit developer handoff and remaining activation gates.
 
 SDK pack --modules (tools/mods/mod_lua_bundle.py) assembles creator-owned modules

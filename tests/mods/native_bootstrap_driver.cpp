@@ -1,4 +1,5 @@
 #include "mod_bootstrap.h"
+#include "mod_files.hpp"
 extern "C" {
 #include "../runtime/guest_storage.h"
 }
@@ -36,9 +37,9 @@ static int run(const std::string &mode,const std::string &original,const std::st
     if(original.size()>=sizeof paths.save)return 2;
     std::strcpy(paths.save,original.c_str());
     if(late && !tsfp_storage_commit(&storage,&paths))return 3;
-    bool before=pc_mod_bootstrap_source(nullptr)!=nullptr;
+    bool before=pc_mod_bootstrap_source(nullptr)!=nullptr || pc_mod_bootstrap_audio(0)!=nullptr;
     int prepared=pc_mod_bootstrap_prepare((mode=="no-root" || mode=="environment-root")?nullptr:original.c_str());
-    size_t length=99;bool premature=pc_mod_bootstrap_source(&length)!=nullptr || length!=0;
+    size_t length=99;bool premature=pc_mod_bootstrap_source(&length)!=nullptr || length!=0 || pc_mod_bootstrap_audio(0)!=nullptr;
     char required[4096]={};int fence=tsfp_storage_required(&storage,required,sizeof required);
     bool escape=false;int committed=0,rechecked=0;
     if(prepared) {
@@ -54,8 +55,19 @@ static int run(const std::string &mode,const std::string &original,const std::st
     }
     const char *source=pc_mod_bootstrap_source(&length);
     const char *profile=pc_mod_bootstrap_profile();
-    std::printf("{\"prepared\":%s,\"committed\":%s,\"ready\":%s,\"rechecked\":%s,\"locked\":%s,\"fence\":%d,\"escape\":%s,\"premature\":%s,\"bytes\":%zu,\"profile\":\"%s\"}\n",
+    std::printf("{\"prepared\":%s,\"committed\":%s,\"ready\":%s,\"rechecked\":%s,\"locked\":%s,\"fence\":%d,\"escape\":%s,\"premature\":%s,\"bytes\":%zu,\"profile\":\"%s\"",
         prepared?"true":"false",committed?"true":"false",source?"true":"false",rechecked?"true":"false",locked?"true":"false",fence,escape?"true":"false",(before||premature)?"true":"false",length,profile?profile:"");
+    if(mode=="audio" || mode=="audio-invalidate") {
+        const auto *wave=pc_mod_bootstrap_audio(0);std::string pcm;
+        if(wave)pcm=tsfp::mods::sha256_bytes(std::string((const char *)wave->pcm,wave->bytes));
+        bool missing=pc_mod_bootstrap_audio(UINT32_MAX)==nullptr;
+        if(mode=="audio-invalidate")pc_mod_bootstrap_invalidate();
+        bool hidden=pc_mod_bootstrap_audio(0)==nullptr;
+        bool retained=wave && pcm==tsfp::mods::sha256_bytes(std::string((const char *)wave->pcm,wave->bytes));
+        std::printf(",\"audio_ready\":%s,\"audio_hidden\":%s,\"audio_retained\":%s,\"missing_hidden\":%s,\"pcm_sha256\":\"%s\"",
+            wave?"true":"false",hidden?"true":"false",retained?"true":"false",missing?"true":"false",pcm.c_str());
+    }
+    std::puts("}");
     return 0;
 }
 #ifdef _WIN32

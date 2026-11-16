@@ -59,7 +59,8 @@ namespace TimeSplitters.Launcher
         public readonly Dictionary<string,ModPayload> Files=new Dictionary<string,ModPayload>(StringComparer.Ordinal);
         public string Key {get{return Id+"@"+Version;}}
         public bool TextureOnly {get{return Files.Count>0 && Files.Keys.All(name=>Regex.IsMatch(name,@"\Atextures/[0-9a-f]{16}\.dds\z"));}}
-        public bool ScriptMode {get{return Files.ContainsKey("scripts/main.lua") && Files.Keys.All(name=>name=="scripts/main.lua" || Regex.IsMatch(name,@"\Atextures/[0-9a-f]{16}\.dds\z"));}}
+        public bool HasAudio {get{return Files.Keys.Any(name=>name.StartsWith("audio/",StringComparison.Ordinal));}}
+        public bool ScriptMode {get{return Files.ContainsKey("scripts/main.lua") && Files.Keys.All(name=>name=="scripts/main.lua" || Regex.IsMatch(name,@"\Atextures/[0-9a-f]{16}\.dds\z") || Regex.IsMatch(name,@"\Aaudio/[0-9a-f]{8}\.wav\z"));}}
     }
     public sealed class ModPayload {public string Sha256;public long Size;}
 
@@ -95,11 +96,12 @@ namespace TimeSplitters.Launcher
         public ModLibrary(string root):this(root,Core.GameRunning){}
         internal ModLibrary(string root,Func<bool> running,Func<DateTime> clock=null){this.root=Path.GetFullPath(root);this.running=running;this.clock=clock??(()=>DateTime.UtcNow);}
         string PathIn(string name){return Core.PathIn(root,"Mods/"+name);}
-        public bool CanEnable(InstalledMod mod){return mod.TextureOnly || (mod.ScriptMode && ScriptRuntimeAvailable());}
-        bool ScriptRuntimeAvailable()
+        public bool CanEnable(InstalledMod mod){return mod.TextureOnly || (mod.ScriptMode && ScriptRuntimeAvailable() && (!mod.HasAudio || RuntimeAvailable("mod_audio_version")));}
+        bool ScriptRuntimeAvailable(){return RuntimeAvailable("mod_script_version");}
+        bool RuntimeAvailable(string capability)
         {
             string path=Core.PathIn(root,LauncherPlatform.ManifestPath(root));if(!File.Exists(path) || new FileInfo(path).Length>4*1024*1024)return false;
-            try {var manifest=ModJson.Read(File.ReadAllText(path),4*1024*1024);object value;return manifest.TryGetValue("mod_script_version",out value) && value is long && (long)value==1;}
+            try {var manifest=ModJson.Read(File.ReadAllText(path),4*1024*1024);object value;return manifest.TryGetValue(capability,out value) && value is long && (long)value==1;}
             catch(InvalidDataException){return false;}
         }
         ModScriptCapsule ScriptCapsule(InstalledMod[] mods)
@@ -115,6 +117,45 @@ namespace TimeSplitters.Launcher
             // Bind every selected package, including independent texture overlays,
             // because each can change the experience associated with these saves.
             return ModScriptCapsule.Create(mode.Sha256,mods.Where(m=>m!=mode).Select(m=>m.Sha256),bytes);
+        }
+        static ModAudioCapsule AudioCapsule(InstalledMod[] mods)
+        {
+            var pins=new List<ModAudioPin>();
+            foreach(var mod in mods)foreach(var pair in mod.Files.Where(p=>p.Key.StartsWith("audio/",StringComparison.Ordinal))) {
+                Core.Require(Regex.IsMatch(pair.Key,@"\Aaudio/[0-9a-f]{8}\.wav\z"),"Unsupported audio resource name.");
+                pins.Add(new ModAudioPin{Key=UInt32.Parse(pair.Key.Substring(6,8),NumberStyles.HexNumber,CultureInfo.InvariantCulture),
+                    Package=mod.Sha256,Sha256=pair.Value.Sha256,Bytes=(ulong)pair.Value.Size});
+            }
+            return pins.Count==0?null:ModAudioCapsule.Create(mods.Select(m=>m.Sha256),pins);
+        }
+        static void StageAudio(InstalledMod[] mods,string directory,CancellationToken token)
+        {
+            var capsule=AudioCapsule(mods);if(capsule==null)return;
+            string cache=Core.PathIn(directory,"audio");Directory.CreateDirectory(cache);
+            var staged=new HashSet<string>(StringComparer.Ordinal);
+            foreach(var mod in mods)foreach(var pair in mod.Files.Where(p=>p.Key.StartsWith("audio/",StringComparison.Ordinal))) {
+                token.ThrowIfCancellationRequested();if(!staged.Add(pair.Value.Sha256))continue;
+                string source=Core.PathIn(mod.Directory,"content/"+pair.Key);byte[] bytes;
+                using(var input=new FileStream(source,FileMode.Open,FileAccess.Read,FileShare.Read))bytes=Read(input,pair.Value.Size,64L*1024*1024,token);
+                Core.Require(bytes.LongLength==pair.Value.Size && Hash(bytes)==pair.Value.Sha256,"Installed audio changed while staging. Reinstall the mod.");
+                using(var output=new FileStream(Core.PathIn(cache,pair.Value.Sha256+".wav"),FileMode.CreateNew,FileAccess.Write,FileShare.None))output.Write(bytes,0,bytes.Length);
+            }
+            File.WriteAllBytes(Core.PathIn(directory,"audio.bin"),capsule.Bytes);
+        }
+        static void ConfigureAudio(ProcessStartInfo info,InstalledMod[] mods,string directory)
+        {
+            var capsule=AudioCapsule(mods);string path=Core.PathIn(directory,"audio.bin"),cache=Core.PathIn(directory,"audio");
+            if(capsule==null){Core.Require(!File.Exists(path) && !Directory.Exists(cache),"Unexpected active audio. Re-enable the profile.");return;}
+            Core.Require(new FileInfo(path).Length==capsule.Bytes.Length && Core.Hash(path)==capsule.Sha256,"Active audio handoff changed. Re-enable the profile.");
+            var files=new HashSet<string>(StringComparer.Ordinal);
+            foreach(var pair in mods.SelectMany(m=>m.Files).Where(p=>p.Key.StartsWith("audio/",StringComparison.Ordinal))) {
+                string name=pair.Value.Sha256+".wav",file=Core.PathIn(cache,name);files.Add(name);
+                Core.Require(new FileInfo(file).Length==pair.Value.Size && Core.Hash(file)==pair.Value.Sha256,"Active audio changed. Re-enable the profile.");
+            }
+            Core.Require(Directory.GetDirectories(cache).Length==0 && files.SetEquals(Directory.GetFiles(cache).Select(Path.GetFileName)),"Unexpected active audio cache files.");
+            info.EnvironmentVariables["TSFP_MOD_AUDIO_CAPSULE"]=path;
+            info.EnvironmentVariables["TSFP_MOD_AUDIO_CAPSULE_SHA256"]=capsule.Sha256;
+            info.EnvironmentVariables["TSFP_MOD_AUDIO_CACHE"]=cache;
         }
         FileStream Lock(){Directory.CreateDirectory(Core.PathIn(root,"Mods"));return new FileStream(PathIn("library.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);}
         static Dictionary<string,object> Object(Dictionary<string,object> parent,string name)
@@ -282,7 +323,7 @@ namespace TimeSplitters.Launcher
             if(full.StartsWith(active+Path.DirectorySeparatorChar,StringComparison.Ordinal))
                 foreach(string file in Directory.GetFiles(full,"*",SearchOption.AllDirectories)) {
                     string relative=file.Substring(full.Length+1).Replace('\\','/');
-                    Core.Require(relative=="manifest.json" || relative=="mode.bin" || Regex.IsMatch(relative,@"\Atextures/[0-9a-f]{16}\.dds\z"),"Unexpected files in an old mod cache were preserved for review.");
+                    Core.Require(relative=="manifest.json" || relative=="mode.bin" || relative=="audio.bin" || Regex.IsMatch(relative,@"\Aaudio/[0-9a-f]{64}\.wav\z") || Regex.IsMatch(relative,@"\Atextures/[0-9a-f]{16}\.dds\z"),"Unexpected files in an old mod cache were preserved for review.");
                 }
             Directory.Delete(full,true);
         }
@@ -356,11 +397,12 @@ namespace TimeSplitters.Launcher
                     foreach(var pair in mod.Files) {
                         token.ThrowIfCancellationRequested();
                         string source=Core.PathIn(mod.Directory,"content/"+pair.Key);Core.Require(new FileInfo(source).Length==pair.Value.Size && Core.Hash(source)==pair.Value.Sha256,"Installed mod payload was modified; reinstall this mod.");
-                        if(pair.Key=="scripts/main.lua")continue;
+                        if(pair.Key=="scripts/main.lua" || pair.Key.StartsWith("audio/",StringComparison.Ordinal))continue;
                         byte[] bytes=File.ReadAllBytes(source);ValidateDds(bytes);string target=Core.PathIn(textures,Path.GetFileName(pair.Key));File.WriteAllBytes(target,bytes);
                     }
                 }
                 if(capsule!=null)File.WriteAllBytes(Core.PathIn(directory,"mode.bin"),capsule.Bytes);
+                StageAudio(mods,directory,token);
                 Core.Write(Core.PathIn(directory,"manifest.json"),Json.Encode(mods.Select(m=>new {key=m.Key,sha256=m.Sha256}).ToArray()));
                 token.ThrowIfCancellationRequested();Core.Require(!running(),"Close the game before changing enabled mods.");CheckWorkshop(mods);
                 Core.Write(PathIn("profile.json"),Json.Encode(new {schema=1,generation=generation,enabled=mods.Select(m=>new {key=m.Key,sha256=m.Sha256}).ToArray()}));published=true;
@@ -433,7 +475,7 @@ namespace TimeSplitters.Launcher
                 Core.Require(CanEnable(mod) && mod.Sha256==bindings[mod.Key] && Core.Hash(Core.PathIn(mod.Directory,"package.zip"))==mod.Sha256,"Enabled mod is unsupported or has changed. Launch without mods or reinstall it.");
                 foreach(var dependency in mod.Dependencies)Core.Require(mods.Any(m=>m.Id==dependency.Key && m.Version==dependency.Value),"The active mod profile is missing a required dependency.");
                 foreach(var pair in mod.Files) {
-                    if(pair.Key=="scripts/main.lua")continue;
+                    if(pair.Key=="scripts/main.lua" || pair.Key.StartsWith("audio/",StringComparison.Ordinal))continue;
                     string name=Path.GetFileName(pair.Key);Core.Require(expected.Add(name),"Enabled texture conflict.");string file=Core.PathIn(textures,name);
                     Core.Require(new FileInfo(file).Length==pair.Value.Size && Core.Hash(file)==pair.Value.Sha256,"Active mod data changed. Re-enable the profile or launch without mods.");
                 }
@@ -447,6 +489,7 @@ namespace TimeSplitters.Launcher
                 info.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE"]=capsulePath;
                 info.EnvironmentVariables["TSFP_MOD_SCRIPT_CAPSULE_SHA256"]=capsule.Sha256;
             } else Core.Require(!File.Exists(capsulePath),"Unexpected active gameplay mode. Re-enable the profile.");
+            ConfigureAudio(info,mods,directory);
             Core.Require(Directory.GetFiles(textures).Select(Path.GetFileName).OrderBy(s=>s,StringComparer.Ordinal).SequenceEqual(expected.OrderBy(s=>s,StringComparer.Ordinal)),"Unexpected active texture files.");
             info.EnvironmentVariables["TSFP_MOD_TEXTURE_DIR"]=textures;
             }

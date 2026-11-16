@@ -1,8 +1,10 @@
 """Real capsule/save lease plus storage state, with narrow native UI/kernel adapters."""
 import base64
+import hashlib
 import json
 import os
 import subprocess
+import struct
 
 import pytest
 from test_mod_capsule import VECTOR
@@ -14,7 +16,7 @@ def launch(tmp_path):
     original=tmp_path/'Saves';original.mkdir()
     (original/'personal.sav').write_bytes(b'original progress')
     capsule=tmp_path/'launch.bin';capsule.write_bytes(base64.b64decode(VECTOR['wire']))
-    environment={k:v for k,v in os.environ.items() if not k.startswith('TSFP_MOD_SCRIPT_CAPSULE') and k!='RECOMP_SAVE_DIR'}
+    environment={k:v for k,v in os.environ.items() if not k.startswith(('TSFP_MOD_SCRIPT_CAPSULE','TSFP_MOD_AUDIO_')) and k!='RECOMP_SAVE_DIR'}
     environment.update(TSFP_MOD_SCRIPT_CAPSULE=str(capsule),TSFP_MOD_SCRIPT_CAPSULE_SHA256=VECTOR['sha256'])
     return original,capsule,environment
 
@@ -33,6 +35,49 @@ def run(tools,launch,mode='run',preference='-'):
     assert (original/'personal.sav').read_bytes()==b'original progress'
     assert list(original.iterdir())==[original/'personal.sav']
     return result
+
+
+def audio_launch(launch,tmp_path):
+    from test_audio_capsule import setup,VECTOR as audio_vector
+    path,cache,payload=setup(tmp_path)
+    data=bytearray(path.read_bytes());struct.pack_into('<I',data,8,3)
+    data=data[:80]+bytes.fromhex('03'*32)+data[80:];path.write_bytes(data)
+    launch[2].update(TSFP_MOD_AUDIO_CAPSULE=str(path),TSFP_MOD_AUDIO_CAPSULE_SHA256=hashlib.sha256(data).hexdigest(),TSFP_MOD_AUDIO_CACHE=str(cache))
+    return path,payload,audio_vector
+
+
+@pytest.mark.parametrize('mode',['audio','audio-invalidate'])
+def test_audio_is_bound_to_source_profile_commit_and_retained_for_draining_voices(process_tools,launch,tmp_path,mode):
+    _,_,vector=audio_launch(launch,tmp_path)
+    result=run(process_tools,launch,mode)
+    assert result['prepared'] and result['committed'] and result['audio_ready'] and result['audio_retained'] and result['missing_hidden']
+    assert result['audio_hidden']==(mode=='audio-invalidate')
+    assert result['pcm_sha256']==hashlib.sha256(base64.b64decode(vector['wav'])[44:]).hexdigest()
+
+
+@pytest.mark.parametrize('kind',['missing-capsule','missing-pin','missing-cache','empty-cache','changed-audio','malformed-wave','wrong-authority','no-script','extra-owner'])
+def test_bad_audio_handoff_aborts_before_save_namespace_creation(process_tools,launch,tmp_path,kind):
+    path,payload,_=audio_launch(launch,tmp_path);env=launch[2]
+    if kind.startswith('missing-'):
+        env.pop({'missing-capsule':'TSFP_MOD_AUDIO_CAPSULE','missing-pin':'TSFP_MOD_AUDIO_CAPSULE_SHA256','missing-cache':'TSFP_MOD_AUDIO_CACHE'}[kind])
+    elif kind=='empty-cache':env['TSFP_MOD_AUDIO_CACHE']=''
+    elif kind=='changed-audio':payload.write_bytes(b'changed')
+    elif kind=='malformed-wave':
+        wav=bytearray(payload.read_bytes());struct.pack_into('<H',wav,20,3)
+        digest=hashlib.sha256(wav).hexdigest();payload.rename(payload.with_name(digest+'.wav'))
+        payload=payload.with_name(digest+'.wav');payload.write_bytes(wav)
+        data=bytearray(path.read_bytes())
+        for at in (112,160):data[at+16:at+48]=bytes.fromhex(digest)
+        path.write_bytes(data);env['TSFP_MOD_AUDIO_CAPSULE_SHA256']=hashlib.sha256(data).hexdigest()
+    elif kind in ('wrong-authority','extra-owner'):
+        data=bytearray(path.read_bytes())
+        if kind=='wrong-authority':data[16:48]=bytes.fromhex('04'*32)
+        else:struct.pack_into('<I',data,8,4);data=data[:112]+bytes.fromhex('04'*32)+data[112:]
+        path.write_bytes(data);env['TSFP_MOD_AUDIO_CAPSULE_SHA256']=hashlib.sha256(data).hexdigest()
+    else:env.pop('TSFP_MOD_SCRIPT_CAPSULE');env.pop('TSFP_MOD_SCRIPT_CAPSULE_SHA256')
+    result=run(process_tools,launch,'audio')
+    assert not result['prepared'] and not result['audio_ready'] and not result['ready'] and result['locked']
+    assert not (launch[0].parent/'ModSaves').exists()
 
 
 def test_verified_source_is_only_published_after_isolated_storage_commit(process_tools,launch):
