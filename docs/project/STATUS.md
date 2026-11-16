@@ -1,3 +1,18 @@
+Owner creator invitations (2026-11-16; source, deployment pending):
+Shared launcher/API now let an authenticated admin issue a one-use24-hour
+creator-only invitation and confirm cancellation by username. Creator/moderator
+roles cannot issue invitations; privileged/recovery invitations remain local
+operator actions. Active role/session rechecked inside the audited transaction;
+only token hashes persist. Native UI hides codes until explicit reveal, never
+auto-copies/saves them and clears them on sign-out. Invitation responses bind
+username, expiry, exact trusted service and strict secret format. Python API/
+service checks pass61 with4 skips on Windows (72.32s). Windows native build/test
+passes116 UI groups and the expanded real account/API backend (54.27s); its
+isolated updater/settings/maintenance checks also pass. Mac/Linux pending.
+Production remains at its previously recorded601/7be deployment. Public owner
+sign-in is pending in the existing Windows sign-in window; the same Mac backup
+setup remains at its existing sudo prompt. Neither window has been restarted.
+
 Exact-source creator SDK -> launcher -> game (2026-11-16):
 At2196da14 full native game rebuilds now pass on Windows, Mac and Linux. Windows
 build checks also pass. Actual-consumer/production-runtime/identity/scope tests

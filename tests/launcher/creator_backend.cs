@@ -23,7 +23,7 @@ public static class CreatorBackendChecks
     {
         readonly Process child;readonly object exchange=new object();readonly Task<string> errors;
         readonly int timeout;
-        public readonly string Invitation,OtherInvitation,ReviewerInvitation,Package,OtherPackage;
+        public readonly string Invitation,OtherInvitation,ReviewerInvitation,AdminInvitation,Package,OtherPackage;
         public readonly Dictionary<string,object> ScanPackages;
         public long Unix=WorkshopTrustChecks.Unix;
         public string LastBearer;
@@ -43,6 +43,7 @@ public static class CreatorBackendChecks
                 Invitation=ModTrust.Text(hello,"invitation");OtherInvitation=ModTrust.Text(hello,"other_invitation");Package=ModTrust.Text(hello,"package");OtherPackage=ModTrust.Text(hello,"other_package");
                 ScanPackages=ModTrust.Object(hello,"scan_packages");
                 ReviewerInvitation=ModTrust.Text(hello,"reviewer_invitation");
+                AdminInvitation=ModTrust.Text(hello,"admin_invitation");
             }catch{Dispose();throw;}
         }
         Dictionary<string,object> Read()
@@ -95,8 +96,25 @@ public static class CreatorBackendChecks
             using(var backend=new Backend(Path.Combine(root,"private-backend")))
             using(var first=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>WorkshopTrustChecks.Now))
             using(var reviewer=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>WorkshopTrustChecks.Now))
+            using(var owner=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>WorkshopTrustChecks.Now))
+            using(var invited=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>WorkshopTrustChecks.Now))
             using(var other=new ModCreatorClient(root,WorkshopTrustChecks.Origin,new Borrowed(backend),()=>WorkshopTrustChecks.Now)) {
                 const string password="Disposable native account password! e\u0301",loginPassword="Disposable native account password! \u00e9";
+                owner.Redeem(backend.AdminInvitation,password,CancellationToken.None).GetAwaiter().GetResult();
+                Need(owner.CanInviteCreators && owner.CanModerate,"The real owner lost invitation privileges.");
+                var invitation=owner.InviteCreator("invited-author",CancellationToken.None).GetAwaiter().GetResult();
+                Need(invitation.Username=="invited-author" && invitation.Service==WorkshopTrustChecks.Origin,"Creator invitation identity changed.");
+                invited.Redeem(invitation.Secret,password,CancellationToken.None).GetAwaiter().GetResult();
+                Need(invited.Username=="invited-author" && !invited.CanInviteCreators && !invited.CanModerate,"Creator invitation granted privileged access.");
+                Reject(()=>invited.InviteCreator("forbidden-author",CancellationToken.None).GetAwaiter().GetResult(),"owner account","A creator issued an invitation.");
+                var cancelled=owner.InviteCreator("cancelled-author",CancellationToken.None).GetAwaiter().GetResult();
+                owner.CancelCreatorInvitation(cancelled.Username,CancellationToken.None).GetAwaiter().GetResult();
+                Reject(()=>invited.Redeem(cancelled.Secret,password,CancellationToken.None).GetAwaiter().GetResult(),"Sign in again","A cancelled invitation was redeemed.");
+                var replacement=owner.InviteCreator(cancelled.Username,CancellationToken.None).GetAwaiter().GetResult();
+                Need(replacement.Secret!=cancelled.Secret,"Invitation replacement reused the cancelled secret.");
+                owner.CancelCreatorInvitation(replacement.Username,CancellationToken.None).GetAwaiter().GetResult();
+                owner.SignOut(CancellationToken.None).GetAwaiter().GetResult();
+                invited.SignOut(CancellationToken.None).GetAwaiter().GetResult();
                 first.Redeem(backend.Invitation,password,CancellationToken.None).GetAwaiter().GetResult();Need(first.Username=="native-creator","Real account redemption differed.");
                 var plan=CreatorPackagePlan.Review(backend.Package,CancellationToken.None);
                 var uploaded=first.Upload(plan,CancellationToken.None).GetAwaiter().GetResult();Need(uploaded.State=="queued" && uploaded.Sha256==plan.Sha256,"Real upload did not enter private quarantine.");

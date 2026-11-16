@@ -22,6 +22,96 @@ from mod_publication import export_snapshot, validate_snapshot
 from test_creator_service import service, account, package, Scanner, PASSWORD
 
 
+def test_owner_invites_creator_once_without_exposing_secret_in_storage_or_audit(service):
+    accounts,uploads,_=service;_,owner,_=account(accounts,'owner','admin');api=WorkshopAPI(accounts,'https://workshop.invalid',uploads=uploads)
+    response=call(api,'POST','/v1/creator-invitations',{'username':'new-creator'},owner)
+    assert response['status']==201;invitation=response['body']
+    assert set(invitation)=={'username','invitation','expires'} and invitation['username']=='new-creator'
+    assert invitation['expires']==accounts.now()+86400
+    with accounts.repository.db() as db:
+        row=db.execute('SELECT * FROM workshop_invites WHERE username=?',('new-creator',)).fetchone()
+        assert row['role']=='creator' and row['account_id'] is None and row['token_hash']!=invitation['invitation']
+        audit=[tuple(r) for r in db.execute('SELECT actor,action,target,note FROM workshop_audit')]
+    assert ('user:owner','invite-created','new-creator','creator') in audit
+    assert invitation['invitation'] not in repr(audit)
+    redeemed=call(api,'POST','/v1/accounts/redeem',{'invitation':invitation['invitation'],'password':PASSWORD})
+    assert redeemed['status']==201 and redeemed['body']['account']=={'username':'new-creator','role':'creator'}
+    assert call(api,'POST','/v1/accounts/redeem',{'invitation':invitation['invitation'],'password':PASSWORD})['status']==401
+    assert call(api,'POST','/v1/creator-invitations',{'username':'new-creator'},owner)['status']==409
+
+
+@pytest.mark.parametrize('role',[None,'creator','moderator'])
+def test_creator_invitation_api_requires_current_owner_role(service,role):
+    accounts,uploads,_=service;token=None
+    if role:_,token,_=account(accounts,'member',role)
+    api=WorkshopAPI(accounts,'https://workshop.invalid',uploads=uploads)
+    assert call(api,'POST','/v1/creator-invitations',{'username':'new-creator'},token)['status']==(403 if role else 401)
+    assert call(api,'DELETE','/v1/creator-invitations/new-creator',token=token)['status']==(403 if role else 401)
+    with accounts.repository.db() as db:assert not db.execute('SELECT 1 FROM workshop_invites WHERE username=?',('new-creator',)).fetchone()
+
+
+@pytest.mark.parametrize('payload',[{'username':'guest','role':'admin'},{'username':'guest','role':'moderator'},{'username':'guest','account_id':1},{'username':'../guest'},{'username':'Aguest'},{}])
+def test_owner_cannot_choose_privileged_roles_recover_accounts_or_alias_names_over_http(service,payload):
+    accounts,uploads,_=service;_,owner,_=account(accounts,'owner','admin');api=WorkshopAPI(accounts,'https://workshop.invalid',uploads=uploads)
+    assert call(api,'POST','/v1/creator-invitations',payload,owner)['status']==400
+    with accounts.repository.db() as db:assert not db.execute('SELECT 1 FROM workshop_invites').fetchone()
+
+
+def test_owner_can_cancel_only_new_creator_invites_and_replace_lost_delivery(service):
+    accounts,uploads,_=service;_,owner,_=account(accounts,'owner','admin');api=WorkshopAPI(accounts,'https://workshop.invalid',uploads=uploads)
+    first=call(api,'POST','/v1/creator-invitations',{'username':'new-creator'},owner)['body']
+    assert call(api,'POST','/v1/creator-invitations',{'username':'new-creator'},owner)['status']==409
+    assert call(api,'DELETE','/v1/creator-invitations/new-creator',token=owner)['status']==204
+    assert call(api,'DELETE','/v1/creator-invitations/new-creator',token=owner)['status']==204
+    assert call(api,'POST','/v1/accounts/redeem',{'invitation':first['invitation'],'password':PASSWORD})['status']==401
+    second=call(api,'POST','/v1/creator-invitations',{'username':'new-creator'},owner)['body']
+    assert second['invitation']!=first['invitation']
+    for name,role in [('new-admin','admin'),('new-reviewer','moderator')]:
+        accounts.create_invite(name,role)
+        assert call(api,'DELETE','/v1/creator-invitations/'+name,token=owner)['status']==403
+    account(accounts,'recovered')
+    recovery=accounts.recovery_invite('recovered','Local operator recovery')
+    assert call(api,'DELETE','/v1/creator-invitations/recovered',token=owner)['status']==403
+    assert accounts.redeem(recovery,PASSWORD,'recovery-fixture')['token']
+
+
+def test_creator_invites_recheck_revoked_or_demoted_owner_and_roll_back_audit_failure(service,monkeypatch):
+    accounts,uploads,_=service;actor,owner,_=account(accounts,'owner','admin');api=WorkshopAPI(accounts,'https://workshop.invalid',uploads=uploads)
+    original=accounts.audit
+    def fail(*args):raise ServiceError(503,'Audit unavailable')
+    monkeypatch.setattr(accounts,'audit',fail)
+    assert call(api,'POST','/v1/creator-invitations',{'username':'new-creator'},owner)['status']==503
+    with accounts.repository.db() as db:assert not db.execute('SELECT 1 FROM workshop_invites WHERE username=?',('new-creator',)).fetchone()
+    monkeypatch.setattr(accounts,'audit',original)
+    invitation=accounts.invite_creator(actor,'new-creator')
+    with accounts.repository.db() as db:db.execute('UPDATE workshop_accounts SET role=? WHERE id=?',('creator',actor.id))
+    with pytest.raises(ServiceError) as denied:accounts.invite_creator(actor,'other-creator')
+    assert denied.value.status==403
+    with pytest.raises(ServiceError) as denied:accounts.cancel_creator_invite(actor,'new-creator')
+    assert denied.value.status==403
+    accounts.logout(actor)
+    assert call(api,'DELETE','/v1/creator-invitations/new-creator',token=owner)['status']==401
+    assert accounts.redeem(invitation['invitation'],PASSWORD,'still-valid')['token']
+
+
+def test_owner_creator_invite_rate_capacity_expiry_and_request_framing(service,monkeypatch):
+    import mod_accounts
+    accounts,uploads,clock=service;_,owner,_=account(accounts,'owner','admin');api=WorkshopAPI(accounts,'https://workshop.invalid',uploads=uploads)
+    monkeypatch.setattr(mod_accounts,'MAX_ACCOUNTS',2)
+    first=call(api,'POST','/v1/creator-invitations',{'username':'new-creator'},owner)['body']
+    assert call(api,'POST','/v1/creator-invitations',{'username':'other-creator'},owner)['status']==503
+    assert call(api,'DELETE','/v1/creator-invitations/new-creator',{'unexpected':True},owner)['status']==400
+    assert call(api,'DELETE','/v1/creator-invitations/new-creator',token=owner,HTTP_TRANSFER_ENCODING='chunked')['status']==400
+    assert call(api,'DELETE','/v1/creator-invitations/new-creator',token=owner,CONTENT_LENGTH='')['status']==204
+    monkeypatch.setattr(mod_accounts,'MAX_ACCOUNTS',10000)
+    for i in range(19):
+        latest=call(api,'POST','/v1/creator-invitations',{'username':'guest-'+str(i)},owner)
+        assert latest['status']==201
+    assert call(api,'POST','/v1/creator-invitations',{'username':'excess-guest'},owner)['status']==429
+    clock.value+=86400
+    assert call(api,'POST','/v1/accounts/redeem',{'invitation':latest['body']['invitation'],'password':PASSWORD})['status']==401
+
+
 @pytest.mark.parametrize('platform,uid', [('posix',0),('nt',1000)])
 def test_production_factory_refuses_root_and_unsupported_host(monkeypatch,platform,uid):
     import mod_api

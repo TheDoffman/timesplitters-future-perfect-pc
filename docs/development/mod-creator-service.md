@@ -1,10 +1,39 @@
 # Private creator service
 
-The creator/moderator backend is implemented in this task branch. It is not
-exposed to the internet. The launcher now includes creator sign-in, invitation
-redemption, reviewed uploads, status history and optional OS-backed session storage.
-Production supervision/backups and public host acceptance remain required before release. The existing Caddy configuration
-still serves only approved snapshot downloads and does not proxy this API.
+The creator/moderator backend is implemented in this task branch. The Mac mini
+hosts the public HTTPS creator API and approved downloads; deployed revisions and
+host acceptance are recorded in [STATUS](../project/STATUS.md). Source changes
+below do not imply that production has been upgraded. The launcher includes
+sign-in, invitation redemption, reviewed uploads, status history and optional
+OS-backed session storage. Final public release and operational acceptance remain.
+
+## Owner-issued creator invitations (source; deployment pending)
+
+In **Mods → Creator**, sign in with the workshop owner account and use **Invite
+a creator**. Enter a unique username: 3–32 lowercase letters, digits or hyphens,
+starting with a letter. **Create invitation** returns a code that expires after
+24 hours and can be redeemed once. Choose **Reveal invitation** and send the code,
+workshop address and username privately to its intended recipient. The code stays
+in launcher memory; it is not saved or copied to the clipboard automatically.
+The recipient uses **Redeem invitation** with their own new workshop password.
+The resulting account can submit mods, with no moderation or admin privileges.
+
+To replace a lost or misdelivered code, enter the username, choose **Review
+cancellation**, then confirm cancellation before creating another invitation.
+Cancellation affects only a pending new creator invitation. It does not delete
+accounts or cancel privileged invitations or account recovery. If creation fails
+after the server accepted it, cancel the pending invitation before retrying;
+the code cannot be fetched again. There are no automatic mutation retries.
+
+`POST /v1/creator-invitations` accepts only `{"username":"creator-name"}` and
+returns `username`, `invitation` and Unix `expires` with HTTP201. Authenticated
+`DELETE /v1/creator-invitations/{username}` takes no body and returns HTTP204,
+including when no invitation remains. Both routes recheck the active admin
+account/session inside the database transaction. Limits are 20 successful issues
+and 40 cancellations per owner per hour, plus the existing global account quota.
+Only invitation hashes are stored; audit records identify the owner and target,
+never the secret. Moderator/admin invitations and recovery remain local operator
+actions. Public creator invitations are not open self-registration.
 
 ## Native creator workflow
 

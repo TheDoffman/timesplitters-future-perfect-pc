@@ -96,6 +96,15 @@ class WorkshopAPI:
             result['account'] = self._identity(self.accounts.authenticate(result['token']))
             return 200, result
         actor = self._actor(environ)
+        if path == '/v1/creator-invitations' and method == 'POST':
+            data = self._json(environ, ('username',))
+            return 201, self.accounts.invite_creator(actor, data['username'])
+        match = re.fullmatch(r'/v1/creator-invitations/([a-z][a-z0-9-]{2,31})', path)
+        if match and method == 'DELETE':
+            demand(environ.get('CONTENT_LENGTH', '') in ('', '0') and not environ.get('HTTP_TRANSFER_ENCODING'),
+                   400, 'Invitation cancellation takes no body')
+            self.accounts.cancel_creator_invite(actor, match[1])
+            return 204, None
         if path == '/v1/reports' and method == 'POST':
             data = self._json(environ, ('sha256','reason','description'))
             return 201, self.reports.create(actor, data['sha256'], data['reason'], data['description'])

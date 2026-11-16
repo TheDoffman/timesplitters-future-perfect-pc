@@ -145,22 +145,49 @@ class Accounts:
         """Local operator command only. Return the one-time secret once to its secure UI/file."""
         name = username(name)
         demand(role in ROLES, 400, 'Invalid account role')
-        secret = secrets.token_urlsafe(32)
-        now = self.now()
         with self.repository.db() as db:
             db.execute('BEGIN IMMEDIATE')
-            db.execute('DELETE FROM workshop_invites WHERE expires<=?', (now,))
-            count = db.execute('SELECT COUNT(*) FROM workshop_accounts').fetchone()[0]
-            count += db.execute('SELECT COUNT(*) FROM workshop_invites').fetchone()[0]
-            demand(count < MAX_ACCOUNTS, 503, 'Workshop account capacity reached')
-            demand(db.execute('SELECT 1 FROM workshop_accounts WHERE username=?',
-                              (name,)).fetchone() is None, 409, 'Creator name already exists')
-            demand(db.execute('SELECT 1 FROM workshop_invites WHERE username=?',
-                              (name,)).fetchone() is None, 409, 'Creator invitation already exists')
-            db.execute('INSERT INTO workshop_invites(token_hash,username,role,created,expires) VALUES(?,?,?,?,?)',
-                       (token_hash(secret), name, role, now, now + INVITE_TTL))
-            self.audit(db, 'system:operator', 'invite-created', name, role)
-        return secret
+            return self._new_invite(db, name, role, 'system:operator')['invitation']
+
+    def _new_invite(self, db, name, role, author):
+        secret = secrets.token_urlsafe(32)
+        now = self.now()
+        db.execute('DELETE FROM workshop_invites WHERE expires<=?', (now,))
+        count = db.execute('SELECT COUNT(*) FROM workshop_accounts').fetchone()[0]
+        count += db.execute('SELECT COUNT(*) FROM workshop_invites').fetchone()[0]
+        demand(count < MAX_ACCOUNTS, 503, 'Workshop account capacity reached')
+        demand(db.execute('SELECT 1 FROM workshop_accounts WHERE username=?',
+                          (name,)).fetchone() is None, 409, 'Creator name already exists')
+        demand(db.execute('SELECT 1 FROM workshop_invites WHERE username=?',
+                          (name,)).fetchone() is None, 409, 'Creator invitation already exists')
+        db.execute('INSERT INTO workshop_invites(token_hash,username,role,created,expires) VALUES(?,?,?,?,?)',
+                   (token_hash(secret), name, role, now, now + INVITE_TTL))
+        self.audit(db, author, 'invite-created', name, role)
+        return {'invitation': secret, 'username': name, 'expires': now + INVITE_TTL}
+
+    def invite_creator(self, actor, name):
+        """An authenticated owner may invite creators, never privileged roles."""
+        name = username(name)
+        with self.repository.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            owner = self.actor(db, actor, ('admin',))
+            demand(self.rate(db, 'creator-invite', owner.username, 20, 3600),
+                   429, 'Creator invitation limit reached; retry later')
+            return self._new_invite(db, name, 'creator', 'user:' + owner.username)
+
+    def cancel_creator_invite(self, actor, name):
+        name = username(name)
+        with self.repository.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            owner = self.actor(db, actor, ('admin',))
+            demand(self.rate(db, 'creator-invite-cancel', owner.username, 40, 3600),
+                   429, 'Invitation cancellation limit reached; retry later')
+            row = db.execute('SELECT * FROM workshop_invites WHERE username=?', (name,)).fetchone()
+            demand(row is None or (row['role'] == 'creator' and row['account_id'] is None),
+                   403, 'Privileged and recovery invitations are managed by the local operator')
+            if row is not None:
+                db.execute('DELETE FROM workshop_invites WHERE username=?', (name,))
+                self.audit(db, 'user:' + owner.username, 'invitation-cancelled', name)
 
     def recovery_invite(self, name, note):
         name = username(name)

@@ -175,6 +175,16 @@ namespace TimeSplitters.Launcher
     }
     // Passwords stay in memory; explicit opt-in stores only a bounded OS-vault
     // session. No cookies, redirects, plaintext files or automatic upload retries.
+    public sealed class CreatorInvitation
+    {
+        public readonly string Username,Secret,Service;public readonly long Expires;
+        internal CreatorInvitation(Dictionary<string,object> data,string expected,string service,long now)
+        {
+            ModTrust.Fields(data,"username invitation expires");Username=CreatorUpload.Text(data,"username",32);
+            Secret=CreatorUpload.Text(data,"invitation",43);Expires=ModTrust.Number(data,"expires",now+1,now+86400);Service=service;
+            ModTrust.Need(Username==expected && Regex.IsMatch(Secret,@"\A[A-Za-z0-9_-]{43}\z"),"invalid creator invitation.");
+        }
+    }
     public sealed class ModCreatorClient : IDisposable
     {
         readonly string root,origin;readonly HttpClient http;readonly Func<DateTime> clock;
@@ -185,6 +195,7 @@ namespace TimeSplitters.Launcher
         public string LastTicket {get;private set;}
         public bool SignedIn {get{return token!=null && Now<expires;}}
         public bool CanModerate {get{return SignedIn && (Role=="moderator" || Role=="admin");}}
+        public bool CanInviteCreators {get{return SignedIn && Role=="admin";}}
         long Now {get{return new DateTimeOffset(clock()).ToUnixTimeSeconds();}}
         public ModCreatorClient(string root):this(root,ModWorkshopClient.Service(root),new HttpClientHandler {AllowAutoRedirect=false,UseCookies=false,UseDefaultCredentials=false},()=>DateTime.UtcNow,new ModSessionVault()){}
         internal ModCreatorClient(string root,string service,HttpMessageHandler handler,Func<DateTime> clock,IModSessionVault vault=null)
@@ -293,6 +304,24 @@ namespace TimeSplitters.Launcher
             catch(Exception error){failure=error;}
             try{Forget();await ClearSaved().ConfigureAwait(false);}finally{if(locked)gate.Release();}
             if(failure!=null)System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+        static void InviteName(string name)
+        {Core.Require(name!=null && Regex.IsMatch(name,@"\A[a-z][a-z0-9-]{2,31}\z"),"Use a lowercase creator name of 3–32 letters, digits or hyphens.");}
+        public async Task<CreatorInvitation> InviteCreator(string name,CancellationToken cancel)
+        {
+            InviteName(name);await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanInviteCreators,"Sign in with the workshop owner account to invite creators.");
+                return new CreatorInvitation(await Request(HttpMethod.Post,"v1/creator-invitations",JsonBody(new {username=name}),201,true,cancel).ConfigureAwait(false),name,origin,Now);
+            }finally{gate.Release();}
+        }
+        public async Task CancelCreatorInvitation(string name,CancellationToken cancel)
+        {
+            InviteName(name);await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanInviteCreators,"Sign in with the workshop owner account to cancel creator invitations.");
+                await Request(HttpMethod.Delete,"v1/creator-invitations/"+name,null,204,true,cancel).ConfigureAwait(false);
+            }finally{gate.Release();}
         }
         public async Task<CreatorUpload[]> History(long after,CancellationToken cancel)
         {
@@ -423,6 +452,8 @@ namespace TimeSplitters.Launcher
         public readonly StackPanel View=new StackPanel();
         readonly TextBox username=new TextBox {Name="CreatorUsername",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly CheckBox remember=new CheckBox {Name="RememberCreatorSignIn",Content="Remember this sign-in on this computer",Margin=new Thickness(0,6,0,8)};
+        readonly TextBox inviteName=new TextBox {Name="InviteCreatorUsername",MaxLength=32,MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        CreatorInvitation issuedInvitation;bool showInvitation;string cancelInvitationName;
         readonly TextBox package=new TextBox {Name="CreatorPackagePath",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reviewNote=new TextBox {Name="ModeratorNote",MaxLength=1800,MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly ComboBox sourceFiles=new ComboBox {Name="ModeratorSourceFile",MinWidth=260,Margin=new Thickness(0,6,0,8)};
@@ -481,7 +512,7 @@ namespace TimeSplitters.Launcher
         {var button=new Button {Name=name,Content=title,IsEnabled=stop==null && enabled,Margin=new Thickness(0,8,10,0)};button.Click+=(s,e)=>action();panel.Children.Add(button);return button;}
         void Render()
         {
-            Detach(username);Detach(remember);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(textureFiles);Detach(reportReason);Detach(reportDescription);Detach(reportResolution);View.Children.Clear();if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();}
+            Detach(username);Detach(remember);Detach(password);Detach(invitation);Detach(inviteName);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(textureFiles);Detach(reportReason);Detach(reportDescription);Detach(reportResolution);View.Children.Clear();if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();ClearInvitation();}
             View.Children.Add(status);var cancel=Button(View,"CancelCreatorOperation","Cancel request",()=>{if(stop!=null)stop.Cancel();});cancel.IsEnabled=stop!=null;Ui.Show(cancel,stop!=null);
             var account=PageTheme.Section(View,"Creator account",authenticated?"Signed in as "+client.Username+" ("+client.Role+")":"Use your workshop account or redeem an operator invitation.");
             if(!authenticated) {
@@ -496,6 +527,7 @@ namespace TimeSplitters.Launcher
             }else Button(account,"CreatorSignOut","Sign out",async()=>{reviewed=null;uploads=new CreatorUpload[0];ClearReviews();ClearReports();await Run(token=>Client.SignOut(token),"Signed out. Local game files were preserved.",35);});
             Button(account,"ForgetCreatorSignIn","Forget saved sign-in",async()=>await Run(token=>Client.ForgetSaved(token),"Saved sign-in forgotten.",40));
             username.IsEnabled=password.IsEnabled=invitation.IsEnabled=stop==null;
+            if(client!=null && client.CanInviteCreators)RenderCreatorInvitations();else ClearInvitation();
             RenderReports(authenticated);
             var submission=PageTheme.Section(View,"Submit a package","Build a ZIP with the mod SDK, enter its full file path, then review it before upload. Its author must match your creator username.");
             submission.Children.Add(package);package.IsEnabled=stop==null;
@@ -513,6 +545,33 @@ namespace TimeSplitters.Launcher
             if(client!=null && client.CanModerate){RenderModeratorReports();RenderModeration();}
         }
         void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;sourcePage=null;texturePreview=null;textureFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";sourceFiles.ItemsSource=null;}
+        void ClearInvitation(){issuedInvitation=null;showInvitation=false;cancelInvitationName=null;}
+        void RenderCreatorInvitations()
+        {
+            var panel=PageTheme.Section(View,"Invite a creator","Give someone an account to submit their own mods. These invitations never grant moderation or administrator access.");
+            panel.Children.Add(PageTheme.Text("Creator username · 3–32 lowercase letters, digits or hyphens",13));panel.Children.Add(inviteName);inviteName.IsEnabled=stop==null;
+            if(cancelInvitationName!=null) {
+                string target=cancelInvitationName;
+                panel.Children.Add(PageTheme.Text("Cancel the pending creator invitation for "+target+"? Existing accounts, privileged invitations and account recovery are preserved.",13,"#FFDAA6"));
+                Button(panel,"ConfirmCancelCreatorInvitation","Cancel this invitation",async()=>{ClearInvitation();await Run(token=>Client.CancelCreatorInvitation(target,token),"Pending creator invitation cancelled.",35);});
+                Button(panel,"BackCreatorInvitation","Back",()=>{cancelInvitationName=null;Render();});return;
+            }
+            Button(panel,"CreateCreatorInvitation","Create invitation",async()=>{string name=inviteName.Text??"";ClearInvitation();await Run(async token=>{issuedInvitation=await Client.InviteCreator(name,token);},"Creator invitation ready. Share it privately before it expires.",35);});
+            Button(panel,"ReviewCancelCreatorInvitation","Review cancellation",()=>{
+                string name=inviteName.Text??"";
+                if(!Regex.IsMatch(name,@"\A[a-z][a-z0-9-]{2,31}\z")){status.Text="Enter a valid lowercase creator username first.";return;}
+                cancelInvitationName=name;showInvitation=false;Render();
+            });
+            panel.Children.Add(PageTheme.Text("Invitations expire after 24 hours and can be redeemed once. If delivery fails, cancel the pending invitation before creating a replacement.",12,"#9EB4C8"));
+            if(issuedInvitation==null)return;
+            panel.Children.Add(PageTheme.Text(issuedInvitation.Username+" · "+issuedInvitation.Service+" · expires "+DateTimeOffset.FromUnixTimeSeconds(issuedInvitation.Expires).LocalDateTime.ToString("g"),12,"#A7D9FA"));
+            if(!showInvitation)Button(panel,"RevealCreatorInvitation","Reveal invitation",()=>{showInvitation=true;Render();});
+            else {
+                panel.Children.Add(new TextBox{Name="CreatedCreatorInvitationSecret",Text=issuedInvitation.Secret,IsReadOnly=true,Margin=new Thickness(0,6,0,8)});
+                panel.Children.Add(PageTheme.Text("Copy this invitation only to its intended creator. It is held in memory and is not saved to a file or copied to your clipboard automatically.",12,"#FFDAA6"));
+                Button(panel,"HideCreatorInvitation","Hide invitation",()=>{showInvitation=false;Render();});
+            }
+        }
         void RenderReports(bool authenticated)
         {
             var panel=PageTheme.Section(View,"Report a mod","Choose Report release in Browse to flag a specific version. Sign-in is required; reports are private to your account and moderators.");
@@ -632,7 +691,7 @@ namespace TimeSplitters.Launcher
         {sourcePage=null;await Run(async token=>{sourcePage=await Client.Source(review,path,offset,token);},"Lua source loaded for inspection. Nothing was executed or installed.",45);}
         async Task Authenticate(bool redeem)
         {
-            string name=username.Text??"",secret=Password,invite=Invitation;bool save=remember.IsChecked==true;ClearCredentials();ClearReviews();ClearReports();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
+            string name=username.Text??"",secret=Password,invite=Invitation;bool save=remember.IsChecked==true;ClearCredentials();ClearReviews();ClearReports();ClearInvitation();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
             await Run(token=>redeem?Client.Redeem(invite,secret,token,save):Client.SignIn(name,secret,token,save),"Signed in. Review a ZIP to submit your addition.",45);
         }
         async Task RestoreSaved()
@@ -654,6 +713,6 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(!disposed){if(client!=null && !String.IsNullOrEmpty(client.VaultNotice))status.Text+=" "+client.VaultNotice;Render();}}
             }
         }
-        public void Dispose(){disposed=true;if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}ClearCredentials();ClearReviews();ClearReports();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
+        public void Dispose(){disposed=true;if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}ClearCredentials();ClearReviews();ClearReports();ClearInvitation();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
     }
 }

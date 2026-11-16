@@ -473,6 +473,57 @@ public static class LauncherSharedUiChecks
     static void CreatorChecks(string root)
     {
         CreatorVaultChecks(root);
+        Test("owner invitation responses bind username expiry and one-time secret",()=>{
+            string folder=Path.Combine(root,"creator-invitation-binding");CreatorConfig(folder);
+            foreach(string mode in new[]{"valid","username","expiry","token","extra"}) {
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-owner",role="admin"}});
+                    var row=new Dictionary<string,object>{{"username",mode=="username"?"different-author":"guest-author"},{"invitation",mode=="token"?new string('!',43):new string('i',43)},{"expires",WorkshopTrustChecks.Unix+(mode=="expiry"?86401:86400)}};
+                    if(mode=="extra")row.Add("role","admin");return CreatorJson(row,201);
+                }),()=>WorkshopTrustChecks.Now)) {
+                    client.SignIn("fixture-owner","fixture-only",System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                    Action issue=()=>{var invitation=client.InviteCreator("guest-author",System.Threading.CancellationToken.None).GetAwaiter().GetResult();Need(invitation.Username=="guest-author" && invitation.Service==WorkshopTrustChecks.Origin,"Invitation lost trusted authority binding");};
+                    if(mode=="valid")issue();else WorkshopReject(issue,"Malformed invitation response was accepted");
+                }
+            }
+        });
+        Test("owner invitations conceal secrets and require cancellation confirmation",()=>WithUiContext(()=>{
+            foreach(string role in new[]{"admin","moderator","creator"}) {
+                string folder=Path.Combine(root,"creator-invitation-"+role);CreatorConfig(folder);int issued=0,cancelled=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    string path=request.RequestUri.AbsolutePath;
+                    if(path=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-owner",role=role}});
+                    if(path=="/v1/sessions/current")return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                    Need(role=="admin" && request.Headers.Authorization.Parameter==new string('t',43),"Invitation request lost owner authentication");
+                    if(request.Method==System.Net.Http.HttpMethod.Post){Need(path=="/v1/creator-invitations","Wrong invitation endpoint");issued++;return CreatorJson(new {username="guest-author",invitation=new string('i',43),expires=WorkshopTrustChecks.Unix+86400},201);}
+                    Need(request.Method==System.Net.Http.HttpMethod.Delete && path=="/v1/creator-invitations/guest-author","Cancellation targeted the wrong invitation");cancelled++;return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                }),()=>WorkshopTrustChecks.Now))
+                using(var page=new ModCreatorPage(folder,false,client)) {
+                    Find<TextBox>(page.View,"CreatorUsername").Text="fixture-owner";SetCreatorSecret(page.View,"CreatorPassword","fixture-only");
+                    Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignOut"),"Owner sign-in did not finish");
+                    Need(All(page.View).OfType<Button>().Any(b=>b.Name=="CreateCreatorInvitation")== (role=="admin"),"Non-owner UI exposed invitation controls");
+                    if(role!="admin") {
+                        WorkshopReject(()=>client.InviteCreator("guest-author",System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"A non-owner invited a creator");
+                        Need(issued==0 && cancelled==0,"A non-owner request reached the server");continue;
+                    }
+                    Find<TextBox>(page.View,"InviteCreatorUsername").Text="Bad/Name";Click(Find<Button>(page.View,"CreateCreatorInvitation"));
+                    PumpUntil(()=>page.StatusText.Contains("lowercase"),"Invalid creator name was not rejected");Need(issued==0,"Invalid name reached the server");
+                    Find<TextBox>(page.View,"InviteCreatorUsername").Text="guest-author";Click(Find<Button>(page.View,"CreateCreatorInvitation"));
+                    PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="RevealCreatorInvitation"),"Invitation did not return to its UI");
+                    Need(issued==1 && !All(page.View).OfType<TextBox>().Any(t=>t.Name=="CreatedCreatorInvitationSecret"),"Invitation secret was revealed automatically");
+                    Click(Find<Button>(page.View,"RevealCreatorInvitation"));Need(Find<TextBox>(page.View,"CreatedCreatorInvitationSecret").Text==new string('i',43),"Explicit reveal lost invitation");
+                    Click(Find<Button>(page.View,"HideCreatorInvitation"));Need(!All(page.View).OfType<TextBox>().Any(t=>t.Name=="CreatedCreatorInvitationSecret") && issued==1,"Hide retained secret or repeated issuance");
+                    Click(Find<Button>(page.View,"ReviewCancelCreatorInvitation"));Need(cancelled==0,"Cancellation happened before confirmation");
+                    Click(Find<Button>(page.View,"BackCreatorInvitation"));Need(cancelled==0,"Back cancelled an invitation");
+                    Click(Find<Button>(page.View,"ReviewCancelCreatorInvitation"));Click(Find<Button>(page.View,"ConfirmCancelCreatorInvitation"));
+                    PumpUntil(()=>page.StatusText=="Pending creator invitation cancelled.","Cancellation did not finish");Need(cancelled==1,"Cancellation was duplicated");
+                    Click(Find<Button>(page.View,"CreateCreatorInvitation"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="RevealCreatorInvitation"),"Replacement invitation did not finish");
+                    Click(Find<Button>(page.View,"RevealCreatorInvitation"));Click(Find<Button>(page.View,"CreatorSignOut"));
+                    PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignIn"),"Owner sign-out did not finish");
+                    Need(!All(page.View).OfType<TextBox>().Any(t=>t.Name=="CreatedCreatorInvitationSecret"),"Sign-out retained a visible invitation");
+                }
+            }
+        }));
         Test("reported release inspection rejects changed digests versions and creator roles",()=>{
             string folder=Path.Combine(root,"reported-release-binding");CreatorConfig(folder);string zip=LibraryPackage(folder,"reported-lookup","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var report=new WorkshopReport(PlayerReport(plan));
             foreach(string mode in new[]{"valid","digest","version","creator"}) {

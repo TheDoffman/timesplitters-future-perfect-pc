@@ -1735,6 +1735,16 @@ interpreter. Normal launcher/UI modes remain Python-free. Test source root and
 interpreter are scoped to the helper; source/helper/Python identity participate
 in build validation receipts/cache. All helper credentials belong to a discarded
 private fixture and never enter command-line arguments or build logs.
+
+Owner creator invitations: test_creator_api.py exercises real transactions,
+single-use redemption, secret-free audit/storage, current-role/session rechecks,
+rollback on audit failure, quotas/rates/expiry, framing and refusal to cancel
+privileged/recovery invitations. Native creator_backend adds a disposable local
+admin, issues/redeems a creator-only invitation, cancels/replaces another and
+checks creator privilege refusal through the actual API. Shared UI checks cover
+owner-only controls, local invalid-name rejection, explicit secret reveal/hide,
+no issuance repeat on reveal, confirmed cancellation/back and sign-out clearing.
+These fixture checks do not prove production deployment or public onboarding.
 Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
 interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;

@@ -1,3 +1,9 @@
+Owner creator onboarding (2026-11-16): **In progress**.
+Shared ModCreatorPage/client and account/API transactions implement admin-issued
+creator-only invitations and confirmed cancellation; no OS-specific invitation
+logic. Windows API/service61 pass4 skip; native UI/backend and Mac/Linux
+validation recorded in STATUS. Deployment/public onboarding remain pending.
+
 Current-source SDK/game/public defaults (2026-11-16): **In progress**.
 At2196da14 game consumer linkage fix and full native builds pass all3; consumer/
 runtime/identity/scope checks pass180/5 Windows,181/4 Mac,180/5 Linux. Rebuilt
