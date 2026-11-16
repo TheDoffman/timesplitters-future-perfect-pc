@@ -1,4 +1,4 @@
-[Service proofs](build-test-details.md). Native CI: API auth/reaping; no control socket.
+[Service proofs](build-test-details.md). API auth/group cleanup; scanner escape checks.
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

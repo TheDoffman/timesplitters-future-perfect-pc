@@ -65,6 +65,10 @@ The guardian has a3600-second deadline, and the parent retires after3300 seconds
 so launchd can renew the service. Parent death closes the private guardian pipe
 and stops/reaps the API process group. Root observation is an additional control,
 not a substitute for that independent lifetime containment.
+The guardian's explicit terminate-group mode is for this trusted forking server;
+the scanner default still stops its wait-owned direct child, even after group
+escape. Server mode uses waitid WNOWAIT to retain child/PID/group ownership until
+remaining workers are stopped, including a master that exits before its workers.
 
 Gateway/publication controllers retain their confined Caddy children, bounded
 scratch leases, private locks, signed refresh/revocation behavior and root-health

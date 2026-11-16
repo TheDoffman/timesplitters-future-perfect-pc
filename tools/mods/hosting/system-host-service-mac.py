@@ -127,7 +127,7 @@ def serve_api(data):
         watch = supervisor(data, 'api', 'origin')
         wait_healthy(watch)
         read, write = os.pipe()
-        process = subprocess.Popen([str(verified_guardian()), str(read), '--deadline-seconds', '3600',
+        process = subprocess.Popen([str(verified_guardian()), str(read), '--deadline-seconds', '3600', '--terminate-group',
                                     str(Path(sys.executable).resolve()), '-I', '-B', str(Path(__file__).absolute()),
                                     '--role', 'api', '--api-child'], stdin=subprocess.DEVNULL,
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,

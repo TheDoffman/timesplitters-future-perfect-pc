@@ -15,8 +15,12 @@
 #include <time.h>
 
 extern char **environ;
-static int finish(pid_t child,int terminate) {
+static int finish(pid_t child,int terminate,int group) {
     int status=0;
+    /* Group mode is only for trusted forking servers. The direct child remains
+       wait-owned, so its spawn-created group ID cannot be recycled before this
+       signal. Always retain the direct-PID stop for a child that changes group. */
+    if(terminate && group && kill(-child,SIGKILL)<0 && errno!=ESRCH)return 125;
     if(terminate && kill(child,SIGKILL)<0 && errno!=ESRCH)return 125;
     while(waitpid(child,&status,0)<0)if(errno!=EINTR)return 125;
     return WIFEXITED(status)?WEXITSTATUS(status):128+WTERMSIG(status);
@@ -31,7 +35,7 @@ int main(int argc,char **argv) {
     char *end=NULL;errno=0;long value=strtol(argv[1],&end,10);
     if(errno || !end || *end || value<3 || value>4095)return 125;
     int parent=(int)value;
-    int command=2;long deadline=210;
+    int command=2,group=0;long deadline=210;
     /* Trusted publication controllers may own a longer server lease. Scanner
        callers keep the fixed default; no upload supplies these arguments. */
     if(strcmp(argv[2],"--deadline-seconds")==0){
@@ -40,6 +44,8 @@ int main(int argc,char **argv) {
         if(errno || !end || *end || deadline<1 || deadline>86400)return 125;
         command=4;
     }
+    if(command<argc && strcmp(argv[command],"--terminate-group")==0){group=1;++command;}
+    if(command>=argc)return 125;
     if(argv[command][0]!='/')return 125;
     double started=now();if(started<0)return 125;
     struct rlimit core={0,0};if(setrlimit(RLIMIT_CORE,&core))return 125;
@@ -57,12 +63,21 @@ int main(int argc,char **argv) {
     posix_spawn_file_actions_destroy(&actions);posix_spawnattr_destroy(&attributes);
     if(error)return 125;
     for(;;) {
-        int status=0;pid_t exited=waitpid(child,&status,WNOHANG);
-        if(exited==child)return WIFEXITED(status)?WEXITSTATUS(status):128+WTERMSIG(status);
-        if(exited<0 && errno!=EINTR)return 125;
+        if(group){
+            /* WNOWAIT preserves PID/group ownership until remaining server
+               workers are stopped, including when their master exits first. */
+            siginfo_t info;memset(&info,0,sizeof(info));
+            int result=waitid(P_PID,(id_t)child,&info,WEXITED|WNOHANG|WNOWAIT);
+            if(result==0 && info.si_pid==child)return finish(child,1,1);
+            if(result<0 && errno!=EINTR){finish(child,1,1);return 125;}
+        }else{
+            int status=0;pid_t exited=waitpid(child,&status,WNOHANG);
+            if(exited==child)return WIFEXITED(status)?WEXITSTATUS(status):128+WTERMSIG(status);
+            if(exited<0 && errno!=EINTR)return 125;
+        }
         double current=now();
-        if(current<0 || current-started>=(double)deadline)return finish(child,1);
+        if(current<0 || current-started>=(double)deadline)return finish(child,1,group);
         struct pollfd watch={parent,POLLIN,0};int ready=poll(&watch,1,5);
-        if((ready>0 && watch.revents) || (ready<0 && errno!=EINTR))return finish(child,1);
+        if((ready>0 && watch.revents) || (ready<0 && errno!=EINTR))return finish(child,1,group);
     }
 }

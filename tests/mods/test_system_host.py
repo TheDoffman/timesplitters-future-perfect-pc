@@ -278,7 +278,7 @@ def test_actual_api_child_factory_auth_and_guardian_group_cleanup(tmp_path):
             return response.status,response.read()
         finally:connection.close()
     try:
-        process=subprocess.Popen([str(verified_guardian()),str(read),'--deadline-seconds','60',
+        process=subprocess.Popen([str(verified_guardian()),str(read),'--deadline-seconds','60','--terminate-group',
                                   sys.executable,'-I','-B','-c',script,str(ROOT/'tools/mods/hosting/system-host-service-mac.py'),str(repository.root)],
                                  stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
                                  close_fds=True,pass_fds=(read,),start_new_session=True,cwd=tmp_path,

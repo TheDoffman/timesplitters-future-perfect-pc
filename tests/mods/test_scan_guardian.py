@@ -194,3 +194,35 @@ def test_explicit_server_deadline_still_kills_escaped_owned_child(worker):
     finally:
         os.close(read)
         os.close(write)
+
+
+@pytest.mark.parametrize('cause',['controller-close','deadline','master-exit'])
+def test_trusted_server_group_stops_forked_worker_even_after_master_exit(guardian,tmp_path,cause):
+    identity=tmp_path/'server.json'
+    script='''import json,os,signal,sys,time
+from pathlib import Path
+child=os.fork()
+if child==0:
+ signal.signal(signal.SIGTERM,signal.SIG_IGN)
+ time.sleep(20)
+ os._exit(0)
+Path(sys.argv[1]).write_text(json.dumps(dict(master=os.getpid(),worker=child)))
+if sys.argv[2]=='master-exit':os._exit(0)
+time.sleep(20)
+'''
+    read,write=os.pipe();process=None
+    try:
+        process=subprocess.Popen([str(guardian),str(read),'--deadline-seconds','1' if cause=='deadline' else '10',
+                                  '--terminate-group',sys.executable,'-I','-B','-c',script,str(identity),cause],
+                                 stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                                 close_fds=True,pass_fds=(read,),start_new_session=True)
+        os.close(read);read=None
+        wait(identity.exists)
+        record=json.loads(identity.read_bytes())
+        if cause=='controller-close':os.close(write);write=None
+        assert process.wait(timeout=5)==(0 if cause=='master-exit' else 137)
+        wait(lambda:gone(record['master']) and gone(record['worker']))
+    finally:
+        for fd in (read,write):
+            if fd is not None:os.close(fd)
+        if process is not None and process.poll() is None:process.wait(timeout=12)
