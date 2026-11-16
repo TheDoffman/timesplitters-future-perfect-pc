@@ -115,6 +115,18 @@ public static class LauncherSharedUiChecks
     }
     static void WorkshopChecks(string root)
     {
+        Test("trusted game updates accept only exact immutable mod-runtime companions",()=>{
+            string prefix="Bin/ModRuntime/"+new string('a',64)+"/";
+            foreach(string file in new[]{"runtime.json","Lua.txt","tsfp-mod-worker","tsfp-mod-worker.exe","tsfp-mod-guardian"})
+                Need(Core.Allowed(prefix+file),"Bundled game helper refused: "+file);
+            foreach(string file in new[]{"other.exe","install.sh","main.lua","nested/Lua.txt","lua.txt","runtime.json.exe"})
+                Need(!Core.Allowed(prefix+file),"Unsupported bundled helper accepted: "+file);
+            foreach(string folder in new[]{new string('a',63),new string('a',65),new string('A',64),new string('g',64)})
+                Need(!Core.Allowed("Bin/ModRuntime/"+folder+"/Lua.txt"),"Invalid helper identity accepted");
+            Need(!Core.Allowed("Bin/modruntime/"+new string('a',64)+"/Lua.txt"),"Noncanonical helper folder accepted");
+            string upload=LibraryPackage(root,"runtime-boundary","1.0.0",1,extra:prefix+"tsfp-mod-worker");
+            WorkshopReject(()=>ModLibrary.InspectPackage(upload,System.Threading.CancellationToken.None),"Uploaded mod gained trusted-game helper permissions");
+        });
         WorkshopTrustChecks.Run(root,Test);
         Test("script source capsules match the native wire and isolated-save identity",()=>{
             Dictionary<string,object> corpus;

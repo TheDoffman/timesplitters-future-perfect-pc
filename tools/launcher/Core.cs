@@ -47,6 +47,13 @@ namespace TimeSplitters.Launcher
         public static bool Allowed(string name)
         {
             Name(name);
+            // These are trusted game-update companions, not uploaded mod files.
+            // The native game independently pins their descriptor and images.
+            if (name.StartsWith("Bin/ModRuntime/", StringComparison.Ordinal)) {
+                var runtime=name.Split('/');
+                return runtime.Length==4 && Regex.IsMatch(runtime[2], @"\A[a-f0-9]{64}\z") &&
+                    new[]{"runtime.json","Lua.txt","tsfp-mod-worker","tsfp-mod-worker.exe","tsfp-mod-guardian"}.Contains(runtime[3]);
+            }
             if (TextureFile(name)) return true;
             if (RootFiles.Contains(name) || name == LauncherPlatform.GameBinary || name == LauncherPlatform.LaunchScript || LauncherFile(name)) return true;
 #if LINUX

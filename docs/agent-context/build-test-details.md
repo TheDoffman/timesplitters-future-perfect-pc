@@ -1711,3 +1711,14 @@ verifier before staging. The complete package/capability fixture runs with both
 local/default and explicit reused SDK selection; test_vulkan_sdk.py separately
 checks source pin, actual critical-file hashes and no writes. Game source/tag,
 renderer, executable and package validation remain mandatory.
+
+Real Mac/Linux game-package acceptance exposed Core.Allowed rejecting
+Bin/ModRuntime/<identity>/Lua.txt, before any installed game could be tested.
+The common installer now admits only exact64 lowercase-hex identity directories
+and runtime.json, Lua.txt, tsfp-mod-worker, tsfp-mod-worker.exe, tsfp-mod-guardian.
+These are trusted game-update companions; native game descriptor/image pins still
+verify them. Uploaded mod validation does not share this exception. Shared UI
+checks run on all three hosts and reject wrong identity length/case/digits,
+arbitrary executables/scripts/nested names and an uploaded mod carrying a helper.
+The actual package --verify-game-package gate remains required after rebuilding
+the native launchers; the initially failed archives are preserved for diagnosis.

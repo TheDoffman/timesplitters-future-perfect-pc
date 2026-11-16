@@ -1,3 +1,16 @@
+Actual Mac/Linux package gate finding (2026-11-16):
+Both genuine local game archives are assembled but their bundled launcher refuses
+Bin/ModRuntime/<identity>/Lua.txt as unsupported. The shared Core.Allowed omitted
+all nested immutable helper companions; this was invisible to launcher-only ZIP
+checks. Failed archives remain preserved and are not accepted/published packages.
+Core now permits only the exact64 lowercase-hex path and five known runtime
+filenames. Native compiled descriptor/image pins remain enforced; uploaded mod
+validation receives no exception. Shared regressions reject malformed identities,
+arbitrary executable/script/nested names and helper injection into an uploaded mod.
+The normal Windows launcher build passes116 updater regressions,111 shared UI
+groups (including this regression), creator backend and its other complete checks.
+Rebuilt Mac/Linux launcher and actual game-package retries are still required.
+
 Native Mac/Linux game and dependency acceptance (2026-11-16):
 The clean bbed Linux game build completes and passes protected-memory/MMIO checks.
 A100-second isolated six-bot unmodded match under Mesa lavapipe exits0 with128

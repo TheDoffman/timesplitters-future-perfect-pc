@@ -1,7 +1,6 @@
-DDS moderation previews use ModCreatorClient.Texture and a bounded pixel view;
-see mod-workshop.md. Installed updates use WorkshopRelease.UpdateFor on the current
-catalog: same-origin receipts, numeric latest versions, no installed duplicates.
-Review reuses dependency planning and retains active/previous versions.
+DDS previews and dependency/update reviews: mod-workshop.md.
+Core.Allowed admits only five named game helpers under Bin/ModRuntime/<64 lowercase
+hex>/; uploaded mod admission stays separate. Package regression: build-test-details.md.
 
 Installed activation now uses ModLibrary.PreviewEnable/ApplyEnable and an in-page
 ModEnablePlan review. It resolves exact installed dependencies (32 packages),
