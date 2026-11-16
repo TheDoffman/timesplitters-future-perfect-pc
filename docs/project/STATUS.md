@@ -1,3 +1,34 @@
+Private Mac installation and startup repair (2026-11-15):
+Protected installation now actually contains source601c63c6, descriptor
+7be977f9d2eda22f5f412db8139096ccc5db52241af8cdc26155516f8a3ad825
+(67 source/3339 runtime files,151131663 bytes). Private host/scan initialization
+completed as UID/GID600 with kernel groups[600]. Official FreshClam definitions
+were downloaded; actual installed scanner admission passed clean, EICAR,
+empty-database and missing-engine controls with ClamAV1.5.4/database28184 and
+macSeatbelt-v3 isolation. This supersedes the older pending-installation evidence.
+
+Initial registration failed private readiness because setup umask077 left three
+root-owned role health directories0700. The loader rolled back all nine temporary
+jobs; independent launchctl/filesystem checks confirmed none loaded and no
+persistent LaunchDaemons files. Source78073cf4 explicitly sets directories0755,
+with a regression under umask077; private markers/plists remain0600. Immutable
+installed601 code is preserved. A native repair window awaits administrator
+authentication: correct only those three mutable directory modes, repeat actual
+scanner admission, verify private signed catalog/readiness and seven restarts,
+then install persistent plists and save an owner invitation privately. None of
+those repair outcomes is yet claimed. Public routing remains unchanged.
+
+Source82025930 moved POSIX test fixtures beneath private HOME parents after the
+Linux runner's writable /tmp ancestor correctly failed production policy; it did
+not weaken ancestor checks. Windows199pass28skip and actual Mac92pass cover that
+repair; directory-mode checks pass Windows50pass21skip and Mac71pass. Full latest
+CI run43789569363 at78073cf4 passed, including Linux Vulkan, Windows/Mac runtime
+shards, all three native launcher builds and complete three-platform packaging.
+Installation console receipt logs/native-private-host-cutover-601c63c6-result.txt
+SHA256 e3bff7fa72a56d30878147abfc7e3e1c9b4a1c2e5464f7b694894de7a5c2baba.
+Public native end-to-end, physical boot, independent recovery and remaining SDK
+requirements stay open. Private installation is not full completion.
+
 Public launcher profile and protected setup admission (2026-11-15):
 The actual ceremony's public root and origin are now tracked source data under
 config/mods/public-workshop-root.json and public-workshop.json, with the exact

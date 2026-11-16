@@ -4,7 +4,7 @@ signed catalog as600, restart3 workers+4 monitors with old-tree exit/new-PID and
 catalog continuity, then install boot plists. Known-only rollback preserves
 foreign/changed items; protected bounded journal distinguishes incomplete cleanup.
 accept-private-host-services-mac.py uses fixed loopback8768 routes and SOURCE pin,
-not a network bootstrap root. No public routing; native protected proof pending.
+not a network bootstrap root. Actual601 readiness failed; all9 jobs rolled back.
 
 prepare-installed-host-mac.py is an immutable root-only setup/admission component:
 read exactly3 owned online inputs, match source public pin, copy600 privately,
@@ -13,7 +13,7 @@ requires real clean/EICAR/empty-DB/missing-engine outcomes with disposable files
 Only afterward generate root monitor plists and an exclusive protected admission
 record. No job registration/start/Funnel. Strict fixed child commands, cleared
 groups and source/UID gates; native CI tests refusal/order/file protections.
-Protected installed execution remains pending, not proved by fixture engines.
+Actual601 installed scanner passed all4 controls with official definitions.
 Health dirs explicitly chmod0755 despite umask077; marker/plists remain0600.
 Strict fixtures use private HOME; writable-ancestor refusal remains enforced.
 
@@ -49,6 +49,7 @@ f099 checks258 Mac/271 Windows; protected deployment/boot/public remains pending
 
 f234 inert root->600/kernel600/denied-root/label-stop proof passed; see STATUS.
 Installed601 passed AV controls; health-dir setup failed and jobs rolled back.
+Mutable-dir repair awaits OS authentication; latest780 CI passes all platforms.
 
 locked-service-bootstrap-mac.py clears groups, sets/verifies GID/UID600/kernel
 credentials and irreversible drop, then execs fixed roles. Both launchd InitGroups
