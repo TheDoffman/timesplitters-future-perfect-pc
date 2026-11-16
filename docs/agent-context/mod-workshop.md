@@ -1,10 +1,10 @@
-register-installed-host-mac.py derives9 fixed jobs and requires fresh protected
-admission/exact generated plists. Bootstrap from staging, verify private API and
-signed catalog as600, restart3 workers+4 monitors with old-tree exit/new-PID and
-catalog continuity, then install boot plists. Known-only rollback preserves
-foreign/changed items; protected bounded journal distinguishes incomplete cleanup.
-accept-private-host-services-mac.py uses fixed loopback8768 routes and SOURCE pin,
-not a network bootstrap root. Actual601 readiness failed; all9 jobs rolled back.
+register-installed-host-mac.py derives9 protected jobs: staging bootstrap,
+source-pinned private readiness and7 restarts precede boot-file installation.
+Known-only rollback/journals preserve foreign state. Actual601 repair now PASSES
+all private checks,9 persistent jobs and post-seal verification (see STATUS).
+Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged.
+Owner/sign-in and native public upload/scan/approval/download/inactive install
+pass; see STATUS. Public game/backup/boot/release gates remain open.
 
 prepare-installed-host-mac.py reads3 owned online inputs, matches the source
 pin, copies600 privately and drops credentials for init/updater/scanner controls.

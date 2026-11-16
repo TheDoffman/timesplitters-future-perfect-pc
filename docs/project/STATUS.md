@@ -1,3 +1,60 @@
+Protected private deployment and public HTTPS acceptance (2026-11-15/16):
+The native repair14642b44 completed EXIT0 after local administrator authentication.
+Installed immutable source601c63c6/descriptor7be977f9d2eda22f5f412db8139096ccc5db52241af8cdc26155516f8a3ad825
+passed fresh actual UID600 scanner admission (clean/EICAR/empty-DB/missing-engine),
+corrected only the three mutable health directories to0755, verified private
+signed catalog/readiness, passed all seven controlled worker/monitor restarts
+with old-tree exit, then installed all nine persistent system-job files. The
+post-operation immutable seal is unchanged. Independently verified all nine
+labels loaded and plists root-owned0644/single-link with exact labels; root
+role health watches API51286/publication51371/gateway51440 as UID600. One-shot
+scan/updater jobs are loaded and idle after exit0. No physical reboot was done.
+Repair receipt logs/native-private-host-repair-14642b44-result.txt SHA256
+331cd41c5c4f5a78b451189dad3d3bf35c9b4ce3ece3351b5407ca03fbeaa3e6.
+
+A separate persistent Tailscale Funnel8443 now forwards only to127.0.0.1:8768.
+Before/after configuration checks prove private443->127.0.0.1:18789 unchanged,
+with AllowFunnel true only for8443. Baselines are in private host cutover storage.
+Independent Windows requests explicitly used public relay199.38.181.54, disabled
+proxies and verified the normal TLS hostname/certificate: health, catalog and
+signed metadata all HTTP200, SSL verify result0. Catalog version2 with zero
+approved releases independently verifies against the exact source b52e5d49... pin.
+Public proof is logs/public-host-14642b44. Default Windows DNS resolves the host
+to a Tailnet100.x address, so ordinary native calls are not described as the
+public-relay transport proof. Private gateway tests also enforce account/upload
+401 and quarantine/.git/config/admin404. No public mod download/play claim yet.
+
+The initial owner invitation was copied directly into a strict private Windows
+NTFS store, wrapped in account DPAPI with origin/pin/type binding and verified in
+memory; the transfer plaintext was deleted. Nothing secret was displayed or
+committed. A local masked owner setup window reuses the verified native creator
+client and source-pinned acceptance profile. Its initial standalone process
+missed the normal launcher's TLS1.2 initialization: a credential-free native
+probe reproduced legacy TLS failure and normal launcher TLS success. Corrected
+window preflights now pass both private DPAPI/profile validation and actual native
+signed HTTPS catalog retrieval before password entry. Owner enrollment now
+completed: workshop-owner/admin, authenticated moderation and native Credential
+Manager restore pass. No owner-password or sudo prompt is pending.
+
+Actual native public client APIs uploaded the repository-owned First to Three
+SDK example as workshop-pipeline-check@1.0.0 (971 bytes), archive SHA256
+fdaff6b88c7e669227f7a6e2d31d3e2d6baa83dd1f8a33e768043a3c8b0a3682.
+It reached pending-review after locked-UID600 ClamAV1.5.4/db28184 scanning with
+macos-seatbelt-v3 isolation. The operator reviewed source/evidence and approved
+it; signed catalog retrieval, verified download and inactive native installation
+passed. Source SHA256
+f4de94c626df298c7a9c66e04b66f4aef585355d5a8ac092cc7dfb82b8f29ed3
+matches the repository-owned SDK example. No original game assets are included.
+Native public transport used a process-local CONNECT proxy forwarding opaque
+TLS bytes to public relay199.38.181.54 with normal hostname/certificate checks.
+No global DNS/proxy or certificate validation changed. Independent public curl
+also verified the approved signed catalog and exact downloaded archive hash.
+The test package remains approved publicly until gameplay/withdrawal checks.
+Normal compiled defaults remain blank, source profile pending-public-acceptance;
+these tests used an explicit private acceptance profile. Public download-to-game,
+update/rollback/removal/revocation, backup/restore, physical boot, remaining SDK
+and public client release gates stay open.
+
 WAV boundary native Mac/sanitizer acceptance (2026-11-15):
 Actual source4914e9df passes200 native WAV/scope/suite/sharding cases1.81s on the
 Mac, including the200000-mutation executable under ASan/UBSan. Final Windows

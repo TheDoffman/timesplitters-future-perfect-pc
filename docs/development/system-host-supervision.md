@@ -161,8 +161,9 @@ Root-owned bounded0600 deployment journals record preparing/starting/restart/
 complete/failed states and whether rollback completed. No routing changes occur.
 Tests exercise file protections, preflight collisions, rollback, uncertain job
 ownership, owner/PID/child/restart/sequence refusal and signed loopback readiness
-with disposable fixtures. Actual privileged registration, seven restart checks
-and physical boot remain unverified until the native cutover executes.
+with disposable fixtures. Actual privileged registration and all seven restart checks now pass in the
+14642b44 repair, with unchanged sealed source601. Independent checks confirm
+nine loaded/persistent root-owned job files. Physical boot remains unverified.
 
 This recovery depends on the Windows account's DPAPI profile/key material. Copying
 the store alone to an unrelated computer is not a portable recovery backup.
@@ -232,3 +233,11 @@ with a disposable private account, verifies HTTP origin/scheme and bearer checks
 observes the configured Gunicorn process tree and closes the parent pipe to check
 group cleanup. This ordinary-user fixture tests child transport/lifetime, not the
 installed root-to-UID600 system-job path.
+
+The separate public8443 cutover now preserves the original private443 mapping
+and passes Windows public-relay HTTPS/normal certificate and pinned catalog
+verification, then native owner enrollment and SDK upload, isolated scan,
+operator approval, signed download and inactive install; see STATUS. Root
+registration itself never changes routing. Public gameplay acceptance remains
+open. Do not interpret configuration persistence or controlled service restarts
+as physical boot acceptance.
