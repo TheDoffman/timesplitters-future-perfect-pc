@@ -70,6 +70,7 @@ CPU_TOOLS = {
     'tests/mods/test_audio_assets.py',
     'tests/mods/test_audio_capsule.py',
     'tools/mods/mod_texture_preview.py', 'tests/mods/test_texture_preview.py',
+    'tools/mods/mod_audio_preview.py', 'tests/mods/test_audio_preview.py',
     'tools/mods/hosting/system-scan-monitor-mac.py', 'tests/mods/test_system_scan_monitor.py',
     'tools/mods/mod_system_host.py', 'tools/mods/hosting/system-host-monitor-mac.py',
     'tools/mods/hosting/system-host-service-mac.py', 'tests/mods/test_system_host.py',

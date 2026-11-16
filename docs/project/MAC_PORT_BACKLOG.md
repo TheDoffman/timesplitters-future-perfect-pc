@@ -1,3 +1,9 @@
+Moderator audio inspection (2026-11-16): **In progress**.
+Shared ModCreatorPage/client implements private bounded PCM waveform inspection
+and frame pagination, using the same bitmap adapter as DDS. No separate host
+audio code; listening remains unimplemented. Windows119 UI groups and audio/API/
+preflight/CI tests pass; actual Mac/Linux checks and deployment pending (STATUS).
+
 Owner creator onboarding (2026-11-16): **In progress**.
 Shared ModCreatorPage/client and account/API transactions implement admin-issued
 creator-only invitations and confirmed cancellation; no OS-specific invitation

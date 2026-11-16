@@ -35,6 +35,35 @@ Only invitation hashes are stored; audit records identify the owner and target,
 never the secret. Moderator/admin invitations and recovery remain local operator
 actions. Public creator invitations are not open self-registration.
 
+## PCM audio inspection (source; deployment pending)
+
+Moderators can select a declared `audio/*.wav` in a completed review and choose
+**Inspect PCM audio**. The view shows PCM16 rate, mono/stereo channel count, total
+duration, payload SHA-256 and a full-scale waveform for at most two seconds.
+Each lane represents one channel; **Next audio portion** reads the following
+contiguous frames until the end. Nothing plays automatically, and this view
+currently provides visual inspection only. Listening controls remain future
+work. A waveform and a clean scan do not establish safe or suitable behavior.
+
+`POST /v1/moderation/{upload}/audio` takes exactly `sha256`, `path`, and an
+integer PCM-frame `offset` (initially0). It requires a current moderator/admin
+session and a completed scanned upload, exact package/payload hashes, and a
+declared PCM WAV. The existing held-file archive checks reject changed, linked,
+special or writable stored blobs. The full WAV is validated against the same
+creator-side PCM16 mono/stereo8..48kHz/600-second/64MiB preflight contract; no
+native or third-party decoder is called. Format validation is independently
+checked against the game's native PCM parser by creator-audio tests.
+
+Responses bind upload/package/path/payload/size and carry rate, channels, total
+frames, exact offset/next_offset and canonical base64 little-endian PCM16 bytes.
+Each response contains at most96000 frames/384000 raw bytes and fits the launcher's
+512KiB response limit. Per-account24/minute and global48/minute preview limits
+are separate from source/texture limits. Account denial does not consume the
+global limit. The client rejects mismatched identities, size/hash, unsupported
+metadata, gaps, oversized/truncated PCM and extra fields before rendering. The
+view neither approves nor installs an upload and clears its data on review
+changes/sign-out/disposal. Production routes and public acceptance remain pending.
+
 ## Native creator workflow
 
 At source07f7f0a7, the user's Mac passes the real private-pipe scanner/moderation

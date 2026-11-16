@@ -1,3 +1,15 @@
+Private moderator audio inspection (2026-11-16; source, deployment pending):
+New role-gated audio preview route verifies completed upload/package/payload and
+the exact WAV before returning a bounded two-second PCM16 segment. Shared native
+moderation UI shows rate/channels/duration/hash and per-channel waveform with
+explicit contiguous pagination. No playback, decoder process, extracted file,
+installation or approval occurs. Listening/public acceptance remain pending.
+Windows native build/test passes119 UI groups including waveform bounds,
+identity/format/size/offset refusals and logout clearing; existing DDS checks and
+the real creator backend also pass (53.98s). Python audio/texture/preflight/CI
+selection checks pass191 with7 skips, including the final vector rerun (14.10s).
+Mac/Linux and deployed service acceptance remain pending.
+
 Owner creator invitations (2026-11-16; source8d289fc2, deployment pending):
 Shared launcher/API now let an authenticated admin issue a one-use24-hour
 creator-only invitation and confirm cancellation by username. Creator/moderator

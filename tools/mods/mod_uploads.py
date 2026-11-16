@@ -340,6 +340,32 @@ class Uploads:
         return dict(id=upload_id, sha256=sha, path=path, payload_sha256=entry['sha256'],
                     size=len(data), **metadata, rgba=base64.b64encode(rgba).decode('ascii'))
 
+    def audio_preview(self, actor, upload_id, sha, path, offset):
+        """Private two-second PCM segment, bound to a completed immutable upload."""
+        self._path(upload_id, '.ready')
+        demand(isinstance(sha, str) and SHA.fullmatch(sha) and isinstance(path, str)
+               and 0 < len(path) <= 180 and type(offset) is int and 0 <= offset < 48000*600,
+               400, 'Invalid audio preview request')
+        with self.repository.db() as db:
+            db.execute('BEGIN IMMEDIATE')
+            actor = self.accounts.actor(db, actor, ('moderator','admin'))
+            row = db.execute("SELECT u.sha256,r.manifest FROM workshop_uploads u JOIN releases r ON u.sha256=r.sha256 "
+                             "WHERE u.id=? AND u.state='complete'", (upload_id,)).fetchone()
+            demand(row is not None, 404, 'Completed scan unavailable')
+            demand(row['sha256'] == sha, 409, 'Reviewed package changed')
+            entry = validate_manifest(json.loads(row['manifest']))['files'].get(path)
+            demand(entry is not None and path.startswith('audio/') and path.endswith('.wav')
+                   and 44 <= entry['size'] <= 64*1024*1024, 400, 'Select a declared PCM WAV')
+            allowed = self.accounts.rate(db, 'audio-preview-account', str(actor.id), 24, 60)
+            if allowed:
+                allowed = self.accounts.rate(db, 'audio-preview-global', 'all', 48, 60)
+        demand(allowed, 429, 'Audio preview request limit reached')
+        data = self._preview_bytes(sha, path, entry, 64*1024*1024)
+        from mod_audio_preview import segment
+        metadata, pcm = segment(data, offset)
+        return dict(id=upload_id, sha256=sha, path=path, payload_sha256=entry['sha256'],
+                    size=len(data), **metadata, pcm=base64.b64encode(pcm).decode('ascii'))
+
     def _preview_bytes(self, sha, path, entry, limit):
         """Read and bind an immutable validated archive and a declared payload."""
         blob = self.repository.blob(sha)

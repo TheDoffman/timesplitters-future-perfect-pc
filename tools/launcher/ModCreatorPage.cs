@@ -148,16 +148,55 @@ namespace TimeSplitters.Launcher
         }
         internal Image Image(out IDisposable lifetime)
         {
-            byte[] bgra=DisplayPixels();
+            return PreviewImage(DisplayPixels(),PreviewWidth,PreviewHeight,"ModeratorTextureImage",out lifetime);
+        }
+        internal static Image PreviewImage(byte[] bgra,int width,int height,string name,out IDisposable lifetime)
+        {
 #if MACOS || LINUX
-            var bitmap=new Avalonia.Media.Imaging.WriteableBitmap(new PixelSize(PreviewWidth,PreviewHeight),new Vector(96,96),Avalonia.Platform.PixelFormat.Bgra8888,Avalonia.Platform.AlphaFormat.Opaque);
-            using(var frame=bitmap.Lock())for(int y=0;y<PreviewHeight;y++)System.Runtime.InteropServices.Marshal.Copy(bgra,y*PreviewWidth*4,IntPtr.Add(frame.Address,y*frame.RowBytes),PreviewWidth*4);
+            var bitmap=new Avalonia.Media.Imaging.WriteableBitmap(new PixelSize(width,height),new Vector(96,96),Avalonia.Platform.PixelFormat.Bgra8888,Avalonia.Platform.AlphaFormat.Opaque);
+            using(var frame=bitmap.Lock())for(int y=0;y<height;y++)System.Runtime.InteropServices.Marshal.Copy(bgra,y*width*4,IntPtr.Add(frame.Address,y*frame.RowBytes),width*4);
             lifetime=bitmap;
 #else
-            var bitmap=System.Windows.Media.Imaging.BitmapSource.Create(PreviewWidth,PreviewHeight,96,96,System.Windows.Media.PixelFormats.Bgra32,null,bgra,PreviewWidth*4);bitmap.Freeze();lifetime=null;
+            var bitmap=System.Windows.Media.Imaging.BitmapSource.Create(width,height,96,96,System.Windows.Media.PixelFormats.Bgra32,null,bgra,width*4);bitmap.Freeze();lifetime=null;
 #endif
-            return new Image {Name="ModeratorTextureImage",Source=bitmap,Width=PreviewWidth*2,Height=PreviewHeight*2,Margin=new Thickness(0,8,0,8)};
+            return new Image {Name=name,Source=bitmap,Width=width*2,Height=height*2,Margin=new Thickness(0,8,0,8)};
         }
+    }
+    public sealed class ModeratorAudioPreview
+    {
+        public readonly string Path,PayloadSha256;
+        public readonly long Size,Frames,Offset,NextOffset;
+        public readonly int Rate,Channels;
+        readonly byte[] pcm;
+        internal ModeratorAudioPreview(Dictionary<string,object> data,ModeratorUpload review,string path,long offset)
+        {
+            ModTrust.Fields(data,"id sha256 path payload_sha256 size rate channels frames offset next_offset pcm");
+            ModTrust.Need(CreatorUpload.Text(data,"id",32)==review.Id && CreatorUpload.Text(data,"sha256",64)==review.Sha256 && CreatorUpload.Text(data,"path",180)==path,"audio preview identity mismatch.");
+            ModPayload entry;ModTrust.Need(path.StartsWith("audio/",StringComparison.Ordinal) && path.EndsWith(".wav",StringComparison.Ordinal) && review.Package.Files.TryGetValue(path,out entry),"undeclared audio preview.");
+            entry=review.Package.Files[path];Path=path;Size=ModTrust.Number(data,"size",44,64*1024*1024);PayloadSha256=CreatorUpload.Text(data,"payload_sha256",64);
+            ModTrust.Need(Size==entry.Size && PayloadSha256==entry.Sha256,"audio preview differs from the manifest.");
+            Rate=(int)ModTrust.Number(data,"rate",8000,48000);Channels=(int)ModTrust.Number(data,"channels",1,2);
+            Frames=ModTrust.Number(data,"frames",1,Rate*600L);Offset=ModTrust.Number(data,"offset",offset,offset);
+            ModTrust.Need(Offset>=0 && Offset<Frames && Frames*Channels*2<=Size-44,"invalid audio preview source bounds.");
+            long end=Math.Min(Frames,Offset+Rate*2L);NextOffset=ModTrust.Number(data,"next_offset",end,end);
+            string encoded=ModTrust.Text(data,"pcm");ModTrust.Need(encoded.Length<=512000,"audio preview exceeds PCM budget.");pcm=Convert.FromBase64String(encoded);
+            ModTrust.Need(pcm.LongLength==(NextOffset-Offset)*Channels*2 && Convert.ToBase64String(pcm)==encoded,"invalid audio preview PCM.");
+        }
+        internal byte[] WaveformPixels()
+        {
+            const int width=256,lane=64;int height=lane*Channels;var bgra=new byte[width*height*4];
+            for(int i=0;i<bgra.Length;i+=4){bgra[i]=38;bgra[i+1]=24;bgra[i+2]=11;bgra[i+3]=255;}
+            int frames=pcm.Length/(2*Channels);
+            for(int channel=0;channel<Channels;channel++)for(int x=0;x<width;x++) {
+                int start=x*frames/width,end=Math.Max(start+1,(x+1)*frames/width),low=32767,high=-32768;
+                for(int frame=start;frame<end;frame++){int at=(frame*Channels+channel)*2;int sample=(short)(pcm[at]|pcm[at+1]<<8);low=Math.Min(low,sample);high=Math.Max(high,sample);}
+                int top=channel*lane+(32767-high)*63/65535,bottom=channel*lane+(32767-low)*63/65535;
+                for(int y=top;y<=bottom;y++){int at=(y*width+x)*4;bgra[at]=250;bgra[at+1]=217;bgra[at+2]=167;}
+            }
+            return bgra;
+        }
+        internal Image Image(out IDisposable lifetime)
+        {return ModeratorTexturePreview.PreviewImage(WaveformPixels(),256,64*Channels,"ModeratorAudioWaveform",out lifetime);}
     }
     public sealed class WorkshopReport
     {
@@ -389,6 +428,15 @@ namespace TimeSplitters.Launcher
                 return new ModeratorTexturePreview(await Request(HttpMethod.Post,"v1/moderation/"+review.Id+"/texture",JsonBody(new {sha256=review.Sha256,path=path}),200,true,cancel).ConfigureAwait(false),review,path);
             }finally{gate.Release();}
         }
+        public async Task<ModeratorAudioPreview> Audio(ModeratorUpload review,string path,long offset,CancellationToken cancel)
+        {
+            ModPayload entry;Core.Require(review!=null && path!=null && path.StartsWith("audio/",StringComparison.Ordinal) && path.EndsWith(".wav",StringComparison.Ordinal) && review.Package.Files.TryGetValue(path,out entry) && entry.Size<=64*1024*1024 && offset>=0 && offset<48000*600L,"Select a declared PCM WAV and valid frame offset.");
+            await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Core.Require(CanModerate,"Sign in with a moderator account to inspect audio.");
+                return new ModeratorAudioPreview(await Request(HttpMethod.Post,"v1/moderation/"+review.Id+"/audio",JsonBody(new {sha256=review.Sha256,path=path,offset=offset}),200,true,cancel).ConfigureAwait(false),review,path,offset);
+            }finally{gate.Release();}
+        }
         public async Task Moderate(ModeratorUpload review,string action,string note,CancellationToken cancel)
         {
             Core.Require(review!=null && (action=="approve" || action=="revoke"),"Invalid moderation decision.");
@@ -460,6 +508,8 @@ namespace TimeSplitters.Launcher
         readonly ComboBox textureFiles=new ComboBox {Name="ModeratorTextureFile",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         ModeratorTexturePreview texturePreview;
         IDisposable textureBitmap;
+        readonly ComboBox audioFiles=new ComboBox {Name="ModeratorAudioFile",MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        ModeratorAudioPreview audioPreview;IDisposable audioBitmap;
         readonly ComboBox reportReason=new ComboBox {Name="PlayerReportReason",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reportDescription=new TextBox {Name="PlayerReportDescription",MaxLength=1000,MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reportResolution=new TextBox {Name="ModeratorReportResolution",MaxLength=1800,MinWidth=260,Margin=new Thickness(0,6,0,8)};
@@ -512,7 +562,7 @@ namespace TimeSplitters.Launcher
         {var button=new Button {Name=name,Content=title,IsEnabled=stop==null && enabled,Margin=new Thickness(0,8,10,0)};button.Click+=(s,e)=>action();panel.Children.Add(button);return button;}
         void Render()
         {
-            Detach(username);Detach(remember);Detach(password);Detach(invitation);Detach(inviteName);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(textureFiles);Detach(reportReason);Detach(reportDescription);Detach(reportResolution);View.Children.Clear();if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();ClearInvitation();}
+            Detach(username);Detach(remember);Detach(password);Detach(invitation);Detach(inviteName);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(textureFiles);Detach(audioFiles);Detach(reportReason);Detach(reportDescription);Detach(reportResolution);View.Children.Clear();if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}if(audioBitmap!=null){audioBitmap.Dispose();audioBitmap=null;}bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();ClearInvitation();}
             View.Children.Add(status);var cancel=Button(View,"CancelCreatorOperation","Cancel request",()=>{if(stop!=null)stop.Cancel();});cancel.IsEnabled=stop!=null;Ui.Show(cancel,stop!=null);
             var account=PageTheme.Section(View,"Creator account",authenticated?"Signed in as "+client.Username+" ("+client.Role+")":"Use your workshop account or redeem an operator invitation.");
             if(!authenticated) {
@@ -544,7 +594,7 @@ namespace TimeSplitters.Launcher
             if(uploads.Length==100)Button(history,"NextCreatorUploads","Next uploads",async()=>{cursor=uploads.Last().Cursor;await History();},authenticated);
             if(client!=null && client.CanModerate){RenderModeratorReports();RenderModeration();}
         }
-        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;sourcePage=null;texturePreview=null;textureFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";sourceFiles.ItemsSource=null;}
+        void ClearReviews(){reviews=new ModeratorUpload[0];selectedReview=null;scanEvidence=null;sourcePage=null;texturePreview=null;textureFiles.ItemsSource=null;audioPreview=null;audioFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";sourceFiles.ItemsSource=null;}
         void ClearInvitation(){issuedInvitation=null;showInvitation=false;cancelInvitationName=null;}
         void RenderCreatorInvitations()
         {
@@ -626,7 +676,7 @@ namespace TimeSplitters.Launcher
             Button(panel,"RefreshModeratorUploads","Refresh moderation",async()=>await Reviews(0));
             foreach(var item in reviews) {
                 var row=item;
-                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,async()=>{selectedReview=row;scanEvidence=null;sourcePage=null;texturePreview=null;textureFiles.ItemsSource=null;sourceFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";await Run(async token=>{scanEvidence=await Client.Evidence(row,token);},"Scan evidence refreshed.",35);});
+                Button(panel,"ModeratorUpload"+row.Id,row.Package.Name+" @ "+row.Version+" · "+row.State,async()=>{selectedReview=row;scanEvidence=null;sourcePage=null;texturePreview=null;textureFiles.ItemsSource=null;audioPreview=null;audioFiles.ItemsSource=null;sourceFiles.ItemsSource=null;decision=null;decisionNote=null;reviewNote.Text="";await Run(async token=>{scanEvidence=await Client.Evidence(row,token);},"Scan evidence refreshed.",35);});
             }
             if(reviews.Length==100)Button(panel,"NextModeratorUploads","Next reviews",async()=>await Reviews(reviews.Last().Cursor));
             if(selectedReview==null)return;
@@ -669,6 +719,18 @@ namespace TimeSplitters.Launcher
                     panel.Children.Add(picture.Image(out textureBitmap));
                 }
             }
+            var audio=review.Package.Files.Keys.Where(path=>path.StartsWith("audio/",StringComparison.Ordinal) && path.EndsWith(".wav",StringComparison.Ordinal)).OrderBy(path=>path,StringComparer.Ordinal).ToArray();
+            if(audio.Length>0) {
+                string chosen=audioFiles.SelectedItem as string;audioFiles.ItemsSource=audio;audioFiles.SelectedItem=audio.Contains(chosen)?chosen:audio[0];audioFiles.IsEnabled=stop==null;panel.Children.Add(audioFiles);
+                Button(panel,"InspectModeratorAudio","Inspect PCM audio",async()=>await ReadAudio(review,(string)audioFiles.SelectedItem,0));
+                if(audioPreview!=null) {
+                    var clip=audioPreview;
+                    panel.Children.Add(PageTheme.Text(clip.Path+" · PCM16 · "+clip.Rate+" Hz · "+clip.Channels+" channel(s) · "+(clip.Frames/(double)clip.Rate).ToString("0.###")+" seconds · SHA-256: "+clip.PayloadSha256,12));
+                    panel.Children.Add(PageTheme.Text("Waveform: "+(clip.Offset/(double)clip.Rate).ToString("0.###")+"–"+(clip.NextOffset/(double)clip.Rate).ToString("0.###")+" seconds. Each lane shows one channel at full scale. No audio is played; the waveform is not a safety verdict.",12));
+                    panel.Children.Add(clip.Image(out audioBitmap));
+                    if(clip.NextOffset<clip.Frames)Button(panel,"NextModeratorAudio","Next audio portion",async()=>await ReadAudio(review,clip.Path,clip.NextOffset));
+                }
+            }
             if(decision==null) {
                 panel.Children.Add(PageTheme.Text("Review note",13));panel.Children.Add(reviewNote);reviewNote.IsEnabled=stop==null;
                 Button(panel,"ReviewModeratorApproval","Review approval",()=>ReviewDecision("approve"),review.State=="pending-review" && scanEvidence!=null && scanEvidence.Fresh);
@@ -689,6 +751,8 @@ namespace TimeSplitters.Launcher
         }
         async Task ReadSource(ModeratorUpload review,string path,long offset)
         {sourcePage=null;await Run(async token=>{sourcePage=await Client.Source(review,path,offset,token);},"Lua source loaded for inspection. Nothing was executed or installed.",45);}
+        async Task ReadAudio(ModeratorUpload review,string path,long offset)
+        {audioPreview=null;await Run(async token=>{audioPreview=await Client.Audio(review,path,offset,token);},"PCM audio loaded for visual inspection. No audio was played or installed.",45);}
         async Task Authenticate(bool redeem)
         {
             string name=username.Text??"",secret=Password,invite=Invitation;bool save=remember.IsChecked==true;ClearCredentials();ClearReviews();ClearReports();ClearInvitation();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
@@ -713,6 +777,6 @@ namespace TimeSplitters.Launcher
                 finally{stop=null;if(!disposed){if(client!=null && !String.IsNullOrEmpty(client.VaultNotice))status.Text+=" "+client.VaultNotice;Render();}}
             }
         }
-        public void Dispose(){disposed=true;if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}ClearCredentials();ClearReviews();ClearReports();ClearInvitation();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
+        public void Dispose(){disposed=true;if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}if(audioBitmap!=null){audioBitmap.Dispose();audioBitmap=null;}ClearCredentials();ClearReviews();ClearReports();ClearInvitation();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
     }
 }

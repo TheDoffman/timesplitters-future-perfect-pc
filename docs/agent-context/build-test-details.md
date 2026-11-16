@@ -1745,6 +1745,16 @@ checks creator privilege refusal through the actual API. Shared UI checks cover
 owner-only controls, local invalid-name rejection, explicit secret reveal/hide,
 no issuance repeat on reveal, confirmed cancellation/back and sign-out clearing.
 These fixture checks do not prove production deployment or public onboarding.
+
+PCM review: test_audio_preview.py checks original mono/stereo vectors at8/22.05/
+48kHz, contiguous exact two-second windows/last frames, maximum response size,
+invalid formats/offsets, account role/scan/identity/rate gates and unsafe stored
+archives. Registered in native runtime CI with CPU-only scope selection tests.
+ModCreatorPage shares its bounded bitmap renderer between DDS and audio; native
+UI checks retain DDS coverage and add PCM manifest/identity/shape/offset refusals,
+channel extrema, explicit fetch, next-page exhaustion and sign-out clearing.
+This is read-only waveform inspection, not listening/playback or public host
+acceptance. Native in-game audio and creator preflight have separate evidence.
 Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
 interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;

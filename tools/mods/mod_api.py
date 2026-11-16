@@ -150,6 +150,10 @@ class WorkshopAPI:
         if match and method == 'POST':
             data = self._json(environ, ('sha256','path','offset'))
             return 200, self.uploads.source_preview(actor, match[1], data['sha256'], data['path'], data['offset'])
+        match = re.fullmatch(r'/v1/moderation/([0-9a-f]{32})/audio', path)
+        if match and method == 'POST':
+            data = self._json(environ, ('sha256','path','offset'))
+            return 200, self.uploads.audio_preview(actor, match[1], data['sha256'], data['path'], data['offset'])
         match = re.fullmatch(r'/v1/moderation/([0-9a-f]{32})', path)
         if match and method == 'POST':
             data = self._json(environ, ('action','note'))

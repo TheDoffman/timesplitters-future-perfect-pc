@@ -119,6 +119,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['examples/mods/modular-first-to-three/scripts/rules/scores.lua'], {'native'}),
     (['examples/mods/modular-first-to-three/mod.json'], {'native'}),
     (['tools/mods/mod_texture_preview.py'], {'native'}),
+    (['tools/mods/mod_audio_preview.py'], {'native'}),
+    (['tests/mods/test_audio_preview.py'], {'native'}),
     (['tools/mods/mod_creator.py', 'tests/mods/test_creator_projects.py'], {'native'}),
     (['tools/mods/mod_backup_pool.py','tests/mods/test_backup_pool.py'], {'native'}),
     (['src/mods/mod_process_identity.cpp','tests/mods/test_process_identity.py'], {'native'}),

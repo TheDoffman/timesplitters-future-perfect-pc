@@ -381,6 +381,20 @@ public static class LauncherSharedUiChecks
         var payload=ModLibrary.InspectPackage(zip,System.Threading.CancellationToken.None).Files["textures/0123456789abcdef.dds"];
         return new Dictionary<string,object>{{"id",new string('a',32)},{"sha256",plan.Sha256},{"path","textures/0123456789abcdef.dds"},{"payload_sha256",payload.Sha256},{"size",payload.Size},{"width",4},{"height",4},{"format","BC1"},{"preview_width",4},{"preview_height",4},{"rgba",Convert.ToBase64String(Enumerable.Range(0,64).Select(i=>(byte)(i%4==3?255:64)).ToArray())}};
     }
+    static byte[] ModeratorWave(int channels=1)
+    {
+        using(var bytes=new MemoryStream())using(var writer=new BinaryWriter(bytes)) {
+            writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));writer.Write(36+16002*channels*2);writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt "));writer.Write(16);
+            writer.Write((short)1);writer.Write((short)channels);writer.Write(8000);writer.Write(16000*channels);writer.Write((short)(channels*2));writer.Write((short)16);
+            writer.Write(System.Text.Encoding.ASCII.GetBytes("data"));writer.Write(16002*channels*2);
+            for(int i=0;i<16002*channels;i++)writer.Write((short)(i%2==0?-32768:32767));return bytes.ToArray();
+        }
+    }
+    static Dictionary<string,object> ModeratorAudio(CreatorPackagePlan plan,long offset=0,int channels=1)
+    {
+        byte[] wave=ModeratorWave(channels);long next=Math.Min(16002,offset+16000);
+        return new Dictionary<string,object>{{"id",new string('a',32)},{"sha256",plan.Sha256},{"path","audio/00000001.wav"},{"payload_sha256",ModTrust.Hash(wave)},{"size",wave.Length},{"rate",8000},{"channels",channels},{"frames",16002},{"offset",offset},{"next_offset",next},{"pcm",Convert.ToBase64String(wave.Skip(44+(int)offset*channels*2).Take((int)(next-offset)*channels*2).ToArray())}};
+    }
     static void SetCreatorSecret(Element view,string name,string secret)
     {
 #if MACOS || LINUX
@@ -473,6 +487,57 @@ public static class LauncherSharedUiChecks
     static void CreatorChecks(string root)
     {
         CreatorVaultChecks(root);
+        Test("audio waveform keeps stereo channels separate and renders final short portions",()=>{
+            string folder=Path.Combine(root,"moderator-audio-stereo");CreatorConfig(folder);
+            string zip=LibraryPackage(folder,"audio-stereo","1.0.0",1,additionalPayloads:new Dictionary<string,byte[]>{{"audio/00000001.wav",ModeratorWave(2)}});
+            var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var review=new ModeratorUpload(ModeratorRow(zip,plan));
+            foreach(long offset in new[]{0L,16000L}) {
+                var clip=new ModeratorAudioPreview(ModJson.Read(Json.Encode(ModeratorAudio(plan,offset,2))),review,"audio/00000001.wav",offset);byte[] pixels=clip.WaveformPixels();
+                Need(pixels.Length==256*128*4 && pixels[0]==38 && pixels[63*256*4]==250 && pixels[64*256*4]==250 && pixels[127*256*4]==38,"Stereo waveform mixed channels or lost short-portion samples");
+            }
+        });
+        Test("moderator audio binds PCM source pagination size and role",()=>{
+            string folder=Path.Combine(root,"moderator-audio-binding");CreatorConfig(folder);
+            string zip=LibraryPackage(folder,"audio-review","1.0.0",1,additionalPayloads:new Dictionary<string,byte[]>{{"audio/00000001.wav",ModeratorWave()}});
+            var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var review=new ModeratorUpload(ModeratorRow(zip,plan));
+            foreach(string mode in new[]{"valid","digest","payload","path","offset","end","channels","rate","frames","size","short","oversize","extra","creator","cancel"}) {
+                int requests=0;
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                    if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role=mode=="creator"?"creator":"moderator"}});
+                    requests++;Need(request.RequestUri.AbsolutePath=="/v1/moderation/"+review.Id+"/audio" && request.Method==System.Net.Http.HttpMethod.Post,"Audio inspection used an unexpected route");
+                    var data=ModeratorAudio(plan);
+                    if(mode=="digest")data["sha256"]=new string('f',64);if(mode=="payload")data["payload_sha256"]=new string('f',64);if(mode=="path")data["path"]="audio/00000002.wav";
+                    if(mode=="offset")data["offset"]=1;if(mode=="end")data["next_offset"]=16001;if(mode=="channels")data["channels"]=3;if(mode=="rate")data["rate"]=48001;
+                    if(mode=="frames")data["frames"]=48000*600;if(mode=="size")data["size"]=44;if(mode=="short")data["pcm"]=Convert.ToBase64String(new byte[2]);
+                    if(mode=="oversize")data["pcm"]=new string('A',512004);if(mode=="extra")data["local_path"]="private";return CreatorJson(data);
+                }),()=>WorkshopTrustChecks.Now))using(var cancel=new System.Threading.CancellationTokenSource()) {
+                    client.SignIn("fixture-creator","fixture-only",System.Threading.CancellationToken.None).GetAwaiter().GetResult();if(mode=="cancel")cancel.Cancel();
+                    Action read=()=>{var clip=client.Audio(review,"audio/00000001.wav",0,cancel.Token).GetAwaiter().GetResult();byte[] pixels=clip.WaveformPixels();Need(pixels.Length==256*64*4 && pixels[0]==250 && pixels[2]==167,"PCM extrema were not rendered at full scale");};
+                    if(mode=="valid")read();else WorkshopReject(read,"Invalid audio preview was accepted");Need(requests==(mode=="creator" || mode=="cancel"?0:1),"Unauthorized/cancelled audio request reached the server");
+                }
+            }
+        });
+        Test("moderator audio UI pages exact PCM and clears images on sign-out",()=>WithUiContext(()=>{
+            string folder=Path.Combine(root,"moderator-audio-ui");CreatorConfig(folder);
+            string zip=LibraryPackage(folder,"audio-review-ui","1.0.0",1,additionalPayloads:new Dictionary<string,byte[]>{{"audio/00000001.wav",ModeratorWave()}});
+            var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int previews=0;
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
+                if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role="moderator"}});
+                if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
+                if(request.RequestUri.AbsolutePath.EndsWith("/evidence"))return CreatorJson(ModeratorScan(plan,"pending-review",true));
+                if(request.RequestUri.AbsolutePath.EndsWith("/audio")) {
+                    var body=ModJson.Read(request.Content.ReadAsStringAsync().GetAwaiter().GetResult());long offset=ModTrust.Number(body,"offset",0,16000);
+                    Need(ModTrust.Text(body,"sha256")==plan.Sha256 && ModTrust.Text(body,"path")=="audio/00000001.wav" && offset==previews*16000,"Audio pagination changed identity or skipped frames");previews++;return CreatorJson(ModeratorAudio(plan,offset));
+                }
+                Need(request.Method==System.Net.Http.HttpMethod.Get,"Audio inspection sent an approval");return CreatorJson(new {uploads=new[]{ModeratorRow(zip,plan)}});
+            }),()=>WorkshopTrustChecks.Now))using(var page=new ModCreatorPage(folder,false,client)) {
+                Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-only");Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="RefreshModeratorUploads" && b.IsEnabled),"Audio moderator sign-in failed");
+                Click(Find<Button>(page.View,"RefreshModeratorUploads"));PumpUntil(()=>page.StatusText=="Moderation queue refreshed.","Audio queue failed");Click(Find<Button>(page.View,"ModeratorUpload"+new string('a',32)));PumpUntil(()=>page.StatusText=="Scan evidence refreshed.","Audio evidence failed");Need(previews==0,"Audio fetched automatically");
+                Click(Find<Button>(page.View,"InspectModeratorAudio"));PumpUntil(()=>previews==1 && All(page.View).OfType<Image>().Any(i=>i.Name=="ModeratorAudioWaveform"),"Audio waveform did not render");var image=Find<Image>(page.View,"ModeratorAudioWaveform");Need(image.Source!=null && image.Width==512 && image.Height==128,"Waveform image is unbounded");
+                Click(Find<Button>(page.View,"NextModeratorAudio"));PumpUntil(()=>previews==2 && !All(page.View).OfType<Button>().Any(b=>b.Name=="NextModeratorAudio"),"Audio final portion did not finish");
+                Click(Find<Button>(page.View,"CreatorSignOut"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignIn"),"Audio sign-out failed");Need(!All(page.View).OfType<Image>().Any(i=>i.Name=="ModeratorAudioWaveform") && !Directory.Exists(Path.Combine(folder,"Mods")),"Audio inspection retained image or installed content");
+            }
+        }));
         Test("owner invitation responses bind username expiry and one-time secret",()=>{
             string folder=Path.Combine(root,"creator-invitation-binding");CreatorConfig(folder);
             foreach(string mode in new[]{"valid","username","expiry","token","extra"}) {
