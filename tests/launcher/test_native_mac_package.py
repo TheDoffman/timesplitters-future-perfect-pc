@@ -168,7 +168,8 @@ def test_mac_packager_only_audits_textures_when_explicit(tmp_path, monkeypatch, 
 
 
 @pytest.mark.parametrize('supported', [True, False, None])
-def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supported):
+@pytest.mark.parametrize('reuse_sdk', [False, True])
+def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supported, reuse_sdk):
     """Run the real package writer with host tools replaced by tiny fixtures."""
     def put(path, value=b'fixture'):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -190,7 +191,11 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
     monkeypatch.setattr(package, 'run', lambda *args: 'revision')
     monkeypatch.setattr(package.subprocess, 'check_output', lambda *args, **kwargs: b'')
     monkeypatch.setattr(package.subprocess, 'run', lambda *args, **kwargs: None)
-    monkeypatch.setattr(package.vulkan_sdk, 'verify_install', lambda: sdk)
+    def verified_sdk(*args, **kwargs):
+        assert args == ((tmp_path,) if reuse_sdk else ())
+        assert kwargs == ({'source_root': tmp_path/'dependencies'} if reuse_sdk else {})
+        return sdk
+    monkeypatch.setattr(package.vulkan_sdk, 'verify_install', verified_sdk)
     monkeypatch.setattr(package, 'prepare_licenses', lambda *args: None)
     def libraries(executable, stage, sdk):
         for name in ('libvulkan.1.dylib', 'libMoltenVK.dylib', 'libdxcompiler.dylib'):
@@ -211,7 +216,9 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
         b'{"version":"1.4.1"}' if target.name == 'manifest.json' else b'fixture'))
     monkeypatch.setattr(package.shutil, 'copytree', lambda source, target: put(target/'Contents/MacOS/TimeSplitters.Launcher'))
     monkeypatch.setattr(package, 'write_source_files', lambda *args: None)
-    monkeypatch.setattr(sys, 'argv', ['package-native-mac.py', '--version', 'v1.0.0'])
+    arguments=['package-native-mac.py', '--version', 'v1.0.0']
+    if reuse_sdk:arguments+=['--sdk-root',str(tmp_path/'dependencies')]
+    monkeypatch.setattr(sys, 'argv', arguments)
     package.main()
     stage = tmp_path/'build/releases/TimeSplitters-Future-Perfect-PC-v1.0.0-macos-arm64'
     manifest = json.loads((stage/'BUILD.json').read_text())

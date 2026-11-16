@@ -178,6 +178,7 @@ def main():
     parser.add_argument('--version', required=True)
     parser.add_argument('--output', type=Path, default=ROOT/'build/releases')
     parser.add_argument('--launcher', type=Path, default=ROOT/'build/macos-launcher')
+    parser.add_argument('--sdk-root', type=Path, help='Read-only SDK reuse from another checkout with the same verified pin')
     parser.add_argument('--with-textures', action='store_true', help='Explicitly bundle the audited enhanced pack (offline distribution)')
     parser.add_argument('--without-textures', action='store_true', help='Make a lightweight package without enhanced textures')
     parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the committed repository pack')
@@ -205,7 +206,7 @@ def main():
     release_source = run('git', 'rev-parse', args.version+'^{commit}')
     if native['source_revision'] != release_source:
         parser.error('Game source must match the existing release tag.')
-    sdk = vulkan_sdk.verify_install()
+    sdk = vulkan_sdk.verify_install(ROOT, source_root=args.sdk_root) if args.sdk_root else vulkan_sdk.verify_install()
     texture_rows, textures = [], optional_identity(ROOT)
     if args.with_textures or args.texture_pack:
         _, texture_rows, textures = ensure_pack(ROOT, args.texture_pack)

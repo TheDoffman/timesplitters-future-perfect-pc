@@ -1705,3 +1705,9 @@ any staging output. Tests in test_linux_media.py cover unchanged bytes/no copied
 installation, altered libraries and mismatched checkout pins; native package
 fixtures verify media/SDK failure leaves no output directory. Linux source SDK
 reuse retains the existing same-pin verifier. No system dependency is upgraded.
+
+The Mac game packager also accepts --sdk-root, using the existing same-pin SDK
+verifier before staging. The complete package/capability fixture runs with both
+local/default and explicit reused SDK selection; test_vulkan_sdk.py separately
+checks source pin, actual critical-file hashes and no writes. Game source/tag,
+renderer, executable and package validation remain mandatory.

@@ -1,3 +1,33 @@
+Native Mac/Linux game and dependency acceptance (2026-11-16):
+The clean bbed Linux game build completes and passes protected-memory/MMIO checks.
+A100-second isolated six-bot unmodded match under Mesa lavapipe exits0 with128
+bounded source observations spanning54 event IDs. GameSHA d621e75a138be1f5787c825d4f9a4b4ccdc809629563ed6205982913ae8c4b92;
+proofSHA bef2263d3b23886a2573a6e04f466b0a1c72640bf8f6fba565895a7a94269f97.
+Afterward Linux fast-forwards to c662 and passes81 dependency/packaging/game-host
+checks0.98s. Its incremental release-media build also completes and passes MMIO:
+SHA6282dadc08853a2504365a613c02c23fa2b5b09af4ade610818f26f138941fc1,
+clean c662 source and verified6.1.5 decoder receipt. This second binary still needs
+its own genuine package/game acceptance; the earlier scene is not its proof.
+
+The clean c662 Mac game build completes platform/MMIO/path and renderer/input/
+settings/debug checks. Its100-second isolated unmodded six-bot match exits0 with
+128 source observations spanning60 event IDs. GameSHA e4effbcab1a8703bf2e2c8c12e112905c8bb3e95fc0c9e4d93ad8ac0730c1ddd;
+proofSHA abca70b418fe6722cac0a590cb565c200b101e4238701ecb36bf2a584bf986ed.
+Task-owned compiler input matches410 original asset entries; pak/xmv are reused
+read-only with no second extract. The private read-only observer does not enable
+mods or change the game binary. Disposable partition disks are recycled and the
+canonical test fixture rechecked. Custom audio playback is still unfinished.
+
+Dependency reuse c662 is committed/pushed and actual Mac/Linux source synchronized.
+Media/SDK pins and original files are verified before use; package preflight
+refuses changed dependencies before staging. Windows selected checks pass41 plus
+one POSIX skip and33 plus six POSIX skips; Mac/Linux pass all81 combined checks.
+Full CI run43823337640 at c662 passes all selected runtime/patch/GPU/Vulkan,
+release checks, all three native launcher builds/their aggregate and PR validation.
+Only the two issue-only jobs skip. Mac packager SDK reuse now has the analogous
+explicit option, with57 Windows package/SDK/media checks passing; actual packaging
+is still pending. No public binary release, host601/7be upgrade or main merge.
+
 Native Mac/Linux launcher and public trust acceptance at bbed037f (2026-11-16):
 The clean Linux task checkout was fast-forwarded from ed05f978 through an
 incremental Git bundle to bbed037f. This avoids Windows worktree Git pointers

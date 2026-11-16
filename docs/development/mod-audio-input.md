@@ -137,3 +137,26 @@ started before patch application and failed fixture compilation; the rerun on
 the patched runtime passes without a product change. Linux game compilation and
 an actual audio-hook scene remain pending; the native test pass does not enable
 replacement playback.
+
+## Native Mac and Linux gameplay observations
+
+The clean bbed Linux build passes its protected-memory/MMIO checks and a100-second
+isolated unmodded six-bot match under Mesa lavapipe. It exits0 and records128
+bounded observations spanning54 valid sound IDs. Its game SHA256 is
+d621e75a138be1f5787c825d4f9a4b4ccdc809629563ed6205982913ae8c4b92;
+evidence SHA256 bef2263d3b23886a2573a6e04f466b0a1c72640bf8f6fba565895a7a94269f97.
+The later c662 release-media build is a distinct executable and needs package/
+game acceptance; it must not inherit this scene's binary identity.
+
+The clean c662 Mac Vulkan/MoltenVK build passes platform/MMIO/path tests and
+renderer/input/settings/debug self-tests. A100-second isolated unmodded six-bot
+match exits0 with128 bounded observations spanning60 valid sound IDs. A private
+read-only observer supplies stage/bot evidence; no mod capsule is active. Game
+SHA256 e4effbcab1a8703bf2e2c8c12e112905c8bb3e95fc0c9e4d93ad8ac0730c1ddd;
+evidence SHA256 abca70b418fe6722cac0a590cb565c200b101e4238701ecb36bf2a584bf986ed.
+Original asset trees are read without a second extract; only the supported XBE
+and synthetic Test Lab fixture are copied into task-owned compiler/test paths.
+
+Together with Windows these establish real source-attribution entry on all three
+hosts. Complete source/bank/stream/rate/loop ownership and replacement playback
+remain unfinished. No audio replacement is enabled by these checks.
