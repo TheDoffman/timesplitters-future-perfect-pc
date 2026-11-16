@@ -178,21 +178,26 @@ namespace TimeSplitters.Launcher
     public sealed class ModCreatorClient : IDisposable
     {
         readonly string root,origin;readonly HttpClient http;readonly Func<DateTime> clock;
-        readonly SemaphoreSlim gate=new SemaphoreSlim(1,1);string token;long expires;
+        readonly SemaphoreSlim gate=new SemaphoreSlim(1,1);readonly IModSessionVault vault;string token,pinHash,vaultBinding;long expires;
+        public string VaultNotice {get;private set;}
         public string Username {get;private set;}
         public string Role {get;private set;}
         public string LastTicket {get;private set;}
         public bool SignedIn {get{return token!=null && Now<expires;}}
         public bool CanModerate {get{return SignedIn && (Role=="moderator" || Role=="admin");}}
         long Now {get{return new DateTimeOffset(clock()).ToUnixTimeSeconds();}}
-        public ModCreatorClient(string root):this(root,ModWorkshopClient.Service(root),new HttpClientHandler {AllowAutoRedirect=false,UseCookies=false,UseDefaultCredentials=false},()=>DateTime.UtcNow){}
-        internal ModCreatorClient(string root,string service,HttpMessageHandler handler,Func<DateTime> clock)
-        {this.root=root;origin=ModWorkshopClient.ServiceUri(service).GetLeftPart(UriPartial.Authority);this.clock=clock;http=new HttpClient(handler,true);http.Timeout=TimeSpan.FromMinutes(15);}
+        public ModCreatorClient(string root):this(root,ModWorkshopClient.Service(root),new HttpClientHandler {AllowAutoRedirect=false,UseCookies=false,UseDefaultCredentials=false},()=>DateTime.UtcNow,new ModSessionVault()){}
+        internal ModCreatorClient(string root,string service,HttpMessageHandler handler,Func<DateTime> clock,IModSessionVault vault=null)
+        {this.root=root;origin=ModWorkshopClient.ServiceUri(service).GetLeftPart(UriPartial.Authority);this.clock=clock;this.vault=vault;http=new HttpClient(handler,true);http.Timeout=TimeSpan.FromMinutes(15);}
         void Pin()
         {
             try {
                 Core.Require(ModWorkshopClient.ServiceUri(ModWorkshopClient.Service(root)).GetLeftPart(UriPartial.Authority)==origin,"The workshop address changed. Restart the launcher before signing in again.");
-                using(var store=new ModTrustStore(root,origin,Now))ModTrust.Roots(store.Pinned,store.Updates,Now);
+                using(var store=new ModTrustStore(root,origin,Now)) {
+                    ModTrust.Roots(store.Pinned,store.Updates,Now);string current=ModTrust.Hash(store.Pinned);
+                    Core.Require(pinHash==null || pinHash==current,"The workshop trust root changed. Restart the launcher before signing in again.");
+                    pinHash=current;vaultBinding=ModTrust.Hash(Encoding.UTF8.GetBytes(origin+"\0"+pinHash));
+                }
             }catch{Forget();throw;}
         }
         void Forget(){token=null;expires=0;Username=null;Role=null;}
@@ -205,7 +210,7 @@ namespace TimeSplitters.Launcher
                 if(authenticated)request.Headers.Authorization=new AuthenticationHeaderValue("Bearer",token);
                 using(var response=await http.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,cancel).ConfigureAwait(false)) {
                     int code=(int)response.StatusCode;
-                    if(code==401)Forget();
+                    if(code==401){Forget();await ClearSaved().ConfigureAwait(false);}
                     Core.Require(code==expected,code==401?"Sign in again to use the creator workshop.":code==403?"This workshop action is not allowed for this account.":code==409?"The request conflicts with an existing item or changed status. Refresh its workshop status before retrying.":code==429?"The workshop request limit was reached. Wait before trying again.":"The workshop could not complete this request (HTTP "+code+"). Refresh workshop status before retrying.");
                     if(code==204)return null;
                     Core.Require(response.Content!=null && response.Content.Headers.ContentType!=null && response.Content.Headers.ContentType.MediaType=="application/json","Invalid creator response format.");
@@ -220,27 +225,68 @@ namespace TimeSplitters.Launcher
         }
         static HttpContent JsonBody(object value)
         {string text=Json.Encode(value);Core.Require(Encoding.UTF8.GetByteCount(text)<=16384,"Creator request exceeds its limit.");return new StringContent(text,Encoding.UTF8,"application/json");}
-        public async Task SignIn(string username,string password,CancellationToken cancel)
-        {await Login("v1/sessions",new {username=username,password=password},200,cancel).ConfigureAwait(false);}
-        public async Task Redeem(string invitation,string password,CancellationToken cancel)
-        {await Login("v1/accounts/redeem",new {invitation=invitation,password=password},201,cancel).ConfigureAwait(false);}
-        async Task Login(string path,object credentials,int expected,CancellationToken cancel)
+        public async Task SignIn(string username,string password,CancellationToken cancel,bool remember=false)
+        {await Login("v1/sessions",new {username=username,password=password},200,cancel,remember).ConfigureAwait(false);}
+        public async Task Redeem(string invitation,string password,CancellationToken cancel,bool remember=false)
+        {await Login("v1/accounts/redeem",new {invitation=invitation,password=password},201,cancel,remember).ConfigureAwait(false);}
+        async Task ClearSaved()
+        {
+            if(vault==null || vaultBinding==null)return;
+            try{await Task.Run(()=>vault.Delete(vaultBinding)).ConfigureAwait(false);}
+            catch{VaultNotice="The saved sign-in could not be removed from the system credential store. Unlock it and choose Forget saved sign-in.";}
+        }
+        async Task Login(string path,object credentials,int expected,CancellationToken cancel,bool remember)
         {
             await gate.WaitAsync(cancel).ConfigureAwait(false);
             try {
-                Forget();var response=await Request(HttpMethod.Post,path,JsonBody(credentials),expected,false,cancel).ConfigureAwait(false);
+                Forget();VaultNotice=null;var response=await Request(HttpMethod.Post,path,JsonBody(credentials),expected,false,cancel).ConfigureAwait(false);
                 ModTrust.Fields(response,"token expires account");string secret=CreatorUpload.Text(response,"token",43);long expiry=ModTrust.Number(response,"expires",Now+1,Now+43200);
                 ModTrust.Need(Regex.IsMatch(secret,@"\A[A-Za-z0-9_-]{43}\z"),"invalid creator session.");
                 var account=ModTrust.Object(response,"account");ModTrust.Fields(account,"username role");string name=CreatorUpload.Text(account,"username",32),role=CreatorUpload.Text(account,"role",16);
                 ModTrust.Need(Regex.IsMatch(name,@"\A[a-z][a-z0-9-]{2,31}\z") && new[]{"creator","moderator","admin"}.Contains(role),"invalid creator account.");
                 token=secret;expires=expiry;Username=name;Role=role;LastTicket=null;
+                if(remember) {
+                    try {Core.Require(vault!=null,"Credential store unavailable.");byte[] saved=Encoding.UTF8.GetBytes(Json.Encode(new {schema=1,origin=origin,pin=pinHash,token=token,expires=expires,username=Username}));await Task.Run(()=>vault.Write(vaultBinding,saved)).ConfigureAwait(false);}
+                    catch{VaultNotice="This sign-in was not saved. Unlock the system credential store to replace or forget any earlier saved sign-in.";}
+                }else await ClearSaved().ConfigureAwait(false);
             }finally{gate.Release();}
+        }
+        public async Task<bool> Resume(CancellationToken cancel)
+        {
+            await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try {
+                Forget();VaultNotice=null;Pin();Core.Require(vault!=null,"The system credential store is unavailable.");
+                byte[] saved=await Task.Run(()=>vault.Read(vaultBinding),cancel).ConfigureAwait(false);if(saved==null)return false;
+                bool invalid=false;
+                try {
+                    Core.Require(saved.Length>0 && saved.Length<=2048,"Invalid saved sign-in.");var data=ModJson.Read(new UTF8Encoding(false,true).GetString(saved),2048);
+                    ModTrust.Fields(data,"schema origin pin token expires username");
+                    ModTrust.Need(ModTrust.Number(data,"schema",1,1)==1 && ModTrust.Text(data,"origin")==origin && ModTrust.Text(data,"pin")==pinHash,"saved sign-in authority differs.");
+                    string secret=CreatorUpload.Text(data,"token",43),name=CreatorUpload.Text(data,"username",32);
+                    ModTrust.Need(Regex.IsMatch(secret,@"\A[A-Za-z0-9_-]{43}\z") && Regex.IsMatch(name,@"\A[a-z][a-z0-9-]{2,31}\z"),"invalid saved sign-in.");
+                    expires=ModTrust.Number(data,"expires",Now+1,Now+43200);token=secret;Username=name;
+                }catch{Forget();invalid=true;}
+                if(invalid){await ClearSaved().ConfigureAwait(false);throw new InvalidOperationException("The saved sign-in expired or is invalid. Sign in again.");}
+                try {
+                    var account=await Request(HttpMethod.Get,"v1/account",null,200,true,cancel).ConfigureAwait(false);ModTrust.Fields(account,"username role");
+                    string name=CreatorUpload.Text(account,"username",32),role=CreatorUpload.Text(account,"role",16);
+                    ModTrust.Need(name==Username && new[]{"creator","moderator","admin"}.Contains(role),"saved sign-in account differs.");Role=role;LastTicket=null;return true;
+                }catch{Forget();throw;}
+            }finally{gate.Release();}
+        }
+        public async Task ForgetSaved(CancellationToken cancel)
+        {
+            await gate.WaitAsync(cancel).ConfigureAwait(false);
+            try{VaultNotice=null;if(vaultBinding==null){using(var store=new ModTrustStore(root,origin,Now))vaultBinding=ModTrust.Hash(Encoding.UTF8.GetBytes(origin+"\0"+ModTrust.Hash(store.Pinned)));}await ClearSaved().ConfigureAwait(false);Core.Require(VaultNotice==null,"The system credential store is locked or unavailable. Unlock it before forgetting the saved sign-in.");}
+            finally{gate.Release();}
         }
         public async Task SignOut(CancellationToken cancel)
         {
-            bool locked=false;
+            bool locked=false;Exception failure=null;VaultNotice=null;
             try {await gate.WaitAsync(cancel).ConfigureAwait(false);locked=true;if(SignedIn)await Request(HttpMethod.Delete,"v1/sessions/current",null,204,true,cancel).ConfigureAwait(false);}
-            finally{Forget();if(locked)gate.Release();}
+            catch(Exception error){failure=error;}
+            try{Forget();await ClearSaved().ConfigureAwait(false);}finally{if(locked)gate.Release();}
+            if(failure!=null)System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
         }
         public async Task<CreatorUpload[]> History(long after,CancellationToken cancel)
         {
@@ -370,6 +416,7 @@ namespace TimeSplitters.Launcher
     {
         public readonly StackPanel View=new StackPanel();
         readonly TextBox username=new TextBox {Name="CreatorUsername",MinWidth=260,Margin=new Thickness(0,6,0,8)};
+        readonly CheckBox remember=new CheckBox {Name="RememberCreatorSignIn",Content="Remember this sign-in on this computer",Margin=new Thickness(0,6,0,8)};
         readonly TextBox package=new TextBox {Name="CreatorPackagePath",MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly TextBox reviewNote=new TextBox {Name="ModeratorNote",MaxLength=1800,MinWidth=260,Margin=new Thickness(0,6,0,8)};
         readonly ComboBox sourceFiles=new ComboBox {Name="ModeratorSourceFile",MinWidth=260,Margin=new Thickness(0,6,0,8)};
@@ -428,17 +475,20 @@ namespace TimeSplitters.Launcher
         {var button=new Button {Name=name,Content=title,IsEnabled=stop==null && enabled,Margin=new Thickness(0,8,10,0)};button.Click+=(s,e)=>action();panel.Children.Add(button);return button;}
         void Render()
         {
-            Detach(username);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(textureFiles);Detach(reportReason);Detach(reportDescription);Detach(reportResolution);View.Children.Clear();if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();}
+            Detach(username);Detach(remember);Detach(password);Detach(invitation);Detach(package);Detach(reviewNote);Detach(sourceFiles);Detach(textureFiles);Detach(reportReason);Detach(reportDescription);Detach(reportResolution);View.Children.Clear();if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}bool authenticated=SignedIn;if(!authenticated){ClearReviews();ClearReports();}
             View.Children.Add(status);var cancel=Button(View,"CancelCreatorOperation","Cancel request",()=>{if(stop!=null)stop.Cancel();});cancel.IsEnabled=stop!=null;Ui.Show(cancel,stop!=null);
             var account=PageTheme.Section(View,"Creator account",authenticated?"Signed in as "+client.Username+" ("+client.Role+")":"Use your workshop account or redeem an operator invitation.");
             if(!authenticated) {
                 account.Children.Add(PageTheme.Text("Username",13));account.Children.Add(username);
                 account.Children.Add(PageTheme.Text("Password (15 or more characters for a new account)",13));account.Children.Add(password);
+                account.Children.Add(remember);remember.IsEnabled=stop==null;
                 Button(account,"CreatorSignIn","Sign in",async()=>await Authenticate(false));
                 account.Children.Add(PageTheme.Text("Invitation (for a new account or account recovery)",13));account.Children.Add(invitation);
                 Button(account,"CreatorRedeem","Redeem invitation",async()=>await Authenticate(true));
-                account.Children.Add(PageTheme.Text("Sign-in details are kept for this launcher session only.",12,"#9EB4C8"));
+                Button(account,"ResumeCreatorSignIn","Use saved sign-in",async()=>await Run(async token=>{Core.Require(await Client.Resume(token),"No saved sign-in is available. Sign in with your workshop password.");},"Signed in using the system credential store.",40));
+                account.Children.Add(PageTheme.Text("Remembering saves only your session in the system credential store, for up to 12 hours. Your password is never saved.",12,"#9EB4C8"));
             }else Button(account,"CreatorSignOut","Sign out",async()=>{reviewed=null;uploads=new CreatorUpload[0];ClearReviews();ClearReports();await Run(token=>Client.SignOut(token),"Signed out. Local game files were preserved.",35);});
+            Button(account,"ForgetCreatorSignIn","Forget saved sign-in",async()=>await Run(token=>Client.ForgetSaved(token),"Saved sign-in forgotten.",40));
             username.IsEnabled=password.IsEnabled=invitation.IsEnabled=stop==null;
             RenderReports(authenticated);
             var submission=PageTheme.Section(View,"Submit a package","Build a ZIP with the mod SDK, enter its full file path, then review it before upload. Its author must match your creator username.");
@@ -576,8 +626,8 @@ namespace TimeSplitters.Launcher
         {sourcePage=null;await Run(async token=>{sourcePage=await Client.Source(review,path,offset,token);},"Lua source loaded for inspection. Nothing was executed or installed.",45);}
         async Task Authenticate(bool redeem)
         {
-            string name=username.Text??"",secret=Password,invite=Invitation;ClearCredentials();ClearReviews();ClearReports();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
-            await Run(token=>redeem?Client.Redeem(invite,secret,token):Client.SignIn(name,secret,token),"Signed in. Review a ZIP to submit your addition.",45);
+            string name=username.Text??"",secret=Password,invite=Invitation;bool save=remember.IsChecked==true;ClearCredentials();ClearReviews();ClearReports();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
+            await Run(token=>redeem?Client.Redeem(invite,secret,token,save):Client.SignIn(name,secret,token,save),"Signed in. Review a ZIP to submit your addition.",45);
         }
         async Task History()
         {uploads=new CreatorUpload[0];await Run(async token=>{uploads=await Client.History(cursor,token);},"Upload status refreshed.",35);}
@@ -590,7 +640,7 @@ namespace TimeSplitters.Launcher
                 try{await operation(cancellation.Token);if(!disposed)status.Text=success;}
                 catch(OperationCanceledException){if(!disposed)status.Text="Request cancelled. Refresh status before retrying.";}
                 catch(Exception error){if(!disposed)status.Text=error.Message;}
-                finally{stop=null;if(!disposed)Render();}
+                finally{stop=null;if(!disposed){if(client!=null && !String.IsNullOrEmpty(client.VaultNotice))status.Text+=" "+client.VaultNotice;Render();}}
             }
         }
         public void Dispose(){disposed=true;if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}ClearCredentials();ClearReviews();ClearReports();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}

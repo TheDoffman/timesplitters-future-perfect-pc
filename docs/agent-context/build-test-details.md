@@ -1,3 +1,13 @@
+CreatorVaultChecks in launcher_shared_ui.cs always runs fake-vault/client/UI
+cases: opt-in, bound pin/origin, current server role, expired/malformed/revoked
+sessions, failed remote logout, unavailable vault and visible deletion failure.
+TSFP_TEST_OS_VAULT=1 adds a disposable random OS-entry read/write/update/isolation/
+remove test; no real account tokens are used. Windows native proof passes.
+Portable recovery tests cover authenticated encryption, fixed KDF/budgets,
+unknown inventory, independent root pin, two-root proof, new-only private IO and
+actual Windows DPAPI rebinding. Actual Windows-to-Mac encrypted fixture passes;
+production backup/custody/restore acceptance remains separate.
+
 Explicit bootstrap tests cover group->GID->UID ordering, failure short-circuiting,
 denied root restoration, fixed role/nonce args and immutable entry gates. Native
 probe now observes root startup then restricted same-PID execution before the

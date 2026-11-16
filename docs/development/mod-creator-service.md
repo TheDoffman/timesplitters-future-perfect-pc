@@ -2,9 +2,8 @@
 
 The creator/moderator backend is implemented in this task branch. It is not
 exposed to the internet. The launcher now includes creator sign-in, invitation
-redemption, reviewed uploads and status history. Persistent credential-vault
-integration, production supervision/backups and public host
-acceptance remain required before release. The existing Caddy configuration
+redemption, reviewed uploads, status history and optional OS-backed session storage.
+Production supervision/backups and public host acceptance remain required before release. The existing Caddy configuration
 still serves only approved snapshot downloads and does not proxy this API.
 
 ## Native creator workflow
@@ -19,10 +18,43 @@ so the existing GUI watchdog still needs a production control design. See STATUS
 Open **Mods → Creator** in a launcher built from this branch. Sign in with your
 workshop username/password, or redeem an operator invitation with a new password.
 Passwords and invitations are masked and cleared after submission or leaving the
-tab. Sessions last at most12 hours and stay in memory for this launcher process;
-they are never written to preferences, logs or a credential file. Sign out also
-forgets the local session if its server revocation request fails. Persistent
-OS credential-vault storage remains unfinished.
+tab. Sessions last at most12 hours. By default they stay in memory for this
+launcher process. **Remember this sign-in on this computer** stores only the
+session token, username, expiry and exact workshop origin/public-pin binding in
+the OS credential store. Passwords and invitations are never saved. No session
+secret is written to preferences, logs or a fallback credential file.
+
+**Use saved sign-in** explicitly restores a session after verifying the configured
+live pinned authority, local expiry/format and the server's current `/v1/account`
+identity/role. Saved roles never grant moderation permissions. Expired, malformed,
+wrong-authority or server-revoked sessions are forgotten. Sign out clears local
+memory and requests removal of the OS entry even if remote logout fails.
+**Forget saved sign-in** removes only that entry, preserving any current memory
+session. Deletion failure is reported visibly; a locked/unavailable vault never
+silently falls back to storing plaintext or claims successful removal.
+
+Windows uses the current account's generic Credential Manager entry (local-machine
+persistence, not machine-wide sharing). Mac uses a generic Keychain password via
+Security.framework with authentication UI disabled; unlock the login keychain in
+the OS and retry if needed. Linux uses `/usr/bin/secret-tool` with the desktop
+Secret Service, a default unlocked collection and a15-second operation limit.
+The desktop's libsecret tools/Secret Service must be installed for persistence;
+headless or unsupported desktops retain normal memory-only sign-in. Session
+bytes travel on stdin, never in process arguments; stdout/stderr are bounded and
+provider errors are not displayed. The entry namespace is an SHA256 binding of
+the canonical origin and original pinned public root, shared across installations
+for that same OS user/authority. Root rotations retain the original pin binding;
+replacing the pinned anchor requires signing in again.
+
+The shared fake-vault/client/UI checks cover opt-in, exact authority/identity,
+current-role lookup, expiry, revocation, memory-only fallback, deletion errors and
+failed remote sign-out. Set `TSFP_TEST_OS_VAULT=1` only for a developer launcher
+workshop test to exercise a disposable random native entry's read/write/update/
+isolation/removal; it does not touch real workshop credentials. The actual
+Windows native-store check passes. Mac/Linux native-store acceptance is separate.
+API references: [Windows credentials](https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentialw),
+[Apple matching](https://developer.apple.com/documentation/security/secitemcopymatching(_:_:)),
+[GNOME secret-tool implementation](https://github.com/GNOME/libsecret/blob/main/tool/secret-tool.c).
 
 Build a ZIP with the SDK, enter its full path, and choose **Review ZIP**. The
 launcher validates the complete archive, manifest and payload without installing

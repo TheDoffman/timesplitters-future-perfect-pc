@@ -1,4 +1,4 @@
-[Service proofs](build-test-details.md); portable recovery crypto/DPAPI and scope tests.
+[Service/vault/recovery checks](build-test-details.md); crypto, DPAPI and scope tests.
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

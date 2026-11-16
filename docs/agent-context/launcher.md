@@ -21,14 +21,17 @@ Caddy's Host matcher gets only the validated hostname; API Host/Origin retain th
 port. Existing private443 routing must stay private; separate8443 is planned.
 Golden port-bound signatures and actual Caddy transport/API tests cover this.
 
-ModCreatorPage adds Creator sign-in/invitation redemption, ZIP review, confirmed
-private upload and bounded scan/error history to Mods. ModCreatorClient binds every
-request to the configured live pinned root/origin, rejects redirects and bounds
-responses. Sessions remain in memory; secret inputs clear on submit/tab exit.
-Read-only InspectPackage shares installer validation. A separate developer mode
-checks real SQLite/account/upload code over pipes; player/UI runs need no Python.
-See mod-workshop.md and build-test-details.md. Native test receipts record the
-Python identity. Report UI/history contracts: mod-workshop.md.
+ModCreatorPage includes creator invitations/uploads/history and opt-in saved
+sessions. ModSessionVault uses Windows Credential Manager, Mac Keychain and
+Linux secret-tool/Secret Service; unavailable/locked stores retain memory-only
+access with a visible warning, never a plaintext fallback. Resume is explicit,
+checks live pinned authority and GET/account role, and refuses expired/changed/
+revoked sessions. Sign-out clears local/vault state even if remote logout fails;
+failed deletion stays visible. Forget saved sign-in preserves a current session.
+Passwords/invitations are never saved. Shared fake-vault/UI tests always run;
+TSFP_TEST_OS_VAULT=1 enables disposable native-store roundtrip/update/isolation/
+delete proof. Windows native proof passes; Mac/Linux acceptance remains pending.
+See ../development/mod-creator-service.md and build-test-details.md.
 
 Dependency install flow: ModWorkshopPage now prepares a fresh signed dependency
 plan, displays exact versions/reuse/new expanded payload size and requires an
@@ -47,15 +50,12 @@ combined transfer limit and cancellation after a completed dependency. Fixture
 keys were generated in memory and discarded; these are injected HTTPS responses,
 not public connectivity or a production signing ceremony.
 
-WorkshopInstallPlan is shared, side-effect-free groundwork for dependency
-installation. It consumes a freshly verified catalog and strict package models,
-orders exact versions dependency-first, deduplicates shared dependencies and
-rejects missing/revoked catalog entries, cycles, incompatible versions, payload
-conflicts, more than32 packages or256MiB expanded payload. Matching installed
-packages are reusable only with the same digest and workshop-origin receipt.
-Execution must recheck installed bytes and availability. Confirmation UI and
-multi-package download/install execution are not connected yet; current Install
-still handles one package. Existing active profiles are untouched by planning.
+WorkshopInstallPlan consumes freshly verified catalogs and strict manifests,
+orders exact dependency versions first and rejects missing/revoked entries,
+cycles, incompatible versions, portable payload collisions, >32 packages or
+>256MiB expanded payload. Reuse requires matching digest and origin receipts.
+Connected confirmation/execution rechecks bytes and availability; incomplete
+installs retain immutable inactive packages and preserve the active profile.
 
 Workshop discovery (feature/mod-platform, basebc67c1c9): shared ModWorkshopPage
 adds content/creator filters, name/creator/numeric-version sorting, latest release

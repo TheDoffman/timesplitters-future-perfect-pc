@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Collections.Generic;
 using TimeSplitters.Launcher;
 #if MACOS || LINUX
@@ -354,8 +355,70 @@ public static class LauncherSharedUiChecks
     }
     static Dictionary<string,object> PlayerReport(CreatorPackagePlan plan)
     {return new Dictionary<string,object>{{"cursor",1L},{"id",new string('d',32)},{"sha256",plan.Sha256},{"mod_id",plan.Id},{"version",plan.Version},{"reporter","fixture-creator"},{"reason","other"},{"description","Original report for review"},{"created",WorkshopTrustChecks.Unix},{"updated",WorkshopTrustChecks.Unix},{"state","open"},{"resolution",""}};}
+    sealed class FixtureSessionVault : IModSessionVault
+    {
+        internal readonly Dictionary<string,byte[]> Values=new Dictionary<string,byte[]>();
+        internal bool FailWrite,FailDelete;internal int Writes,Deletes;
+        public byte[] Read(string binding){lock(Values){byte[] value;return Values.TryGetValue(binding,out value)?(byte[])value.Clone():null;}}
+        public void Write(string binding,byte[] secret){if(FailWrite)throw new Exception("Do not expose private provider details");lock(Values){Values[binding]=(byte[])secret.Clone();Writes++;}}
+        public void Delete(string binding){if(FailDelete)throw new Exception("Do not expose private provider details");lock(Values){Values.Remove(binding);Deletes++;}}
+    }
+    static void CreatorVaultChecks(string root)
+    {
+        Test("remembered sessions opt in bind authority and recheck the current server role",()=>{
+            string folder=Path.Combine(root,"session-vault-roundtrip");CreatorConfig(folder);var vault=new FixtureSessionVault();int accounts=0;
+            Func<System.Net.Http.HttpRequestMessage,System.Net.Http.HttpResponseMessage> respond=request=>{
+                if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(CreatorLogin());
+                Need(request.RequestUri.AbsolutePath=="/v1/account" && request.Method==System.Net.Http.HttpMethod.Get && request.Headers.Authorization.Parameter==new string('t',43),"Saved sign-in was not revalidated with its bearer session");accounts++;return CreatorJson(new {username="fixture-creator",role="creator"});
+            };
+            using(var first=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(respond),()=>WorkshopTrustChecks.Now,vault)) {
+                first.SignIn("fixture-creator","not-a-real-password",System.Threading.CancellationToken.None).GetAwaiter().GetResult();Need(vault.Writes==0,"Remembering was enabled by default");
+                first.SignIn("fixture-creator","not-a-real-password",System.Threading.CancellationToken.None,true).GetAwaiter().GetResult();Need(vault.Writes==1 && vault.Values.Count==1,"Opt-in did not persist the session");
+                string saved=Encoding.UTF8.GetString(vault.Values.Values.Single());Need(!saved.Contains("not-a-real-password") && !saved.Contains("role"),"Password or stale privileges entered the credential store");
+            }
+            Need(vault.Values.Count==1,"Disposal removed an opted-in session");
+            using(var resumed=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(respond),()=>WorkshopTrustChecks.Now,vault)) {
+                Need(resumed.Resume(System.Threading.CancellationToken.None).GetAwaiter().GetResult() && resumed.SignedIn && !resumed.CanModerate && accounts==1,"Saved sign-in trusted stale roles or failed to resume");
+                resumed.SignIn("fixture-creator","not-a-real-password",System.Threading.CancellationToken.None).GetAwaiter().GetResult();Need(vault.Values.Count==0,"Unchecking Remember retained an earlier saved sign-in");
+            }
+        });
+        Test("expired changed-authority malformed and revoked remembered sessions fail closed",()=>{
+            foreach(string mode in new[]{"expired","pin","schema","token","revoked"}) {
+                string folder=Path.Combine(root,"session-vault-"+mode);CreatorConfig(folder);var vault=new FixtureSessionVault();int requests=0;
+                using(var first=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>CreatorJson(CreatorLogin())),()=>WorkshopTrustChecks.Now,vault))first.SignIn("fixture-creator","fixture-only",System.Threading.CancellationToken.None,true).GetAwaiter().GetResult();
+                string binding=vault.Values.Keys.Single();var saved=ModJson.Read(Encoding.UTF8.GetString(vault.Values[binding]));
+                if(mode=="expired")saved["expires"]=WorkshopTrustChecks.Unix-1;else if(mode=="pin")saved["pin"]=new string('f',64);else if(mode=="schema")saved["schema"]=true;else if(mode=="token")saved["token"]="invalid";
+                vault.Values[binding]=Encoding.UTF8.GetBytes(Json.Encode(saved));
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{requests++;return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);}),()=>WorkshopTrustChecks.Now,vault)) {
+                    WorkshopReject(()=>client.Resume(System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Invalid saved sign-in resumed");Need(!client.SignedIn && !client.CanModerate && vault.Values.Count==0,"Invalid saved credentials were retained");Need(requests==(mode=="revoked"?1:0),"Invalid local session reached the network");
+                }
+            }
+        });
+        Test("failed remote sign-out clears remembered session and vault failures stay visible",()=>{
+            string folder=Path.Combine(root,"session-vault-signout");CreatorConfig(folder);var vault=new FixtureSessionVault();
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>request.Method==System.Net.Http.HttpMethod.Delete?new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable):CreatorJson(CreatorLogin())),()=>WorkshopTrustChecks.Now,vault)) {
+                client.SignIn("fixture-creator","fixture-only",System.Threading.CancellationToken.None,true).GetAwaiter().GetResult();
+                WorkshopReject(()=>client.SignOut(System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Remote logout failure was hidden");Need(!client.SignedIn && vault.Values.Count==0,"Remote failure retained remembered credentials");
+                vault.FailWrite=true;client.SignIn("fixture-creator","fixture-only",System.Threading.CancellationToken.None,true).GetAwaiter().GetResult();Need(client.SignedIn && client.VaultNotice.Contains("not saved") && !client.VaultNotice.Contains("provider details"),"Vault failure broke memory-only sign-in or exposed provider details");
+                vault.FailWrite=false;client.SignIn("fixture-creator","fixture-only",System.Threading.CancellationToken.None,true).GetAwaiter().GetResult();vault.FailDelete=true;
+                WorkshopReject(()=>client.ForgetSaved(System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Locked vault claimed successful deletion");Need(client.VaultNotice.Contains("could not be removed"),"Failed credential deletion was not visible");vault.FailDelete=false;client.ForgetSaved(System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+            }
+        });
+        Test("remember sign-in UI is opt in and exposes explicit resume and forget",()=>WithUiContext(()=>{
+            string folder=Path.Combine(root,"session-vault-ui");CreatorConfig(folder);var vault=new FixtureSessionVault();
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>CreatorJson(CreatorLogin())),()=>WorkshopTrustChecks.Now,vault))using(var page=new ModCreatorPage(folder,false,client)) {
+                var remember=Find<CheckBox>(page.View,"RememberCreatorSignIn");Need(remember.IsChecked!=true && Find<Button>(page.View,"ResumeCreatorSignIn")!=null && Find<Button>(page.View,"ForgetCreatorSignIn")!=null,"Remember UI missing or enabled by default");remember.IsChecked=true;
+                Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-only");Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignOut" && b.IsEnabled),"Remembered UI sign-in did not finish");Need(vault.Writes==1,"Remember checkbox did not reach the client");Click(Find<Button>(page.View,"ForgetCreatorSignIn"));PumpUntil(()=>page.StatusText=="Saved sign-in forgotten.","Explicit Forget did not finish");Need(vault.Values.Count==0 && client.SignedIn,"Forgetting the OS entry changed the active memory session");
+            }
+        }));
+        if(Environment.GetEnvironmentVariable("TSFP_TEST_OS_VAULT")=="1")Test("actual OS credential vault roundtrip update isolation and removal",()=>{
+            var vault=new ModSessionVault();string binding=ModTrust.Hash(Encoding.UTF8.GetBytes("disposable-vault-fixture-"+Guid.NewGuid().ToString("N"))),other=ModTrust.Hash(Encoding.UTF8.GetBytes("other-fixture-"+Guid.NewGuid().ToString("N")));byte[] first=Encoding.UTF8.GetBytes("Disposable session fixture; no actual account"),second=Encoding.UTF8.GetBytes("Updated disposable session fixture");
+            try{Need(vault.Read(binding)==null,"Fresh random fixture already existed");vault.Write(binding,first);Need(vault.Read(binding).SequenceEqual(first) && vault.Read(other)==null,"Credential bytes or scope isolation failed");vault.Write(binding,second);Need(vault.Read(binding).SequenceEqual(second),"Credential update failed");vault.Delete(binding);Need(vault.Read(binding)==null,"Credential removal failed");vault.Delete(binding);}finally{vault.Delete(binding);}
+        });
+    }
     static void CreatorChecks(string root)
     {
+        CreatorVaultChecks(root);
         Test("reported release inspection rejects changed digests versions and creator roles",()=>{
             string folder=Path.Combine(root,"reported-release-binding");CreatorConfig(folder);string zip=LibraryPackage(folder,"reported-lookup","1.0.0",1);var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);var report=new WorkshopReport(PlayerReport(plan));
             foreach(string mode in new[]{"valid","digest","version","creator"}) {

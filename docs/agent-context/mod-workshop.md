@@ -31,15 +31,15 @@ aliased state is preserved/refused. Bounded held-FD reads protect private files.
 Workers require host+scan completion; no DBinit/jobs/network. Rotation requires
 preserving migration. Details: ../development/system-host-supervision.md.
 
-Trust recovery: prepare-workshop-trust-windows.py uses account DPAPI/NTFS ACLs;
-only catalog inputs enter the Mac. portable-workshop-recovery.py exports/checks/
-imports independently passphrase-encrypted authority (fixed scrypt/AES-GCM,
-bounded exact inventory, out-of-band pin, both-root proof, new-only private IO).
-Check works across OSes; Windows import rebinds DPAPI. Local hidden prompt only,
-no password arguments/pipes. See ../development/mod-host-recovery.md. Production
-export/passphrase custody/off-device drill remain open. Preparation permits exact
-Git or HEAD-declared CRLF only; mixed/changed/filter bytes remain refused.
-Installed provenance/production ceremony evidence is in STATUS; jobs rolled back.
+Trust recovery: Windows ceremony uses DPAPI/NTFS ACLs; portable export/check/
+new-account import uses passphrase scrypt/AES-GCM with exact bounded inventory,
+independent pin and both-root proof. Local prompt only; production custody/drill
+remain open. See ../development/mod-host-recovery.md. Preparation permits exact
+Git or HEAD-declared CRLF only; installed provenance is in STATUS.
+Creator sign-in optionally uses ModSessionVault (Credential Manager/Keychain/
+Linux Secret Service); explicit restore rechecks pinned root and server identity,
+never stored roles/passwords. Sign-out/Forget clear saved entries; locked-store
+failure is visible without plaintext fallback. See ../development/mod-creator-service.md.
 
 Fixed host roles use system-host-service-mac.py/system-host-monitor-mac.py:
 root controls fixed labels/numeric metadata/bounded inert heartbeats; configs/
@@ -174,7 +174,7 @@ clear on authentication change; every request retains live root/origin checks.
 The existing API enforces roles/fresh clean scans and transactional audit. No
 quarantine source download or public acceptance is added.
 Shared native tests inject decisions; real backend tests verify creator403 and
-moderator empty-queue access for unscanned uploads. See mod-creator-service.md.
+moderator empty-queue access for unscanned uploads. See ../development/mod-creator-service.md.
 
 Native creator scanner acceptance adds explicit Mac --test-creator-scanner.
 It extends the same native-client/real-WSGI private-pipe fixture with actual

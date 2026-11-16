@@ -153,6 +153,7 @@ $arguments += $bannerArguments
 $settingsSources = @((Join-Path $source 'Ui.cs'), (Join-Path $source 'GameSessions.cs'), (Join-Path $source 'CrashReports.cs'), (Join-Path $source 'PageTheme.cs'), (Join-Path $source 'ReleaseNotesMarkdown.cs'), (Join-Path $source 'ReleaseNotesDocument.cs'), (Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
 # Every shared page is compiled for both hosts; add new pages beside these sources.
 $settingsSources += @((Join-Path $source 'ModScriptLaunch.cs'))
+$settingsSources += @((Join-Path $source 'ModSessionVault.cs'))
 $settingsSources += @(Get-ChildItem -LiteralPath $source -Filter '*Page.cs' | ForEach-Object { $_.FullName })
 $defaultControls = @(('/resource:' + (Join-Path $source 'PageTheme.xaml') + ',PageTheme.xaml'),
     ('/resource:' + (Join-Path $source 'TabsTheme.xaml') + ',TabsTheme.xaml'), ('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),

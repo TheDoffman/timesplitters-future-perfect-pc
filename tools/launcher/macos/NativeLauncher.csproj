@@ -12,6 +12,7 @@
     <Compile Include="../../../tests/launcher/launcher_shared_ui.cs" />
     <Compile Include="../../../tests/launcher/creator_backend.cs" />
     <Compile Include="../ModScriptLaunch.cs" />
+    <Compile Include="../ModSessionVault.cs" />
     <EmbeddedResource Include="../../../tests/launcher/mod-launch-vectors.json" LogicalName="mod-launch-vectors.json" />
     <Compile Include="../../../tests/launcher/workshop_trust.cs" />
     <EmbeddedResource Include="../../../tests/launcher/workshop-trust-fixtures.json" LogicalName="workshop-trust-fixtures.json" />
