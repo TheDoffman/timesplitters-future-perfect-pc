@@ -151,6 +151,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/mods/mod_portable_recovery.py'], {'native'}),
     (['tools/mods/hosting/portable-workshop-recovery.py'], {'native'}),
     (['tests/mods/test_portable_recovery.py'], {'native'}),
+    (['src/mods/mod_wave.c', 'src/mods/mod_wave.h', 'tests/mods/test_wave_input.py', 'tests/mods/native_wave_fuzz.c'], {'native'}),
     (['tools/mods/hosting/private-recovery-windows.ps1'], {'native'}),
     (['tools/mods/hosting/prepare-workshop-trust-windows.py'], {'native'}),
     (['tests/mods/test_windows_recovery.py'], {'native'}),

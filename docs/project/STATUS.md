@@ -1,3 +1,21 @@
+Shared custom WAV input boundary (2026-11-15):
+mod_wave.c/.h adds a no-allocation/no-IO parser for bounded immutable PCM16
+RIFF/WAVE snapshots: exact sizes, unique fmt-before-data, mono/stereo8..48kHz,
+matching frame/byte rate,64MiB/64-chunk/600-second limits, borrowed byte view and
+zero failed output. Compressed/float/extensible formats, ambiguity, truncation,
+padding/frame errors and trailing bytes are refused before any OS decoder.
+Windows38 native cases pass1.77s including exact PCM, all truncations and a
+200000-mutation executable using misaligned source storage. Combined native WAV,
+CI scope/suite/sharding checks pass200 cases6.53s. Mac/sanitizer and Linux checks
+remain pending. Audio replacement is not activated; game buffer/stream timing,
+original loop/ownership mapping, creator importer and runtime capability remain
+required. Existing original-loader audio_bank.py evidence identifies the known
+US sound-event/CRC entry points, without new addresses or modified game assets.
+See mod-audio-input.md. The native runtime test list now explicitly includes
+portable recovery and WAV tests; prior portable scope selected native jobs but
+omitted its file from the fixed list. Protected service repair/public routing
+remain unchanged; this is progress toward audio support, not its completion.
+
 Final saved-session Mac acceptance (2026-11-15):
 Actual clean source2b66df42 now passes native build/publish/sign/deep strict
 verification, all111 shared launcher UI groups (including wrong returned

@@ -6,16 +6,14 @@ foreign/changed items; protected bounded journal distinguishes incomplete cleanu
 accept-private-host-services-mac.py uses fixed loopback8768 routes and SOURCE pin,
 not a network bootstrap root. Actual601 readiness failed; all9 jobs rolled back.
 
-prepare-installed-host-mac.py is an immutable root-only setup/admission component:
-read exactly3 owned online inputs, match source public pin, copy600 privately,
-run scan/host init and official updater as600, then accept-installed-scanner-mac.py
-requires real clean/EICAR/empty-DB/missing-engine outcomes with disposable files.
-Only afterward generate root monitor plists and an exclusive protected admission
-record. No job registration/start/Funnel. Strict fixed child commands, cleared
-groups and source/UID gates; native CI tests refusal/order/file protections.
-Actual601 installed scanner passed all4 controls with official definitions.
-Health dirs explicitly chmod0755 despite umask077; marker/plists remain0600.
-Strict fixtures use private HOME; writable-ancestor refusal remains enforced.
+prepare-installed-host-mac.py reads3 owned online inputs, matches the source
+pin, copies600 privately and drops credentials for init/updater/scanner controls.
+Only then generate protected monitors/admission; no startup/Funnel. Actual601
+scanner passes4 controls. Health dirs chmod0755 under077; markers/plists0600;
+private-HOME fixtures retain writable-ancestor rejection.
+Native mod_wave.c validates exact bounded PCM16 RIFF snapshots, returns borrowed
+bytes/typed errors, and clears failed output. No playback/activation yet. See
+../development/mod-audio-input.md for original loader evidence and timing gates.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony
 origin and exact signed public root; status remains pending-public-acceptance.

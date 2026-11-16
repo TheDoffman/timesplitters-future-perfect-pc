@@ -43,14 +43,14 @@ in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_texture
 Private art stays local. Networking: `src/network/`, HLE/kernel patches and
 `tools/network/online.py`; [LAN](system-link.md), [Online UI](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
-Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
-General buffering, lifecycle, format and device recovery are unconditional;
-Enhanced Audio controls only the optional mix. Effects adapt their default
-lead from 40 to 90 ms and refill immediately after skipping stale hitch data.
-Explicit lead overrides stay fixed. Final buffer Release also reclaims host
-slots; XAudio/SDL expose lifetime failure-category counters in the periodic
-DSOUND health report and an idempotent normal-exit summary. Windows WM_QUIT
-runs registered cleanup, matching the SDL close path. Tail drain: [contracts](audio-buffers.md).
+Audio: runtime hle_dsound*/hle_xmv*. [Beta](../development/positional-audio.md).
+Buffering/lifecycle/format/device recovery are unconditional; Enhanced Audio
+controls optional mix. Default effects lead is40->90ms, with immediate refill
+past stale hitch data; explicit lead stays fixed. Final Release frees host slots.
+XAudio/SDL lifetime counters enter DSOUND health/normal-exit summaries; WM_QUIT
+runs registered cleanup like SDL. [Tail drain](audio-buffers.md).
+Native custom WAV input validates PCM16 without allocation/IO/playback; audio
+activation stays off. [Contract and hooks](../development/mod-audio-input.md).
 `audio_output.h` owns `RECOMP_AUDIO_DEFAULT_GAIN` (0.5, about -6 dB).
 XAudio applies it once to the master; SDL applies it once per stream. This
 quiets the output at 100% without changing saved Music/Sound sliders, their

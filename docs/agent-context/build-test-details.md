@@ -1,3 +1,10 @@
+test_wave_input.py compiles/calls actual mod_wave.c on all native hosts. Exact
+PCM, format/chunk/size/duration limits, failed-output clearing and200000 native
+mutations are checked; TSFP_MOD_SANITIZE=1 instruments the standalone mutation
+executable, not Python/production. This does not prove game audio replacement.
+Runtime native suite now explicitly includes wave and portable recovery tests;
+previous portable scope selected native CI but omitted that file from its list.
+
 Restored sessions also discard vault entries on a wrong server account or invalid
 role; transport failures clear memory without silently granting access.
 CreatorVaultChecks in launcher_shared_ui.cs always runs fake-vault/client/UI
