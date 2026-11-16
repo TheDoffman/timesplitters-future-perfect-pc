@@ -1,3 +1,48 @@
+Protected cutover files, journal and shutdown component (2026-11-16; sourcec9d54c88):
+Source5331a989 adds protected-directory/file attestation for all20 fixed staging/
+boot plists against immutable factory bytes. Nofollow/nonblocking bounded reads,
+root ownership, exact modes, single links, regular files and stable file/directory
+identities are required. Preflight brackets complete live observations with file
+checks. Root-only upgrades journal is outside monitor/, uses a nonblocking lease,
+canonical bounded histories and before/after/plan/preflight/UID/boot/nonce binding.
+It persists the original numeric PID/group snapshot and stop intents before any
+commands, refuses out-of-order observations, blocks new nonces while unsettled,
+and preserves unknown/foreign/partial writes, replaced leases and wrong-boot state.
+History is limited to32 journals with known existing-transaction recovery allowed.
+
+Sourcec9d54c88 connects it to root-only fixed-label quiesce (no CLI/deployment).
+Four monitors precede backup/remaining workers. It verifies each current job,
+records intent, issues bootout only for the fixed label, then observes that same
+label. Return codes/timeouts alone never count as a stop; other observation errors
+preserve the intent. Actual read-only Mac missing backup-label response is native
+exit113 with the exact system-domain absence diagnostic. Final quiescence requires
+all10 labels absent, numeric old PID/group exit and no UID600 processes, unchanged
+job files and repeated label absence. New PIDs outside the original snapshot or
+reappearing labels require explicit recovery. No sampled PID is signalled.
+
+Final focused cutover/journal/CI-scope checks: Windows197 pass/44 POSIX skips0.36s,
+actual Mac241 pass0.80s, Linux241 pass1.33s. Actual filesystem/ownership/mode/flock
+tests use private HOME fixtures with simulated root authority on the Mac; all
+shutdown command responses are simulated. These are not production root job
+shutdown/admission proofs. Cases cover links/FIFO/foreign files, replacement,
+interrupted journal rename/reopen, pending intent, capacity, boot/identity refusal,
+timeout/nonzero stop with observed absence, persistent timeout, escaped service
+processes, changed/reappeared jobs, conservative failure and known-state resume.
+Logs: cutover-root-state-mac.txt and cutover-shutdown-{mac,linux}.txt copied under
+Windows ignored logs. Earlier Windows fixture NameError was corrected before
+the final matrix. No test weakened production file or absence checks.
+
+The immutable-root entry point, sealed old/new closure checks, ingress suspension,
+forced fresh UID600 backup, root admission, monitor/config transition, rollback,
+new private scanner/readiness/restart admission and public restoration are still
+required. These component functions have not stopped production jobs, changed
+private files or routing, or activated the staged host. Existing601/7be/frozen14d
+and the pending backup ceremony remain unchanged. Same backup zsh29800/sudo29803
+and WorkshopSignIn45300 are live; sign-in result remains absent. No duplicate
+prompts or credential/vault reads. Current prior49add627 CI43967020387 is still
+in progress at Linux Vulkan133649253916; listed launcher/runtime/patch jobs pass,
+including combined three-platform artifacts. Do not call the aggregate passed yet.
+
 Cutover observations and preserved-backup compatibility (2026-11-16; sourceedbc588f):
 Read-only mod_host_cutover.py binds all10 fixed job labels to expected top-level
 launchctl path/type/program/arguments/PID, observes them twice around numeric
