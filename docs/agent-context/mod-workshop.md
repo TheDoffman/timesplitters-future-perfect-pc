@@ -15,7 +15,7 @@ Only then generate protected monitors/admission; no startup/Funnel. Actual601
 scanner passes4 controls. Health dirs chmod0755 under077; markers/plists0600;
 private-HOME fixtures retain writable-ancestor rejection.
 Audio store/boot: ../development/mod-audio-assets.md.
-Host voices: ../development/mod-audio-player.md. Lua audio/capability off.
+Host voices/game.cmake: ../development/mod-audio-player.md. Lua audio off.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony
 origin and exact signed public root; status remains pending-public-acceptance.

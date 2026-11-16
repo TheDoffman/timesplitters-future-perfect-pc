@@ -58,3 +58,8 @@ the actual XAudio2/SDL adapters at slots273/304 and reject305. The production
 factory driver separately checks voice reset on epoch loss and shutdown. These
 component checks and normal game builds are distinct from hardware audibility,
 actual Lua playback, device recovery under load and full release acceptance.
+
+`src/mods/game.cmake` also sets the game-only implementation flag on the separate
+`xbox_hle` static-library target. An executable PRIVATE definition alone does not
+compile the HLE implementation; the normal Windows game link exposed that gap.
+Component HLE fixtures and asset-free standalone builds retain their own flags.

@@ -29,4 +29,7 @@ if(TSFP_SHARED_SOURCE)
         set_source_files_properties("${TSFP_MOD_SOURCE}/mod_images.cpp" "${TSFP_MOD_SOURCE}/mod_saves.cpp" "${TSFP_MOD_SOURCE}/mod_capsule.cpp" "${TSFP_MOD_SOURCE}/mod_bootstrap.cpp" "${TSFP_MOD_SOURCE}/mod_resources.cpp" "${TSFP_MOD_SOURCE}/mod_audio_assets.cpp" "${TSFP_MOD_SOURCE}/mod_audio_capsule.cpp" "${TSFP_MOD_SOURCE}/mod_wave.c" "${TSFP_MOD_SOURCE}/mod_manager.cpp" "${TSFP_MOD_SOURCE}/mod_runtime.cpp" "${TSFP_MOD_SOURCE}/mod_game_runtime.cpp" PROPERTIES COMPILE_OPTIONS "-Wall;-Wextra;-Werror;-fstack-protector-strong")
     endif()
     target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_MOD_GAME=1)
+    # HLE is a separate static-library target, so executable PRIVATE definitions
+    # do not compile its custom voice implementation.
+    target_compile_definitions(xbox_hle PRIVATE TSFP_MOD_GAME=1)
 endif()
