@@ -1,3 +1,5 @@
+native_audio_source.c now uses real VirtualAlloc/mmap page permissions and the production RAM/OS read guard, including denied stack/request pages, read-only requests, invalid guest extents and host-pointer overflow. It supplies no menu-local guard double; Windows linking and Mac/Linux compilation remain actual host checks.
+
 native-source-error reproduces a failed original settings assignment with valid data: requested attribution must stay unknown and HRESULT/registers/data remain unchanged. Patch2714 guards that result; the original2713 fixture fails and its privately patched Windows fixture passes. Actual runtime rollout/checks are separate.
 
 test_audio_source.py compiles the real thread-local attribution and guarded guest wrapper for both platform defines and inactive mode. Actual HLE mod-source tests verify buffer binding/rebinding and unchanged source bytes; runtime native CI includes both routes. Native game trace/build acceptance is separate.

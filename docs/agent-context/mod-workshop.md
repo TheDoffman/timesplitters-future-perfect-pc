@@ -3,18 +3,18 @@ source-pinned private readiness and7 restarts precede boot-file installation.
 Known-only rollback/journals preserve foreign state. Actual601 repair now PASSES
 all private checks,9 persistent jobs and post-seal verification (see STATUS).
 Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged.
-Owner/sign-in, native public SDK pipeline and packaged Windows match pass.
-Signed withdrawal blocks launch; disable/uninstall pass. See STATUS; other-host
-public game, update/rollback, backup/boot/SDK/release gates remain open.
+Native public Windows search/play/update/rollback/withdrawal and off-device
+restore/key recovery pass; see STATUS. Other-host public game, backup operations,
+boot/full SDK/release remain open.
 
 prepare-installed-host-mac.py reads3 owned online inputs, matches the source
 pin, copies600 privately and drops credentials for init/updater/scanner controls.
 Only then generate protected monitors/admission; no startup/Funnel. Actual601
 scanner passes4 controls. Health dirs chmod0755 under077; markers/plists0600;
 private-HOME fixtures retain writable-ancestor rejection.
-Native WAV parsing and patch2713 source attribution preserve original PCM/clocks.
-Failed native binds stay unknown (2714). No replacement yet; scopes/tests:
-../development/mod-audio-input.md.
+WAV/source attribution preserve PCM/clocks with fresh guest-RAM/OS read bounds.
+Failed binds stay unknown (2714); replacement remains off.
+Contract/tests: ../development/mod-audio-input.md.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony
 origin and exact signed public root; status remains pending-public-acceptance.

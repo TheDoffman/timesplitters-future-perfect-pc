@@ -1,3 +1,48 @@
+Public Windows mod lifecycle and portable recovery acceptance (2026-11-16):
+Actual signed public catalog discovery passes native search, creator/category
+filters, latest-only and retained-version selection. Two operator-owned SDK
+releases passed fresh confined ClamAV1.5.4/db28184 scan and exact source review.
+Native initial activation, offered update review and retained-version rollback
+finish real offline six-bot matches with win scores3 ->4 ->3, clean exit0.
+The ordinary save hashes stay unchanged; the previous mode namespace is preserved
+during update and reused on rollback. These use the actual packaged d6e39902 game,
+SHA502f2f52f3face49626094ed6c6be8af37ad407c419c6e7ff0f80ee2e564805b,
+and actual shared native client APIs. The harness supplies isolated host data,
+input/display preferences. It does not fabricate game capability metadata.
+Lifecycle proof is ignored private/test-saves/lifecycle-a59/lifecycle-evidence.json.
+The first rollback harness attempt incorrectly tried reinstalling the retained
+package and was refused; correcting the harness to the existing-version enable
+flow produced the completed rollback scene. No product install policy was weakened.
+
+Version1.0.1 archive SHA87ad66a83138d876cb28b8e85a18e02d51355fa9539c3d7f2f7e325f57378783;
+version1.0.2 SHAb6d14dddcac0cbd06729d1fa4679f9a2f5784a0bb53ac7ac849fa689b936ff36.
+Both temporary releases were then revoked: native active launch refusal,
+Play without mods, disable and removal of both retained versions pass. Independent
+public normal-TLS requests verify signed catalog v11 and package HTTP404.
+Twelve inactive disposable partition images were recycled; mode data/proofs remain.
+One approval attempt reported native validation failure after its decision had
+persisted; review/catalog inspection and a fresh verified read completed without
+repeating the moderation decision or uploading again. Its exact failure cause
+was not captured; no signature, availability or role check was bypassed.
+
+The production authority export is now actually decrypted and both root keys
+proved on the Mac, account_bound:false, root_valid_now:true, keys_written:false.
+The initial generic check ended2 after input; file/pin/permissions and identical
+Windows/Mac scrypt/AES-GCM fixture checks passed, then the read-only retry ended0.
+No more recovery/admin prompt is pending. Actual off-device production restore
+also reconciles post-backup knowledge: the old snapshot lacks the two later
+release hashes; a new unserved restore receives trusted v11 cumulative revocations
+and retains both unknown hashes as recovery tombstones, while all accounts stay
+suspended and old authentication stays revoked. Live services remain unchanged.
+
+The single-compiler audio build compiled guest units but failed its final link:
+manual audio attribution referenced a menu-local guest_writable helper. The shared
+adapter now performs RAM/overflow checks plus fresh real OS read queries. Its
+new VirtualAlloc/mmap fixture removes that guard double; Windows final source,
+WAV and HLE checks pass157 cases7.51s. Final native rebuild/link, audio source scene,
+matching Mac/Linux checks and full SDK/release remain unfinished. No game/audio
+replacement completion is claimed. Main and the installed host release stay intact.
+
 Production off-device recovery checkpoint (2026-11-16):
 The user's local administrator authentication completed the private backup drill
 EXIT0. Immutable installed release7be/source601 seals match before/after; no live

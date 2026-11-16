@@ -1,3 +1,5 @@
+Audio request reads use shared pc_guest_span queries and guest-RAM/overflow bounds. The native fixture exercises real denied/read-only pages; the earlier menu-local helper was unavailable to the Windows manual unit and failed linking.
+
 Patch2714 clears attribution on native SetBufferData failure; its HRESULT and original data/clock behavior remain unchanged.
 
 Patch2713 observes verified US28240 requests and stamps buffer event IDs through thread-local bounded scopes; PCM, formats and clocks stay unchanged. See ../development/mod-audio-input.md.

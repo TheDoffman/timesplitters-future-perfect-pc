@@ -96,3 +96,13 @@ while preserving the original error result, registers, data and clocks. The
 native-source-error fixture reproduces the prior incorrect stamp and passes with
 the guard in a privately patched Windows HLE fixture. Actual runtime checks for
 this follow-up are tracked separately in STATUS.
+
+The request adapter now uses a fresh shared pc_guest_span read query for each
+word, additionally fencing guest-RAM extent and host-pointer overflow. It accepts
+read-only request storage and leaves denied/unmapped input unknown. The earlier
+menu-local guard had no definition in the Windows manual translation unit; the
+full link exposed that dependency. The new native fixture allocates real OS pages
+and tests denied stack/request access, read-only request access and overflow,
+without supplying a replacement guard. Windows final source/WAV/HLE selection
+passes157 cases7.51s; final native linking and matching Mac/Linux checks remain
+pending at this checkpoint. Replacement audio is still not enabled.
