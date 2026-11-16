@@ -267,11 +267,17 @@ namespace TimeSplitters.Launcher
                     expires=ModTrust.Number(data,"expires",Now+1,Now+43200);token=secret;Username=name;
                 }catch{Forget();invalid=true;}
                 if(invalid){await ClearSaved().ConfigureAwait(false);throw new InvalidOperationException("The saved sign-in expired or is invalid. Sign in again.");}
+                Dictionary<string,object> account;
+                try{account=await Request(HttpMethod.Get,"v1/account",null,200,true,cancel).ConfigureAwait(false);}
+                catch{Forget();throw;}
+                bool invalidAccount=false;
                 try {
-                    var account=await Request(HttpMethod.Get,"v1/account",null,200,true,cancel).ConfigureAwait(false);ModTrust.Fields(account,"username role");
+                    ModTrust.Fields(account,"username role");
                     string name=CreatorUpload.Text(account,"username",32),role=CreatorUpload.Text(account,"role",16);
-                    ModTrust.Need(name==Username && new[]{"creator","moderator","admin"}.Contains(role),"saved sign-in account differs.");Role=role;LastTicket=null;return true;
-                }catch{Forget();throw;}
+                    ModTrust.Need(name==Username && new[]{"creator","moderator","admin"}.Contains(role),"saved sign-in account differs.");Role=role;LastTicket=null;
+                }catch{Forget();invalidAccount=true;}
+                if(invalidAccount){await ClearSaved().ConfigureAwait(false);throw new InvalidOperationException("The saved sign-in account is invalid. Sign in again.");}
+                return true;
             }finally{gate.Release();}
         }
         public async Task ForgetSaved(CancellationToken cancel)

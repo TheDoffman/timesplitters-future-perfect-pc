@@ -1,3 +1,5 @@
+Restored sessions also discard vault entries on a wrong server account or invalid
+role; transport failures clear memory without silently granting access.
 CreatorVaultChecks in launcher_shared_ui.cs always runs fake-vault/client/UI
 cases: opt-in, bound pin/origin, current server role, expired/malformed/revoked
 sessions, failed remote logout, unavailable vault, visible deletion failure and cleared

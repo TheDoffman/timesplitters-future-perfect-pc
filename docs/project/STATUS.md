@@ -1,3 +1,18 @@
+Saved-session final validation (2026-11-15):
+Actual source801ccdf6 Mac build/publish/sign/deep strict verification, all111
+shared UI groups and real creator backend now pass with a clean source tree.
+Build receipt SHA256
+396d5382bb342a354a8a368c3d60f5cf0a88152c67da8ba885d52208298ac82f;
+credential-vault-build-801ccdf6.log SHA256
+38fef846c654f4d4093d2942a9103042dec47640dce439b7c9bef37e13a8aa73.
+This verifies clearing secret drafts on resume; it does not claim native Keychain
+persistence while the keychain is locked. A final account-validation correction
+now discards the saved OS entry when GET/v1/account returns a different username
+or unsupported role, rather than merely forgetting memory. Windows full build,
+111 UI groups (including actual Credential Manager proof), real backend and all
+other launcher suites pass56.84s. Mac validation of that final correction remains
+pending. Public host/installed601 state remain unchanged.
+
 Optional creator session vaults (2026-11-15):
 Source1a135c18 implements opt-in remembered workshop sessions using Windows
 Credential Manager, macOS Security.framework generic Keychain passwords and Linux

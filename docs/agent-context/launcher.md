@@ -26,7 +26,7 @@ sessions. ModSessionVault uses Windows Credential Manager, Mac Keychain and
 Linux secret-tool/Secret Service; unavailable/locked stores retain memory-only
 access with a visible warning, never a plaintext fallback. Resume is explicit,
 checks live pinned authority and GET/account role, and refuses expired/changed/
-revoked sessions. Sign-out clears local/vault state even if remote logout fails;
+revoked/wrong-account sessions. Sign-out clears local/vault state on logout failure;
 failed deletion stays visible. Forget saved sign-in preserves a current session.
 Resume clears unsent secrets; passwords/invitations are never saved. Tests run;
 TSFP_TEST_OS_VAULT=1 enables disposable native-store roundtrip/update/isolation/

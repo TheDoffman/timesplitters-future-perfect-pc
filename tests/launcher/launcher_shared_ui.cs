@@ -383,14 +383,14 @@ public static class LauncherSharedUiChecks
             }
         });
         Test("expired changed-authority malformed and revoked remembered sessions fail closed",()=>{
-            foreach(string mode in new[]{"expired","pin","schema","token","revoked"}) {
+            foreach(string mode in new[]{"expired","pin","schema","token","revoked","identity","role"}) {
                 string folder=Path.Combine(root,"session-vault-"+mode);CreatorConfig(folder);var vault=new FixtureSessionVault();int requests=0;
                 using(var first=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>CreatorJson(CreatorLogin())),()=>WorkshopTrustChecks.Now,vault))first.SignIn("fixture-creator","fixture-only",System.Threading.CancellationToken.None,true).GetAwaiter().GetResult();
                 string binding=vault.Values.Keys.Single();var saved=ModJson.Read(Encoding.UTF8.GetString(vault.Values[binding]));
                 if(mode=="expired")saved["expires"]=WorkshopTrustChecks.Unix-1;else if(mode=="pin")saved["pin"]=new string('f',64);else if(mode=="schema")saved["schema"]=true;else if(mode=="token")saved["token"]="invalid";
                 vault.Values[binding]=Encoding.UTF8.GetBytes(Json.Encode(saved));
-                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{requests++;return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);}),()=>WorkshopTrustChecks.Now,vault)) {
-                    WorkshopReject(()=>client.Resume(System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Invalid saved sign-in resumed");Need(!client.SignedIn && !client.CanModerate && vault.Values.Count==0,"Invalid saved credentials were retained");Need(requests==(mode=="revoked"?1:0),"Invalid local session reached the network");
+                using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{requests++;return mode=="revoked"?new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized):CreatorJson(new {username=mode=="identity"?"another-account":"fixture-creator",role=mode=="role"?"unknown":"creator"});}),()=>WorkshopTrustChecks.Now,vault)) {
+                    WorkshopReject(()=>client.Resume(System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Invalid saved sign-in resumed");Need(!client.SignedIn && !client.CanModerate && vault.Values.Count==0,"Invalid saved credentials were retained");Need(requests==(new[]{"revoked","identity","role"}.Contains(mode)?1:0),"Invalid local session reached the network");
                 }
             }
         });

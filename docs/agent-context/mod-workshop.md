@@ -38,7 +38,7 @@ remain open. See ../development/mod-host-recovery.md. Preparation permits exact
 Git or HEAD-declared CRLF only; installed provenance is in STATUS.
 Creator sign-in optionally uses ModSessionVault (Credential Manager/Keychain/
 Linux Secret Service); explicit restore rechecks pinned root and server identity,
-never stored roles/passwords; resume clears drafts. Sign-out/Forget clear entries; locked-store
+refusing wrong accounts/roles; resume clears drafts. Sign-out/Forget clear entries; locked-store
 failure is visible without plaintext fallback. See ../development/mod-creator-service.md.
 
 Fixed host roles use system-host-service-mac.py/system-host-monitor-mac.py:
