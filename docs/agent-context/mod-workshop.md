@@ -1,3 +1,11 @@
+register-installed-host-mac.py derives9 fixed jobs and requires fresh protected
+admission/exact generated plists. Bootstrap from staging, verify private API and
+signed catalog as600, restart3 workers+4 monitors with old-tree exit/new-PID and
+catalog continuity, then install boot plists. Known-only rollback preserves
+foreign/changed items; protected bounded journal distinguishes incomplete cleanup.
+accept-private-host-services-mac.py uses fixed loopback8768 routes and SOURCE pin,
+not a network bootstrap root. No public routing; native protected proof pending.
+
 prepare-installed-host-mac.py is an immutable root-only setup/admission component:
 read exactly3 owned online inputs, match source public pin, copy600 privately,
 run scan/host init and official updater as600, then accept-installed-scanner-mac.py
@@ -29,22 +37,14 @@ host-input. Actual Windows tests/production ceremony pass; account/profile-bound
 recovery still needs independent portable/profile backup acceptance.
 Host preparation permits only exact Git bytes or exact HEAD-declared CRLF checkout
 rendering; mixed endings/text changes/local filter substitutions remain refused.
-Actual production root ceremony/recovery proof completed on Windows; only3 online
-inputs staged+hash/signature verified in a private Mac inbox. New60-source9e1
-bundle prepared only; root runtime remains f234, no production jobs. STATUS has
-public fingerprint/provenance. Portable recovery/protected cutover remain open.
+Production roots/recovery and3 online Mac inputs verified; source/installed
+provenance is in STATUS. Root runtime remains f234, no production jobs.
 
-Fixed api/publication/gateway roles use system-host-service-mac.py and protected
-system-host-monitor-mac.py. Root accepts fixed labels, numeric process metadata
-and bounded inert heartbeats; configs/keys/signing/network remain UID600. Health
-binds role/release/PID/UID; GUI health cannot admit system jobs. Generation checks
-config after dropping credentials; new-only plists follow scan-monitor generation.
-API uses guardian group cleanup, control socket off and bounded renewal. Actual
-f099 Mac258pass8.73s, Windows271pass104skips1.64s; source bundle prepared only.
-Protected new-role installation/lifecycle/boot/public deployment remain pending.
-
-Actual Mac2619 gateway14pass verifies launcher routes/framing/credentials at all3
-authorities. Original private443 routing remains; current provenance is in STATUS.
+Fixed host roles use system-host-service-mac.py/system-host-monitor-mac.py:
+root controls fixed labels/numeric metadata/bounded inert heartbeats; configs/
+keys/network stay600. Health binds role/release/PID/UID, ignoring GUI health.
+API uses guardian group cleanup, no control socket and bounded renewal. Actual
+f099 checks258 Mac/271 Windows; protected deployment/boot/public remains pending.
 
 Actual f234 inert proof passes root->same PID/UID/GID600/kernel[600], denied root
 restore/health writes, root-controller label stop and worker/child exit. Temporary
