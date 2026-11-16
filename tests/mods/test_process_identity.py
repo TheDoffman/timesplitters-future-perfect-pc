@@ -14,14 +14,14 @@ import pytest
 from test_script_process import process_tools
 
 
-def call(tools,*args):
+def call(tools,*args,no_debug=False):
     driver=tools['worker'].with_name('tsfp-mod-process-identity-driver'+tools['worker'].suffix)
-    result=subprocess.run([str(driver),*map(str,args)],capture_output=True,timeout=5)
+    result=subprocess.run([str(driver),*(['no-debug'] if no_debug else []),*map(str,args)],capture_output=True,timeout=5)
     assert result.returncode==0 and not result.stderr,(result.returncode,result.stdout,result.stderr)
     return json.loads(result.stdout)
 
 
-def state(tools,record):return call(tools,'state',*(record[key] for key in ('kind','pid','start_a','start_b')))
+def state(tools,record,**kwargs):return call(tools,'state',*(record[key] for key in ('kind','pid','start_a','start_b')),**kwargs)
 
 
 @contextlib.contextmanager
@@ -119,15 +119,18 @@ def test_denied_query_preserves_record_as_unknown_while_original_process_is_aliv
     security.SetKernelObjectSecurity.restype=ctypes.c_int
     kernel.LocalFree.argtypes=[ctypes.c_void_p];kernel.LocalFree.restype=ctypes.c_void_p
     with held_python() as child:
-        record=call(process_tools,'read',child.pid);assert record['state']=='alive'
+        record=call(process_tools,'read',child.pid,no_debug=True)
+        assert record['state']=='alive' and record['debug_disabled']
         descriptor=ctypes.c_void_p()
         # Only this newly-created fixture process changes. Its original owned
         # handle retains exit/control rights; no account/file ACL is modified.
         assert security.ConvertStringSecurityDescriptorToSecurityDescriptorW('D:(D;;0x00101000;;;WD)',1,ctypes.byref(descriptor),None)
         try:assert security.SetKernelObjectSecurity(ctypes.c_void_p(int(child._handle)),4,descriptor),ctypes.get_last_error()
         finally:kernel.LocalFree(descriptor)
-        assert call(process_tools,'read',child.pid)['state']=='unknown'
-        assert state(process_tools,record)['state']=='unknown' and child.poll() is None
+        denied=call(process_tools,'read',child.pid,no_debug=True)
+        assert denied['debug_disabled'] and denied['state']=='unknown',denied
+        preserved=state(process_tools,record,no_debug=True)
+        assert preserved['debug_disabled'] and preserved['state']=='unknown' and child.poll() is None,preserved
 
 
 @pytest.mark.skipif(sys.platform!='linux',reason='Actual Linux proc comm parser')

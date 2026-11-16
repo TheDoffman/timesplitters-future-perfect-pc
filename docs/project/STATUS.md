@@ -1,3 +1,16 @@
+Windows query-denial CI control (2026-11-16):
+Earlier3cec run43909559613 failed Windows runtime1/3 job133448077462: the denied
+fixture query returned alive instead of unknown (1 failed,1331 passed,205 skipped).
+OpenProcess can bypass a process DACL when debug privilege is enabled, so the
+test had not established a controlled denial on that runner. The test-only
+identity driver now uses ImpersonateSelf, disables debug privilege on its private
+thread token and checks the resulting privilege list before querying. The DACL
+unknown assertion is retained; caller/account privileges and product identity
+code are unchanged. Local identity/scope checks pass160/4 skips15.45s. Current
+CI/other-host acceptance follows; no failed run is being presented as passing.
+API references: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocess
+and https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-impersonateself
+
 Owned native startup stamps (2026-11-16, no disk journal/reaper yet):
 Process retains immutable stamps after termination. Windows reads its owned
 suspended process handle before resume. Linux's fixed-stack, allocation-free
