@@ -2,9 +2,14 @@ Lua sound addon integration (2026-11-16): **In progress**.
 Common VM/wire/session/match/factory/title code routes explicit audio_api=1
 commands through canonical fields, trusted resource preflight and owner-thread
 dispatch. Audio creator template packages generated WAVs and complete controls.
-Windows292/two skips plus4 focused checks pass; Mac/Linux/game acceptance follows.
-Current production audio capability remains off. Earlier5968 CI passes23/two
-issue skips after a truncated SDK download retry. See mod-audio-scripting.md.
+Windows292/two skips plus4 focused checks pass; final native Mac294/one skip and
+Linux295 pass. All3 normal game builds and CI43873582308 pass23/two issue skips.
+Actual generated-template six-bot games pass all3 with accepted output and
+pause/resume/pitch/gain, exit0 and preserved originals. Mac has an earlier signal11
+in MoltenVK finishQueries; cause/stability remains open. Linux records1002 full-game
+queue-full refusals with accepted mod PCM and no device/voice failures. No physical
+listening claim. Launcher-to-game audio/profile/release capability remains off.
+Measured evidence/observer limitations: STATUS and mod-audio-scripting.md.
 
 Private custom voice engine (2026-11-16, implementationf321e661/guard7c743ae8): **In progress**.
 Shared HLE player reuses buffer clocks/reserved slots273..304/common backends;

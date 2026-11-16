@@ -84,5 +84,15 @@ canonical-field checks and legacy-wire refusal. Production factory tests cover
 source resource authorization, unknown-resource rollback, simulation-thread
 dispatch, invalidation and a reply exceeding the former frame limit. Creator
 tests pack the audio template, run its full sequence in the real VM and load the
-generated WAVs through the native immutable store. Hardware/gameplay acceptance
-is a separate required step.
+generated WAVs through the native immutable store.
+
+At clean fdab5e79, normal native game builds and real offline six-bot audio-template
+games pass on Windows, Mac and Linux/WSL software Vulkan. Private read-only
+observers record accepted PCM and the authored control sequence; originals and
+the synthetic fixture remain unchanged and games exit0. This establishes actual
+game execution and backend acceptance, not physical audibility. Linux records
+retryable full-game queue pressure, without device/voice failure. A prior Mac
+attempt faults in MoltenVK finishQueries; its root cause remains open despite
+the later passing run. STATUS retains counts, provenance and harness corrections.
+Launcher-to-game audio acceptance, capability advertisement and release publication
+remain required before general activation.

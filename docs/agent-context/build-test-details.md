@@ -8,7 +8,9 @@ Mod voices: tests/media/test_mod_audio_player.py runs actual player/shared clock
 with fake committed resources/device. Output-gain fixtures check actual backend
 slots273/304 and refusal305. Factory test_game_runtime.py adds epoch/shutdown
 voice-reset checks. CI media suites include the new player test on all hosts.
-No actual Lua playback claim: ../development/mod-audio-player.md.
+Actual fdab Lua playback passes all3 six-bot games; see STATUS for host evidence,
+Mac MoltenVK crash limitation and Linux backpressure. No physical listening proof:
+../development/mod-audio-player.md.
 
 Audio startup: test_mod_bootstrap.py exercises source/audio owner matching,
 incomplete/changed/malformed requests, storage commit gating and retained PCM

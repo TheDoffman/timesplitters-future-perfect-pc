@@ -13,9 +13,41 @@ complete script sequence. Actual CLI pack/validate, VM sequence and native-store
 acceptance pass. Windows combined VM/session/factory/match/manager/runtime/
 creator/assets/original-score checks pass292/two intentional skips156.89s.
 Final mixed/maximum-reply/stop cases pass3 (93 deselected)14.36s; independent
-native authority absence passes1 (22 deselected)15.12s. Mac/Linux and normal game
-builds follow. Public audio capability remains off until actual in-game playback
-acceptance. Contract: docs/development/mod-audio-scripting.md.
+native authority absence passes1 (22 deselected)15.12s. Final fdab5e79 checks pass
+294/one intentional skip on Mac83.55s and295 Linux103.27s. All three normal native
+game builds pass their usual platform checks and owned image cleanup. CI43873582308
+finishes23 successful jobs/two intentional issue skips, including native launcher
+packages and the final PR validation gate.
+
+Actual generated audio-template gameplay now passes on Windows, native Mac and
+Linux/WSL software Vulkan at clean fdab5e79. The identical original ZIP hash is
+57610824b923f24c6565a14f1674a874438478aebeee20a3f7cd594b9ad3ae53.
+Each isolated offline six-bot match runs the real source/audio bootstrap, confined
+worker, parent validation, guest dispatch and native audio backend. Read-only
+private observers record25/24/24 voice states respectively, including accepted
+one-shot/loop output, five paused samples each, ten half-pitch11025Hz samples on
+Mac/Linux and changed gain-2602. Match samples total219/282/277. All exit0 and
+preserve original synthetic saves and the canonical fixture; only owned inactive
+namespace images are disposed. No personal saves or original audio assets used.
+
+Windows XAudio2 accepts custom slots273/274; Mac/Linux SDL opens once. Mac and
+Windows final refusal/failure counters are zero. Linux records1002 retryable
+queue-full refusals across the full game output, while the observed mod voices
+accept PCM; invalid-PCM/device/voice/allocation/unavailable/retry-wait counters
+remain zero. This is real execution/output-submission acceptance, not a physical
+listening test or a hardware-position claim for SDL.
+
+Harness failures stay separate: the first Mac replay coalesced short keys and
+stayed at character selection; the corrected timing reaches gameplay. A second
+Mac attempt receives signal11 in libMoltenVK (PC in finishQueries block, matching
+sample LR), before mod audio samples; root cause/stability remains open. A later
+run passes. Initial private observers picked the inserted Mac dylib as image0
+and assumed Linux symbols were exported; exact binary-pinned symbols/MH_EXECUTE
+correct this. SDL fills health but returns0 for unavailable hardware latency;
+the observer initially discarded that snapshot. Independent captured final
+health counters verify device opening without another game run. Original evidence
+is preserved. Current launcher-to-game audio acceptance, capability advertisement
+and release publication remain open. Contract: docs/development/mod-audio-scripting.md.
 Earlier5968 CI43868305742 now completes23 successes/two intentional issue skips;
 its Linux SDK download truncation passed on the targeted retry (no pin changes).
 

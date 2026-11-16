@@ -5,7 +5,8 @@ Patch2717 adds fixed32 custom voices under the shared HLE audio lock, reusing
 existing buffer clocks/output. Stock slots/clocks remain unchanged; slots273..304
 are private mod output. Runtime stops them on epoch/failure/shutdown. Lua audio
 now validates resources/fields before model commit and dispatches before title
-score/end transitions. Capability stays off pending gameplay acceptance.
+score/end transitions. All3 fdab audio games pass; capability awaits launcher/
+release acceptance. STATUS retains Mac MoltenVK crash and Linux queue pressure.
 Contracts: ../development/mod-audio-player.md, ../development/mod-audio-scripting.md.
 
 Patch2716 carries private authored rate/channels/loop flags from guarded US event

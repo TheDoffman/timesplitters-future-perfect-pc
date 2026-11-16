@@ -85,4 +85,7 @@ No device audibility or Lua-triggered gameplay is inferred from these checks.
 [Lua sound scripting](mod-audio-scripting.md) now routes validated commits to
 these controls on the owning simulation thread. Resource validation precedes
 model commit; sound dispatch precedes stock score/end transitions. Actual
-gameplay acceptance and production capability activation remain pending.
+generated-template games now pass on Windows/Mac/Linux with accepted PCM and
+pause/resume/pitch/gain. See STATUS and mod-audio-scripting.md for the exact
+scope, Mac crash limitation and Linux backpressure. Launcher-to-game acceptance
+and production capability activation remain pending.
