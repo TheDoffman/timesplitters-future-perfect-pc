@@ -1,3 +1,14 @@
+Backup worker source (2026-11-16, not installed):
+Small content-addressed backup-only bundles bind their committed source and the
+existing immutable Mac runtime. The fixed root prelude verifies protected code,
+uses the existing irreversible credential drop, then execs a bounded worker.
+The worker supervises a same-job child with a30-minute wall limit,8KiB output
+limits, child CPU/memory/descriptor limits and private atomic status. Root never
+reads the private backup/database. Windows descriptor/scope selection passes154,
+with10 POSIX-only skips; actual Mac/Linux tests follow. No protected installer,
+scheduled job or production backup deployment has been performed for this code.
+User confirmed portable production recovery verification exit0 on the Mac.
+
 Managed backup source (2026-11-16):
 mod_backup.verify_snapshot now checks complete private snapshots read-only,
 including hashes and SQLite schema/references without WAL sidecars or auth

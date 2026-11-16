@@ -1,3 +1,7 @@
+Backup worker: test_backup_service checks descriptor/code/runtime binding,
+no-follow reads, private status preservation and actual child timeout/output/reaping.
+Windows passes154 scope/descriptor checks, skips10 POSIX cases; host runs pending.
+Native CI selects these cases. Protected installation/startup remains pending.
 Managed backups: test_backup_pool uses real private SQLite/package snapshots,
 read-only verification (no WAL sidecars/auth changes), due-time/budget/last-good
 preservation, fixed-layout retention, same-second ordering, locks/unknown entries,

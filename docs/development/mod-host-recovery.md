@@ -145,6 +145,40 @@ Production service cutover, off-device recovery, supervision,
 retention, and service/endpoint cutover acceptance are separate release gates.
 The tests use disposable repositories and signing identities, not production data.
 
+## Backup-only protected worker source
+
+`mod_backup_release.py` prepares a seven-file content-addressed bundle from a
+clean committed checkout. Each file must equal its Git blob; the descriptor
+binds the source revision, operator UID, payload hashes and an existing protected
+host release. `hosting/prepare-backups-mac.py` runs as the ordinary Mac user and
+creates a new bundle only. It does not install or start anything. Preparation and
+installed-code validation reject linked ancestors/files, hard links, unsafe
+ownership, writable shared paths, unexpected entries and mismatched hashes.
+Privileged reads pin directory descriptors while walking each ancestor.
+
+The proposed installed layout is `backup-releases/DESCRIPTOR_SHA256` beneath the
+protected workshop root. A separate root-owned binding fixes the service UID/GID
+and canonical Python inside the existing immutable host runtime. The fixed
+`hosting/backup-bootstrap-mac.py` validates this inventory and reuses that runtime's
+existing locked-service bootstrap to clear groups and irreversibly drop root
+before executing `mod_backup_service.py`. It supplies no arbitrary executable,
+identity, repository or command override. Existing API/scanner releases stay intact.
+
+The worker uses only `data/scan/repository` and `data/backups/managed`, with seven
+daily captures and the existing8GiB logical pool budget. It supervises one trusted
+capture child in the same launchd process group, limits each output stream to8KiB
+and wall time to30minutes, then terminates/reaps the child on failure. Child limits
+are600 CPU seconds,1GiB data,64 descriptors and no core dumps. It never executes
+uploaded archives. Private bounded atomic status preserves malformed, foreign or
+differently bound previous state instead of overwriting it. The proposed launchd
+plist runs hourly and at load; due-time policy determines whether capture is needed.
+
+`tests/mods/test_backup_service.py` checks descriptor/runtime/code bindings,
+committed preparation, refusal/preservation paths and real POSIX timeout/output
+cleanup. These source checks do not prove protected installation or persistence.
+The protected installer, job registration and production capture acceptance remain
+pending; this source alone does not enable scheduled backups or off-device copies.
+
 ## Portable recovery of the signing authority
 
 The Windows root ceremony's `recovery.dpapi` depends on that Windows account's
