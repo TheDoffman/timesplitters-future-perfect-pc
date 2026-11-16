@@ -41,9 +41,32 @@ Moderators can select a declared `audio/*.wav` in a completed review and choose
 **Inspect PCM audio**. The view shows PCM16 rate, mono/stereo channel count, total
 duration, payload SHA-256 and a full-scale waveform for at most two seconds.
 Each lane represents one channel; **Next audio portion** reads the following
-contiguous frames until the end. Nothing plays automatically, and this view
-currently provides visual inspection only. Listening controls remain future
-work. A waveform and a clean scan do not establish safe or suitable behavior.
+contiguous frames until the end. Nothing plays automatically. Choose **Listen
+to this portion** to play just that already inspected window, at one-quarter
+sample amplitude (about12dB below full gain). System volume is unchanged. Use
+**Stop listening** to cancel; leaving the page also cancels playback. A waveform,
+listening and a clean scan do not establish safe or suitable behavior.
+
+The launcher sends only its owned, validated PCM16 bytes to the system output;
+it does not hand uploaded WAV headers or paths to a media player. Shared playback
+logic serializes previews across pages, copies/attenuates samples, polls for
+completion/cancellation and disposes the output before the operation completes.
+It applies a five-second cooperative completion deadline after opening the
+device; OS audio calls themselves are outside that polling deadline. A failed
+native resource release disables further previews until the launcher restarts,
+preserving memory still potentially borrowed by the driver.
+
+Windows uses waveOut with held unmanaged headers/buffers; reset/unprepare/close
+must finish before freeing them. Mac uses an AudioToolbox output queue, a static
+callback/unmanaged completion flag, asynchronous drain and synchronous disposal.
+Linux uses nonblocking ALSA PCM16 interleaved writes, actual queued-frame delay,
+drop/close and no subprocess. Linux needs `libasound.so.2` and a configured
+default output (such as its desktop's ALSA/PipeWire/Pulse bridge). Unavailable
+outputs produce an error; visual inspection remains available. No output-device
+configuration or system mixer setting is changed.
+Reference contracts: [Windows waveform buffers](https://learn.microsoft.com/en-us/windows/win32/multimedia/audio-data-blocks),
+[Apple queue stop/drain](https://developer.apple.com/documentation/audiotoolbox/audioqueuestop(_:_:)),
+[ALSA PCM interface](https://www.alsa-project.org/alsa-doc/alsa-lib/group___p_c_m.html).
 
 `POST /v1/moderation/{upload}/audio` takes exactly `sha256`, `path`, and an
 integer PCM-frame `offset` (initially0). It requires a current moderator/admin
@@ -62,7 +85,8 @@ are separate from source/texture limits. Account denial does not consume the
 global limit. The client rejects mismatched identities, size/hash, unsupported
 metadata, gaps, oversized/truncated PCM and extra fields before rendering. The
 view neither approves nor installs an upload and clears its data on review
-changes/sign-out/disposal. Production routes and public acceptance remain pending.
+changes/sign-out/disposal. Production routes, physical listening and public
+acceptance remain separate from component/native-device tests.
 
 ## Native creator workflow
 

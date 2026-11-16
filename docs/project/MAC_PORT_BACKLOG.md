@@ -1,3 +1,10 @@
+Moderator PCM listening (2026-11-16): **In progress**.
+Shared bounded playback controller/UI with thin Windows waveOut, Mac AudioQueue
+and Linux nonblocking ALSA adapters. Native source/build inclusion updated for
+all3 hosts; explicit Listen/Stop and disposal cancellation preserve system volume.
+Windows122 UI groups and actual silent device tests pass; Mac/Linux actual native
+checks, public deployment and physical listening remain pending (STATUS).
+
 Moderator audio inspection (2026-11-16): **In progress**.
 Shared ModCreatorPage/client implements private bounded PCM waveform inspection
 and frame pagination, using the same bitmap adapter as DDS. No separate host

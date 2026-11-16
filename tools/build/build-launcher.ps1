@@ -155,6 +155,7 @@ $settingsSources = @((Join-Path $source 'Ui.cs'), (Join-Path $source 'GameSessio
 # Every shared page is compiled for both hosts; add new pages beside these sources.
 $settingsSources += @((Join-Path $source 'ModScriptLaunch.cs'))
 $settingsSources += @((Join-Path $source 'ModSessionVault.cs'))
+$settingsSources += @((Join-Path $source 'ModPreviewAudio.cs'))
 $settingsSources += @(Get-ChildItem -LiteralPath $source -Filter '*Page.cs' | ForEach-Object { $_.FullName })
 $defaultControls = @(('/resource:' + (Join-Path $source 'PageTheme.xaml') + ',PageTheme.xaml'),
     ('/resource:' + (Join-Path $source 'TabsTheme.xaml') + ',TabsTheme.xaml'), ('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),

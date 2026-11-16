@@ -195,6 +195,7 @@ namespace TimeSplitters.Launcher
             }
             return bgra;
         }
+        internal byte[] PlaybackPcm(){return (byte[])pcm.Clone();}
         internal Image Image(out IDisposable lifetime)
         {return ModeratorTexturePreview.PreviewImage(WaveformPixels(),256,64*Channels,"ModeratorAudioWaveform",out lifetime);}
     }
@@ -527,7 +528,8 @@ namespace TimeSplitters.Launcher
         string Invitation {get{return invitation.Password;}}
 #endif
         readonly TextBlock status=PageTheme.Text("Sign in to submit your own packaged additions for scanning and review.",13,"#B4C7D8");
-        readonly string root;readonly bool preview;ModCreatorClient client;CancellationTokenSource stop;bool disposed;
+        readonly string root;readonly bool preview;ModCreatorClient client;CancellationTokenSource stop;bool disposed,listening;
+        readonly ModPreviewAudio audioPlayer;
         CreatorPackagePlan reviewed;CreatorUpload[] uploads=new CreatorUpload[0];long cursor;
         ModeratorUpload[] reviews=new ModeratorUpload[0];ModeratorUpload selectedReview;string decision,decisionNote;
         ModeratorEvidence scanEvidence;
@@ -536,7 +538,8 @@ namespace TimeSplitters.Launcher
         WorkshopReport[] moderatorReports=new WorkshopReport[0];WorkshopReport selectedReport;bool reportHistory;string reportDecision,reportDecisionNote;
         public string StatusText {get{return status.Text;}}
         public ModCreatorPage(string root,bool preview=false):this(root,preview,null){}
-        internal ModCreatorPage(string root,bool preview,ModCreatorClient client){this.root=root;this.preview=preview;this.client=client;AutomationProperties.SetName(username,"Workshop username");AutomationProperties.SetName(password,"Workshop password");AutomationProperties.SetName(invitation,"Workshop invitation");AutomationProperties.SetName(package,"Mod ZIP file path");AutomationProperties.SetName(reportDescription,"Describe the problem with this release");foreach(string reason in new[]{"malware","broken","policy","other"})reportReason.Items.Add(new ComboBoxItem {Tag=reason,Content=reason});reportReason.SelectedIndex=3;status.Margin=new Thickness(0,0,0,12);Render();}
+        internal ModCreatorPage(string root,bool preview,ModCreatorClient client):this(root,preview,client,new ModPreviewAudio()){}
+        internal ModCreatorPage(string root,bool preview,ModCreatorClient client,ModPreviewAudio audioPlayer){this.root=root;this.preview=preview;this.client=client;this.audioPlayer=audioPlayer;AutomationProperties.SetName(username,"Workshop username");AutomationProperties.SetName(password,"Workshop password");AutomationProperties.SetName(invitation,"Workshop invitation");AutomationProperties.SetName(package,"Mod ZIP file path");AutomationProperties.SetName(reportDescription,"Describe the problem with this release");foreach(string reason in new[]{"malware","broken","policy","other"})reportReason.Items.Add(new ComboBoxItem {Tag=reason,Content=reason});reportReason.SelectedIndex=3;status.Margin=new Thickness(0,0,0,12);Render();}
         public void BeginReport(string id,string version,string sha)
         {
             if(stop!=null){status.Text="Finish or cancel the current request before choosing another release.";return;}
@@ -726,8 +729,10 @@ namespace TimeSplitters.Launcher
                 if(audioPreview!=null) {
                     var clip=audioPreview;
                     panel.Children.Add(PageTheme.Text(clip.Path+" · PCM16 · "+clip.Rate+" Hz · "+clip.Channels+" channel(s) · "+(clip.Frames/(double)clip.Rate).ToString("0.###")+" seconds · SHA-256: "+clip.PayloadSha256,12));
-                    panel.Children.Add(PageTheme.Text("Waveform: "+(clip.Offset/(double)clip.Rate).ToString("0.###")+"–"+(clip.NextOffset/(double)clip.Rate).ToString("0.###")+" seconds. Each lane shows one channel at full scale. No audio is played; the waveform is not a safety verdict.",12));
+                    panel.Children.Add(PageTheme.Text("Waveform: "+(clip.Offset/(double)clip.Rate).ToString("0.###")+"–"+(clip.NextOffset/(double)clip.Rate).ToString("0.###")+" seconds. Each lane shows one channel at full scale. Listening uses reduced preview gain and preserves system volume. Neither is a safety verdict.",12));
                     panel.Children.Add(clip.Image(out audioBitmap));
+                    if(listening){var halt=Button(panel,"StopModeratorAudio","Stop listening",()=>{if(stop!=null)stop.Cancel();});halt.IsEnabled=stop!=null;}
+                    else Button(panel,"PlayModeratorAudio","Listen to this portion",async()=>await Listen(clip));
                     if(clip.NextOffset<clip.Frames)Button(panel,"NextModeratorAudio","Next audio portion",async()=>await ReadAudio(review,clip.Path,clip.NextOffset));
                 }
             }
@@ -753,6 +758,12 @@ namespace TimeSplitters.Launcher
         {sourcePage=null;await Run(async token=>{sourcePage=await Client.Source(review,path,offset,token);},"Lua source loaded for inspection. Nothing was executed or installed.",45);}
         async Task ReadAudio(ModeratorUpload review,string path,long offset)
         {audioPreview=null;await Run(async token=>{audioPreview=await Client.Audio(review,path,offset,token);},"PCM audio loaded for visual inspection. No audio was played or installed.",45);}
+        async Task Listen(ModeratorAudioPreview clip)
+        {
+            if(disposed || stop!=null)return;listening=true;
+            try{await Run(token=>audioPlayer.Play(clip,token),"Audio portion finished. No game files were changed.",8,"Listening to this two-second audio portion…");}
+            finally{listening=false;if(!disposed)Render();}
+        }
         async Task Authenticate(bool redeem)
         {
             string name=username.Text??"",secret=Password,invite=Invitation;bool save=remember.IsChecked==true;ClearCredentials();ClearReviews();ClearReports();ClearInvitation();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
@@ -765,18 +776,18 @@ namespace TimeSplitters.Launcher
         }
         async Task History()
         {uploads=new CreatorUpload[0];await Run(async token=>{uploads=await Client.History(cursor,token);},"Upload status refreshed.",35);}
-        async Task Run(Func<CancellationToken,Task> operation,string success,int seconds)
+        async Task Run(Func<CancellationToken,Task> operation,string success,int seconds,string working=null)
         {
             if(disposed || stop!=null)return;
             if(preview){ClearCredentials();status.Text="Preview only. No account request or upload was made.";return;}
             using(var cancellation=new CancellationTokenSource(TimeSpan.FromSeconds(seconds))) {
-                stop=cancellation;status.Text="Working with the creator workshop…";Render();
+                stop=cancellation;status.Text=working??"Working with the creator workshop…";Render();
                 try{await operation(cancellation.Token);if(!disposed)status.Text=success;}
-                catch(OperationCanceledException){if(!disposed)status.Text="Request cancelled. Refresh status before retrying.";}
+                catch(OperationCanceledException){if(!disposed)status.Text=listening?"Listening stopped.":"Request cancelled. Refresh status before retrying.";}
                 catch(Exception error){if(!disposed)status.Text=error.Message;}
                 finally{stop=null;if(!disposed){if(client!=null && !String.IsNullOrEmpty(client.VaultNotice))status.Text+=" "+client.VaultNotice;Render();}}
             }
         }
-        public void Dispose(){disposed=true;if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}if(audioBitmap!=null){audioBitmap.Dispose();audioBitmap=null;}ClearCredentials();ClearReviews();ClearReports();ClearInvitation();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
+        public void Dispose(){if(disposed)return;disposed=true;if(textureBitmap!=null){textureBitmap.Dispose();textureBitmap=null;}if(audioBitmap!=null){audioBitmap.Dispose();audioBitmap=null;}ClearCredentials();ClearReviews();ClearReports();ClearInvitation();if(stop!=null)stop.Cancel();if(client!=null)client.Dispose();}
     }
 }

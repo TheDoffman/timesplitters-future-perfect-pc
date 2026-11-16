@@ -1,3 +1,18 @@
+Explicit moderator PCM listening (2026-11-16; source, deployment pending):
+ModPreviewAudio plays only the owned validated <=2-second PCM portion, at quarter
+amplitude, with one process-wide gate and cooperative5-second completion polling.
+Windows waveOut/Mac AudioQueue/Linux nonblocking ALSA adapters use no uploaded
+container decoder or external player and never change the system mixer. Native
+release failure preserves borrowed storage and disables playback until restart.
+UI adds explicit Listen/Stop, and page disposal cancels playback; no automatic
+audio or network refetch. Linux needs a configured ALSA default output.
+Windows native build/test passes122 UI groups plus the real creator backend and
+existing checks (59.46s). Fake devices prove bounds/ownership/attenuation,
+serialization, failures/cancel/timeout cleanup and page-disposal behavior. Explicit
+native silent8/48kHz mono/stereo completion/cancellation/release passes. This is
+actual Windows device-service evidence, not physical listening. Mac/Linux native
+checks, public deployment and physical acceptance remain pending.
+
 Private moderator audio inspection (2026-11-16; sourcef1d6c699, deployment pending):
 New role-gated audio preview route verifies completed upload/package/payload and
 the exact WAV before returning a bounded two-second PCM16 segment. Shared native

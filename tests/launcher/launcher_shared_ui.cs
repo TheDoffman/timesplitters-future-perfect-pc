@@ -484,9 +484,68 @@ public static class LauncherSharedUiChecks
             try{Need(vault.Read(binding)==null,"Fresh random fixture already existed");vault.Write(binding,first);Need(vault.Read(binding).SequenceEqual(first) && vault.Read(other)==null,"Credential bytes or scope isolation failed");vault.Write(binding,second);Need(vault.Read(binding).SequenceEqual(second),"Credential update failed");vault.Delete(binding);Need(vault.Read(binding)==null,"Credential removal failed");vault.Delete(binding);}finally{vault.Delete(binding);}
         });
     }
+    sealed class PreviewDevice : IPreviewPcmDevice
+    {
+        internal readonly System.Threading.ManualResetEventSlim Opened=new System.Threading.ManualResetEventSlim();
+        internal byte[] Samples;internal bool Complete,Released,FailOpen,FailAdvance,FailRelease;
+        public void Open(byte[] pcm,int rate,int channels){Samples=pcm;Opened.Set();if(FailOpen)throw new InvalidOperationException("Audio open fixture failure");}
+        public bool Advance(){if(FailAdvance)throw new InvalidOperationException("Audio write fixture failure");return Complete;}
+        public void Dispose(){Released=true;if(FailRelease)throw new InvalidOperationException("Audio release fixture failure");}
+    }
+    static void AudioPlaybackChecks()
+    {
+        Test("audio playback owns attenuated PCM and releases before cancellation completes",()=>{
+            var output=new PreviewDevice();int created=0;byte[] source={0,128,255,127};
+            var player=new ModPreviewAudio(()=>{created++;return output;});
+            using(var cancel=new System.Threading.CancellationTokenSource()) {
+                var play=player.PlayPcm(source,8000,1,cancel.Token);Need(output.Opened.Wait(3000),"PCM output did not open");
+                source[0]=123;Need(output.Samples.SequenceEqual(new byte[]{0,224,255,31}),"Playback changed gain, channel order or borrowed mutable input");
+                cancel.Cancel();WorkshopReject(()=>play.GetAwaiter().GetResult(),"Cancelled playback succeeded");Need(output.Released && created==1,"Cancellation completed before device release");
+            }
+            using(var cancel=new System.Threading.CancellationTokenSource()) {
+                cancel.Cancel();WorkshopReject(()=>player.PlayPcm(source,8000,1,cancel.Token).GetAwaiter().GetResult(),"Pre-cancelled playback opened a device");
+                Need(created==1,"Pre-cancelled playback created a device");
+            }
+            foreach(byte[] invalid in new[]{new byte[0],new byte[3],new byte[8000*4+2]})WorkshopReject(()=>player.PlayPcm(invalid,8000,1,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Invalid PCM reached output");
+            Need(created==1,"Invalid PCM opened a device");
+        });
+        Test("audio playback serializes devices and releases on open write and close failures",()=>{
+            var first=new PreviewDevice();var second=new PreviewDevice {Complete=true};int created=0;
+            var player=new ModPreviewAudio(()=>++created==1?first:second);
+            using(var cancel=new System.Threading.CancellationTokenSource()) {
+                var a=player.PlayPcm(new byte[2],8000,1,cancel.Token);Need(first.Opened.Wait(3000),"First audio did not open");
+                var b=player.PlayPcm(new byte[2],8000,1,System.Threading.CancellationToken.None);Need(created==1 && !second.Opened.IsSet,"Two preview devices opened together");
+                cancel.Cancel();WorkshopReject(()=>a.GetAwaiter().GetResult(),"First audio ignored cancellation");b.GetAwaiter().GetResult();Need(first.Released && second.Released,"Serialized outputs were not released");
+            }
+            foreach(string fault in new[]{"open","write","close"}) {
+                var output=new PreviewDevice {Complete=true,FailOpen=fault=="open",FailAdvance=fault=="write",FailRelease=fault=="close"};
+                WorkshopReject(()=>new ModPreviewAudio(()=>output).PlayPcm(new byte[2],8000,1,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Audio output failure was hidden");Need(output.Released,"Audio output failure skipped disposal");
+            }
+        });
+        Test("stalled preview output times out releases and permits a later preview",()=>{
+            var stalled=new PreviewDevice();var clock=System.Diagnostics.Stopwatch.StartNew();
+            WorkshopReject(()=>new ModPreviewAudio(()=>stalled).PlayPcm(new byte[2],8000,1,System.Threading.CancellationToken.None).GetAwaiter().GetResult(),"Stalled output never timed out");
+            Need(stalled.Released && clock.ElapsedMilliseconds>=4900 && clock.ElapsedMilliseconds<8000,"Preview timeout did not release within its cooperative budget");
+            var next=new PreviewDevice {Complete=true};new ModPreviewAudio(()=>next).PlayPcm(new byte[2],8000,1,System.Threading.CancellationToken.None).GetAwaiter().GetResult();Need(next.Released,"Timeout retained the playback gate");
+        });
+    }
+    public static int RunPreviewAudio()
+    {
+        try {
+            foreach(int rate in new[]{8000,48000})foreach(int channels in new[]{1,2}) {
+                new ModPreviewAudio().PlayPcm(new byte[rate*channels*2/10],rate,channels,System.Threading.CancellationToken.None).GetAwaiter().GetResult();
+                using(var cancel=new System.Threading.CancellationTokenSource(150)) {
+                    try {new ModPreviewAudio().PlayPcm(new byte[rate*channels*4],rate,channels,cancel.Token).GetAwaiter().GetResult();throw new Exception("Native silent preview ignored cancellation");}
+                    catch(System.OperationCanceledException){}
+                }
+            }
+            Console.WriteLine("PASS native silent PCM previews: 8/48kHz mono/stereo completion, cancellation and release; no physical listening claim.");return 0;
+        }catch(Exception error){Console.Error.WriteLine(error);return 1;}
+    }
     static void CreatorChecks(string root)
     {
         CreatorVaultChecks(root);
+        AudioPlaybackChecks();
         Test("audio waveform keeps stereo channels separate and renders final short portions",()=>{
             string folder=Path.Combine(root,"moderator-audio-stereo");CreatorConfig(folder);
             string zip=LibraryPackage(folder,"audio-stereo","1.0.0",1,additionalPayloads:new Dictionary<string,byte[]>{{"audio/00000001.wav",ModeratorWave(2)}});
@@ -518,9 +577,10 @@ public static class LauncherSharedUiChecks
             }
         });
         Test("moderator audio UI pages exact PCM and clears images on sign-out",()=>WithUiContext(()=>{
-            string folder=Path.Combine(root,"moderator-audio-ui");CreatorConfig(folder);
+            foreach(bool disposePlaying in new[]{false,true}) {
+            string folder=Path.Combine(root,"moderator-audio-ui-"+disposePlaying);CreatorConfig(folder);
             string zip=LibraryPackage(folder,"audio-review-ui","1.0.0",1,additionalPayloads:new Dictionary<string,byte[]>{{"audio/00000001.wav",ModeratorWave()}});
-            var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int previews=0;
+            var plan=CreatorPackagePlan.Review(zip,System.Threading.CancellationToken.None);int previews=0;var output=new PreviewDevice();
             using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>{
                 if(request.RequestUri.AbsolutePath=="/v1/sessions")return CreatorJson(new {token=new string('t',43),expires=WorkshopTrustChecks.Unix+43200,account=new {username="fixture-creator",role="moderator"}});
                 if(request.Method==System.Net.Http.HttpMethod.Delete)return new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NoContent);
@@ -530,12 +590,17 @@ public static class LauncherSharedUiChecks
                     Need(ModTrust.Text(body,"sha256")==plan.Sha256 && ModTrust.Text(body,"path")=="audio/00000001.wav" && offset==previews*16000,"Audio pagination changed identity or skipped frames");previews++;return CreatorJson(ModeratorAudio(plan,offset));
                 }
                 Need(request.Method==System.Net.Http.HttpMethod.Get,"Audio inspection sent an approval");return CreatorJson(new {uploads=new[]{ModeratorRow(zip,plan)}});
-            }),()=>WorkshopTrustChecks.Now))using(var page=new ModCreatorPage(folder,false,client)) {
+            }),()=>WorkshopTrustChecks.Now))using(var page=new ModCreatorPage(folder,false,client,new ModPreviewAudio(()=>output))) {
                 Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-only");Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="RefreshModeratorUploads" && b.IsEnabled),"Audio moderator sign-in failed");
                 Click(Find<Button>(page.View,"RefreshModeratorUploads"));PumpUntil(()=>page.StatusText=="Moderation queue refreshed.","Audio queue failed");Click(Find<Button>(page.View,"ModeratorUpload"+new string('a',32)));PumpUntil(()=>page.StatusText=="Scan evidence refreshed.","Audio evidence failed");Need(previews==0,"Audio fetched automatically");
                 Click(Find<Button>(page.View,"InspectModeratorAudio"));PumpUntil(()=>previews==1 && All(page.View).OfType<Image>().Any(i=>i.Name=="ModeratorAudioWaveform"),"Audio waveform did not render");var image=Find<Image>(page.View,"ModeratorAudioWaveform");Need(image.Source!=null && image.Width==512 && image.Height==128,"Waveform image is unbounded");
+                Need(!output.Opened.IsSet,"Fetching a waveform played audio automatically");Click(Find<Button>(page.View,"PlayModeratorAudio"));PumpUntil(()=>output.Opened.IsSet,"Explicit audio playback did not open output");
+                Need(previews==1,"Listening fetched a different audio window");
+                if(disposePlaying){page.Dispose();PumpUntil(()=>output.Released,"Leaving the page retained audio output");continue;}
+                Click(Find<Button>(page.View,"StopModeratorAudio"));PumpUntil(()=>page.StatusText=="Listening stopped.","Stop did not return to the moderator UI");Need(output.Released,"Stop returned before device cleanup");
                 Click(Find<Button>(page.View,"NextModeratorAudio"));PumpUntil(()=>previews==2 && !All(page.View).OfType<Button>().Any(b=>b.Name=="NextModeratorAudio"),"Audio final portion did not finish");
                 Click(Find<Button>(page.View,"CreatorSignOut"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignIn"),"Audio sign-out failed");Need(!All(page.View).OfType<Image>().Any(i=>i.Name=="ModeratorAudioWaveform") && !Directory.Exists(Path.Combine(folder,"Mods")),"Audio inspection retained image or installed content");
+            }
             }
         }));
         Test("owner invitation responses bind username expiry and one-time secret",()=>{

@@ -1,4 +1,4 @@
-Invites/audio inspection: ../development/mod-creator-service.md (source; not deployed).
+Invites/PCM listening: ../development/mod-creator-service.md (source; not deployed).
 Origin-bound defaults/custom roots and DDS/dependencies: mod-workshop.md.
 Core.Allowed admits only five named game helpers under Bin/ModRuntime/<64 lowercase
 hex>/; uploaded mod admission stays separate. Package regression: build-test-details.md.
