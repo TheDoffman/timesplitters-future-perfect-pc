@@ -1765,8 +1765,10 @@ Windows application/tests and both native csproj files. Developer-only explicit
 --test-preview-audio performs silent8/48kHz mono/stereo completion/cancellation
 on actual output services; it is separate from default tests and never claims
 physical audibility. No external player, uploaded container decoder or mixer
-change. Linux requires a configured ALSA default output; unavailable output is a
-failure, not a synthetic native success. See creator-service user documentation.
+change. Linux uses async PulseAudio first, then ALSA only before any PCM submission;
+unavailable output is a failure, not a synthetic native success. Native WSL first
+failed because ALSA default/card0 is absent; the initial failure remains recorded.
+See creator-service user documentation and STATUS for actual provider evidence.
 Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
 interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;

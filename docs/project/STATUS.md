@@ -1,4 +1,14 @@
-Explicit moderator PCM listening (2026-11-16; source, deployment pending):
+Linux desktop audio follow-up (2026-11-16; source, deployment pending):
+Actual sourceaaa310ea Mac/Linux native builds/test/packages pass123/124 UI groups
+plus real creator backend; Linux package repair/restart retains saves/metadata.
+Mac actual AudioQueue silent8/48kHz mono/stereo finish/cancel/release also passes.
+WSL native ALSA-only test fails with Unknown PCM default/card0 missing (confirmed
+native exit1). Pulse service/libraries are present. Source now uses a nonblocking
+Pulse context/stream/drain first, with ALSA fallback only before any PCM has been
+submitted. No daemon spawn or sound replay after submission. Actual updated
+Linux device/build checks remain pending; the ALSA-only failure is not a pass.
+
+Explicit moderator PCM listening (2026-11-16; sourceaaa310ea, deployment pending):
 ModPreviewAudio plays only the owned validated <=2-second PCM portion, at quarter
 amplitude, with one process-wide gate and cooperative5-second completion polling.
 Windows waveOut/Mac AudioQueue/Linux nonblocking ALSA adapters use no uploaded

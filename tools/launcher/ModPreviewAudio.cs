@@ -44,7 +44,7 @@ namespace TimeSplitters.Launcher
                         }
                     }
                 },cancel).ConfigureAwait(false);
-            }catch(DllNotFoundException){throw new InvalidOperationException("The system PCM audio service is unavailable. On Linux, install ALSA with a configured default output.");}
+            }catch(DllNotFoundException){throw new InvalidOperationException("The system PCM audio service is unavailable. Linux needs PulseAudio/PipeWire or a configured ALSA output.");}
             finally{gate.Release();}
         }
     }
@@ -107,7 +107,7 @@ namespace TimeSplitters.Launcher
         [DllImport(Audio)]static extern int snd_pcm_delay(IntPtr pcm,out IntPtr delay);
         [DllImport(Audio)]static extern int snd_pcm_drop(IntPtr pcm);
         [DllImport(Audio)]static extern int snd_pcm_close(IntPtr pcm);
-        sealed class Device : IPreviewPcmDevice
+        sealed class AlsaDevice : IPreviewPcmDevice
         {
             IntPtr handle,data;int frames,written,align;
             public void Open(byte[] pcm,int rate,int channels)
@@ -134,6 +134,96 @@ namespace TimeSplitters.Launcher
                 if(handle!=IntPtr.Zero){snd_pcm_drop(handle);if(snd_pcm_close(handle)!=0)ReleaseFailed();handle=IntPtr.Zero;}
                 if(data!=IntPtr.Zero){Marshal.FreeHGlobal(data);data=IntPtr.Zero;}
             }
+        }
+        const string Pulse="libpulse.so.0";
+        [StructLayout(LayoutKind.Sequential)]struct PulseFormat {public int Format;public uint Rate;public byte Channels;}
+        [StructLayout(LayoutKind.Sequential)]struct PulseBuffers {public uint Maximum,Target,Prebuffer,Minimum,Fragment;}
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]delegate void PulseSuccess(IntPtr stream,int success,IntPtr user);
+        static readonly PulseSuccess drained=(stream,success,user)=>Marshal.WriteInt32(user,success==0?-1:1);
+        [DllImport(Pulse)]static extern IntPtr pa_mainloop_new();
+        [DllImport(Pulse)]static extern IntPtr pa_mainloop_get_api(IntPtr loop);
+        [DllImport(Pulse)]static extern int pa_mainloop_iterate(IntPtr loop,int block,out int result);
+        [DllImport(Pulse)]static extern void pa_mainloop_free(IntPtr loop);
+        [DllImport(Pulse)]static extern IntPtr pa_context_new(IntPtr api,string name);
+        [DllImport(Pulse)]static extern int pa_context_connect(IntPtr context,IntPtr server,int flags,IntPtr spawn);
+        [DllImport(Pulse)]static extern int pa_context_get_state(IntPtr context);
+        [DllImport(Pulse)]static extern void pa_context_disconnect(IntPtr context);
+        [DllImport(Pulse)]static extern void pa_context_unref(IntPtr context);
+        [DllImport(Pulse)]static extern IntPtr pa_stream_new(IntPtr context,string name,ref PulseFormat format,IntPtr map);
+        [DllImport(Pulse)]static extern int pa_stream_connect_playback(IntPtr stream,IntPtr device,ref PulseBuffers buffers,int flags,IntPtr volume,IntPtr sync);
+        [DllImport(Pulse)]static extern int pa_stream_get_state(IntPtr stream);
+        [DllImport(Pulse)]static extern UIntPtr pa_stream_writable_size(IntPtr stream);
+        [DllImport(Pulse)]static extern int pa_stream_write(IntPtr stream,IntPtr data,UIntPtr bytes,IntPtr free,long offset,int seek);
+        [DllImport(Pulse)]static extern IntPtr pa_stream_drain(IntPtr stream,PulseSuccess callback,IntPtr user);
+        [DllImport(Pulse)]static extern int pa_stream_disconnect(IntPtr stream);
+        [DllImport(Pulse)]static extern void pa_stream_unref(IntPtr stream);
+        [DllImport(Pulse)]static extern void pa_operation_cancel(IntPtr operation);
+        [DllImport(Pulse)]static extern void pa_operation_unref(IntPtr operation);
+        sealed class PulseDevice : IPreviewPcmDevice
+        {
+            IntPtr loop,context,stream,data,flag,operation;int length,written,rate,channels;
+            internal bool Submitted {get{return written>0;}}
+            public void Open(byte[] pcm,int rate,int channels)
+            {
+                this.rate=rate;this.channels=channels;length=pcm.Length;
+                loop=pa_mainloop_new();Core.Require(loop!=IntPtr.Zero,"The desktop audio loop is unavailable.");
+                context=pa_context_new(pa_mainloop_get_api(loop),"TimeSplitters mod preview");Core.Require(context!=IntPtr.Zero,"The desktop audio context is unavailable.");
+                // Connect only to the existing configured service; never spawn a daemon.
+                Check(pa_context_connect(context,IntPtr.Zero,1,IntPtr.Zero));
+                data=Marshal.AllocHGlobal(length);Marshal.Copy(pcm,0,data,length);flag=Marshal.AllocHGlobal(4);Marshal.WriteInt32(flag,0);
+            }
+            public bool Advance()
+            {
+                for(int i=0;i<8;i++){int status;Core.Require(pa_mainloop_iterate(loop,0,out status)>=0,"The desktop audio loop failed.");}
+                int state=pa_context_get_state(context);Core.Require(state>=0 && state<=4,"The desktop audio service disconnected.");if(state!=4)return false;
+                if(stream==IntPtr.Zero) {
+                    var format=new PulseFormat {Format=3,Rate=(uint)rate,Channels=(byte)channels};
+                    stream=pa_stream_new(context,"Inspected PCM portion",ref format,IntPtr.Zero);Core.Require(stream!=IntPtr.Zero,"The desktop PCM stream is unavailable.");
+                    var buffers=new PulseBuffers {Maximum=(uint)(length+rate*channels*2/10),Target=(uint)(rate*channels*2/10),Prebuffer=0,Minimum=(uint)(rate*channels*2/50),Fragment=UInt32.MaxValue};
+                    Check(pa_stream_connect_playback(stream,IntPtr.Zero,ref buffers,0x2000,IntPtr.Zero,IntPtr.Zero));
+                }
+                state=pa_stream_get_state(stream);Core.Require(state>=0 && state<=2,"The desktop PCM stream failed.");if(state!=2)return false;
+                if(written<length) {
+                    ulong available=pa_stream_writable_size(stream).ToUInt64();Core.Require(available!=UInt64.MaxValue,"The desktop PCM stream is not writable.");
+                    int bytes=(int)Math.Min(Math.Min(available,(ulong)(length-written)),32768UL);bytes-=bytes%(channels*2);
+                    if(bytes>0){Check(pa_stream_write(stream,IntPtr.Add(data,written),(UIntPtr)(uint)bytes,IntPtr.Zero,0,0));written+=bytes;}
+                    if(written<length)return false;
+                }
+                if(operation==IntPtr.Zero){operation=pa_stream_drain(stream,drained,flag);Core.Require(operation!=IntPtr.Zero,"The desktop PCM stream could not drain.");}
+                int result=Marshal.ReadInt32(flag);Core.Require(result>=0,"The desktop PCM drain failed.");return result==1;
+            }
+            public void Dispose()
+            {
+                // This non-threaded loop dispatches callbacks only inside Advance.
+                if(operation!=IntPtr.Zero){pa_operation_cancel(operation);pa_operation_unref(operation);operation=IntPtr.Zero;}
+                if(stream!=IntPtr.Zero){pa_stream_disconnect(stream);pa_stream_unref(stream);stream=IntPtr.Zero;}
+                if(context!=IntPtr.Zero){pa_context_disconnect(context);pa_context_unref(context);context=IntPtr.Zero;}
+                if(loop!=IntPtr.Zero){pa_mainloop_free(loop);loop=IntPtr.Zero;}
+                if(flag!=IntPtr.Zero){Marshal.FreeHGlobal(flag);flag=IntPtr.Zero;}
+                if(data!=IntPtr.Zero){Marshal.FreeHGlobal(data);data=IntPtr.Zero;}
+            }
+        }
+        sealed class Device : IPreviewPcmDevice
+        {
+            IPreviewPcmDevice inner;byte[] pcm;int rate,channels;bool fallback;
+            public void Open(byte[] pcm,int rate,int channels)
+            {
+                this.pcm=pcm;this.rate=rate;this.channels=channels;inner=new PulseDevice();
+                try{inner.Open(pcm,rate,channels);}
+                catch(Exception error){if(!MayFallback(error))throw;UseAlsa();}
+            }
+            static bool MayFallback(Exception error){return error is System.IO.InvalidDataException || error is DllNotFoundException || error is EntryPointNotFoundException;}
+            void UseAlsa(){inner.Dispose();fallback=true;inner=new AlsaDevice();inner.Open(pcm,rate,channels);}
+            public bool Advance()
+            {
+                try{return inner.Advance();}
+                catch(Exception error) {
+                    var pulse=inner as PulseDevice;
+                    if(fallback || pulse==null || pulse.Submitted || !MayFallback(error))throw;
+                    UseAlsa();return false;
+                }
+            }
+            public void Dispose(){if(inner!=null){inner.Dispose();inner=null;}pcm=null;}
         }
 #else
         const string Audio="winmm.dll";

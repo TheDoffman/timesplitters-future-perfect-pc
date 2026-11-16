@@ -59,14 +59,19 @@ preserving memory still potentially borrowed by the driver.
 Windows uses waveOut with held unmanaged headers/buffers; reset/unprepare/close
 must finish before freeing them. Mac uses an AudioToolbox output queue, a static
 callback/unmanaged completion flag, asynchronous drain and synchronous disposal.
-Linux uses nonblocking ALSA PCM16 interleaved writes, actual queued-frame delay,
-drop/close and no subprocess. Linux needs `libasound.so.2` and a configured
-default output (such as its desktop's ALSA/PipeWire/Pulse bridge). Unavailable
-outputs produce an error; visual inspection remains available. No output-device
+Linux first uses the existing PulseAudio-compatible desktop service (including
+PipeWire's Pulse service) through a nonblocking private main loop and explicit
+drain. It never spawns a daemon. If that service is unavailable before any PCM
+is submitted, it closes that context and tries nonblocking ALSA interleaved writes
+with queued-frame delay and drop/close. It never retries through another backend
+after submitting sound. Linux needs `libpulse.so.0` with a reachable desktop
+service or `libasound.so.2` with a configured default output. Unavailable outputs
+produce an error; visual inspection remains available. No output-device
 configuration or system mixer setting is changed.
 Reference contracts: [Windows waveform buffers](https://learn.microsoft.com/en-us/windows/win32/multimedia/audio-data-blocks),
 [Apple queue stop/drain](https://developer.apple.com/documentation/audiotoolbox/audioqueuestop(_:_:)),
-[ALSA PCM interface](https://www.alsa-project.org/alsa-doc/alsa-lib/group___p_c_m.html).
+[ALSA PCM interface](https://www.alsa-project.org/alsa-doc/alsa-lib/group___p_c_m.html),
+[PulseAudio PCM ownership/drain](https://freedesktop.org/software/pulseaudio/doxygen/stream_8h.html).
 
 `POST /v1/moderation/{upload}/audio` takes exactly `sha256`, `path`, and an
 integer PCM-frame `offset` (initially0). It requires a current moderator/admin
