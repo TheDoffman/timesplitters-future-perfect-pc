@@ -1,3 +1,10 @@
+Patch2715 adds opt-in TSFP_MOD_AUDIO_LIFETIME_TRACE=1 (512 metadata records) at
+bind/play/frequency/loop/pause/stop/retire under the existing audio lock. It reads
+only host buffer/model fields; it never queries guest memory, changes clocks/PCM
+or transfers source attribution across model retirement. Fixtures cover neutral
+sample/model state, exact opt-in, budgets and known-to-unknown generation change.
+Actual native gameplay observation remains required. Contract: ../development/mod-audio-input.md.
+
 Audio request reads use shared pc_guest_span queries and guest-RAM/overflow bounds. The native fixture exercises real denied/read-only pages; the earlier menu-local helper was unavailable to the Windows manual unit and failed linking.
 
 Patch2714 clears attribution on native SetBufferData failure; its HRESULT and original data/clock behavior remain unchanged.

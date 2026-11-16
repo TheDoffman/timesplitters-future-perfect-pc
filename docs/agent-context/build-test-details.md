@@ -1723,6 +1723,11 @@ arbitrary executables/scripts/nested names and an uploaded mod carrying a helper
 The actual package --verify-game-package gate remains required after rebuilding
 the native launchers; the initially failed archives are preserved for diagnosis.
 
+Audio lifetime: test_audio_timing.py adds4 actual HLE format-fixture cases for
+TSFP_MOD_AUDIO_LIFETIME_TRACE exact opt-in and512-row cap, bind/play/rate/loop/
+pause/stop/retire/unknown generations and unchanged model/PCM. Existing all-host
+native-suite and Linux media selections already register the full file.
+
 Creator tools (mod_creator.py): ../development/mod-creator-tools.md.
 test_creator_projects.py covers CLI new/import/pack/validate, decoded PNG budgets,
 mips/channels/source preservation, DDS byte preservation, output collisions and

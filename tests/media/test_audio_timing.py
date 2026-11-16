@@ -143,6 +143,26 @@ def test_acoustic_guest_state(buffer_test):
     assert result.returncode==0,result.stdout+result.stderr
     assert 'PASS:' in result.stdout
 
+
+@pytest.mark.parametrize('enabled', ['1', '0', 'true', ''])
+def test_audio_lifetime_observer_preserves_native_model_and_pcm(format_test, enabled):
+    environment = dict(os.environ, TSFP_MOD_AUDIO_LIFETIME_TRACE=enabled)
+    result = subprocess.run([str(format_test), 'mod-lifetime'], env=environment,
+                            capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout+result.stderr
+    lines = [line for line in result.stderr.splitlines() if line.startswith('[mod-audio-lifetime] ')]
+    if enabled != '1':
+        assert not lines
+        return
+    assert len(lines) == 512
+    rows = [dict(field.split('=', 1) for field in line.split()[1:]) for line in lines]
+    for operation in ('bind', 'loop', 'frequency', 'play', 'pause', 'stop', 'retire'):
+        assert any(row['op'] == operation and row['event'] == '42' for row in rows)
+    known = next(row for row in rows if row['op'] == 'play' and row['event'] == '42')
+    assert (known['base'], known['rate'], known['loop'], known['playing']) == ('48000', '24000', '8:24', '1')
+    unknown = next(row for row in rows if row['op'] == 'play' and row['event'] == '4294967295')
+    assert unknown['base'] == unknown['rate'] == '22050' and unknown['generation'] != known['generation']
+
 def test_independent_ambience_and_environment(buffer_test):
     result=subprocess.run([str(buffer_test),'feature-gates'],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr

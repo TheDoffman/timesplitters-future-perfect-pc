@@ -14,8 +14,8 @@ pin, copies600 privately and drops credentials for init/updater/scanner controls
 Only then generate protected monitors/admission; no startup/Funnel. Actual601
 scanner passes4 controls. Health dirs chmod0755 under077; markers/plists0600;
 private-HOME fixtures retain writable-ancestor rejection.
-WAV/source attribution preserve PCM/clocks with fresh guest-RAM/OS read bounds.
-Failed binds stay unknown (2714); replacement remains off.
+WAV/source/lifetime tracing preserves PCM/clocks. Failed binds stay unknown;
+retired models lose identity. Replacement remains off (2713..2715).
 Contract/tests: ../development/mod-audio-input.md.
 
 Public source config/mods/public-workshop.json/root pins the verified ceremony

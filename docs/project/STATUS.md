@@ -1,3 +1,15 @@
+Audio lifetime evidence hook (2026-11-16, local source):
+Patch2715 adds opt-in512-row bind/play/frequency/loop/pause/stop/retire metadata,
+including unknown identities and actual original/current rates. It reads existing
+host buffer/model state under the audio lock without guest reads, decoding,
+sample/clock changes or attribution transfer. The actual HLE fixture demonstrates
+known identity through pitch/loop/play/stop, then existing settings-driven model
+retirement/new unknown generation. Exact opt-in, logging cap and unchanged model/
+PCM are verified. Windows audio/source/WAV161 checks pass6.07s. Actual Mac/Linux
+fixtures, game builds and lifetime gameplay traces remain pending. This is a
+replacement-integration prerequisite, not enabled custom audio playback.
+Contract: docs/development/mod-audio-input.md.
+
 Creator project/import tools (2026-11-16, source b0997ca9):
 mod-workshop.py now has new gameplay/textures/mixed templates and import-texture.
 mod_creator.py validates metadata before creating a new-only project, copies the

@@ -1,0 +1,80 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -132,6 +132,21 @@
+         b->model.loop_start_bytes,b->model.loop_end_bytes);
+ }
+ 
++/* Opt-in lifetime evidence, serialized by the audio lock. No guest reads,
++   PCM copies, clock updates, allocation or source-attribution changes. */
++static void mod_audio_lifetime_trace(const char *operation,const Buffer *b,uint32_t requested,uint32_t result)
++{
++    static int enabled=-1;static unsigned lines;
++    if(enabled<0){const char *value=getenv("TSFP_MOD_AUDIO_LIFETIME_TRACE");enabled=value && value[0]=='1' && !value[1];}
++    if(!enabled || !b || !b->iface || lines>=512u)return;
++    ++lines;
++    fprintf(stderr,"[mod-audio-lifetime] op=%s event=%u iface=%08X generation=%llu raw=%u pcm=%u base=%u rate=%u align=%u loop=%u:%u flags=%u playing=%u paused=%u requested=%u result=%08X\n",
++        operation,(unsigned)b->mod_audio_event,b->iface,(unsigned long long)b->generation,
++        b->size,b->model.size_bytes,b->model.original_sample_rate,b->model.sample_rate,
++        b->model.block_align,b->model.loop_start_bytes,b->model.loop_end_bytes,
++        b->model.play_flags,(unsigned)b->model.playing,(unsigned)b->paused,requested,result);
++}
++
+ static Buffer g_buffers[SLOTS];
+ static uint64_t g_buffer_generation;
+ static CRITICAL_SECTION g_lock;
+@@ -285,6 +300,7 @@
+ 
+ static void retire(Buffer *b)
+ {
++    mod_audio_lifetime_trace("retire",b,0u,0u);
+     recomp_audio_output_reset_voice(slot_of(b));
+     memset(b, 0, sizeof *b);
+ }
+@@ -819,6 +835,7 @@
+             b->model.loop_end_bytes = decoded_end;
+             recomp_dsound_buffer_cursor(&b->model,now);
+             b->output_model = b->model;
++            mod_audio_lifetime_trace("loop",b,0u,0u);
+         }
+         return b;
+     }
+@@ -1065,6 +1082,7 @@
+         }
+         resync_output(b, continuing, now);
+     }
++    mod_audio_lifetime_trace("play",b,flags,result);
+     unlock();
+     HLE_RETURN(result);
+ }
+@@ -1081,6 +1099,7 @@
+         recomp_dsound_buffer_stop(&b->model, now);
+         b->paused = 0;
+         resync_output(b, 0, now);
++        mod_audio_lifetime_trace("stop",b,0u,0u);
+     }
+     unlock();
+ }
+@@ -1144,6 +1163,7 @@
+             resync_output(b, 0, now);
+         }
+     }
++    mod_audio_lifetime_trace("pause",b,how,0u);
+     unlock();
+     return RECOMP_DSOUND_OK;
+ }
+@@ -1289,6 +1309,7 @@
+             }
+         }
+     }
++    mod_audio_lifetime_trace("frequency",b,frequency,result);
+     unlock();
+     HLE_RETURN(result);
+ }
+@@ -1450,6 +1471,7 @@
+     Buffer *bound=model_for(iface, now);
+     if(bound)bound->mod_audio_event=result==RECOMP_DSOUND_OK?tsfp_mod_audio_source_current(g_esp):TSFP_MOD_AUDIO_UNKNOWN;
+     mod_audio_source_trace(bound);
++    mod_audio_lifetime_trace("bind",bound,bytes,result);
+     unlock();
+     HLE_RETURN(result);
+ }

@@ -397,6 +397,13 @@ Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Wind
 Mac build passes using supported --output under the owned Library/Caches folder.
 No public workshop service, production trust activation or release is claimed.
 
+Audio lifetime follow-up (2026-11-16, local source): shared patch2715 observes
+buffer identity/generation, actual pitch/loops and retirement without changing
+samples, clocks or source attribution. No OS adapter is introduced. Windows's
+actual HLE/source/WAV161 checks pass; actual Mac/Linux fixtures and gameplay
+evidence remain pending. Custom audio replacement stays off. See STATUS and
+docs/development/mod-audio-input.md.
+
 Creator project/import follow-up (2026-11-16, source b0997ca9): shared mod_creator.py
 adds new gameplay/textures/mixed templates and bounded PNG/exact DDS import through
 the existing texture encoder. No new OS adapter or game permission is needed.

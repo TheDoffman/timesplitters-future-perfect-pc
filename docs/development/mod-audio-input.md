@@ -1,5 +1,27 @@
 # Custom audio input boundary
 
+## Playback lifetime observation
+
+Patch2715 adds a separate opt-in `TSFP_MOD_AUDIO_LIFETIME_TRACE=1`, capped at512
+metadata records per process. It observes host buffer bind, play, frequency,
+changed loops, pause/resume, stop and retirement under the existing audio lock.
+Unknown event IDs are included: `4294967295` means no verified source identity.
+The interface plus generation distinguishes a reused buffer from an earlier
+binding. Records include raw/decoded sizes, original/current sample rates, decoded
+loop bounds, play flags, playing/paused state, requested operation argument and
+result. A loop end of0 means the full decoded source end. The observer reads no
+guest memory or PCM, changes no attribution, clocks or samples, and invokes no
+decoder. It neither enables nor authorizes replacements.
+
+The actual HLE fixture binds event42, changes pitch48000->24000, sets loop8:24,
+plays, pauses/resumes and stops. A later settings-rate change retires the old
+model and starts a new unknown generation at22050. The observer faithfully records
+that existing loss of identity instead of inventing a continuation. A600-call
+probe confirms the512-record cap and byte-identical model/sample state. Separate
+processes verify only the exact opt-in value1 enables logging. Windows's complete
+audio/source/WAV selection passes161 cases. Native host fixtures and actual game
+playback traces remain pending at this source checkpoint.
+
 `src/mods/mod_wave.c/.h` validates an immutable caller-owned WAV snapshot before
 its PCM could reach game audio. It performs no IO, allocation, conversion,
 resampling, native decoder calls or playback. It is a shared input component,
