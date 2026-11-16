@@ -1,5 +1,5 @@
 Crash: ../development/native-crash-images.md.
-Linked-cache recovery: mod-scripting.md; Lua: ../development/mod-audio-scripting.md.
+Lease/link recovery: mod-scripting.md; Lua: ../development/mod-audio-scripting.md.
 
 Preflight also rejects restored flags on a previously unsupported fresh epoch.
 

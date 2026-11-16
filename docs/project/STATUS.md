@@ -13,8 +13,10 @@ Exact01e497f3 actual Mac resource/save/process99/11 skips pass (30.75s), Linux
 Windows helper/hardlink9/1 skip checks (16.22s). Windows production testing-OFF
 build01e497f3 passes; identical-source testing-library probe positive control and
 production symbol absence pass (local build/mod-recovery-production-01e497f3/
-probe-exclusion-proof.json). Host sanitizer checks, early no-record recovery and
-uncertain interrupted-profile cases remain pending. No public host/routing or client publication changes.
+probe-exclusion-proof.json). At24365271 host ASan/UBSan resources/recovery53/3 skips pass on each host
+(Mac15.63s/Linux19.97s). A final lease unlink anchoring adjustment passes Windows
+resource/save88/12 skips (36.89s); actual Mac/Linux checks follow. Early no-record
+recovery and uncertain interrupted-profile cases remain separate work. No public host/routing or client publication changes.
 
 Shared native cache startup journal (2026-11-16, implementation in progress):
 Session now writes private new-only intent before native creation and commits

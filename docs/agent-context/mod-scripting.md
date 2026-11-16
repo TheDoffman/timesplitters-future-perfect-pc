@@ -12,7 +12,9 @@ proven exited qualify. Roots without committed records, legacy/unmarked roots,
 unknown files, links/hardlinks, invalid/oversize metadata, changed helper hashes,
 active tasks and uncertain native queries are never adopted for removal.
 Recovery acquires the EXISTING nofollow/noninherited runtime lease without creating
-or truncating it. Windows held handles exclude write/delete sharing; POSIX opens,
+or truncating it. Runtime-lease removal now uses the held root descriptor on
+POSIX in both normal teardown and recovery, with fresh inode/uid/mode/link/size
+checks. SaveNamespace lease semantics stay unchanged. Windows held handles exclude write/delete sharing; POSIX opens,
 enumerates and unlinks relative to held directory descriptors, with inode/owner/
 link/mode and file-ctime checks. verify_pinned_descriptor in mod_images.cpp reuses
 the shared digest adapter on borrowed handles, with size/deadline limits and no
@@ -38,7 +40,9 @@ bytes AND native file identities of linked files outside the cache; updated
 Windows helper/hardlink9/1 skip checks pass (16.22s). Actual profile-scope native
 identity remains unchanged on Windows refusal paths. Production testing-OFF
 Windows build01e and identical-source test-probe exclusion pass. Sanitizer checks
-follow; no full game/client release claim follows from these component tests.
+at24365271 pass53/3 skips on each host (Mac15.63s/Linux19.97s). A final lease
+unlink anchoring adjustment passes Windows resource/save88/12 skips (36.89s);
+actual Mac/Linux checks follow. No full game/client release claim follows.
 
 Shared startup journal (source; full stale recovery still pending):
 CacheJournal in mod_private.hpp/mod_saves.cpp binds to a bounded process-wide

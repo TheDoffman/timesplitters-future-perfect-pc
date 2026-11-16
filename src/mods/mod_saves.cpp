@@ -211,14 +211,18 @@ struct Lease {
             held.st_nlink==1 && !held.st_size);
 #endif
     }
-    void remove_fresh(const fs::path &path,Security &security) {
-        check(path,security);
+    void remove_fresh(const fs::path &path,Security &security,const File &directory) {
 #ifdef _WIN32
+        (void)directory;check(path,security);
         FILE_DISPOSITION_INFO disposition{};disposition.DeleteFile=TRUE;
         need(SetFileInformationByHandle(file.value,FileDispositionInfo,&disposition,sizeof(disposition))!=FALSE);
         CloseHandle(file.value);file.value=INVALID_HANDLE_VALUE;
 #else
-        need(unlink(path.c_str())==0);
+        struct stat held{},named{};auto leaf=path.filename();
+        need(fstat(file.value,&held)==0 && fstatat(directory.value,leaf.c_str(),&named,AT_SYMLINK_NOFOLLOW)==0 &&
+            S_ISREG(held.st_mode) && held.st_dev==named.st_dev && held.st_ino==named.st_ino &&
+            held.st_uid==geteuid() && held.st_nlink==1 && !held.st_size && (held.st_mode&0777)==0600);
+        (void)security;need(unlinkat(directory.value,leaf.c_str(),0)==0);
 #endif
     }
 };
@@ -360,7 +364,7 @@ PrivateDirectory::~PrivateDirectory() {
                     need(++count<=2 && (name==".tsfp-runtime-owner" || name==".runtime-lock"));
                 }
                 need(count==2);Security security(false);
-                owner->lease->remove_fresh(path/".runtime-lock",security);
+                owner->lease->remove_fresh(path/".runtime-lock",security,owner->directory);
 #ifdef _WIN32
                 need(DeleteFileW((path/L".tsfp-runtime-owner").c_str())!=FALSE);
 #else
@@ -824,7 +828,7 @@ void recover_cache(const fs::path &root,const ImagePins &pins,RecoveryClock::tim
     for(auto &record:records)record->remove(owner,root);
     recheck_root();
     remaining=recovery_children(owner.directory,root,2,RecoveryClock::time_point::max());need(remaining.size()==2);
-    ownership.remove(owner,root);owner.lease->remove_fresh(root/".runtime-lock",security);
+    ownership.remove(owner,root);owner.lease->remove_fresh(root/".runtime-lock",security,owner.directory);
 #ifdef _WIN32
     FILE_DISPOSITION_INFO disposition{};disposition.DeleteFile=TRUE;
     need(SetFileInformationByHandle(owner.directory.value,FileDispositionInfo,&disposition,sizeof(disposition))!=FALSE);

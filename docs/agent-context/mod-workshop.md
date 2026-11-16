@@ -2,7 +2,7 @@ SDK: ../development/mod-creator-tools.md; ops: ../development/mod-workshop-opera
 register-installed-host-mac.py derives9 protected jobs: staging bootstrap,
 source-pinned private readiness and7 restarts precede boot-file installation.
 601 repair passes private checks,9 jobs and post-seal verification (STATUS).
-Linked-cache recovery: mod-scripting.md.
+Lease/link recovery: mod-scripting.md.
 Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged.
 Public native3->4->3 gameplay/lifecycle and withdrawal pass on all3 hosts (STATUS).
 Mac had one pre-match signal11; retry passed, cause/stability remains open.
