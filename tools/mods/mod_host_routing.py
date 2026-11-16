@@ -69,6 +69,17 @@ def snapshot(data,origin):
     return dict(schema=1,origin=origin,phase=phase,config_sha256=digest(canonical),unrelated_sha256=digest(other))
 
 
+def baseline(value):
+    require(isinstance(value,dict) and set(value)=={'schema','origin','phase','config_sha256','unrelated_sha256'}
+            and type(value['schema']) is int and value['schema']==1 and value['phase']=='public',
+            'Use the saved public workshop route baseline')
+    require(all(isinstance(value[key],str) and len(value[key])==64
+                and all(c in '0123456789abcdef' for c in value[key]) for key in ('config_sha256','unrelated_sha256')),
+            'Invalid saved routing fingerprints')
+    authority(value['origin'])
+    return value
+
+
 def transition(before,expose,invoke,record,*,resume=False):
     """Record durable intent before ONE action, then prove the resulting state.
 
@@ -76,12 +87,8 @@ def transition(before,expose,invoke,record,*,resume=False):
     journal callback. It must verify private readiness before requesting restore.
     This primitive has no CLI or automatic activation/recovery authorization.
     """
-    require(isinstance(before,dict) and set(before)=={'schema','origin','phase','config_sha256','unrelated_sha256'}
-            and type(before['schema']) is int and before['schema']==1 and before['phase']=='public'
-            and type(expose) is bool and type(resume) is bool,'Use the saved public workshop route baseline')
-    require(all(isinstance(before[key],str) and len(before[key])==64
-                and all(c in '0123456789abcdef' for c in before[key]) for key in ('config_sha256','unrelated_sha256')),
-            'Invalid saved routing fingerprints')
+    baseline(before)
+    require(type(expose) is bool and type(resume) is bool,'Choose an explicit routing transition')
     origin=before['origin'];authority(origin)
     current=snapshot(invoke('status'),origin)
     require(current['unrelated_sha256']==before['unrelated_sha256'],'Unrelated routing changed; preserving it')

@@ -247,7 +247,7 @@ def label_state(generated, spec, command):
     return None
 
 
-def quiesce(entries, uid, journal, command, *, clock=time.monotonic, sleep=time.sleep, timeout=60):
+def quiesce(entries, uid, journal, command, *, routing, clock=time.monotonic, sleep=time.sleep, timeout=60):
     """Stop only attested labels, preserving pending intents on uncertainty.
 
     The root coordinator must first seal-check both releases and suspend public
@@ -266,6 +266,7 @@ def quiesce(entries, uid, journal, command, *, clock=time.monotonic, sleep=time.
     by_label = {spec['Label']:(path,spec) for path,spec in entries}
     state = journal.state()
     require(not state['settled'], 'Cutover transaction is already settled')
+    journal.require_suspended(routing)
     for label in stop_order():
         path, spec = by_label[label]
         current = label_state(path, spec, command)
@@ -278,6 +279,7 @@ def quiesce(entries, uid, journal, command, *, clock=time.monotonic, sleep=time.
             require(current['pid'] is None or current['pid'] in tracked['pids'],
                     'Cutover process changed after preflight; explicit recovery required')
         job_files(entries, files)
+        journal.require_suspended(routing)
         if state['pending'] is None:state = journal.record('stop-intent', label)
         require(state['pending'] == label, 'Cutover pending intent differs')
         if current is not None:
@@ -306,6 +308,7 @@ def quiesce(entries, uid, journal, command, *, clock=time.monotonic, sleep=time.
         require(clock() < deadline, 'Cutover descendants remain; preserving stop history')
         sleep(.1)
     job_files(entries, files)
+    journal.require_suspended(routing)
     require(all(label_state(path,spec,command) is None for path,spec in entries),
             'A cutover label reappeared after process observation')
     if not state['quiescent']:state = journal.record('quiescent')

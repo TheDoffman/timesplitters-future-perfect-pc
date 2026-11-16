@@ -193,11 +193,12 @@ exit requires those identities/groups and every dedicated UID600 process to be
 gone, catching escaped or reparented descendants. Reused identities conservatively
 refuse admission; these samples are never signal targets.
 
-`mod_host_cutover_journal.py` holds a nonblocking root-only global lease and
+`mod_host_cutover_journal.py` v2 holds a nonblocking root-only global lease and
 records bounded canonical stop history under root-owned0700 `upgrades`, outside
 the monitor directory that an upgrade will replace. It binds before/after,
-plan/preflight hashes, UID, the original numeric PID/group snapshot, nonce and
-native boot session. Every stop intent
+plan/preflight hashes, UID, the original numeric PID/group snapshot, saved public
+routing baseline, nonce and native boot session. The earlier undeployed v1
+format is preserved/refused rather than silently adopted. Every stop intent
 precedes its observation; four monitors must precede backup and the remaining
 workers. A pending intent survives reopening and cannot be counted as a stop.
 Unsettled prior transactions block new nonces; settled history remains bounded
@@ -205,10 +206,29 @@ to32 transactions. A caller records settlement only after verified restoration,
 final activation, or an unused preparation. This storage primitive does not prove
 that those actions occurred. Replaced leases/directories, malformed/foreign or
 noncanonical histories, wrong boot identities and unknown/partial pending writes
-are preserved and refused. A crash during journal replacement requires explicit
-recovery; do not delete the pending file or start a new nonce to bypass it.
+are preserved and refused. Explicit `recover_pending=True` may promote only one
+complete canonical append to the exact existing history/base in the same boot,
+under the same global lease. It rechecks both files before replacement. Truncated,
+foreign, duplicate or multi-event pending files stay untouched; no new nonce or
+automatic cleanup bypasses them. Promotion recovers metadata, not an OS outcome.
 This journal stores the coordinator's observations; it does not perform them or
 issue migration authority. No deployed job uses it yet.
+
+The v2 routing callback is directly compatible with the selective transition
+primitive. It persists intent before the action, permits only matching observed
+results, and makes already-recorded recovery observations inert. Stops require a
+recorded suspension; `quiesce(..., routing=<operator transport>)` also verifies
+current routing before the stop sequence, before every next stop and at final
+quiescence. Re-exposure halts progress. An explicit re-suspension is possible but
+invalidates earlier private admission. Restoring public access requires a fresh
+root-recorded private-access report digest for the before/after generation; the
+after generation additionally requires all old stops observed. The report is
+valid for300 seconds at intent and observation. Pending restore recovery may
+refresh that verification. The coordinator must produce the actual verified
+report; recording its digest is not itself proof. Settlement requires no pending
+intent and confirmed public restoration (or an unused/cancelled preparation).
+Cancelling an unapplied suspension requires the exact original public state and
+no observed service stops. No CLI currently invokes this mutation pipeline.
 
 The root-only `quiesce` primitive attests those job files, checks the journal's
 UID/boot and addresses only the fixed `system/<label>` targets. It durably writes

@@ -192,16 +192,18 @@ def test_protected_jobs_refuse_directory_links_writable_ancestors_and_unknown_pa
 
 
 @pytest.mark.parametrize('outcome', ['success','timeout-success','error-success','timeout-live',
-                                    'escaped-process','restarted','foreign-binding','reappeared'])
-def test_label_shutdown_uses_durable_intents_and_requires_observed_quiescence(protected_jobs, outcome):
+                                    'escaped-process','restarted','foreign-binding','reappeared','route-reappeared'])
+def test_label_shutdown_uses_durable_intents_and_requires_observed_quiescence(protected_jobs, outcome,workshop_routing):
     import subprocess
     import mod_host_cutover_journal as storage
+    import mod_host_routing as routes
     entries = protected_jobs
     labels = cutover.jobs()
     loaded = dict.fromkeys(labels, True)
     calls = []
     arguments = dict(before='a'*64, after='b'*64, uid=600, nonce='c'*64, plan_sha256='d'*64,
-                     preflight_sha256='e'*64, tracked=dict(pids=list(range(123,133)),groups=list(range(123,133))))
+                     preflight_sha256='e'*64, tracked=dict(pids=list(range(123,133)),groups=list(range(123,133))),
+                     routing=workshop_routing['baseline'])
     ticks = iter(range(1000))
 
     def command(arguments):
@@ -212,6 +214,7 @@ def test_label_shutdown_uses_durable_intents_and_requires_observed_quiescence(pr
         if arguments[1] == 'bootout':
             assert state.state()['pending'] == label
             if outcome != 'timeout-live':loaded[label]=False
+            if outcome=='route-reappeared' and label==storage.stop_order()[0]:workshop_routing['invoke']('restore')
             if outcome == 'reappeared' and label == storage.stop_order()[-1]:loaded[storage.stop_order()[0]]=True
             if outcome.startswith('timeout'):raise subprocess.TimeoutExpired(arguments,3)
             return (5 if outcome == 'error-success' else 0), ''
@@ -224,24 +227,30 @@ def test_label_shutdown_uses_durable_intents_and_requires_observed_quiescence(pr
                    +'\t}\n\tpid = '+str(pid)+'\n}\n')
 
     with storage.transaction(**arguments) as state:
+        with pytest.raises(ModError):cutover.quiesce(entries,600,state,command,routing=workshop_routing['invoke'])
+        assert not calls
+        routes.transition(state.base['routing'],False,workshop_routing['invoke'],state.routing_event)
         if outcome in ('success','timeout-success','error-success'):
-            assert cutover.quiesce(entries,600,state,command,clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)['quiescent']
+            assert cutover.quiesce(entries,600,state,command,routing=workshop_routing['invoke'],clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)['quiescent']
             stopped = [v[-1].removeprefix('system/') for v in calls if v[1]=='bootout']
             assert stopped == storage.stop_order()
             # Reopening a quiescent observation must observe absence again, not
             # issue another stop or infer success from the stored phase.
-            cutover.quiesce(entries,600,state,command,clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)
+            cutover.quiesce(entries,600,state,command,routing=workshop_routing['invoke'],clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)
             assert len([v for v in calls if v[1]=='bootout']) == 10
         else:
             with pytest.raises(ModError):
-                cutover.quiesce(entries,600,state,command,clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)
+                cutover.quiesce(entries,600,state,command,routing=workshop_routing['invoke'],clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)
             assert not state.state()['quiescent']
             if outcome == 'timeout-live':
                 assert state.state()['pending'] == storage.stop_order()[0]
                 assert len([v for v in calls if v[1]=='bootout']) == 1
-            if outcome in ('timeout-live','escaped-process'):
+            if outcome in ('timeout-live','escaped-process','route-reappeared'):
+                if outcome=='route-reappeared':
+                    assert len([v for v in calls if v[1]=='bootout'])==1
+                    routes.transition(state.base['routing'],False,workshop_routing['invoke'],state.routing_event)
                 outcome='success'
-                assert cutover.quiesce(entries,600,state,command,clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)['quiescent']
+                assert cutover.quiesce(entries,600,state,command,routing=workshop_routing['invoke'],clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)['quiescent']
 
 
 @pytest.mark.parametrize('code,output', [(1,'permission denied'), (113,''), (113,'Bad request.\nother service\n'), (127,'command not found')])

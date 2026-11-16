@@ -7,7 +7,7 @@ Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged
 Public native3->4->3 gameplay/lifecycle and withdrawal pass on all3 hosts (STATUS).
 Mac had one pre-match signal11; retry passed, cause/stability remains open.
 Signedv31 retains5 revocations; downloads404. Backup custody/clone restore pass;
-Upgrade routing/backup: ../development/mod-workshop-operations.md.
+Journal v2: ../development/mod-workshop-operations.md.
 
 prepare-installed-host-mac.py reads3 owned online inputs, matches the source
 pin, copies600 privately and drops credentials for init/updater/scanner controls.
