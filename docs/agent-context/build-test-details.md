@@ -1769,6 +1769,16 @@ change. Linux uses async PulseAudio first, then ALSA only before any PCM submiss
 unavailable output is a failure, not a synthetic native success. Native WSL first
 failed because ALSA default/card0 is absent; the initial failure remains recorded.
 See creator-service user documentation and STATUS for actual provider evidence.
+
+Frozen upgrade candidate4fc86283/descriptor14d9a007...7d515c: actual staged
+runtime Python and frozen source pass UID501 disposable SDK-package quarantine,
+creator invitation/cancellation, fresh isolated ClamAV clean/EICAR, exact PCM,
+manual approval/report closure/revocation and secret-free audit/storage checks.
+Separate actual empty-definition/missing-engine controls exhaust three retries
+and refuse approval. Frozen/runtime inventory re-verifies after both runs. No
+production data/TLS/job changes or UID600 admission; exact receipts in STATUS.
+The current initializer/registrar are fresh-generation-only, not a preserving
+upgrade path. Migration and generation-bound backup handling remain required.
 Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
 interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;

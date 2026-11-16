@@ -34,6 +34,41 @@ never a mod ZIP, source commit, screenshot or support log. The portable encrypte
 signing-key recovery file has passed the owner's Mac check; keep its passphrase
 separately from the file. It does not back up the repository.
 
+## Upgrading the deployed generation
+
+The current installer can stage a new immutable release alongside the running
+one. It does not switch active services. The initializer requires its exact
+generation's configuration/marker, and the job registrar refuses existing system
+job files and labels. Re-running those new-host commands against the deployed
+generation is not a preserving upgrade.
+
+Source4fc86283 is frozen in candidate descriptor
+`14d9a007d249a52005cdf07bd3b2f5957a785b42fc11e7f7d3af56d63d7d515c`.
+Its plan and actual disposable frozen-source/runtime acceptance pass on the Mac:
+creator-only invitations, the SDK audio package, fresh isolated ClamAV clean/
+EICAR results, exact PCM inspection, manual approval, report closure, revocation,
+and empty-database/missing-engine refusal. These use UID501, private fixture data
+and in-memory WSGI requests. They do not establish UID600 admission, TLS/public
+acceptance, an installed release or active-generation migration. Exact receipts
+and pins are in STATUS. Do not regenerate this frozen candidate merely because
+later documentation or client commits change HEAD.
+
+Before cutover, the preserving migration still needs to be implemented and
+accepted: verify the current sealed generation and exact job/config bindings;
+complete and verify a fresh recovery capture; stage and admit the candidate
+under UID600; stop the fixed monitors/workers with proven child cleanup; migrate
+only the declared generation-bound configuration, markers and job files; then
+verify private readiness, scanner controls, persistent jobs and public signed
+reads. Preserve the origin/root keys, accounts, uploads, audit, catalog version
+floor and revocations throughout. A cutover journal must distinguish safe
+rollback from uncertain partial state; never clear state to force admission.
+
+The pending backup installation is bound to the old7be generation. Finish its
+existing ceremony first, then explicitly account for that backup job/binding in
+the upgrade. Installing a new host generation does not automatically migrate the
+backup job. Keep the separate private443 routing unchanged. No active-generation
+switch or new administrator prompt has been performed for this candidate.
+
 ## Routine checks
 
 At the start of a moderation session, and after a service or host restart:

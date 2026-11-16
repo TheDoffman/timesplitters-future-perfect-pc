@@ -1,3 +1,33 @@
+Frozen host upgrade candidate (2026-11-16; source4fc86283; not installed/active):
+prepare-release-mac.py froze81 source/guardian files with3339 verified runtime
+files,151216490 bytes. Descriptor14d9a007d249a52005cdf07bd3b2f5957a785b42fc11e7f7d3af56d63d7d515c
+binds existing runtime receipta0aed054dc52660b9591f70a5483ea10bd3362fe747f483041dc7dfef44df8f0.
+Frozen installer plan passes, with no root/service/public changes. Preparation
+receiptSHA eeda4541923b06e7147d7b40dc121c96a0d80015103502ee3ffdf26df300c161.
+Actual frozen runtime Python and frozen modules then passed a disposable UID501
+workflow using the same exported-SDK audio ZIP467394f8...271b6 that already played
+on all3 native hosts: owner issues/cancels creator-only invitations, creator
+uploads into quarantine, actual confined ClamAV1.5.4/daily28185 returns fresh
+clean macos-seatbelt-v3 evidence, private PCM equals independent stdlib WAV
+frames, creator inspection is refused, owner manually approves, creator reports,
+owner closes report and revokes. EICAR scan is blocked and approval refused.
+Audit/storage checks find no plaintext fixture passwords/invitations/sessions.
+Entire frozen source/runtime inventory re-verifies unchanged after acceptance.
+ReceiptSHA2c85e0e2374957ece76c1d9bcc25d9198424bb0e6a1dccfb30fbe38846f81a2c.
+Separate new disposable queue tests actual empty-definitions/missing-engine
+controls: each gets retry/retry/scan-error, never a catalog entry or approval.
+Only fixture account/queue clock advances; OS/AV freshness is real. ReceiptSHA
+343b385b461d904684f9faebbbe7289d26cf1e0a52f7a31730db7f9a25378d17.
+Both runs use the staged verified runtime and frozen candidate modules; no
+checkout fallback, live data/key reads, TLS/public exposure or UID600 admission.
+Copies: logs/upgrade-candidate-4fc86283*.txt and corresponding receipt JSONs.
+Mac private artifacts: TSFP-Mod-Host-Runtime-1a59fca0/{release-bundle-4fc86283,
+upgrade-acceptance-4fc86283,upgrade-failclosed-4fc86283} under Library/Caches.
+Existing initializer/registrar deliberately refuse changed generations/existing
+jobs. A preserving active-generation migration and backup-binding migration are
+still required; see mod-workshop-operations.md. Existing backup admin-auth and
+Windows owner sign-in windows remain pending. Production601/7be is unchanged.
+
 Linux desktop audio follow-up (2026-11-16; source3a555fb4, deployment pending):
 Actual sourceaaa310ea Mac/Linux native builds/test/packages pass123/124 UI groups
 plus real creator backend; Linux package repair/restart retains saves/metadata.

@@ -1,3 +1,11 @@
+Preserving host upgrade (2026-11-16): **In progress**.
+Source4fc86283 frozen descriptor14d9a007...7d515c plans81 source/3339 runtime
+files without root/service changes. Actual frozen Python/modules pass disposable
+UID501 creator-invite/SDK-audio/real fresh AV/review/report/revoke/PCM checks;
+EICAR blocked, empty/missing scanner controls retry then scan-error/refuse approval.
+Exact receipts in STATUS. Protected UID600 admission and preserving generation/
+backup-job migration remain unimplemented/unverified; production601/7be unchanged.
+
 Moderator PCM listening (2026-11-16): **In progress**.
 Shared bounded playback controller/UI with thin Windows waveOut, Mac AudioQueue
 and Linux nonblocking ALSA adapters. Native source/build inclusion updated for
