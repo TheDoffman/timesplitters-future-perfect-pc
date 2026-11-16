@@ -22,11 +22,12 @@ and authenticated review are now implemented. The native Creator tab supports
 sign-in/invitations, reviewed ZIP uploads, status history and optional OS-vault
 sessions; native moderation/reporting are implemented. Windows vault proof passes;
 Mac/Linux persistence acceptance remains incomplete. The public Mac host is
-deployed; complete cross-host public gameplay and release remain pending. See [creator service](mod-creator-service.md).
+deployed; final cross-host release and SDK/assets remain pending. See [creator service](mod-creator-service.md).
 Signed static exports, offline root rotation and monotonic publication versions
 and shared native signature/checkpoint/revocation enforcement are implemented.
 The production origin/root are pinned and Windows public lifecycle acceptance
-passes. Complete cross-host public gameplay and release remain pending. See
+passes. Public installed-game lifecycle now also passes on Mac/Linux; final release,
+SDK/assets and a captured Mac crash follow-up remain pending. See
 [catalog trust](mod-catalog-trust.md) before hosting or generating any real keys.
 
 Texture-only packages can now be enabled in a separate active overlay. The
@@ -58,8 +59,10 @@ Windows creator upload-to-launcher-to-game acceptance now passes through real
 3-to-4-to-3 score update/rollback matches. Both temporary releases were revoked;
 normal-save preservation, launch refusal and removal pass. The public Mac mini
 host and signing authority are deployed over HTTPS without a purchased domain.
-Mac/Linux native signed-catalog reads pass; their public install/gameplay lifecycle
-and the complete SDK/asset work remain pending. No usable public game/launcher
+Mac/Linux public initial/update/rollback/removal now also passes through genuine
+installed game packages with original saves preserved. One Mac pre-match signal11
+is still undetermined after a successful retry. Complete SDK/asset work and final
+release/stability acceptance remain pending. No usable public game/launcher
 release has been published, and compiled workshop defaults remain inactive. See the
 [Mac hosting setup](mac-mod-hosting.md) for the approved static-download alpha,
 public address and launcher connection. The local Python preview remains local.
@@ -91,7 +94,8 @@ enable a retained older version and review its dependency changes. Uninstall
 is available for disabled versions that other installed packages do not require.
 Textures require Enhanced mode and a game built with this branch's overlay
 reader; an existing published game does not gain support by updating only its
-launcher. Complete cross-host public creator-to-launcher-to-game acceptance is still pending.
+launcher. Public native player lifecycle passes on all three hosts; final release and broader
+creator-role, stability and asset/SDK acceptance remain pending.
 
 Enabled packages are pinned by their ID, exact version and SHA-256. Conflicting
 texture keys, dependency cycles, missing exact dependencies and two active

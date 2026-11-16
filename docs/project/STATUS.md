@@ -1,3 +1,50 @@
+Public installed Mac/Linux mod lifecycle acceptance (2026-11-16):
+Both hosts now use persistent installations created by actual Core.Unpack/
+InstallPending from genuine v0.6.3-mod-workshop.2 packages, preserving their
+BUILD capability1, source c662 and packaging260d provenance. Fresh public native
+search/download/install/activation finishes actual offline six-bot matches at
+3 ->4 ->3 accepted kills for initial1.0.3, offered update1.0.4 and retained-version
+rollback. Mode3 progress is unchanged during update; rollback reuses the same
+namespace/inode. Ordinary save hashes and data canaries stay unchanged.
+This uses native client/model/StartInfo APIs, not manually clicked public UI.
+Observers supply synthetic input/read-only state; validation is off in these
+packaged scenes. Mac executes as UID501; WSL Linux uses its existing UID0.
+
+The first Linux replay reached profile creation because startup movies shifted
+its input schedule; all five seeded fixture files remained unchanged. A native
+saved Skip startup splashes preference plus fresh signed trust/existing selection
+completed the retry without reinstalling. One Mac rollback attempt exited139
+(signal11) in the menu before the match. Its retained progress/inode and ordinary
+saves remained unchanged; the retry with dyld diagnostics completed normally.
+The crash cause is undetermined and remains a release-stability follow-up; no
+product fix or general stability claim is inferred from the successful retry.
+Private captured crash report: app/Logs/Crashes/crash-20261116-082410712-0000081976-798729.
+
+Both temporary versions passed fresh confined ClamAV1.5.4/db28184 scans and exact
+source review before approval. Version1.0.3 SHA1c342cc11bc4a787bb18dfd01ef1e8309f7b9eb82355cd21c9a52db3a77b2b75;
+1.0.4 SHAd838f1cb19ffc0f0d1610f43c15b6bdf93d92000d50284b8f70c32b677617227.
+Both are permanently revoked now. Native active-launch refusal, Play without
+mods, disable and uninstall pass on both hosts. Independent Python signature/
+root verification accepts signed catalog v19 with all five test revocations;
+normal-TLS direct package requests return404. Each host recycles12 known
+inactive partition images while preserving mode data and canonical fixtures.
+All test relays are stopped. No new user input, host601/7be update or main merge.
+
+Ignored lifecycle proofs: logs/mod-public-cross-linux-proof.json SHA
+96a81301284637a4fc57a179be0048f2668e819e35edfe30c022318a46f8aa2b;
+logs/mod-public-cross-mac-proof.json SHA
+d27c860d92668518afa62196fab9e2bb61e1134101e400ebff6f43aff12049a5.
+Namespace3 is433bc61ac090903a5e766213f2facae6d7e3533c9d02b32aaa896590a280f9b5;
+namespace4 is08979ca604d3462d356b6848aa41d117eead80a698302822675a6c139b1fa815.
+Full CI43826562017 at260d now passes every selected runtime/patch/GPU/Vulkan,
+release, native launcher/aggregate and PR validation job (two issue-only skips).
+Native launcher tests pass111 Windows/112 Mac/113 Linux shared UI groups, including
+the helper allowlist regression. Genuine package install/verification checks pass1408
+Mac and1557 Linux files with corruption refusal and personal preservation.
+No public game/client binary release has been published. Full assets/SDK/API,
+multiplayer authority, Mac crash follow-up, operational backups/boot and final
+release acceptance remain open; the full goal remains active.
+
 Actual Mac/Linux package gate finding (2026-11-16):
 Both genuine local game archives are assembled but their bundled launcher refuses
 Bin/ModRuntime/<identity>/Lua.txt as unsupported. The shared Core.Allowed omitted

@@ -1,4 +1,4 @@
-DDS previews and dependency/update reviews: mod-workshop.md.
+DDS previews, dependency/update reviews and public game flow: mod-workshop.md.
 Core.Allowed admits only five named game helpers under Bin/ModRuntime/<64 lowercase
 hex>/; uploaded mod admission stays separate. Package regression: build-test-details.md.
 

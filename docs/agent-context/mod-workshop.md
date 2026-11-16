@@ -3,11 +3,10 @@ source-pinned private readiness and7 restarts precede boot-file installation.
 Known-only rollback/journals preserve foreign state. Actual601 repair now PASSES
 all private checks,9 persistent jobs and post-seal verification (see STATUS).
 Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged.
-Native public Windows search/play/update/rollback/withdrawal and off-device
-restore/key recovery pass; see STATUS. Other-host public game, backup operations,
-boot/full SDK/release remain open.
-Fresh bbed Mac/Linux launchers pass111/112 UI groups/backend and public signed
-v13/v12 trust reads. Their public game lifecycle remains pending (STATUS).
+Public native3->4->3 gameplay/lifecycle and withdrawal pass on all3 hosts (STATUS).
+Mac had one pre-match signal11; retry passed, cause/stability remains open.
+Signedv19 retains5 test revocations; temporary downloads404. Backup custody/clone
+restore pass; scheduled operations, boot/full SDK/release remain open.
 
 prepare-installed-host-mac.py reads3 owned online inputs, matches the source
 pin, copies600 privately and drops credentials for init/updater/scanner controls.
