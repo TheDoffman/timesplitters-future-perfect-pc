@@ -9,6 +9,8 @@ import stat
 
 MAX_BYTES = 512 * 1024**2
 SHA = re.compile(r'[0-9a-f]{64}')
+INSTALLED_ROOT = Path('/Library/Application Support/TSFP Mod Workshop')
+ROOT_UID = 0
 
 
 def require(value, message):
@@ -83,7 +85,7 @@ def read_file(root, relative, uid, maximum):
     relative = name(relative)
     parent = directory(Path(root) / str(relative.parent), uid)
     try:
-        fd = os.open(relative.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+        fd = os.open(relative.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
     finally:
         os.close(parent)
     with os.fdopen(fd, 'rb') as stream:
@@ -144,22 +146,20 @@ def verify(root, files, uid, readonly=False, directory_mode=None):
             require(stat.S_IMODE(path.lstat().st_mode) == expected_mode, 'Release file mode changed')
 
 
-def plan(bundle, expected):
-    require(SHA.fullmatch(expected or ''), 'An explicit descriptor SHA256 is required')
-    bundle = Path(os.path.abspath(bundle))
-    uid = bundle.lstat().st_uid
-    wire = read_file(bundle.parent, bundle.name, uid, 512 * 1024)
-    require(hashlib.sha256(wire).hexdigest() == expected, 'Release descriptor digest mismatch')
+def descriptor(wire):
     data = decode(wire, 512 * 1024)
     require(isinstance(data, dict) and set(data) == {'schema', 'producer', 'source_revision', 'owner_uid',
             'runtime_root', 'runtime_sha256', 'source_root', 'source_files'}
             and type(data['schema']) is int and data['schema'] == 1 and data['producer'] == 'tsfp-host-release-v1'
-            and type(data['owner_uid']) is int and data['owner_uid'] == uid and uid > 0
+            and type(data['owner_uid']) is int and data['owner_uid'] > 0
             and isinstance(data['source_revision'], str) and re.fullmatch(r'[0-9a-f]{40}', data['source_revision']),
             'Invalid host release descriptor')
     for field in ('runtime_root', 'source_root'):
         require(isinstance(data[field], str) and Path(data[field]).is_absolute(), 'Release input root must be absolute')
-    runtime_wire = read_file(data['runtime_root'], 'runtime.json', uid, 4 * 1024**2)
+    return data
+
+
+def component_records(data, runtime_wire):
     require(isinstance(data['runtime_sha256'], str) and SHA.fullmatch(data['runtime_sha256'])
             and hashlib.sha256(runtime_wire).hexdigest() == data['runtime_sha256'],
             'Runtime receipt differs from release descriptor')
@@ -194,19 +194,77 @@ def plan(bundle, expected):
     require(required.issubset(source_files), 'Incomplete server source/guardian component')
     require(source_files['build/scan-guardian/scan-guardian-mac']['mode'] == 0o755,
             'Guardian must remain an executable regular file')
-    verify(Path(data['runtime_root']), staged_runtime, uid)
-    verify(Path(data['source_root']), source_files, uid, readonly=True)
-    guardian_wire = read_file(data['source_root'], 'build/scan-guardian/receipt.json', uid, 4096)
+    total = sum(r.get('bytes', 0) for files in (runtime_files, source_files) for r in files.values())
+    require(total <= MAX_BYTES, 'Combined release exceeds storage budget')
+    return runtime, runtime_files, staged_runtime, source_files, total
+
+
+def verify_guardian(source, source_files, uid):
+    guardian_wire = read_file(source, 'build/scan-guardian/receipt.json', uid, 4096)
     guardian = decode(guardian_wire, 4096)
     require(guardian.get('producer') == 'tsfp-scan-guardian-v1' and guardian.get('schema') == 1
             and guardian.get('source_sha256') == source_files['tools/mods/scan_guardian_mac.c']['sha256']
             and guardian.get('sha256') == source_files['build/scan-guardian/scan-guardian-mac']['sha256'],
             'Guardian source/image receipt mismatch')
-    total = sum(r.get('bytes', 0) for files in (runtime_files, source_files) for r in files.values())
-    require(total <= MAX_BYTES, 'Combined release exceeds storage budget')
+
+
+def plan(bundle, expected):
+    require(SHA.fullmatch(expected or ''), 'An explicit descriptor SHA256 is required')
+    bundle = Path(os.path.abspath(bundle))
+    uid = bundle.lstat().st_uid
+    wire = read_file(bundle.parent, bundle.name, uid, 512 * 1024)
+    require(hashlib.sha256(wire).hexdigest() == expected, 'Release descriptor digest mismatch')
+    data = descriptor(wire)
+    require(data['owner_uid'] == uid, 'Release descriptor belongs to another operator')
+    runtime_wire = read_file(data['runtime_root'], 'runtime.json', uid, 4 * 1024**2)
+    runtime, runtime_files, staged_runtime, source_files, total = component_records(data, runtime_wire)
+    verify(Path(data['runtime_root']), staged_runtime, uid)
+    verify(Path(data['source_root']), source_files, uid, readonly=True)
+    verify_guardian(data['source_root'], source_files, uid)
     return dict(descriptor=data, descriptor_wire=wire, identity=expected, uid=uid, runtime=runtime,
                 components=[('runtime', Path(data['runtime_root']), runtime_files),
                             ('source', Path(data['source_root']), source_files)], bytes=total)
+
+
+def installed(expected, uid):
+    """Verify only a protected installed tree; never follow staging input roots.
+
+    The root caller supplies the already verified locked service UID. This
+    attests code/receipts, not active jobs, private initialization or readiness.
+    """
+    require(isinstance(expected, str) and SHA.fullmatch(expected)
+            and type(uid) is int and uid >= 600, 'Invalid installed release identity')
+    root = INSTALLED_ROOT/'releases'/expected
+    wire = read_file(root, 'release.json', ROOT_UID, 512 * 1024)
+    require(hashlib.sha256(wire).hexdigest() == expected, 'Installed release descriptor digest mismatch')
+    data = descriptor(wire)
+    runtime_wire = read_file(root/'runtime', 'runtime.json', ROOT_UID, 4 * 1024**2)
+    runtime, runtime_files, _, source_files, total = component_records(data, runtime_wire)
+    for prefix, records in (('runtime',runtime_files), ('source',source_files)):
+        verify(root/prefix, records, ROOT_UID, directory_mode=0o755)
+    verify_guardian(root/'source', source_files, ROOT_UID)
+    expected_files = {'release.json','intent.json','installation.json'} | {
+        prefix+'/'+name for prefix,records in (('runtime',runtime_files),('source',source_files)) for name in records}
+    require(inventory(root, ROOT_UID, 0o755) == expected_files, 'Installed release contains unknown or missing files')
+    receipts = {}
+    for name, maximum in (('release.json',512*1024), ('intent.json',8192), ('installation.json',8192)):
+        payload = read_file(root, name, ROOT_UID, maximum)
+        require(stat.S_IMODE((root/name).lstat().st_mode) == 0o600, 'Installed receipt mode changed')
+        receipts[name] = decode(payload, maximum)
+    intent, marker = receipts['intent.json'], receipts['installation.json']
+    common = dict(schema=1,descriptor_sha256=expected,source_revision=data['source_revision'],uid=uid,services_started=False)
+    require(isinstance(intent,dict) and set(intent) == {*common,'phase'}
+            and all(type(intent.get(k)) is type(v) and intent[k] == v for k,v in common.items())
+            and intent['phase'] == 'preparing', 'Installed release intent differs')
+    require(isinstance(marker,dict) and set(marker) == {*common,'phase','producer','release','smoke','public_endpoint_started'}
+            and all(type(marker.get(k)) is type(v) and marker[k] == v for k,v in common.items())
+            and marker['phase'] == 'complete' and marker['producer'] == 'tsfp-installed-host-v1'
+            and marker['release'] == str(root) and marker['public_endpoint_started'] is False
+            and isinstance(marker['smoke'],dict), 'Installed release is incomplete or foreign')
+    require(read_file(root,'release.json',ROOT_UID,512*1024) == wire, 'Installed descriptor changed during verification')
+    python = root/'runtime'/runtime['python']
+    require(python == python.resolve(strict=True), 'Installed Python entry point must be canonical')
+    return dict(root=root,identity=expected,descriptor=data,runtime=runtime,python=python,uid=uid,bytes=total)
 
 
 def copy_component(source, target, files, uid, created_directory):

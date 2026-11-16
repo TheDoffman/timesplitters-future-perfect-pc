@@ -1,5 +1,5 @@
 Game link/lease checks: mod-scripting.md; backups/SDK: [details](build-test-details.md).
-Migration/cutover stop recovery: test_host_cutover*.py; build-test-details.md.
+Installed closure/cutover: test_host_release.py, test_host_cutover*.py.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

@@ -100,6 +100,29 @@ stop services, change the backup binding or activate a release. The root
 coordinator producing and validating that admission remains to be implemented;
 this component must not be used as a standalone live upgrade procedure.
 
+`host_release.installed(identity, uid)` verifies the protected installed code
+tree independently of the operator's former staging directories. It derives
+source/runtime inventories from the descriptor and bound runtime receipt, checks
+all bytes/modes/links/directories, the guardian source/image receipt, exact tree
+inventory and complete installation/intent receipts bound to revision/UID/path.
+It never follows the descriptor's `source_root` or `runtime_root` staging paths
+and never reads locked repository/configuration/signing data. Receipt identity
+and boolean fields are typed; unknown artifacts, mismatched receipts or escaping
+runtime links are preserved and refused. The existing staging-plan verifier uses
+the same descriptor/component contract. File reads use nonblocking nofollow
+descriptors so special files are rejected without waiting on a FIFO.
+
+`upgrade-installed-host-mac.py` is the upgrade entry point's read-only inspection
+phase. With no arguments it returns a plan without installed/private I/O.
+`--inspect --from-release <exact-sha>` requires Darwin/root, installed Python
+`-I -S -B`, the immutable current entry-point path and verified locked account.
+It verifies both installed closures and requires their public origin/root pin to
+match. New pending-public-acceptance status is allowed; changing authority is
+refused. The resulting report proves installed code/profile compatibility only.
+It does not stop jobs, create a journal, suspend routing, force a backup, migrate
+private state or activate the candidate. There is no apply action yet, and no
+current production ceremony invokes this new entry point.
+
 `mod_host_cutover.py` implements job/process attestation for that
 coordinator. Its `job_files` checks twenty generated/boot plists against the
 immutable factory bytes, requiring root ownership, single-link regular files,
