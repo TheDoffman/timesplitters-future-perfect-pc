@@ -11163,15 +11163,17 @@ GCC guard indentation was corrected. This does not activate scripts or change
 gameplay yet. Separate OS-confined worker supervision, real guest API hooks,
 multiplayer/save separation and live custom-mode game acceptance are required. See STATUS and mod-gameplay-scripting.md; full goal remains incomplete.
 
-Windows creation-time script job admission (base68522e3f): **In progress**.
+Windows creation-time script job admission (source2d207818): **Verified for named process checks**.
 The Windows Process adapter now supplies JOB_LIST to CreateProcessW and verifies
 the exact job before resume, closing the suspended-child create/assign gap.
 Windows33 process/resource cases pass/2 host skips, including abrupt broker death
 at the suspended boundary. Shared policy/limits and Mac/Linux adapters are
 unchanged: job-list assignment is a Windows kernel API; Mac uses its existing
 guardian and Linux its existing parent-death fence. No duplicated Mac feature or
-platform exception is required. Shared-header/other-host and production no-test
-build checks follow; this is containment work, not completed orphan recovery.
+platform exception is required. Actual same-source Mac32/3 skips and Linux31/4
+skips process/resource checks pass. Windows33/2 skips and production no-test build
+pass, including probe-symbol exclusion with a same-source test positive control.
+This is containment work, not completed orphan recovery or final game acceptance.
 
 Native script process isolation (base b4043614): **Awaiting validation** on Mac/Linux.
 Shared Process interface, bounded batch diagnostic runner and worker self-sealing

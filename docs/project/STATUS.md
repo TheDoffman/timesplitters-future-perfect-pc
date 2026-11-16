@@ -5,8 +5,13 @@ thread. This closes the earlier create/assign orphan interval without changing
 LPAC, explicit stdio, mitigations, process count or memory budgets. A test-only
 probe pauses at that exact boundary, records kernel job membership and verifies
 child termination after abrupt broker death before resume. Windows selected
-process/resource checks pass33/2 host skips; no-test production and Mac/Linux
-checks follow. Cache/profile recovery and final game/release acceptance remain open.
+process/resource checks at2d207818 pass33/2 host skips35.59s, Mac32/3 skips18.46s
+and Linux31/4 skips24.72s. The Windows production no-test build also passes with
+BUILD-worker.json testing:false. dumpbin verifies no test-probe symbol in that
+library and its presence in the same-revision testing library (positive control).
+Proof: build/mod-job-production-2d207818/probe-exclusion-proof.json; ignored logs
+job-at-creation-{windows-final,production-windows}.txt. Cache/profile recovery and
+final game/release acceptance remain open.
 API rationale: https://devblogs.microsoft.com/oldnewthing/20230209-00/?p=107812/
 
 Private mod cache recovery foundation (2026-11-16, not a completed reaper):

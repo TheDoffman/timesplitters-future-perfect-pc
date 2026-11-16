@@ -5,7 +5,9 @@ LPAC/stdio/mitigations and the non-inherited kill-on-close job. The test-only
 TSFP_MOD_PROCESS_TESTING callback pauses after membership validation, before
 resume; the real abrupt-parent test checks kernel membership then kills/reaps the
 suspended child through job lifetime. Production builds exclude the callback/API.
-Windows process/resources33 pass/2 skips; production and other-host checks follow.
+At2d207818 Windows33/2 skips35.59s, Mac32/3 skips18.46s and Linux31/4 skips24.72s
+process/resource checks pass. Windows production no-test build passes; dumpbin
+finds no probe symbol, with a same-revision testing library as positive control.
 This does not implement cache/profile reaping. See STATUS for exact source.
 
 Private cache ownership foundation: new PrivateDirectory instances in mod_saves.cpp
