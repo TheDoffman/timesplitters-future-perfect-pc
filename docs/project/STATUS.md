@@ -1,3 +1,41 @@
+Selective routing contract (2026-11-16; source09917a98; not deployed):
+mod_host_routing parses the exact workshop8443 HTTPS proxy and distinguishes
+public/private/absent states. It refuses partial/foreign/aliased managed routes,
+foreground sessions and public443 exposure. Only hashes of unrelated routing
+enter reports; known empty/omitted/null maps normalize identically. A transition
+requires the saved public baseline and a durable intent callback before one
+fixed action. It verifies actual post-state/unrelated fingerprints after success,
+nonzero result or timeout; no retry/reset/default443. Explicit resume handles
+already-observed desired states. Restore must match the original public baseline.
+The operator-writable app is always spawned after dropping to the established
+operator UID/actual primary GID, with empty extra groups and a clean environment;
+changing operator ownership requires separate migration. Preflight now reads that
+status and includes full/unrelated routing hashes in its digest. No mutation CLI,
+root routing journal or restore-admission authority is enabled yet.
+
+Focused routing/child/CI-scope tests pass Windows211 with7 POSIX skips0.44s,
+actual Mac218 pass0.40s and Linux218 pass0.39s. Cases cover route shape/type/origin,
+private443 preservation, timeout/nonzero with actual outcome, unchanged/foreign
+state, intent failure, explicit resume and fixed non-root app command credentials.
+All mutations/credential dropping are simulated; none changed production routing.
+Actual UID501 Mac status through the committed parser succeeds with public8443,
+full fingerprint7b6ddeb0fcc458c41df290c8906dfe556f1467b77b75aaf4dd0fd391131d9a26
+and unrelated fingerprintf4b7e8b3cf3020edcb384e26087a32a04af1c69287012a4d0d252c9d8704390a.
+The earlier58f73772 unrelated hash retained an empty AllowFunnel map; the new
+contract normalizes that empty map, not an actual routing change. ReceiptSHA256
+d83eb33149e91b08d70c54c780e09d444fc66ab758cd4db99e40f6a5e7fc2d8a;
+logs workshop-routing-actual.txt and receipt JSON are copied under Windows logs.
+
+Prior96696833 CI43977106528 now terminates23 successful jobs/2 intentional skips,
+including Linux Vulkan/full mod cases, all runtime/patch selections, all3 launcher
+packages, combined artifact verification and aggregate PR validation. This confirms
+the isolated-fixture repair at that revision; it does not cover the newer routing
+source or prove production upgrade admission. Live601/7be/frozen14d, pending backup
+and owner-sign-in ceremonies and both routing ports remain unchanged. Next gates
+are durable routing intent/recovery integration before shutdown, fresh backup/
+root admission, monitor/config switch, private scanner/readiness/restarts and
+public restoration. The whole mod-system objective remains incomplete.
+
 Isolated installed-upgrade preflight (2026-11-16; sourcef56d437e, fixtures8cd1edee/1e6e7bdf):
 The read-only installed upgrade entry now accepts --preflight with exact base and
 backup descriptors. It verifies both host closures, public authority, the sealed
