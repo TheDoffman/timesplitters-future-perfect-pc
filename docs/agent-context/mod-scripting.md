@@ -1,3 +1,14 @@
+Process identity queries (mod_process_identity.hpp/.cpp) distinguish alive/exited/
+unknown using native PID+creation stamps: Windows FILETIME (including borrowed
+owned handles), Linux bounded proc/stat field22, Darwin BSD start seconds/useconds.
+Foreign/invalid schemes and query/access/format failures are unknown. PID reuse
+with a different stamp proves only the recorded task exited; no process is killed.
+Missing POSIX records require a signal0 ESRCH existence check; zombies are exited.
+Native test_process_identity covers held/exited tasks, malformed/foreign records,
+Windows borrowed handles and Linux unusual comm/zombies; native CI selects it.
+This is a read-only primitive: cache journal custody, owned-child snapshot capture
+and actual removal remain separate work. Windows/other-host checks follow.
+
 Windows job admission now uses PROC_THREAD_ATTRIBUTE_JOB_LIST in CreateProcessW;
 IsProcessInJob verifies the exact job before ResumeThread. This closes the
 create-suspended/assign-later orphan interval. Five creation attributes preserve

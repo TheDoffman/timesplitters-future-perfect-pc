@@ -46,6 +46,7 @@
     "tests/mods/test_native_trust_fixtures.py",
     "tests/mods/test_script_worker.py",
     "tests/mods/test_script_process.py",
+    "tests/mods/test_process_identity.py",
     "tests/mods/test_script_session.py",
     "tests/mods/test_script_images.py",
     "tests/mods/test_runtime_images.py",

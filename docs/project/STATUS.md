@@ -1,3 +1,13 @@
+Native recovery identity primitive (2026-11-16, no cleanup yet):
+Shared typed queries distinguish a live native creation stamp, exited original
+task/PID reuse and uncertain evidence. Windows supports borrowed owned handles;
+Linux reads a bounded proc/stat record with parentheses/newline-safe comm parsing;
+Mac uses BSD creation seconds/useconds. Invalid/foreign records, denied queries
+and malformed evidence fail to unknown. POSIX missing-task results are checked
+with signal0; zombies count as exited. These operations never terminate tasks.
+New native process-identity tests and CI scope registration are present; named
+host results follow. No cache journal is adopted and no orphan cleanup is enabled.
+
 Windows script-worker creation-time containment (2026-11-16):
 The native adapter assigns its existing non-inherited kill-on-close job inside
 CreateProcessW via JOB_LIST and verifies membership before resuming the suspended
