@@ -1,3 +1,22 @@
+WAV boundary native Mac/sanitizer acceptance (2026-11-15):
+Actual source4914e9df passes200 native WAV/scope/suite/sharding cases1.81s on the
+Mac, including the200000-mutation executable under ASan/UBSan. Final Windows
+parser selection passes38 cases1.40s. The first Mac selection had199 passes and
+one manifest-path failure because its intentionally sparse checkout omitted
+existing tests/textures files. The parser/sanitizer itself passed. Verified the
+skip-worktree entry and restored only public tracked tests (976 files/6911694B)
+through Git sparse-checkout; the complete same selection then passed without
+changing a production/test gate. A redundant per-blob Git size query was cancelled
+as an owned process group after identifying lazy fetch overhead; no unrelated
+process or primary checkout was touched. No game assets were read/modified.
+
+The full prior CI43796412744 atf4713470 is now SUCCESS, providing all-platform
+launcher/runtime/package evidence for portable recovery and session-vault source.
+New WAV/parser and explicit native test-list changes still need their own CI.
+Public audio activation/replacement remains off. Installed601/private service
+repair and public routing remain unchanged; the same native repair question
+awaits user authentication. Full product completion remains unproved.
+
 Shared custom WAV input boundary (2026-11-15):
 mod_wave.c/.h adds a no-allocation/no-IO parser for bounded immutable PCM16
 RIFF/WAVE snapshots: exact sizes, unique fmt-before-data, mono/stereo8..48kHz,

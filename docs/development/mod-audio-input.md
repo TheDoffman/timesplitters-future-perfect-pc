@@ -58,6 +58,7 @@ duration budgets and zeroed failed output. `native_wave_fuzz.c` runs200000
 deterministic mutations against misaligned source storage and checks every result.
 `TSFP_MOD_SANITIZE=1` adds ASan/UBSan to that standalone mutation executable on
 Clang/GCC; no sanitizer runtime is injected into Python or production helpers.
-Windows38 cases pass; Mac/Linux and sanitized native checks remain unverified
-until their results are recorded in STATUS. This proves an input parser, not
+Windows38 cases pass; the actual Mac also passes the selected200 parser/scope/
+suite/shard checks with the standalone mutation harness under ASan/UBSan. Linux
+remains unverified until CI records its new source results. This proves an input parser, not
 asset replacement, sound quality, decoder coverage or a released audio SDK.
