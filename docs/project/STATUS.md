@@ -10,8 +10,9 @@ Linux10.97s. Expanded Windows identity/process/scope checks pass167/3 skips35.55
 including actual query denial on a new fixture process and a creation stamp read
 from the suspended confined child's owned handle before resume/parent-kill.
 Only the fixture kernel-object ACL changes; no account or file ACL is modified.
-Expanded other-host checks follow. No cache journal is adopted and no orphan
-cleanup is enabled. Initial Windows harness errors (missing NOMINMAX; text-mode
+Expanded b4ced75f Mac164/6 skips17.18s and Linux165/5 skips23.22s identity/process/
+scope checks also pass. No cache journal is adopted and no orphan cleanup is
+enabled. Initial Windows harness errors (missing NOMINMAX; text-mode
 readiness CRLF) were corrected before these successful checks.
 
 Windows script-worker creation-time containment (2026-11-16):

@@ -11,7 +11,8 @@ on Mac7.94s and158/1 skip on Linux10.97s. Expanded Windows identity/process/scop
 checks pass167/3 skips35.55s, including a real suspended LPAC child stamp before
 resume and a live owned fixture whose query ACL is denied (unknown, not dead).
 This is a read-only primitive: cache journal custody, owned-child snapshot capture
-and actual removal remain separate work. Expanded other-host checks follow.
+and actual removal remain separate work. Expanded b4ced75f Mac164/6 skips17.18s
+and Linux165/5 skips23.22s identity/process/scope checks also pass.
 
 Windows job admission now uses PROC_THREAD_ATTRIBUTE_JOB_LIST in CreateProcessW;
 IsProcessInJob verifies the exact job before ResumeThread. This closes the

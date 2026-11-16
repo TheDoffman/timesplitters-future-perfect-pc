@@ -11163,12 +11163,14 @@ GCC guard indentation was corrected. This does not activate scripts or change
 gameplay yet. Separate OS-confined worker supervision, real guest API hooks,
 multiplayer/save separation and live custom-mode game acceptance are required. See STATUS and mod-gameplay-scripting.md; full goal remains incomplete.
 
-Native process identity for crash recovery (base15676c33): **In progress**.
+Native process identity for crash recovery (source9fe57a16/controls b4ced75f): **Verified for named identity queries**.
 One shared alive/exited/unknown policy has thin Windows creation-FILETIME,
 Linux proc start-tick and Mac BSD creation-time adapters. Native OS query failure
 preserves uncertain state; a matching PID with another creation stamp identifies
 reuse. The new tests use actual held/exited tasks and Linux zombie/unusual-name
-controls; host results follow. This does not establish cache-journal ownership,
+controls. Expanded Windows167/3 skips, Mac164/6 and Linux165/5 identity/process/
+scope checks pass, including actual Windows query denial and suspended-child
+owned-handle capture. This does not establish cache-journal ownership,
 capture all child/guardian identities, remove a directory/profile or finish crash
 recovery. No platform exception or duplicate Mac feature is introduced.
 
