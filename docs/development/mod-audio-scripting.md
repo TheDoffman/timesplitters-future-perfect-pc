@@ -100,8 +100,11 @@ writers carry the native value forward and default an absent field to0. Windows
 packages declare1 for the compiled implementation. The launcher still requires
 exact integer1; missing, boolean, string or future values cannot enable audio.
 Mac real-package-writer fixtures cover1/0/absent, alongside the existing strict
-launcher checks. Windows actual launcher Install/Enable/StartInfo stages the
-generated audio ZIP into an isolated installation and the pinned game executes
-all controls, accepts backend PCM, exits0 and preserves originals. Mac/Linux
-launcher handoff and release publication remain separate; this source change
-does not modify existing public downloads.
+launcher checks. Actual Windows/Mac/Linux launcher Install/Enable/StartInfo stages
+the generated audio ZIP into isolated installations; pinned games execute all
+controls, accept backend PCM, exit0 and preserve originals. Source/audio capsules
+are compared with independently encoded expectations and staged WAV hashes.
+The Mac/Linux checks use current audio1 native receipts, verified retained package
+GPU/media files and current helpers. STATUS retains exact scope and limitations.
+Public release publication remains separate; this source change does not modify
+existing public downloads.

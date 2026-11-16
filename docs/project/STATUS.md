@@ -14,8 +14,29 @@ slots273/274, exits0 and preserves originals/fixture. Final output counters are
 clean. The installed executable is a hardlink to the pinned build, avoiding a
 second physical copy; only six owned inactive test disk images are recycled.
 An earlier setup stopped before the game because its private C# driver was not
-compiled; that partial fixture is retained. Updated Mac/Linux receipts and their
-launcher audio handoff remain next; this is not a public release claim.
+compiled; that partial fixture is retained.
+
+At clean dc478459, both normal native game builds pass again, now with audio1
+receipts. Actual native launcher builds pass114 shared UI groups on Mac and115
+on Linux, plus the real creator backend and normal platform regressions. Current
+native launchers then Install/Enable/GameSettings.StartInfo the same generated
+audio ZIP, using exact independent source/audio capsule comparisons and hashed
+staged WAVs. Real games pass23 Mac/24 Linux voice samples,282/278 six-bot match
+samples and470/481 output-health snapshots. Both exit0, preserve ordinary saves
+against the canonical fixture and dispose only owned inactive namespace disks.
+Mac final output counters are clean; Linux records132 retryable full-game queue
+refusals and no other output failure/refusal counters. SDL hardware latency is
+unavailable; lifetime health snapshots are valid. No physical listening claim.
+
+Native game hashes: Mac9f2d9795eb7b0c36fdf10b0d4f59e61941dbd254f3a956c49eb6212ddaf6bec0;
+Linuxfd5a07668335ca597f67a85350ad1b4c8920a945def98fe8208ce493a8f96bc4.
+Private installed apps hardlink the game and verified retained package GPU/media
+files, copy the current sealed helpers, and use isolated display/data settings.
+This proves the real launcher audio handoff and game path, not a newly published
+full package. Mac's initial setup hit the case-insensitive Saves/saves alias before
+launch; a fresh fixture uses samefile validation. The earlier MoltenVK signal11
+remains an open stability limitation despite subsequent passing audio runs.
+All3 launcher audio flows now pass; public release/SDK/host acceptance remains.
 
 Lua sound addon integration (2026-11-16):
 API1 scripts may explicitly declare audio_api=1 and use bounded game.audio play,

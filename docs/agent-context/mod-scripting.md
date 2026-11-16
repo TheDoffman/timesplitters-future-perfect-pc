@@ -2,7 +2,7 @@ Lua audio_api=1 explicitly enables bounded game.audio controls. New batches use
 reply v2 fields; legacy batches keep v1. Parent resource callbacks are retained
 through manager/match and checked before model commit. Owner-thread dispatch
 precedes stock score/end; stop-only after End/Stop. New builds declare audio1;
-public release remains pending. Actual fdab audio games pass all3; STATUS
+public release remains pending. Actual launcher audio games pass all3; STATUS
 retains Mac MoltenVK crash and Linux backpressure limits. SDK/wire/test contract: ../development/mod-audio-scripting.md.
 
 Audio boot: mod_bootstrap optionally loads a source-owner-bound audio capsule

@@ -87,5 +87,6 @@ these controls on the owning simulation thread. Resource validation precedes
 model commit; sound dispatch precedes stock score/end transitions. Actual
 generated-template games now pass on Windows/Mac/Linux with accepted PCM and
 pause/resume/pitch/gain. See STATUS and mod-audio-scripting.md for the exact
-scope, Mac crash limitation and Linux backpressure. Launcher-to-game acceptance
-and production capability activation remain pending.
+scope, Mac crash limitation and Linux backpressure. Actual launcher-to-game audio
+also passes all3; new build receipts advertise audio1. Public release remains
+pending.
