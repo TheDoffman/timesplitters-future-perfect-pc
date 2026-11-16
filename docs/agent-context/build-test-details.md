@@ -1722,3 +1722,10 @@ checks run on all three hosts and reject wrong identity length/case/digits,
 arbitrary executables/scripts/nested names and an uploaded mod carrying a helper.
 The actual package --verify-game-package gate remains required after rebuilding
 the native launchers; the initially failed archives are preserved for diagnosis.
+
+Native module capture: ../development/native-crash-images.md. The existing native
+crash suite now faults in a library loaded after reporter startup, including a
+Unicode/space path. Portable registry boundaries run inside test_crash_capture.py;
+the Linux workflow explicitly selects that cross-host test as well. Windows
+minidump behavior remains unchanged. Native Mac/Linux tests and real-game capture
+are separate from the initial passing Windows registry check.

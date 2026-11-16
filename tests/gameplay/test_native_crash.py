@@ -42,3 +42,17 @@ def test_refuses_linked_report_root(client,tmp_path):
     outside=tmp_path/'outside';outside.mkdir();link=tmp_path/'reports';link.symlink_to(outside,target_is_directory=True)
     result=subprocess.run([str(client),'crash'],env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(link)),timeout=15)
     assert result.returncode==FATAL_STATUS and not list(outside.iterdir())
+
+
+def test_library_loaded_after_startup_is_the_fault_image(client,tmp_path):
+    directory=tmp_path/'shared runtime Ω';directory.mkdir()
+    library=directory/('test-runtime.dylib' if sys.platform=='darwin' else 'test-runtime.so')
+    flags=['-dynamiclib'] if sys.platform=='darwin' else ['-shared','-fPIC']
+    subprocess.run(['clang','-g','-O0',*flags,str(ROOT/'tests/gameplay/native_crash_library.c'),'-o',str(library)],check=True)
+    if sys.platform=='darwin':subprocess.run(['dsymutil',str(library)],check=True)
+    result=subprocess.run([str(client),'crash-library',str(library)],env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(tmp_path/'reports')),capture_output=True,text=True,timeout=15)
+    assert result.returncode==(133 if sys.platform=='darwin' else 132),result.stderr
+    reports=list((tmp_path/'reports').glob('*/report.json'));assert len(reports)==1
+    stack=(reports[0].parent/'native-stack.txt').read_text()
+    assert 'PC image: '+str(library) in stack and 'tsfp_native_library_fault' in stack,stack
+    assert len(stack)<=262144

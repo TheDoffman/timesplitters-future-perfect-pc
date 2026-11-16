@@ -14,6 +14,18 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_native_module_registry(tmp_path):
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path/('modules.exe' if os.name=='nt' else 'modules')
+    source=ROOT/'tests/diagnostics/native_modules.c'
+    flags=([compiler,'/nologo','/std:c11','/W4','/WX','/I'+str(ROOT/'src'),str(source),'/Fe:'+str(exe)]
+           if os.name=='nt' else [compiler,'-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'src'),str(source),'-o',str(exe)])
+    built=subprocess.run(flags,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert built.returncode==0,built.stdout+built.stderr
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=5)
+    assert result.returncode==0,result.stdout+result.stderr
+
+
 def wait_for_armed_health(path, deadline):
     """Poll through Windows rename sharing conflicts without extending the bound."""
     while time.monotonic() < deadline:

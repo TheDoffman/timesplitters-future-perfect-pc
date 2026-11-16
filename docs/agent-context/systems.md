@@ -1,3 +1,4 @@
+Crash image maps: [contract](../development/native-crash-images.md).
 Runtime resources/preflight: [contracts](mod-scripting.md).
 
 Preflight also rejects restored flags on a previously unsupported fresh epoch.

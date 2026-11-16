@@ -1726,6 +1726,16 @@ for this Windows contention policy; existing entry acceptance remains separate.
 
 ### MAC-044 - Game crash capture and launcher reports
 
+- **Image-location follow-up (2026-11-16, source checkpoint):** The public mod
+  rollback test captured a Mac menu signal11 without an image map; a retry passed,
+  but the cause is undetermined. Shared `pc_native_modules.h` now publishes bounded
+  executable ranges; Darwin uses dyld notifications and the Linux reporter reads
+  proc maps/ELF load bias. `crash_posix.c` resolves PC against its recorded image,
+  keeps LR image context and refuses guessed main-image attribution. Windows
+  already has module information in its minidump. Portable boundaries pass on
+  Windows; late-loaded-library crash, native Mac/Linux and game acceptance remain
+  pending. See [image contract](../development/native-crash-images.md) and STATUS.
+
 - **Status:** Awaiting validation
 - **Launcher release preparation:** v1.2.16 packages the Windows report UI and
   unfinished-session recovery from merged PR #160. Native crash/hang capture

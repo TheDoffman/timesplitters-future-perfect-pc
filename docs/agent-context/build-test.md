@@ -1,4 +1,4 @@
-Runtime companions/service/audio/OS checks: [details](build-test-details.md).
+Runtime/module/service/audio/OS checks: [details](build-test-details.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

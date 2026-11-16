@@ -15,6 +15,7 @@
 #include "../diagnostics/pc_hang_policy.h"
 #include "../diagnostics/pc_breadcrumbs.h"
 #include "../diagnostics/pc_capture_health.h"
+#include "../diagnostics/pc_native_modules.h"
 #ifdef __APPLE__
 #include <CommonCrypto/CommonDigest.h>
 #ifndef TSFP_CRASH_TEST
@@ -24,9 +25,11 @@
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 #include <mach-o/dyld.h>
+#include <mach-o/loader.h>
 #else
 #include <openssl/sha.h>
 #include <sys/uio.h>
+#include <elf.h>
 #define CC_SHA256_DIGEST_LENGTH SHA256_DIGEST_LENGTH
 #define CC_SHA256_CTX SHA256_CTX
 #define CC_SHA256_Init SHA256_Init
@@ -58,6 +61,9 @@ typedef struct Capture {
     atomic_int entered,done,armed,focused,inhibited,stopping;
     atomic_ullong frames;
     PcBreadcrumbs breadcrumbs,models,allocations; uint64_t started_ms;
+#ifdef __APPLE__
+    PcNativeModules modules;
+#endif
     int pid,signal;uint32_t guest[8];uint64_t registers[31],pc,sp,address,base;
     unsigned frame_timeout,startup_timeout,extended;
     atomic_ullong guest_base;
@@ -69,6 +75,69 @@ static int notify_fd=-1;
 static pid_t helper;
 static char alternate_stack[65536];
 static uint64_t ticks(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return (uint64_t)t.tv_sec*1000+t.tv_nsec/1000000;}
+#ifdef __APPLE__
+static int slid_address(uint64_t address,intptr_t slide,uint64_t *out){
+    if(slide>=0){if(address>UINT64_MAX-(uint64_t)slide)return 0;*out=address+(uint64_t)slide;}
+    else {uint64_t delta=(uint64_t)(-(slide+1))+1;if(address<delta)return 0;*out=address-delta;}
+    return 1;
+}
+static void image_added(const struct mach_header *header,intptr_t slide){
+    Capture *c=capture;if(!c || atomic_load(&c->entered) || atomic_load(&c->stopping) || header->magic!=MH_MAGIC_64)return;
+    const struct mach_header_64 *h=(const struct mach_header_64 *)header;
+    if(h->sizeofcmds>1024*1024 || h->ncmds>4096)return;
+    const unsigned char *at=(const unsigned char *)(h+1),*end=at+h->sizeofcmds;
+    Dl_info info;if(!dladdr(header,&info) || !info.dli_fname)return;
+    for(uint32_t i=0;i<h->ncmds;i++){
+        if((size_t)(end-at)<sizeof(struct load_command))return;
+        const struct load_command *cmd=(const struct load_command *)at;
+        if(cmd->cmdsize<sizeof *cmd || cmd->cmdsize>(size_t)(end-at))return;
+        if(cmd->cmd==LC_SEGMENT_64 && cmd->cmdsize>=sizeof(struct segment_command_64)){
+            const struct segment_command_64 *s=(const struct segment_command_64 *)at;uint64_t begin,finish;
+            if((s->initprot&VM_PROT_EXECUTE) && s->vmsize && s->vmaddr<=UINT64_MAX-s->vmsize &&
+                    slid_address(s->vmaddr,slide,&begin) && slid_address(s->vmaddr+s->vmsize,slide,&finish)){
+                pc_native_module_add(&c->modules,(uintptr_t)header,begin,finish,0,info.dli_fname);
+            }
+        }
+        at+=cmd->cmdsize;
+    }
+}
+static void image_removed(const struct mach_header *header,intptr_t slide){
+    (void)slide;if(capture)pc_native_module_remove(&capture->modules,(uintptr_t)header);
+}
+#else
+static int elf_bias(const char *path,uint64_t start,uint64_t offset,uint64_t *bias){
+    int fd=open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW);if(fd<0)return 0;
+    Elf64_Ehdr h;struct stat st;int result=0;
+    if(fstat(fd,&st) || !S_ISREG(st.st_mode) || pread(fd,&h,sizeof h,0)!=sizeof h ||
+       memcmp(h.e_ident,ELFMAG,SELFMAG) || h.e_ident[EI_CLASS]!=ELFCLASS64 || h.e_ident[EI_DATA]!=ELFDATA2LSB ||
+       (h.e_type!=ET_EXEC && h.e_type!=ET_DYN) || h.e_phentsize!=sizeof(Elf64_Phdr) || !h.e_phnum || h.e_phnum>1024 ||
+       h.e_phoff>(uint64_t)st.st_size || (uint64_t)h.e_phnum*sizeof(Elf64_Phdr)>(uint64_t)st.st_size-h.e_phoff)goto done;
+    long page=sysconf(_SC_PAGESIZE);if(page<=0)goto done;
+    for(unsigned i=0;i<h.e_phnum;i++){
+        Elf64_Phdr p;if(pread(fd,&p,sizeof p,(off_t)(h.e_phoff+i*sizeof p))!=sizeof p)break;
+        if(p.p_type!=PT_LOAD || !(p.p_flags&PF_X) || !p.p_filesz || p.p_offset>UINT64_MAX-p.p_filesz)continue;
+        uint64_t low=p.p_offset-(p.p_offset%(uint64_t)page),end=p.p_offset+p.p_filesz,preferred;
+        if(offset<low || offset>=end)continue;
+        if(offset<=p.p_offset){uint64_t delta=p.p_offset-offset;if(p.p_vaddr<delta)continue;preferred=p.p_vaddr-delta;}
+        else {uint64_t delta=offset-p.p_offset;if(p.p_vaddr>UINT64_MAX-delta)continue;preferred=p.p_vaddr+delta;}
+        if(start>=preferred){*bias=start-preferred;result=1;break;}
+    }
+done:close(fd);return result;
+}
+static void linux_images(Capture *c,PcNativeModules *modules){
+    char path[64];snprintf(path,sizeof path,"/proc/%d/maps",c->pid);FILE *f=fopen(path,"r");
+    if(!f){pc_crumb_store(&modules->truncated,1);return;}
+    char line[PATH_MAX+256];
+    while(fgets(line,sizeof line,f)){
+        unsigned long long begin,end,offset;char mode[5];int used=0;
+        if(sscanf(line,"%llx-%llx %4s %llx %*s %*s %n",&begin,&end,mode,&offset,&used)!=4 || !strchr(mode,'x') || !used)continue;
+        char *name=line+used;name[strcspn(name,"\n")]=0;uint64_t bias;
+        if(*name!='/' || strchr(name,'\\') || strstr(name," (deleted)") || !elf_bias(name,begin,offset,&bias))continue;
+        pc_native_module_add(modules,begin,begin,end,bias,name);
+    }
+    fclose(f);
+}
+#endif
 static int foreground(Capture *c){
 #if defined(TSFP_CRASH_TEST) || defined(__linux__)
     return atomic_load(&c->focused);
@@ -117,6 +186,36 @@ static void tool(char *const argv[],int output){
     pid_t child=fork();if(child==0){struct rlimit limit={262144,262144};setrlimit(RLIMIT_FSIZE,&limit);dup2(output,STDOUT_FILENO);dup2(output,STDERR_FILENO);execv(argv[0],argv);_exit(127);}
     if(child<0)return;uint64_t end=ticks()+5000;int status;
     while(waitpid(child,&status,WNOHANG)==0){if(ticks()>=end){kill(child,SIGKILL);waitpid(child,&status,0);break;}usleep(20000);}
+}
+static void image_map(FILE *out,PcNativeModules *modules){
+    if(!modules){fputs("Executable image mappings unavailable.\n",out);return;}
+    fprintf(out,"Known executable image mappings: reserved=%u capacity=%u incomplete=%lld\n",pc_native_module_count(modules),PC_NATIVE_MODULE_COUNT,(long long)pc_crumb_load(&modules->truncated));
+    unsigned bytes=0;
+    for(unsigned i=0;i<pc_native_module_count(modules);i++){
+        PcNativeImage image;if(!pc_native_module_view(modules,i,&image))continue;
+        if(bytes+256>131072){fputs("Image listing bounded at 128 KiB.\n",out);break;}
+        const char *base=strrchr(image.path,'/');base=base?base+1:image.path;char name[97];unsigned n=0;
+        for(;n+1<sizeof name && base[n];n++)name[n]=((unsigned char)base[n]<32 || base[n]==127)?'?':base[n];name[n]=0;
+        int wrote=fprintf(out,"0x%llx-0x%llx base=0x%llx bias=0x%llx %s%s\n",(unsigned long long)image.begin,(unsigned long long)image.end,(unsigned long long)image.base,(unsigned long long)image.bias,name,image.path_complete?"":" [path truncated]");
+        if(wrote>0)bytes+=(unsigned)wrote;
+    }
+}
+static void image_location(FILE *out,PcNativeModules *modules,const char *label,uint64_t address,int symbolize){
+    PcNativeImage image;
+    if(!modules || !pc_native_module_find(modules,address,&image)){
+        fprintf(out,"%s image: unrecorded for 0x%llx; not attributed to the executable.\n",label,(unsigned long long)address);return;
+    }
+    fprintf(out,"%s image: %s\n%s mapping: 0x%llx-0x%llx base=0x%llx bias=0x%llx\n",label,image.path,label,(unsigned long long)image.begin,(unsigned long long)image.end,(unsigned long long)image.base,(unsigned long long)image.bias);
+    if(!symbolize || !image.path_complete || image.path[0]!='/')return;
+    char pc[24];fflush(out);
+#ifdef __APPLE__
+    char base[24];snprintf(base,sizeof base,"0x%llx",(unsigned long long)image.base);snprintf(pc,sizeof pc,"0x%llx",(unsigned long long)address);
+    char *args[]={"/usr/bin/atos","-arch","arm64","-o",image.path,"-l",base,pc,NULL};tool(args,fileno(out));
+#else
+    uint64_t relative;if(!pc_native_module_address(&image,address,&relative))return;
+    snprintf(pc,sizeof pc,"0x%llx",(unsigned long long)relative);
+    char *args[]={"/usr/bin/addr2line","-f","-C","-e",image.path,pc,NULL};tool(args,fileno(out));
+#endif
 }
 #ifdef __APPLE__
 typedef mach_port_t NativeTask;
@@ -168,16 +267,21 @@ static void report(Capture *c,int hang){
     int locked=openat(dir,"capture.lock",O_CREAT|O_EXCL|O_RDWR|O_CLOEXEC,0600);if(locked<0){close(dir);return;}flock(locked,LOCK_EX);
     guest_report(c,dir,hang);
     executable_hash(c->executable,hash);
+#ifdef __APPLE__
+    PcNativeModules *modules=&c->modules;
+#else
+    PcNativeModules *modules=calloc(1,sizeof *modules);if(modules)linux_images(c,modules);
+#endif
     FILE *out=new_file(dir,"native-stack.txt");
     if(out){
+        image_map(out,modules);
 #ifdef __APPLE__
         if(hang){char pid[20];snprintf(pid,sizeof pid,"%d",c->pid);char *args[]={"/usr/bin/sample",pid,"1","1",NULL};fflush(out);tool(args,fileno(out));}
         else {
             fprintf(out,"Native ARM64 register context\nSignal: %d\nFault address: 0x%llx\nPC: 0x%llx SP: 0x%llx Image base: 0x%llx\n",c->signal,(unsigned long long)c->address,(unsigned long long)c->pc,(unsigned long long)c->sp,(unsigned long long)c->base);
             for(int i=0;i<31;i++)fprintf(out,"x%d = 0x%016llx\n",i,(unsigned long long)c->registers[i]);
-            fprintf(out,"Xbox eax ecx edx esp ebx esi edi ebp:");for(int i=0;i<8;i++)fprintf(out," %08x",c->guest[i]);fputs("\nPC and LR symbols (matching executable/dSYM required):\n",out);fflush(out);
-            char base[24],pc[24],lr[24];snprintf(base,sizeof base,"0x%llx",(unsigned long long)c->base);snprintf(pc,sizeof pc,"0x%llx",(unsigned long long)c->pc);snprintf(lr,sizeof lr,"0x%llx",(unsigned long long)c->registers[30]);
-            char *args[]={"/usr/bin/atos","-arch","arm64","-o",c->executable,"-l",base,pc,lr,NULL};tool(args,fileno(out));
+            fprintf(out,"Xbox eax ecx edx esp ebx esi edi ebp:");for(int i=0;i<8;i++)fprintf(out," %08x",c->guest[i]);fputs("\nPC and LR locations (matching files/dSYMs required):\n",out);
+            image_location(out,modules,"PC",c->pc,1);image_location(out,modules,"LR",c->registers[30],0);fflush(out);
             char pid[20];snprintf(pid,sizeof pid,"%d",c->pid);char *sample[]={"/usr/bin/sample",pid,"1","1",NULL};tool(sample,fileno(out));
         }
 #else
@@ -185,12 +289,14 @@ static void report(Capture *c,int hang){
             c->signal,(unsigned long long)c->address,(unsigned long long)c->pc,(unsigned long long)c->sp);
         for(int i=0;i<23;i++)fprintf(out,"greg%d = 0x%016llx\n",i,(unsigned long long)c->registers[i]);
         fprintf(out,"Xbox eax ecx edx esp ebx esi edi ebp:");for(int i=0;i<8;i++)fprintf(out," %08x",c->guest[i]);fputc('\n',out);
-        if(!hang){char pc[24];snprintf(pc,sizeof pc,"0x%llx",(unsigned long long)c->pc);
-            char *args[]={"/usr/bin/addr2line","-f","-C","-e",c->executable,pc,NULL};fflush(out);tool(args,fileno(out));}
+        if(!hang)image_location(out,modules,"PC",c->pc,1);
         else fputs("Live stack sampling unavailable; process left running.\n",out);
 #endif
         fclose(out);
     }
+#ifndef __APPLE__
+    free(modules);
+#endif
     int input=open(c->log,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);if(input>=0){struct stat st;if(!fstat(input,&st)&&S_ISREG(st.st_mode)){lseek(input,st.st_size>65536?st.st_size-65536:0,SEEK_SET);out=new_file(dir,"game-log-tail.txt");if(out){char bytes[65536];ssize_t n=read(input,bytes,sizeof bytes);if(n>0)fwrite(bytes,1,(size_t)n,out);fclose(out);}}close(input);}
     out=new_file(dir,"report.txt");if(out){fprintf(out,"TimeSplitters native " TSFP_NATIVE_SYSTEM " %s\n%s\nSignal: %d\nExecutable SHA-256: %s\nNative context: native-stack.txt\nNothing was uploaded. Review the context and log excerpt before sharing.\n",hang?"suspected hang":"fatal signal",hang?"Frame progress stopped; the game was left running.":"The native game received a fatal signal.",hang?0:c->signal,hash);fclose(out);}
     out=new_file(dir,"breadcrumbs.txt");if(out){pc_crumb_report(out,&c->breadcrumbs);fclose(out);}
@@ -243,6 +349,9 @@ int tsfp_native_crash_init(NativeGuestCapture guest){
     if(helper<0)goto fail;close(mapfd);close(pipefd[0]);fcntl(pipefd[1],F_SETFL,O_NONBLOCK);fcntl(pipefd[1],F_SETFD,FD_CLOEXEC);
     /* A dead helper must never turn notification into a second fatal signal. */
     signal(SIGPIPE,SIG_IGN);capture=c;guest_capture=guest;notify_fd=pipefd[1];
+#ifdef __APPLE__
+    _dyld_register_func_for_add_image(image_added);_dyld_register_func_for_remove_image(image_removed);
+#endif
     stack_t stack={.ss_sp=alternate_stack,.ss_size=sizeof alternate_stack};sigaltstack(&stack,NULL);
     atexit(tsfp_native_crash_stop);return 1;
 fail:munmap(c,sizeof *c);close(mapfd);close(pipefd[0]);close(pipefd[1]);return 0;

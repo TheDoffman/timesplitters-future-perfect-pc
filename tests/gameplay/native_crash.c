@@ -1,5 +1,6 @@
 #include "native/crash_posix.h"
 #include "pc_breadcrumbs.h"
+#include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -13,12 +14,20 @@ __attribute__((noinline)) void tsfp_native_crash_test_site(void){
 }
 int main(int argc,char **argv){
     int result=tsfp_native_crash_helper(argc,argv);if(result>=0)return result;
-    if(argc!=2 || !tsfp_native_crash_init(guest))return 2;
+    if((argc!=2 && argc!=3) || !tsfp_native_crash_init(guest))return 2;
     pc_capture_gameplay(4,4,0,1,2,0);pc_capture_model(0x811ee970u,15,123);pc_capture_allocation(1,0x10000,4096);pc_capture_allocation(257,0x10000,4096);
     struct sigaction action={0};action.sa_sigaction=tsfp_native_crash_signal;action.sa_flags=SA_SIGINFO|SA_ONSTACK;sigemptyset(&action.sa_mask);sigaction(SIGABRT,&action,NULL);
 #ifdef __linux__
     sigaction(SIGILL,&action,NULL);
+#else
+    sigaction(SIGTRAP,&action,NULL);
 #endif
+    if(!strcmp(argv[1],"crash-library")){
+        if(argc!=3)return 2;
+        void *library=dlopen(argv[2],RTLD_NOW|RTLD_LOCAL);if(!library)return 3;
+        void (*fault)(void)=(void (*)(void))dlsym(library,"tsfp_native_library_fault");if(!fault)return 4;
+        fault();return 5;
+    }
     if(!strcmp(argv[1],"crash")){tsfp_native_crash_test_site();return 3;}
     if(!strcmp(argv[1],"unarmed")){usleep(1800000);return 0;}
     tsfp_native_crash_armed(1);
