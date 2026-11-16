@@ -101,8 +101,12 @@ coordinator producing and validating that admission remains to be implemented;
 this component must not be used as a standalone live upgrade procedure.
 
 `mod_host_cutover.py` implements read-only job/process observations for that
-coordinator. The caller must first verify generated and boot plist bytes against
-the sealed release. The observer binds all ten fixed labels to the exact program
+coordinator. Its `job_files` checks twenty generated/boot plists against the
+immutable factory bytes, requiring root ownership, single-link regular files,
+exact modes (host staging0600, backup staging0444, boot0644), safe ancestors and
+stable held-file/directory identities. `preflight` repeats those checks around
+the complete live observation. The caller must still verify sealed runtime/source
+inventories before deriving specifications. The observer binds all ten fixed labels to the exact program
 and argument sequence and accepts only the expected protected staging path or
 installed boot-file path. Actual current jobs were loaded from staging paths;
 requiring only the boot-file path would incorrectly reject them. It observes all
@@ -112,8 +116,24 @@ It tracks descendants and groups without command-line/environment inspection;
 exit requires those identities/groups and every dedicated UID600 process to be
 gone, catching escaped or reparented descendants. Reused identities conservatively
 refuse admission; these samples are never signal targets. These primitives do
-not stop jobs, verify root plist ownership, check label absence, change routing,
+not stop jobs, check label absence, change routing,
 write a root proof or activate a generation. Those coordinator steps remain open.
+
+`mod_host_cutover_journal.py` holds a nonblocking root-only global lease and
+records bounded canonical stop history under root-owned0700 `upgrades`, outside
+the monitor directory that an upgrade will replace. It binds before/after,
+plan/preflight hashes, UID, nonce and native boot session. Every stop intent
+precedes its observation; four monitors must precede backup and the remaining
+workers. A pending intent survives reopening and cannot be counted as a stop.
+Unsettled prior transactions block new nonces; settled history remains bounded
+to32 transactions. A caller records settlement only after verified restoration,
+final activation, or an unused preparation. This storage primitive does not prove
+that those actions occurred. Replaced leases/directories, malformed/foreign or
+noncanonical histories, wrong boot identities and unknown/partial pending writes
+are preserved and refused. A crash during journal replacement requires explicit
+recovery; do not delete the pending file or start a new nonce to bypass it.
+This journal does not execute shutdown, establish process/label absence, suspend
+ingress, force a backup or issue migration authority. No deployed job uses it yet.
 
 The current public8443 route is Funnel-enabled HTTPS proxying127.0.0.1:8768;
 private443 exists with Funnel disabled. Thus starting new private gateway jobs

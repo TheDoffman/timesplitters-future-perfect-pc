@@ -4,13 +4,109 @@ The caller supplies job specifications derived from verified immutable releases.
 These observations do not authorize migration, stop jobs or issue admission.
 """
 from pathlib import Path
+import hashlib
+import os
+import plistlib
 import re
+import stat
 
 from mod_host_migration import jobs
 from mod_package import require
+from mod_system_host import ROOT
 
 LAUNCHD = Path('/Library/LaunchDaemons')
 MAX_OUTPUT = 1024 * 1024
+ROOT_UID = 0
+
+
+def protected_directory(path):
+    """Hold a nofollow root-owned directory through non-writable ancestors."""
+    path = Path(os.path.abspath(path))
+    fd = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for part in path.parts[1:]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+            os.close(fd)
+            fd = child
+            info = os.fstat(fd)
+            require(info.st_uid in (0, ROOT_UID) and not info.st_mode & 0o022,
+                    'Unsafe cutover directory ancestor')
+        require(os.fstat(fd).st_uid == ROOT_UID, 'Cutover directory must be root-owned')
+        return fd
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def stamp(info):
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns,
+            info.st_uid, info.st_gid, stat.S_IMODE(info.st_mode), info.st_nlink)
+
+
+def protected_bytes(path, mode, maximum):
+    fd = protected_directory(path.parent)
+    try:
+        child = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+        with os.fdopen(child, 'rb') as stream:
+            before = os.fstat(stream.fileno())
+            require(stat.S_ISREG(before.st_mode) and before.st_uid == ROOT_UID and before.st_nlink == 1
+                    and stat.S_IMODE(before.st_mode) == mode and 0 < before.st_size <= maximum,
+                    'Unsafe protected cutover file')
+            data = stream.read(maximum+1)
+            after = os.fstat(stream.fileno())
+            require(len(data) == before.st_size and stamp(before) == stamp(after)
+                    and stamp(os.stat(path.name, dir_fd=fd, follow_symlinks=False)) == stamp(after),
+                    'Protected cutover file changed')
+        current = protected_directory(path.parent)
+        try:
+            require((os.fstat(current).st_dev, os.fstat(current).st_ino)
+                    == (os.fstat(fd).st_dev, os.fstat(fd).st_ino), 'Cutover directory was replaced')
+        finally:
+            os.close(current)
+        return data, stamp(after)
+    finally:
+        os.close(fd)
+
+
+def validate_entries(entries):
+    require(isinstance(entries, list) and len(entries) == 10
+            and all(isinstance(v, tuple) and len(v) == 2 and isinstance(v[0], Path)
+                    and isinstance(v[1], dict) and isinstance(v[1].get('Label'), str) for v in entries)
+            and sorted(spec['Label'] for _, spec in entries) == jobs(),
+            'Use exactly the fixed cutover job set')
+    for generated, spec in entries:
+        role = spec['Label'].split('.')[3]
+        if role == 'backup':
+            require(generated.parent.parent == ROOT/'backup-jobs'
+                    and re.fullmatch('[0-9a-f]{64}', generated.parent.name) and generated.name == 'worker.plist',
+                    'Invalid protected backup job path')
+        else:
+            monitor = spec['Label'].endswith('.monitor')
+            expected = ((ROOT/'monitor'/('monitor.plist' if monitor else 'scan.plist')) if role == 'scan'
+                        else ROOT/'monitor'/'definitions.plist' if role == 'definitions'
+                        else ROOT/'monitor'/role/('monitor.plist' if monitor else 'worker.plist'))
+            require(generated == expected, 'Invalid protected host job path')
+
+
+def job_files(entries, previous=None):
+    """Attest all twenty staging/boot files against immutable factory bytes.
+
+    Passing a previous result also requires unchanged file identities/metadata,
+    so replacement with identical bytes cannot silently cross an observation.
+    """
+    validate_entries(entries)
+    result = {}
+    for generated, spec in entries:
+        expected = plistlib.dumps(spec)
+        require(0 < len(expected) <= 32768, 'Cutover job specification exceeds budget')
+        for path, mode in ((generated, 0o444 if spec['Label'].endswith('.backup') else 0o600),
+                           (LAUNCHD/(spec['Label']+'.plist'), 0o644)):
+            data, identity = protected_bytes(path, mode, 32768)
+            require(data == expected, 'Protected cutover job differs from immutable policy')
+            result[str(path)] = dict(stamp=identity, sha256=hashlib.sha256(data).hexdigest())
+    require(len(result) == 20 and (previous is None or result == previous),
+            'Protected cutover jobs changed during observation')
+    return result
 
 
 def loaded_job(output, generated, specification):
@@ -100,9 +196,7 @@ def observe(entries, uid, command):
     launchd origins. The caller must verify their root-owned bytes against the
     immutable specification before calling; label matching alone is insufficient.
     """
-    require(isinstance(entries, list) and len(entries) == 10
-            and sorted(spec['Label'] for _, spec in entries) == jobs(),
-            'Observe exactly the fixed cutover job set')
+    validate_entries(entries)
 
     def snapshot():
         result = {}
@@ -121,3 +215,11 @@ def observe(entries, uid, command):
     tracked = tracked_processes(set(running), rows, uid)
     require(snapshot() == before, 'Cutover jobs changed during observation')
     return dict(jobs=before, tracked=tracked)
+
+
+def preflight(entries, uid, command):
+    """Attest root job files on both sides of the complete live observation."""
+    files = job_files(entries)
+    observation = observe(entries, uid, command)
+    job_files(entries, files)
+    return dict(files=files, observation=observation)
