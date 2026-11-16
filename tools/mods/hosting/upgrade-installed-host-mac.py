@@ -1,5 +1,6 @@
 """Inspect a preserving installed-host upgrade; no activation or service commands."""
 import argparse
+import hashlib
 import importlib.util
 import json
 import os
@@ -36,17 +37,52 @@ def public_profile(verified):
     return value
 
 
-def inspection(before,after,uid):
+def verified_pair(before,after,uid):
     release.require(isinstance(before,str) and isinstance(after,str) and release.SHA.fullmatch(before)
                     and release.SHA.fullmatch(after) and before!=after,'Choose two distinct exact installed releases')
     old=release.installed(before,uid);new=release.installed(after,uid)
     old_profile,new_profile=public_profile(old),public_profile(new)
     release.require(all(old_profile[k]==new_profile[k] for k in ('origin','trusted_root_sha256')),
                     'Upgrade changes the workshop authority; preserving it requires a separate contract')
+    return old,new,old_profile
+
+
+def inspection(before,after,uid):
+    old,new,old_profile=verified_pair(before,after,uid)
     return dict(schema=1,phase='installed-upgrade-inspected',before=before,after=after,uid=uid,
         source_revisions=dict(before=old['descriptor']['source_revision'],after=new['descriptor']['source_revision']),
         origin=old_profile['origin'],trusted_root_sha256=old_profile['trusted_root_sha256'],
         installed_sources_verified=True,installed_runtimes_verified=True,
+        services_changed=False,network_started=False,data_written=False)
+
+
+def preflight(before,after,uid,backup_identity):
+    old,new,profile=verified_pair(before,after,uid)
+    release.require(isinstance(backup_identity,str) and release.SHA.fullmatch(backup_identity),
+                    'An exact preserved backup release is required')
+    # Only verified new source is imported in this parent. Old host/backup
+    # factories run in separate old-bound interpreters after credentials drop.
+    required={'tools/mods/mod_host_upgrade_process.py','tools/mods/mod_host_cutover.py',
+              'tools/mods/mod_backup_release.py','tools/mods/hosting/upgrade-job-specs-mac.py'}
+    release.require(required <= new['descriptor']['source_files'].keys(),'Incomplete installed upgrade coordinator')
+    sys.path.insert(0,str(new['root']/'source/tools/mods'))
+    import mod_host_upgrade_process as process
+    import mod_host_cutover as cutover
+    import mod_backup_release as backup
+    from mod_host_watch import run_command
+    folder=release.INSTALLED_ROOT/'backup-releases'/backup_identity
+    _,binding=backup.installed(folder)
+    release.require(binding['uid']==binding['gid']==uid,'Preserved backup service identity changed')
+    runtime=release.installed(binding['base_release'],uid)
+    release.require(binding['python']==str(runtime['python']),'Preserved backup runtime binding differs')
+    host_jobs=process.job_specs(old,new,uid)
+    backup_jobs=process.job_specs(runtime,new,uid,backup_identity=backup_identity)
+    observed=cutover.preflight(host_jobs+backup_jobs,uid,run_command)
+    digest=hashlib.sha256(json.dumps(observed,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    return dict(schema=1,phase='installed-upgrade-preflight',before=before,after=after,uid=uid,
+        origin=profile['origin'],trusted_root_sha256=profile['trusted_root_sha256'],
+        backup_identity=backup_identity,backup_base_release=runtime['identity'],preflight_sha256=digest,
+        jobs=10,protected_job_files=20,tracked_processes=len(observed['observation']['tracked']['pids']),
         services_changed=False,network_started=False,data_written=False)
 
 
@@ -69,17 +105,22 @@ def root_context(before):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--inspect',action='store_true')
+    action=parser.add_mutually_exclusive_group()
+    action.add_argument('--inspect',action='store_true')
+    action.add_argument('--preflight',action='store_true')
     parser.add_argument('--from-release')
+    parser.add_argument('--backup-release')
     args=parser.parse_args()
     try:
-        if not args.inspect:
-            release.require(args.from_release is None,'Choose explicit installed upgrade inspection')
+        if not (args.inspect or args.preflight):
+            release.require(args.from_release is None and args.backup_release is None,'Choose explicit installed upgrade inspection')
             value=dict(schema=1,phase='plan-only',installed_releases=2,jobs=10,services_changed=False,
                        network_started=False,data_written=False)
         else:
+            release.require((args.preflight and isinstance(args.backup_release,str) and release.SHA.fullmatch(args.backup_release))
+                            or (args.inspect and args.backup_release is None),'Choose an exact backup release only for preflight')
             after,uid=root_context(args.from_release)
-            value=inspection(args.from_release,after,uid)
+            value=preflight(args.from_release,after,uid,args.backup_release) if args.preflight else inspection(args.from_release,after,uid)
         print(json.dumps(value,indent=2));return 0
     except (OSError,ValueError,subprocess.SubprocessError) as error:
         print('Installed host upgrade: '+str(error)[:1000],file=sys.stderr);return 2

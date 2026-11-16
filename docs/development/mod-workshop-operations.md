@@ -123,6 +123,32 @@ It does not stop jobs, create a journal, suspend routing, force a backup, migrat
 private state or activate the candidate. There is no apply action yet, and no
 current production ceremony invokes this new entry point.
 
+The read-only `--preflight --from-release <sha> --backup-release <sha>` phase
+additionally verifies the preserved eight-file backup closure and its independent
+installed runtime. That runtime may be older than the active host. The coordinator
+never imports old factory modules in its new interpreter. It invokes the new
+immutable `upgrade-job-specs-mac.py` in separate old-bound isolated processes,
+after dropping UID/GID/supplementary groups to the locked identity. One child
+reads the old host's nine pure job factories; another reads the backup's one
+factory. They validate their locked credentials, Python bindings and module
+closures before returning bounded typed metadata, with no private configuration,
+repository access or service operations. Parent validation binds identity,
+retained base, UID/GID/groups, fixed labels and executable paths. The resulting
+ten entries feed the protected twenty-plist and double live-job observations.
+The preflight report contains a digest and counts, not migration authority.
+
+`mod_host_upgrade_process.py` bounds those metadata children to15 seconds/64KiB
+stdout and the forced-backup child to1800 seconds/8KiB stdout; stderr is separately
+bounded to8KiB and must be empty on success. It uses clean fixed environments,
+no stdin or inherited descriptors, and owned Popen handles for termination/reaping
+after timeout, excessive output, selector failure or interruption. These trusted
+programs do not create descendants. The backup receipt must identify a new
+captured/verified snapshot in the preserved binding with creation after root's
+quiescence time; not-due, malformed, future or mismatched results are refused.
+This transport does not itself attest code inventories: the installed entry point
+must do so before choosing these fixed child operations. No apply action or
+live upgrade is enabled by the read-only preflight phase.
+
 `force-upgrade-backup-mac.py` is the locked-account capture phase for a future
 quiescent upgrade. Its default is plan-only. Active use requires a root-owned
 immutable step, isolated `-I -S -B` Mac Python, the locked identity and the exact

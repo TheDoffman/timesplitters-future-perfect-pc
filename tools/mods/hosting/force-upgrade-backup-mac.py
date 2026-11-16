@@ -104,7 +104,7 @@ def main():
             need(args.backup_release is None,'Choose explicit forced capture')
             result=dict(schema=1,phase='plan-only',forced_capture=False,data_written=False)
         data=json.dumps(result,separators=(',',':'))
-        need(len(data.encode())<=8192,'Forced backup report exceeds budget')
+        need(len(data.encode())+1<=8192,'Forced backup report exceeds budget')
         print(data);return 0
     except (OSError,ValueError,sqlite3.Error):
         # Private repository/backup exception text is not a root/operator report.
