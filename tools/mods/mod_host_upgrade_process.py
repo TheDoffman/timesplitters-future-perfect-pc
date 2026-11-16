@@ -17,8 +17,9 @@ STDERR_LIMIT=8192
 def _capture(arguments,options,*,timeout,limit):
     """Transport only; public callers below choose fixed commands/credentials.
 
-    These trusted metadata/backup programs do not create children. Cleanup uses
-    the still-owned Popen child handle, never a sampled PID or arbitrary group.
+    Cleanup uses the still-owned Popen child handle, never a sampled PID/group.
+    Metadata/backup programs do not create descendants. Routing clients must not
+    signal unrelated operator services when an operation becomes uncertain.
     """
     child=subprocess.Popen(arguments,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE,close_fds=True,**options)

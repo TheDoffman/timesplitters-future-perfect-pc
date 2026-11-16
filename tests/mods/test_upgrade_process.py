@@ -138,7 +138,8 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
         python=process.ROOT/'releases'/identity/'runtime/Frameworks/Python.framework/Versions/3.12/bin/python3.12')
     old,new,backup_runtime=entry(before),entry(after),entry(retained)
     new['descriptor']=dict(source_files={key:{} for key in ('tools/mods/mod_host_upgrade_process.py',
-        'tools/mods/mod_host_cutover.py','tools/mods/mod_backup_release.py','tools/mods/hosting/upgrade-job-specs-mac.py')})
+        'tools/mods/mod_host_cutover.py','tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py',
+        'tools/mods/hosting/upgrade-job-specs-mac.py')})
     profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='f'*64)
     monkeypatch.setattr(upgrade,'verified_pair',lambda *args:(old,new,profile))
     monkeypatch.setattr(upgrade.release,'installed',lambda identity,uid:backup_runtime if identity==retained and uid==600 else pytest.fail('Unexpected retained runtime'))
@@ -157,10 +158,13 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     binding=dict(uid=600,gid=600,base_release=retained,python=str(backup_runtime['python']))
     monkeypatch.setitem(sys.modules,'mod_backup_release',SimpleNamespace(installed=lambda folder:({},binding)))
     monkeypatch.setitem(sys.modules,'mod_host_watch',SimpleNamespace(run_command=lambda _:pytest.fail('Unexpected real command')))
+    route=dict(schema=1,origin=profile['origin'],phase='public',config_sha256='e'*64,unrelated_sha256='f'*64)
+    monkeypatch.setitem(sys.modules,'mod_host_routing',SimpleNamespace(operator=lambda *_:lambda action:b'{}',snapshot=lambda *_:route))
     report=upgrade.preflight(before,after,600,backup_id)
     assert calls==[(before,{}),(retained,dict(backup_identity=backup_id))]
     assert report['jobs']==10 and report['protected_job_files']==20 and report['backup_base_release']==retained
     assert len(report['preflight_sha256'])==64 and not report['data_written'] and not report['services_changed']
+    assert report['public_route_verified'] and report['unrelated_routing_sha256']=='f'*64
 
 
 def test_job_reader_default_plan_and_ordinary_active_refusal(monkeypatch):

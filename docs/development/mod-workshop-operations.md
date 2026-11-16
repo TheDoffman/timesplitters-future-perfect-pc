@@ -244,6 +244,29 @@ state, rather than treating an exit code as routing proof. No off/on command has
 been executed for the candidate; exact selective suspension/restoration remains
 an implementation and acceptance gate.
 
+`mod_host_routing.py` implements that selective state contract. It accepts the
+fixed8443 HTTPS proxy only, distinguishes public/private/absent states, refuses
+foreground/partial/aliased or unknown managed routes and public443 exposure,
+and hashes unrelated configuration without logging its private handler contents.
+Empty/omitted/null known maps normalize identically; all other unrelated values
+remain exact. Preflight reads status through the established operator and binds
+both full and unrelated fingerprints into its digest. No routing mutation is
+part of preflight.
+
+The transition primitive requires a saved public baseline and the coordinator's
+durable journal callback. Intent must succeed before one fixed off/on action;
+success is established by the subsequent status, including unchanged unrelated
+configuration. Timeouts/nonzero results are not retried or treated as absence.
+Already-changed state needs explicit resume; unknown changes remain preserved.
+Restore requires the exact original public configuration. The coordinator must
+first prove private admission before requesting restore; this module does not
+grant that authority. Its app transport drops to the verified original operator
+UID and actual primary GID with empty supplementary groups and a clean environment
+before executing the operator-writable app. It never runs that app as root or
+uses reset/default443. Owner changes require a separate migration contract.
+No CLI exposes these mutations; durable root routing events, recovery and actual
+selective off/on acceptance still must be integrated before live activation.
+
 ## Routine checks
 
 At the start of a moderation session, and after a service or host restart:
