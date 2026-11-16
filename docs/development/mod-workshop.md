@@ -19,9 +19,9 @@ signing uses pinned PyCA cryptography. It has no paid API.
 The private creator/moderator API additionally uses a separately pinned Gunicorn
 host runtime. Accounts, ownership, quota-reserved uploads, a serial scan queue
 and authenticated review are now implemented. The native Creator tab supports
-sign-in/invitations, reviewed ZIP uploads and status history with memory-only
-sessions; native moderation/reporting are implemented. Persistent credential vaults and public deployment
-remain incomplete. See [creator service](mod-creator-service.md).
+sign-in/invitations, reviewed ZIP uploads, status history and optional OS-vault
+sessions; native moderation/reporting are implemented. Windows vault proof passes;
+Mac/Linux persistence acceptance and public deployment remain incomplete. See [creator service](mod-creator-service.md).
 Signed static exports, offline root rotation and monotonic publication versions
 and shared native signature/checkpoint/revocation enforcement are implemented.
 Production pins and public acceptance are still pending. See

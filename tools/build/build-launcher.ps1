@@ -116,6 +116,7 @@ foreach ($path in @($BannerPath, $LogoPath, $BackdropPath)) {
 }
 $cacheOptions = "launcher-v1|test=$Test|art=$RequireArtwork|banner=$BannerPath|logo=$LogoPath|backdrop=$BackdropPath|os=$([Environment]::OSVersion.VersionString)|ps=$($PSVersionTable.PSVersion)|culture=$([Globalization.CultureInfo]::CurrentCulture.Name)"
 $cacheOptions += "|creator-python=$creatorPython|creator-python-version=$creatorPythonVersion"
+$cacheOptions += "|os-vault-test=$env:TSFP_TEST_OS_VAULT"
 $fingerprint = Get-LauncherFingerprint -Paths $cacheInputs -Options $cacheOptions
 if ($Test -and !$Rebuild -and (Test-LauncherReceipt -Receipt $receipt -Fingerprint $fingerprint -Output $Output -Files $cachedFiles)) {
     $buildOutcome = 'reused verified build and tests'

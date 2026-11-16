@@ -51,7 +51,14 @@ current-role lookup, expiry, revocation, memory-only fallback, deletion errors a
 failed remote sign-out. Set `TSFP_TEST_OS_VAULT=1` only for a developer launcher
 workshop test to exercise a disposable random native entry's read/write/update/
 isolation/removal; it does not touch real workshop credentials. The actual
-Windows native-store check passes. Mac/Linux native-store acceptance is separate.
+Windows native-store check passes. The Mac native binary builds/signs and passes
+110 UI groups plus the real backend at source1a135c18. Its optional native-store
+write returned errSecInteractionNotAllowed (-25308); a disposable API diagnostic
+confirmed the default keychain was locked in this SSH session, with no entry
+created. No keychain settings were changed and no password prompt was opened.
+Native Mac persistence requires a later unlocked-keychain test; Linux native-store
+acceptance is also separate. Explicit Resume clears unsent secret drafts and
+previous account work before restoring a session.
 API references: [Windows credentials](https://learn.microsoft.com/en-us/windows/win32/api/wincred/ns-wincred-credentialw),
 [Apple matching](https://developer.apple.com/documentation/security/secitemcopymatching(_:_:)),
 [GNOME secret-tool implementation](https://github.com/GNOME/libsecret/blob/main/tool/secret-tool.c).

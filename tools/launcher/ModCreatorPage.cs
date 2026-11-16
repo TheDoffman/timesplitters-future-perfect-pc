@@ -173,8 +173,8 @@ namespace TimeSplitters.Launcher
             ModTrust.Need(new[]{"malware","broken","policy","other"}.Contains(Reason) && new[]{"open","closed"}.Contains(State) && Description.Trim().Length>0 && (State!="closed" || Resolution.Trim().Length>0),"invalid report content.");
         }
     }
-    // Passwords and bearer sessions stay in memory. No cookies, redirect,
-    // credential files, diagnostic payloads or automatic upload retries.
+    // Passwords stay in memory; explicit opt-in stores only a bounded OS-vault
+    // session. No cookies, redirects, plaintext files or automatic upload retries.
     public sealed class ModCreatorClient : IDisposable
     {
         readonly string root,origin;readonly HttpClient http;readonly Func<DateTime> clock;
@@ -485,7 +485,7 @@ namespace TimeSplitters.Launcher
                 Button(account,"CreatorSignIn","Sign in",async()=>await Authenticate(false));
                 account.Children.Add(PageTheme.Text("Invitation (for a new account or account recovery)",13));account.Children.Add(invitation);
                 Button(account,"CreatorRedeem","Redeem invitation",async()=>await Authenticate(true));
-                Button(account,"ResumeCreatorSignIn","Use saved sign-in",async()=>await Run(async token=>{Core.Require(await Client.Resume(token),"No saved sign-in is available. Sign in with your workshop password.");},"Signed in using the system credential store.",40));
+                Button(account,"ResumeCreatorSignIn","Use saved sign-in",async()=>await RestoreSaved());
                 account.Children.Add(PageTheme.Text("Remembering saves only your session in the system credential store, for up to 12 hours. Your password is never saved.",12,"#9EB4C8"));
             }else Button(account,"CreatorSignOut","Sign out",async()=>{reviewed=null;uploads=new CreatorUpload[0];ClearReviews();ClearReports();await Run(token=>Client.SignOut(token),"Signed out. Local game files were preserved.",35);});
             Button(account,"ForgetCreatorSignIn","Forget saved sign-in",async()=>await Run(token=>Client.ForgetSaved(token),"Saved sign-in forgotten.",40));
@@ -628,6 +628,11 @@ namespace TimeSplitters.Launcher
         {
             string name=username.Text??"",secret=Password,invite=Invitation;bool save=remember.IsChecked==true;ClearCredentials();ClearReviews();ClearReports();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
             await Run(token=>redeem?Client.Redeem(invite,secret,token,save):Client.SignIn(name,secret,token,save),"Signed in. Review a ZIP to submit your addition.",45);
+        }
+        async Task RestoreSaved()
+        {
+            ClearCredentials();ClearReviews();ClearReports();reviewed=null;uploads=new CreatorUpload[0];cursor=0;
+            await Run(async token=>{Core.Require(await Client.Resume(token),"No saved sign-in is available. Sign in with your workshop password.");},"Signed in using the system credential store.",40);
         }
         async Task History()
         {uploads=new CreatorUpload[0];await Run(async token=>{uploads=await Client.History(cursor,token);},"Upload status refreshed.",35);}

@@ -1,6 +1,8 @@
 CreatorVaultChecks in launcher_shared_ui.cs always runs fake-vault/client/UI
 cases: opt-in, bound pin/origin, current server role, expired/malformed/revoked
-sessions, failed remote logout, unavailable vault and visible deletion failure.
+sessions, failed remote logout, unavailable vault, visible deletion failure and cleared
+unsent secret drafts on explicit resume. The Windows build cache includes the
+native-vault test flag, so an ordinary cached run cannot satisfy that request.
 TSFP_TEST_OS_VAULT=1 adds a disposable random OS-entry read/write/update/isolation/
 remove test; no real account tokens are used. Windows native proof passes.
 Portable recovery tests cover authenticated encryption, fixed KDF/budgets,

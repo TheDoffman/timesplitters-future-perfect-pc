@@ -28,7 +28,7 @@ access with a visible warning, never a plaintext fallback. Resume is explicit,
 checks live pinned authority and GET/account role, and refuses expired/changed/
 revoked sessions. Sign-out clears local/vault state even if remote logout fails;
 failed deletion stays visible. Forget saved sign-in preserves a current session.
-Passwords/invitations are never saved. Shared fake-vault/UI tests always run;
+Resume clears unsent secrets; passwords/invitations are never saved. Tests run;
 TSFP_TEST_OS_VAULT=1 enables disposable native-store roundtrip/update/isolation/
 delete proof. Windows native proof passes; Mac/Linux acceptance remains pending.
 See ../development/mod-creator-service.md and build-test-details.md.

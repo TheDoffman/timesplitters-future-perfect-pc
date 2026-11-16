@@ -1,3 +1,40 @@
+Optional creator session vaults (2026-11-15):
+Source1a135c18 implements opt-in remembered workshop sessions using Windows
+Credential Manager, macOS Security.framework generic Keychain passwords and Linux
+secret-tool/Secret Service. Passwords/invitations never enter those stores. Exact
+origin/original-root pin and bounded token/expiry/username are checked before an
+explicit resume; GET/v1/account supplies the current identity/role. No stored
+role grants moderation. Expired/invalid/revoked entries are cleared; sign-out
+clears memory and attempts vault removal even when remote revocation fails.
+Locked/unavailable stores preserve memory-only access and report saving/deletion
+failure; no plaintext fallback exists. Forget saved sign-in preserves a current
+memory session. Linux persistence needs libsecret tools, a desktop Secret Service
+and an unlocked default collection; the fixed helper uses stdin, bounded pipes
+and a15-second deadline. No session secret enters process arguments.
+
+Windows full build/regressions/real creator backend passed58.52s. A direct63-group
+workshop run also passed the actual Credential Manager read/write/update/scope/
+removal test under a fresh disposable binding. Mac build/publish/sign/deep strict
+verification passed; all110 normal shared UI groups and real creator backend
+passed in the separate8.35s run. The optional native Keychain write failed with
+errSecInteractionNotAllowed(-25308). A disposable exact-API diagnostic confirmed
+update=-25300/add=-25308/cleanup=-25300 and default keychain flags2 (locked in this
+SSH session); no item was created, settings changed or new password prompt opened.
+Native Mac persistence and Linux Secret Service proof remain open.
+
+Follow-up UI review found unsent password/invitation drafts could remain detached
+when using a saved sign-in. Explicit resume now clears those drafts and previous
+account work first, with a shared regression. Windows build/cache keys now include
+TSFP_TEST_OS_VAULT so ordinary cached tests cannot satisfy a requested native-store
+check. Final Windows full suite plus actual native-store test and real backend
+passed56.73s; compatibility/cache checks pass10 tests/31 subtests0.82s. Mac follow-up
+validation remains pending synchronization of this change. Evidence is in ignored
+logs/windows-workshop-vault.txt and logs/windows-vault-final-build.txt; Mac logs
+credential-vault-build-1a135c18.log and credential-vault-ui-backend-1a135c18.log in
+the existing launcher cache. Protected installed601/public routing are unchanged;
+repair14642b44 still has its same live shell35295/sudo35297 waiting at authentication.
+CI for1a135c18 was queued as43794823513; latest full green remains78073cf4.
+
 Portable off-server signing recovery (2026-11-15):
 Source91e80ccd adds a separate locally prompted passphrase-encrypted export,
 verification and new-account Windows import. Fixed scrypt N131072/r8/p1 and

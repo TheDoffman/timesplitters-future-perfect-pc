@@ -1,3 +1,13 @@
+Creator session vault (2026-11-15, source1a135c18): **In progress**.
+Shared opt-in/resume/forget UI and account-role revalidation use thin OS stores:
+Windows Credential Manager, Mac Security.framework Keychain, Linux Secret Service.
+Windows native-store proof passes; Mac builds/signs and passes110 shared UI groups
+plus the real backend. Mac native-write diagnostic returns locked-keychain
+errSecInteractionNotAllowed(-25308), no entry created; native persistence needs an
+unlocked-keychain test. Linux actual Secret Service proof also remains open.
+The follow-up clears unsent secret drafts on explicit resume and binds native-store
+test requests into Windows cache keys. See STATUS and mod-creator-service.md.
+
 Public HTTPS connectivity acceptance (2026-11-15, sourceef234211):
 A bounded foreground Funnel on unused8443 forwarded to the confined gateway8768
 and static8766. The probe started only those confined marker servers; no creator

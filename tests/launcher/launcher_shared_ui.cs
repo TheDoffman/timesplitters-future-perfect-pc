@@ -411,6 +411,24 @@ public static class LauncherSharedUiChecks
                 Find<TextBox>(page.View,"CreatorUsername").Text="fixture-creator";SetCreatorSecret(page.View,"CreatorPassword","fixture-only");Click(Find<Button>(page.View,"CreatorSignIn"));PumpUntil(()=>All(page.View).OfType<Button>().Any(b=>b.Name=="CreatorSignOut" && b.IsEnabled),"Remembered UI sign-in did not finish");Need(vault.Writes==1,"Remember checkbox did not reach the client");Click(Find<Button>(page.View,"ForgetCreatorSignIn"));PumpUntil(()=>page.StatusText=="Saved sign-in forgotten.","Explicit Forget did not finish");Need(vault.Values.Count==0 && client.SignedIn,"Forgetting the OS entry changed the active memory session");
             }
         }));
+        Test("restoring a saved sign-in clears unsent password and invitation drafts",()=>WithUiContext(()=>{
+            string folder=Path.Combine(root,"session-vault-resume-ui");CreatorConfig(folder);var vault=new FixtureSessionVault();
+            using(var first=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>CreatorJson(CreatorLogin())),()=>WorkshopTrustChecks.Now,vault))first.SignIn("fixture-creator","fixture-only",System.Threading.CancellationToken.None,true).GetAwaiter().GetResult();
+            using(var client=new ModCreatorClient(folder,WorkshopTrustChecks.Origin,new WorkshopHandler(request=>CreatorJson(new {username="fixture-creator",role="creator"})),()=>WorkshopTrustChecks.Now,vault))using(var page=new ModCreatorPage(folder,false,client)) {
+                SetCreatorSecret(page.View,"CreatorPassword","unsent-password-draft");SetCreatorSecret(page.View,"CreatorInvitation","unsent-invitation-draft");
+#if MACOS || LINUX
+                var password=Find<TextBox>(page.View,"CreatorPassword");var invitation=Find<TextBox>(page.View,"CreatorInvitation");
+#else
+                var password=Find<PasswordBox>(page.View,"CreatorPassword");var invitation=Find<PasswordBox>(page.View,"CreatorInvitation");
+#endif
+                Click(Find<Button>(page.View,"ResumeCreatorSignIn"));PumpUntil(()=>page.StatusText=="Signed in using the system credential store.","Saved sign-in did not resume through the UI");
+#if MACOS || LINUX
+                Need(password.Text=="" && invitation.Text=="","Restored sign-in retained secret drafts");
+#else
+                Need(password.Password=="" && invitation.Password=="","Restored sign-in retained secret drafts");
+#endif
+            }
+        }));
         if(Environment.GetEnvironmentVariable("TSFP_TEST_OS_VAULT")=="1")Test("actual OS credential vault roundtrip update isolation and removal",()=>{
             var vault=new ModSessionVault();string binding=ModTrust.Hash(Encoding.UTF8.GetBytes("disposable-vault-fixture-"+Guid.NewGuid().ToString("N"))),other=ModTrust.Hash(Encoding.UTF8.GetBytes("other-fixture-"+Guid.NewGuid().ToString("N")));byte[] first=Encoding.UTF8.GetBytes("Disposable session fixture; no actual account"),second=Encoding.UTF8.GetBytes("Updated disposable session fixture");
             try{Need(vault.Read(binding)==null,"Fresh random fixture already existed");vault.Write(binding,first);Need(vault.Read(binding).SequenceEqual(first) && vault.Read(other)==null,"Credential bytes or scope isolation failed");vault.Write(binding,second);Need(vault.Read(binding).SequenceEqual(second),"Credential update failed");vault.Delete(binding);Need(vault.Read(binding)==null,"Credential removal failed");vault.Delete(binding);}finally{vault.Delete(binding);}
