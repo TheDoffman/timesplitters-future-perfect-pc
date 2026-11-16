@@ -1,11 +1,16 @@
-Backup installer source (2026-11-16, not installed):
+Backup installer source (2026-11-16, protected setup awaiting local authentication):
 The new-only registrar seals the small code bundle against the existing runtime,
 then performs privilege-drop/initial-capture/read-only verification and two staged
 job runs before adding/testing one persistent startup plist. Failures preserve
 backup data and remove only owned label/inode/content artifacts; foreign files
 and existing host jobs/routing remain untouched. Tests check runtime/private-parent
 refusal and simulate
-launchd while exercising actual POSIX files. Protected host acceptance follows.
+launchd while exercising actual POSIX files. Actual f6a649eb Mac/Linux each pass181
+checks (0.96/0.95s); Windows155 pass/26 POSIX skips. Protected host acceptance follows.
+Frozen eight-file83733-byte bundle c29aeabf5aac2e69b85af9175da452ba20e04eaeee92f738e2cb5fe44a0e783d
+binds f6a649eb to existing7be runtime. Unprivileged plan/refusal checks pass.
+The local Mac setup window is waiting for administrator authentication; no
+scheduled-job success or production backup deployment is claimed from preparation.
 
 Backup worker source (2026-11-16, not installed):
 Small content-addressed backup-only bundles bind their committed source and the
