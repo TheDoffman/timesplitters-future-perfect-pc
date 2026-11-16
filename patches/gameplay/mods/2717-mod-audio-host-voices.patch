@@ -1,0 +1,53 @@
+--- a/src/hle/audio_output.h
++++ b/src/hle/audio_output.h
+@@ -24,6 +24,9 @@
+ #define RECOMP_AUDIO_DEFAULT_GAIN 0.5f
+ #define RECOMP_AUDIO_RETRY_MS 1000u
+ #define RECOMP_AUDIO_SLOT_MOVIE 272u
++#define RECOMP_AUDIO_SLOT_MOD_FIRST 273u
++#define RECOMP_AUDIO_SLOT_MOD_COUNT 32u
++#define RECOMP_AUDIO_SLOT_COUNT (RECOMP_AUDIO_SLOT_MOD_FIRST + RECOMP_AUDIO_SLOT_MOD_COUNT)
+ 
+ void recomp_audio_output_initialize(void);
+ void recomp_audio_output_shutdown(void);
+--- a/src/hle/audio_output_xaudio2.cpp
++++ b/src/hle/audio_output_xaudio2.cpp
+@@ -27,7 +27,7 @@
+ 
+ /* 0..255 are DirectSound buffers (hle_dsound.c), 256..271 streams
+  * (hle_dsound_stream.c), 272 a movie's sound (hle_xmv.c). */
+-constexpr uint32_t kVoiceCount = 256 + 16 + 1;
++constexpr uint32_t kVoiceCount = RECOMP_AUDIO_SLOT_COUNT;
+ /* Submissions in flight per voice. A stream keeps LEAD_MS of sound ahead of
+    its clock in CHUNK_MS pieces (hle_dsound_stream.c), so four was one short
+    of what the music path asks for and every frame past the first dropped a
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -60,6 +60,9 @@
+ #define TSFP_MOD_AUDIO_SOURCE_IMPLEMENTATION
+ #include "mods/mod_audio_source.h"
+ #undef TSFP_MOD_AUDIO_SOURCE_IMPLEMENTATION
++#ifdef TSFP_MOD_GAME
++static void pc_mod_audio_tick_locked(uint64_t now);
++#endif
+ #define PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+ #include "interface/pc_audio_mix_settings.h"
+ #undef PC_AUDIO_MIX_SETTINGS_IMPLEMENTATION
+@@ -1609,6 +1612,9 @@
+                 pump(b, now);
+         }
+     }
++#ifdef TSFP_MOD_GAME
++    pc_mod_audio_tick_locked(now);
++#endif
+     report(now);
+     unlock();
+     /* Streams: feed the host, complete packets -- on their own clock (the
+@@ -1833,3 +1839,7 @@
+     commit_note(client, settings, params, vdata);
+     g_stat.commits_3d++;
+ }
++
++#ifdef TSFP_MOD_GAME
++#include "mods/pc_mod_audio_host.inc"
++#endif

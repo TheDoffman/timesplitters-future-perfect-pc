@@ -95,7 +95,7 @@ loading the maximum32-package/8192-resource capsule and refusing an extra byte.
 Native launcher builds and shared checks pass on all three hosts (112 Windows,
 113 Mac,114 Linux UI groups), with the actual fixture creator backend. Native
 parent ASan/UBSan capsule checks pass31 each on Mac9.31s/Linux16.42s, with leak
-detection disabled. CI43861454203 is still pending at this evidence checkpoint.
+detection disabled. CI43861454203 completes23 successful jobs/two intentional issue skips.
 
 ## Profile staging and startup
 
@@ -150,3 +150,18 @@ component CMakeLists. It includes the store, capsule and WAV parser with strict
 source warnings. The initial Windows startup build exposed missing loader symbols;
 adding these common sources corrects the link on all game hosts. Normal native
 game builds verify this integration independently of the component drivers.
+
+Startup integration evidence: native bootstrap/capsule/store/source/scope tests
+pass257 cases on Windows62.65s, Mac29.56s and Linux41.98s at implementation50c4dd69
+(Windows tested the identical precommit source content). Normal game builds at
+link-fixaf18d689 pass all three hosts and their normal native checks. Launcher
+build/tests pass113 Windows,114 Mac and115 Linux shared UI groups plus the actual
+fixture creator backend; Mac/Linux builds are ataf18d689, Windows uses the same
+shared launcher code at50c4dd69. Actual native parent ASan/UBSan bootstrap/capsule
+suites pass61 cases on Mac18.48s/Linux32.53s ataf18d689, with leak detection
+disabled. No custom playback or game-audio sanitizer injection is claimed.
+Sourceaf18d689 is pushed and synchronized; CI43863701975 completes23 successful jobs/two intentional issue skips.
+
+The next host playback component is described in [custom audio voices](mod-audio-player.md).
+Its private native controls are integrated; Lua commands/activation and actual
+in-game custom sound acceptance remain pending.

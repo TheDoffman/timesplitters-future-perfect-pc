@@ -391,7 +391,7 @@ jobs:
             tests/graphics/test_visibility_queries.py
             tests/graphics/test_cutscene_letterbox.py tests/graphics/test_menu_text.py tests/graphics/test_zero_base_indices.py
             tests/graphics/test_quit_menu.py tests/graphics/test_channel_clears.py
-            tests/media/test_audio_audit.py tests/media/test_audio_candidates.py tests/media/test_audio_loops.py tests/media/test_audio_measurements.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py
+            tests/media/test_audio_audit.py tests/media/test_audio_candidates.py tests/media/test_audio_loops.py tests/media/test_audio_measurements.py tests/media/test_audio_timing.py tests/media/test_audio_output_gain.py tests/media/test_mod_audio_player.py
             tests/media/test_audio_device_recovery.py tests/media/test_native_movie_file.py
             tests/compiler/test_linux_desktop.py tests/compiler/test_linux_video_startup.py tests/compiler/test_guest_storage.py
             tests/compiler/test_guest_paths.py tests/compiler/test_io_lifetime.py

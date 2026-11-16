@@ -1,5 +1,6 @@
 #include "mod_game_runtime.h"
 #include "mod_bootstrap.h"
+#include "mod_audio_player.h"
 #include "mod_resources.hpp"
 #include "mod_runtime.hpp"
 #include "mod-runtime-images.h"
@@ -68,6 +69,7 @@ void fail(const char *message) noexcept {
         std::fprintf(stderr,"[MOD-RUNTIME] %s\n",diagnostic);
     }
     pc_mod_bootstrap_invalidate();
+    if(selected.load())pc_mod_audio_stop_all();
     if(context && context->runtime)context->runtime->close();
 }
 void at_exit(){(void)pc_mod_runtime_shutdown();}
@@ -108,11 +110,13 @@ extern "C" TsfpModMatch *pc_mod_runtime_update(const TsfpModWorld *world,int can
     if(context->owner==std::thread::id{})context->owner=std::this_thread::get_id();
     if(context->owner!=std::this_thread::get_id()) {closing.store(true);return nullptr;}
     try {
-        if(failed.load() || closing.load()){context->runtime->close();context->bound=0;active_match.store(false);return nullptr;}
+        if(failed.load() || closing.load()){pc_mod_audio_stop_all();context->runtime->close();context->bound=0;active_match.store(false);return nullptr;}
         if(!can_start && (!world || context->bound!=world->epoch))world=nullptr;
         auto *match=context->runtime->update(world);
         if(context->runtime->faulted()){fail(context->runtime->error().c_str());match=nullptr;}
-        context->bound=match && world?world->epoch:0;active_match.store(context->bound!=0);return match;
+        uint64_t bound=match && world?world->epoch:0;
+        if(bound!=context->bound)pc_mod_audio_stop_all();
+        context->bound=bound;active_match.store(context->bound!=0);return match;
     }catch(...){fail("Script frame admission failed");return nullptr;}
 }
 extern "C" int pc_mod_runtime_faulted(void){return failed.load()?1:0;}
@@ -145,6 +149,7 @@ extern "C" int pc_mod_runtime_shutdown(void) {
     active_match.store(false);
     std::lock_guard<std::mutex> lock(facade);
     if(!context)return 1;
+    pc_mod_audio_stop_all();
     bool owner=context->owner==std::thread::id{} || context->owner==std::this_thread::get_id();
     if(context->runtime) {
         if(owner)context->runtime->close();else context->runtime->cancel_background();

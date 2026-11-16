@@ -1,3 +1,9 @@
+Mod voices: tests/media/test_mod_audio_player.py runs actual player/shared clocks
+with fake committed resources/device. Output-gain fixtures check actual backend
+slots273/304 and refusal305. Factory test_game_runtime.py adds epoch/shutdown
+voice-reset checks. CI media suites include the new player test on all hosts.
+No actual Lua playback claim: ../development/mod-audio-player.md.
+
 Audio startup: test_mod_bootstrap.py exercises source/audio owner matching,
 incomplete/changed/malformed requests, storage commit gating and retained PCM
 after invalidation. Shared launcher UI tests exercise actual install/staging/

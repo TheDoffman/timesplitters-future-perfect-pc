@@ -64,5 +64,14 @@ int main(int argc,char **argv)
         assert(source.matrix[0]==1 && source.matrix[1]==1);
         recomp_audio_output_set_spatial(99,1,1); /* reject invalid slots */
     }
+    if(expected>0) {
+        const uint8_t pcm[16]={};
+        for(uint32_t slot: {RECOMP_AUDIO_SLOT_MOD_FIRST,RECOMP_AUDIO_SLOT_COUNT-1u}) {
+            assert(recomp_audio_output_submit(slot,pcm,sizeof pcm,48000,1,16,0));
+            assert(recomp_audio_output_set_volume(slot,-10000) && voices[slot].source->gain==0.f);
+            recomp_audio_output_reset_voice(slot);
+        }
+        assert(!recomp_audio_output_submit(RECOMP_AUDIO_SLOT_COUNT,pcm,sizeof pcm,48000,1,16,0));
+    }
     puts("PASS: actual XAudio master initialization and voice attenuation");
 }

@@ -1,3 +1,8 @@
+Patch2717 adds fixed32 custom voices under the shared HLE audio lock, reusing
+existing buffer clocks/output. Stock slots/clocks remain unchanged; slots273..304
+are private mod output. Runtime stops them on epoch/failure/shutdown. Lua commands
+and capability remain off. Contract: ../development/mod-audio-player.md.
+
 Patch2716 carries private authored rate/channels/loop flags from guarded US event
 metadata through the existing TLS scope to successful buffer binding. Selected
 Q12 values must match the supported XBE's35-entry table. Unavailable metadata

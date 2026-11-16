@@ -1,17 +1,45 @@
-Audio profile staging/startup integration (2026-11-16):
-ModLibrary now stages exact verified WAV snapshots in a flat hash-named cache,
-binds their capsule to every selected package, and rechecks it at Configure.
-Native bootstrap loads audio against the source capsule's independent package
-set before opening isolated saves. PCM appears only after storage commit and
-remains owned for draining voices after invalidation. Invalid/partial/changed/
-malformed-wave requests abort before creating the save namespace. Known obsolete
-cache files can be removed; unknown files are preserved. Windows native capsule/
-bootstrap/store/source/scope257 checks pass62.65s; the Windows launcher build and
-113 shared UI groups plus fixture backend pass with unchanged inputs. The first
-launcher run correctly rejected a receipt after inputs changed during validation;
-the final unchanged-input rerun passes. Mac/Linux and normal game builds follow.
-No production mod_audio_version capability is advertised; the staging acceptance
-uses a fixture-only capability. Actual custom playback remains open.
+Private custom voice engine (2026-11-16): patch2717 services32 custom voices
+under the existing HLE audio lock, using shared buffer clocks and separate native
+slots273..304. It consumes only committed bootstrap WAV views, preserves original
+PCM/clocks, bounds pitch/volume/service/copies, commits only accepted submissions,
+handles pause/resume/loop/tails and clears on invalidation. Runtime binding/epoch
+changes, failure and shutdown stop custom voices. Existing backend gain controls
+also cover the added slots. Windows combined factory/player/output/timing/scope
+checks pass299/two intentional platform skips23.68s; final tiny-loop/tail-gain
+player cases pass9 in1.08s. The initial normal Windows build passes; final-source
+normal builds and Mac/Linux acceptance follow. These are private native controls;
+versioned Lua commands, offline-authority admission and actual audible custom
+playback are not yet integrated. No production audio capability is advertised.
+Contract: docs/development/mod-audio-player.md.
+
+Audio profile staging/startup (2026-11-16, implementation50c4dd69/linkaf18d689):
+The shared launcher stages a deduplicated, hash-named WAV cache and exact capsule,
+then rechecks its profile binding and flat inventory at launch. Native bootstrap
+matches the source capsule's independent package set and loads all WAV snapshots
+before opening isolated saves. PCM is withheld until storage commit; retained
+views survive runtime invalidation for draining voices. Invalid/partial/changed/
+malformed-WAV requests abort before creating the save namespace. Ordinary recovery
+clears inherited activation; known obsolete cache files can be recycled and
+unknown files are preserved. Production audio capability remains unadvertised;
+staging tests use a fixture-only capability, not a claim of playback.
+
+Native bootstrap/capsule/store/source/scope257 cases pass on Windows62.65s,
+Mac29.56s and Linux41.98s at implementation50c4dd69 (Windows tested identical
+precommit content). All three normal game builds pass at link-fixaf18d689, with
+native checks and owned disk cleanup. The initial Windows game link identified
+the separate game.cmake source list omitted the audio components; af18d689 adds
+them to common game targets with strict warnings. No generated-code edits,
+compiler optimization or system settings changes were needed. The first launcher
+validation caught changing inputs; the unchanged-input rerun passes. Native
+launcher checks pass113 Windows,114 Mac and115 Linux UI groups plus real fixture
+creator backend. Mac/Linux launchers are ataf18d689; Windows uses the identical
+shared launcher source at50c4dd69. Actual host ASan/UBSan bootstrap/capsule tests
+pass61 on Mac18.48s/Linux32.53s ataf18d689 (leak detection disabled). These are
+actual loaders/startup components and native builds, not in-game custom playback.
+Sourceaf18d689 is pushed/synced. CI43863701975 completes23 successful jobs/two intentional issue skips. The earlier809
+handoff CI43861454203 is terminal23 successes/two intentional issue skips.
+Actual playback, voice clocks/pitch/loops/stop/budgets and stable creator audio
+API/importers remain open. Contract: docs/development/mod-audio-assets.md.
 
 Private audio capsule handoff (2026-11-16, source809bba7d):
 The shared C# encoder and native reader use bounded TSFPAUD1 wire with no paths.
@@ -24,7 +52,7 @@ native launcher builds/tests pass:112 Windows,113 Mac and114 Linux shared UI
 groups, including encoder golden vectors, plus the real fixture creator backend.
 Actual native parent ASan/UBSan capsule suites pass31 each on Mac9.31s and
 Linux16.42s (leak detection disabled). Source809bba7d is pushed and synchronized
-on all three hosts. CI43861454203 remains in progress; no final CI claim yet.
+on all three hosts. CI43861454203 completes23 successful jobs/two intentional issue skips.
 No startup staging/render binding or audio capability is activated. These are
 handoff/component checks, not in-game audio acceptance or a public release.
 Contract: docs/development/mod-audio-assets.md.

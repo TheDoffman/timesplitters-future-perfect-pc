@@ -1,16 +1,26 @@
-Audio profile staging/startup integration (2026-11-16): **In progress**.
-Shared launcher stages/hash-checks a deduplicated audio cache and exact capsule;
-native bootstrap binds it to source owners before save creation, gates PCM on
-commit and retains it after invalidation. Windows257 native checks and launcher
-113 UI groups pass. Mac/Linux verification follows. Production audio capability
-and actual playback remain off. See mod-audio-assets.md and STATUS.
+Private custom voice engine (2026-11-16): **In progress**.
+One shared HLE player reuses buffer clocks, reserved slots273..304 and common
+backend interfaces; SDL follows the same slot budget. Runtime lifecycle stops
+voices on epoch/failure/shutdown. Windows299/two skips and final9 player checks
+pass; final game builds/Mac/Linux checks follow. Lua command/authority wiring and
+actual playback/capability acceptance remain open. See mod-audio-player.md/STATUS.
+
+Audio profile staging/startup (2026-11-16, implementation50c4dd69/linkaf18d689): **In progress**.
+Common launcher stages/rechecks exact WAVs and source-owner-bound audio capsules.
+Native bootstrap loads before save creation, gates PCM on commit and retains it
+for draining voices after invalidation. Native257 checks pass each host. All three
+normal game builds pass ataf18d689, including the shared game.cmake audio source
+list fix. Native launcher checks pass113 Windows/114 Mac/115 Linux UI groups plus
+fixture backend. Mac/Linux ASan/UBSan61 cases pass each (no leak detection).
+Source is pushed/synced; CI43863701975 terminal23 successes/two intentional issue skips. Playback/voice policy, SDK and
+production audio capability remain open. See mod-audio-assets.md and STATUS.
 
 Private audio capsule handoff (2026-11-16, source809bba7d): **In progress**.
 Common ModAudioCapsule/read_audio_capsule encode/validate the same path-free
 wire. Native227 checks pass on each actual host, including32 owners/8192 clips.
 All three native launchers build/pass shared UI and fixture backend checks.
 Mac/Linux native ASan/UBSan31 checks each pass (no leak detection). Source is
-pushed/synchronized; CI43861454203 pending. Launcher staging/startup wiring and
+pushed/synchronized; CI43861454203 terminal23 successes/two issue skips. Launcher staging/startup wiring and
 actual custom playback remain open. See mod-audio-assets.md and STATUS.
 
 Creator session vault (2026-11-15, source1a135c18): **In progress**.

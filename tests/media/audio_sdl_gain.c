@@ -96,6 +96,15 @@ int main(int argc,char **argv)
         memcpy(heard,heard_pcm,8);assert(abs(heard[0])<6000 && acoustics[3].bed_amount>.9f);
         recomp_audio_output_reset_voice(3);assert(acoustics[3].bed==0 && acoustics[3].bed_amount==0);
     }
+    if(expected>0) {
+        const unsigned slots[]={RECOMP_AUDIO_SLOT_MOD_FIRST,RECOMP_AUDIO_SLOT_COUNT-1u};
+        for(unsigned i=0;i<2;i++) {
+            assert(recomp_audio_output_submit(slots[i],pcm,sizeof pcm,48000,2,16,0));
+            assert(recomp_audio_output_set_volume(slots[i],-10000) && voices[slots[i]].stream->gain==0.f);
+            recomp_audio_output_reset_voice(slots[i]);
+        }
+        assert(!recomp_audio_output_submit(RECOMP_AUDIO_SLOT_COUNT,pcm,sizeof pcm,48000,2,16,0));
+    }
     recomp_audio_output_shutdown();
     puts("PASS: actual SDL buffer/music/movie output gain and live volume changes");
     return 0;

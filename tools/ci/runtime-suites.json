@@ -218,6 +218,7 @@
     "tests/media/test_audio_measurements.py",
     "tests/media/test_audio_timing.py",
     "tests/media/test_audio_output_gain.py",
+    "tests/media/test_mod_audio_player.py",
     "tests/media/test_audio_device_recovery.py",
     "tests/gameplay/test_native_linux.py",
     "tests/gameplay/test_frame_clock.py",

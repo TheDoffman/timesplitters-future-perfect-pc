@@ -20,6 +20,8 @@ static std::unique_ptr<tsfp::mods::SaveNamespace> lease;
 static std::string source;
 static std::atomic<bool> verified{true};
 static std::atomic<unsigned> probes{0};
+static std::atomic<unsigned> audio_stops{0};
+extern "C" void pc_mod_audio_stop_all(void){++audio_stops;}
 static std::atomic<bool> probe_gate{true},probe_inside{false};
 static bool requested=true,network_locked=false;
 static int (*overlay_extension)(char *,size_t);
@@ -57,7 +59,7 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
     if(mode=="fault")source="return {api=1,on_start=function() error('fixture mode stopped') end}";
     if(mode=="ordinary") {
         requested=false;CHECK(pc_mod_runtime_prepare(cache.c_str()));CHECK(!pc_mod_runtime_selected() && !network_locked && !overlay_extension);
-        CHECK(pc_mod_runtime_shutdown());std::puts("PASS ordinary");return 0;
+        CHECK(pc_mod_runtime_shutdown() && !audio_stops.load());std::puts("PASS ordinary");return 0;
     }
     std::string error;lease=tsfp::mods::SaveNamespace::open(original,std::string(64,'a'),error);CHECK(lease);
     bool from_environment=mode=="cache-env" || mode=="cache-missing" || mode=="cache-empty";
@@ -105,6 +107,7 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
         std::puts("PASS tamper");return 0;
     }
     CHECK(match && probes.load()==1);
+    CHECK(audio_stops.load()>0); // First binding clears voices from any previous epoch.
     int status=0;end=Clock::now()+std::chrono::seconds(3);
     while(!status && Clock::now()<end){TsfpModCommit commit{};status=tsfp_mod_match_pump(match,&world,&commit);if(!status)std::this_thread::sleep_for(std::chrono::milliseconds(1));}
     if(mode=="fault") {
@@ -113,6 +116,11 @@ static int run(const std::string &mode,const std::string &cache,const std::strin
     }
     CHECK(status==1);int32_t score=0;CHECK(tsfp_mod_match_score(match,&world,1,&score) && score==4);
     CHECK(pc_mod_runtime_update(&world,0)==match); // Existing result model retained.
+    if(mode=="audio-epoch") {
+        unsigned before=audio_stops.load();++world.epoch;
+        CHECK(!pc_mod_runtime_update(&world,0) && audio_stops.load()>before);
+        before=audio_stops.load();CHECK(pc_mod_runtime_shutdown() && audio_stops.load()>before);
+    }
     if(mode=="other-thread") {
         int cleaned=0;std::thread other([&]{cleaned=pc_mod_runtime_shutdown();});other.join();CHECK(cleaned);
         CHECK(tsfp_mod_match_score(match,&world,1,&score) && score==4); // Retained result model, never freed by UI thread.
