@@ -99,6 +99,7 @@ CPU_TOOLS = {
     'tools/mods/mod_accounts.py', 'tools/mods/mod_uploads.py', 'tools/mods/mod_api.py',
     'tools/mods/mod_operator.py', 'tools/mods/hosting/gunicorn.conf.py', 'tools/mods/hosting/requirements.txt',
     'tools/mods/mod_backup.py', 'tests/mods/test_host_backup.py',
+    'tools/mods/mod_backup_pool.py', 'tests/mods/test_backup_pool.py',
     'tools/mods/mod_rescan.py', 'tests/mods/test_periodic_rescan.py',
     'tools/mods/hosting/scan-service-mac.py', 'tests/mods/test_scan_service.py',
     'tools/mods/hosting/definitions-service-mac.py', 'tests/mods/test_definitions_service.py',

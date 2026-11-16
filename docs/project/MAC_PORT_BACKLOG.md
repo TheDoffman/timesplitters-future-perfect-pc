@@ -1,3 +1,10 @@
+Managed backup scheduling source (2026-11-16): **In progress**.
+Read-only verify and a new-only private pool provide due-time/keep/byte limits,
+replacement-before-prune, fixed-layout unlink and interrupted-output handling.
+Manual backups/last good copies remain protected. Native pool/legacy restore
+tests are wired into CI; Windows143 checks pass/29 POSIX skips. Actual native
+checks and protected scheduling/off-device deployment follow. No live changes.
+
 Production launcher defaults (2026-11-16): **In progress**.
 The accepted source profile is active; compiled production origin/root enable
 fresh launchers without Support/Mods. Exact-origin pin cannot be replaced locally;

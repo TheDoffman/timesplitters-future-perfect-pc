@@ -1,7 +1,9 @@
 # Private workshop backup and recovery
 
 `tools/mods/mod_backup.py` is an operator tool for the Mac/POSIX workshop host.
-It does not enable public hosting or configure scheduled backups. Windows players
+It does not enable public hosting. `mod_backup_pool.py` adds managed due-time
+rotation that a protected scheduler can invoke; installing that scheduler remains
+a separate deployment step. Windows players
 do not need it. Keep backups outside every served publication directory. They
 contain password hashes, account identities, ownership and private moderation
 history; use private storage and an independently protected off-device copy.
@@ -35,8 +37,55 @@ requires an additional256MiB disk headroom. Larger repositories currently requir
 an operational archival/capacity plan before using this tool. Files are mode0600,
 directories0700. `backup.json` is written last and committed to disk; an incomplete
 output is preserved privately for inspection and cannot be restored as complete.
-Existing backups are never replaced or automatically deleted. Retention and
-off-device storage remain operator responsibilities.
+Existing manual backups are never replaced or automatically deleted. Off-device
+storage remains a separate responsibility. A new managed pool may rotate only
+its own snapshots under the explicit policy below.
+
+## Verify and manage routine captures
+
+Read-only verification checks all file hashes, SQLite schema/integrity and stored
+package references without restoring or revoking authentication:
+
+```sh
+python tools/mods/mod_backup.py verify /private/backups/snapshot-001
+```
+
+It opens only the immutable snapshot database with `mode=ro&immutable=1`, avoiding
+WAL/shared-memory sidecars. Live databases always retain ordinary SQLite locking.
+
+Initialize a **new** private managed pool, separate from the live repository and
+every served directory. Existing paths/manual backups are never adopted:
+
+```sh
+python tools/mods/mod_backup_pool.py init /private/workshop/repository /private/backups/managed --keep 7 --interval 86400 --maximum-bytes 8589934592
+python tools/mods/mod_backup_pool.py run /private/backups/managed
+```
+
+The policy records the exact repository and a unique pool identity. Invoke `run`
+periodically as the same locked service account; it captures only when due.
+`--force` requests a fresh capture immediately. A nonblocking lock serializes
+runs. Clock rollback, unknown entries, aliases, corrupt metadata and changed
+file sizes stop work without replacing existing data. The interval is1 hour to7
+days; retention keeps1..32 complete snapshots. Defaults are daily/7 snapshots and
+8GiB logical snapshot bytes, including manifests, plus bounded policy/lock files.
+Filesystem allocation/headroom is checked separately during capture.
+
+The entire new snapshot must fit the remaining pool budget, including a4MiB
+manifest reserve, before it is created. Previous good snapshots are not deleted
+to make capture fit. After full verification of the replacement, rotation hashes
+each removal candidate and unlinks only its declared fixed-layout files through
+directory descriptors; there is no recursive delete or link traversal. The newest
+verified snapshot always survives. Manual backups outside the pool stay untouched.
+An interrupted complete capture is recognized and finishes rotation on a later
+tick. Incomplete or unexpected output stays private for operator inspection and
+blocks further captures rather than consuming more space. Exit2 reports failure;
+successful JSON distinguishes `captured` from `not-due` and includes the next due
+time, retained bytes/count and names removed under the policy.
+
+This source implementation does not install/edit production launchd jobs, upgrade
+the protected601/7be runtime, copy backups off-device or alter public routing.
+Protected scheduling and off-device retention need their own deployment and
+host acceptance; do not point old installed code at a new source configuration.
 
 ## Stage a restore
 

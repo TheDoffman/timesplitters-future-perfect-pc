@@ -1,3 +1,11 @@
+Managed backups: test_backup_pool uses real private SQLite/package snapshots,
+read-only verification (no WAL sidecars/auth changes), due-time/budget/last-good
+preservation, fixed-layout retention, same-second ordering, locks/unknown entries,
+corruption and interrupted complete/partial capture. Original test_host_backup
+restore/reconciliation cases now also run in native CI. Windows intentionally
+skips POSIX capture; actual Mac/Linux acceptance is required. No production jobs
+are installed by the module. Contract: ../development/mod-host-recovery.md.
+
 Public defaults: test_public_host_profile compares compiled origin/root bytes to
 the accepted profile; pending/active staging, mismatch/expiry/new-only guards stay
 covered. Native workshop_trust checks fresh defaults, file-override refusal and

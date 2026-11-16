@@ -135,7 +135,8 @@ def inventory(db):
     return refs, tables
 
 
-def snapshot(repository, destination):
+def snapshot(repository, destination, *, maximum_total=MAX_TOTAL):
+    require(type(maximum_total) is int and 0 < maximum_total <= MAX_TOTAL, 'Invalid backup storage budget')
     root = private_directory(repository)
     require(not (root / BARRIER).exists() and not (root / BARRIER).is_symlink(), 'Finish repository recovery before backing it up')
     target = Path(os.path.abspath(destination))
@@ -153,7 +154,7 @@ def snapshot(repository, destination):
                 estimate += regular(path, MAX_ARCHIVE).st_size
             else:
                 require(not required, 'Required upload/blob is missing')
-        require(estimate <= MAX_TOTAL and shutil.disk_usage(target.parent).free >= estimate + MAX_DB,
+        require(estimate <= maximum_total and shutil.disk_usage(target.parent).free >= estimate + MAX_DB,
                 'Insufficient private backup disk headroom')
         output = fresh_directory(target)
         (output / 'blobs').mkdir(mode=0o700)
@@ -165,7 +166,7 @@ def snapshot(repository, destination):
             source.backup(backup, pages=128)
         files = {}
         total = db_file.stat().st_size
-        require(0 < total <= MAX_DB, 'Database snapshot exceeds its budget')
+        require(0 < total <= min(MAX_DB, maximum_total), 'Database snapshot exceeds its budget')
         with db_file.open('rb') as stream:
             files['catalog.sqlite'] = {'size': total, 'sha256': hashlib.file_digest(stream, 'sha256').hexdigest()}
             os.fsync(stream.fileno())
@@ -178,7 +179,7 @@ def snapshot(repository, destination):
                 continue
             size = regular(source, MAX_ARCHIVE).st_size
             total += size
-            require(total <= MAX_TOTAL, 'Backup storage budget exceeded')
+            require(total <= maximum_total, 'Backup storage budget exceeded')
             record = copy_file(source, output / name, MAX_ARCHIVE)
             require(record['sha256'] == sha, 'Stored package digest changed')
             files[name] = record
@@ -191,7 +192,8 @@ def snapshot(repository, destination):
     return {'backup': str(output), 'files': len(files), 'bytes': total}
 
 
-def restore(backup, destination):
+def backup_manifest(backup):
+    """Strict layout/metadata preflight without changing or trusting payloads."""
     source = private_directory(backup)
     regular(source / MANIFEST, 4 * 1024**2)
     manifest = read_json((source / MANIFEST).read_bytes())
@@ -223,6 +225,49 @@ def restore(backup, destination):
             observed.add(entry.name)
             require(len(observed) <= MAX_FILES + 1, 'Backup file budget exceeded')
     require(observed == set(files) | {MANIFEST}, 'Backup contains missing or unexpected files')
+    return source, manifest, total
+
+
+def verify_snapshot(backup):
+    """Read-only full file/hash/schema/reference check; never creates SQLite WAL."""
+    source, manifest, total = backup_manifest(backup)
+    for name, expected in sorted(manifest['files'].items()):
+        path = source/name
+        before = regular(path, MAX_DB if name == 'catalog.sqlite' else MAX_ARCHIVE)
+        require(before.st_size == expected['size'], 'Backup integrity check failed')
+        with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK), 'rb') as incoming:
+            held = os.fstat(incoming.fileno())
+            require((held.st_dev, held.st_ino, held.st_size) ==
+                    (before.st_dev, before.st_ino, before.st_size), 'Backup changed before verification')
+            digest = hashlib.sha256()
+            remaining=held.st_size
+            while remaining:
+                chunk=incoming.read(min(1024*1024,remaining))
+                require(chunk, 'Backup shortened during verification')
+                remaining-=len(chunk);digest.update(chunk)
+            require(not incoming.read(1), 'Backup grew during verification')
+            after = os.fstat(incoming.fileno())
+            require((after.st_size, after.st_mtime_ns, after.st_ctime_ns) ==
+                    (held.st_size, held.st_mtime_ns, held.st_ctime_ns)
+                    and digest.hexdigest() == expected['sha256'], 'Backup integrity check failed')
+    # Only immutable snapshots are opened this way. The live repository always
+    # uses ordinary SQLite locking. A WAL-mode snapshot must not gain sidecars.
+    with closing(sqlite3.connect((source/'catalog.sqlite').as_uri()+'?mode=ro&immutable=1',uri=True,timeout=3)) as db:
+        db.row_factory=sqlite3.Row
+        db.execute('PRAGMA trusted_schema=OFF');db.execute('PRAGMA foreign_keys=ON')
+        refs, _ = inventory(db)
+        for name, (sha, required) in refs.items():
+            require(not required or name in manifest['files'], 'Snapshot database refers to a missing package')
+            if name in manifest['files']:
+                require(manifest['files'][name]['sha256'] == sha, 'Snapshot package identity mismatch')
+    require(backup_manifest(source)[1] == manifest, 'Backup manifest changed during verification')
+    return dict(backup=str(source),created=manifest['created'],files=len(manifest['files']),bytes=total,
+                manifest_sha256=hashlib.sha256((source/MANIFEST).read_bytes()).hexdigest())
+
+
+def restore(backup, destination):
+    source, manifest, total = backup_manifest(backup)
+    files = manifest['files']
     target = Path(os.path.abspath(destination))
     require(not target.is_relative_to(source) and not source.is_relative_to(target), 'Backup and recovery must be separate')
     output = fresh_directory(target)
@@ -310,13 +355,19 @@ def finish_recovery(repository, reconciliation):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('backup', 'restore', 'resume'))
+    parser.add_argument('action', choices=('backup', 'restore', 'resume', 'verify'))
     parser.add_argument('source', type=Path)
-    parser.add_argument('destination', type=Path)
+    parser.add_argument('destination', type=Path, nargs='?')
     args = parser.parse_args()
     try:
-        action = {'backup': snapshot, 'restore': restore, 'resume': finish_recovery}[args.action]
-        print(json.dumps(action(args.source, args.destination)))
+        if args.action == 'verify':
+            require(args.destination is None, 'Verify needs only a snapshot path')
+            value=verify_snapshot(args.source)
+        else:
+            require(args.destination is not None, 'Choose a destination')
+            action = {'backup': snapshot, 'restore': restore, 'resume': finish_recovery}[args.action]
+            value=action(args.source,args.destination)
+        print(json.dumps(value))
         return 0
     except (ModError, OSError, sqlite3.Error, ValueError) as error:
         print('Workshop recovery: ' + str(error), file=__import__('sys').stderr)

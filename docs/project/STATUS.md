@@ -1,3 +1,17 @@
+Managed backup source (2026-11-16):
+mod_backup.verify_snapshot now checks complete private snapshots read-only,
+including hashes and SQLite schema/references without WAL sidecars or auth
+changes. Existing snapshot supports a tighter caller storage ceiling; legacy
+manual capture/restore formats and defaults remain compatible. mod_backup_pool
+initializes only a new owned private namespace, records its source/policy, locks
+runs and applies daily due-time/budget/keep rules. A fully verified replacement
+precedes exact fixed-layout removal; last-good/manual backups survive a failed
+capture. Complete interrupted captures finish rotation; incomplete/unknown output
+is preserved and blocks growth. No recursive deletion is used. Windows collection/
+scope checks pass143 with29 intentional POSIX skips. Actual Mac/Linux tests and
+scheduled protected deployment/off-device automation remain pending; installed
+601/7be services and public routing are unchanged.
+
 Production launcher defaults (2026-11-16):
 New source launchers now use the accepted public Mac origin and compiled signed
 bootstrap root without local Support/Mods files. The production pin is bound to

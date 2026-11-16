@@ -10,6 +10,8 @@
     "tests/mods/test_creator_projects.py",
     "tests/mods/test_creator_audio.py",
     "tests/mods/test_creator_sdk.py",
+    "tests/mods/test_host_backup.py",
+    "tests/mods/test_backup_pool.py",
       "tests/mods/test_texture_preview.py",
       "tests/mods/test_scan_service.py",
       "tests/mods/test_system_scan_monitor.py",
