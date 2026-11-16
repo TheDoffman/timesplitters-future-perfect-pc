@@ -182,6 +182,7 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
                   source_sha256={}, auto_display_resolution=True, display_settings_version=5)
     if supported is not None:
         native['language_packs'] = supported
+        native['mod_audio_version'] = 1 if supported else 0
     put(native_dir/'BUILD.json', json.dumps(native).encode())
     sdk = tmp_path/'sdk'
     put(sdk/'share/vulkan/icd.d/MoltenVK_icd.json', b'{"ICD":{"library_path":"driver"}}')
@@ -225,6 +226,7 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
     assert manifest['language_packs'] is (supported is True)
     assert manifest['auto_display_resolution'] is True
     assert manifest['display_settings_version'] == 5
+    assert manifest['mod_audio_version'] == (1 if supported else 0)
     assert manifest['native_build'] == native
     assert 'Licenses/SMAA.txt' in manifest['files']
     assert 'Licenses/Keyboard-mouse-icons.txt' in manifest['files']

@@ -1,3 +1,11 @@
+Audio capability metadata (2026-11-16): **In progress**.
+New native receipts declare1 after actual3-host audio gameplay. Mac/Linux packages
+preserve native mod_audio_version (absent=>0); Windows compiled packages declare1.
+Launcher exact-integer guard is unchanged; real Mac writer1/0/absent fixtures pass.
+Windows real launcher Install/Enable/StartInfo-to-game audio now passes with
+25 voice samples, exit0 and preserved originals. Updated native receipts and
+Mac/Linux launcher handoff follow. Public unchanged.
+
 Lua sound addon integration (2026-11-16): **In progress**.
 Common VM/wire/session/match/factory/title code routes explicit audio_api=1
 commands through canonical fields, trusted resource preflight and owner-thread

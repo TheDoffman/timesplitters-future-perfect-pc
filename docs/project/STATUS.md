@@ -1,3 +1,22 @@
+Audio build capability (2026-11-16):
+Following real generated-template gameplay on all3 hosts, new native Mac/Linux
+build receipts and Windows package manifests declare mod_audio_version=1.
+Mac/Linux package writers preserve the native field, defaulting absent to0;
+the launcher continues requiring exact integer1. Current public downloads,
+production workshop/routing and main remain unchanged. Package/regression checks
+pass204/one platform skip on Windows5.17s, including actual Mac writer1/0/absent
+fixtures. The current Windows launcher build passes its native regression suites.
+Actual Windows launcher Install/Enable/GameSettings.StartInfo now stages the
+creator audio ZIP and starts the pinned fdab game from an isolated installation.
+Generated source/audio capsules exactly match independently encoded expectations;
+the real game shows25 voice samples with the complete control sequence, accepts
+slots273/274, exits0 and preserves originals/fixture. Final output counters are
+clean. The installed executable is a hardlink to the pinned build, avoiding a
+second physical copy; only six owned inactive test disk images are recycled.
+An earlier setup stopped before the game because its private C# driver was not
+compiled; that partial fixture is retained. Updated Mac/Linux receipts and their
+launcher audio handoff remain next; this is not a public release claim.
+
 Lua sound addon integration (2026-11-16):
 API1 scripts may explicitly declare audio_api=1 and use bounded game.audio play,
 pause, pitch, volume, stop and stop_all. Legacy-only replies retain wire1; audio

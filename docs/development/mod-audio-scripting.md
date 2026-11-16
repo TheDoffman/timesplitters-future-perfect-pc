@@ -3,7 +3,8 @@
 Sound commands are an explicit addon to Lua API1. Declare `audio_api=1` in the
 returned callback table. Existing API1 scripts keep their behavior and original
 reply format. The package API remains `tsfp-mod-v1-draft` until release acceptance;
-production game manifests do not advertise audio support yet.
+new source builds advertise `mod_audio_version=1` after real three-host gameplay
+acceptance. Existing public downloads are unchanged.
 
 ```lua
 return {
@@ -94,5 +95,13 @@ game execution and backend acceptance, not physical audibility. Linux records
 retryable full-game queue pressure, without device/voice failure. A prior Mac
 attempt faults in MoltenVK finishQueries; its root cause remains open despite
 the later passing run. STATUS retains counts, provenance and harness corrections.
-Launcher-to-game audio acceptance, capability advertisement and release publication
-remain required before general activation.
+Native Mac/Linux build receipts now declare `mod_audio_version=1`; their package
+writers carry the native value forward and default an absent field to0. Windows
+packages declare1 for the compiled implementation. The launcher still requires
+exact integer1; missing, boolean, string or future values cannot enable audio.
+Mac real-package-writer fixtures cover1/0/absent, alongside the existing strict
+launcher checks. Windows actual launcher Install/Enable/StartInfo stages the
+generated audio ZIP into an isolated installation and the pinned game executes
+all controls, accepts backend PCM, exits0 and preserves originals. Mac/Linux
+launcher handoff and release publication remain separate; this source change
+does not modify existing public downloads.

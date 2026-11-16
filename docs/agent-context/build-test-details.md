@@ -2,7 +2,11 @@ Lua audio: script_worker/session/game_runtime tests cover explicit API1 addon,
 v2 reply/canonical fields, budgets, unknown-resource atomic refusal, owner-thread
 dispatch and retained manager callback. Creator/audio-assets tests cover the
 new audio template: actual CLI pack/validate, VM sequence and native PCM store.
-Contract: ../development/mod-audio-scripting.md.
+Build receipt writers now declare mod_audio_version=1 after real3-host gameplay;
+Mac/Linux packages preserve the exact native value (absent=>0), Windows packages
+declare1 for the compiled implementation. Mac real-writer fixtures check1/0/absent.
+Launcher RuntimeAvailable still requires exact integer1. Existing public packages
+are unchanged. Contract: ../development/mod-audio-scripting.md.
 
 Mod voices: tests/media/test_mod_audio_player.py runs actual player/shared clocks
 with fake committed resources/device. Output-gain fixtures check actual backend
