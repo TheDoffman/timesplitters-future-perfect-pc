@@ -464,6 +464,8 @@ def test_recovery_refuses_uncertain_roots_without_mutating_any_cache_file(runtim
                 lines[4]=' '.join(str(record[k]) for k in ('kind','pid','start_a','start_b'))
             commit.write_bytes(('\n'.join(lines)+'\n').encode('ascii'))
         before=cache_snapshot(root)
+        outside={p:(p.read_bytes(),p.stat().st_dev,p.stat().st_ino) for p in runtime[1].iterdir() if p.is_file()}
         assert call(runtime,mode='recover',pins=pins)==[dict(examined=1,removed=0,preserved=1)]
         assert cache_snapshot(root)==before
+        assert {p:(p.read_bytes(),p.stat().st_dev,p.stat().st_ino) for p in outside}==outside
         if os.name=='nt':assert directory_identity(profile_scope)==profile_identity

@@ -4,7 +4,9 @@ complete journals with proven native worker death before deleting known helpers.
 Windows thin adapter validates actual profile identity before OS deletion. POSIX
 enumeration/unlink is relative to held descriptors with inode/content checks.
 Windows resource/process55/8 skips and updated recovery17 pass; earlier resource/
-save85/12 skips pass. Actual Mac/Linux acceptance follows. Early/incomplete and uncertain profile states preserve
+save85/12 skips pass. At01e497f3 actual Mac resource/save/process99/11 skips pass (30.75s); Linux98/12
+skips pass (35.64s). Outside-link byte/native-identity assertions added (Windows
+9/1 skip); sanitizer verification follows. Early/incomplete and uncertain profile states preserve
 evidence; broader runtime/game/release acceptance remains pending. See STATUS.
 
 Shared startup journal (2026-11-16): **In progress**.

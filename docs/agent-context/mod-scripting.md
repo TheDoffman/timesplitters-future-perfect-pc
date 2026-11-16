@@ -1,4 +1,4 @@
-Committed-cache recovery (source; native host acceptance in progress):
+Committed-cache recovery (source01e497f3; native checks pass):
 recover_private_caches in mod_saves.cpp runs from RuntimeResources::create before
 fresh allocation, using compiled helper pins. It scans at most8192 parent entries,
 rotates candidate order, admits at most16 roots,64 root members,16 journal pairs,
@@ -31,7 +31,14 @@ preserved on failure. A crash inside native profile deletion or incomplete start
 can leave an uncertain root for inspection rather than a guessed cleanup retry.
 No-record early-crash cache recovery and interrupted-profile cleanup remain
 separate work. Actual crash-to-next-launch and refusal tests are in
-test_mod_resources.py; no full game/client release claim follows from them.
+test_mod_resources.py. Actual01e497f3 Mac resource/save/process99/11 skips and
+Linux98/12 skips pass (30.75/35.64s). Windows resource/process55/8 skips pass
+(37.26s); extra recovery17 checks pass (17.71s). Refusal controls also compare
+bytes AND native file identities of linked files outside the cache; updated
+Windows helper/hardlink9/1 skip checks pass (16.22s). Actual profile-scope native
+identity remains unchanged on Windows refusal paths. Production testing-OFF
+Windows build01e and identical-source test-probe exclusion pass. Sanitizer checks
+follow; no full game/client release claim follows from these component tests.
 
 Shared startup journal (source; full stale recovery still pending):
 CacheJournal in mod_private.hpp/mod_saves.cpp binds to a bounded process-wide

@@ -8,8 +8,13 @@ Windows resource/process55/8 skips pass (37.26s), including canonical negative
 records and direct native profile-scope preservation. Added nested unknown,
 outside hardlink and helper-link refusal controls pass in recovery17 selection
 (17.71s). Earlier resource/save85/12 skips pass (36.20s); scope147 pass (0.46s).
-Mac/Linux acceptance, early no-record recovery and uncertain interrupted-profile
-cases remain pending. No public host/routing or client publication changes.
+Exact01e497f3 actual Mac resource/save/process99/11 skips pass (30.75s), Linux
+98/12 skips pass (35.64s). Added outside-link byte/native-identity assertions pass
+Windows helper/hardlink9/1 skip checks (16.22s). Windows production testing-OFF
+build01e497f3 passes; identical-source testing-library probe positive control and
+production symbol absence pass (local build/mod-recovery-production-01e497f3/
+probe-exclusion-proof.json). Host sanitizer checks, early no-record recovery and
+uncertain interrupted-profile cases remain pending. No public host/routing or client publication changes.
 
 Shared native cache startup journal (2026-11-16, implementation in progress):
 Session now writes private new-only intent before native creation and commits
