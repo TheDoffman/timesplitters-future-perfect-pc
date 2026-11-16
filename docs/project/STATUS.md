@@ -1,3 +1,43 @@
+Private production inputs and off-server root recovery (2026-11-15):
+The new initializer creates data/host only from fixed private origin/public-root/
+catalog-key inputs after verifying the supplied root fingerprint, current signed
+root, matching origin and distinct authorized catalog signer. Configs/state and a
+preparing->complete marker are new-only; idempotent checks preserve live data and
+refuse foreign/partial/changed/linked/different-generation state. Workers require
+matching completed scan and host setup. On the actual Mac125 initializer/host/
+release tests passed2.82s. These tests use disposable inputs, not root deployment.
+
+Windows trust ceremony tests pass all4 actual DPAPI/ACL/recovery cases15.98s.
+The production ceremony was then executed with fresh RSA3072 root-a/root-b and a
+separate online catalog key for https://dans-mac-mini.tail7e8ab8.ts.net:8443.
+Both encrypted root keys and the account-DPAPI recovery capsule remain in the
+private Windows recovery store outside this checkout/cloud-sync folders. The
+actual ceremony decrypted both roots in memory and proved their threshold
+signatures. No root plaintext or passwords were exported. This is account/profile-
+bound off-server recovery; independent portable export/profile backup and disaster
+restore remain incomplete, so this is not full backup/recovery acceptance.
+Public root fingerprint:
+b52e5d499648b84e8f5e84bb7b0a539426e6ff706f396d94baf7dfee19f73d27.
+Only the three online host-input files were staged in a new0700 Mac cache inbox,
+set0600 and checked for owner/single-link/size/stable bytes, exact Windows hashes,
+live root/origin and authorized online key. No root private material is present.
+Private input receiptSHA0aa266178d46e0e5b67b8eb40520d8b52fce31802f58f4a28ea0d61907bcc110.
+Mac and Windows clocks matched and Tailscale's actual self DNS was verified.
+
+Sourcec42e5258 checks pass Windows236 with60 POSIX/native skips19.38s and Mac169
+with4 Windows skips3.55s. Packaging then correctly refused the Windows helper's
+HEAD-declared CRLF checkout as differing from its LF Git blob. The preparer now
+accepts only exact Git bytes or exact HEAD-declared CRLF rendering, with mixed/
+changed/undeclared cases refused. Windows145pass16skips0.31s and Mac38pass0.09s
+cover release/scope contracts. New matching source9e1f1f98 is frozen/plan-verified:
+60 source/3339 runtime files151089818B, descriptorSHA
+932408a7bb515397973ccec2f0f56162f43c83f283b32a8fcedce89d025542ce;
+preparation receiptSHAf00918f794a8f19cb93cc781e06c0a357a4bf9089a7ecb77083086f4d22e981f.
+The partial refused c42 preparation is preserved. Protected installed code remains
+f234; no production initialization/jobs/new public routes have been applied.
+Public trust delivery, protected cutover/lifecycle/boot, official UID600 definitions,
+backup/restore and creator-to-native-game public acceptance remain required.
+
 Restricted persistent-host control implementation (2026-11-15):
 Sourcef099ea69 adds fixed api/publication/gateway bootstrap roles, unprivileged
 system-host-service-mac.py workers, protected system-host-monitor-mac.py control

@@ -19,6 +19,10 @@ tamper and complete ceremony tests pass on Windows. This account/profile-bound
 recovery is not a portable backup; portable export/profile backup remains needed.
 Host preparation permits only exact Git bytes or exact HEAD-declared CRLF checkout
 rendering; mixed endings/text changes/local filter substitutions remain refused.
+Actual production root ceremony/recovery proof completed on Windows; only3 online
+inputs staged+hash/signature verified in a private Mac inbox. New60-source9e1
+bundle prepared only; root runtime remains f234, no production jobs. STATUS has
+public fingerprint/provenance. Portable recovery/protected cutover remain open.
 
 Fixed api/publication/gateway roles use system-host-service-mac.py and protected
 system-host-monitor-mac.py. Root accepts fixed labels, numeric process metadata
@@ -136,12 +140,12 @@ of a<=1MiB script, with validated byte-boundary offset/next; no extract/eval/wri
 Persistent preview limits are24/account and48/global per minute, separate from
 approval. Native SourcePage binds identity/path/file digest/size/offset/text bytes
 and verifies a complete single-page digest. UI offers all declared Lua scripts,
-read-only portions and visible control/bidi escapes. Asset previews remain open.
+read-only portions and visible control/bidi escapes. DDS preview is described above;
+audio/map inspection remains open.
 Tests cover access/unscanned/path/digest/offset/UTF-8 boundaries/corruption/rates,
 native bindings and UI; real Mac moderation mode reads the original script too.
-Host API changed again: da3 is historical; matching30fa source bundle is now
-frozen/plan-verified. Actual native Lua/scanner/moderation acceptance passes;
-privileged installation remains pending. Source-inspection details: STATUS.
+Actual native Lua/scanner/moderation acceptance passes; current installation and
+source provenance are recorded above and in STATUS.
 
 GET /v1/moderation/<upload>/evidence exposes role-gated completed-scan metadata:
 exact upload/digest/state, engine/version/status/time/isolation/definition-age
@@ -151,9 +155,7 @@ binds all identity/state fields and strict types. Selection fetches evidence;
 fresh clean evidence enables approval, while revocation remains available on
 stale/error evidence. Server approval still rechecks actual freshness atomically.
 Unit/API/UI adversarial checks and the opt-in real Mac moderation mode cover it.
-This changes host API source: the older frozen0338 release lacks this endpoint
-and must not be presented as the matching launcher host release. A matchingda3
-source bundle is prepared/plan-verified; root install remains pending; see STATUS.
+Current host source/installation provenance is recorded above; see STATUS.
 
 Explicit Mac --test-creator-moderation extends real scanner acceptance through
 ModCreatorClient.Reviews/Moderate: only the genuinely clean package is approved,
