@@ -1,5 +1,5 @@
 Game link/lease checks: mod-scripting.md; backups/SDK: [details](build-test-details.md).
-Migration/audio checks: build-test-details.md.
+Migration leases/audio checks: build-test-details.md.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

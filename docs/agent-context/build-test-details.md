@@ -1791,6 +1791,8 @@ test_host_migration.py covers actual POSIX writes/recovery, unfamiliar bytes/
 links/modes, private state replacement and admission denial; pure contracts and
 default CLI run on Windows too. Native CI selects these tests. This is not the
 root cutover coordinator or live production admission; those remain pending.
+Separate-process lease and replaced-private-directory cases also exercise real
+POSIX locking/namespace behavior; they do not rely on an in-process lock mock.
 Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
 interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;

@@ -9,8 +9,11 @@ root-owned quiescence admission binding plan/nonce, all9 jobs plus backup stoppe
 and backup verification after quiescence. Installed locked-account CLI defaults
 to plan-only; it cannot issue that authority or activate a service. Root cutover
 coordination/backup binding migration and actual UID600 admission remain pending.
-Windows migration/initializer/CI scope checks pass159 with61 POSIX skips (1.50s);
-final native filesystem/recovery checks pending. Production601/7be unchanged.
+Atf34a7af9 Windows migration/initializer/CI scope checks pass159 with62 POSIX
+skips (1.69s); actual Mac221 pass6.06s and Linux221 pass8.69s. These use private
+HOME filesystem fixtures with test authority owners, not live UID600 admission.
+Added separate-process lease and replaced-directory cases are pending final run.
+Production601/7be unchanged; no privileged job/config/data changes occurred.
 
 Frozen host upgrade candidate (2026-11-16; source4fc86283; not installed/active):
 prepare-release-mac.py froze81 source/guardian files with3339 verified runtime

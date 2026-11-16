@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import select
 import subprocess
 import sys
 import time
@@ -220,3 +221,34 @@ def test_immutable_origin_or_root_change_requires_explicit_separate_migration(pr
     profile.write_bytes(migration.wire(value))
     with pytest.raises(ModError,match='binding'):migration.migrate(before,after,nonce)
     assert members(root)==plan['before'] and not (root/'data/host-migrations').exists()
+
+
+def test_separate_process_lease_blocks_second_migration_and_releases_after_exit(private_tree):
+    root,before,after,nonce,plan,_,_,_=private_tree
+    migration.migrate(before,after,nonce)
+    lease=root/'data/host-migrations/lease'
+    program="import fcntl,sys; f=open(sys.argv[1],'rb'); fcntl.flock(f,fcntl.LOCK_EX); print('locked',flush=True); sys.stdin.buffer.read(1)"
+    child=subprocess.Popen([sys.executable,'-I','-c',program,str(lease)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    try:
+        assert select.select([child.stdout],[],[],5)[0] and child.stdout.readline()==b'locked\n'
+        with pytest.raises(BlockingIOError):migration.migrate(before,after,nonce,rollback=True)
+        assert members(root)==plan['after']
+        child.communicate(b'x',timeout=5);assert child.returncode==0
+        assert migration.migrate(before,after,nonce,rollback=True)['phase']=='rolled-back'
+    finally:
+        if child.poll() is None:child.kill();child.wait(timeout=5)
+        child.stdin.close();child.stdout.close();child.stderr.close()
+
+
+def test_replaced_private_directory_stops_migration_and_preserves_replacement(private_tree,monkeypatch):
+    root,before,after,nonce,plan,guards,_,_=private_tree
+    replace=migration._replace;changed=[]
+    def replaced_directory(*args):
+        if args[-1].startswith('.migration-') and not changed:
+            changed.append(True);host=root/'data/host';host.rename(root/'data/preserved-host')
+            host.mkdir(mode=0o700);(host/'unrelated').write_bytes(b'preserve replacement')
+        return replace(*args)
+    monkeypatch.setattr(migration,'_replace',replaced_directory)
+    with pytest.raises(ModError,match='replaced'):migration.migrate(before,after,nonce)
+    assert (root/'data/host/unrelated').read_bytes()==b'preserve replacement'
+    assert (root/'data/preserved-host/catalog-1.pem').read_bytes()==guards['host/catalog-1.pem']
