@@ -68,3 +68,15 @@ Patch2718 uses the dedicated `TSFP_MOD_AUDIO_HOST` guard on that HLE target,
 leaving unrelated `TSFP_MOD_GAME` display-menu branches unchanged. The initial
 broad HLE flag exposed a missing menu include; the audio guard avoids expanding
 that unrelated compilation path.
+
+At implementationf321e661, combined actual factory/player/output/timing/scope
+checks pass299 Windows cases/two intentional skips23.68s,299 Mac/two skips14.55s
+and300 Linux/one skip20.80s. Nine final Windows tiny-loop/tail-level checks pass
+1.08s. All three normal native game builds at guard-fix7c743ae8 pass their usual
+native checks and recycle owned test images. These builds compile the actual
+HLE player, unlike the earlier executable-only flag attempt. Native player
+ASan/UBSan passes all nine scenarios each on Mac/Linux, with leak detection
+disabled; this uses the actual player/clock and fake host device, not sanitizer
+injection into the running game. The initial Linux shell loop stopped before
+running cases; an explicit bounded Python subprocess harness verifies all nine.
+No device audibility or Lua-triggered gameplay is inferred from these checks.

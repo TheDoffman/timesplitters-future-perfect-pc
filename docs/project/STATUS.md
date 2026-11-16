@@ -1,16 +1,30 @@
-Private custom voice engine (2026-11-16): patch2717 services32 custom voices
-under the existing HLE audio lock, using shared buffer clocks and separate native
-slots273..304. It consumes only committed bootstrap WAV views, preserves original
-PCM/clocks, bounds pitch/volume/service/copies, commits only accepted submissions,
-handles pause/resume/loop/tails and clears on invalidation. Runtime binding/epoch
-changes, failure and shutdown stop custom voices. Existing backend gain controls
-also cover the added slots. Windows combined factory/player/output/timing/scope
-checks pass299/two intentional platform skips23.68s; final tiny-loop/tail-gain
-player cases pass9 in1.08s. The initial normal Windows build passes; final-source
-normal builds and Mac/Linux acceptance follow. These are private native controls;
-versioned Lua commands, offline-authority admission and actual audible custom
-playback are not yet integrated. No production audio capability is advertised.
-Contract: docs/development/mod-audio-player.md.
+Private custom voice engine (2026-11-16, implementationf321e661/guard7c743ae8):
+Patch2717 services32 custom voices under the existing HLE audio lock, using shared
+buffer clocks and separate output slots273..304. It consumes committed bootstrap
+WAV views, preserves original PCM/clocks, bounds pitch/volume/service/copies,
+commits only accepted submissions, handles pause/resume/loop/tails, and clears
+on bootstrap invalidation. Source-loop copying doubles complete periods, keeping
+one-frame loops bounded; effects-bus changes also update queued one-shot tails.
+Runtime epoch/binding changes, failure and shutdown stop custom voices. Actual
+SDL/XAudio2 output fixtures verify first/last mod slots and reject slot305.
+
+Combined actual factory/player/output/timing/scope tests atf321e661 pass299/two
+intentional skips on Windows23.68s and Mac14.55s,300/one skip Linux20.80s.
+Final9 Windows tiny-loop/tail-level cases pass1.08s. Actual player/clock ASan/UBSan
+passes all9 cases each Mac/Linux (leak detection disabled; host device mocked).
+The initial Linux shell-loop harness stopped before scenarios; an explicit
+bounded Python subprocess harness passes all9. All three normal game builds at
+7c743ae8 pass their native checks and owned test-image cleanup. The first final
+Windows link exposed HLE missing the implementation flag; broad TSFP_MOD_GAME
+on HLE then enabled unrelated display-menu code and failed its include. Patch2718
+and the common game.cmake target use dedicated TSFP_MOD_AUDIO_HOST, compiling
+only custom audio without expanding that menu path. No generated guest C,
+compiler optimization or system settings changes were needed.
+
+These private native controls still need versioned Lua commands, resource and
+offline-authority transaction admission, and actual in-game custom playback.
+Production audio capability remains unadvertised. This is a host-engine milestone,
+not complete audio SDK/public release acceptance. Contract: mod-audio-player.md.
 
 Audio profile staging/startup (2026-11-16, implementation50c4dd69/linkaf18d689):
 The shared launcher stages a deduplicated, hash-named WAV cache and exact capsule,

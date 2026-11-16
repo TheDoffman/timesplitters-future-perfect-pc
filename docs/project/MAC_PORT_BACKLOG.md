@@ -1,9 +1,11 @@
-Private custom voice engine (2026-11-16): **In progress**.
-One shared HLE player reuses buffer clocks, reserved slots273..304 and common
-backend interfaces; SDL follows the same slot budget. Runtime lifecycle stops
-voices on epoch/failure/shutdown. Windows299/two skips and final9 player checks
-pass; final game builds/Mac/Linux checks follow. Lua command/authority wiring and
-actual playback/capability acceptance remain open. See mod-audio-player.md/STATUS.
+Private custom voice engine (2026-11-16, implementationf321e661/guard7c743ae8): **In progress**.
+Shared HLE player reuses buffer clocks/reserved slots273..304/common backends;
+epoch/failure/shutdown stops clear voices. Actual component checks pass299/two
+skips Win/Mac,300/one skip Linux; player ASan/UBSan9 cases pass Mac/Linux (no leak
+detection). All three normal game builds/native checks pass at7c743ae8. Dedicated
+TSFP_MOD_AUDIO_HOST avoids enabling unrelated display-menu branches; actual HLE
+implementation is compiled. Lua/authority transactions, audibility/gameplay and
+production capability remain open. See mod-audio-player.md and STATUS.
 
 Audio profile staging/startup (2026-11-16, implementation50c4dd69/linkaf18d689): **In progress**.
 Common launcher stages/rechecks exact WAVs and source-owner-bound audio capsules.
