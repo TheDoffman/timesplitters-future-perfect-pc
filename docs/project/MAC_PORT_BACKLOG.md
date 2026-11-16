@@ -397,7 +397,7 @@ Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Wind
 Mac build passes using supported --output under the owned Library/Caches folder.
 No public workshop service, production trust activation or release is claimed.
 
-Authored audio binding follow-up (2026-11-16, local source): shared request/TLS
+Authored audio binding follow-up (2026-11-16, sourcec2b9e3be/301767f7): shared request/TLS
 snapshot and patch2716 preserve verified authored rate/channels/loop flags in
 successful buffer bindings, with guarded reads and pinned Q12 values. Failures/
 retirement clear metadata; clocks/PCM and script permissions stay unchanged.
@@ -406,6 +406,14 @@ native Mac/Linux/game acceptance remains pending. Linux161 checks and the Window
 game build now pass atc2b9e3be. Mac first reports159 passes/two fixture mprotect
 aborts; the shared denial fixture now aligns to the actual host page size instead
 of assuming4KiB. Corrected native reruns remain pending. See STATUS/mod-audio-input.md.
+
+Final301767f7 acceptance: corrected Mac161 cases pass5.09s; Linux/Windows final
+guard cases and all three normal game builds pass. Actual unmodded six-bot scenes
+exit0, and independently parsed original bank metadata matches all captured known
+Play snapshots (89 Windows/88 Mac/87 Linux); differing runtime pitches preserve
+the authored base. Unknown sources keep zero metadata. Source is synchronized;
+CI43850646185 completes23 successful jobs/two intentional issue skips. Custom
+replacement/stream/full SDK acceptance remains open.
 
 Audio lifetime follow-up (2026-11-16, source48465dd9): shared patch2715 observes
 buffer identity/generation, actual pitch/loops and retirement without changing

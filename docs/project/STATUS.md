@@ -1,4 +1,4 @@
-Authored audio metadata binding (2026-11-16, local source):
+Authored audio metadata binding (2026-11-16, sourcec2b9e3be/fixture301767f7):
 TsfpModAudioSource privately carries authored rate/channels/whole-source-loop
 beside the verified event ID. Fresh RAM/OS queries guard the live event record,
 selector and selected Q12 value; that value must match the supported XBE's
@@ -6,16 +6,31 @@ original35-entry table. Missing metadata stays zero without inventing a base.
 The existing bounded thread scope copies metadata; successful buffer binds retain
 it through pitch/play/stop, failed binds clear it, and retirement clears it.
 Samples, clocks, script API, package permissions and replacement activation are
-unchanged. Actual guarded-source/HLE/WAV161 Windows checks pass6.21s; the final
-seven affected guard/scope/lifetime cases also pass2.79s. Actual Mac/Linux and
-normal game validation remain pending. Contract: mod-audio-input.md.
+unchanged. Complete guarded-source/HLE/WAV161 selections pass on Windows6.21s,
+Linux9.60s and the corrected Mac5.09s. Linux/Windows also pass all three corrected
+source-guard cases0.51s/2.35s. All three normal301 game builds pass their native
+checks. The first Mac fixture used an invalid4KiB-aligned mprotect target on16KiB
+host pages; the correction rounds to the actual host page size. No production
+source query or compiler/game behavior was weakened. Standalone native guard
+fixtures additionally pass ASan/UBSan on Mac/Linux (leak detection disabled).
+Contract: docs/development/mod-audio-input.md.
 
-Authored-binding native handoff atc2b9e3be: actual Linux161 checks pass9.60s;
-the normal Windows build and its full checks pass. The Mac selection has159
-passes/two source-fixture aborts: a hardcoded4KiB-aligned mprotect target is invalid
-on its16KiB pages. The shared test now aligns the metadata target using the
-host's actual page size. This is a fixture correction; final native reruns and
-gameplay acceptance remain required.
+Unmodded six-bot Arcade scenes exit0: Windows85s, Mac/Linux100s. The independent
+original-bank comparison verifies captured authored rate/channels/loop flags for
+every known Play:89/88/87 respectively. Playback pitch differs from the preserved
+authored base in17/15/16 cases. One authored looping Play is observed per host;
+all four unknown initial plays retain zero metadata. No audio package is loaded.
+Game SHA Windows8824505f09c361cc270eb5426659a55d8a137ec59a70d56dc46634cc6e64dfed;
+Mac5fc4ce51b265dbf66bcfcd0963d9f2ab7dc199ba30900cebefa7404c7b202a4a;
+Linuxec17928a962068ef6d2cdf43d501c36edb8ed548856a5a39f0136e4ce0a10d58.
+Ignored proofs logs/mod-audio-authored-{win,mac,linux}-proof.json have SHAs
+8ecb7bdecad553b481e538211a45c459f1110962be25303ee6ed2d77e47c7773 /
+77435f278d09de332980ebdd2610ee8437a25493f19394be1c9050953ecbb9f0 /
+7ee5343694dfc73c8d1fa858c026b4aa276aedeece448fdefc798b0b79ab915c.
+Canonical fixtures are preserved; known own partition images recycled. Source is
+pushed and synchronized. CI43850646185 completes23 successful jobs with two
+intentional issue skips. Audio replacement, complete streamed/music coverage and
+the full goal remain unfinished.
 
 Audio lifetime evidence hook (2026-11-16, source48465dd9):
 Patch2715 adds opt-in512-row bind/play/frequency/loop/pause/stop/retire metadata,

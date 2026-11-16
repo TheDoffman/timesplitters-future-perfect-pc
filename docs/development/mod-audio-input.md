@@ -25,8 +25,27 @@ Separate scope cases cover copied values, nested masking and thread isolation.
 Actual HLE fixtures verify preservation through pitch/play/stop, clearing at
 retirement and clearing every field after native bind failure. Windows's full
 audio/source/WAV selection passes161 cases; seven affected cases pass again
-after the final guard/scope additions. Matching native host/game validation
-remains pending at this source checkpoint. No replacement playback is enabled.
+after the final guard/scope additions. No replacement playback is enabled.
+
+The corrected host-page fixture at301767f7 passes all161 Mac cases5.09s; Linux's
+earlier161-case pass9.60s is followed by all three corrected guard cases0.51s,
+and Windows's three corrected guard cases pass2.35s. The initial Mac failure was
+an unaligned mprotect request in the test:16KiB host pages require rounding the
+metadata address to the actual page size. No production read check was relaxed.
+All three normal301 game builds pass their native checks.
+The standalone guarded-reader fixture also passes ASan/UBSan on actual Mac and
+Linux hosts; leak detection is disabled. No sanitizer is injected into the game.
+
+Real isolated six-bot Arcade scenes then exit0 (85 seconds Windows,100 Mac/Linux).
+Every known Play snapshot in the bounded traces matches independently parsed
+original-bank rate/channels/loop metadata:89 Windows,88 Mac,87 Linux. Playback
+differs from the captured authored base in17/15/16 cases, while authored metadata
+remains intact. Each host observes one authored looping Play; the four unknown
+initial plays retain zero metadata. These are unmodded source-binding checks,
+not custom audio, stream coverage or replacement-clock acceptance.
+Evidence lives in private/test-saves/audio-authored-3017-{win,mac,linux}/evidence.json;
+Windows analysis copies are logs/mod-audio-authored-*-proof.json. Source is pushed
+and synchronized; CI43850646185 completes23 successful jobs/two intentional issue skips.
 
 ## Playback lifetime observation
 
