@@ -1,3 +1,33 @@
+Public launcher profile and protected setup admission (2026-11-15):
+The actual ceremony's public root and origin are now tracked source data under
+config/mods/public-workshop-root.json and public-workshop.json, with the exact
+b52e5d49... fingerprint and pending-public-acceptance status. No private keys are
+included. prepare-launcher-workshop-profile.py verifies the pin/signatures/origin/
+lifetime and stages the launcher's existing Support/Mods settings only for private
+acceptance until the profile is active. Normal launcher defaults stay disconnected.
+Windows profile/scope136 cases pass0.42s; actual Mac profile9 cases pass0.03s and
+a new acceptance-only profile was staged successfully without network/services.
+
+prepare-installed-host-mac.py now provides the immutable root setup component:
+read exactly three private administrator-owned online inputs, match the immutable
+public pin, copy only fixed names as UID600 and run both initializers/updater in
+explicitly credential-dropped children. accept-installed-scanner-mac.py requires
+real benign/EICAR/empty-database/missing-engine outcomes and isolation/engine
+identity using disposable owned files. Only then can fixed root monitor generators
+run and a protected exclusive admission.json be recorded. No job registration,
+startup or public routing is performed. Unit fixtures cover failure ordering,
+fixed commands/privileges, nofollow/modes/aliases/unknown entries and exact reuse;
+they do not prove actual privileged ClamAV admission. Windows targeted177pass32
+POSIX skips0.69s; actual Mac78pass0.21s. Protected execution remains pending.
+New matching sourcecb49fd14 is prepared/plan-verified only:65 source/3339 runtime
+files151112488B, descriptorSHA
+54d2652b54dc684a1b8592071a995bc88fae73b9813f44142f65b009fb0c2b36;
+preparation receiptSHA7a92f9bd162bab36306b8c933f3ae3d48d635ddf12cc26fe037bae6b669651ca.
+The installed protected release remains f234. Persistent job registration and
+private service/readiness/restart checks must join this setup in the concrete
+native cutover before another administrator authentication step. Public profile
+activation, internet/native end-to-end, boot, recovery and full SDK gates stay open.
+
 Private production inputs and off-server root recovery (2026-11-15):
 The new initializer creates data/host only from fixed private origin/public-root/
 catalog-key inputs after verifying the supplied root fingerprint, current signed
