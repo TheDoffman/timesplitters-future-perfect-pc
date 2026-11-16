@@ -106,3 +106,27 @@ and tests denied stack/request access, read-only request access and overflow,
 without supplying a replacement guard. Windows final source/WAV/HLE selection
 passes157 cases7.51s; final native linking and matching Mac/Linux checks remain
 pending at this checkpoint. Replacement audio is still not enabled.
+
+## Native Windows observation at source0ece5ff0
+
+The normal optimized Windows build now links and passes its complete checks using
+one compiler with UseMultiToolTask/EnforceProcessCountAcrossBuilds. The earlier
+memory and unresolved-guard failures are superseded by this successful build;
+no generated C or optimization was changed. Native source/WAV/HLE selections
+pass157 cases on Windows and the actual Mac (5.21s on Mac).
+
+An85-second isolated, unmodded six-bot Arcade scene exits0 and records exactly
+the bounded128 observations spanning47 valid event IDs. Game SHA256 is
+2a8528cd14c5a523a7e98f742582488751f800763872ebea203a805fd306a0d9.
+Evidence SHA256 is
+f2d5d172d7e5ec2d46caf7c0ca7d965e6a76a9b416a40dfe6f3f106354d7dd4b.
+These prove the adapter is actually reached in this Windows scene. They do not
+establish complete bank/stream attribution or custom replacement playback.
+
+The traces also show a single event/buffer generation at different rates during
+initialization (event3371:44000 then22042). An early SetBufferData snapshot must
+not be treated as a final authored playback rate. Matching original frequency,
+loop/stop/packet lifetime and source identity remains a prerequisite for replacement.
+The full source0ece CI run passes Windows/Mac runtime and patch shards, Linux
+Vulkan, GPU, native launcher and package checks; actual Mac/Linux audio-hook
+scenes remain separate acceptance work.

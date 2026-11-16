@@ -1,3 +1,40 @@
+Native audio attribution build/scene acceptance at0ece5ff0 (2026-11-16):
+The final normal Windows build now completes EXIT0, including full native checks
+and matching crash symbols. One compiler plus UseMultiToolTask and global process
+count enforcement preserves Release optimization and completed objects. The shared
+RAM/OS read guard fixes the previous menu-local unresolved symbol; patch2714 is
+applied to the Windows runtime. Source/WAV/HLE tests pass157 Windows cases7.51s
+and157 actual Mac cases5.21s. An85-second isolated six-bot Arcade scene exits0,
+with128 bounded observations covering47 valid sound IDs. GameSHA
+2a8528cd14c5a523a7e98f742582488751f800763872ebea203a805fd306a0d9;
+scene proof SHA f2d5d172d7e5ec2d46caf7c0ca7d965e6a76a9b416a40dfe6f3f106354d7dd4b
+in ignored private/test-saves/audio-source-2713/evidence.json. No capsule or
+replacement audio is active in this scene. Initialization can expose different
+rates for the same event/generation; final rate/source/loop mapping remains open.
+
+Full CI run43817951423 on clean source0ece5ff0 is SUCCESS: all six Windows/Mac
+runtime shards, all six patch-transition shards, Linux Vulkan, Mac GPU, Windows/Mac
+release checks, all three native launcher builds and their aggregate, texture
+verification and PR validation pass. Only the two issue-only jobs are skipped.
+This is source/build/check evidence, not a public game or launcher release.
+
+The Windows public lifecycle proof SHA is
+8345bc600948cd189fd4a804be062dc72f8c9f82e80de01022a761ba7d341be7.
+Its completed3->4->3 matches use the genuine previously packaged d6 game; they
+do not substitute the new audio build or imply Mac/Linux public gameplay.
+No password/recovery question remains pending: the actual Mac production authority
+check ends0, both root keys prove, no decrypted keys are written. Both temporary
+public lifecycle versions are revoked and their download endpoints return404;
+all test relays have stopped. The installed Mac host remains on immutable601/7be.
+
+The prior WSL runtime barrier has changed: after the compiler memory pressure
+cleared, a normal Ubuntu-24.04 startup succeeds and reports kernel
+6.18.58.1-microsoft-standard-WSL2 x86_64, exit0. No OS, service or VM reset/reboot
+was performed. The existing Linux checkout/build/data still need inspection and
+source synchronization before further Linux acceptance. The full goal remains
+active: complete SDK/assets, public Mac/Linux lifecycle, operational backups/boot,
+and publication still require work. Main remains untouched.
+
 Public Windows mod lifecycle and portable recovery acceptance (2026-11-16):
 Actual signed public catalog discovery passes native search, creator/category
 filters, latest-only and retained-version selection. Two operator-owned SDK
