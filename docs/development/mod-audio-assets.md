@@ -45,8 +45,15 @@ Unicode paths and source replacement. A native allocation counter checks repeate
 lookup. A valid64MiB WAV and four-resource256MiB mount pass; a fifth resource
 is refused. The test uses one disposable source file, not copied game assets.
 `test_mod_capsule.py` checks the existing shared reader/capsule behavior too.
-Windows's combined selection, including CI scope checks, passes196 cases;
-native Mac/Linux and normal build acceptance remain pending at this checkpoint.
+At source ef78a73c, the combined asset/capsule/CI-selection suite passes196 cases
+on Windows29.41s, Mac14.77s and Linux20.52s. Two final Windows handshake/Unicode
+checks also pass14.07s. Shared image/staging regression passes34 Windows cases
+with five intentional platform skips. All three normal native game builds pass
+their checks. Actual host ASan/UBSan runs pass23 asset-store cases each on Mac
+8.61s and Linux15.45s, with leak detection disabled; the large256MiB boundary
+case is excluded from sanitizer runs and passes normally on all three hosts.
+These are actual loader/parent-build checks, not custom game-audio acceptance.
+CI43857620225 at that source completes23 successful jobs/two intentional issue skips.
 
 Startup handoff/launcher staging, resource binding and actual custom playback are
 still integration work. Audio packages remain inactive in the launcher. No new

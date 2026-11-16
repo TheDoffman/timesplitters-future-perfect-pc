@@ -1,4 +1,4 @@
-Immutable native audio asset store (2026-11-16, local source):
+Immutable native audio asset store (2026-11-16, sourceef78a73c):
 AudioAssets now preflights trusted package/asset pins and loads a complete,
 hash-checked PCM WAV set into owned snapshots. It refuses duplicate/reserved keys,
 unauthorized owners, malformed WAVs, size/hash mismatch and linked/special files.
@@ -7,10 +7,18 @@ allocation/decoding/locks; source replacement cannot alter borrowed PCM. The
 data-only reader keeps executable/source policy at32MiB and enforces single-link
 regular files for64MiB data snapshots. Cancellation is checked between reads.
 
-Windows actual native asset/capsule/scope selection passes196 cases29.41s,
-including a real64MiB input/four-resource256MiB accepted boundary and fifth-resource
-refusal. Game assets are not copied. Normal game/cross-host acceptance and actual
-startup/launcher/playback integration remain pending. Audio activation stays off.
+Actual native asset/capsule/scope selections pass196 cases on Windows29.41s,
+Mac14.77s and Linux20.52s, including a real64MiB input/four-resource256MiB accepted
+boundary and fifth-resource refusal. Two final Windows handshake/Unicode cases
+pass14.07s; image/staging regression34 passes/five intentional platform skips.
+Actual Mac/Linux parent ASan/UBSan each pass23 asset-store cases8.61s/15.45s
+(leak detection disabled, large boundary case separately tested normally).
+All three normal native game builds pass their checks with sourceef; no generated
+code, compiler optimization or system settings are changed. Test artifacts use
+original synthetic WAVs, not copied game assets. Source is pushed/synchronized.
+CI43857620225 completes23 successful jobs/two intentional issue skips.
+Startup/launcher/render binding and actual
+custom playback remain pending; audio activation stays off.
 Contract: docs/development/mod-audio-assets.md.
 
 Authored audio metadata binding (2026-11-16, sourcec2b9e3be/fixture301767f7):

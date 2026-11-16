@@ -397,13 +397,17 @@ Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Wind
 Mac build passes using supported --output under the owned Library/Caches folder.
 No public workshop service, production trust activation or release is claimed.
 
-Audio asset snapshot follow-up (2026-11-16, local source): shared AudioAssets
+Audio asset snapshot follow-up (2026-11-16, sourceef78a73c): shared AudioAssets
 validates trusted owner/hash/size/WAV pins into an immutable all-or-nothing store.
 Lookup uses no IO/allocations; actual source replacement and64/256MiB boundaries
 are covered. The data-only64MiB reader adds single-link checks without changing
 the existing32MiB source/helper policy. No OS adapter or VM permission is added.
-Windows196 native asset/capsule/scope checks pass; actual Mac/Linux/game linking
-and playback integration remain pending. See STATUS/mod-audio-assets.md.
+Actual native asset/capsule/scope196 checks pass on all three hosts; normal native
+game builds pass. Mac/Linux each pass23 ASan/UBSan cases (large256MiB boundary
+separately passes normally, leak detection disabled). Source is synchronized;
+CI43857620225 completes23 successful jobs/two intentional issue skips.
+Startup/launcher/playback integration remains open. See
+STATUS/mod-audio-assets.md.
 
 Authored audio binding follow-up (2026-11-16, sourcec2b9e3be/301767f7): shared request/TLS
 snapshot and patch2716 preserve verified authored rate/channels/loop flags in
