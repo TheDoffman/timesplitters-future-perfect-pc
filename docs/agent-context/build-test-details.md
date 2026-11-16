@@ -1728,6 +1728,8 @@ RAM/OS guards on event metadata, denied/readonly/unaligned records, selector and
 pinned-Q12 rejection, copying/nested masks/thread isolation. HLE layout/format
 fixtures verify successful metadata binding, failed-bind clearing and retention
 through rate/play/stop followed by clearing at retirement. No PCM/wire change.
+Metadata-page denial uses the actual host page size, including16KiB Apple Silicon
+pages; an initial4KiB-aligned fixture failed mprotect before this correction.
 
 Audio lifetime: test_audio_timing.py adds4 actual HLE format-fixture cases for
 TSFP_MOD_AUDIO_LIFETIME_TRACE exact opt-in and512-row cap, bind/play/rate/loop/

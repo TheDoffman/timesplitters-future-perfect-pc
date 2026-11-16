@@ -402,7 +402,10 @@ snapshot and patch2716 preserve verified authored rate/channels/loop flags in
 successful buffer bindings, with guarded reads and pinned Q12 values. Failures/
 retirement clear metadata; clocks/PCM and script permissions stay unchanged.
 No OS adapter is needed. Windows161 checks plus seven affected final checks pass;
-native Mac/Linux/game acceptance remains pending. See STATUS/mod-audio-input.md.
+native Mac/Linux/game acceptance remains pending. Linux161 checks and the Windows
+game build now pass atc2b9e3be. Mac first reports159 passes/two fixture mprotect
+aborts; the shared denial fixture now aligns to the actual host page size instead
+of assuming4KiB. Corrected native reruns remain pending. See STATUS/mod-audio-input.md.
 
 Audio lifetime follow-up (2026-11-16, source48465dd9): shared patch2715 observes
 buffer identity/generation, actual pitch/loops and retirement without changing

@@ -10,6 +10,13 @@ unchanged. Actual guarded-source/HLE/WAV161 Windows checks pass6.21s; the final
 seven affected guard/scope/lifetime cases also pass2.79s. Actual Mac/Linux and
 normal game validation remain pending. Contract: mod-audio-input.md.
 
+Authored-binding native handoff atc2b9e3be: actual Linux161 checks pass9.60s;
+the normal Windows build and its full checks pass. The Mac selection has159
+passes/two source-fixture aborts: a hardcoded4KiB-aligned mprotect target is invalid
+on its16KiB pages. The shared test now aligns the metadata target using the
+host's actual page size. This is a fixture correction; final native reruns and
+gameplay acceptance remain required.
+
 Audio lifetime evidence hook (2026-11-16, source48465dd9):
 Patch2715 adds opt-in512-row bind/play/frequency/loop/pause/stop/retire metadata,
 including unknown identities and actual original/current rates. It reads existing

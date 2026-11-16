@@ -116,7 +116,8 @@ int main(void)
     expected_rate=expected_channels=expected_loop=0;
     g_xbox_total_ram=0x4ca9b6u;request(2048,257,42,0);g_xbox_total_ram=6*1024*1024;
     protection(0x500000u,1);request(2048,257,42,0);protection(0x500000u,0);
-    protection(0x4ca000u,1);request(2048,257,42,0);protection(0x4ca000u,0);
+    {size_t metadata_page=0x4ca9b4u/page*page;
+     protection(metadata_page,1);request(2048,257,42,0);protection(metadata_page,0);}
     memory[0x500001u+42u*20u+4u]=35;request(2048,257,42,0);
     memory[0x500001u+42u*20u+4u]=20;
     {uint16_t changed=1882;memcpy(memory+0x4ca9b8u+20u*2u,&changed,2);}
