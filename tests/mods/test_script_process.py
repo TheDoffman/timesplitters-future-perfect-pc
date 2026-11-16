@@ -162,14 +162,21 @@ def test_production_worker_runs_actual_mode_inside_os_policy(process_tools, tmp_
     assert not list(tmp_path.iterdir())
 
 
-def test_abrupt_parent_death_terminates_native_worker(process_tools, tmp_path):
-    with subprocess.Popen([str(process_tools['lifetime']), str(process_tools['probe']), str(tmp_path)],
+@pytest.mark.parametrize('phase',['running','before-resume'])
+def test_abrupt_parent_death_terminates_native_worker(process_tools, tmp_path,phase):
+    if phase=='before-resume' and os.name!='nt':pytest.skip('Windows creation-time job admission')
+    arguments=[str(process_tools['lifetime']),str(process_tools['probe']),str(tmp_path)]
+    if phase=='before-resume':arguments.append('--before-resume')
+    with subprocess.Popen(arguments,
                           stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as parent:
         identity = queue.Queue()
         reader = threading.Thread(target=lambda: identity.put(parent.stdout.readline()), daemon=True)
         reader.start()
         try:
-            worker_pid = int(identity.get(timeout=5))
+            value=identity.get(timeout=5)
+            if phase=='before-resume':
+                report=json.loads(value);assert report['in_job'] and report['before_resume'];worker_pid=report['pid']
+            else:worker_pid=int(value)
             assert worker_pid > 0 and worker_pid != parent.pid
             if os.name == 'nt':
                 import ctypes

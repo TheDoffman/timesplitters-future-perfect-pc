@@ -9,6 +9,12 @@
 // verified game/SDK installation, never from an uploaded mod manifest.
 namespace tsfp { namespace mods {
 struct ProcessUsage { uint64_t resident_bytes=0,cpu_microseconds=0;bool exited=false;int exit_code=0; };
+#if defined(_WIN32) && defined(TSFP_MOD_PROCESS_TESTING)
+// Test builds only: observe the owned suspended child after kernel job admission,
+// before ResumeThread. Production builds contain neither this API nor a gate.
+using SuspendedProcessProbe=void(*)(uint64_t,uintptr_t,uintptr_t);
+void set_suspended_process_probe(SuspendedProcessProbe);
+#endif
 class Process {
 public:
     static std::unique_ptr<Process> start(const std::string &executable,const std::string &cache,std::string &error);

@@ -1,3 +1,14 @@
+Windows script-worker creation-time containment (2026-11-16):
+The native adapter assigns its existing non-inherited kill-on-close job inside
+CreateProcessW via JOB_LIST and verifies membership before resuming the suspended
+thread. This closes the earlier create/assign orphan interval without changing
+LPAC, explicit stdio, mitigations, process count or memory budgets. A test-only
+probe pauses at that exact boundary, records kernel job membership and verifies
+child termination after abrupt broker death before resume. Windows selected
+process/resource checks pass33/2 host skips; no-test production and Mac/Linux
+checks follow. Cache/profile recovery and final game/release acceptance remain open.
+API rationale: https://devblogs.microsoft.com/oldnewthing/20230209-00/?p=107812/
+
 Private mod cache recovery foundation (2026-11-16, not a completed reaper):
 New native PrivateDirectory caches record their generated ownership identity and
 hold an exclusive non-inherited lifetime lock. Rechecks reject changed records;

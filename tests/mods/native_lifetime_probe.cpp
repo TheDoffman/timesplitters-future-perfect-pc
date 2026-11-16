@@ -5,9 +5,18 @@
 #include <chrono>
 #include <thread>
 #include <cstring>
+#include <cwchar>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#ifdef TSFP_MOD_PROCESS_TESTING
+static void before_resume(uint64_t pid,uintptr_t process,uintptr_t job) {
+    BOOL in_job=FALSE;
+    bool assigned=IsProcessInJob(reinterpret_cast<HANDLE>(process),reinterpret_cast<HANDLE>(job),&in_job)!=FALSE && in_job;
+    std::printf("{\"pid\":%llu,\"in_job\":%s,\"before_resume\":true}\n",static_cast<unsigned long long>(pid),assigned?"true":"false");
+    std::fflush(stdout);(void)std::getchar();
+}
+#endif
 #endif
 static int run(const std::string &image,const std::string &cache) {
     std::string error;auto child=tsfp::mods::Process::start(image,cache,error);
@@ -27,7 +36,12 @@ static int run(const std::string &image,const std::string &cache) {
 }
 #ifdef _WIN32
 int wmain(int argc,wchar_t **argv) {
-    if(argc!=3)return 2;
+    if(argc!=3 && argc!=4)return 2;
+#ifdef TSFP_MOD_PROCESS_TESTING
+    if(argc==4){if(std::wcscmp(argv[3],L"--before-resume")!=0)return 2;tsfp::mods::set_suspended_process_probe(before_resume);}
+#else
+    if(argc==4)return 2;
+#endif
     auto utf8=[](const wchar_t *text){int size=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,text,-1,nullptr,0,nullptr,nullptr);
         if(size<=0)return std::string();std::string result((size_t)size,0);WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,text,-1,&result[0],size,nullptr,nullptr);result.pop_back();return result;};
     return run(utf8(argv[1]),utf8(argv[2]));

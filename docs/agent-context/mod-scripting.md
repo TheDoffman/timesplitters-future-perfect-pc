@@ -1,3 +1,13 @@
+Windows job admission now uses PROC_THREAD_ATTRIBUTE_JOB_LIST in CreateProcessW;
+IsProcessInJob verifies the exact job before ResumeThread. This closes the
+create-suspended/assign-later orphan interval. Five creation attributes preserve
+LPAC/stdio/mitigations and the non-inherited kill-on-close job. The test-only
+TSFP_MOD_PROCESS_TESTING callback pauses after membership validation, before
+resume; the real abrupt-parent test checks kernel membership then kills/reaps the
+suspended child through job lifetime. Production builds exclude the callback/API.
+Windows process/resources33 pass/2 skips; production and other-host checks follow.
+This does not implement cache/profile reaping. See STATUS for exact source.
+
 Private cache ownership foundation: new PrivateDirectory instances in mod_saves.cpp
 write .tsfp-runtime-owner bound to their generated leaf and hold an exclusive
 .runtime-lock (non-inherited Windows handle/POSIX CLOEXEC flock). Recheck validates

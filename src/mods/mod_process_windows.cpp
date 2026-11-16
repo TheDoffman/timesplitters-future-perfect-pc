@@ -15,6 +15,9 @@
 
 namespace tsfp { namespace mods {
 namespace {
+#ifdef TSFP_MOD_PROCESS_TESTING
+SuspendedProcessProbe suspended_probe=nullptr;
+#endif
 std::wstring wide(const std::string &text) {
     if(text.empty() || text.size()>32760 || text.find('\0')!=std::string::npos)return {};
     int count=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,text.data(),(int)text.size(),nullptr,0);
@@ -156,6 +159,9 @@ public:
     }
 };
 }
+#ifdef TSFP_MOD_PROCESS_TESTING
+void set_suspended_process_probe(SuspendedProcessProbe probe){suspended_probe=probe;}
+#endif
 std::unique_ptr<Process> Process::start(const std::string &executable,const std::string &cache,std::string &error) {
     auto child=std::make_unique<WindowsProcess>();auto source=wide(executable),root=wide(cache);
     if(source.empty() || root.empty() || !std::filesystem::path(source).is_absolute() || !std::filesystem::path(root).is_absolute() ||
@@ -200,15 +206,18 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
     limits.BasicLimitInformation.LimitFlags=JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE|JOB_OBJECT_LIMIT_ACTIVE_PROCESS|JOB_OBJECT_LIMIT_PROCESS_MEMORY|JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION;
     limits.BasicLimitInformation.ActiveProcessLimit=1;limits.ProcessMemoryLimit=128u*1024*1024;
     if(!SetInformationJobObject(child->job,JobObjectExtendedLimitInformation,&limits,sizeof(limits))){error=last_error("Cannot limit worker job");return {};}
-    SIZE_T size=0;InitializeProcThreadAttributeList(nullptr,4,0,&size);std::vector<unsigned char> storage(size);
-    auto attributes=(LPPROC_THREAD_ATTRIBUTE_LIST)storage.data();if(!InitializeProcThreadAttributeList(attributes,4,0,&size)){error=last_error("Cannot initialize worker attributes");return {};}
+    SIZE_T size=0;InitializeProcThreadAttributeList(nullptr,5,0,&size);std::vector<unsigned char> storage(size);
+    auto attributes=(LPPROC_THREAD_ATTRIBUTE_LIST)storage.data();if(!InitializeProcThreadAttributeList(attributes,5,0,&size)){error=last_error("Cannot initialize worker attributes");return {};}
     SECURITY_CAPABILITIES capabilities{};capabilities.AppContainerSid=child->sid;
     HANDLE handles[]={child->input.child,child->output.child,child->diagnostic.child};DWORD lpac=1;
     DWORD64 mitigation=PROCESS_CREATION_MITIGATION_POLICY_PROHIBIT_DYNAMIC_CODE_ALWAYS_ON|PROCESS_CREATION_MITIGATION_POLICY_WIN32K_SYSTEM_CALL_DISABLE_ALWAYS_ON;
     bool configured=UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES,&capabilities,sizeof(capabilities),nullptr,nullptr) &&
         UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_HANDLE_LIST,handles,sizeof(handles),nullptr,nullptr) &&
         UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_ALL_APPLICATION_PACKAGES_POLICY,&lpac,sizeof(lpac),nullptr,nullptr) &&
-        UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY,&mitigation,sizeof(mitigation),nullptr,nullptr);
+        UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY,&mitigation,sizeof(mitigation),nullptr,nullptr) &&
+        // Assignment at creation closes the suspended-orphan gap between
+        // CreateProcess and a later AssignProcessToJobObject call.
+        UpdateProcThreadAttribute(attributes,0,PROC_THREAD_ATTRIBUTE_JOB_LIST,&child->job,sizeof(child->job),nullptr,nullptr);
     if(!configured){error=last_error("Cannot configure worker isolation attributes");DeleteProcThreadAttributeList(attributes);return {};}
     STARTUPINFOEXW startup{};startup.StartupInfo.cb=sizeof(startup);startup.StartupInfo.dwFlags=STARTF_USESTDHANDLES;
     startup.StartupInfo.hStdInput=handles[0];startup.StartupInfo.hStdOutput=handles[1];startup.StartupInfo.hStdError=handles[2];startup.lpAttributeList=attributes;
@@ -225,7 +234,11 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
     DWORD launch_error=GetLastError();DeleteProcThreadAttributeList(attributes);
     if(!launched){SetLastError(launch_error);error=last_error("Cannot launch confined worker");return {};}
     child->process=info.hProcess;
-    bool assigned=AssignProcessToJobObject(child->job,child->process)!=FALSE;
+    BOOL in_job=FALSE;
+    bool assigned=IsProcessInJob(child->process,child->job,&in_job)!=FALSE && in_job;
+#ifdef TSFP_MOD_PROCESS_TESTING
+    if(assigned && suspended_probe)suspended_probe(info.dwProcessId,reinterpret_cast<uintptr_t>(child->process),reinterpret_cast<uintptr_t>(child->job));
+#endif
     bool resumed=assigned && ResumeThread(info.hThread)!=DWORD(-1);CloseHandle(info.hThread);
     if(!resumed){error=last_error("Cannot attach worker job before execution");return {};}
     close(child->input.child);close(child->output.child);close(child->diagnostic.child);
