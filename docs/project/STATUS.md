@@ -1,3 +1,17 @@
+Private configuration migration component (2026-11-16; source, not deployed):
+mod_host_migration.py derives only six generation-bound config/marker records
+from the existing v1 initializers. It verifies both immutable origin/root profiles,
+keeps signing keys/API config guarded and unchanged, and does not read/migrate
+repository contents. Held-directory reads/replaces, before/after journals,
+nonblocking global lease and explicit known-state resume/rollback preserve unknown
+or changed files. Journals are bounded to32 generations. Apply requires fresh
+root-owned quiescence admission binding plan/nonce, all9 jobs plus backup stopped,
+and backup verification after quiescence. Installed locked-account CLI defaults
+to plan-only; it cannot issue that authority or activate a service. Root cutover
+coordination/backup binding migration and actual UID600 admission remain pending.
+Windows migration/initializer/CI scope checks pass159 with61 POSIX skips (1.50s);
+final native filesystem/recovery checks pending. Production601/7be unchanged.
+
 Frozen host upgrade candidate (2026-11-16; source4fc86283; not installed/active):
 prepare-release-mac.py froze81 source/guardian files with3339 verified runtime
 files,151216490 bytes. Descriptor14d9a007d249a52005cdf07bd3b2f5957a785b42fc11e7f7d3af56d63d7d515c

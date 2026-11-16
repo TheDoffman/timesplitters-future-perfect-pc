@@ -24,6 +24,7 @@
       "tests/mods/test_host_identity.py",
       "tests/mods/test_private_scan_init.py",
       "tests/mods/test_private_host_init.py",
+      "tests/mods/test_host_migration.py",
       "tests/mods/test_prepare_installed_host.py",
       "tests/mods/test_job_registration.py",
       "tests/mods/test_private_service_readiness.py",

@@ -1,3 +1,11 @@
+Private generation configuration step (2026-11-16): **In progress**.
+Shared mod_host_migration.py and installed locked-account CLI implement only six
+known config/marker changes, pinned profiles, private bounded journal/lease and
+explicit resume/rollback. Root quiescence/backup admission required; keys/API
+configuration/repository are not outputs. Windows pure/initializer/CI checks pass;
+native FS tests pending. Root coordinator, backup rebinding and production UID600
+acceptance remain separate unfinished work (STATUS).
+
 Preserving host upgrade (2026-11-16): **In progress**.
 Source4fc86283 frozen descriptor14d9a007...7d515c plans81 source/3339 runtime
 files without root/service changes. Actual frozen Python/modules pass disposable

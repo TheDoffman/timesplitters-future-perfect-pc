@@ -69,6 +69,24 @@ the upgrade. Installing a new host generation does not automatically migrate the
 backup job. Keep the separate private443 routing unchanged. No active-generation
 switch or new administrator prompt has been performed for this candidate.
 
+The new private migration component (`mod_host_migration.py` and the installed
+`migrate-private-generation-mac.py` step) implements only the locked-account
+configuration phase. It derives the six allowed records from the v1 initializers
+and stores a bounded private before/after journal. It supports explicit resume
+or rollback only while all current bytes belong to those known generations.
+Unknown files, links, partial journals or concurrent changes are preserved.
+Signing files, API configuration and repository data are read/guarded or left
+alone; they are not migration outputs. Root-update files require a separate
+explicit migration contract.
+
+Its default command is plan-only. Actual migration requires an immutable installed
+step, locked UID/groups and a fresh root-owned `monitor/upgrade-quiescence.json`
+binding the exact plan/nonce, all nine host jobs plus backup stopped, and a backup
+verified after quiescence. The private worker does not create that authority,
+stop services, migrate the backup binding or activate a release. The root
+coordinator producing and validating that admission remains to be implemented;
+this component must not be used as a standalone live upgrade procedure.
+
 ## Routine checks
 
 At the start of a moderation session, and after a service or host restart:

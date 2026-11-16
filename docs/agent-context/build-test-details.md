@@ -1779,6 +1779,18 @@ and refuse approval. Frozen/runtime inventory re-verifies after both runs. No
 production data/TLS/job changes or UID600 admission; exact receipts in STATUS.
 The current initializer/registrar are fresh-generation-only, not a preserving
 upgrade path. Migration and generation-bound backup handling remain required.
+
+Private migration component: mod_host_migration.py derives six exact config/
+marker records from the existing v1 initializers, journals before/after bytes,
+holds directory FDs and a nonblocking process lock, and supports explicit known-
+state resume/rollback. API config, root/key bytes/inodes and repository contents
+are not rewritten. Fresh root-owned admission must bind plan/nonce/generations,
+all9 host jobs plus backup stopped and a recently verified backup after quiescence.
+CLI defaults to plan-only; active modes require installed Darwin/locked identity.
+test_host_migration.py covers actual POSIX writes/recovery, unfamiliar bytes/
+links/modes, private state replacement and admission denial; pure contracts and
+default CLI run on Windows too. Native CI selects these tests. This is not the
+root cutover coordinator or live production admission; those remain pending.
 Mac/Linux BUILD-launcher.json.creator_backend_python records the resolved
 interpreter executable, version and launcher-file SHA256 when --test is used.
 This identifies the developer test launcher, not a fully sealed Python runtime;

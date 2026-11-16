@@ -78,6 +78,7 @@ CPU_TOOLS = {
     'tools/mods/mod_host_identity.py', 'tests/mods/test_host_identity.py',
     'tools/mods/hosting/initialize-private-scan-mac.py', 'tests/mods/test_private_scan_init.py',
     'tools/mods/hosting/initialize-private-host-mac.py', 'tests/mods/test_private_host_init.py',
+    'tools/mods/mod_host_migration.py', 'tools/mods/hosting/migrate-private-generation-mac.py', 'tests/mods/test_host_migration.py',
     'tools/mods/hosting/prepare-installed-host-mac.py', 'tests/mods/test_prepare_installed_host.py',
     'tools/mods/hosting/register-installed-host-mac.py', 'tests/mods/test_job_registration.py',
     'tools/mods/hosting/accept-private-host-services-mac.py', 'tests/mods/test_private_service_readiness.py',
