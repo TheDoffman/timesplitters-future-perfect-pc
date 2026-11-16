@@ -1,3 +1,18 @@
+Immutable native audio asset store (2026-11-16, local source):
+AudioAssets now preflights trusted package/asset pins and loads a complete,
+hash-checked PCM WAV set into owned snapshots. It refuses duplicate/reserved keys,
+unauthorized owners, malformed WAVs, size/hash mismatch and linked/special files.
+Limits:32 packages,8192 assets,64MiB/file,256MiB raw snapshots. Lookup does no IO,
+allocation/decoding/locks; source replacement cannot alter borrowed PCM. The
+data-only reader keeps executable/source policy at32MiB and enforces single-link
+regular files for64MiB data snapshots. Cancellation is checked between reads.
+
+Windows actual native asset/capsule/scope selection passes196 cases29.41s,
+including a real64MiB input/four-resource256MiB accepted boundary and fifth-resource
+refusal. Game assets are not copied. Normal game/cross-host acceptance and actual
+startup/launcher/playback integration remain pending. Audio activation stays off.
+Contract: docs/development/mod-audio-assets.md.
+
 Authored audio metadata binding (2026-11-16, sourcec2b9e3be/fixture301767f7):
 TsfpModAudioSource privately carries authored rate/channels/whole-source-loop
 beside the verified event ID. Fresh RAM/OS queries guard the live event record,

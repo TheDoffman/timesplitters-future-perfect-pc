@@ -1723,6 +1723,13 @@ arbitrary executables/scripts/nested names and an uploaded mod carrying a helper
 The actual package --verify-game-package gate remains required after rebuilding
 the native launchers; the initially failed archives are preserved for diagnosis.
 
+Audio assets: test_audio_assets.py uses the actual CMake-built native store and
+PCM parser, owner/digest/size/count budgets, allocation-free lookups, source-file
+replacement/Unicode paths and link/type refusals. One64MiB WAV tests an actual
+256MiB accepted mount/fifth-file refusal. Native-suite registration covers
+Windows/Mac; the existing Linux tests/mods selection includes it. Shared source
+reader regression: test_mod_capsule.py. Contract: ../development/mod-audio-assets.md.
+
 Authored audio snapshot: native_audio_source.c/test_audio_source.py cover fresh
 RAM/OS guards on event metadata, denied/readonly/unaligned records, selector and
 pinned-Q12 rejection, copying/nested masks/thread isolation. HLE layout/format

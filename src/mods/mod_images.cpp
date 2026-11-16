@@ -192,22 +192,27 @@ std::string sha256_bytes(const std::string &bytes) {
     }
     return hash.finish();
 }
-std::string read_pinned_file(const std::string &name,const std::string &expected,size_t maximum) {
-    require(digest(expected) && maximum && maximum<=image_limit,"Invalid pinned input policy");
+static std::string read_pinned_input(const std::string &name,const std::string &expected,size_t maximum,
+                                    uint64_t ceiling,bool single_link,const std::atomic<bool> *cancel) {
+    require(digest(expected) && maximum && maximum<=ceiling,"Invalid pinned input policy");
+    require(!cancel || !cancel->load(),"Pinned input cancelled");
     auto path=plain_path(name,false);File input;uint64_t length=0;
 #ifdef _WIN32
     input.handle=CreateFileW(path.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_SEQUENTIAL_SCAN,nullptr);
     require(input.handle!=INVALID_HANDLE_VALUE,"Cannot open pinned input");BY_HANDLE_FILE_INFORMATION info{};
     require(GetFileType(input.handle)==FILE_TYPE_DISK && GetFileInformationByHandle(input.handle,&info) &&
-        !(info.dwFileAttributes&(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_REPARSE_POINT)),"Invalid pinned input");
+        !(info.dwFileAttributes&(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_REPARSE_POINT)) &&
+        (!single_link || info.nNumberOfLinks==1),"Invalid pinned input");
     length=((uint64_t)info.nFileSizeHigh<<32)|info.nFileSizeLow;
 #else
     input.handle=open(path.c_str(),O_RDONLY|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW);require(input.handle>=0,"Cannot open pinned input");
-    struct stat info{};require(fstat(input.handle,&info)==0 && S_ISREG(info.st_mode) && info.st_size>0,"Invalid pinned input");length=(uint64_t)info.st_size;
+    struct stat info{};require(fstat(input.handle,&info)==0 && S_ISREG(info.st_mode) && info.st_size>0 &&
+        (!single_link || info.st_nlink==1),"Invalid pinned input");length=(uint64_t)info.st_size;
 #endif
     require(length && length<=maximum,"Pinned input exceeds budget");
     std::string bytes;bytes.reserve((size_t)length);Hash hash;std::array<unsigned char,32768> buffer{};
     for(;;) {
+        require(!cancel || !cancel->load(),"Pinned input cancelled");
         size_t count;
 #ifdef _WIN32
         DWORD got=0;require(ReadFile(input.handle,buffer.data(),(DWORD)buffer.size(),&got,nullptr)!=FALSE,"Cannot read pinned input");count=got;
@@ -220,6 +225,12 @@ std::string read_pinned_file(const std::string &name,const std::string &expected
         hash.update(buffer.data(),count);bytes.append(reinterpret_cast<const char *>(buffer.data()),count);
     }
     require(bytes.size()==length && hash.finish()==expected,"Pinned input digest mismatch");return bytes;
+}
+std::string read_pinned_file(const std::string &name,const std::string &expected,size_t maximum) {
+    return read_pinned_input(name,expected,maximum,image_limit,false,nullptr);
+}
+std::string read_pinned_data_file(const std::string &name,const std::string &expected,size_t maximum,const std::atomic<bool> *cancel) {
+    return read_pinned_input(name,expected,maximum,64u*1024*1024,true,cancel);
 }
 bool ImagePins::valid()const noexcept {
 #ifdef __APPLE__

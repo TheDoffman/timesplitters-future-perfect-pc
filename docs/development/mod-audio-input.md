@@ -1,5 +1,8 @@
 # Custom audio input boundary
 
+[Immutable asset loading](mod-audio-assets.md) now owns hash-pinned validated
+WAV snapshots. Startup/launcher wiring and actual playback remain unfinished.
+
 ## Authored source snapshot
 
 `TsfpModAudioSource` privately carries event ID, authored rate, channel count and
