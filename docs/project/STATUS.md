@@ -1,3 +1,49 @@
+Installed upgrade closure and forced backup phases (2026-11-16; sources02f095e3/05696f70):
+host_release.installed derives protected source/runtime inventories directly from
+the installed descriptor/runtime receipt. It verifies all files/modes/links and
+directories, exact inventory, guardian receipt and revision/UID-bound complete
+installation/intent receipts; it does not follow former user staging roots or
+read private configuration, repository or signing contents. Shared descriptor/
+component validation preserves the staging-plan contract; input reads now reject
+FIFOs without blocking. The new immutable upgrade entry point defaults to plan,
+and offers root-only -I-S-B installed inspection of both closures and unchanged
+public origin/root pin. Pending publication status is allowed; changed authority
+is refused. There is no apply action or production invocation yet.
+
+force-upgrade-backup-mac.py defaults to plan; active use requires locked process,
+immutable program, preserved backup-code binding and its exact isolated runtime.
+It imports the old module closure without generation mixing, checks the fixed
+pool/repository policy, forces a capture despite normal cadence and independently
+verifies the exact returned snapshot under the pool lease. The bounded receipt
+contains hash/identity/time/size only; private exception text is suppressed.
+It preserves the old scheduled-job binding and status. Root supervision/receipt
+admission, fresh-after-quiescence enforcement and actual UID600 use remain open.
+
+Final focused release/upgrade-backup/cutover/journal/CI-scope tests pass Windows
+229 with91 POSIX skips0.57s, actual Mac320 pass2.20s and Linux300 pass/20 unprivileged
+staging-owner skips3.16s. Installed-tree positives use private HOME inventories
+with simulated root ownership on the Mac; no live root code was admitted. Cases
+cover unknown/tampered code/runtime/receipts/UID/type/mode/links/FIFO, omitted
+staging paths, authority changes, forced-versus-normal cadence, mixed modules,
+policy refusal and preserving captures after failed independent verification.
+
+Actual ordinary Mac inspection refuses exit2 before installed/private reads;
+default plan succeeds. The refactored staging contract re-verifies frozen14d's
+entire151216490-byte source/runtime inventory unchanged. Separately, actual staged
+Python and the frozen8-file c29 backup bundle execute the new forced-capture core
+on a separate private copy of the newer4fc repository: initial capture, not-due,
+forced verified new snapshot, not-due, second forced verified new snapshot.
+All3 snapshots remain; old bundle re-verifies unchanged. HelperSHA256
+a5ea9ed1cb24ee5f811cf93539b3bb3a42ec5cd5148453a2ed0df60e471b117a;
+acceptance receiptSHA25651b02e46a2831cf895713a89e0e62dca74f63102a94f69cb68a3c55be7f4bb12.
+This is UID501 library interoperability, not active root/runtime binding admission.
+Logs upgrade-backup-{mac,linux,frozen}.txt, installed-upgrade-probe.txt and the
+receipt JSON are copied under ignored Windows logs. Production601/7be, frozen14d,
+pending backup ceremony and public/private routing remain unchanged. Same Mac
+zsh29800/sudo29803 and Windows sign-in45300 remain live; result is absent. No
+duplicate prompts or credential reads. Priorfaeed CI43969550317 is queued as last
+observed; neither that run nor these component checks prove final release readiness.
+
 Protected cutover files, journal and shutdown component (2026-11-16; sourcec9d54c88):
 Source5331a989 adds protected-directory/file attestation for all20 fixed staging/
 boot plists against immutable factory bytes. Nofollow/nonblocking bounded reads,
