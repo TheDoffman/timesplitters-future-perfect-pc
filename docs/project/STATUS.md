@@ -6,10 +6,11 @@ test had not established a controlled denial on that runner. The test-only
 identity driver now uses ImpersonateSelf, disables debug privilege on its private
 thread token and checks the resulting privilege list before querying. The DACL
 unknown assertion is retained; caller/account privileges and product identity
-code are unchanged. Local identity/scope checks pass160/4 skips15.45s. Current
-CI/other-host acceptance follows; no failed run is being presented as passing.
-API references: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocess
-and https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-impersonateself
+code are unchanged. Identity/scope checks at40a04082 pass160/4 skips on Windows
+15.45s, actual Mac8.33s and Linux11.08s. Remote CI acceptance follows; no failed
+run is being presented as passing. API references:
+[OpenProcess access checks](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocess)
+and [thread-scoped impersonation](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-impersonateself).
 
 Owned native startup stamps (2026-11-16, no disk journal/reaper yet):
 Process retains immutable stamps after termination. Windows reads its owned

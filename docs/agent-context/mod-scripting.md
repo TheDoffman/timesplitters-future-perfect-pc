@@ -1,9 +1,9 @@
 Windows query-denial CI control: the test driver now uses ImpersonateSelf and a
 private thread token with SeDebugPrivilege disabled and independently verified.
-The fixture process DACL therefore denies the intended query on privileged CI
-hosts as well; the unknown assertion remains strict. Primary/caller/account token
-settings and production identity code are unchanged. Local identity/scope160 pass/
-4 skips15.45s; remote/other-host checks follow. Prior3cec CI failed only this
+This makes the denial control independent of inherited debug privilege; the
+unknown assertion remains strict. Primary/caller/account token settings and
+production identity code are unchanged. Identity/scope160/4 skips pass locally
+on Windows15.45s, Mac8.33s and Linux11.08s at40a04082. Remote CI follows. Prior3cec failed this
 assertion in Windows runtime1/3; it is not a passing PR gate.
 
 Owned startup identity: Process::creation_stamps returns fixed immutable creation
