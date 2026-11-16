@@ -4,6 +4,7 @@
 #define _DARWIN_C_SOURCE
 #endif
 #include "mod_process.hpp"
+#include "mod_process_stamp_wire.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -32,6 +33,8 @@ void close_fd(int &fd){if(fd>=0)close(fd);fd=-1;}
 class PosixProcess final:public Process {
 public:
     pid_t pid=-1,worker_pid=-1;int input=-1,output=-1,diagnostic=-1,liveness=-1;bool reaped=false;int code=0;
+    ProcessStamps created;
+    bool creation_stamps(ProcessStamps &out)const noexcept override {out=created;return out.valid();}
     ~PosixProcess()override{terminate();close_fd(input);close_fd(output);close_fd(diagnostic);}
     int write(const void *bytes,size_t size)override {
         if(input<0)return -1;
@@ -108,6 +111,18 @@ bool pipe_pair(int (&fds)[2]) {
     if(pipe(fds))return false;
     return fcntl(fds[0],F_SETFD,FD_CLOEXEC)==0 && fcntl(fds[1],F_SETFD,FD_CLOEXEC)==0;
 }
+bool creation_wire(const TsfpModProcessBirthWire &wire,pid_t owner,ProcessStamps &out) {
+    out={};if(wire.version!=1 || !wire.count || wire.count>2)return false;
+    for(size_t at=0;at<wire.count;++at) {
+        const auto &value=wire.values[at];if(value.reserved)return false;
+        out.values[at]={static_cast<ProcessStampKind>(value.kind),value.pid,value.start_a,value.start_b};
+    }
+    for(size_t at=wire.count;at<2;++at) {
+        const auto &value=wire.values[at];
+        if(value.kind || value.reserved || value.pid || value.start_a || value.start_b)return false;
+    }
+    out.count=wire.count;return out.valid() && out.values[0].pid==static_cast<uint64_t>(owner);
+}
 }
 std::unique_ptr<Process> Process::start(const std::string &image,const std::string &cache,std::string &error) {
     (void)cache;std::error_code fs;
@@ -165,6 +180,19 @@ std::unique_ptr<Process> Process::start(const std::string &image,const std::stri
         if(dup2(executed[1],3)<0 || fcntl(3,F_SETFD,FD_CLOEXEC)<0)_exit(126);
         if(prctl(PR_SET_PDEATHSIG,SIGKILL) || getppid()!=parent || syscall(SYS_close_range,4u,~0u,0))_exit(126);
         struct rlimit core{0,0},files{64,64};if(setrlimit(RLIMIT_CORE,&core) || setrlimit(RLIMIT_NOFILE,&files))_exit(126);
+        // This fixed, allocation-free self-query happens before exec. The
+        // private CLOEXEC pipe proves provenance without reopening a reused PID.
+        ProcessStamp stamp;
+        if(read_process_stamp(static_cast<uint64_t>(getpid()),stamp)!=ProcessState::alive)_exit(126);
+        TsfpModProcessBirthWire birth{};birth.version=1;birth.count=1;
+        birth.values[0]={static_cast<uint32_t>(stamp.kind),0,stamp.pid,stamp.start_a,stamp.start_b};
+        size_t sent=0;
+        while(sent<sizeof(birth)) {
+            ssize_t count=::write(3,reinterpret_cast<const unsigned char *>(&birth)+sent,sizeof(birth)-sent);
+            if(count<0 && errno==EINTR)continue;
+            if(count<=0)_exit(126);
+            sent+=static_cast<size_t>(count);
+        }
         execve(image.c_str(),arguments,environment);_exit(127);
     }
     close_fd(executed[1]);
@@ -181,7 +209,7 @@ std::unique_ptr<Process> Process::start(const std::string &image,const std::stri
     }
     child->pid=pid;child->input=in[1];child->output=out[0];child->diagnostic=err[0];
 #ifdef __APPLE__
-    int64_t worker_identity=0;size_t received=0;
+    TsfpModProcessBirthWire worker_identity{};size_t received=0;
     if(fcntl(identity[0],F_SETFL,fcntl(identity[0],F_GETFL)|O_NONBLOCK)<0){close_fd(identity[0]);error="Cannot inspect guardian startup";return {};}
     auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(2);
     while(received<sizeof(worker_identity) && std::chrono::steady_clock::now()<deadline) {
@@ -191,21 +219,25 @@ std::unique_ptr<Process> Process::start(const std::string &image,const std::stri
         else std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
     close_fd(identity[0]);
-    if(received!=sizeof(worker_identity) || worker_identity<=0 || worker_identity>INT32_MAX){error="Lifetime guardian startup failed";return {};}
-    child->worker_pid=(pid_t)worker_identity;
+    if(received!=sizeof(worker_identity) || !creation_wire(worker_identity,pid,child->created)
+        || child->created.values[1].pid==static_cast<uint64_t>(getpid())){error="Lifetime guardian startup failed";return {};}
+    child->worker_pid=static_cast<pid_t>(child->created.values[1].pid);
 #else
-    bool crossed=false;
+    bool crossed=false;TsfpModProcessBirthWire birth{};size_t received=0;
     if(fcntl(executed[0],F_SETFL,fcntl(executed[0],F_GETFL)|O_NONBLOCK)>=0) {
         auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(2);
         while(std::chrono::steady_clock::now()<deadline) {
-            unsigned char unexpected;ssize_t count=::read(executed[0],&unexpected,1);
-            if(!count){crossed=true;break;}
+            unsigned char unexpected;
+            ssize_t count=received<sizeof(birth)?::read(executed[0],reinterpret_cast<unsigned char *>(&birth)+received,sizeof(birth)-received)
+                : ::read(executed[0],&unexpected,1);
+            if(count>0 && received<sizeof(birth)){received+=static_cast<size_t>(count);continue;}
+            if(!count){crossed=received==sizeof(birth);break;}
             if(count>0 || (errno!=EAGAIN && errno!=EINTR))break;
             struct pollfd pending{executed[0],POLLIN,0};(void)::poll(&pending,1,2);
         }
     }
     close_fd(executed[0]);
-    if(!crossed){error="Worker exec boundary timed out";return {};}
+    if(!crossed || !creation_wire(birth,pid,child->created)){error="Worker exec/identity boundary failed";return {};}
 #endif
     for(int fd:{child->input,child->output,child->diagnostic})if(fcntl(fd,F_SETFL,fcntl(fd,F_GETFL)|O_NONBLOCK)<0){error="Cannot set worker pipe mode";return {};}
     return child;

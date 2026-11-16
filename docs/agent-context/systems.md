@@ -1,5 +1,5 @@
-Crashes: ../development/native-crash-images.md.
-Process: mod-scripting.md; Lua: ../development/mod-audio-scripting.md.
+Crash: ../development/native-crash-images.md.
+Owned PID: mod-scripting.md; Lua: ../development/mod-audio-scripting.md.
 
 Preflight also rejects restored flags on a previously unsupported fresh epoch.
 

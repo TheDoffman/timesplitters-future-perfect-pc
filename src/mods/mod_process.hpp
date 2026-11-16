@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include "mod_process_identity.hpp"
 
 // Trusted parent only. No Lua is linked into this module. Paths come from the
 // verified game/SDK installation, never from an uploaded mod manifest.
@@ -23,6 +24,9 @@ public:
     virtual int write(const void *,size_t)=0;
     virtual int read(void *,size_t,bool diagnostic=false)=0;
     virtual bool usage(ProcessUsage &)=0;
+    // Immutable creation evidence from owned handles/private startup pipes.
+    // It remains available after termination; fake/test processes may decline.
+    virtual bool creation_stamps(ProcessStamps &out)const noexcept {out={};return false;}
     // Background supervisors only: bounded wait for pipe readiness (at most2ms).
     // Avoids periodic Windows timer rounding on latency-sensitive callbacks.
     virtual void wait_for_activity(bool writing)=0;

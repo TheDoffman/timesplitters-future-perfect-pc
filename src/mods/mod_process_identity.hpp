@@ -1,6 +1,8 @@
 #ifndef TSFP_MOD_PROCESS_IDENTITY_HPP
 #define TSFP_MOD_PROCESS_IDENTITY_HPP
 #include <cstdint>
+#include <array>
+#include <cstddef>
 
 namespace tsfp { namespace mods {
 // Trusted broker metadata only. These queries never terminate processes. The
@@ -9,6 +11,12 @@ enum class ProcessStampKind:uint32_t { none=0,windows_filetime=1,linux_start_tic
 struct ProcessStamp {
     ProcessStampKind kind=ProcessStampKind::none;
     uint64_t pid=0,start_a=0,start_b=0;
+    bool valid()const noexcept;
+};
+// Darwin records guardian then worker; other hosts record their one worker.
+struct ProcessStamps {
+    std::array<ProcessStamp,2> values{};
+    size_t count=0;
     bool valid()const noexcept;
 };
 enum class ProcessState { alive,exited,unknown };

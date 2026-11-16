@@ -1,3 +1,13 @@
+Owned native startup stamps (2026-11-16, no disk journal/reaper yet):
+Process retains immutable stamps after termination. Windows reads its owned
+suspended process handle before resume. Linux's fixed-stack, allocation-free
+post-fork self-query sends a72-byte birth record before exec; the old exec EOF
+fence remains mandatory. Mac's trusted guardian clears SIGCHLD auto-reaping and
+captures guardian/worker creation stamps before reaping, then reports both over
+the private startup pipe. Legacy/malformed messages fail closed. Sealed workers
+inherit only stdio. Windows22 process/identity checks pass/5 host skips33.38s;
+actual Mac/Linux expanded checks follow. No cache/profile deletion is added.
+
 Native recovery identity primitive (2026-11-16, no cleanup yet):
 Shared typed queries distinguish a live native creation stamp, exited original
 task/PID reuse and uncertain evidence. Windows supports borrowed owned handles;

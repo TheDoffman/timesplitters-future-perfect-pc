@@ -11163,6 +11163,16 @@ GCC guard indentation was corrected. This does not activate scripts or change
 gameplay yet. Separate OS-confined worker supervision, real guest API hooks,
 multiplayer/save separation and live custom-mode game acceptance are required. See STATUS and mod-gameplay-scripting.md; full goal remains incomplete.
 
+Owned process startup stamps (base3cec75dc): **In progress**.
+The shared Process interface retains immutable child/guardian creation evidence.
+Windows snapshots its owned handle before resume; Linux sends a self-stamp from
+its fixed-stack post-fork prelude before exec/EOF; Mac's trusted guardian captures
+itself and its unreaped worker over private FD4. The guardian clears inherited
+SIGCHLD auto-reap state. A fixed72-byte control record rejects legacy/invalid
+startup data without granting any additional sealed-worker descriptors. Windows22
+process/identity tests pass/5 host skips; actual Mac/Linux checks follow. This is
+owned provenance for the pending journal/reaper, not completed orphan cleanup.
+
 Native process identity for crash recovery (source9fe57a16/controls b4ced75f): **Verified for named identity queries**.
 One shared alive/exited/unknown policy has thin Windows creation-FILETIME,
 Linux proc start-tick and Mac BSD creation-time adapters. Native OS query failure

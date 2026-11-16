@@ -23,9 +23,27 @@ static void before_resume(uint64_t pid,uintptr_t process,uintptr_t job) {
 }
 #endif
 #endif
-static int run(const std::string &image,const std::string &cache) {
+static int run(const std::string &image,const std::string &cache,bool show_stamps=false) {
     std::string error;auto child=tsfp::mods::Process::start(image,cache,error);
     if(!child){fprintf(stderr,"%s\n",error.c_str());return 125;}
+    if(show_stamps) {
+        tsfp::mods::ProcessStamps before;
+        if(!child->creation_stamps(before) || !before.valid())return 125;
+        std::printf("{\"count\":%u,\"stamps\":[",static_cast<unsigned>(before.count));
+        for(size_t at=0;at<before.count;++at) {
+            const auto &stamp=before.values[at];
+            std::printf("%s{\"kind\":%u,\"pid\":%llu,\"start_a\":%llu,\"start_b\":%llu}",at?",":"",
+                static_cast<unsigned>(stamp.kind),static_cast<unsigned long long>(stamp.pid),
+                static_cast<unsigned long long>(stamp.start_a),static_cast<unsigned long long>(stamp.start_b));
+        }
+        std::puts("]}");std::fflush(stdout);(void)std::getchar();child->terminate();
+        tsfp::mods::ProcessStamps after;bool retained=child->creation_stamps(after) && after.count==before.count;
+        for(size_t at=0;retained && at<before.count;++at) {
+            const auto &a=before.values[at],&b=after.values[at];
+            retained=a.kind==b.kind && a.pid==b.pid && a.start_a==b.start_a && a.start_b==b.start_b;
+        }
+        std::printf("{\"retained\":%s}\n",retained?"true":"false");return retained?0:125;
+    }
     const char *data="lifetime\n-\n0 0 0\n-\n";size_t length=strlen(data),sent=0;
     auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(3);
     std::string identity;
@@ -43,14 +61,15 @@ static int run(const std::string &image,const std::string &cache) {
 int wmain(int argc,wchar_t **argv) {
     if(argc!=3 && argc!=4)return 2;
 #ifdef TSFP_MOD_PROCESS_TESTING
-    if(argc==4){if(std::wcscmp(argv[3],L"--before-resume")!=0)return 2;tsfp::mods::set_suspended_process_probe(before_resume);}
+    if(argc==4 && std::wcscmp(argv[3],L"--before-resume")==0)tsfp::mods::set_suspended_process_probe(before_resume);
+    else if(argc==4 && std::wcscmp(argv[3],L"--stamps")!=0)return 2;
 #else
     if(argc==4)return 2;
 #endif
     auto utf8=[](const wchar_t *text){int size=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,text,-1,nullptr,0,nullptr,nullptr);
         if(size<=0)return std::string();std::string result((size_t)size,0);WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,text,-1,&result[0],size,nullptr,nullptr);result.pop_back();return result;};
-    return run(utf8(argv[1]),utf8(argv[2]));
+    return run(utf8(argv[1]),utf8(argv[2]),argc==4 && std::wcscmp(argv[3],L"--stamps")==0);
 }
 #else
-int main(int argc,char **argv){return argc==3?run(argv[1],argv[2]):2;}
+int main(int argc,char **argv){return argc==3 || (argc==4 && !std::strcmp(argv[3],"--stamps"))?run(argv[1],argv[2],argc==4):2;}
 #endif

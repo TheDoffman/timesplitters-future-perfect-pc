@@ -124,6 +124,8 @@ class WindowsProcess final:public Process {
 public:
     Pipe input,output,diagnostic;HANDLE process=nullptr,job=nullptr;PSID sid=nullptr;
     std::wstring profile,directory,image,profile_root;bool profile_owned=false,directory_owned=false,image_owned=false;
+    ProcessStamps created;
+    bool creation_stamps(ProcessStamps &out)const noexcept override {out=created;return out.valid();}
     ~WindowsProcess() override {
         terminate();input.disconnect();output.disconnect();diagnostic.disconnect();
         if(image_owned)DeleteFileW(image.c_str());if(directory_owned)RemoveDirectoryW(directory.c_str());
@@ -236,6 +238,11 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
     child->process=info.hProcess;
     BOOL in_job=FALSE;
     bool assigned=IsProcessInJob(child->process,child->job,&in_job)!=FALSE && in_job;
+    ProcessStamp stamp;
+    if(!assigned || read_owned_process_stamp(reinterpret_cast<uintptr_t>(child->process),stamp)!=ProcessState::alive || stamp.pid!=info.dwProcessId) {
+        CloseHandle(info.hThread);error="Cannot establish owned worker creation identity";return {};
+    }
+    child->created.values[0]=stamp;child->created.count=1;
 #ifdef TSFP_MOD_PROCESS_TESTING
     if(assigned && suspended_probe)suspended_probe(info.dwProcessId,reinterpret_cast<uintptr_t>(child->process),reinterpret_cast<uintptr_t>(child->job));
 #endif

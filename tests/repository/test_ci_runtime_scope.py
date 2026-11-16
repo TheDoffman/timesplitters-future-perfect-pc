@@ -122,6 +122,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/mods/mod_creator.py', 'tests/mods/test_creator_projects.py'], {'native'}),
     (['tools/mods/mod_backup_pool.py','tests/mods/test_backup_pool.py'], {'native'}),
     (['src/mods/mod_process_identity.cpp','tests/mods/test_process_identity.py'], {'native'}),
+    (['src/mods/mod_process_stamp_wire.h'], {'native'}),
     (['tools/mods/mod_backup_service.py','tools/mods/hosting/backup-bootstrap-mac.py','tests/mods/test_backup_service.py'], {'native'}),
     (['tools/mods/mod_backup_install.py','tools/mods/hosting/install-backups-mac.py','tests/mods/test_backup_install.py'], {'native'}),
     (['tools/mods/mod-creator.py','tools/mods/mod_creator_cli.py','tools/mods/mod_wave_input.py',

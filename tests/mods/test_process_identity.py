@@ -6,6 +6,8 @@ import queue
 import subprocess
 import sys
 import threading
+import shutil
+from pathlib import Path
 
 import pytest
 
@@ -68,6 +70,37 @@ def test_another_platform_stamp_cannot_authorize_cleanup(process_tools):
 def test_native_driver_reports_its_own_stamp(process_tools):
     record=call(process_tools,'self')
     assert record['state']=='alive' and record['valid'] and record['pid']>0 and record['start_a']>0
+
+
+def test_owned_startup_stamps_survive_termination_without_reopening_initial_pid(process_tools,tmp_path):
+    arguments=[str(process_tools['lifetime']),str(process_tools['probe']),str(tmp_path),'--stamps']
+    parent=subprocess.Popen(arguments,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    ready=queue.Queue();threading.Thread(target=lambda:ready.put(parent.stdout.readline()),daemon=True).start()
+    try:
+        record=json.loads(ready.get(timeout=5));expected=2 if sys.platform=='darwin' else 1
+        assert record['count']==len(record['stamps'])==expected
+        assert len({stamp['pid'] for stamp in record['stamps']})==expected
+        for stamp in record['stamps']:
+            assert stamp['pid'] not in (parent.pid,os.getpid()) and stamp['start_a']>0
+            assert state(process_tools,stamp)['state'] in ('alive','unknown')
+        out,err=parent.communicate(b'\n',timeout=6)
+        assert parent.returncode==0 and not err and json.loads(out)['retained'],(parent.returncode,out,err)
+        for stamp in record['stamps']:assert state(process_tools,stamp)['state']=='exited'
+        assert not list(tmp_path.iterdir())
+    finally:
+        if parent.poll() is None:parent.kill();parent.communicate(timeout=5)
+
+
+@pytest.mark.skipif(sys.platform!='darwin',reason='Darwin private guardian control wire')
+@pytest.mark.parametrize('payload',[b'\x01'*8,b'\x00'*72])
+def test_legacy_or_invalid_guardian_birth_message_is_refused(process_tools,tmp_path,payload):
+    source=tmp_path/'source';source.mkdir();cache=tmp_path/'cache';cache.mkdir()
+    image=source/'worker';shutil.copy2(process_tools['probe'],image)
+    guardian=source/'tsfp-mod-guardian'
+    guardian.write_text('#!'+sys.executable+'\nimport os\nos.write(4,'+repr(payload)+')\nos.close(4)\n');guardian.chmod(0o500)
+    result=subprocess.run([str(process_tools['lifetime']),str(image),str(cache)],stdin=subprocess.DEVNULL,capture_output=True,timeout=6)
+    assert result.returncode==125 and b'Lifetime guardian startup failed' in result.stderr
+    assert not list(cache.iterdir())
 
 
 @pytest.mark.skipif(os.name!='nt',reason='Windows borrowed-handle identity')

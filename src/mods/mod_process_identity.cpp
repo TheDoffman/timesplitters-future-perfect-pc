@@ -3,7 +3,6 @@
 #include <cerrno>
 #include <cstring>
 #include <limits>
-#include <string>
 #include <string_view>
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -40,6 +39,12 @@ bool ProcessStamp::valid()const noexcept {
 #endif
     return kind==ProcessStampKind::darwin_start_time?start_b<1000000:start_b==0;
 }
+bool ProcessStamps::valid()const noexcept {
+    size_t expected=native_process_stamp_kind()==ProcessStampKind::darwin_start_time?2u:1u;
+    if(count!=expected)return false;
+    for(size_t at=0;at<count;++at)if(!values[at].valid())return false;
+    return count!=2 || values[0].pid!=values[1].pid;
+}
 #ifdef _WIN32
 ProcessState read_owned_process_stamp(uintptr_t borrowed,ProcessStamp &out)noexcept {
     out={};HANDLE handle=reinterpret_cast<HANDLE>(borrowed);
@@ -72,8 +77,12 @@ bool decimal(std::string_view text,uint64_t &value)noexcept {
     return true;
 }
 ProcessState linux_stamp(uint64_t pid,ProcessStamp &out) {
-    std::string path="/proc/"+std::to_string(pid)+"/stat";
-    int fd=open(path.c_str(),O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK);
+    // No heap allocation or inherited userspace lock in the post-fork prelude.
+    char path[64]="/proc/",digits[20];size_t at=6,n=0;uint64_t number=pid;
+    do{digits[n++]=static_cast<char>('0'+number%10);number/=10;}while(number);
+    while(n)path[at++]=digits[--n];
+    std::memcpy(path+at,"/stat",6);
+    int fd=open(path,O_RDONLY|O_CLOEXEC|O_NOFOLLOW|O_NONBLOCK);
     if(fd<0)return missing_task(pid,errno);
     std::array<char,4096> bytes{};ssize_t size;
     do{size=read(fd,bytes.data(),bytes.size());}while(size<0 && errno==EINTR);
@@ -81,8 +90,9 @@ ProcessState linux_stamp(uint64_t pid,ProcessStamp &out) {
     if(size<=0 || static_cast<size_t>(size)==bytes.size())return ProcessState::unknown;
     std::string_view data(bytes.data(),static_cast<size_t>(size));
     size_t left=data.find('('),right=data.rfind(')');
-    if(left==std::string_view::npos || right==std::string_view::npos || left>=right || right+2>=data.size()
-        || data.substr(0,left)!=std::to_string(pid)+" " || data[right+1]!=' ')return ProcessState::unknown;
+    uint64_t named_pid=0;
+    if(left==std::string_view::npos || right==std::string_view::npos || left<2 || left>=right || right+2>=data.size()
+        || data[left-1]!=' ' || !decimal(data.substr(0,left-1),named_pid) || named_pid!=pid || data[right+1]!=' ')return ProcessState::unknown;
     auto tail=data.substr(right+2);std::string_view state;uint64_t ticks=0;
     for(unsigned field=3;field<=22;++field) {
         size_t begin=tail.find_first_not_of(" \t\r\n");if(begin==std::string_view::npos)return ProcessState::unknown;

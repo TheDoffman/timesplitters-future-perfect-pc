@@ -1,3 +1,15 @@
+Owned startup identity: Process::creation_stamps returns fixed immutable creation
+evidence retained after terminate. Windows captures its owned hProcess before
+ResumeThread. Linux self-captures in the allocation-free post-fork prelude and
+writes a versioned72-byte record on its CLOEXEC exec-boundary pipe; full record
+plus EOF is required before usage sampling. Darwin's trusted guardian clears
+SIGCHLD auto-reaping, snapshots itself and its unreaped child before waitpid,
+and sends both stamps over private FD4. mod_process_stamp_wire.h fixes size/kind/
+count/reserved rules; old/invalid startup messages fail closed. Worker stdio-only
+inheritance is preserved. Native owned-stamp checks retain evidence after stop;
+Darwin legacy/invalid wire refusals are added. Windows22 pass/5 host skips; other
+hosts follow. Disk journals and orphan removal remain unimplemented.
+
 Process identity queries (mod_process_identity.hpp/.cpp) distinguish alive/exited/
 unknown using native PID+creation stamps: Windows FILETIME (including borrowed
 owned handles), Linux bounded proc/stat field22, Darwin BSD start seconds/useconds.

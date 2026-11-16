@@ -132,6 +132,7 @@ CPU_TOOLS = {
     'src/mods/mod_worker.c', 'src/mods/mod_watchdog.c', 'src/mods/mod_watchdog.h',
     'src/mods/mod_process.hpp', 'src/mods/mod_process_windows.cpp', 'src/mods/mod_process_posix.cpp',
     'src/mods/mod_process_identity.hpp', 'src/mods/mod_process_identity.cpp',
+    'src/mods/mod_process_stamp_wire.h',
     'tests/mods/test_process_identity.py', 'tests/mods/native_process_identity_driver.cpp',
     'src/mods/mod_runner.cpp', 'src/mods/mod_seal.c', 'src/mods/mod_seal.h',
     'tests/mods/test_script_process.py', 'tests/mods/native_process_probe.c',
