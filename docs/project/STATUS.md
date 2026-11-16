@@ -14,10 +14,25 @@ Affected tests at c67 additionally pass3 Linux cases and2 Mac cases with one
 ELF-only skip; the new Linux PIE-main case resolves the real fault function.
 A compiled f3 reporter control reproduces the gap on both hosts: controlled
 library fatal exits occur, but neither the actual PC image nor its exported
-function is recorded. New native tests record both. Native game integration and
-reproduction of the earlier Mac menu signal11 remain pending; this diagnostic
-improvement does not claim to fix that fault. Source is committed locally for
-native handoff; remote publication/checks follow validation.
+function is recorded. New native tests record both. Source is pushed through
+4b78d30e; CI43840628389 passes23 jobs with two intentional issue skips.
+
+Normal native Mac/Linux game builds at4b pass. Parent-scoped private test libraries
+then fault inside the actual isolated game processes: both exit139, reporting the
+correct library and exported fault function. Mac game SHA4f359a91748d5863dbaf64caaf13925ef89dd7c5ae1970397895dc45e2357bc9;
+Linux game SHA55f33d74802a6eb0f98180d057ed8f7344f33ea0f6be79a32d2c435fc5b34be8.
+Mac guest memory access remains denied and its native-stack output reaches the
+existing262144-byte cap; Linux captures per-region status with11006-byte output.
+Ignored proofs: logs/mod-crash-images-game-{mac,linux}-proof.json. No diagnostic
+injector is shipped or uploaded.
+
+A separate55-second unmodded Mac replay at4b uses a fresh copy of the retained
+synthetic mode3 profile, reaches Arcade gameplay with six bots, and exits0.
+Retained source hashes and canonical fixture remain unchanged; six owned inactive
+partition images are recycled. Evidence: private/test-saves/menu-crash-replay-4b78-01/evidence.json
+on the healthy Mac task checkout. The original modded menu signal11 is still
+undetermined; neither diagnostic capture nor this successful replay fixes it.
+Production host601/7be, public routing and approved package state are unchanged.
 
 Public installed Mac/Linux mod lifecycle acceptance (2026-11-16):
 Both hosts now use persistent installations created by actual Core.Unpack/

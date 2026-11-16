@@ -1735,8 +1735,12 @@ for this Windows contention policy; existing entry acceptance remains separate.
   already has module information in its minidump. Portable boundaries pass on
   Windows; actual Mac/Linux selections pass12 cases each, including late-library
   image/function resolution. The old f3 reporter fails that controlled attribution
-  on both hosts. Linux PIE main-image normalization also passes. Real game
-  integration and the original menu-crash investigation remain pending. See [image contract](../development/native-crash-images.md) and STATUS.
+  on both hosts. Linux PIE main-image normalization also passes. Actual4b Mac/Linux
+  game builds pass; private controlled game faults record their actual library
+  and function. An isolated55-second unmodded Mac replay reaches Arcade gameplay
+  and exits0 with retained synthetic profile hashes unchanged. CI43840628389 has
+  23 successful jobs/two intentional skips. The original menu fault remains
+  undetermined; this is diagnostic validation, not its fix. See [image contract](../development/native-crash-images.md) and STATUS.
 
 - **Status:** Awaiting validation
 - **Launcher release preparation:** v1.2.16 packages the Windows report UI and

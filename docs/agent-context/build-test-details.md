@@ -1727,5 +1727,8 @@ Native module capture: ../development/native-crash-images.md. The existing nativ
 crash suite now faults in a library loaded after reporter startup, including a
 Unicode/space path. Portable registry boundaries run inside test_crash_capture.py;
 the Linux workflow explicitly selects that cross-host test as well. Windows
-minidump behavior remains unchanged. Native Mac/Linux tests and real-game capture
-are separate from the initial passing Windows registry check.
+minidump behavior remains unchanged. Mac/Linux native tests and actual game fault
+probes pass at4b; CI43840628389 passes23 jobs/two intentional skips. A55-second
+unmodded Mac replay reaches Arcade gameplay and exits0 with retained synthetic
+profile hashes unchanged. The earlier modded menu signal11 remains undetermined;
+controlled diagnostic capture is not its reproduction or fix.

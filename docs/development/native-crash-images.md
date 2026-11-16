@@ -35,8 +35,20 @@ its exported function, checking the actual image and symbol in the report.
 The native suite passes12 cases on both Mac and Linux at the implementation
 checkpoint. Additional affected tests pass on each host, including an explicit
 PIE main-image fault on Linux. The previous f3 reporter fails to record the actual
-library/function in the controlled fault on both hosts. Real game integration and
-reproduction of the original menu crash remain separate acceptance steps.
+library/function in the controlled fault on both hosts.
+
+Actual native game builds at4b78d30e pass on Mac and Linux. A parent-scoped private
+test library faults in each isolated game child; both exit139 and record its
+actual PC image and exported fault function. The Linux report captures guest
+memory with per-region status; macOS correctly reports denied memory access.
+The Mac native-stack output reaches its existing262144-byte cap; Linux uses11006
+bytes. These are controlled diagnostic faults, not the original menu failure.
+The test library is neither shipped nor uploaded.
+
+A separate55-second unmodded Mac replay copies the retained synthetic test
+profile into fresh isolated storage, reaches Arcade gameplay, and exits0. Source
+profile hashes remain unchanged. This does not reproduce or resolve the earlier
+modded menu fault. CI43840628389 passes23 jobs with two intentional issue skips.
 
 The public lifecycle's earlier Mac menu signal11 remains undetermined. This
 change improves future evidence; it does not claim to fix that crash.
