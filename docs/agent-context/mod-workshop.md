@@ -17,6 +17,8 @@ ACLs allow current user+SYSTEM; check decrypts and proves both recovered root
 signatures without plaintext root export. DPAPI integrity/wrong entropy, ACL,
 tamper and complete ceremony tests pass on Windows. This account/profile-bound
 recovery is not a portable backup; portable export/profile backup remains needed.
+Host preparation permits only exact Git bytes or exact HEAD-declared CRLF checkout
+rendering; mixed endings/text changes/local filter substitutions remain refused.
 
 Fixed api/publication/gateway roles use system-host-service-mac.py and protected
 system-host-monitor-mac.py. Root accepts fixed labels, numeric process metadata

@@ -4,6 +4,10 @@ The API, signed publication controller and ingress gateway have fixed system-job
 entry points. This component is implemented separately from deployment: no new
 production jobs, private configuration, keys or public routes have been enabled.
 The existing private Tailscale443 mapping must remain unchanged.
+Release preparation verifies source against Git, allowing only exact bytes or
+the exact CRLF rendering explicitly declared by HEAD attributes for Windows
+operator scripts. It freezes those verified checkout bytes; mixed endings,
+source changes and arbitrary filter transformations are refused.
 Actual f099 native component checks pass258 cases, including live ordinary-user
 Gunicorn auth and complete group cleanup. The matching release is prepared only;
 protected new-role jobs, private provisioning and restart/boot remain unverified.

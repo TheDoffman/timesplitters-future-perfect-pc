@@ -18,6 +18,17 @@ def git(*args):
     return subprocess.check_output(['/opt/homebrew/bin/git', '-C', str(ROOT), *args], timeout=20)
 
 
+def matches_revision(key, wire, canonical):
+    if wire == canonical:
+        return True
+    # Windows-only operator helpers intentionally check out with CRLF even on
+    # the Mac. Permit only the exact HEAD-declared rendering, never arbitrary
+    # normalization, local filters, mixed endings or changed source text.
+    expected = key.encode()+b': eol: crlf\n'
+    return (b'\r' not in canonical and wire == canonical.replace(b'\n', b'\r\n')
+            and git('check-attr', '--source=HEAD', 'eol', '--', key) == expected)
+
+
 def prepare(runtime, output):
     release.require(sys.platform == 'darwin' and os.getuid() != 0, 'Prepare as the ordinary Mac user without sudo')
     uid = os.getuid()
@@ -40,7 +51,7 @@ def prepare(runtime, output):
         release.name(key)
         wire = release.read_file(ROOT, key, uid, 8 * 1024**2)
         canonical = git('show', revision + ':' + key)
-        release.require(wire == canonical, 'Hosting source bytes differ from Git revision')
+        release.require(matches_revision(key, wire, canonical), 'Hosting source bytes differ from Git revision')
         path = snapshot / key
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('xb') as stream:

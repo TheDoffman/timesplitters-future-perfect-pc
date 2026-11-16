@@ -1,4 +1,4 @@
-[Service proofs](build-test-details.md). Host init/Windows DPAPI/ACL/API/guardian.
+[Service proofs](build-test-details.md). Host init/DPAPI/ACL/source EOL/API/guardian.
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

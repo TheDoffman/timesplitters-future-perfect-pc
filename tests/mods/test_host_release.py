@@ -16,6 +16,26 @@ spec.loader.exec_module(release)
 spec = importlib.util.spec_from_file_location('host_installer_test', ROOT / 'tools/mods/hosting/install-release-mac.py')
 installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
+spec = importlib.util.spec_from_file_location('host_preparer_test', ROOT / 'tools/mods/hosting/prepare-release-mac.py')
+preparer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(preparer)
+
+
+@pytest.mark.parametrize('variant',['exact','declared-crlf','undeclared-crlf','mixed','changed','canonical-cr','wrong-path'])
+def test_source_freeze_accepts_only_exact_git_or_declared_crlf_rendering(monkeypatch,variant):
+    name='tools/mods/hosting/private-recovery-windows.ps1'
+    canonical=b'first\nsecond\n'
+    current=canonical if variant=='exact' else canonical.replace(b'\n',b'\r\n')
+    if variant=='mixed':current=b'first\r\nsecond\n'
+    if variant=='changed':current=b'other\r\nsecond\r\n'
+    if variant=='canonical-cr':canonical=b'first\r\nsecond\r\n';current=canonical.replace(b'\n',b'\r\n')
+    attribute=(name+': eol: crlf\n').encode()
+    if variant=='undeclared-crlf':attribute=(name+': eol: unspecified\n').encode()
+    if variant=='wrong-path':attribute=b'other.ps1: eol: crlf\n'
+    calls=[]
+    monkeypatch.setattr(preparer,'git',lambda *args:(calls.append(args),attribute)[1])
+    assert preparer.matches_revision(name,current,canonical)==(variant in ('exact','declared-crlf'))
+    if calls:assert calls==[('check-attr','--source=HEAD','eol','--',name)]
 
 
 def record(wire, mode=0o644):
