@@ -16,7 +16,14 @@ A fresh Windows native client reads real signedv31 twice without local service/
 root settings, preserves its pin/high-water and uses normal launcher TLS setup.
 Its first private helper omitted normal startup TLS setup and failed before a
 successful read; using the real ReleaseClient startup matches the launcher.
-Actual Mac/Linux candidate builds/public reads follow; publication stays pending.
+At clean e8945093, actual native Mac/Linux launcher builds also pass their normal
+suites,115/116 shared UI groups and the real creator backend. Each host passes
+all11 public-profile Python cases. Fresh Mac/Linux native clients then read the
+real signedv31 catalog twice through the default endpoint, with no local service
+or bootstrap-root files and ordinary TLS verification. Source/receipt hashes are
+retained in private/public-default-read-{mac,linux}/acceptance.json. Their private
+helpers use the real launcher startup and only read public metadata. Updated
+default clients are verified on all3 hosts; public binary publication remains.
 
 Standalone creator SDK and WAV import (2026-11-16):
 The creator-only mod-creator.py CLI now shares its parser/commands with the source

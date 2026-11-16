@@ -1,9 +1,10 @@
 Production launcher defaults (2026-11-16): **In progress**.
 The accepted source profile is active; compiled production origin/root enable
 fresh launchers without Support/Mods. Exact-origin pin cannot be replaced locally;
-custom authorities keep explicit roots. Windows native/Python/live signedv31
-checks pass. Actual Mac/Linux new launcher builds/reads follow; no public update,
-server/routing change or main merge. See STATUS for the precise scope.
+custom authorities keep explicit roots. At e8945093 all3 native/Python/live
+signedv31 checks pass, including fresh clients with no local workshop settings;
+Mac/Linux UI115/116 groups and creator backend pass. No public update, server/
+routing change or main merge. See STATUS for the precise scope.
 
 Standalone creator SDK/WAV import (2026-11-16): **In progress**.
 Shared creator-only commands and deterministic source export need no game/source
