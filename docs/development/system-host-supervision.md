@@ -4,6 +4,9 @@ The API, signed publication controller and ingress gateway have fixed system-job
 entry points. This component is implemented separately from deployment: no new
 production jobs, private configuration, keys or public routes have been enabled.
 The existing private Tailscale443 mapping must remain unchanged.
+Actual f099 native component checks pass258 cases, including live ordinary-user
+Gunicorn auth and complete group cleanup. The matching release is prepared only;
+protected new-role jobs, private provisioning and restart/boot remain unverified.
 
 `locked-service-bootstrap-mac.py` accepts api/publication/gateway roles in addition
 to scan/definitions and its inert proof role. These are fixed arguments to

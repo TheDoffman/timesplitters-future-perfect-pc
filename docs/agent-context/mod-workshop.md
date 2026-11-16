@@ -8,6 +8,8 @@ API uses explicit guardian group cleanup, control socket off and bounded renewal
 Details: ../development/system-host-supervision.md. Native child/auth/cleanup and
 file/control tests are registered in native
 CI; protected installation/lifecycle/boot/public deployment remain pending.
+Actual f099 Mac258pass8.73s, Windows271pass104skips1.64s. Matching56-source release
+is prepared only; protected runtime remains f234. See STATUS for provenance.
 
 Actual Mac at2619f6f6 passes14 confined gateway cases2.57s: all launcher routes,
 exact methods/IDs,16KiB bodies, private bearer/HTTPS and stripped static credentials

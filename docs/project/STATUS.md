@@ -1,3 +1,30 @@
+Restricted persistent-host control implementation (2026-11-15):
+Sourcef099ea69 adds fixed api/publication/gateway bootstrap roles, unprivileged
+system-host-service-mac.py workers, protected system-host-monitor-mac.py control
+and root-health adapters. Private config/signing/network handling stays non-root;
+the monitor controls only derived labels and reads numeric process state plus a
+bounded inert heartbeat. Health binds role/release/PID/UID/policy/freshness. New-only
+generation validates configuration in a credential-dropped child and requires the
+matching scan monitor generation. Existing GUI prototypes remain separate.
+The API uses fixed Gunicorn settings, with its unused control socket disabled,
+and a verified native guardian. Live ordinary-user API tests exposed that the
+scanner guardian's direct-child cleanup left two Gunicorn workers alive. Those
+exact disposable workers were verified and terminated; the new explicit server
+group mode holds child ownership with waitid WNOWAIT, then stops remaining workers
+before reaping, including after master exit. Default scanner escape handling is
+unchanged. Real child HTTP tests now pass authentication, origin/scheme rejection,
+two-worker observation and complete guardian/master/worker exit. Native group
+tests cover parent closure, deadline and early master exit; scanner escape tests
+also pass. Full focused Mac suite passes258 cases8.73s; Windows271pass104 native/
+POSIX skips1.64s. No protected new-role system-job or boot acceptance is claimed.
+Matching56-source/3339-runtime release is prepared and plan-verified only:
+descriptorSHA9bded553a723572c7517958e65936e524d217fc7e5eefb566b15d2bf2520e76a,
+preparation receiptSHA8c90afc605342af05c3f057c3e77476868959be52b2d89ee75de551a3c30dd93.
+It has not been installed; the protected runtime still contains f234. Private host
+configuration/keys, official definitions under UID600, production jobs, restart/
+boot, backup/recovery and public internet acceptance remain incomplete. Original
+private443 routing is preserved, no public endpoint enabled. The full goal is open.
+
 Confined launcher gateway route acceptance (2026-11-15):
 Source2619f6f6 repairs missing report/history/resolution, digest/evidence lookup
 and Lua/DDS inspection forwarding in Gatewayfile. Actual confined Caddy on the
