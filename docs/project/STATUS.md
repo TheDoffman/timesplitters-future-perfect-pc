@@ -1,3 +1,51 @@
+Isolated installed-upgrade preflight (2026-11-16; sourcef56d437e, fixtures8cd1edee/1e6e7bdf):
+The read-only installed upgrade entry now accepts --preflight with exact base and
+backup descriptors. It verifies both host closures, public authority, the sealed
+backup code/binding and its independently retained runtime (which can predate the
+current host). It derives9 old host job specifications and1 backup specification
+in separate fresh old-bound interpreters, after credential dropping. The parent
+imports only new modules, validates typed identity/UID/GID/groups/labels/commands,
+then performs protected20-plist and double live-job observations. The output is
+a preflight digest/count report; it does not authorize migration or enable apply.
+
+mod_host_upgrade_process supervises fixed metadata children15s/64KiB and backup
+children1800s/8KiB, with separately bounded empty-on-success stderr. Clean fixed
+environment/stdio/UID/GID/groups, nonblocking transport and owned Popen handles
+bound cleanup on timeout/overflow/selector failure; no sampled-PID signalling.
+Backup receipts must bind the preserved identity/runtime and a forced, independently
+verified new snapshot after quiescence. Tests cover typed/binding/name/time/hash
+refusal and actual owned-child termination/reaping. No production child was run
+under UID600 or admitted by this new coordinator yet.
+
+Actual Mac UID501 read-only acceptance executes the pure factory reader in the
+actual old installed7be Python with fresh old modules. Its9 specifications match
+all current root-owned0644 startup plists byte for byte; output9676 bytes stays
+within the new transport bound. Ordinary --preflight is refused exit2 before
+protected/private reads. ReceiptSHA256
+3d92598d00e1b76bcd39ca2d67d4fef2192e21b2fec368fbcda4bffc2d908a11;
+logs upgrade-children-actual.txt and receipt JSON are copied under Windows logs.
+This validates UID501 transport/factory compatibility, not locked/root preflight.
+
+Prior96441aec CI43972291750 is terminal failure: Linux Vulkan133667756709 fails
+only three forced-backup tests on the larger pytest process's ambient modules;
+1572 other cases pass/51 skip. Production module closure checks correctly refuse
+that context. Source8cd1edee moves core fixtures into fresh -I-S-B driver processes
+and deliberately seeds a foreign module in the parent, preserving the rejection
+test inside its child. No production guard, SDK pin or timing check is weakened.
+Focused final checks pass Mac353/2.73s and Windows255 with98 POSIX skips/0.65s.
+
+The first full local Linux mod run at8cd passes all corrected backup cases but
+finishes1 failed/1584 passed/72 skipped272.32s: an older publication fixture tries
+signing as WSL root. Source1e6e7bdf now asserts the mandatory root refusal there;
+ordinary-user runs retain the full positive key/authority checks. Both the Mac
+ordinary-user and WSL root parameter sets pass3 cases (0.48s/0.50s). Production
+signer code is unchanged. The new full Linux run at1e6 now passes1585 with72
+platform/fixture skips in276.45s; log upgrade-isolation-final-linux.txt retains the
+full result. This is the complete local mod suite, not the whole release/CI gate.
+Actual backup/sign-in prompts remain pending; live601/7be, frozen14d and routing
+are unchanged. Root route control, safe recovery, admission and activation remain
+unfinished; the full mod-system acceptance table still governs completion.
+
 Installed upgrade closure and forced backup phases (2026-11-16; sources02f095e3/05696f70):
 host_release.installed derives protected source/runtime inventories directly from
 the installed descriptor/runtime receipt. It verifies all files/modes/links and
