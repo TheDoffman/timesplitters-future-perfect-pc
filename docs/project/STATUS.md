@@ -5,7 +5,8 @@ uses the existing irreversible credential drop, then execs a bounded worker.
 The worker supervises a same-job child with a30-minute wall limit,8KiB output
 limits, child CPU/memory/descriptor limits and private atomic status. Root never
 reads the private backup/database. Windows descriptor/scope selection passes154,
-with10 POSIX-only skips; actual Mac/Linux tests follow. No protected installer,
+with10 POSIX-only skips; actual Mac/Linux each pass164 atf1cc1676 (0.81/0.70s).
+These exercise real child termination/reaping and immutable preparation. No protected installer,
 scheduled job or production backup deployment has been performed for this code.
 User confirmed portable production recovery verification exit0 on the Mac.
 
