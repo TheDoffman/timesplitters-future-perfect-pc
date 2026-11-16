@@ -1,4 +1,4 @@
-Cache leases/driver faults: mod-scripting.md; backups/SDK: [details](build-test-details.md).
+Cache leases/host checks: mod-scripting.md; backups/SDK: [details](build-test-details.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

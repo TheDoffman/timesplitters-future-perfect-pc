@@ -8,9 +8,11 @@ Existing save leases are preserved. No stale directory is swept/adopted, and
 closed-layout/process-death admission plus Windows profile recovery remain open.
 Actual Mac62 pass/7 skips at e87cfb96. Linux61 pass/7 skips and1 resource execution
 failure after successful cache admission; isolated rerun passes1. The resource
-driver gains bounded native failure diagnostics; this remains an unresolved
-Linux acceptance issue, not a passing full selection. Installed host services
-and public releases are unchanged.
+driver gains bounded native failure diagnostics. Atc6b23672 the Linux full
+selection passes62/7 skips22.39s and instrumented resource checks pass24/1 skip
+on Windows16.91s and Mac8.71s. The first intermittent transaction failure has no
+established cause; the passing rerun does not establish a fix. Installed host
+services and public releases are unchanged.
 
 Backup installer source (2026-11-16, protected setup awaiting local authentication):
 The new-only registrar seals the small code bundle against the existing runtime,

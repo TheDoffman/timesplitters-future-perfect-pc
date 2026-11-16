@@ -5,8 +5,10 @@ both. Normal teardown removes metadata only after all other contents are gone;
 changed markers/unknown contents preserve the namespace. SaveNamespace's existing
 session-lock semantics are unchanged. Windows resources/saves63 pass/6 skips;
 Mac62 pass/7 skips. Linux61 pass/7 skips/1 real transaction failure; its isolated
-rerun passes. The resource driver now retains bounded native fault diagnostics;
-Linux acceptance remains under investigation. Kill tests release the kernel lock.
+rerun passes. Atc6b23672 Linux full selection62 passes/7 skips (22.39s), and the
+instrumented resource checks pass24/1 skip on Windows/Mac (16.91/8.71s). The first
+intermittent transaction failure has no established cause; bounded diagnostics
+remain for recurrence. Kill tests release the kernel lock.
 This does not sweep or adopt any old directory: inactive process/layout admission,
 actual stale removal and Windows AppContainer profile recovery remain required.
 
