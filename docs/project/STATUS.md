@@ -1,3 +1,13 @@
+Private mod cache recovery foundation (2026-11-16, not a completed reaper):
+New native PrivateDirectory caches record their generated ownership identity and
+hold an exclusive non-inherited lifetime lock. Rechecks reject changed records;
+normal teardown removes only recognized metadata after payloads are gone and
+preserves unknown content. Windows resource/save checks pass63 with6 host skips,
+including a real abrupt-parent kill leaving a marked cache for later recovery.
+Existing save leases are preserved. No stale directory is swept/adopted, and
+closed-layout/process-death admission plus Windows profile recovery remain open.
+Mac/Linux checks follow; installed host services and public releases are unchanged.
+
 Backup installer source (2026-11-16, protected setup awaiting local authentication):
 The new-only registrar seals the small code bundle against the existing runtime,
 then performs privilege-drop/initial-capture/read-only verification and two staged

@@ -107,6 +107,46 @@ def test_two_cache_leases_are_fresh_and_independent(runtime):
     assert not list(runtime[1].iterdir())
 
 
+def test_private_cache_has_bound_ownership_and_exclusive_lifetime_lease(runtime):
+    with held(runtime,'private-hold') as (p,root):
+        assert (root/'.tsfp-runtime-owner').read_text()=='TSFP mod runtime cache v1\n'+root.name+'\n'
+        assert (root/'.runtime-lock').stat().st_size==0
+        assert {path.name for path in root.iterdir()}=={'.tsfp-runtime-owner','.runtime-lock'}
+        if os.name!='nt':
+            import fcntl
+            with (root/'.runtime-lock').open('r+b') as incoming:
+                with pytest.raises(BlockingIOError):fcntl.flock(incoming,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        else:
+            import ctypes
+            kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+            kernel.CreateFileW.argtypes=[ctypes.c_wchar_p,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_void_p,ctypes.c_uint32,ctypes.c_uint32,ctypes.c_void_p]
+            kernel.CreateFileW.restype=ctypes.c_void_p
+            handle=kernel.CreateFileW(str(root/'.runtime-lock'),0x80000000,7,None,3,0x00200000,None)
+            assert handle==ctypes.c_void_p(-1).value and ctypes.get_last_error()==32
+    assert not root.exists()
+
+
+def test_changed_cache_marker_refuses_recheck_and_preserves_all_contents(runtime):
+    with held(runtime,'private-hold') as (p,root):
+        marker=root/'.tsfp-runtime-owner';marker.write_text('unknown ownership\n')
+        out,err=p.communicate(b'\n',timeout=10)
+        assert p.returncode==0 and not err and not json.loads(out)['rechecked']
+    assert marker.read_text()=='unknown ownership\n' and (root/'.runtime-lock').exists()
+
+
+def test_abrupt_parent_death_preserves_marked_cache_for_later_recovery(runtime):
+    with held(runtime,'private-hold') as (p,root):
+        p.kill();p.communicate(timeout=10)
+    assert root.is_dir() and (root/'.tsfp-runtime-owner').read_text().endswith(root.name+'\n')
+    if os.name!='nt':
+        import fcntl
+        with (root/'.runtime-lock').open('r+b') as incoming:fcntl.flock(incoming,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    # Recovery is not a blanket sweep: a new allocation preserves this old cache
+    # until closed-layout/process-identity recovery admission is implemented.
+    assert call(runtime,mode='private')[0]['accepted']
+    assert root.exists() and list(runtime[1].iterdir())==[root]
+
+
 @pytest.mark.parametrize('kind',['relative','missing','file','parent-link'])
 def test_unsafe_cache_parents_are_refused(runtime,kind):
     parent=runtime[1]

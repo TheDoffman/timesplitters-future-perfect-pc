@@ -5,8 +5,10 @@
 namespace tsfp { namespace mods {
 // Fresh private directory under a trusted existing per-user parent. Unlike save
 // namespaces, executable caches require native permissions; no exFAT fallback.
-// No existing directory is adopted. Destruction removes only this owned EMPTY
-// directory, by held identity, after all images/processes have been cleaned.
+// No existing directory is adopted. New caches hold an exclusive, non-inherited
+// lifetime lock and a marker bound to their generated leaf name. Destruction
+// removes these records only after all payloads are gone, then removes the owned
+// directory by held identity. Unknown contents/changed records are preserved.
 class PrivateDirectory {
 public:
     static std::unique_ptr<PrivateDirectory> create(const std::string &parent,std::string &error);

@@ -176,14 +176,15 @@ void tree(const fs::path &root,Security &security,bool leased) {
 }
 struct Lease {
     File file;
-    explicit Lease(const fs::path &path,Security &security) {
+    explicit Lease(const fs::path &path,Security &security,bool fresh=false) {
 #ifdef _WIN32
-        file.value=CreateFileW(path.c_str(),GENERIC_READ|GENERIC_WRITE,0,&security.attributes,OPEN_ALWAYS,FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+        file.value=CreateFileW(path.c_str(),GENERIC_READ|GENERIC_WRITE|(fresh?DELETE:0),0,&security.attributes,
+            fresh?CREATE_NEW:OPEN_ALWAYS,FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
         need(file.value!=INVALID_HANDLE_VALUE);BY_HANDLE_FILE_INFORMATION info{};
         need(GetFileType(file.value)==FILE_TYPE_DISK && GetFileInformationByHandle(file.value,&info) && info.nNumberOfLinks==1 && !info.nFileSizeHigh && !info.nFileSizeLow &&
             !(info.dwFileAttributes&(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_REPARSE_POINT)));
 #else
-        file.value=open(path.c_str(),O_RDWR|O_CREAT|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW,0600);need(file.value>=0);
+        file.value=open(path.c_str(),O_RDWR|O_CREAT|O_NONBLOCK|O_CLOEXEC|O_NOFOLLOW|(fresh?O_EXCL:0),0600);need(file.value>=0);
         struct stat s{};need(fstat(file.value,&s)==0 && S_ISREG(s.st_mode) && s.st_nlink==1 && !s.st_size);
         need(flock(file.value,LOCK_EX|LOCK_NB)==0);
 #endif
@@ -198,6 +199,16 @@ struct Lease {
         struct stat held{},named{};
         need(fstat(file.value,&held)==0 && lstat(path.c_str(),&named)==0 && held.st_dev==named.st_dev && held.st_ino==named.st_ino &&
             held.st_nlink==1 && !held.st_size);
+#endif
+    }
+    void remove_fresh(const fs::path &path,Security &security) {
+        check(path,security);
+#ifdef _WIN32
+        FILE_DISPOSITION_INFO disposition{};disposition.DeleteFile=TRUE;
+        need(SetFileInformationByHandle(file.value,FileDispositionInfo,&disposition,sizeof(disposition))!=FALSE);
+        CloseHandle(file.value);file.value=INVALID_HANDLE_VALUE;
+#else
+        need(unlink(path.c_str())==0);
 #endif
     }
 };
@@ -252,6 +263,8 @@ SaveNamespace::~SaveNamespace(){delete static_cast<Lease *>(lock_);}
 namespace {
 struct PrivateOwner {
     File directory;
+    std::unique_ptr<Lease> lease;
+    std::string marker;
 #ifndef _WIN32
     File parent;
 #endif
@@ -281,6 +294,11 @@ std::unique_ptr<PrivateDirectory> PrivateDirectory::create(const std::string &pa
         memcpy(result->root_.data(),text.data(),result->root_.size());
         owner.directory.value=open(result->root_.c_str(),O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);need(owner.directory.value>=0);
 #endif
+        // New caches carry an exclusive, non-inherited lifetime lease and an
+        // explicit ownership marker. Unknown/legacy directories remain unmarked.
+        owner.marker="TSFP mod runtime cache v1\n"+fs::u8path(result->root_).filename().u8string()+"\n";
+        marker(fs::u8path(result->root_)/".tsfp-runtime-owner",owner.marker,true,security);
+        owner.lease=std::make_unique<Lease>(fs::u8path(result->root_)/".runtime-lock",security,true);
         need(result->recheck(error));return result;
     }catch(...){error="A private native helper cache could not be created";return nullptr;}
 }
@@ -290,6 +308,9 @@ bool PrivateDirectory::recheck(std::string &error)const {
         need(owner_ && !root_.empty());auto path=checked_path(root_,true);
         checked_path(parent_,true);Security security(false);security.check(fs::u8path(parent_),false);security.check(path,true);
         auto &owner=*static_cast<PrivateOwner *>(owner_);
+        need(owner.lease!=nullptr);
+        marker(path/".tsfp-runtime-owner",owner.marker,false,security);
+        owner.lease->check(path/".runtime-lock",security);
 #ifdef _WIN32
         BY_HANDLE_FILE_INFORMATION held{};
         need(owner.directory.value!=INVALID_HANDLE_VALUE && GetFileType(owner.directory.value)==FILE_TYPE_DISK &&
@@ -307,6 +328,23 @@ PrivateDirectory::~PrivateDirectory() {
     auto *owner=static_cast<PrivateOwner *>(owner_);if(!owner)return;
     try {
         if(!root_.empty()) {
+            if(owner->lease) {
+                // A changed marker or any unknown payload preserves the whole
+                // namespace. Never remove ownership evidence from uncertain data.
+                std::string error;need(recheck(error));auto path=fs::u8path(root_);
+                size_t count=0;
+                for(const auto &entry:fs::directory_iterator(path)) {
+                    auto name=entry.path().filename().u8string();
+                    need(++count<=2 && (name==".tsfp-runtime-owner" || name==".runtime-lock"));
+                }
+                need(count==2);Security security(false);
+                owner->lease->remove_fresh(path/".runtime-lock",security);
+#ifdef _WIN32
+                need(DeleteFileW((path/L".tsfp-runtime-owner").c_str())!=FALSE);
+#else
+                need(unlinkat(owner->directory.value,".tsfp-runtime-owner",0)==0);
+#endif
+            }
 #ifdef _WIN32
             if(owner->directory.value!=INVALID_HANDLE_VALUE) {
                 // The kernel refuses nonempty directories; never enumerate or

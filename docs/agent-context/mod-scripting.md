@@ -1,3 +1,13 @@
+Private cache ownership foundation: new PrivateDirectory instances in mod_saves.cpp
+write .tsfp-runtime-owner bound to their generated leaf and hold an exclusive
+.runtime-lock (non-inherited Windows handle/POSIX CLOEXEC flock). Recheck validates
+both. Normal teardown removes metadata only after all other contents are gone;
+changed markers/unknown contents preserve the namespace. SaveNamespace's existing
+session-lock semantics are unchanged. Windows resources/saves63 pass/6 skips;
+Mac/Linux follow. Real kill tests leave marked caches and release the kernel lock.
+This does not sweep or adopt any old directory: inactive process/layout admission,
+actual stale removal and Windows AppContainer profile recovery remain required.
+
 Lua audio_api=1 explicitly enables bounded game.audio controls. New batches use
 reply v2 fields; legacy batches keep v1. Parent resource callbacks are retained
 through manager/match and checked before model commit. Owner-thread dispatch
