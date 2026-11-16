@@ -2,8 +2,11 @@ Private generation configuration step (2026-11-16): **In progress**.
 Shared mod_host_migration.py and installed locked-account CLI implement only six
 known config/marker changes, pinned profiles, private bounded journal/lease and
 explicit resume/rollback. Root quiescence/backup admission required; keys/API
-configuration/repository are not outputs. Windows pure/initializer/CI checks pass;
-native FS tests pending. Root coordinator, backup rebinding and production UID600
+configuration/repository are not outputs. Atb4158060 Windows159 pass67 POSIX skip;
+actual Mac/Linux226 each pass including process leases, namespace replacement,
+interruption/recovery, journal corruption/capacity and native boot binding. Mac
+ordinary-user apply refuses exit2; no live configs/jobs changed. Root coordinator,
+backup rebinding and production UID600
 acceptance remain separate unfinished work (STATUS).
 
 Preserving host upgrade (2026-11-16): **In progress**.

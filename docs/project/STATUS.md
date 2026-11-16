@@ -1,18 +1,23 @@
-Private configuration migration component (2026-11-16; source, not deployed):
+Private configuration migration component (2026-11-16; sourceb4158060, not deployed):
 mod_host_migration.py derives only six generation-bound config/marker records
 from the existing v1 initializers. It verifies both immutable origin/root profiles,
 keeps signing keys/API config guarded and unchanged, and does not read/migrate
 repository contents. Held-directory reads/replaces, before/after journals,
 nonblocking global lease and explicit known-state resume/rollback preserve unknown
-or changed files. Journals are bounded to32 generations. Apply requires fresh
+or changed files. Journals are bounded to32 transactions. Apply requires fresh
 root-owned quiescence admission binding plan/nonce, all9 jobs plus backup stopped,
-and backup verification after quiescence. Installed locked-account CLI defaults
+and backup verification after quiescence, bound to the native boot session so a
+reboot invalidates prior admission. Installed locked-account CLI defaults
 to plan-only; it cannot issue that authority or activate a service. Root cutover
 coordination/backup binding migration and actual UID600 admission remain pending.
-Atf34a7af9 Windows migration/initializer/CI scope checks pass159 with62 POSIX
-skips (1.69s); actual Mac221 pass6.06s and Linux221 pass8.69s. These use private
-HOME filesystem fixtures with test authority owners, not live UID600 admission.
-Added separate-process lease and replaced-directory cases are pending final run.
+Final migration/initializer/CI scope checks pass159 with67 POSIX skips on Windows
+(1.53s), actual Mac226 pass7.08s and Linux226 pass10.16s. These use private HOME
+filesystem fixtures with test authority owners, not live UID600 admission.
+Actual separate-process lease, replaced-directory, interrupted rename/resume/
+rollback, malformed journal, capacity/recovery and wrong-boot cases pass. Mac
+ordinary-user --apply is refused with exit2 before configuration changes.
+Logs: host-migration-{windows,mac,linux,unprivileged}.txt under ignored logs;
+native logs copied to Windows. No unchanged native game/client tests were rerun.
 Production601/7be unchanged; no privileged job/config/data changes occurred.
 
 Frozen host upgrade candidate (2026-11-16; source4fc86283; not installed/active):
