@@ -3,6 +3,10 @@
 #include <memory>
 #include <string>
 namespace tsfp { namespace mods {
+struct ImagePins;
+class Process;
+class CacheJournal;
+bool cache_process_start_allowed(const std::string &)noexcept;
 // Fresh private directory under a trusted existing per-user parent. Unlike save
 // namespaces, executable caches require native permissions; no exFAT fallback.
 // No existing directory is adopted. New caches hold an exclusive, non-inherited
@@ -18,9 +22,28 @@ public:
     PrivateDirectory(const PrivateDirectory &)=delete;
     PrivateDirectory &operator=(const PrivateDirectory &)=delete;
 private:
+    friend class CacheJournal;
+    friend bool cache_process_start_allowed(const std::string &)noexcept;
     PrivateDirectory()=default;
     std::string root_,parent_;
     void *owner_=nullptr;
+};
+// Bounded, new-only per-start evidence, tied to a live PrivateDirectory lease.
+// A committed record precedes transmission of mod source to the confined child.
+class CacheJournal {
+public:
+    static std::unique_ptr<CacheJournal> begin(const std::string &cache,const std::string &image,const ImagePins *,std::string &error);
+    ~CacheJournal();
+    bool starting(std::string &error)noexcept;
+    bool commit(const Process &,std::string &error);
+    void finish(bool artifacts_cleaned)noexcept;
+    CacheJournal(const CacheJournal &)=delete;
+    CacheJournal &operator=(const CacheJournal &)=delete;
+private:
+    struct State;
+    std::unique_ptr<State> state_;
+    CacheJournal();
+    friend bool cache_process_start_allowed(const std::string &)noexcept;
 };
 }}
 #endif

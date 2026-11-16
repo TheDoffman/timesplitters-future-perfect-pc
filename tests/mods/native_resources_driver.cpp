@@ -1,5 +1,7 @@
 #include "mod_resources.hpp"
 #include "mod_manager.hpp"
+#include "mod_images.hpp"
+#include "mod_process.hpp"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -30,7 +32,24 @@ static int run(const std::string &mode,const std::string &parent,const std::stri
     auto resources=tsfp::mods::RuntimeResources::create(subdir,name,pins,parent,error);
     record("accepted",!!resources,resources?resources->cache():"");if(!resources)return 0;
     if(mode=="hold"){(void)std::getchar();record("rechecked",resources->recheck(error),resources->cache());return 0;}
-    if(mode!="run")return 0;
+    if(mode=="no-journal") {
+        auto child=tsfp::mods::Process::start(resources->worker(),resources->cache(),error);
+        record("refused",!child && !error.empty());return child?3:0;
+    }
+    if(mode=="intent-hold") {
+        auto images=tsfp::mods::ImageStage::create(resources->worker(),resources->cache(),pins,nullptr,error);
+        auto journal=images?tsfp::mods::CacheJournal::begin(resources->cache(),images->worker(),&pins,error):nullptr;
+        bool admitted=journal && journal->starting(error);record("intent",admitted);if(!admitted)return 3;
+        (void)std::getchar();auto child=tsfp::mods::Process::start(images->worker(),resources->cache(),error);
+        if(!child){record("refused",true);return 0;}
+        bool committed=journal->commit(*child,error);record("committed",committed);
+        int command=committed?std::getchar():0;
+        if(command=='l')journal->finish(true); // Prove live identities prevent cleanup.
+        child->terminate();bool cleaned=child->cleanup_owned();child.reset();
+        if(command!='l')journal->finish(cleaned);
+        return committed?0:3;
+    }
+    if(mode!="run" && mode!="journal-hold")return 0;
     const char source[]="return {api=1,on_start=function() game.set_score(1,4) end}";
     TsfpModMatchConfig config{resources->worker().c_str(),resources->cache().c_str(),source,sizeof(source)-1,17,15,pin.c_str(),pins.guardian.c_str(),nullptr};
     auto manager=tsfp::mods::MatchManager::create(config,error);if(!manager)return 3;
@@ -50,6 +69,7 @@ static int run(const std::string &mode,const std::string &parent,const std::stri
         const char *reason=tsfp_mod_match_error(match);
         std::fprintf(stderr,"Resource execution failed: %.400s\n",reason && *reason?reason:"No expected score transaction before deadline");
     }
+    if(mode=="journal-hold"){record("ready",accepted);if(accepted)(void)std::getchar();}
     manager->close();end=std::chrono::steady_clock::now()+std::chrono::seconds(3);
     while(!manager->stopped() && std::chrono::steady_clock::now()<end)std::this_thread::sleep_for(std::chrono::milliseconds(1));
     bool stopped=manager->stopped();if(!stopped)std::abort();manager.reset();

@@ -2,6 +2,7 @@
 #include "mod_images.hpp"
 #include "mod_audio_command.h"
 #include "mod_process.hpp"
+#include "mod_private.hpp"
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -160,15 +161,23 @@ SessionStatus Session::poll(tsfp_script_result &commands,uint64_t &sequence,std:
 }
 
 void Session::work(std::shared_ptr<State> state,std::string image,std::string cache,std::string source,uint32_t seed,std::shared_ptr<const ImagePins> pins) noexcept {
-    std::unique_ptr<Process> child;std::unique_ptr<ImageStage> images;std::string failure;
+    std::unique_ptr<Process> child;std::unique_ptr<ImageStage> images;std::unique_ptr<CacheJournal> journal;std::string failure;
+    auto stop=[&] {
+        bool cleaned=false;
+        if(child){child->terminate();cleaned=child->cleanup_owned();child.reset();}
+        if(journal){journal->finish(cleaned);journal.reset();}
+    };
     try {
         if(pins) {
             images=ImageStage::create(image,cache,*pins,&state->cancel,failure);
             if(!images)throw std::runtime_error("Cannot verify confined script helpers");
             image=images->worker();
         }
+        journal=CacheJournal::begin(cache,image,pins.get(),failure);
+        if(!journal || !journal->starting(failure))throw std::runtime_error("Cannot record confined script startup");
         child=Process::start(image,cache,failure);
         if(!child)throw std::runtime_error("Cannot start confined script worker");
+        if(!journal->commit(*child,failure))throw std::runtime_error("Cannot record confined worker identity");
         auto rate_start=Clock::now(),idle_start=Clock::now();ProcessUsage usage{};
         if(!child->usage(usage))throw std::runtime_error("Cannot inspect script worker");
         uint64_t rate_cpu=usage.cpu_microseconds,idle_cpu=usage.cpu_microseconds;
@@ -248,7 +257,7 @@ void Session::work(std::shared_ptr<State> state,std::string image,std::string ca
                     if(usage.resident_bytes>128u*1024*1024 || usage.cpu_microseconds-idle_cpu>250000)throw std::runtime_error("Script shutdown resource budget exceeded");
                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 }
-                child.reset();
+                stop();
             }
             {
                 std::lock_guard<std::mutex> lock(state->mutex);
@@ -267,6 +276,6 @@ void Session::work(std::shared_ptr<State> state,std::string image,std::string ca
             state->phase=SessionStatus::Faulted;
         }catch(...) {state->invalid.store(true);}
     }catch(...) {state->invalid.store(true);}
-    child.reset();images.reset();state->stopped.store(true);
+    stop();images.reset();state->stopped.store(true);
 }
 }}

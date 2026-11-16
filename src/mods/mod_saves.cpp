@@ -1,6 +1,11 @@
 #include "mod_saves.hpp"
 #include "mod_files.hpp"
 #include "mod_private.hpp"
+#include "mod_images.hpp"
+#include "mod_process.hpp"
+#include <atomic>
+#include <map>
+#include <mutex>
 #include <array>
 #include <filesystem>
 #include <stdexcept>
@@ -269,6 +274,14 @@ struct PrivateOwner {
     File parent;
 #endif
 };
+struct PrivateRegistry {
+    std::mutex mutex;
+    std::map<std::string,PrivateDirectory *> owners;
+};
+// Lifetime is process-wide; cache destruction may run from a detached session.
+PrivateRegistry &private_registry(){static auto *value=new PrivateRegistry;return *value;}
+thread_local CacheJournal *starting_journal=nullptr;
+std::atomic<uint64_t> journal_sequence{0};
 }
 std::unique_ptr<PrivateDirectory> PrivateDirectory::create(const std::string &parent_name,std::string &error) {
     error.clear();
@@ -296,10 +309,13 @@ std::unique_ptr<PrivateDirectory> PrivateDirectory::create(const std::string &pa
 #endif
         // New caches carry an exclusive, non-inherited lifetime lease and an
         // explicit ownership marker. Unknown/legacy directories remain unmarked.
-        owner.marker="TSFP mod runtime cache v1\n"+fs::u8path(result->root_).filename().u8string()+"\n";
+        owner.marker="TSFP mod runtime cache v2\n"+fs::u8path(result->root_).filename().u8string()+"\n";
         marker(fs::u8path(result->root_)/".tsfp-runtime-owner",owner.marker,true,security);
         owner.lease=std::make_unique<Lease>(fs::u8path(result->root_)/".runtime-lock",security,true);
-        need(result->recheck(error));return result;
+        need(result->recheck(error));
+        auto &registry=private_registry();std::lock_guard<std::mutex> guard(registry.mutex);
+        need(registry.owners.size()<64 && registry.owners.emplace(result->root_,result.get()).second);
+        return result;
     }catch(...){error="A private native helper cache could not be created";return nullptr;}
 }
 bool PrivateDirectory::recheck(std::string &error)const {
@@ -325,6 +341,7 @@ bool PrivateDirectory::recheck(std::string &error)const {
     }catch(...){error="Private native helper cache changed";return false;}
 }
 PrivateDirectory::~PrivateDirectory() {
+    {auto &registry=private_registry();std::lock_guard<std::mutex> guard(registry.mutex);registry.owners.erase(root_);}
     auto *owner=static_cast<PrivateOwner *>(owner_);if(!owner)return;
     try {
         if(!root_.empty()) {
@@ -362,5 +379,169 @@ PrivateDirectory::~PrivateDirectory() {
         }
     }catch(...){} // Preserve uncertain/unknown state; no cleanup retry.
     delete owner;
+}
+
+namespace {
+// Held handles prevent Windows replacement. POSIX names are resolved relative to
+// the already-owned root descriptor, then matched to the original inode/content.
+struct JournalFile {
+    File file;std::string name,bytes;uint64_t device=0,inode=0;
+    void create(PrivateOwner &owner,const fs::path &root,const std::string &leaf,const std::string &body) {
+        need(body.size()<=4096);name=leaf;bytes=body;
+#ifdef _WIN32
+        (void)owner;Security security(false);
+        file.value=CreateFileW((root/fs::u8path(name)).c_str(),GENERIC_READ|GENERIC_WRITE|DELETE,FILE_SHARE_READ,
+            &security.attributes,CREATE_NEW,FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+        need(file.value!=INVALID_HANDLE_VALUE);DWORD written=0;
+        need(WriteFile(file.value,bytes.data(),static_cast<DWORD>(bytes.size()),&written,nullptr) && written==bytes.size() && FlushFileBuffers(file.value));
+        BY_HANDLE_FILE_INFORMATION info{};need(GetFileInformationByHandle(file.value,&info)!=FALSE);
+        device=info.dwVolumeSerialNumber;inode=(uint64_t(info.nFileIndexHigh)<<32)|info.nFileIndexLow;
+#else
+        (void)root;file.value=openat(owner.directory.value,name.c_str(),O_RDWR|O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC,0600);
+        need(file.value>=0);struct stat info{};need(fstat(file.value,&info)==0);device=info.st_dev;inode=info.st_ino;
+        size_t at=0;while(at<bytes.size()) {
+            ssize_t n=write(file.value,bytes.data()+at,bytes.size()-at);
+            if(n<0 && errno==EINTR)continue;
+            need(n>0);at+=static_cast<size_t>(n);
+        }
+        need(fsync(file.value)==0 && fsync(owner.directory.value)==0);
+#endif
+        check(owner,root);
+    }
+    void check(PrivateOwner &owner,const fs::path &root)const {
+        std::array<char,4097> buffer{};
+#ifdef _WIN32
+        (void)owner;Security security(false);security.check(root/fs::u8path(name),true);
+        BY_HANDLE_FILE_INFORMATION info{};need(GetFileInformationByHandle(file.value,&info)!=FALSE && GetFileType(file.value)==FILE_TYPE_DISK &&
+            info.nNumberOfLinks==1 && !(info.dwFileAttributes&(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_REPARSE_POINT)) &&
+            !info.nFileSizeHigh && info.nFileSizeLow==bytes.size() && info.dwVolumeSerialNumber==device &&
+            ((uint64_t(info.nFileIndexHigh)<<32)|info.nFileIndexLow)==inode);
+        LARGE_INTEGER zero{};need(SetFilePointerEx(file.value,zero,nullptr,FILE_BEGIN)!=FALSE);DWORD got=0;
+        need(ReadFile(file.value,buffer.data(),static_cast<DWORD>(buffer.size()),&got,nullptr) && got==bytes.size());
+#else
+        (void)root;struct stat held{},named{};
+        need(fstat(file.value,&held)==0 && fstatat(owner.directory.value,name.c_str(),&named,AT_SYMLINK_NOFOLLOW)==0 &&
+            S_ISREG(held.st_mode) && S_ISREG(named.st_mode) && held.st_nlink==1 && held.st_uid==geteuid() && (held.st_mode&0777)==0600 &&
+            uint64_t(held.st_dev)==device && uint64_t(held.st_ino)==inode && held.st_dev==named.st_dev && held.st_ino==named.st_ino &&
+            held.st_size==static_cast<off_t>(bytes.size()));
+        size_t at=0;while(at<bytes.size()) {
+            ssize_t n=pread(file.value,buffer.data()+at,bytes.size()-at,static_cast<off_t>(at));
+            if(n<0 && errno==EINTR)continue;
+            need(n>0);at+=static_cast<size_t>(n);
+        }
+#endif
+        need(memcmp(buffer.data(),bytes.data(),bytes.size())==0);
+    }
+    void remove(PrivateOwner &owner,const fs::path &root) {
+        check(owner,root);
+#ifdef _WIN32
+        FILE_DISPOSITION_INFO disposition{};disposition.DeleteFile=TRUE;
+        need(SetFileInformationByHandle(file.value,FileDispositionInfo,&disposition,sizeof(disposition))!=FALSE);
+        CloseHandle(file.value);file.value=INVALID_HANDLE_VALUE;
+#else
+        need(unlinkat(owner.directory.value,name.c_str(),0)==0 && fsync(owner.directory.value)==0);
+#endif
+    }
+};
+bool plain_cache(const std::string &cache) {
+    std::error_code error;auto status=fs::symlink_status(fs::u8path(cache)/".tsfp-runtime-owner",error);
+    return (!error || error==std::errc::no_such_file_or_directory) && status.type()==fs::file_type::not_found;
+}
+bool ascii_line(const std::string &text,size_t maximum) {
+    if(text.empty() || text.size()>maximum)return false;
+    for(unsigned char c:text)if(c<33 || c>126)return false;
+    return true;
+}
+}
+struct CacheJournal::State {
+    std::string cache;JournalFile intent,committed;ProcessStamps stamps;
+    bool owned=false,attempted=false,claimed=false,complete=false,finished=false;
+};
+CacheJournal::CacheJournal():state_(new State){}
+CacheJournal::~CacheJournal(){if(starting_journal==this)starting_journal=nullptr;}
+std::unique_ptr<CacheJournal> CacheJournal::begin(const std::string &cache,const std::string &image,const ImagePins *pins,std::string &error) {
+    error.clear();
+    try {
+        auto journal=std::unique_ptr<CacheJournal>(new CacheJournal);auto &state=*journal->state_;state.cache=cache;
+        auto &registry=private_registry();std::lock_guard<std::mutex> guard(registry.mutex);
+        auto found=registry.owners.find(cache);
+        if(found==registry.owners.end()){need(plain_cache(cache));return journal;}
+        auto *directory=found->second;need(directory->recheck(error) && pins && pins->valid());
+        auto root=fs::u8path(cache),worker=fs::u8path(image);
+        auto relative=worker.lexically_relative(root);auto components=std::distance(relative.begin(),relative.end());
+        need(components==2 && relative.begin()->u8string().rfind("images-",0)==0 && relative.filename()==worker.filename());
+        auto relative_text=relative.generic_u8string();need(ascii_line(relative_text,256) && relative_text.find("..") == std::string::npos);
+        size_t entries=0;for(const auto &entry:fs::directory_iterator(root)){(void)entry;need(++entries<=256);}
+        uint64_t sequence=journal_sequence.fetch_add(1)+1;need(sequence!=0);
+        std::string leaf=".spawn-"+std::to_string(sequence);
+        auto &owner=*static_cast<PrivateOwner *>(directory->owner_);uint64_t device=0,inode=0;
+#ifdef _WIN32
+        BY_HANDLE_FILE_INFORMATION identity{};need(GetFileInformationByHandle(owner.directory.value,&identity)!=FALSE);
+        device=identity.dwVolumeSerialNumber;inode=(uint64_t(identity.nFileIndexHigh)<<32)|identity.nFileIndexLow;
+#else
+        struct stat identity{};need(fstat(owner.directory.value,&identity)==0);device=identity.st_dev;inode=identity.st_ino;
+#endif
+        need(inode!=0);
+        std::string body="TSFP mod spawn intent v1\n"+root.filename().u8string()+"\n"+leaf+"\n"+
+            std::to_string(device)+" "+std::to_string(inode)+"\n"+relative_text+"\n"+pins->worker+"\n"+pins->guardian+"\n";
+        state.owned=true;state.intent.create(owner,root,leaf+".intent",body);
+        return journal;
+    }catch(...){error="Cannot record private worker startup intent";return {};}
+}
+bool CacheJournal::starting(std::string &error)noexcept {
+    try {
+        auto &state=*state_;need(!state.attempted && !state.finished && !starting_journal);
+        state.attempted=true;starting_journal=this;return true;
+    }catch(...){error="Cannot admit private worker startup";return false;}
+}
+bool cache_process_start_allowed(const std::string &cache)noexcept {
+    try {
+        auto &registry=private_registry();std::lock_guard<std::mutex> guard(registry.mutex);
+        auto found=registry.owners.find(cache);
+        if(found==registry.owners.end())return plain_cache(cache);
+        if(!starting_journal)return false;
+        auto &state=*starting_journal->state_;std::string error;
+        need(state.owned && state.cache==cache && state.attempted && !state.claimed && !state.finished && found->second->recheck(error));
+        state.intent.check(*static_cast<PrivateOwner *>(found->second->owner_),fs::u8path(cache));state.claimed=true;return true;
+    }catch(...){return false;}
+}
+bool CacheJournal::commit(const Process &process,std::string &error) {
+    try {
+        auto &state=*state_;need(state.attempted && !state.complete && !state.finished);
+        if(!state.owned){state.complete=true;if(starting_journal==this)starting_journal=nullptr;return true;}
+        need(state.claimed && process.creation_stamps(state.stamps) && state.stamps.valid());
+        std::string body="TSFP mod spawn commit v1\n"+fs::u8path(state.cache).filename().u8string()+"\n"+state.intent.name+"\n";
+        body+=std::to_string(state.stamps.count)+"\n";
+        for(size_t i=0;i<state.stamps.count;++i) {
+            const auto &stamp=state.stamps.values[i];body+=std::to_string(static_cast<uint32_t>(stamp.kind))+" "+std::to_string(stamp.pid)+" "+std::to_string(stamp.start_a)+" "+std::to_string(stamp.start_b)+"\n";
+        }
+#ifdef _WIN32
+        auto *artifact=process.creation_artifacts();need(artifact && ascii_line(artifact->cache_leaf,36) && artifact->cache_leaf.size()==36 &&
+            artifact->profile=="TSFP.Mod."+artifact->cache_leaf && ascii_line(artifact->sid,192) && artifact->sid.rfind("S-1-15-2-",0)==0 && artifact->file);
+        body+=artifact->cache_leaf+"\n"+artifact->profile+"\n"+artifact->sid+"\n"+std::to_string(artifact->volume)+" "+std::to_string(artifact->file)+"\n";
+#endif
+        auto &registry=private_registry();std::lock_guard<std::mutex> guard(registry.mutex);
+        auto found=registry.owners.find(state.cache);need(found!=registry.owners.end() && found->second->recheck(error));
+        auto &owner=*static_cast<PrivateOwner *>(found->second->owner_);auto root=fs::u8path(state.cache);
+        state.intent.check(owner,root);
+        auto name=state.intent.name.substr(0,state.intent.name.size()-7)+".commit";
+        state.committed.create(owner,root,name,body);state.complete=true;
+        if(starting_journal==this)starting_journal=nullptr;
+        return true;
+    }catch(...){if(starting_journal==this)starting_journal=nullptr;error="Cannot commit private worker creation evidence";return false;}
+}
+void CacheJournal::finish(bool artifacts_cleaned)noexcept {
+    if(starting_journal==this)starting_journal=nullptr;
+    try {
+        auto &state=*state_;need(!state.finished);state.finished=true;
+        if(!state.owned)return;
+        need(state.complete && artifacts_cleaned);
+        for(size_t i=0;i<state.stamps.count;++i)need(process_stamp_state(state.stamps.values[i])==ProcessState::exited);
+        auto &registry=private_registry();std::lock_guard<std::mutex> guard(registry.mutex);std::string error;
+        auto found=registry.owners.find(state.cache);need(found!=registry.owners.end() && found->second->recheck(error));
+        auto &owner=*static_cast<PrivateOwner *>(found->second->owner_);auto root=fs::u8path(state.cache);
+        state.intent.check(owner,root);state.committed.check(owner,root);
+        state.committed.remove(owner,root);state.intent.remove(owner,root);
+    }catch(...){} // Ambiguous startup, changed evidence or live/unknown child: preserve.
 }
 }}

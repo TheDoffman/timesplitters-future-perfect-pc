@@ -4,6 +4,7 @@
 #define _DARWIN_C_SOURCE
 #endif
 #include "mod_process.hpp"
+#include "mod_private.hpp"
 #include "mod_process_stamp_wire.h"
 #include <unistd.h>
 #include <fcntl.h>
@@ -125,7 +126,8 @@ bool creation_wire(const TsfpModProcessBirthWire &wire,pid_t owner,ProcessStamps
 }
 }
 std::unique_ptr<Process> Process::start(const std::string &image,const std::string &cache,std::string &error) {
-    (void)cache;std::error_code fs;
+    if(!cache_process_start_allowed(cache)){error="Owned cache requires its startup journal";return {};}
+    std::error_code fs;
     if(!std::filesystem::path(image).is_absolute() || image.find('\0')!=std::string::npos || std::filesystem::is_symlink(image,fs) ||
         !std::filesystem::is_regular_file(image,fs) || fs){error="Invalid trusted worker path";return {};}
     auto child=std::make_unique<PosixProcess>();int in[2]={-1,-1},out[2]={-1,-1},err[2]={-1,-1};

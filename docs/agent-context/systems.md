@@ -1,11 +1,11 @@
 Crash: ../development/native-crash-images.md.
-Owned PID: mod-scripting.md; Lua: ../development/mod-audio-scripting.md.
+Spawn journal: mod-scripting.md; Lua: ../development/mod-audio-scripting.md.
 
 Preflight also rejects restored flags on a previously unsupported fresh epoch.
 
 [Sun/visibility repair](fidelity-comparison.md).
 
-Native mod startup, isolated storage, binding and window-thread drain: [contracts](mod-scripting.md).
+Mod startup/storage and window-thread drain: [contracts](mod-scripting.md).
 
 # Shared systems
 

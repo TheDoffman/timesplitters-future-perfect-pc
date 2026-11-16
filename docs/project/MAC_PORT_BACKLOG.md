@@ -1,3 +1,11 @@
+Shared startup journal (2026-11-16): **In progress**.
+CacheJournal uses the same live-cache registry, exclusive bounded intent/commit
+records and pre-Lua Session admission on all hosts; native adapters supply owned
+birth stamps. Windows adds actual AppContainer/profile identity and post-death
+cleanup evidence. Windows resource/process40/8 skips pass (35.82s). Actual Mac/
+Linux validation follows; automatic stale-cache/profile removal remains required.
+See mod-scripting.md and STATUS for contracts and evidence; no public release.
+
 Managed backup scheduling source (2026-11-16): **In progress**.
 Read-only verify and a new-only private pool provide due-time/keep/byte limits,
 replacement-before-prune, fixed-layout unlink and interrupted-output handling.

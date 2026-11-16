@@ -1,3 +1,16 @@
+Shared native cache startup journal (2026-11-16, implementation in progress):
+Session now writes private new-only intent before native creation and commits
+owned birth stamps before Lua source transmission. A live lease registry and
+one-use thread-local admission prevent unjournaled marked-cache starts. Windows
+commits actual GUID/SID/profile-directory file identity and requires confirmed
+process exit before artifact cleanup. Normal teardown validates both record
+identities/contents and every child's death before removing evidence; ambiguous,
+live, changed or collided state remains intact. Windows actual resource/
+process checks pass40 with8 skips (35.82s), including root identity and confirmed
+profile-scope cleanup checks. Earlier expanded resource/save/session selection
+passes147 with12 skips (70.52s); scope147 pass. Actual Mac/Linux checks follow. Stale scanning/profile recovery, full game/release acceptance
+and public client publication remain pending. No production host/routing change.
+
 Windows query-denial CI control (2026-11-16):
 Earlier3cec run43909559613 failed Windows runtime1/3 job133448077462: the denied
 fixture query returned alive instead of unknown (1 failed,1331 passed,205 skipped).
@@ -7,8 +20,11 @@ identity driver now uses ImpersonateSelf, disables debug privilege on its privat
 thread token and checks the resulting privilege list before querying. The DACL
 unknown assertion is retained; caller/account privileges and product identity
 code are unchanged. Identity/scope checks at40a04082 pass160/4 skips on Windows
-15.45s, actual Mac8.33s and Linux11.08s. Remote CI acceptance follows; no failed
-run is being presented as passing. API references:
+15.45s, actual Mac8.33s and Linux11.08s. CI43918120688 exact9abc Windows runtime1/3
+job133478511389 now passes1333/207 skips (512.22s), resolving that test failure.
+The overall run failed its gate because Mac runtime1/3, runtime3/3, patches2/3
+and launcher jobs were cancelled without steps; cancellation cause is not
+established. The full gate remains unpassed. API references:
 [OpenProcess access checks](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocess)
 and [thread-scoped impersonation](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-impersonateself).
 

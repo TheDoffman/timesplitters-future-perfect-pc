@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <array>
 #include <cstddef>
+#include <string>
 
 namespace tsfp { namespace mods {
 // Trusted broker metadata only. These queries never terminate processes. The
@@ -18,6 +19,11 @@ struct ProcessStamps {
     std::array<ProcessStamp,2> values{};
     size_t count=0;
     bool valid()const noexcept;
+};
+// Windows-only owned profile/cache artifacts. Absolute user paths are not stored.
+struct ProcessArtifacts {
+    std::string cache_leaf,profile,sid;
+    uint64_t volume=0,file=0;
 };
 enum class ProcessState { alive,exited,unknown };
 ProcessStampKind native_process_stamp_kind()noexcept;

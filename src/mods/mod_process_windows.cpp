@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include "mod_process.hpp"
+#include "mod_private.hpp"
 #include <windows.h>
 #include <userenv.h>
 #include <sddl.h>
@@ -125,11 +126,29 @@ public:
     Pipe input,output,diagnostic;HANDLE process=nullptr,job=nullptr;PSID sid=nullptr;
     std::wstring profile,directory,image,profile_root;bool profile_owned=false,directory_owned=false,image_owned=false;
     ProcessStamps created;
+    ProcessArtifacts artifacts;std::wstring profile_scope_path;bool confirmed_exit=true;
     bool creation_stamps(ProcessStamps &out)const noexcept override {out=created;return out.valid();}
+    const ProcessArtifacts *creation_artifacts()const noexcept override {return &artifacts;}
+    bool cleanup_owned()noexcept override {
+        if(!confirmed_exit)return false;
+        if(profile_owned && artifacts.file) {
+            HANDLE scope=CreateFileW(profile_scope_path.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,
+                OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+            BY_HANDLE_FILE_INFORMATION info{};
+            bool same=scope!=INVALID_HANDLE_VALUE && GetFileType(scope)==FILE_TYPE_DISK && GetFileInformationByHandle(scope,&info) &&
+                (info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) && !(info.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT) &&
+                info.dwVolumeSerialNumber==artifacts.volume && ((uint64_t(info.nFileIndexHigh)<<32)|info.nFileIndexLow)==artifacts.file;
+            if(scope!=INVALID_HANDLE_VALUE)CloseHandle(scope);
+            if(!same)return false;
+        }
+        if(image_owned){if(!DeleteFileW(image.c_str()))return false;image_owned=false;}
+        if(directory_owned){if(!RemoveDirectoryW(directory.c_str()))return false;directory_owned=false;}
+        if(profile_owned){if(FAILED(DeleteAppContainerProfile(profile.c_str())))return false;profile_owned=false;}
+        return true;
+    }
     ~WindowsProcess() override {
         terminate();input.disconnect();output.disconnect();diagnostic.disconnect();
-        if(image_owned)DeleteFileW(image.c_str());if(directory_owned)RemoveDirectoryW(directory.c_str());
-        if(profile_owned)DeleteAppContainerProfile(profile.c_str());if(sid)FreeSid(sid);
+        (void)cleanup_owned();if(sid)FreeSid(sid);
     }
     int write(const void *bytes,size_t length)override{return input.transfer(const_cast<void *>(bytes),length);}
     int read(void *bytes,size_t length,bool error)override{return (error?diagnostic:output).transfer(bytes,length);}
@@ -156,7 +175,7 @@ public:
     }
     void terminate()override {
         if(job)TerminateJobObject(job,125);
-        if(process){if(WaitForSingleObject(process,2000)!=WAIT_OBJECT_0){TerminateProcess(process,125);WaitForSingleObject(process,2000);}close(process);}
+        if(process){DWORD state=WaitForSingleObject(process,2000);if(state!=WAIT_OBJECT_0){TerminateProcess(process,125);state=WaitForSingleObject(process,2000);}confirmed_exit=state==WAIT_OBJECT_0;close(process);}
         close(job);
     }
 };
@@ -165,6 +184,7 @@ public:
 void set_suspended_process_probe(SuspendedProcessProbe probe){suspended_probe=probe;}
 #endif
 std::unique_ptr<Process> Process::start(const std::string &executable,const std::string &cache,std::string &error) {
+    if(!cache_process_start_allowed(cache)){error="Owned cache requires its startup journal";return {};}
     auto child=std::make_unique<WindowsProcess>();auto source=wide(executable),root=wide(cache);
     if(source.empty() || root.empty() || !std::filesystem::path(source).is_absolute() || !std::filesystem::path(root).is_absolute() ||
        source.rfind(L"\\\\",0)==0 || root.rfind(L"\\\\",0)==0){error="Worker and cache need absolute local paths";return {};}
@@ -174,6 +194,8 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
     wchar_t id[40];if(!StringFromGUID2(guid,id,40)){error="Cannot format worker identity";return {};}
     std::wstring unique=id;unique.erase(std::remove(unique.begin(),unique.end(),L'{'),unique.end());unique.erase(std::remove(unique.begin(),unique.end(),L'}'),unique.end());
     child->profile=L"TSFP.Mod."+unique;
+    child->artifacts.cache_leaf=std::string(unique.begin(),unique.end());
+    child->artifacts.profile="TSFP.Mod."+child->artifacts.cache_leaf;
     HRESULT created=CreateAppContainerProfile(child->profile.c_str(),L"TimeSplitters script worker",L"Temporary confined mod worker",nullptr,0,&child->sid);
     if(FAILED(created)){error="Cannot create worker AppContainer (HRESULT "+std::to_string((unsigned)created)+")";return {};}
     child->profile_owned=true;
@@ -188,6 +210,7 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
     // Block the otherwise-writable per-profile filesystem. Only the broker owns it.
     LPWSTR sid_text=nullptr,profile_folder=nullptr;
     if(!ConvertSidToStringSidW(child->sid,&sid_text)){error="Cannot inspect worker SID";return {};}
+    child->artifacts.sid=std::string(sid_text,sid_text+wcslen(sid_text));
     HRESULT folder_result=GetAppContainerFolderPath(sid_text,&profile_folder);LocalFree(sid_text);
     if(FAILED(folder_result) || !profile_folder){error="Cannot locate isolated worker profile";return {};}
     child->profile_root=profile_folder;
@@ -201,6 +224,16 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
     }
     if(fs)secured=false;
     if(!secured){error="Cannot restrict isolated worker profile";return {};}
+    HANDLE profile_identity=CreateFileW(profile_scope.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,
+        OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,nullptr);
+    BY_HANDLE_FILE_INFORMATION profile_info{};
+    bool identified=profile_identity!=INVALID_HANDLE_VALUE && GetFileType(profile_identity)==FILE_TYPE_DISK && GetFileInformationByHandle(profile_identity,&profile_info)
+        && (profile_info.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) && !(profile_info.dwFileAttributes&FILE_ATTRIBUTE_REPARSE_POINT);
+    if(profile_identity!=INVALID_HANDLE_VALUE)CloseHandle(profile_identity);
+    if(!identified){error="Cannot identify owned worker profile";return {};}
+    child->artifacts.volume=profile_info.dwVolumeSerialNumber;
+    child->artifacts.file=(static_cast<uint64_t>(profile_info.nFileIndexHigh)<<32)|profile_info.nFileIndexLow;
+    child->profile_scope_path=profile_scope.wstring();
     std::wstring pipe=L"\\\\.\\pipe\\TSFP.Mod."+unique;
     if(!child->input.create(pipe+L".in",true) || !child->output.create(pipe+L".out",false) || !child->diagnostic.create(pipe+L".err",false)){error=last_error("Cannot create worker pipes");return {};}
     child->job=CreateJobObjectW(nullptr,nullptr);if(!child->job){error=last_error("Cannot create worker job");return {};}
@@ -235,7 +268,7 @@ std::unique_ptr<Process> Process::start(const std::string &executable,const std:
         EXTENDED_STARTUPINFO_PRESENT|CREATE_UNICODE_ENVIRONMENT|CREATE_SUSPENDED|CREATE_NO_WINDOW,environment.data(),child->directory.c_str(),&startup.StartupInfo,&info);
     DWORD launch_error=GetLastError();DeleteProcThreadAttributeList(attributes);
     if(!launched){SetLastError(launch_error);error=last_error("Cannot launch confined worker");return {};}
-    child->process=info.hProcess;
+    child->process=info.hProcess;child->confirmed_exit=false;
     BOOL in_job=FALSE;
     bool assigned=IsProcessInJob(child->process,child->job,&in_job)!=FALSE && in_job;
     ProcessStamp stamp;

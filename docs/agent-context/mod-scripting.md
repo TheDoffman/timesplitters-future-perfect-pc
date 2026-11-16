@@ -1,3 +1,31 @@
+Shared startup journal (source; full stale recovery still pending):
+CacheJournal in mod_private.hpp/mod_saves.cpp binds to a bounded process-wide
+registry of actual live PrivateDirectory leases. New roots carry marker v2;
+foreign marked roots are never adopted. Session creates an exclusive, flushed
+.spawn-N.intent after pinned staging and before native creation, then commits
+the owned ProcessStamps before transmitting any Lua source. The intent records
+the root leaf and native directory identity, relative staged helper and trusted
+worker/guardian digests. Windows
+commit metadata also records the created profile GUID/SID and native profile
+directory volume/file identity; no absolute personal path or secret is stored.
+Each file is bounded to4096 bytes, created new-only with private permissions and
+non-inherited handles. POSIX uses held root-relative descriptors and inode/content
+checks; Windows holds handles excluding write/delete sharing. Native start claims
+one thread-local intent; registered/foreign marked caches without it fail before
+child creation. Plain unmarked standalone diagnostic caches keep their old API.
+Session terminates/reaps, checks owned artifact cleanup, and removes both records
+only when every committed creation identity is proven exited and both files
+retain their original identity/content. Active/unknown identities, collisions,
+changed records and incomplete startup preserve evidence. The registry is removed
+under its mutex before PrivateDirectory teardown; no raw registry pointer escapes
+the lock. Windows waits for confirmed death before removing owned artifacts.
+The tests use actual Session/LPAC/guardian/Linux children: intent-before-start,
+birth/provenance, normal cleanup, live-record preservation, changed file/link/
+inode refusal, immutable Windows handles, foreign commit collision and abrupt
+broker death. test_mod_resources.py and existing native CI route cover them.
+Automatic stale-cache scanning/admission/removal and profile recovery are still
+required; this change writes evidence and performs normal cleanup only.
+
 Windows query-denial CI control: the test driver now uses ImpersonateSelf and a
 private thread token with SeDebugPrivilege disabled and independently verified.
 This makes the denial control independent of inherited debug privilege; the
@@ -18,8 +46,8 @@ inheritance is preserved. Native owned-stamp checks retain evidence after stop;
 Darwin legacy/invalid wire refusals pass. At eb73c190 Windows native22/5 skips
 and resources24/1 skip pass; Mac/Linux identity/process/scope168/6 and167/7 pass.
 Host ASan/UBSan identity/process/resources45/7 Mac and44/8 Linux pass. Windows
-no-test production build/probe exclusion passes. Disk journals and orphan removal
-remain unimplemented; exact timings/receipts are in STATUS.
+no-test production build/probe exclusion passes. Shared startup journals are now implemented below; orphan removal remains pending.
+Exact timings/receipts are in STATUS.
 
 Process identity queries (mod_process_identity.hpp/.cpp) distinguish alive/exited/
 unknown using native PID+creation stamps: Windows FILETIME (including borrowed
@@ -33,8 +61,8 @@ zombies; native CI selects it. At9fe57a16 identity/scope checks pass156/3 skips
 on Mac7.94s and158/1 skip on Linux10.97s. Expanded Windows identity/process/scope
 checks pass167/3 skips35.55s, including a real suspended LPAC child stamp before
 resume and a live owned fixture whose query ACL is denied (unknown, not dead).
-This is a read-only primitive: cache journal custody, owned-child snapshot capture
-and actual removal remain separate work. Expanded b4ced75f Mac164/6 skips17.18s
+This is a read-only primitive: disk custody/normal cleanup are implemented below; actual stale removal remains
+separate work. Expanded b4ced75f Mac164/6 skips17.18s
 and Linux165/5 skips23.22s identity/process/scope checks also pass.
 
 Windows job admission now uses PROC_THREAD_ATTRIBUTE_JOB_LIST in CreateProcessW;

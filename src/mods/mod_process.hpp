@@ -27,6 +27,9 @@ public:
     // Immutable creation evidence from owned handles/private startup pipes.
     // It remains available after termination; fake/test processes may decline.
     virtual bool creation_stamps(ProcessStamps &out)const noexcept {out={};return false;}
+    virtual const ProcessArtifacts *creation_artifacts()const noexcept {return nullptr;}
+    // Called only after termination; false preserves evidence for later recovery.
+    virtual bool cleanup_owned()noexcept {return true;}
     // Background supervisors only: bounded wait for pipe readiness (at most2ms).
     // Avoids periodic Windows timer rounding on latency-sensitive callbacks.
     virtual void wait_for_activity(bool writing)=0;
