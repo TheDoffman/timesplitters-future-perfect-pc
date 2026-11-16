@@ -52,7 +52,7 @@ failed remote sign-out. Set `TSFP_TEST_OS_VAULT=1` only for a developer launcher
 workshop test to exercise a disposable random native entry's read/write/update/
 isolation/removal; it does not touch real workshop credentials. The actual
 Windows native-store check passes. The Mac native binary builds/signs and passes
-110 UI groups plus the real backend at source1a135c18. Its optional native-store
+111 UI groups plus the real backend at final source2b66df42. Its optional native-store
 write returned errSecInteractionNotAllowed (-25308); a disposable API diagnostic
 confirmed the default keychain was locked in this SSH session, with no entry
 created. No keychain settings were changed and no password prompt was opened.

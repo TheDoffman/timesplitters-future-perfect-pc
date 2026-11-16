@@ -1,7 +1,7 @@
 Creator session vault (2026-11-15, source1a135c18): **In progress**.
 Shared opt-in/resume/forget UI and account-role revalidation use thin OS stores:
 Windows Credential Manager, Mac Security.framework Keychain, Linux Secret Service.
-Windows native-store proof passes; Mac builds/signs and passes110 shared UI groups
+Windows native-store proof passes; final2b66df42 Mac builds/signs and passes111 shared UI groups
 plus the real backend. Mac native-write diagnostic returns locked-keychain
 errSecInteractionNotAllowed(-25308), no entry created; native persistence needs an
 unlocked-keychain test. Linux actual Secret Service proof also remains open.

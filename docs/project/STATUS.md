@@ -1,3 +1,18 @@
+Final saved-session Mac acceptance (2026-11-15):
+Actual clean source2b66df42 now passes native build/publish/sign/deep strict
+verification, all111 shared launcher UI groups (including wrong returned
+account/role rejection and secret-draft clearing) and the real creator backend.
+Build receipt SHA256
+b369b68b8c5ed10da53b373f765227201cd7dd5c17cd1874fb6b3988718b767a;
+credential-vault-build-2b66df42.log SHA256
+38fef846c654f4d4093d2942a9103042dec47640dce439b7c9bef37e13a8aa73.
+Windows final full suite with native Credential Manager test passed56.84s.
+Mac native Keychain persistence still requires an unlocked-keychain check; Linux
+native Secret Service and public authenticated flows remain unverified. The code
+was synchronized to the clean Mac source via a verified Git bundle before pushing
+so final local/native evidence can accompany one remote update. Protected source601
+and the pending repair14642b44 authentication are unchanged. Full goal stays open.
+
 Saved-session final validation (2026-11-15):
 Actual source801ccdf6 Mac build/publish/sign/deep strict verification, all111
 shared UI groups and real creator backend now pass with a clean source tree.
