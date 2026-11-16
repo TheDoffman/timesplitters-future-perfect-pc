@@ -1,3 +1,30 @@
+Portable off-server signing recovery (2026-11-15):
+Source91e80ccd adds a separate locally prompted passphrase-encrypted export,
+verification and new-account Windows import. Fixed scrypt N131072/r8/p1 and
+AES256-GCM protect the bounded exact-key inventory; recovery checks the recorded
+out-of-band public pin, both roots/threshold proof, online signer and origin
+before filesystem mutation. Unknown fields, tampering, wrong passwords/pins,
+foreign/linked/existing files and weak/unbounded passphrases are refused. Windows
+import creates private ACLs and rebinds the capsule to the current account's
+DPAPI; verification also runs on POSIX without Windows account keys. Expired
+roots are recoverable but explicitly reported unready. CLI accepts no passphrase
+argument/environment/pipe and prints no secret exception data.
+
+Windows initial portable/recovery/scope selection passed156 tests39.95s; final
+portable/scope selection passed154 tests22.28s, including actual Windows DPAPI
+import/export and existing-store preservation. Actual Mac final selection passed
+153 with1 Windows-only skip4.18s. A fresh disposable authority was encrypted on
+Windows and only its encrypted fixture/public pin transferred to the Mac; the Mac
+successfully decrypted and proved both roots without any DPAPI capsule. Fixture
+pin c719c7ac23f7ddb4b190b60a8c2a3582699cf71000875ac757601af94e9e90d4,
+encrypted wire SHA256
+3af094fa04fbb28e08d2a7315588a1af9702dcec45b7aca044fa296227756a26.
+These are disposable keys, not the production authority. Production export,
+independent passphrase custody, off-device backup/restore and current revocation
+reconciliation remain open. Installed601 and public routing are unchanged;
+private health-directory repair still awaits its existing native sudo prompt.
+CI run43793123467 for91e80ccd was queued at last inspection; no green claim yet.
+
 Private Mac installation and startup repair (2026-11-15):
 Protected installation now actually contains source601c63c6, descriptor
 7be977f9d2eda22f5f412db8139096ccc5db52241af8cdc26155516f8a3ad825

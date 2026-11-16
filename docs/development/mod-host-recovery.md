@@ -139,7 +139,9 @@ does not authorize serving with expired trust. Import rebinds the recovery capsu
 to the new Windows account and preserves incomplete output for inspection on IO
 failure. It starts no services and changes no launcher or public routing.
 
-The format and Windows account rebinding have disposable-key tests. Production
+The final portable/scope selection passes154 cases on Windows and153 with1
+Windows-only skip on the actual Mac. A disposable encrypted Windows export was
+also transferred to and verified on the Mac without Windows DPAPI. Production
 export, independent custody of its passphrase, off-device storage and a restore
 drill must still be performed before claiming disaster-recovery acceptance.
 This export does not include the workshop database/packages or post-backup
