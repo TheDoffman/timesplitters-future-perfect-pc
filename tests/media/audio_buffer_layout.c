@@ -30,6 +30,7 @@ static uint32_t native_loop(uint32_t settings,uint32_t start,uint32_t length) {
 }
 static unsigned native_calls,native_allocations,native_frees;
 static int native_allocation_failure;
+static uint32_t native_forced_error;
 static void native_data(void) {
     uint32_t object=g_ecx,data=HLE_MEM32(g_esp+4),bytes=HLE_MEM32(g_esp+8);
     native_calls++;
@@ -42,7 +43,7 @@ static void native_data(void) {
     }
     HLE_MEM32(object+0xc4)=HLE_MEM32(object+0xcc)=0;
     HLE_MEM32(object+0xc8)=HLE_MEM32(object+0xd0)=bytes;
-    g_ecx=0xdead;g_edx=0xbeef;g_eax=native_allocation_failure?0x8007000eu:0;g_esp+=12;
+    g_ecx=0xdead;g_edx=0xbeef;g_eax=native_forced_error?native_forced_error:native_allocation_failure?0x8007000eu:0;g_esp+=12;
 }
 int main(int argc,char **argv) {
     CHECK(argc==2);const char *mode=argv[1];
@@ -79,6 +80,17 @@ int main(int argc,char **argv) {
     if(!legacy)CHECK(HLE_MEM32(settings+0xb8)==0x5a5a5a5a);
     Buffer *b=find(iface);CHECK(b && b->data==data && b->size==size);
     b->model.last_ms=b->output_model.last_ms=1000;
+    if(!strcmp(mode,"native-source-error")) {
+        unsigned token=tsfp_mod_audio_source_enter(40,g_esp+256);
+        hle_IDirectSoundBuffer_SetBufferData();tsfp_mod_audio_source_leave(token);
+        CHECK(g_eax==0 && b->mod_audio_event==40);
+        native_forced_error=0x8007000eu;
+        token=tsfp_mod_audio_source_enter(41,g_esp+256);
+        hle_IDirectSoundBuffer_SetBufferData();tsfp_mod_audio_source_leave(token);
+        CHECK(g_eax==0x8007000eu && b->mod_audio_event==TSFP_MOD_AUDIO_UNKNOWN);
+        CHECK(b->data==data && b->size==size); /* failure never gains a new source ID */
+        CHECK(g_esp==0x18000 && g_ecx==0x1234 && g_edx==0x5678);
+    }
     if(!strcmp(mode,"native-clear")) {
         HLE_MEM32(g_esp+12)=0; /* Native zero-length clears even a nonnull argument. */
         hle_IDirectSoundBuffer_SetBufferData();CHECK(g_eax==0);

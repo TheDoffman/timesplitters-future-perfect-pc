@@ -1,3 +1,5 @@
+Patch2714 clears attribution on native SetBufferData failure; its HRESULT and original data/clock behavior remain unchanged.
+
 Patch2713 observes verified US28240 requests and stamps buffer event IDs through thread-local bounded scopes; PCM, formats and clocks stay unchanged. See ../development/mod-audio-input.md.
 
 Patch2711 passes NULL to shared bootstrap so Windows obtains the explicit RECOMP_SAVE_DIR as UTF8, bypassing ANSI getenv; no default root is introduced.

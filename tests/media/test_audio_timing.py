@@ -160,7 +160,7 @@ def layout_test(tmp_path_factory):
     return compile_audio('layout', tmp_path_factory)
 
 
-@pytest.mark.parametrize('scenario', ['native-data', 'native-start', 'native-end', 'native-clear', 'native-allocate',
+@pytest.mark.parametrize('scenario', ['native-source-error', 'native-data', 'native-start', 'native-end', 'native-clear', 'native-allocate',
                                      'native-failure', 'native-missing', 'legacy',
                                      'guard-data', 'guard-loop', 'guard-play'])
 def test_native_buffer_layout(layout_test, scenario):

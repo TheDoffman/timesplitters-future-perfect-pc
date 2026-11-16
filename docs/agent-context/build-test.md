@@ -1,4 +1,4 @@
-Service/vault/recovery/WAV/source-attribution: [checks](build-test-details.md).
+Service/vault/recovery/WAV/audio-source/error: [checks](build-test-details.md).
 [Visibility](fidelity-comparison.md); [bounds](independent.md).
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 

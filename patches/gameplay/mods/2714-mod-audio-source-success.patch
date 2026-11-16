@@ -1,0 +1,11 @@
+--- a/src/hle/hle_dsound.c
++++ b/src/hle/hle_dsound.c
+@@ -1448,7 +1448,7 @@
+         HLE_MEM32(object + SET_LOOP_LEN) = 0u;
+     }
+     Buffer *bound=model_for(iface, now);
+-    if(bound)bound->mod_audio_event=tsfp_mod_audio_source_current(g_esp);
++    if(bound)bound->mod_audio_event=result==RECOMP_DSOUND_OK?tsfp_mod_audio_source_current(g_esp):TSFP_MOD_AUDIO_UNKNOWN;
+     mod_audio_source_trace(bound);
+     unlock();
+     HLE_RETURN(result);

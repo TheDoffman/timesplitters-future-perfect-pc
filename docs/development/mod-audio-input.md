@@ -86,5 +86,13 @@ original-callee count/register/ESP effects, malformed and unaligned requests,
 invalid IDs, nested masking, overflow, skipped leave via longjmp and actual thread
 isolation. The real HLE buffer fixture also checks binding/rebinding, stop and
 unchanged PCM/rate/alignment. Windows selected source/WAV/audio lifecycle checks
-pass156 cases. Runtime build, controlled native source traces and other-host
-checks remain required; no replacement/audio activation is claimed here.
+pass156 cases; the actual Mac passes the same156 cases4.64s. Runtime build,
+controlled native source traces and Linux checks remain required; no
+replacement/audio activation is claimed here.
+
+Patch2714 additionally requires successful native SetBufferData completion before
+assigning a requested event ID. A failed helper clears attribution to unknown
+while preserving the original error result, registers, data and clocks. The
+native-source-error fixture reproduces the prior incorrect stamp and passes with
+the guard in a privately patched Windows HLE fixture. Actual runtime checks for
+this follow-up are tracked separately in STATUS.

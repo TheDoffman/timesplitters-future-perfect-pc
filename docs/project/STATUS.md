@@ -1,3 +1,49 @@
+Production off-device recovery checkpoint (2026-11-16):
+The user's local administrator authentication completed the private backup drill
+EXIT0. Immutable installed release7be/source601 seals match before/after; no live
+service, routing or repository cutover occurred. Actual locked UID600 snapshot
+and conservative clone restore pass. The132810-byte private ZIP, SHA256
+5c9d84907c21bfc416b8994c80f3d9cb402825cc613c45cde1642ee2ce2dec09,
+was copied into strict private Windows storage, independently hash/size checked,
+then returned to the Mac. Actual unprivileged off-device restore from those
+returned bytes passes: owner/password-hash identity, ownership, audits and reports
+retained; one old session removed, invitations removed, all accounts suspended.
+Current HTTPS signed catalog floor6/cumulative revoked sample hash reconcile;
+the unserved clone retains that revocation and floor. Original live owner sign-in
+still confirms admin and public health remains ready after the drill.
+
+The user also created the production passphrase-encrypted authority export,
+confirmed separate passphrase custody and passed decrypt/both-root proof before
+writing. Its23080 encrypted bytes were copied off Windows and verified into
+private persistent Mac Application Support storage (outside Caches). No plaintext
+root keys were transferred. A separate ordinary-user Mac verification prompt
+awaits that recovery passphrase to prove this production file independently of
+Windows DPAPI. No sudo password is needed for that check. Automatic backups,
+retention, boot and live disaster cutover remain unverified; full goal stays open.
+
+Patch2714's failure guard and regression are now prepared as a separate source
+patch. The previous Windows repository scope/shard/patch-transition selection
+completed212 cases1402.09s on2713. The optimized single-compiler Windows game
+retry remains active on2713; it must finish before applying2714 to that runtime
+and doing the final incremental build/157-case/scene checks. Neither build nor
+native scene acceptance has passed for the new audio hook at this checkpoint.
+
+Audio attribution follow-up checkpoint (2026-11-16, incomplete):
+The first Windows build ended with C1002 in generated units0430/0431 plus D8040;
+this is not build success. A single-compiler optimized retry is running with
+CL_MPCount=1, UseMultiToolTask=true and EnforceProcessCountAcrossBuilds=true,
+the existing documented memory workaround. No generated C, compiler optimization,
+system memory setting or unrelated process was changed to bypass the failure.
+The regenerated wrapper was selected by the normal supported tool.
+
+Additional review reproduced a failed native SetBufferData assignment receiving
+the requested event ID. A new real-HLE native-source-error regression fails on
+the current2713 runtime and passes with a candidate HRESULT guard in a private
+HLE fixture. The candidate remains outside active build/patch-test inputs until
+they finish; integration and the157-case selection remain pending. The prior156
+Windows and actual Mac checks exclude this newly added failure scenario. These
+are source-attribution checks, not enabled replacement or native scene acceptance.
+
 Audio source attribution foundation (2026-11-16, validation in progress):
 Patch2713 observes the verified supported-US28240 request route and stamps source
 IDs on buffer data binding. Thread-local bounded scopes mask invalid IDs and
@@ -9,7 +55,12 @@ and actual thread isolation; the real HLE fixture checks rebinding/stop/PCM byte
 Windows source/WAV/audio lifecycle selection passes156 cases5.70s. Repository
 scope/shard/patch-upgrade checks and the full native Windows build are still
 running; the normal tool regenerated1440 C units (~741MB). No audio replacement
-or native game observation is claimed yet. Mac/source CI checks remain pending.
+or native game observation is claimed yet. Actual Mac source/WAV/HLE checks now
+pass156 cases4.64s. The first sparse-checkout attempt passed155 and failed only
+because the existing compiler scanner module was absent; adding its public
+source cone resolved it. The isolated pinned runtime was reconstructed from
+vendored source and patched through the supported tool. Production host release
+601 and the primary game checkout were not changed. Linux/source CI is pending.
 
 Backup work: actual Mac backup/restore regressions pass16 cases3.57s and the
 installed module matches that source. A private operator snapshot/clone drill is
