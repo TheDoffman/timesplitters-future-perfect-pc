@@ -47,8 +47,10 @@ def test_refuses_linked_report_root(client,tmp_path):
 def test_library_loaded_after_startup_is_the_fault_image(client,tmp_path):
     directory=tmp_path/'shared runtime Ω';directory.mkdir()
     library=directory/('test-runtime.dylib' if sys.platform=='darwin' else 'test-runtime.so')
-    flags=['-dynamiclib'] if sys.platform=='darwin' else ['-shared','-fPIC']
-    subprocess.run(['clang','-g','-O0',*flags,str(ROOT/'tests/gameplay/native_crash_library.c'),'-o',str(library)],check=True)
+    obj=directory/'library.o'
+    subprocess.run(['clang','-g','-O0','-fPIC','-c',str(ROOT/'tests/gameplay/native_crash_library.c'),'-o',str(obj)],check=True)
+    flags=['-dynamiclib'] if sys.platform=='darwin' else ['-shared']
+    subprocess.run(['clang',*flags,str(obj),'-o',str(library)],check=True)
     if sys.platform=='darwin':subprocess.run(['dsymutil',str(library)],check=True)
     result=subprocess.run([str(client),'crash-library',str(library)],env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(tmp_path/'reports')),capture_output=True,text=True,timeout=15)
     assert result.returncode==(133 if sys.platform=='darwin' else 132),result.stderr
@@ -56,3 +58,16 @@ def test_library_loaded_after_startup_is_the_fault_image(client,tmp_path):
     stack=(reports[0].parent/'native-stack.txt').read_text()
     assert 'PC image: '+str(library) in stack and 'tsfp_native_library_fault' in stack,stack
     assert len(stack)<=262144
+
+
+@pytest.mark.skipif(sys.platform!='linux',reason='ELF PIE address normalization')
+def test_pie_main_fault_uses_elf_load_bias(tmp_path):
+    exe=tmp_path/'pie-capture'
+    subprocess.run(['clang','-std=c11','-g','-O0','-fPIE','-pie','-D_GNU_SOURCE','-DTSFP_CRASH_TEST',
+        '-I'+str(ROOT/'src'),'-I'+str(ROOT/'src/diagnostics'),str(ROOT/'tests/gameplay/native_crash.c'),
+        str(ROOT/'src/native/crash_posix.c'),'-lcrypto','-ldl','-o',str(exe)],check=True)
+    result=subprocess.run([str(exe),'crash'],env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(tmp_path/'reports')),capture_output=True,text=True,timeout=15)
+    assert result.returncode==132,result.stderr
+    reports=list((tmp_path/'reports').glob('*/report.json'));assert len(reports)==1
+    stack=(reports[0].parent/'native-stack.txt').read_text()
+    assert 'PC image: '+str(exe) in stack and 'tsfp_native_crash_test_site' in stack,stack
