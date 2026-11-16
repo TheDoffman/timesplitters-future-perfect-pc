@@ -1,4 +1,4 @@
-Creator project/import tools (2026-11-16, local source):
+Creator project/import tools (2026-11-16, source b0997ca9):
 mod-workshop.py now has new gameplay/textures/mixed templates and import-texture.
 mod_creator.py validates metadata before creating a new-only project, copies the
 original API1 First to Three source for gameplay, and imports bounded PNG or exact
@@ -8,9 +8,25 @@ are checked. Sources/manifests and existing/case-colliding outputs are preserved
 linked paths are refused. No player, upload, decoder or trust capability changes.
 
 Windows creator/actual native reader plus packed-template VM and scope selection
-passes172 cases; an earlier creator/linker/scope selection passes181. Native Mac/
-Linux tool acceptance, new live-game/public creator acceptance and final SDK
-distribution remain pending. Details: docs/development/mod-creator-tools.md.
+passes172 cases; an earlier creator/linker/scope selection passes181. Actual Mac
+and Linux creator/linker/native reader/packed-template VM/scope selections each
+pass187 cases (9.10s/10.50s). Source is committed/pushed and synchronized.
+
+Independent native creator runs encode the same authored8x4 test pixels into
+DXT1, DXT5 and BGRA8, then build mixed script/texture ZIPs. All three produce the
+same1847-byte ZIP SHA441a092632eb8703b2e3816638f70a6901123f467662539bc3c847488328d598
+and matching DDS hashes. Linux's compressed source PNG bytes differ with its zlib;
+the decoded source pixels and resulting DDS/package match. Source artwork remains
+unchanged. Each host's private/mod-sdk-acceptance/b0997ca9 retains proofs/artifacts.
+Actual native ModLibrary.InspectPackage accepts this exact mixed package on all
+three hosts. Mac/Linux use the260d native launcher, whose inspection code is
+unchanged throughb099. Windows uses the existing launcher app SHA
+2c3582293353762a5de4d6d9239fa6224352343a8ef2f70f06726c076b41bf97;
+its source revision is not independently verified by this inspection.
+No install, activation, public upload or new gameplay acceptance is claimed for
+these artifacts. CI43843861954 completes23 successful jobs with two intentional
+issue skips. New live-game/public creator acceptance and final SDK
+distribution remain open. Details: docs/development/mod-creator-tools.md.
 
 Native fault-image capture checkpoint (2026-11-16):
 POSIX reports now associate PC with its actual recorded executable mapping instead

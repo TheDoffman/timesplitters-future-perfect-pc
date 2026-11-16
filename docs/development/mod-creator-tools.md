@@ -85,3 +85,14 @@ actual shared native reader. `test_script_worker.py` packs both gameplay-bearing
 templates and executes their rules in the real restricted VM through three kills
 and the end-match command. These are tool/reader/VM checks; new live-game/public
 creator acceptance and final SDK publication remain separate.
+
+At source b0997ca9, Windows's creator/native-reader/packed-template VM/scope
+selection passes172 cases; actual Mac/Linux selections including the linker
+each pass187. Independent native authoring runs produce identical three-format
+DDS payloads and the same mixed mod ZIP from matching authored pixels. The
+actual native launchers inspect that exact package successfully on all3 hosts.
+The proof ZIP is1847 bytes, SHA256
+`441a092632eb8703b2e3816638f70a6901123f467662539bc3c847488328d598`.
+These checks neither install nor publish the test package. STATUS records exact
+launcher provenance and the remaining acceptance work.
+CI43843861954 at that source completes23 successful jobs/two intentional issue skips.
