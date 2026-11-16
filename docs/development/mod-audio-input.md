@@ -22,6 +22,36 @@ processes verify only the exact opt-in value1 enables logging. Windows's complet
 audio/source/WAV selection passes161 cases. Native host fixtures and actual game
 playback traces remain pending at this source checkpoint.
 
+At source48465dd9 the same161 cases pass on the actual Mac/Linux hosts
+(5.26s/9.49s), and all three normal game builds pass their native checks. Windows
+uses the supported Windows PowerShell build environment: a PowerShell7 attempt
+failed in existing icon generation before the game build; the normal retry passes.
+No generated game code, optimization or system memory settings were changed.
+
+Isolated unmodded six-bot Arcade scenes exit0 on all three hosts (85 seconds
+Windows,100 Mac/Linux). Each captures512 records through roughly50..53 seconds,
+including gameplay. Known Play counts are91/90/89 respectively, and every known
+Play matches a prior bind of the same event/interface/generation. Four unknown
+initial plays on each host have64-byte sources at48000Hz; their identity stays
+unknown. Event5490 plays with the original whole-source loop flag,112768 decoded
+bytes and16007Hz on all hosts; no explicit loop-region mutation was observed.
+
+Every known Play differs from its buffer's initial44000Hz template rate. The
+existing bank audit reads only280326 bytes of original metadata and the verified
+XBE's35-entry frequency table. Comparing those authored rates with actual Play
+gives69/80/71 exact matches and22/10/18 differences on Windows/Mac/Linux. Thus
+the template rate is not the authored base for replacement pitch scaling. For
+example, event3371's bank rate and actual Play are22042Hz, although the buffer
+template says44000; event5490 similarly matches16007Hz and its bank loop flag.
+No original audio payload is copied. This is evidence for the next source-metadata
+binding step, not a replacement implementation or complete bank/stream coverage.
+
+Ignored host evidence: private/test-saves/audio-lifetime-4846-{win,mac,linux}/evidence.json.
+Windows analysis copies: logs/mod-audio-lifetime-*-proof.json,
+logs/mod-audio-lifetime-analysis.json and logs/mod-audio-authored-frequency-proof.json.
+Arrival timestamps are bounded pipe-capture times, not exact game ticks.
+CI43846826893 at48465dd9 completes23 successful jobs/two intentional issue skips.
+
 `src/mods/mod_wave.c/.h` validates an immutable caller-owned WAV snapshot before
 its PCM could reach game audio. It performs no IO, allocation, conversion,
 resampling, native decoder calls or playback. It is a shared input component,

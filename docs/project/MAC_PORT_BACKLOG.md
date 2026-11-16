@@ -397,11 +397,14 @@ Source28f42934 CI run43633538621 succeeded. Native launcher at that source: Wind
 Mac build passes using supported --output under the owned Library/Caches folder.
 No public workshop service, production trust activation or release is claimed.
 
-Audio lifetime follow-up (2026-11-16, local source): shared patch2715 observes
+Audio lifetime follow-up (2026-11-16, source48465dd9): shared patch2715 observes
 buffer identity/generation, actual pitch/loops and retirement without changing
-samples, clocks or source attribution. No OS adapter is introduced. Windows's
-actual HLE/source/WAV161 checks pass; actual Mac/Linux fixtures and gameplay
-evidence remain pending. Custom audio replacement stays off. See STATUS and
+samples, clocks or source attribution. No OS adapter is introduced. Actual HLE/
+source/WAV161 checks and normal game builds pass on all three hosts. Isolated
+six-bot scenes exit0 and known Play rows91 Windows/90 Mac/89 Linux match verified
+bindings. Bank metadata proves the buffer template is not the authored base for
+replacement pitch. Whole-source event5490 looping is observed; complete stream/
+subregion/custom replacement acceptance remains open. See STATUS and
 docs/development/mod-audio-input.md.
 
 Creator project/import follow-up (2026-11-16, source b0997ca9): shared mod_creator.py

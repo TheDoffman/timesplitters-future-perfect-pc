@@ -1,13 +1,37 @@
-Audio lifetime evidence hook (2026-11-16, local source):
+Audio lifetime evidence hook (2026-11-16, source48465dd9):
 Patch2715 adds opt-in512-row bind/play/frequency/loop/pause/stop/retire metadata,
 including unknown identities and actual original/current rates. It reads existing
 host buffer/model state under the audio lock without guest reads, decoding,
 sample/clock changes or attribution transfer. The actual HLE fixture demonstrates
 known identity through pitch/loop/play/stop, then existing settings-driven model
 retirement/new unknown generation. Exact opt-in, logging cap and unchanged model/
-PCM are verified. Windows audio/source/WAV161 checks pass6.07s. Actual Mac/Linux
-fixtures, game builds and lifetime gameplay traces remain pending. This is a
-replacement-integration prerequisite, not enabled custom audio playback.
+PCM are verified. Audio/source/WAV161 checks pass on Windows6.07s/Mac5.26s/
+Linux9.49s. All three normal game builds pass their full native checks. Windows
+uses the supported Windows PowerShell environment after PowerShell7 failed in
+existing System.Drawing icon generation before game compilation. No generated
+game C, compiler optimization or system memory settings were changed.
+
+Isolated unmodded six-bot Arcade scenes exit0: Windows85 seconds, Mac/Linux100.
+Game SHAs Windows3a49c5ff49295157dc446c17a770da178c2ebb0ec0df9cbcdd41d9d3c6608b4d;
+Mac17077371265def9e1c430977c936ed9eca1548c2451357b74e0aaa48a688e624;
+Linux5a67c32138a65e15974e10517a1bb57157791d29b96f3d9d9f7436b494db151c.
+Each512-row trace extends into gameplay. All known Play rows91/90/89 match an
+earlier verified bind with the same event/interface/generation. Every known Play
+uses a rate different from the44000Hz buffer template. Four unknown initial
+64-byte/48000Hz plays remain explicitly unknown; event5490's whole-source loop
+flag and16007Hz playback are observed on all hosts. Explicit loop-region mutation
+and complete streamed/music coverage remain unproven.
+
+Read-only comparison against280326 bytes of original bank metadata and the
+supported XBE's frequency table yields69/80/71 exact authored/playback matches,
+with22/10/18 differing rates. Event3371 is authored/played at22042Hz, not its
+44000Hz buffer template. Replacement pitch needs verified authored source metadata;
+it must not use the early template rate as the authored base. No audio payload
+is copied. Sources/synthetic fixtures are preserved and own inactive partition
+images recycled. Ignored proofs: logs/mod-audio-lifetime-{win,mac,linux}-proof.json,
+mod-audio-lifetime-analysis.json and mod-audio-authored-frequency-proof.json.
+Source is pushed and synchronized; CI43846826893 completes23 successful jobs
+with two intentional issue skips. Custom replacement playback remains off.
 Contract: docs/development/mod-audio-input.md.
 
 Creator project/import tools (2026-11-16, source b0997ca9):
