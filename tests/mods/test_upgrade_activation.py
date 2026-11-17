@@ -175,6 +175,16 @@ def test_foreign_retirement_destination_is_preserved_without_removing_active_aut
     assert item.state.state()['retire_pending']==dict(generation='before',sha256=sha)
 
 
+@pytest.mark.parametrize('target',['folder','store'])
+def test_retirement_refuses_changed_private_storage_mode_without_consuming_proof(flow,target):
+    item=flow;item.run('apply');item.run('rollback')
+    path=item.case.root/'monitor/upgrade-quiescence.json';original=path.read_bytes()
+    directory=item.case.exchange.folder if target=='folder' else item.case.exchange.folder.parent
+    directory.chmod(0o755)
+    with pytest.raises(ModError):activation.retire_proof(item.state,item.case.exchange,item.gate)
+    assert path.read_bytes()==original and item.state.state()['retire_pending'] is None
+
+
 @pytest.mark.parametrize('failure',['chmod','observation'])
 def test_retirement_interruption_preserves_known_archive_and_requires_explicit_resume(flow,monkeypatch,failure):
     item=flow;item.run('apply');item.run('rollback');state=item.state

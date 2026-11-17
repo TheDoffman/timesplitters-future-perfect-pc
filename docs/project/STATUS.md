@@ -1,3 +1,40 @@
+Private startup authority (2026-11-16; source3b4e1e72/d21bdf63/c6d0e4d1;
+not deployed): the internal activation phase retires active migration authority
+under durable intent, archives known proof bytes in Root700 storage at0600, and
+supports explicit recovery after rename/chmod/observation interruption. Foreign
+destinations and changed proofs are preserved/refused. Known archived retirement
+permits the original monitor proof to be absent without relaxing other inventory
+checks. The fixed installed AV helper uses isolated UID600 transport (900s/8KiB)
+and exact clean/EICAR/empty-database/missing-engine controls. Parent topology
+checks reject escaped scanner descendants before recording scanner admission.
+
+Four fixed monitors precede backup and remaining workers. Every bootstrap has a
+durable intent and actual launchd binding observation, including nonzero/timeout
+outcomes. Explicit resume observes loaded pending effects without loading them
+again; absent/uncertain pending outcomes remain private for separate recovery.
+Fixed monitor directory/plist/marker identities and20 job files stay attested while
+separate health metadata updates. A reappearing active proof halts startup. The
+journal invalidates quiescence at the first start intent; old stop history cannot
+authorize another quiescent record or capture. Public access/restoration/settlement
+are blocked after startup; the phase explicitly returns readiness_verified=false.
+
+Activation/proof/archive/journal tests pass14 Mac/5.82s and14 Linux/7.69s after the
+fixture explicitly binds all imported boot readers to the simulated boot. Expanded
+combined activation/flow/layout/admission/process/cutover/journal checks pass242
+Mac/15.08s and242 Linux/20.67s atc6d0e4d1; Windows plus CI-scope passes259/143
+POSIX skips0.64s. Filesystem/journal effects are real private HOME fixtures; authority,
+scanner results, launchd and process responses are simulated. These do not prove
+installed UID600 AV admission or production startup. Private readiness, seven
+restarts, controlled post-start stop/rollback, health-history checkpointing,
+reboot recovery, public acceptance and the full installed apply CLI remain open.
+
+Priora5c6639a CI43992368060 completed successfully:23 success/two intentional skips,
+including Linux Vulkan, native launcher packages/combined release and aggregate.
+Earlier intermittent startup/recovery and Mac signal11 remain undetermined;
+passing runs are not their explanation/fix. Existing Mac backup zsh29800/sudo29803
+remain live at sudo -v (9h46m observed); Windows WorkshopSignIn45300 is still live.
+No production job, route, private configuration, key or frozen ceremony changed.
+
 Journaled configuration/file flow (2026-11-16; source3690bbbf/723268c5/283ce1ea/
 aeb3e5c0; not deployed): Root journal binds the prepared manifest, private migration
 intent/exact receipt, each filesystem intent/observation and complete layout result.

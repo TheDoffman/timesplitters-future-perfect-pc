@@ -17,6 +17,13 @@ PROOF='upgrade-quiescence.json'
 def fingerprint(data):return hashlib.sha256(data).hexdigest()
 
 
+def private_layout_storage(folder):
+    for path in (folder.parent,folder):
+        fd=cutover.protected_directory(path)
+        try:require(stat.S_IMODE(os.fstat(fd).st_mode)==0o700,'Retired authority storage must remain Root700')
+        finally:os.close(fd)
+
+
 def archive_path(folder,generation,sha):
     require(generation in ('before','after') and isinstance(sha,str) and journal_code.SHA.fullmatch(sha),
             'Invalid retired proof identity')
@@ -24,6 +31,7 @@ def archive_path(folder,generation,sha):
 
 
 def _archive(journal,folder,generation,sha):
+    private_layout_storage(folder)
     path=archive_path(folder,generation,sha)
     try:data,identity=cutover.protected_bytes(path,0o600,8192)
     except ValueError:
@@ -63,6 +71,7 @@ def retire_proof(journal,layout,gate,*,resume=False):
     require(type(resume) is bool and os.geteuid()==cutover.ROOT_UID and layout.journal is journal
             and journal.base['boot_id']==boot_identity() and state['layout_complete']==generation
             and not state['started'] and state['start_pending'] is None,'Invalid proof retirement context')
+    private_layout_storage(layout.folder)
     gate();require(layout._locations()['active']==generation,'Active layout generation differs')
     pending=state['retire_pending']
     if pending is None and generation in state['retired_proofs']:
@@ -110,7 +119,7 @@ def retire_proof(journal,layout,gate,*,resume=False):
 
 def fixed_monitor_files(layout,generation):
     """Attest immutable markers/plists while monitors update separate health files."""
-    manifest=read_json(layout.manifest)
+    private_layout_storage(layout.folder);manifest=read_json(layout.manifest)
     data,_=cutover.protected_bytes(layout.folder/'manifest.json',0o600,65536)
     require(data==layout.manifest,'Prepared layout manifest changed')
     baseline=manifest['monitor' if generation=='before' else 'after_monitor']

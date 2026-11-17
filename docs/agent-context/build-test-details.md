@@ -1937,3 +1937,5 @@ entry points; production native boot/context checks remain unchanged.
 Startup invalidates original quiescence: its old stop history cannot authorize
 new captures or another quiescent record. Expired AV controls can be renewed on
 explicit resume after re-observing the known private job/process trees.
+Retirement/startup revalidate Root700 on both archive store and nonce directory;
+changed traversal modes refuse proof consumption before an intent is recorded.
