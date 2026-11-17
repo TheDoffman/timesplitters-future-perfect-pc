@@ -15,7 +15,7 @@ from mod_package import ModError
 
 
 @pytest.fixture
-def prepared(private_posix_path,monkeypatch):
+def prepared(private_posix_path,monkeypatch,request):
     root=private_posix_path/'workshop';root.mkdir(mode=0o755)
     boot=private_posix_path/'boot';boot.mkdir(mode=0o755)
     (root/'upgrades').mkdir(mode=0o700)
@@ -50,7 +50,8 @@ def prepared(private_posix_path,monkeypatch):
     write(root/'monitor/api/health.json',b'{"old-health":true}',0o644)
     base=dict(before=before.name,after=after.name,uid=600,nonce='c'*64,boot_id='f'*64)
     journal=SimpleNamespace(base=base,state=lambda:dict(quiescent=True))
-    exchange=layout.Layout(journal,before,after,old,new);fingerprint=exchange.prepare()
+    exchange=layout.Layout(journal,before,after,old,new)
+    fingerprint=None if getattr(request,'param',None)=='deferred' else exchange.prepare()
     original=layout.snapshot(root/'monitor');events=[];pending=[None];gates=[]
     def record(kind,operation,identity):
         assert identity==fingerprint

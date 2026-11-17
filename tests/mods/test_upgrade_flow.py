@@ -18,6 +18,8 @@ import mod_host_upgrade_layout as layout
 import mod_host_upgrade_process as process
 from mod_package import ModError
 
+pytestmark=pytest.mark.parametrize('prepared',['deferred'],indirect=True)
+
 
 @pytest.fixture
 def flow(prepared,workshop_routing,monkeypatch):
@@ -49,6 +51,7 @@ def flow(prepared,workshop_routing,monkeypatch):
             admission._publish(state,proof,previous,identity)
             return proof
         capture_and_prove();case.exchange.journal=state
+        case.fingerprint=case.exchange.prepare()
         gate=lambda:layout.quiescence_gate(state,case.old,command,workshop_routing['invoke'])
         current=dict(identity='b'*64,uid=600)
         def child(current,uid,before,nonce,plan_sha256,*,rollback):
@@ -161,6 +164,13 @@ def test_unknown_proof_is_refused_before_private_migration(flow,field):
     path.write_bytes(migration.wire(value))
     with pytest.raises(ModError):item.run('apply')
     assert item.calls==[] and item.private==['before'] and not item.case.exchange.saved.exists()
+
+
+def test_missing_original_proof_is_preserved_and_refused_before_private_migration(flow):
+    item=flow;path=item.case.root/'monitor/upgrade-quiescence.json'
+    path.rename(item.case.root/'preserved-proof.json')
+    with pytest.raises(ModError):item.run('apply')
+    assert item.calls==[] and item.private==['before'] and not path.exists()
 
 
 def test_typed_journal_refuses_forged_out_of_order_or_foreign_effects(flow):

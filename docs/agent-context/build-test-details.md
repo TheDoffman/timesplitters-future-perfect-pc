@@ -1921,3 +1921,6 @@ Flow fixtures scope the worker's relocated ROOT and fixed labels to its credenti
 simulation, preserving factory/journal label identity in the parent phase.
 Prepared-only cancellation performs no private migration or file exchange. Unknown
 proof hash/nonce/boot/UID is refused before invoking the private migration child.
+Flow staging is deferred until after the real journal's capture/proof, matching
+the intended Root sequence and pinning an original proof in the manifest. Missing
+original proofs are refused; recorded fresh replacements still permit recovery.
