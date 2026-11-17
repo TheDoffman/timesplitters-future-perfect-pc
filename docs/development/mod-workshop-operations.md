@@ -115,7 +115,7 @@ verified after quiescence. Admission also binds the native boot identity so that
 a pre-reboot record cannot authorize migration after boot jobs reload. The
 private worker does not create that authority,
 stop services, change the backup binding or activate a release. The root
-coordinator producing and validating that admission remains to be implemented;
+coordinator's internal admission phase exists, but installed acceptance remains open;
 this component must not be used as a standalone live upgrade procedure.
 
 `host_release.installed(identity, uid)` verifies the protected installed code
@@ -232,6 +232,27 @@ foreign, duplicate or multi-event pending files stay untouched; no new nonce or
 automatic cleanup bypasses them. Promotion recovers metadata, not an OS outcome.
 This journal stores the coordinator's observations; it does not perform them or
 issue migration authority. No deployed job uses it yet.
+
+`mod_host_upgrade_layout.py` stages the new nine plists and four monitor markers
+in a Root-only transaction folder. It attests the old factory-derived files and
+marker generations first, bounds Root-owned history to128 records/1MiB/four levels,
+and pins both directory inventories and the unchanged independent backup files.
+The old monitor directory, including deployment and health history, is archived
+whole. No old health record is copied into the fresh monitor directory.
+
+Its internal exchange primitive announces intent before each of eleven effects:
+archive/install monitor directories and replace nine boot files. Explicit resume
+can observe a pending completed effect without repeating it. Reverse exchange
+restores the original directory identity/history and old boot bytes. Unknown,
+replaced or duplicate generations, mixed boot files without explicit recovery,
+foreign manifests and partial temporary writes are preserved/refused. A live gate
+rechecks suspended routing and all ten absent labels around numeric descendant/
+group/UID absence; it performs no job stop or startup. Backup bytes and identities
+must remain unchanged. The caller must hold the Root journal lease, verify sealed
+factories/configuration migration, bind the prepared manifest digest and durably
+record every effect. That coordinator event integration, post-activation rollback
+and production admission remain open; no CLI exposes this phase yet. Reopening a
+prepared layout requires its exact journal-bound digest and same boot identity.
 
 The v2 routing callback is directly compatible with the selective transition
 primitive. It persists intent before the action, permits only matching observed

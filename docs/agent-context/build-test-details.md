@@ -1900,3 +1900,9 @@ skips actual POSIX filesystem cases; native Mac/Linux runs are required. These
 internal phases do not enable a production upgrade CLI or prove a live cutover.
 Refresh tests require a new capture while preserving the original shutdown time;
 interrupted proof commits preserve pending bytes and reject implicit retry.
+test_upgrade_layout.py exercises actual before/after monitor directory exchange,
+nine boot-file replacements, reverse exchange and explicit interrupted-effect
+recovery. Original root-owned history is archived intact; changed identities,
+foreign files, failed gates/journals and partial writes are preserved/refused.
+Authority/effect callbacks are simulated. The live gate's fixed-label/UID/group/
+routing parsing is tested separately; no test changes installed system jobs.
