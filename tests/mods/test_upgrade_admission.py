@@ -1,6 +1,5 @@
 """Real protected proof/journal files; simulated job and backup child actions."""
 import hashlib
-import json
 import os
 from pathlib import Path
 import sys
@@ -113,3 +112,34 @@ def test_unrecognized_evidence_is_preserved(context,damage):
         assert path.read_bytes()==original
         if damage=='foreign-proof':assert context['calls']==[]
         else:assert not (context['root']/'monitor'/admission.NAME).exists()
+
+
+def test_refresh_requires_a_new_capture_and_keeps_original_quiescence(context,monkeypatch):
+    with journal.transaction(**context['args']) as state:
+        suspend(context,state);first=run(context,state)
+        context['now'][0]+=40
+        context['report'].update(started=context['now'][0],created=context['now'][0],finished=context['now'][0],
+                                 verified_manifest_sha256='5'*64)
+        monkeypatch.setattr(admission.process,'forced_backup',lambda *args,**kwargs:context['report'].copy())
+        second=run(context,state)
+        assert second['time']==first['time']+40 and second['quiesced_at']==first['quiesced_at']
+        assert second['backup_sha256']=='5'*64 and second['backup_verified_at']==context['now'][0]
+        assert admission._existing(state)[0]==migration.wire(second)
+        assert len([event for event in migration.read_json(state.current)['events'] if event['kind']=='backup-verified'])==2
+
+
+def test_interrupted_proof_commit_preserves_pending_and_refuses_implicit_retry(context,monkeypatch):
+    with journal.transaction(**context['args']) as state:
+        suspend(context,state)
+        original=admission.os.replace
+        def interrupted(source,target,**kwargs):
+            if target==admission.NAME:raise OSError('proof commit interrupted')
+            return original(source,target,**kwargs)
+        with monkeypatch.context() as patch:
+            patch.setattr(admission.os,'replace',interrupted)
+            with pytest.raises(OSError):run(context,state)
+        pending=context['root']/'monitor'/('.upgrade-quiescence-'+state.base['nonce']+'.pending')
+        payload=pending.read_bytes()
+        assert not (context['root']/'monitor'/admission.NAME).exists()
+        with pytest.raises(FileExistsError):run(context,state)
+        assert pending.read_bytes()==payload

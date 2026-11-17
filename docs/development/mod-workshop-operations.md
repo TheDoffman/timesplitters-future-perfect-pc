@@ -179,8 +179,9 @@ worker's status or change its runtime binding. Failed captures/verification leav
 existing and incomplete artifacts for inspection; exception text from private
 data does not become the operator report. Root must verify both immutable code
 closures before launching this child through a bounded supervisor, after job
-quiescence, and check the receipt before issuing migration admission. That root
-integration and actual UID600 capture admission remain unfinished.
+quiescence, and check the receipt before issuing migration admission. The internal
+capture/admission phase now implements that ordering; installed Root/UID600
+acceptance and full service switching remain unfinished.
 
 The forced-backup core tests use `upgrade_backup_driver.py` in fresh `-I -S -B`
 interpreters, matching the production closure boundary. A larger pytest process
@@ -261,8 +262,9 @@ labels are absent it checks numeric descendant/group exit and absence of all
 UID600 processes, rechecks files and label absence, then records quiescence.
 This primitive has no CLI and has not stopped production jobs. The root entry
 point must still verify sealed code and suspend ingress before invoking it;
-forced fresh backup, admission proof, configuration/monitor migration, rollback,
-private scanner/readiness/restart acceptance and public restoration remain open.
+the internal forced-backup/proof phase is available, while integrated configuration/
+monitor migration, rollback, private scanner/readiness/restart acceptance and
+public restoration remain open.
 
 The current public8443 route is Funnel-enabled HTTPS proxying127.0.0.1:8768;
 private443 exists with Funnel disabled. Thus starting new private gateway jobs

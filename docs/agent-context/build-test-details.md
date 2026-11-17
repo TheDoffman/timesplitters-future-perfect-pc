@@ -1898,3 +1898,5 @@ files. test_upgrade_process.py verifies fixed locked migration child flags,
 bounded transport, six-output plans and exact apply/rollback receipts. Windows
 skips actual POSIX filesystem cases; native Mac/Linux runs are required. These
 internal phases do not enable a production upgrade CLI or prove a live cutover.
+Refresh tests require a new capture while preserving the original shutdown time;
+interrupted proof commits preserve pending bytes and reject implicit retry.
