@@ -67,8 +67,8 @@ def _context(runtime,current,uid,name):
             'Installed upgrade Python entry point differs')
     options=dict(user=uid,group=uid,extra_groups=[],cwd=runtime['root'],
         env=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(ROOT/'data'),TMPDIR=str(ROOT/'data'),LC_ALL='C',TZ='UTC'))
-    # Only the locked configuration helper needs this verified runtime's pinned
-    # application packages (signing validation). User site/PYTHONPATH stay off.
+    # Configuration/scanner helpers use the verified runtime's application
+    # packages. User site/PYTHONPATH stay off; metadata/backup remain no-site.
     flags=['-I','-B'] if name in ('migrate-private-generation-mac.py','accept-installed-scanner-mac.py') else ['-I','-S','-B']
     return [str(python),*flags,str(program)],options
 

@@ -75,8 +75,16 @@ def test_startup_loads_only_fixed_jobs_after_controls_and_blocks_public_restorat
     assert result['readiness_verified'] is False and result['public_endpoint_started'] is False
     assert item.state.state()['started']==case.effects and not item.state.state()['quiescent']
     with pytest.raises(ModError):item.state.record('access-verified',data=dict(release='b'*64,sha256='9'*64))
+    for kind in ('quiescent','quiescence-rechecked'):
+        with pytest.raises(ModError):item.state.record(kind)
     count=len(case.effects);case.start(resume=True)
     assert len(case.effects)==count and case.scanner==['b'*64]
+
+
+def test_readmission_renews_expired_scanner_controls_without_reloading_known_jobs(running):
+    case=running;case.start();case.flow.now[0]+=301
+    case.start(resume=True)
+    assert case.scanner==['b'*64,'b'*64] and len(case.effects)==10
 
 
 @pytest.mark.parametrize('mode',['loaded-error','timeout-loaded'])

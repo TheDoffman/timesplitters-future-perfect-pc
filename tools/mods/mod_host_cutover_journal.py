@@ -117,16 +117,18 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
             stopped.append(label);pending = None
         elif kind == 'quiescent':
             require(data is None and suspended and route_pending is None and not quiescent
-                    and label is None and pending is None and stopped == order,
+                    and label is None and pending is None and stopped == order and not started and start_pending is None,
                     'Cutover quiescence lacks complete stop observations')
             quiescent = True
             quiesced_at=event['time'];checked_at=event['time']
         elif kind=='quiescence-rechecked':
             require(data is None and label is None and suspended and route_pending is None
-                    and pending is None and quiescent and stopped==order,'Quiescence recheck lacks stopped state')
+                    and pending is None and quiescent and stopped==order and not started and start_pending is None,
+                    'Quiescence recheck lacks stopped state')
             checked_at=event['time']
         elif kind=='backup-verified':
             require(label is None and suspended and route_pending is None and pending is None
+                    and retire_pending is None and start_pending is None and not started
                     and quiescent,'Backup verification requires observed quiescence')
             from mod_host_upgrade_process import checked_backup_receipt
             backup=checked_backup_receipt(data,backup_base_release,uid,backup_identity,quiesced_at,clock=lambda:event['time'])

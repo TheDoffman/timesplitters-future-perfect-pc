@@ -1934,3 +1934,6 @@ static policy identities remain pinned; loaded jobs do not establish readiness,
 restart acceptance or permission to expose the workshop publicly.
 Activation fixtures explicitly bind the same simulated boot across all imported
 entry points; production native boot/context checks remain unchanged.
+Startup invalidates original quiescence: its old stop history cannot authorize
+new captures or another quiescent record. Expired AV controls can be renewed on
+explicit resume after re-observing the known private job/process trees.

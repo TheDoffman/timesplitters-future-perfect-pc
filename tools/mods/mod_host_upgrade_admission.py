@@ -71,9 +71,11 @@ def capture_and_admit(journal,entries,runtime,current,profile,plan,routing,comma
     objects. No public CLI exposes this phase until activation/rollback completes.
     """
     base=journal.base;uid=base['uid']
+    state=journal.state()
     require(os.geteuid()==cutover.ROOT_UID and base['boot_id']==migration.boot_identity()
             and runtime['identity']==base['backup_base_release'] and current['identity']==base['after']
-            and runtime['uid']==current['uid']==uid and profile['origin']==base['routing']['origin'],
+            and runtime['uid']==current['uid']==uid and profile['origin']==base['routing']['origin']
+            and not state['started'] and state['start_pending'] is None and state['retire_pending'] is None,
             'Invalid root backup/admission context')
     process.checked_migration_plan(plan,base['before'],base['after'],profile)
     require(plan['sha256']==base['plan_sha256'],'Migration plan differs from the root transaction')
