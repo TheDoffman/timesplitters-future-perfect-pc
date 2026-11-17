@@ -1,3 +1,41 @@
+Post-start shutdown/reversal (2026-11-16; source880d242c/dfa0f4ac/3f20e952;
+not deployed): the new private-stop phase binds current generation/process trees
+and any pending restart tree before stopping fixed monitors, backup and workers.
+Each bootout has durable intent and exact native absence observation. Explicit
+resume never blindly repeats a pending bootout. All tracked groups/PIDs and every
+dedicated-UID process must exit before another quiescent record; unknown UID
+processes block that record after known jobs stop. Startup/AV authority is excluded
+while shutdown is incomplete. A pending bootstrap that never loaded can be safely
+cancelled through the observed stop sequence.
+
+Stopped monitor checkpoints bind typed generation health and fixed policy identity
+to the original layout digest. Known Root atomic-write temporary files remain
+bounded opaque evidence; unknown, linked or changed history is refused. Reverse
+exchange admits only the journal-bound checkpoint, preserves the complete new
+monitor directory, and restores old files before private configuration rollback.
+Fresh capture/proof binds the new shutdown time; an expired restored old proof
+requires explicit recapture. The catalog floor survives shutdown/reversal/startup.
+The full journal bound is256 events/128KiB (32 transactions); a complete post-start
+apply/admit/stop/reverse/old-start/readmit/restoration cycle exceeds128 events.
+
+Combined shutdown/acceptance/startup/flow/layout/admission/process/cutover/journal/
+readiness-helper checks pass289 Mac/49.61s and289 Linux/60.74s atdfa0f4ac; Windows
+plus CI-scope passes280/169 POSIX skips1.49s. Final incomplete-shutdown authority
+guards at3f20e952 pass12 shutdown cases Mac/16.37s and Linux/20.88s. Tests use real
+protected files, journals, proof/checkpoint hashes and exchanges with simulated
+credentials, OS process/job responses, scanner/readiness and private-child config
+writes. These are not installed Root/UID600 or real service-stop evidence. Full
+apply-context/CLI composition, reboot recovery, actual old-code/new-data/schema
+compatibility, installed deployment and public cutover acceptance remain open.
+
+Watchdog-fix source5e67c56a CI44002897043 completed successfully:23 success/two
+intentional skips, including Linux Vulkan, all native launcher packages/combined
+release and aggregate. It predates the shutdown changes above. The older Mac
+main-game crash and final exact-source release/physical acceptance remain open.
+The Mac backup ceremony still has live zsh29800/sudo29803 at sudo -v (11h20m
+observed). Windows sign-in45300 is now absent and its private stage has no result
+file; it did not complete. No replacement prompt or live service mutation occurred.
+
 Native watchdog startup race (2026-11-16; regressiona2e34948, fix1144206b;
 not released): a standalone driver compiles the ACTUAL production watchdog and
 Linux seal, without Lua/input or a test seal. strace delays real rseq syscall entry
