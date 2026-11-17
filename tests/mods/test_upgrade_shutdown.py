@@ -129,6 +129,41 @@ def test_escaped_uid_process_blocks_quiescence_after_known_labels_stop(stopping)
     assert len(case.stops)==10 and case.flow.state.state()['quiescent']
 
 
+def test_pending_restart_tree_is_retained_even_when_no_longer_owned_by_service_uid(stopping):
+    case=stopping;item=case.flow;state=item.state;generation='after'
+    profile={key:state.state()['private_baseline'][key] for key in ('origin','trusted_root_sha256')}
+    state.record('private-readiness-verified',generation,process.private_readiness(case.case.current,600,profile,floor=40))
+    label=journal_code.restart_order()[0];old=case.case.pids[label]
+    state.record('restart-intent',label,dict(pid=old,tracked=dict(pids=[old],groups=[old])))
+    case.case.pids[label]+=1000;extra=[f'{old} 1 {old} 501\n'];ticks=[0.0]
+    def command(argv):
+        code,text=case.command(argv)
+        return code,text+''.join(extra) if argv[0]=='/bin/ps' else text
+    def sleep(seconds):ticks[0]+=seconds
+    def stop(resume=False):
+        return shutdown.stop_private_services(state,item.case.exchange,item.case.new,command,item.routing['invoke'],
+            resume=resume,clock=lambda:ticks[0],sleep=sleep,timeout=1)
+    with pytest.raises(ModError):stop()
+    assert len(state.state()['shutdown']['tracked'])==2 and len(case.stops)==10 and not state.state()['quiescent']
+    extra.clear();stop(resume=True)
+    assert len(case.stops)==10 and state.state()['restart_pending'] is None and state.state()['quiescent']
+
+
+def test_checkpoint_commit_interruption_requires_explicit_known_file_recovery(stopping,monkeypatch):
+    case=stopping;case.health();case.stop();state=case.flow.state;original=state.record
+    def record(kind,*args,**kwargs):
+        if kind=='monitor-checkpoint':raise OSError('checkpoint journal unavailable')
+        return original(kind,*args,**kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(state,'record',record)
+        with pytest.raises(OSError):case.checkpoint()
+    paths=list(case.flow.case.exchange.folder.glob('monitor-checkpoint-*.json'))
+    assert len(paths)==1;data=paths[0].read_bytes()
+    with pytest.raises(ModError):case.checkpoint()
+    sha=case.checkpoint(resume=True)
+    assert paths[0].read_bytes()==data and state.state()['monitor_checkpoints']=={'after':sha}
+
+
 @pytest.mark.parametrize('damage',['unknown','bad-health','health-link'])
 def test_checkpoint_preserves_unknown_or_invalid_history_and_refuses_adoption(stopping,damage):
     case=stopping;case.health();case.stop();root=case.flow.case.root/'monitor'

@@ -1959,3 +1959,6 @@ Checkpoint tests preserve bounded valid health and known Root monitor temporarie
 refuse arbitrary/changed history, and complete a reverse/start/readiness/public
 memory-routing cycle with the catalog floor retained. Full reversal exceeds128
 events, so the journal is now bounded to256 events/128KiB (32 transactions).
+Pending restart trees remain tracked even if their PID/group is reused by a
+different UID; no sampled process is signalled. A complete checkpoint written
+before a lost journal commit is adopted only on explicit validated resume.

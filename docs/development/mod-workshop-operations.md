@@ -327,8 +327,8 @@ Only a fresh report after all seven checks admits the exact private-access diges
 The selective routing primitive rechecks both AV/private freshness and the digest
 at restoration intent and observation, preventing stale admission or changed
 evidence from enabling public service. This function does not change routing.
-Controlled post-start shutdown/rollback, health-history checkpointing, reboot
-recovery, the full installed apply CLI and production acceptance remain open.
+Installed post-start shutdown/rollback acceptance, reboot recovery, the full
+installed apply CLI and production acceptance remain open.
 
 `mod_host_upgrade_shutdown.py` now implements controlled post-start shutdown and
 monitor-history checkpointing. It snapshots current fixed labels/process trees
