@@ -258,10 +258,13 @@ def admit_private_services(journal,current,layout,entries,profile,command,routin
             rows=cutover.process_rows(output);old=pending['tracked']
             gone=(not set(old['pids']).intersection(rows)
                   and not set(old['groups']).intersection(group for _,group,_ in rows.values()))
-            if observed is not None and observed['pid'] is not None and observed['pid']!=pending['pid'] and gone:
-                require(cutover.label_state(path,spec,command)==observed,'Restart identity changed during cleanup observation')
-                journal.record('restart-observed',label,dict(pid=observed['pid'],old_tree_exited=True))
-                return
+            if observed is not None and observed['pid'] is not None and observed['pid']!=pending['pid'] and gone and observed['pid'] in rows:
+                tree=cutover.tracked_processes({observed['pid']},rows,base['uid'])
+                owner=0 if label.endswith('.monitor') else base['uid']
+                if all(rows[pid][2]==owner for pid in tree['pids']):
+                    require(cutover.label_state(path,spec,command)==observed,'Restart identity changed during cleanup observation')
+                    journal.record('restart-observed',label,dict(pid=observed['pid'],old_tree_exited=True))
+                    return
             require(clock()<deadline,'Private restart or old-tree cleanup remains unresolved')
             sleep(.5)
     if journal.state()['restart_pending'] is None:ready()

@@ -1948,3 +1948,6 @@ authority, health, cleanup and freshness failures remain private. Renewal rechec
 AV/readiness without repeating completed restarts. This is not installed Root
 readiness or actual process restart evidence; existing helper tests cover its
 signature/loopback implementation separately.
+Restart completion also requires the new PID in the numeric process table with
+the fixed role's owner throughout its observed tree. Stale launchd PIDs and an
+unfinished privilege drop stay pending; explicit resume does not signal again.

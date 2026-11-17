@@ -43,7 +43,17 @@ def accepting(running,monkeypatch):
             if mode[0]=='timeout':raise subprocess.TimeoutExpired(argv,3)
             return (1 if mode[0]=='nonzero' else 0),'fixed utility result'
         code,output=case.command(argv)
-        if argv[0]=='/bin/ps':output+=''.join(extra)
+        if argv[0]=='/bin/ps':
+            output+=''.join(extra)
+            if kills and mode[0] in ('wrong-owner','new-missing'):
+                pid=case.pids[kills[-1]];lines=[]
+                for line in output.splitlines():
+                    fields=line.split()
+                    if int(fields[0])==pid:
+                        if mode[0]=='new-missing':continue
+                        fields[-1]='0'
+                    lines.append(' '.join(fields))
+                output='\n'.join(lines)+'\n'
         return code,output
     def sleep(seconds):ticks[0]+=seconds
     def admit(*,resume=False):
@@ -68,7 +78,7 @@ def test_authoritative_new_pid_and_cleanup_can_confirm_nonzero_or_timeout(accept
     assert len(case.kills)==7 and case.case.flow.state.state()['activation_ready']
 
 
-@pytest.mark.parametrize('mode',['no-change','orphan'])
+@pytest.mark.parametrize('mode',['no-change','orphan','wrong-owner','new-missing'])
 def test_pending_restart_preserves_old_tree_evidence_and_resume_never_repeats_kill(accepting,mode):
     case=accepting;case.mode[0]=mode;state=case.case.flow.state
     with pytest.raises(ModError):case.admit()
