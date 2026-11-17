@@ -243,6 +243,7 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
         python=process.ROOT/'releases'/identity/'runtime/Frameworks/Python.framework/Versions/3.12/bin/python3.12')
     old,new,backup_runtime=entry(before),entry(after),entry(retained)
     new['descriptor']=dict(source_files={key:{} for key in ('tools/mods/mod_host_upgrade_process.py',
+        'tools/mods/mod_host_upgrade_context.py',
         'tools/mods/mod_host_cutover.py','tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py',
         'tools/mods/hosting/upgrade-job-specs-mac.py','tools/mods/hosting/migrate-private-generation-mac.py')})
     profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='f'*64)

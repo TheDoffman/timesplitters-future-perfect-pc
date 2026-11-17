@@ -1,5 +1,5 @@
 SDK: ../development/mod-creator-tools.md; ops: ../development/mod-workshop-operations.md.
-Upgrade/rollback/data/recovery: ops; read-only CLI.
+Upgrade/context/rollback: ops; read-only CLI.
 register-installed-host-mac.py derives9 protected jobs: staging bootstrap,
 source-pinned private readiness and7 restarts precede boot-file installation.
 601 repair passes private checks,9 jobs and post-seal verification (STATUS).

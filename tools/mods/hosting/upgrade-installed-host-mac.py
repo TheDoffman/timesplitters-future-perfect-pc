@@ -1,6 +1,5 @@
 """Inspect a preserving installed-host upgrade; no activation or service commands."""
 import argparse
-import hashlib
 import importlib.util
 import json
 import os
@@ -67,7 +66,7 @@ def prepare_context(before,after,uid,backup_identity):
                     'An exact preserved backup release is required')
     # Only verified new source is imported in this parent. Old host/backup
     # factories run in separate old-bound interpreters after credentials drop.
-    required={'tools/mods/mod_host_upgrade_process.py','tools/mods/mod_host_cutover.py',
+    required={'tools/mods/mod_host_upgrade_process.py','tools/mods/mod_host_upgrade_context.py','tools/mods/mod_host_cutover.py',
               'tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py','tools/mods/hosting/upgrade-job-specs-mac.py',
               'tools/mods/hosting/migrate-private-generation-mac.py'}
     release.require(required <= new['descriptor']['source_files'].keys(),'Incomplete installed upgrade coordinator')
@@ -76,6 +75,7 @@ def prepare_context(before,after,uid,backup_identity):
     import mod_host_cutover as cutover
     import mod_backup_release as backup
     import mod_host_routing as routing
+    from mod_host_upgrade_context import preflight_digest
     from mod_host_watch import run_command
     folder=release.INSTALLED_ROOT/'backup-releases'/backup_identity
     _,binding=backup.installed(folder)
@@ -97,9 +97,7 @@ def prepare_context(before,after,uid,backup_identity):
     # Bind the candidate's factory outputs as well as the running old jobs.
     # Paths are explicitly encoded; no closure/callable/private payload enters
     # the report or its digest input.
-    candidate_metadata=[dict(generated=str(path),specification=spec) for path,spec in candidate_entries]
-    digest=hashlib.sha256(json.dumps(dict(jobs=observed,candidate_jobs=candidate_metadata,
-        routing=route,plan_sha256=plan['sha256'],private=private),sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    digest=preflight_digest(observed,candidate_entries,route,plan,private)
     report=dict(schema=1,phase='installed-upgrade-preflight',before=before,after=after,uid=uid,
         origin=profile['origin'],trusted_root_sha256=profile['trusted_root_sha256'],
         backup_identity=backup_identity,backup_base_release=runtime['identity'],preflight_sha256=digest,

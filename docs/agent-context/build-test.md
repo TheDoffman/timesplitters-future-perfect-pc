@@ -1,5 +1,5 @@
 Game link/lease: mod-scripting.md; backups/SDK/recovery: [details](build-test-details.md).
-Upgrade/rollback guards: test_upgrade_coordinator.py/test_upgrade_process.py.
+Upgrade/context: test_upgrade_coordinator.py/test_upgrade_context.py.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

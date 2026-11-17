@@ -1986,3 +1986,12 @@ Old-generation AV rejection and catalog regression block public restoration unti
 fresh acceptance succeeds. A prepared layout can be cancelled before migration
 without private configuration writes; pending forward migration is preserved and
 refused by rollback even on explicit resume.
+
+test_upgrade_context.py exercises real Root-owned metadata files/journal leases
+with explicit authority/factory simulation. It reopens the lease and reconstructs
+in a separate Python process without current private inspection or stored-command
+execution. Bad modes, links/hardlinks/FIFOs, partial/noncanonical/foreign metadata,
+boolean policy aliases, changed plans/observations/factories, namespace/capacity
+and cross-boot/missing-after-event cases preserve evidence and refuse. Mac/Linux
+POSIX runs are required; Windows skips protected filesystem cases. Preflight
+composition tests retain the unchanged digest contract through the shared helper.

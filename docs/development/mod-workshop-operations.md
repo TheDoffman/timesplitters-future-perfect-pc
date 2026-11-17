@@ -165,6 +165,26 @@ objects/callables are never serialized in the public report. Retaining context
 does not authorize effects or replace later per-phase file/process/routing guards;
 there is still no apply CLI or reboot-recovery path.
 
+`mod_host_upgrade_context` persists only bounded upgrade metadata under Root700
+`upgrade-contexts/<nonce>.json` (Root600, maximum32 files/64KiB each). Its shared
+preflight digest preserves the existing wire contract. The canonical artifact
+binds the same boot/nonce/generations/backup, full hash-only migration plan,
+original private baseline, route and twenty-file/ten-job observations. It compares
+both saved job sets byte-for-byte with freshly verified factory outputs, including
+boolean types. Saved specifications are never used as executable commands.
+Only a new, event-free held Root transaction can create an absent artifact;
+an exact existing artifact can be adopted only on explicit resume. Partial,
+foreign, linked, replaced, over-capacity or noncanonical artifacts are preserved.
+
+Reconstruction requires an already-held same-boot journal lease and caller-verified
+old/new/backup closures, bindings, factories and fixed transports. It checks the
+original preflight digest and restores historical plan/baseline/observations while
+retaining the fresh callable objects. It does not inspect current private files
+as though they were still the base generation, issue migration authority, or
+treat historical job/PID metadata as current OS proof. Subsequent phase guards
+remain mandatory. Immutable entry-point lease/recovery construction, reboot
+recovery and apply CLI integration are still unfinished.
+
 The internal `mod_host_upgrade_coordinator.apply_private` composes the forward
 phases under an already-held Root journal lease. It binds retained context to
 that exact journal, rejects cross-boot/foreign/rollback/restoration state, records
