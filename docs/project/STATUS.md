@@ -1,3 +1,29 @@
+Forward private upgrade composition (2026-11-16; source8b0baab7/0969d2ab;
+not deployed): mod_host_upgrade_coordinator.apply_private now consumes the verified
+retained context under an already-held Root journal lease. It rejects foreign
+boot/plan/process/backup/authority bindings and restoration/reversal/shutdown
+histories, records the baseline, suspends workshop ingress, stops old jobs,
+forces a preserved-runtime capture, prepares/exchanges protected configuration
+and files, retires worker migration authority, admits AV, loads ten private jobs
+and completes seven restart/readiness checks. Its result keeps ingress suspended;
+it neither exposes an apply CLI nor claims public HTTPS acceptance.
+
+Explicit same-boot resume can finish a prepared-before layout, a lost migration
+result, partial file exchange, loaded pending bootstrap or completed pending
+restart. A lost migration observation requires a fresh capture/proof; once
+configuration is durably after, mixed boot-file exchange needs no new migration
+authority. Initial old-job shutdown also now observes pending bootouts without
+ever reissuing them; a still-loaded pending stop remains unresolved.
+
+Actual Mac and Linux coordinator/flow/cutover/admission/startup/readiness/shutdown
+suites pass148 each (54.85s/67.33s). Windows scope/process checks pass229/seven
+POSIX skips. Composed fixtures use real protected files, journals, captured-receipt
+validation, proof publication/retirement and worker proof reads; credentials,
+launchd/processes, backup/scanner/readiness children and private writes are
+simulated. No production service/routing/data changed. Installed context/lease
+creation and reconstruction, reversal orchestration, reboot recovery, actual
+Root/UID600 deployment and full creator/public/game/release acceptance remain open.
+
 Upgrade orchestration context (2026-11-16; source4cb392e2/75522e2f; not deployed):
 prepare_context now retains both verified host closures, independently preserved
 backup binding/runtime, fixed operator/command callables, old/candidate factory
