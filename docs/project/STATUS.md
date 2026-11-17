@@ -1,3 +1,22 @@
+Upgrade orchestration context (2026-11-16; source4cb392e2/75522e2f; not deployed):
+prepare_context now retains both verified host closures, independently preserved
+backup binding/runtime, fixed operator/command callables, old/candidate factory
+entries, complete migration plan, private baseline, protected observation and
+routing baseline. A separate candidate-bound locked child reads the target nine
+job factories; their fixed set plus unchanged backup is validated before the old
+live observation. Candidate path/spec metadata is included in the preflight digest.
+Public preflight returns only its metadata report, without internal objects or
+callables. Later phases still require their own fresh guards; no apply CLI or
+reboot recovery has been enabled by this refactor.
+
+Actual Mac and Linux process/acceptance/cutover suites pass152 each (16.02s/19.79s).
+Windows process suite passes68/seven POSIX skips; host-release/scope checks pass
+188/43 POSIX skips. Composition fixtures verify retained object identity, separate
+old/backup/candidate runtime selection and changed-candidate digest invalidation;
+real bounded child transports run in the POSIX suites. Production files, jobs,
+routing and data were untouched. Existing backup ceremony zsh29800/sudo29803 is
+still live; no replacement authentication prompt was opened.
+
 Post-start shutdown/reversal (2026-11-16; source880d242c/dfa0f4ac/3f20e952;
 not deployed): the new private-stop phase binds current generation/process trees
 and any pending restart tree before stopping fixed monitors, backup and workers.
