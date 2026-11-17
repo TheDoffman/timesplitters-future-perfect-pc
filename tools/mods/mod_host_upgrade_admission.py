@@ -20,6 +20,12 @@ def _existing(journal):
     path=cutover.ROOT/'monitor'/NAME
     try:data,identity=cutover.protected_bytes(path,0o644,8192)
     except FileNotFoundError:return None,None
+    checked_existing(journal,data)
+    return data,identity
+
+
+def checked_existing(journal,data):
+    """Validate active or archived proof metadata against this root history."""
     value=read_json(data);base=journal.base
     fields={'schema','producer','before','after','uid','nonce','plan_sha256','backup_sha256','time',
             'stopped_jobs','quiesced_at','backup_verified_at','boot_id'}
@@ -35,7 +41,7 @@ def _existing(journal):
             and value['quiesced_at'] in quiesced and any(record['verified_manifest_sha256']==value['backup_sha256']
                 and record['finished']==value['backup_verified_at'] for record in captures),
             'Preserving an unknown or foreign migration admission')
-    return data,identity
+    return value
 
 
 def _publish(journal,value,previous,identity):

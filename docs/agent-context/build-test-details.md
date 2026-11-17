@@ -1910,3 +1910,10 @@ Both sides of interruption (before effect/after effect) require explicit recover
 known pending intents are not duplicated. Reopen checks digest/boot/backup context.
 Layout stores are separate from the global cutover journal's exact inventory;
 the real journal reopen regression checks coexistence with prepared layouts.
+test_upgrade_flow.py combines real protected filesystem effects, the Root journal,
+routing adapter and worker proof reader. Private migration/OS results and credential
+transitions are simulated; it is not installed UID600 evidence. Full apply/reverse
+requires more than64 events and fits the new bounded128-event/64KiB journal. It
+tests lost child results, interrupted effect observations, known-proof refresh,
+stale captures, generation mismatch and forged/out-of-order receipts. Proof updates
+must match Root-recorded captures; other monitor identity changes remain refused.

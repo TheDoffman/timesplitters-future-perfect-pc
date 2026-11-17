@@ -39,6 +39,52 @@ def quiescence_gate(journal,entries,command,routing):
     absent();journal.require_suspended(routing)
 
 
+def configuration_and_exchange(journal,current,layout,direction,gate,*,resume=False):
+    """Journal-bind the locked migration and actual protected filesystem effects.
+
+    Installed entry point must verify sealed closures, factories, backup and
+    fresh proof first. A stale proof is refused by the locked migration worker;
+    callers may explicitly refresh it from another verified quiescent capture.
+    No activation or public routing change occurs here.
+    """
+    import mod_host_upgrade_process as process
+    base=journal.base
+    require(direction in ('apply','rollback') and type(resume) is bool and layout.journal is journal
+            and current['identity']==base['after'] and current['uid']==base['uid']
+            and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity(),
+            'Invalid journaled configuration/layout context')
+    gate();require(layout.manifest is not None,'A complete prepared layout is required')
+    fingerprint=digest(layout.manifest);state=journal.state()
+    if state['layout_sha256'] is None:journal.record('layout-prepared',data=fingerprint)
+    else:require(state['layout_sha256']==fingerprint,'Prepared layout differs from the root journal')
+    layout.reopen(fingerprint)
+    state=journal.state()
+    require(resume or (state['config_pending'] is None and state['layout_pending'] is None),
+            'Interrupted upgrade requires explicit recovery')
+    def migrate(action):
+        state=journal.state();target='after' if action=='apply' else 'before'
+        require(state['config_pending'] in (None,action),'Another private migration requires explicit resolution')
+        if state['config']==target and state['config_pending'] is None:return
+        gate()
+        if state['config_pending'] is None:journal.record('migration-intent',action,base['plan_sha256'])
+        result=process.migration_step(current,base['uid'],base['before'],base['nonce'],base['plan_sha256'],rollback=action=='rollback')
+        process.checked_migration_result(result,base['before'],base['after'],base['plan_sha256'],rollback=action=='rollback')
+        gate();journal.record('migration-observed',action,result)
+    if direction=='apply':migrate('apply')
+    elif state['config_pending']=='apply':
+        require(resume,'An interrupted private apply requires explicit recovery')
+        migrate('apply')
+    state=journal.state()
+    require(state['layout_pending'] is None or state['layout_pending'].startswith(direction+'-'),
+            'Resolve the pending protected effect in its original direction first')
+    result=layout.exchange(direction,journal.layout_event,gate,resume=resume,pending=state['layout_pending'])
+    target='after' if direction=='apply' else 'before'
+    if journal.state()['layout_complete']!=target:journal.record('layout-complete',direction,result)
+    if direction=='rollback':migrate('rollback')
+    return dict(phase='configuration-and-layout-'+('applied' if direction=='apply' else 'rolled-back'),
+                plan_sha256=base['plan_sha256'],layout_sha256=fingerprint,services_started=False)
+
+
 def payloads(entries,release,uid):
     """Derive exactly nine plists and four markers; backup is deliberately absent."""
     cutover.validate_entries(entries)
@@ -112,10 +158,11 @@ def _new(directory,name,data,mode):
     finally:os.close(fd)
 
 
-def _check_payloads(directory,expected):
+def _check_payloads(directory,expected,*,allow_proof=False):
     observed=snapshot(directory)
     directories={'','api','publication','gateway'}
-    require(set(observed)==directories|set(expected),'Staged monitor inventory differs')
+    extra={'upgrade-quiescence.json'} if allow_proof and 'upgrade-quiescence.json' in observed else set()
+    require(set(observed)==directories|set(expected)|extra,'Staged monitor inventory differs')
     require(all(observed[name][-1]==0o755 for name in directories),'Staged monitor directory mode differs')
     for name,data in expected.items():
         found,_=cutover.protected_bytes(directory/name,0o600,32768)
@@ -219,10 +266,17 @@ class Layout:
         for name,path in (('active',cutover.ROOT/'monitor'),('saved',self.saved),('staged',self.staged)):
             try:observed=snapshot(path)
             except FileNotFoundError:found[name]=None;continue
-            if observed==original:found[name]='before'
+            stable=lambda value:{key:item for key,item in value.items() if key!='upgrade-quiescence.json'}
+            if 'upgrade-quiescence.json' in observed:
+                from mod_host_upgrade_admission import checked_existing
+                checked_existing(self.journal,cutover.protected_bytes(path/'upgrade-quiescence.json',0o644,8192)[0])
+            require('upgrade-quiescence.json' not in original or 'upgrade-quiescence.json' in observed
+                    or stable(observed)==stable(manifest['after_monitor']),
+                    'Preserving a missing original migration proof')
+            if stable(observed)==stable(original):found[name]='before'
             else:
-                require(observed==manifest['after_monitor'],'Preserving changed protected monitor evidence')
-                _check_payloads(path,self.after);found[name]='after'
+                require(stable(observed)==stable(manifest['after_monitor']),'Preserving changed protected monitor evidence')
+                _check_payloads(path,self.after,allow_proof=True);found[name]='after'
         require(sorted(v for v in found.values() if v is not None)==['after','before']
                 and found['saved'] in (None,'before') and found['staged'] in (None,'after'),
                 'Preserving unknown or duplicate protected monitor generations')

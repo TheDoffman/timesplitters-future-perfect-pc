@@ -7,7 +7,7 @@ Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged
 Public native3->4->3 gameplay/lifecycle and withdrawal pass on all3 hosts (STATUS).
 Native exit diagnostics: mod-scripting.md; Mac/CI stability remains open.
 Signedv31 retains5 revocations; downloads404. Backup custody/clone restore pass;
-Protected layout recovery: ../development/mod-workshop-operations.md.
+Journaled file recovery: ../development/mod-workshop-operations.md.
 
 prepare-installed-host-mac.py reads3 owned online inputs, matches the source
 pin, copies600 privately and drops credentials for init/updater/scanner controls.

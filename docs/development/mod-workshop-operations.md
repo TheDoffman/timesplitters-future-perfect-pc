@@ -251,9 +251,30 @@ rechecks suspended routing and all ten absent labels around numeric descendant/
 group/UID absence; it performs no job stop or startup. Backup bytes and identities
 must remain unchanged. The caller must hold the Root journal lease, verify sealed
 factories/configuration migration, bind the prepared manifest digest and durably
-record every effect. That coordinator event integration, post-activation rollback
+record every effect. Full activation integration, post-activation rollback
 and production admission remain open; no CLI exposes this phase yet. Reopening a
 prepared layout requires its exact journal-bound digest and same boot identity.
+
+The journal now records the prepared layout digest, private migration intent/result,
+each fixed filesystem intent/observation and the complete layout result. It models
+the monitor location and all nine boot-file generations; foreign/out-of-order or
+duplicate effects are refused. `configuration_and_exchange` applies private
+configuration before switching files, and restores files before rolling back
+configuration. A lost private-child result retains intent and needs explicit
+resume through the private migration's existing known-state journal. Partial
+file effects retain their exact pending operation. Public access/restoration and
+settlement must match the complete configuration/layout generation. Suspension
+can still contain re-exposure while a protected effect is pending.
+
+The bounded Root history is now128 events/64KiB per transaction; a complete
+apply/reverse/restoration exceeds the former64-event limit. Known proof refresh
+is the sole exception to monitor inventory identity stability: a Root0644 proof
+must match this transaction's recorded backup hash/time, shutdown, boot, plan and
+nonce. Active and archived proofs are checked identically. This allows explicit
+fresh recapture after proof expiry while preserving all other recorded files.
+The locked worker still independently enforces its short admission lifetime.
+Activation, post-start health-history checkpointing, reboot recovery and installed
+acceptance remain unfinished; these internal phases are not a live upgrade CLI.
 
 The v2 routing callback is directly compatible with the selective transition
 primitive. It persists intent before the action, permits only matching observed

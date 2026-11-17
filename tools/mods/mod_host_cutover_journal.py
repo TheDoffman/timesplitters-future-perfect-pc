@@ -13,7 +13,8 @@ from mod_host_migration import boot_identity, jobs
 from mod_package import ModError, read_json, require
 
 MAX_JOURNALS = 32
-MAX_BYTES = 32768
+MAX_BYTES = 65536
+MAX_EVENTS = 128
 SHA = re.compile('[0-9a-f]{64}\\Z')
 
 
@@ -37,12 +38,14 @@ def routing_receipt(value, baseline):
     return value
 
 
-def replay(events, clock, baseline, before, after,uid,backup_identity,backup_base_release):
+def replay(events, clock, baseline, before, after,uid,backup_identity,backup_base_release,plan_sha256):
     routes.baseline(baseline)
-    require(isinstance(events, list) and len(events) <= 64, 'Cutover event budget exceeded')
+    require(isinstance(events, list) and len(events) <= MAX_EVENTS, 'Cutover event budget exceeded')
     stopped = [];pending = None;quiescent = False;settled = False;previous = 0
     suspended=False;route_pending=None;restored=False;access=None;access_time=None
     quiesced_at=None;checked_at=None;backup=None
+    config='before';config_pending=None;layout_sha=None;layout_pending=None;layout_complete=None
+    monitor='before';boots={label:'before' for label in jobs() if not label.endswith('.backup')}
     order = stop_order()
     for event in events:
         require(isinstance(event, dict) and set(event) == {'kind','label','time','data'}
@@ -54,6 +57,8 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         if kind in ('routing-intent','routing-observed','routing-unchanged'):
             require(label is None and pending is None,'Routing cannot cross a pending service stop')
             receipt=routing_receipt(data,baseline);expose=receipt['expose']
+            require(not expose or (config_pending is None and layout_pending is None),
+                    'Public restoration cannot cross a pending protected operation')
             if kind=='routing-unchanged':
                 require(route_pending is False and not stopped and not suspended and not expose
                         and receipt['phase']=='public','Unconfirmed routing change cannot be discarded')
@@ -85,6 +90,11 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                     and isinstance(data,dict) and set(data)=={'release','sha256'}
                     and data['release'] in (before,after) and isinstance(data['sha256'],str) and SHA.fullmatch(data['sha256'])
                     and (data['release']==before or quiescent),'Private access verification lacks the required stopped state')
+            if layout_sha is not None:
+                require(config_pending is None and layout_pending is None and layout_complete==config
+                        and monitor==config and all(value==config for value in boots.values())
+                        and data['release']==(before if config=='before' else after),
+                        'Private access does not match completed configuration/layout')
             access=data;access_time=event['time']
         elif kind == 'stop-intent':
             require(data is None and suspended and route_pending is None and not restored and not quiescent
@@ -110,13 +120,72 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                     and quiescent,'Backup verification requires observed quiescence')
             from mod_host_upgrade_process import checked_backup_receipt
             backup=checked_backup_receipt(data,backup_base_release,uid,backup_identity,quiesced_at,clock=lambda:event['time'])
+        elif kind=='layout-prepared':
+            require(label is None and isinstance(data,str) and SHA.fullmatch(data) and layout_sha is None
+                    and quiescent and suspended and route_pending is None and pending is None
+                    and config_pending is None and backup is not None,
+                    'Prepared layout lacks verified shutdown/backup context')
+            layout_sha=data;layout_complete='before'
+        elif kind in ('migration-intent','migration-observed'):
+            require(label in ('apply','rollback') and quiescent and suspended and route_pending is None
+                    and pending is None and layout_pending is None and layout_sha is not None,
+                    'Private migration lacks protected shutdown/layout context')
+            target='after' if label=='apply' else 'before'
+            if kind=='migration-intent':
+                require(data==plan_sha256 and config_pending is None and config!=target and monitor=='before'
+                        and all(value=='before' for value in boots.values()) and backup is not None
+                        and 0<=event['time']-backup['finished']<=300,
+                        'Private migration intent changes the plan or precedes file restoration')
+                config_pending=label;access=None;access_time=None
+            else:
+                from mod_host_upgrade_process import checked_migration_result
+                require(config_pending==label,'Private migration observation lacks its intent')
+                checked_migration_result(data,before,after,plan_sha256,rollback=label=='rollback')
+                config=target;config_pending=None
+        elif kind in ('layout-intent','layout-observed'):
+            require(isinstance(label,str) and data==layout_sha and layout_sha is not None and config=='after'
+                    and config_pending is None and quiescent and suspended and route_pending is None and pending is None,
+                    'Protected file exchange lacks completed private migration')
+            direction,separator,operation=label.partition('-')
+            require(separator and direction in ('apply','rollback') and operation in {'archive','install',*boots},
+                    'Unmanaged protected file exchange')
+            source='before' if direction=='apply' else 'after';target='after' if direction=='apply' else 'before'
+            if kind=='layout-intent':
+                require(layout_pending is None,'Another protected effect remains unresolved')
+                require((operation=='archive' and monitor==source)
+                        or (operation=='install' and monitor=='absent')
+                        or (operation in boots and monitor==target and boots[operation]==source),
+                        'Protected effect is out of order or already completed')
+                layout_pending=label;layout_complete=None;access=None;access_time=None
+            else:
+                require(layout_pending==label,'Protected observation lacks its matching durable intent')
+                if operation=='archive':monitor='absent'
+                elif operation=='install':monitor=target
+                else:boots[operation]=target
+                layout_pending=None
+        elif kind=='layout-complete':
+            require(label in ('apply','rollback') and config=='after' and config_pending is None and layout_pending is None
+                    and quiescent and suspended and pending is None and route_pending is None,
+                    'Protected layout completion lacks shutdown context')
+            target='after' if label=='apply' else 'before'
+            require(layout_sha is not None and monitor==target and all(value==target for value in boots.values())
+                    and isinstance(data,dict) and set(data)=={'phase','layout_sha256','boot_files','backup_changed','services_started'}
+                    and data['phase']=='protected-layout-'+('applied' if label=='apply' else 'rolled-back')
+                    and data['layout_sha256']==layout_sha and type(data['boot_files']) is int and data['boot_files']==9
+                    and data['backup_changed'] is False and data['services_started'] is False,
+                    'Protected layout result differs from complete observed effects')
+            layout_complete=target
         else:
             require(kind == 'settled' and data is None and label is None and pending is None
-                    and route_pending is None and not suspended,'Invalid cutover settlement')
+                    and route_pending is None and not suspended and config_pending is None and layout_pending is None
+                    and (layout_sha is None or (layout_complete==config and monitor==config
+                        and all(value==config for value in boots.values()))),'Invalid cutover settlement')
             settled = True
     return dict(stopped=stopped,pending=pending,quiescent=quiescent,settled=settled,
                 routing_suspended=suspended,routing_pending=route_pending,routing_restored=restored,
-                access=access,access_time=access_time,quiesced_at=quiesced_at,checked_at=checked_at,backup=backup)
+                access=access,access_time=access_time,quiesced_at=quiesced_at,checked_at=checked_at,backup=backup,
+                config=config,config_pending=config_pending,layout_sha256=layout_sha,layout_pending=layout_pending,
+                layout_complete=layout_complete,monitor=monitor,boots=boots)
 
 
 def checked(data, clock):
@@ -128,7 +197,7 @@ def checked(data, clock):
             and all(isinstance(value[k], str) and SHA.fullmatch(value[k]) for k in
                     ('before','after','nonce','plan_sha256','preflight_sha256','boot_id','backup_identity','backup_base_release'))
             and data == wire(value), 'Preserving unknown cutover history')
-    replay(value['events'],clock,value['routing'],value['before'],value['after'],value['uid'],value['backup_identity'],value['backup_base_release'])
+    replay(value['events'],clock,value['routing'],value['before'],value['after'],value['uid'],value['backup_identity'],value['backup_base_release'],value['plan_sha256'])
     cutover.checked_tracking(value['tracked'])
     return value
 
@@ -202,7 +271,7 @@ class Journal:
 
     def _replay(self,events):
         return replay(events,self.clock,self.base['routing'],self.base['before'],self.base['after'],self.base['uid'],
-                      self.base['backup_identity'],self.base['backup_base_release'])
+                      self.base['backup_identity'],self.base['backup_base_release'],self.base['plan_sha256'])
 
     def record(self, kind, label=None, data=None):
         """Persist intent before a stop, and observation only after OS verification.
@@ -245,6 +314,13 @@ class Journal:
                     'Routing observation lacks a recorded transition')
             return state
         return self.record(kind,data=data)
+
+    def layout_event(self,kind,operation,identity):
+        """Durable adapter for the fixed protected-file exchange primitive."""
+        state=self.state()
+        require(kind in ('intent','observed') and identity==state['layout_sha256'],'Foreign protected layout callback')
+        if kind=='intent' and state['layout_pending']==operation:return state
+        return self.record('layout-'+kind,operation,identity)
 
     def require_suspended(self,invoke):
         state=self.state()
@@ -293,7 +369,7 @@ def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracke
             data, _ = cutover.protected_bytes(directory/other, 0o600, MAX_BYTES)
             history = checked(data, clock)
             require(history['nonce']+'.json' == other and replay(history['events'],clock,history['routing'],history['before'],history['after'],
-                    history['uid'],history['backup_identity'],history['backup_base_release'])['settled'],
+                    history['uid'],history['backup_identity'],history['backup_base_release'],history['plan_sha256'])['settled'],
                     'Existing cutover requires recovery before another transaction')
         base = dict(schema=2,producer='tsfp-root-cutover-v2',before=before,after=after,uid=uid,
                     nonce=nonce,plan_sha256=plan_sha256,preflight_sha256=preflight_sha256,

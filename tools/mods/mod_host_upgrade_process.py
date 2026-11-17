@@ -110,10 +110,14 @@ def migration_step(current,uid,before,nonce,plan_sha256,*,rollback=False):
     arguments,options=_context(current,current,uid,'migrate-private-generation-mac.py')
     arguments += ['--rollback' if rollback else '--apply','--from-release',before,'--nonce',nonce]
     result=read_json(_capture(arguments,options,timeout=30,limit=8192))
+    return checked_migration_result(result,before,current['identity'],plan_sha256,rollback=rollback)
+
+
+def checked_migration_result(result,before,after,plan_sha256,*,rollback=False):
     require(isinstance(result,dict) and set(result)=={'schema','phase','plan_sha256','before','after','files',
             'services_changed','repository_modified','keys_modified'} and type(result['schema']) is int and result['schema']==1
             and result['phase']==('rolled-back' if rollback else 'applied') and result['plan_sha256']==plan_sha256
-            and result['before']==before and result['after']==current['identity'] and type(result['files']) is int and result['files']==6
+            and result['before']==before and result['after']==after and type(result['files']) is int and result['files']==6
             and all(result[k] is False for k in ('services_changed','repository_modified','keys_modified')),
             'Private migration result differs from the requested generation/plan')
     return result
