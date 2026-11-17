@@ -12,7 +12,7 @@ import mod_host_routing as routes
 import mod_host_upgrade_admission as admission
 import mod_host_upgrade_activation as activation
 import mod_host_upgrade_layout as layouts
-from mod_package import require
+from mod_package import read_json,require
 
 
 def checked_context(journal,context):
@@ -53,10 +53,14 @@ def apply_private(journal,context,*,resume=False):
     checked_context(journal,context)
     state=journal.state();base=journal.base
     require(not state['settled'] and not state['routing_restored'] and state['routing_pending'] is not True
-            and state['layout_complete'] in (None,'after') and state['config_pending'] in (None,'apply')
+            and state['layout_complete'] in (None,'before','after') and state['config_pending'] in (None,'apply')
             and (state['layout_pending'] is None or state['layout_pending'].startswith('apply-'))
             and state['shutdown'] is None and state['activation_generation'] in (None,'after'),
             'Forward upgrade cannot cross restoration, reversal or shutdown recovery')
+    require(not any(event['kind'] in ('migration-intent','layout-intent','layout-complete')
+            and isinstance(event['label'],str) and event['label'].startswith('rollback')
+            for event in read_json(journal.current)['events']),
+            'A recorded reversal requires its own explicit recovery path')
     require(resume or (not state['routing_suspended'] and state['routing_pending'] is None
             and not state['stopped'] and state['pending'] is None and state['layout_sha256'] is None),
             'An existing upgrade requires explicit recovery')
