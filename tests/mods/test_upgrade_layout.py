@@ -102,7 +102,7 @@ def test_unknown_or_changed_files_and_failed_quiescence_preserve_active_generati
     if damage=='staged-file':(item.staged/'monitor.json').write_bytes(b'foreign')
     elif damage=='staged-link':(item.staged/'extra').symlink_to(case.root/'monitor')
     elif damage=='staged-clone':
-        path=item.staged/'monitor.json';data=path.read_bytes();path.rename(path.with_suffix('.saved'));path.write_bytes(data);path.chmod(0o600)
+        path=item.staged/'monitor.json';data=path.read_bytes();path.rename(case.root/'preserved-marker.json');path.write_bytes(data);path.chmod(0o600)
     elif damage in ('foreign-boot','backup-identical-replacement'):
         label=next(spec['Label'] for _,spec in case.old if spec['Label'].endswith('.backup')==(damage=='backup-identical-replacement'))
         path=case.boot/(label+'.plist')
@@ -121,6 +121,36 @@ def test_intent_callback_failure_precedes_every_filesystem_effect(prepared):
     def failed(*args):raise OSError('journal unavailable')
     with pytest.raises(OSError):case.exchange.exchange('apply',failed,case.gate)
     assert layout.snapshot(case.root/'monitor')==case.original and not case.exchange.saved.exists()
+
+
+@pytest.mark.parametrize('operation',['archive','install','boot'])
+@pytest.mark.parametrize('direction',['apply','rollback'])
+def test_durable_intent_before_interrupted_effect_resumes_without_duplicate_intent(prepared,operation,direction):
+    case=prepared
+    if direction=='rollback':case.exchange.exchange('apply',case.record,case.gate)
+    def record(kind,name,identity):
+        case.record(kind,name,identity)
+        if kind=='intent' and ((operation=='boot' and '.workshop.' in name) or name==direction+'-'+operation):
+            raise OSError('interrupted after durable intent before effect')
+    with pytest.raises(OSError):case.exchange.exchange(direction,record,case.gate)
+    pending=case.pending[0];assert pending
+    count=case.events.count(('intent',pending))
+    case.exchange.exchange(direction,case.record,case.gate,resume=True,pending=pending)
+    assert case.events.count(('intent',pending))==count==1 and case.pending[0] is None
+
+
+@pytest.mark.parametrize('damage',['digest','boot','foreign-backup'])
+def test_reopen_refuses_unbound_or_foreign_layout_context(prepared,damage):
+    case=prepared;fingerprint=case.fingerprint
+    if damage=='digest':fingerprint='0'*64
+    if damage=='boot':case.journal.base['boot_id']='0'*64
+    if damage=='foreign-backup':
+        index=next(i for i,(_,spec) in enumerate(case.new) if spec['Label'].endswith('.backup'))
+        case.new[index]=(case.new[index][0],dict(case.new[index][1],ProgramArguments=['/foreign/python']))
+    with pytest.raises(ModError):
+        reopened=layout.Layout(case.journal,case.root/'releases'/('a'*64),case.root/'releases'/('b'*64),case.old,case.new)
+        reopened.reopen(fingerprint)
+    assert layout.snapshot(case.root/'monitor')==case.original
 
 
 def test_pending_boot_write_is_preserved_and_never_implicitly_adopted(prepared,monkeypatch):
