@@ -1,3 +1,30 @@
+Protected service-file exchange (2026-11-16; source7c47d5a6/e2757b55/26eabbb3;
+not deployed): the internal layout phase stages nine factory-derived plists and
+four monitor markers, preserving the entire original monitor directory/history
+and the independent backup job/runtime. It binds exact file identities, boots,
+before/after payloads and both monitor inventories in a Root-only manifest. Each
+archive/install/replacement requires an intent callback and fresh live quiescence
+gate. Explicit resume distinguishes interrupted-before-effect from already-done
+effects; reverse exchange restores original directory identity and old boot bytes.
+Unknown/partial artifacts and changed identities are preserved/refused. Layout
+storage uses separate Root700 upgrade-layouts (32 transactions), avoiding the
+global cutover journal's exact artifact inventory. A real journal reopen fixture
+checks coexistence. Native filesystem tests pass35 Mac/2.06s and35 Linux/2.18s;
+Windows skips all35 POSIX cases0.14s. Prior e275 combined layout/admission/process/
+cutover/journal checks pass195 Mac/3.79s and195 Linux/4.77s; Windows plus CI-scope
+checks pass250/105 skips0.64s. Authority, factories, effect callbacks and OS command
+results are simulated; filesystem effects/archives/reopen are real private HOME
+fixtures. These tests do not prove installed Root/UID600 admission or live routing.
+Root coordinator event binding, configuration ordering, post-activation rollback,
+scanner/readiness/restarts and public restoration remain open. No apply CLI exists.
+
+Prior106b42ce CI43988222910 completed successfully:23 success/two intentional skips,
+including Linux Vulkan, native launcher packages/combined release and aggregate.
+This does not establish a cause or fix for the earlier intermittent recovery/
+startup failures or Mac signal11. The existing backup ceremony still has live
+zsh29800/sudo29803 at sudo -v (8h59m observed) and Windows sign-in45300 remains
+live. No duplicate prompt, live job/configuration/route or frozen ceremony changed.
+
 Fresh backup/migration admission (2026-11-16; sourceeb15b55c/1b422486; not deployed):
 The internal Root phase binds preserved backup identity/runtime and a digest-only
 six-file configuration plan in its journal. After suspended ingress and observed
