@@ -215,7 +215,7 @@ refuse admission; these samples are never signal targets.
 `mod_host_cutover_journal.py` v2 holds a nonblocking root-only global lease and
 records bounded canonical stop history under root-owned0700 `upgrades`, outside
 the monitor directory that an upgrade will replace. It binds before/after,
-plan/preflight hashes, UID, the original numeric PID/group snapshot, saved public
+plan/preflight hashes, preserved backup descriptor/base runtime, UID, the original numeric PID/group snapshot, saved public
 routing baseline, nonce and native boot session. The earlier undeployed v1
 format is preserved/refused rather than silently adopted. Every stop intent
 precedes its observation; four monitors must precede backup and the remaining

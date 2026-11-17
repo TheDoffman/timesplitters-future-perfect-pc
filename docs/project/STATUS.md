@@ -1,3 +1,30 @@
+Fresh backup/migration admission (2026-11-16; sourceeb15b55c/1b422486; not deployed):
+The internal Root phase binds preserved backup identity/runtime and a digest-only
+six-file configuration plan in its journal. After suspended ingress and observed
+shutdown it forces a locked-account capture, verifies/journals the exact receipt,
+rechecks routing/jobs/descendants, and publishes the worker-compatible short-lived
+proof. Original quiescence time survives rechecks; proof refresh requires a fresh
+capture. Foreign proofs and interrupted writes remain preserved/refused. Fixed
+apply/rollback child transport accepts only exact generation/plan receipts with
+unchanged repository/keys/services. No production apply CLI is enabled.
+Focused transport/admission/cutover/journal checks pass Windows90/74 POSIX skips
+0.35s, actual Mac164/1.73s and Linux164/2.79s. Additional migration/routing/backup/
+closure/CI-scope checks pass Windows220/80 skips1.10s, Mac300/6.94s, Linux280/20
+skips8.88s. POSIX proof/journal filesystem operations are real; authority/job and
+capture actions in admission fixtures are simulated, not installed UID600 proof.
+Both native checkouts fast-forwarded through Git. Full Root activation/monitor
+replacement/rollback, installed acceptance and public restoration remain open.
+
+Prior030110be CI43985098820 is terminal21 success/2 skip/2 failures. Linux Vulkan
+133711306797 fails recovery-refusal[hash] during crashed_runtime setup: its first
+ready record is false before recovery/hash mutation.1642 pass/51 skip282.64s;
+aggregate follows the Linux failure. This log does not reveal worker fault/exit
+text, so it establishes neither the cause nor a repair of intermittent startup.
+The earlier recovery[run] failure and Mac pre-match signal11 remain unresolved.
+Read-only handle checks still find the existing backup Terminal zsh29800 and
+sudo29803 waiting in sudo -v, plus Windows WorkshopSignIn45300. No new prompt,
+production route/job/configuration, key or frozen ceremony changed.
+
 Routing journal integration/recovery (2026-11-16; sourcee8d72ab5; not deployed):
 Root journal v2 binds the saved public routing baseline and typed routing/stop/
 private-access events. It commits intent before invoking the transition adapter,
