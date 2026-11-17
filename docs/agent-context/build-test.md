@@ -1,5 +1,5 @@
 Game link/lease checks: mod-scripting.md; backups/SDK: [details](build-test-details.md).
-Journal/flow checks: build-test-details.md; worker exit: test_script_session.py.
+Flow isolation: build-test-details.md; worker exit: test_script_session.py.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

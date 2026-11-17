@@ -1917,3 +1917,5 @@ requires more than64 events and fits the new bounded128-event/64KiB journal. It
 tests lost child results, interrupted effect observations, known-proof refresh,
 stale captures, generation mismatch and forged/out-of-order receipts. Proof updates
 must match Root-recorded captures; other monitor identity changes remain refused.
+Flow fixtures scope the worker's relocated ROOT and fixed labels to its credential
+simulation, preserving factory/journal label identity in the parent phase.

@@ -24,7 +24,7 @@ def flow(prepared,workshop_routing,monkeypatch):
     case=prepared;now=[1000000000];calls=[];private=['before']
     monkeypatch.setattr(journal,'boot_identity',lambda:'f'*64)
     monkeypatch.setattr(migration,'boot_identity',lambda:'f'*64)
-    monkeypatch.setattr(migration,'ROOT',case.root);monkeypatch.setattr(migration,'ROOT_UID',os.geteuid())
+    monkeypatch.setattr(migration,'ROOT_UID',os.geteuid())
     arguments=dict(before='a'*64,after='b'*64,uid=600,nonce='c'*64,plan_sha256='d'*64,preflight_sha256='e'*64,
         tracked=dict(pids=[],groups=[]),routing=workshop_routing['baseline'],backup_identity='8'*64,
         backup_base_release='7'*64,clock=lambda:now[0])
@@ -57,6 +57,8 @@ def flow(prepared,workshop_routing,monkeypatch):
             # runs under the actual fixture owner, and no service process starts.
             with monkeypatch.context() as patch:
                 patch.setattr(migration.os,'geteuid',lambda:600)
+                patch.setattr(migration,'ROOT',case.root)
+                patch.setattr(migration,'jobs',lambda:sorted(spec['Label'] for _,spec in case.old))
                 migration._admission(dict(manifest=dict(before=before,after=current['identity']),sha256=plan_sha256),nonce,state.clock)
             if rollback:
                 assert json.loads((case.root/'monitor/monitor.json').read_bytes())['release']==str(case.root/'releases'/before)
