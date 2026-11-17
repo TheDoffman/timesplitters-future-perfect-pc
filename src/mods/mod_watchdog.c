@@ -7,9 +7,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 static volatile LONG64 deadline;
+static volatile LONG ready;
 static uint64_t clock_ms(void){return GetTickCount64();}
 static DWORD WINAPI watch(void *unused) {
-    (void)unused;
+    (void)unused;InterlockedExchange(&ready,1);
     for(;;){LONG64 value=InterlockedCompareExchange64(&deadline,0,0);
         if(value && clock_ms()>=(uint64_t)value && InterlockedCompareExchange64(&deadline,-1,value)==value)ExitProcess(124);
         Sleep(5);
@@ -18,19 +19,23 @@ static DWORD WINAPI watch(void *unused) {
 int tsfp_mod_watchdog_start(void){
     HANDLE thread=CreateThread(NULL,0,watch,NULL,0,NULL);
     if(!thread)return 0;
+    while(!InterlockedCompareExchange(&ready,0,0))Sleep(0);
     CloseHandle(thread);return 1;
 }
 void tsfp_mod_watchdog_arm(void){InterlockedExchange64(&deadline,(LONG64)(clock_ms()+500));}
 void tsfp_mod_watchdog_disarm(void){InterlockedExchange64(&deadline,0);}
 #else
 #include <pthread.h>
+#include <sched.h>
 #include <stdatomic.h>
 #include <time.h>
 #include <unistd.h>
 static atomic_uint_fast64_t deadline;
+static atomic_int ready;
 static uint64_t clock_ms(void){struct timespec time;clock_gettime(CLOCK_MONOTONIC,&time);return (uint64_t)time.tv_sec*1000+(uint64_t)time.tv_nsec/1000000;}
 static void *watch(void *unused) {
     struct timespec delay={0,5000000};(void)unused;
+    atomic_store_explicit(&ready,1,memory_order_release);
     for(;;){uint_fast64_t value=atomic_load(&deadline);
         if(value && clock_ms()>=value && atomic_compare_exchange_strong(&deadline,&value,UINT64_MAX))_exit(124);
         nanosleep(&delay,NULL);
@@ -40,7 +45,11 @@ static void *watch(void *unused) {
 int tsfp_mod_watchdog_start(void){
     pthread_t thread;
     if(pthread_create(&thread,NULL,watch,NULL))return 0;
-    pthread_detach(thread);return 1;
+    pthread_detach(thread);
+    /* pthread_create may return before the child's libc TLS/rseq startup. The
+       caller seals every thread next; do not race that trusted initialization. */
+    while(!atomic_load_explicit(&ready,memory_order_acquire))sched_yield();
+    return 1;
 }
 void tsfp_mod_watchdog_arm(void){atomic_store(&deadline,clock_ms()+500);}
 void tsfp_mod_watchdog_disarm(void){atomic_store(&deadline,0);}

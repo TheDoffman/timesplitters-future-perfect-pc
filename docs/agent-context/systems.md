@@ -944,3 +944,4 @@ earlier synthetic rule0 mismatch. See mod-scripting.md for acceptance limits.
 Linux worker usage starts after a bounded CLOEXEC exec boundary, excluding the
 inherited game address space; worker limits remain fixed. See mod-scripting.md.
 Local script hosts may select a strictly validated cache parent; mod-scripting.md.
+Watchdog startup: mod-scripting.md.

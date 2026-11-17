@@ -31,4 +31,7 @@ def test_delayed_thread_registration_precedes_unchanged_process_wide_seal(tmp_pa
     evidence=trace.read_text()
     assert result.returncode==0 and result.stdout==b'PASS\n',(result.returncode,result.stderr,evidence[-4096:])
     assert 'SECCOMP_FILTER_FLAG_TSYNC' in evidence and 'rseq(' in evidence and '(DELAYED)' in evidence
+    lines=evidence.splitlines();sealed=next(index for index,line in enumerate(lines) if 'SECCOMP_FILTER_FLAG_TSYNC' in line)
+    assert sum('rseq(' in line for line in lines)>=2,'Exercise both main and watchdog libc registration'
+    assert not any('rseq(' in line or 'rseq resumed' in line for line in lines[sealed+1:]),'Thread registration crossed sealing'
     assert 'SIGSEGV' not in evidence and 'SIGABRT' not in evidence

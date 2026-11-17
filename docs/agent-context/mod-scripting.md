@@ -7,6 +7,11 @@ writev/tgkill are also denied and the process receives SIGSEGV. The pre-fix
 standalone trace reproduces that outcome. The regression requires clean startup
 with the unchanged filter and limits; Linux CI installs strace. It is Linux x64
 only; ordinary native worker/confinement checks remain required on every host.
+The watchdog now release-publishes readiness only after its thread enters trusted
+code; startup waits with acquire semantics before returning to the caller. Windows
+uses the equivalent Interlocked readiness publication. No thread creation,
+syscall allowance,500ms deadline, sandbox/profile, helper pin or resource limit
+is loosened. The checked-in regression fails on a2e34948 with SIGSEGV (-11).
 
 Actual game consumer link (2026-11-16): full Windows/Mac/Linux game builds at
 03473783 failed because game.cmake omitted mod_process_identity.cpp; standalone
