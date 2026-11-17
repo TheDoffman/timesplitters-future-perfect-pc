@@ -57,7 +57,7 @@ def configuration_and_exchange(journal,current,layout,direction,gate,*,resume=Fa
     fingerprint=digest(layout.manifest);state=journal.state()
     if state['layout_sha256'] is None:journal.record('layout-prepared',data=fingerprint)
     else:require(state['layout_sha256']==fingerprint,'Prepared layout differs from the root journal')
-    layout.reopen(fingerprint)
+    layout.reopen(fingerprint);layout._locations()
     state=journal.state()
     require(resume or (state['config_pending'] is None and state['layout_pending'] is None),
             'Interrupted upgrade requires explicit recovery')
@@ -65,7 +65,7 @@ def configuration_and_exchange(journal,current,layout,direction,gate,*,resume=Fa
         state=journal.state();target='after' if action=='apply' else 'before'
         require(state['config_pending'] in (None,action),'Another private migration requires explicit resolution')
         if state['config']==target and state['config_pending'] is None:return
-        gate()
+        gate();layout._locations()
         if state['config_pending'] is None:journal.record('migration-intent',action,base['plan_sha256'])
         result=process.migration_step(current,base['uid'],base['before'],base['nonce'],base['plan_sha256'],rollback=action=='rollback')
         process.checked_migration_result(result,base['before'],base['after'],base['plan_sha256'],rollback=action=='rollback')
@@ -77,7 +77,8 @@ def configuration_and_exchange(journal,current,layout,direction,gate,*,resume=Fa
     state=journal.state()
     require(state['layout_pending'] is None or state['layout_pending'].startswith(direction+'-'),
             'Resolve the pending protected effect in its original direction first')
-    result=layout.exchange(direction,journal.layout_event,gate,resume=resume,pending=state['layout_pending'])
+    cancel=direction=='rollback' and state['config']=='before' and state['layout_complete']=='before' and state['layout_pending'] is None
+    result=layout.exchange(direction,journal.layout_event,gate,resume=resume or cancel,pending=state['layout_pending'])
     target='after' if direction=='apply' else 'before'
     if journal.state()['layout_complete']!=target:journal.record('layout-complete',direction,result)
     if direction=='rollback':migrate('rollback')

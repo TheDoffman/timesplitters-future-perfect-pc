@@ -147,6 +147,22 @@ def test_old_backup_cannot_authorize_migration_even_with_prepared_layout(flow):
     assert item.case.exchange._locations()['active']=='before'
 
 
+def test_cancelling_prepared_layout_does_not_migrate_or_exchange_any_files(flow):
+    item=flow;result=item.run('rollback')
+    assert result['phase']=='configuration-and-layout-rolled-back' and item.calls==[]
+    assert item.private==['before'] and not item.case.exchange.saved.exists()
+    assert item.state.state()['layout_complete']=='before'
+
+
+@pytest.mark.parametrize('field',['backup_sha256','nonce','boot_id','uid'])
+def test_unknown_proof_is_refused_before_private_migration(flow,field):
+    item=flow;path=item.case.root/'monitor/upgrade-quiescence.json'
+    value=json.loads(path.read_bytes());value[field]=601 if field=='uid' else '0'*64
+    path.write_bytes(migration.wire(value))
+    with pytest.raises(ModError):item.run('apply')
+    assert item.calls==[] and item.private==['before'] and not item.case.exchange.saved.exists()
+
+
 def test_typed_journal_refuses_forged_out_of_order_or_foreign_effects(flow):
     item=flow;state=item.state
     state.record('layout-prepared',data=item.case.fingerprint)

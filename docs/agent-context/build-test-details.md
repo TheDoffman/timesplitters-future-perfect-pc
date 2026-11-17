@@ -1919,3 +1919,5 @@ stale captures, generation mismatch and forged/out-of-order receipts. Proof upda
 must match Root-recorded captures; other monitor identity changes remain refused.
 Flow fixtures scope the worker's relocated ROOT and fixed labels to its credential
 simulation, preserving factory/journal label identity in the parent phase.
+Prepared-only cancellation performs no private migration or file exchange. Unknown
+proof hash/nonce/boot/UID is refused before invoking the private migration child.
