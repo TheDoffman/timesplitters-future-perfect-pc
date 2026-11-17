@@ -9,6 +9,7 @@ import pytest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'tools/mods'))
 import mod_host_cutover as cutover
+import mod_host_cutover_journal as cutover_journal
 import mod_host_upgrade_layout as layout
 from mod_package import ModError
 
@@ -151,6 +152,30 @@ def test_reopen_refuses_unbound_or_foreign_layout_context(prepared,damage):
         reopened=layout.Layout(case.journal,case.root/'releases'/('a'*64),case.root/'releases'/('b'*64),case.old,case.new)
         reopened.reopen(fingerprint)
     assert layout.snapshot(case.root/'monitor')==case.original
+
+
+def test_layout_store_preserves_global_cutover_journal_inventory_contract(prepared,workshop_routing,monkeypatch):
+    case=prepared;monkeypatch.setattr(cutover_journal,'boot_identity',lambda:'f'*64)
+    arguments=dict(before='a'*64,after='b'*64,uid=600,nonce='c'*64,plan_sha256='d'*64,preflight_sha256='e'*64,
+                   tracked=dict(pids=[],groups=[]),routing=workshop_routing['baseline'],backup_identity='8'*64,
+                   backup_base_release='7'*64,clock=lambda:1000000000)
+    with cutover_journal.transaction(**arguments) as state:state.record('settled')
+    with cutover_journal.transaction(**arguments) as state:assert state.state()['settled']
+    assert case.exchange.folder.parent==case.root/'upgrade-layouts'
+
+
+@pytest.mark.parametrize('damage',['unknown','full','mode'])
+def test_store_limits_preserve_existing_evidence_and_refuse_more_staging(prepared,damage):
+    case=prepared;store=case.exchange.folder.parent
+    if damage=='unknown':(store/'foreign').write_bytes(b'preserve')
+    elif damage=='full':
+        for index in range(31):(store/format(index,'064x')).mkdir(mode=0o700)
+    else:store.chmod(0o755)
+    case.journal.base['nonce']='d'*64
+    item=layout.Layout(case.journal,case.root/'releases'/('a'*64),case.root/'releases'/('b'*64),case.old,case.new)
+    with pytest.raises(ModError):item.prepare()
+    assert not item.folder.exists() and layout.snapshot(case.root/'monitor')==case.original
+    assert case.exchange.folder.exists()
 
 
 def test_pending_boot_write_is_preserved_and_never_implicitly_adopted(prepared,monkeypatch):

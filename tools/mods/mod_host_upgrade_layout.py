@@ -148,7 +148,7 @@ class Layout:
         path,spec=backup(old_entries)
         self.backup_paths=((path,0o444),(cutover.LAUNCHD/(spec['Label']+'.plist'),0o644))
         self.backup_bytes=plistlib.dumps(spec)
-        self.folder=cutover.ROOT/'upgrades'/(base['nonce']+'.layout')
+        self.folder=cutover.ROOT/'upgrade-layouts'/base['nonce']
         self.staged=self.folder/'monitor-after';self.saved=self.folder/'monitor-before'
         self.manifest=None
 
@@ -169,8 +169,18 @@ class Layout:
             if name.endswith('.json'):require(read_json(observed)==read_json(data),'Old monitor generation differs')
             else:require(observed==data,'Old protected job differs')
         inventory=snapshot(cutover.ROOT/'monitor')
+        root=cutover.protected_directory(cutover.ROOT)
+        try:
+            try:os.mkdir('upgrade-layouts',0o700,dir_fd=root);os.fsync(root)
+            except FileExistsError:pass
+        finally:os.close(root)
         parent=cutover.protected_directory(self.folder.parent)
-        try:os.mkdir(self.folder.name,0o700,dir_fd=parent);os.fsync(parent)
+        try:
+            require(stat.S_IMODE(os.fstat(parent).st_mode)==0o700,'Unsafe protected layout store')
+            with os.scandir(parent) as stream:names=[entry.name for entry in islice(stream,33)]
+            require(len(names)<32 and all(len(name)==64 and all(c in '0123456789abcdef' for c in name) for name in names),
+                    'Preserving unknown or full protected layout storage')
+            os.mkdir(self.folder.name,0o700,dir_fd=parent);os.fsync(parent)
         finally:os.close(parent)
         self.staged.mkdir(mode=0o755);self.staged.chmod(0o755)
         for role in ('api','publication','gateway'):

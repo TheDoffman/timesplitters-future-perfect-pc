@@ -1908,3 +1908,5 @@ Authority/effect callbacks are simulated. The live gate's fixed-label/UID/group/
 routing parsing is tested separately; no test changes installed system jobs.
 Both sides of interruption (before effect/after effect) require explicit recovery;
 known pending intents are not duplicated. Reopen checks digest/boot/backup context.
+Layout stores are separate from the global cutover journal's exact inventory;
+the real journal reopen regression checks coexistence with prepared layouts.

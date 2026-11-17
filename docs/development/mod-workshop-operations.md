@@ -234,7 +234,8 @@ This journal stores the coordinator's observations; it does not perform them or
 issue migration authority. No deployed job uses it yet.
 
 `mod_host_upgrade_layout.py` stages the new nine plists and four monitor markers
-in a Root-only transaction folder. It attests the old factory-derived files and
+in Root-only `upgrade-layouts/<nonce>` (at most32 transactions), separate from the
+global cutover journal's exact inventory. It attests the old factory-derived files and
 marker generations first, bounds Root-owned history to128 records/1MiB/four levels,
 and pins both directory inventories and the unchanged independent backup files.
 The old monitor directory, including deployment and health history, is archived
