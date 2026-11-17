@@ -102,6 +102,8 @@ def test_pending_stop_resumes_only_observation_without_repeating_bootout(stoppin
     case=stopping;case.mode[0]='not-unloaded'
     with pytest.raises(ModError):case.stop()
     label=case.flow.state.state()['shutdown_pending'];assert label and case.stops==[label]
+    state=case.flow.state
+    with pytest.raises(ModError):state.record('scanner-verified','after',state.state()['scanner'])
     case.case.loaded.pop(label);case.mode[0]=None
     with pytest.raises(ModError):case.stop()
     case.stop(resume=True)

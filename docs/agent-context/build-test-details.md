@@ -1962,3 +1962,5 @@ events, so the journal is now bounded to256 events/128KiB (32 transactions).
 Pending restart trees remain tracked even if their PID/group is reused by a
 different UID; no sampled process is signalled. A complete checkpoint written
 before a lost journal commit is adopted only on explicit validated resume.
+Incomplete shutdown excludes new AV/startup events until its stop history and
+process cleanup are complete; the scanner-event guard has a direct negative case.

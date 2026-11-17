@@ -233,6 +233,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         elif kind=='scanner-verified':
             require(label in retired and label==config==monitor==layout_complete and suspended and route_pending is None
                     and config_pending is None and layout_pending is None and retire_pending is None
+                    and (shutdown is None or shutdown_complete)
                     and (quiescent or activation_generation==label),'Scanner admission lacks retired-proof generation context')
             from mod_host_upgrade_process import checked_scanner_result
             checked_scanner_result(data,before if label=='before' else after,uid)
@@ -240,6 +241,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         elif kind in ('start-intent','start-observed'):
             require(label in jobs() and data is not None and config_pending is None and layout_pending is None
                     and retire_pending is None and suspended and route_pending is None and pending is None
+                    and (shutdown is None or shutdown_complete)
                     and layout_complete==config==monitor and config in retired and scanner is not None and private_baseline is not None,
                     'Private startup lacks complete admitted generation context')
             if kind=='start-intent':
