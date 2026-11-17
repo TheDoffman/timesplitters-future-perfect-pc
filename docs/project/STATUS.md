@@ -1,3 +1,37 @@
+Journaled configuration/file flow (2026-11-16; source3690bbbf/723268c5/283ce1ea/
+aeb3e5c0; not deployed): Root journal binds the prepared manifest, private migration
+intent/exact receipt, each filesystem intent/observation and complete layout result.
+It models configuration, active monitor and nine boot-file generations. Public
+restoration/access/settlement refuse pending or mismatched generations. The internal
+configuration_and_exchange phase applies private configuration before file exchange,
+and restores files before configuration rollback; lost results require explicit
+resume. Prepared-only cancellation performs neither change. The128-event/64KiB
+bound accommodates a full apply/reverse/restoration (over64 events); overflow
+preserves committed bytes. Known active/archived proof refresh requires exact Root
+capture history; missing original/foreign proofs and other changed monitor files
+are refused before the private helper runs. This supports recapture after expiry
+without replacing the layout manifest or losing archived evidence.
+
+The combined journal/flow/layout/admission/cutover/process set passes217 Mac/8.42s
+and217 Linux/11.59s at283ce1ea; Windows plus CI-scope passes250/127 skips0.59s.
+Final intended-order fixtures stage after a real Root journal capture/proof;
+flow/layout tests pass54 Mac/6.71s and54 Linux/8.76s, Windows54 POSIX skips0.18s.
+The flow uses real protected filesystem/journal/proof-reader/routing code in
+private HOME fixtures, with simulated credentials, OS responses and private-child
+configuration writes. The initial failed fixture changed the parent's path-derived
+labels;723268c5 scopes relocated ROOT/labels to the simulated child. No production
+identity policy was changed. These checks are not installed Root/UID600 acceptance.
+Activation, post-start health history, proof retirement before startup, reboot
+recovery, scanner/readiness/restarts and public restoration remain unfinished.
+The installed CLI still has no apply action; no live job, route or key changed.
+
+Prior0a4b0fe9 CI43990066134 completed successfully (23 success/two intentional skips),
+including Linux Vulkan, all native launcher packages/combined release and aggregate.
+Intermittent earlier worker-start/recovery failures and Mac signal11 remain
+undetermined; a green run is not their cause/fix. The existing Mac backup zsh29800/
+sudo29803 remains live at sudo -v (9h13m observed); Windows WorkshopSignIn45300
+remains live. Existing prompts and frozen ceremonies were not duplicated/changed.
+
 Protected service-file exchange (2026-11-16; source7c47d5a6/e2757b55/26eabbb3;
 not deployed): the internal layout phase stages nine factory-derived plists and
 four monitor markers, preserving the entire original monitor directory/history
