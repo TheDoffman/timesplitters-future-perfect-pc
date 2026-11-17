@@ -246,12 +246,28 @@ void pc_display_camera(void (*original)(void))
     static ULONGLONG discord_sampled;
     static PcDiscordGuestCache discord_cache;
     ULONGLONG now=GetTickCount64();
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    static ULONGLONG network_frame,network_frame_gap;
+    if(network_frame && now>=network_frame && now-network_frame>network_frame_gap)network_frame_gap=now-network_frame;
+    network_frame=now;
+#endif
     if(now-discord_sampled>=1000) {
         PcDiscordSnapshot sample;
         int network=0;
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
         double latency;unsigned peers;
         network=pc_network_latency(&latency,&peers);
+        static ULONGLONG network_sampled;
+        if(!network)network_frame_gap=0;
+        if(network && (!network_sampled || now-network_sampled>=10000)) {
+            int32_t values[PC_NETWORK_SYNC_FIELDS];
+            if(pc_network_sync_snapshot(values)) {
+                values[14]=latency<0.?-1:(latency>2147483647.?INT32_MAX:(int32_t)latency);
+                values[15]=network_frame_gap>INT32_MAX?INT32_MAX:(int32_t)network_frame_gap;
+                pc_capture_network(values);network_sampled=now;network_frame_gap=0;
+            }
+        }
+
 #endif
         pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
         pc_capture_gameplay(sample.scene,sample.mode,sample.menu_mode,sample.paused,sample.network,(sample.flags&0x20000000u)!=0);

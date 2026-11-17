@@ -60,6 +60,33 @@ static void health(PcCrashPacket *p)
     if(ok)MoveFileExW(temporary,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH);
     DeleteFileW(temporary);
 }
+static int file_hash(const WCHAR *path,char *hex);
+static void network_export(PcCrashPacket *p)
+{
+    static int64_t published;int64_t next=pc_crumb_load(&p->network.next);
+    if(!next || next==published || next%PC_CRUMB_NETWORK_FIELDS)return;
+    char session[33];
+    if(!pc_capture_session(session) || !directory(p->root))return;
+    WCHAR path[PC_CRASH_PATH],temporary[PC_CRASH_PATH],name[80];
+    join(path,p->root,L"network-sync.txt");
+    DWORD attr=GetFileAttributesW(path);
+    if(attr!=INVALID_FILE_ATTRIBUTES && (attr&(FILE_ATTRIBUTE_REPARSE_POINT|FILE_ATTRIBUTE_DIRECTORY)))return;
+    swprintf_s(name,_countof(name),L"sync-%lu-%llu.tmp",GetCurrentProcessId(),GetTickCount64());
+    join(temporary,p->root,name);
+    HANDLE file=CreateFileW(temporary,GENERIC_WRITE,0,NULL,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,NULL);
+    if(file==INVALID_HANDLE_VALUE)return;
+    int fd=_open_osfhandle((intptr_t)file,_O_BINARY);
+    if(fd<0){CloseHandle(file);DeleteFileW(temporary);return;}
+    FILE *out=_fdopen(fd,"wb");
+    if(!out){_close(fd);DeleteFileW(temporary);return;}
+    static char hash[65];if(!hash[0] && !file_hash(p->executable,hash))strcpy_s(hash,sizeof hash,"unavailable");
+    fprintf(out,"Network sync schema 1; windows-x64; process-id %lu; executable-sha256 %s; local numeric counters only.\n",p->process_id,hash);
+    pc_crumb_report(out,&p->network);
+    int ok=fflush(out)==0 && !ferror(out) && FlushFileBuffers(file);
+    if(fclose(out))ok=0;
+    if(ok && MoveFileExW(temporary,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))published=next;
+    DeleteFileW(temporary);
+}
 static int incident_name(const WCHAR *name)
 {
     if (wcslen(name) != 42 || wcsncmp(name, L"crash-", 6)) return 0;
@@ -90,7 +117,7 @@ static void rotate(const WCHAR *root)
         HANDLE lock = CreateFileW(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, NULL);
         if (lock == INVALID_HANDLE_VALUE) continue;
         CloseHandle(lock);
-        const WCHAR *files[] = {L"crash.dmp", L"report.json", L"report.txt", L"game-log-tail.txt", L"breadcrumbs.txt", L"guest-memory.bin", L"diagnostics.json", L"model-history.txt", L"allocation-history.txt", L"capture.lock"};
+        const WCHAR *files[] = {L"crash.dmp", L"report.json", L"report.txt", L"game-log-tail.txt", L"breadcrumbs.txt", L"guest-memory.bin", L"diagnostics.json", L"model-history.txt", L"allocation-history.txt", L"network-history.txt", L"capture.lock"};
         for (unsigned n = 0; n < _countof(files); ++n) {
             join(file, folder, files[n]);
             DWORD attr = GetFileAttributesW(file);
@@ -189,7 +216,7 @@ static int guest_report(HANDLE process,const PcCrashGuest *guest,const WCHAR *fo
     int ok=pc_guest_capture_write_mode(out,guest_read,&reader,registers,extended);if(fclose(out))ok=0;
     if(!ok)DeleteFileW(path);return ok;
 }
-static int capture(HANDLE process, PcCrashPacket *p, int hang, ULONGLONG stalled_ms, HANDLE crash_request, PcBreadcrumbs *breadcrumbs)
+static int capture(HANDLE process, PcCrashPacket *p, int hang, ULONGLONG stalled_ms, HANDLE crash_request, PcBreadcrumbs *breadcrumbs,PcBreadcrumbs *network)
 {
     WCHAR folder[PC_CRASH_PATH], name[64], path[PC_CRASH_PATH];
     SYSTEMTIME now; GetSystemTime(&now);
@@ -232,6 +259,8 @@ static int capture(HANDLE process, PcCrashPacket *p, int hang, ULONGLONG stalled
     if(models){pc_crumb_report(models,&p->models);fclose(models);}
     join(path,folder,L"allocation-history.txt");FILE *allocations=NULL;_wfopen_s(&allocations,path,L"wb");
     if(allocations){pc_crumb_report(allocations,&p->allocations);fclose(allocations);}
+    join(path,folder,L"network-history.txt");FILE *net=NULL;_wfopen_s(&net,path,L"wb");
+    if(net){pc_crumb_report(net,network);fclose(net);}
     char sha[65] = "unavailable";
     file_hash(p->executable, sha);
     join(path, folder, L"report.json");
@@ -384,12 +413,12 @@ int wmain(int argc, WCHAR **argv)
     for (;;) {
         DWORD waited = WaitForMultipleObjects(2, waits, FALSE, 250);
         if (waited == WAIT_OBJECT_0) {
-            MemoryBarrier(); result = capture(handles[4], p, 0, 0, NULL, &p->breadcrumbs);
+            MemoryBarrier(); result = capture(handles[4], p, 0, 0, NULL, &p->breadcrumbs,&p->network);
             SetEvent(handles[2]); break;
         }
-        if (waited != WAIT_TIMEOUT) break;
+        if (waited != WAIT_TIMEOUT) {network_export(p);break;}
         ULONGLONG now = GetTickCount64();
-        if(now-last_health>=2000){health(p);last_health=now;}
+        if(now-last_health>=2000){health(p);network_export(p);last_health=now;}
         LONG64 frames = InterlockedCompareExchange64(&p->frame_sequence, 0, 0);
         int suppressed = InterlockedCompareExchange(&p->watchdog_inhibited, 0, 0) > 0;
         HWND window = (HWND)(uintptr_t)InterlockedCompareExchange64((volatile LONG64 *)&p->game_window, 0, 0);
@@ -420,7 +449,7 @@ int wmain(int argc, WCHAR **argv)
             MemoryBarrier();
             if (sequence == InterlockedCompareExchange(&p->snapshot_sequence, 0, 0)) { report.guest = guest; report.thread_id = thread_id; break; }
         }
-        capture(handles[4], &report, 1, now - policy.last_progress, handles[1], &p->breadcrumbs);
+        capture(handles[4], &report, 1, now - policy.last_progress, handles[1], &p->breadcrumbs,&p->network);
     }
     UnmapViewOfFile(p);
     for (int i = 0; i < 5; ++i) CloseHandle(handles[i]);

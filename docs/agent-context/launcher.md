@@ -1,3 +1,4 @@
+[Sync telemetry](network-sync-telemetry.md).
 Online game beta0.7.0-beta.1 is uploaded as a draft prerelease from46f1a2d0
 on feature/native-multiplayer-ui (release443677772). Beta metadata targets
 Preview/Beta, but drafts stay hidden from launcher discovery. Windows+Linux assets;

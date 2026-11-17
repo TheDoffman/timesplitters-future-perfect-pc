@@ -44845,3 +44845,59 @@ for this source merge. Existing executable provenance predates main integration.
 Native Mac/Linux build and scene acceptance remain pending; Windows compile
 contracts do not substitute for those host checks. Personal settings, saves,
 canonical fixtures and source assets are preserved.
+
+
+## 2026-11-17: Local release synchronization telemetry
+
+Implemented on feature/online-sync-telemetry, depending on the unmerged native
+multiplayer integration atd477b47a. Shared transport observation records title
+packet counts, admitted bot updates, duplicate/reordered/coalesced updates,
+per-bot arrival intervals and interval variation, current silence and local
+acceptance-to-consumption delay. Existing fresh RTT and camera-callback gap
+complete a16-field numeric snapshot. Counters are local/context-scoped; no wire
+format, smoothing, cadence, ownership or timeout behavior changes. These are
+not packet-loss measurements or one-way authoritative state age.
+
+The normal shared camera sampler publishes the first active sample and then
+at most every10seconds, independently of the user's Discord presence option.
+A separate64-entry atomic numeric history retains up to four complete samples
+without displacing other breadcrumbs. Existing capture helpers write a bounded,
+atomically replaced network-sync.txt in the validated crash-report root for
+nonfatal stutter, with platform/PID/executable hash provenance. Crash and hang
+reports contain network-history.txt, included by the updated shared launcher ZIP
+allowlist. Windows shared capture protocol is6; the matching rebuilt helper is
+required. No new telemetry upload, service dependency, player identity, address,
+invitation code or payload collection was added.
+
+Windows11 x64/MSVC14.42.34433:124 focused checks passed,13 unavailable-host skips,
+in43.44s. This includes real loopback transport admission, timing/counter tests,
+fatal capture, normal-session export, bounded interrupted-producer history,
+existing bot lifecycle and menu/CI contracts. A separate real nonfatal watchdog
+hang check passes and retains live network history. Final counter cleanup,
+transport/ring and repository contracts:27 passed in10.56s. The actual production
+menu translation unit compiles with the existing Release includes/defines and
+TSFP_PC_DISCORD, covering the shipped sampler path. Windows launcher build/test
+passes in48.85s, including116 isolated updater regressions, shared UI/settings,
+crash discovery and the eight-file synthetic ZIP export with network history.
+Context/index and whitespace checks pass againstd477b47a.
+
+No game executable was rebuilt, installed, published or pushed. Current beta
+release assets and installed game are unchanged; next release packaging must
+build the game, matching helper and updated launcher from these sources. Native
+Mac/Linux source adapters and fixtures were updated, but host build/report/ZIP
+and gameplay acceptance remain pending (MAC-013). No impaired gameplay run or
+new claim about historical crash causality follows from these instrumentation
+checks. Controlled jitter/loss/reordering/frame-stall tests remain the next step
+when evaluating synchronization changes. See the local telemetry contract for
+measurement limits. Logs remain ignored under logs/network-telemetry-*; personal
+saves/settings and the canonical fixture were preserved.
+
+Community lobby follow-up: the user confirmed these failures occurred from a
+different network than the community server. Read-only pinned public HTTPS
+requests reproduced the reported failures without gameplay or lobby membership:
+48 requests over50.795s with the Arcade one-second socket deadline yielded32
+successes,11 SSL read timeouts,2 SSL handshake timeouts and3 other timeouts.
+Separate batches of eight requests with two-second and five-second deadlines
+both passed; intermittent failures remain unresolved. This isolates reproduction
+from native gameplay, but does not establish whether the service or network
+path is responsible. No heartbeat/lease policy or deployed service was changed.

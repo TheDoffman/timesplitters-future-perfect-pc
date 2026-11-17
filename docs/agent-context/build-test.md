@@ -1,3 +1,4 @@
+[Sync telemetry](network-sync-telemetry.md).
 [Pads](controller-deadzones.md). [IDs](online-player-identities.md). [TLS](native-multiplayer-menu.md).
 [Actors](network-actor-lifetime.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
@@ -9,7 +10,7 @@
 Warnings: [launcher](launcher.md).
 [Save/checksum tests](multiplayer-exit.md#validation).
 
-[Online](multiplayer-ui.md); [sun](fidelity-comparison.md); [batch](independent.md).
+[Online](multiplayer-ui.md); [sun](fidelity-comparison.md).
 [Effect depth](native-effect-depth.md).
 [Update tests](main-menu-update.md).
 [HUD/MSAA](../development/graphics-options.md).

@@ -1,3 +1,4 @@
+[Sync telemetry](network-sync-telemetry.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
 [Actors](network-actor-lifetime.md).
 [Tex](texture-preference.md); [arms](video-options.md).

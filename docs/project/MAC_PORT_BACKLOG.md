@@ -3403,6 +3403,16 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Local sync telemetry (2026-11-17, uncommitted; Awaiting validation on native
+  Mac/Linux):** Shared transport counters and camera sampling preserve current
+  synchronization behavior. Windows and POSIX capture adapters keep a separate
+  bounded numeric history, export a latest normal-session report in the helper
+  and include crash/hang history. Shared launcher ZIP export includes it. No
+  private service change or automatic upload. Windows contract, real UDP,
+  crash-helper and launcher checks pass; native Mac/Linux build, report/export
+  and gameplay acceptance remain pending. See
+  [the measurement contract](../agent-context/network-sync-telemetry.md).
+
 - **Actor/body lifetime repair (2026-11-17, uncommitted;
   Awaiting validation):** Shared `pc_network_bot_lifecycle.inc` unlists retired
   Online Arcade guest bots and releases their owned weapon models before body
