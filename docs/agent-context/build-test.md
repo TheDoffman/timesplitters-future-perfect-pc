@@ -1,5 +1,6 @@
 Game link/lease checks: mod-scripting.md; backups/SDK: [details](build-test-details.md).
 Recovery guards: build-test-details.md; worker exit: test_script_session.py.
+test_upgrade_process.py checks retained upgrade context and candidate-spec digest.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

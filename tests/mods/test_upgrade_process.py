@@ -233,7 +233,8 @@ def test_backup_factory_uses_its_independent_retained_runtime(verified,monkeypat
     assert process.job_specs(runtime,current,600,backup_identity=identity)[0][1]['Label']=='org.timesplitters.workshop.backup'
 
 
-def test_preflight_verifies_independent_backup_binding_and_combines_only_attested_job_metadata(monkeypatch):
+@pytest.mark.parametrize('retain_context',[False,True])
+def test_preflight_verifies_independent_backup_binding_and_combines_only_attested_job_metadata(monkeypatch,retain_context):
     from types import SimpleNamespace
     spec=importlib.util.spec_from_file_location('upgrade_preflight_composition',SOURCE/'tools/mods/hosting/upgrade-installed-host-mac.py')
     upgrade=importlib.util.module_from_spec(spec);spec.loader.exec_module(upgrade)
@@ -250,28 +251,50 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     monkeypatch.setattr(upgrade.release,'INSTALLED_ROOT',process.ROOT)
     monkeypatch.setattr(sys,'path',list(sys.path))
     calls=[]
+    old_entries=[(Path('/old-generated.plist'),dict(Label='old'))]
+    backup_entries=[(Path('/backup-generated.plist'),dict(Label='backup'))]
+    candidate_entries=[(Path('/new-generated.plist'),dict(Label='new'))]
     def job_specs(runtime,current,uid,**kwargs):
         assert current is new and uid==600
         calls.append((runtime['identity'],kwargs))
-        return ['host'] if runtime is old else ['backup']
+        return old_entries if runtime is old else candidate_entries if runtime is new else backup_entries
+    observation=dict(files={'only':'attested'},observation=dict(tracked=dict(pids=[123],groups=[123])))
     def observed(entries,uid,command):
-        assert entries==['host','backup'] and uid==600
-        return dict(files={'only':'attested'},observation=dict(tracked=dict(pids=[123],groups=[123])))
+        assert entries==old_entries+backup_entries and uid==600
+        return observation
+    def validate(entries):assert entries==candidate_entries+backup_entries
     private=dict(catalog_version=42)
+    plan=dict(sha256='9'*64,manifest={'retained':'plan'})
     monkeypatch.setitem(sys.modules,'mod_host_upgrade_process',SimpleNamespace(job_specs=job_specs,
-        migration_plan=lambda *args:dict(sha256='9'*64),private_readiness=lambda *args:private))
-    monkeypatch.setitem(sys.modules,'mod_host_cutover',SimpleNamespace(preflight=observed))
+        migration_plan=lambda *args:plan,private_readiness=lambda *args:private))
+    monkeypatch.setitem(sys.modules,'mod_host_cutover',SimpleNamespace(preflight=observed,validate_entries=validate))
     binding=dict(uid=600,gid=600,base_release=retained,python=str(backup_runtime['python']))
     monkeypatch.setitem(sys.modules,'mod_backup_release',SimpleNamespace(installed=lambda folder:({},binding)))
     monkeypatch.setitem(sys.modules,'mod_host_watch',SimpleNamespace(run_command=lambda _:pytest.fail('Unexpected real command')))
     route=dict(schema=1,origin=profile['origin'],phase='public',config_sha256='e'*64,unrelated_sha256='f'*64)
-    monkeypatch.setitem(sys.modules,'mod_host_routing',SimpleNamespace(operator=lambda *_:lambda action:b'{}',snapshot=lambda *_:route))
-    report=upgrade.preflight(before,after,600,backup_id)
-    assert calls==[(before,{}),(retained,dict(backup_identity=backup_id))]
+    invoke=lambda action:b'{}'
+    monkeypatch.setitem(sys.modules,'mod_host_routing',SimpleNamespace(operator=lambda *_:invoke,snapshot=lambda *_:route))
+    if retain_context:
+        context=upgrade.prepare_context(before,after,600,backup_id)
+        assert context['old'] is old and context['new'] is new and context['profile'] is profile
+        assert context['backup_runtime'] is backup_runtime and context['backup_binding'] is binding
+        assert context['operator'] is invoke and context['observed'] is observation
+        assert context['entries']==old_entries+backup_entries
+        assert context['candidate_entries']==candidate_entries+backup_entries
+        assert context['plan'] is plan and context['private_baseline'] is private and context['routing'] is route
+        report=context['report']
+    else:report=upgrade.preflight(before,after,600,backup_id)
+    assert calls==[(before,{}),(retained,dict(backup_identity=backup_id)),(after,{})]
     assert report['jobs']==10 and report['protected_job_files']==20 and report['backup_base_release']==retained
     assert len(report['preflight_sha256'])==64 and not report['data_written'] and not report['services_changed']
     assert report['public_route_verified'] and report['unrelated_routing_sha256']=='f'*64
     assert report['private_baseline']==private
+    assert not {'old','new','operator','command','observed','plan','entries','candidate_entries'} & report.keys()
+    json.dumps(report)  # Public CLI output remains metadata-only JSON.
+    # A changed target factory must alter admission even if running jobs,
+    # routing, private readiness and the migration plan are unchanged.
+    candidate_entries[0][1]['Label']='changed-new'
+    assert upgrade.preflight(before,after,600,backup_id)['preflight_sha256']!=report['preflight_sha256']
 
 
 def test_job_reader_default_plan_and_ordinary_active_refusal(monkeypatch):

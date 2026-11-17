@@ -154,6 +154,16 @@ repository access or service operations. Parent validation binds identity,
 retained base, UID/GID/groups, fixed labels and executable paths. The resulting
 ten entries feed the protected twenty-plist and double live-job observations.
 The preflight report contains a digest and counts, not migration authority.
+`prepare_context` retains the verified old/new closures, preserved backup binding
+and runtime, operator callable, fixed command transport, old/candidate job entries,
+complete migration plan, private baseline, protected-file/process observation and
+saved route for later orchestration. It also reads the candidate's nine pure
+factories through the candidate-bound locked interpreter and validates their
+combined ten-entry set with the unchanged backup. The preflight digest binds
+these target specifications as well as the observed running old jobs. Internal
+objects/callables are never serialized in the public report. Retaining context
+does not authorize effects or replace later per-phase file/process/routing guards;
+there is still no apply CLI or reboot-recovery path.
 
 `mod_host_upgrade_process.py` bounds those metadata children to15 seconds/64KiB
 stdout and the forced-backup child to1800 seconds/8KiB stdout; stderr is separately

@@ -56,7 +56,12 @@ def inspection(before,after,uid):
         services_changed=False,network_started=False,data_written=False)
 
 
-def preflight(before,after,uid,backup_identity):
+def prepare_context(before,after,uid,backup_identity):
+    """Retain verified inputs for orchestration; this does not authorize effects.
+
+    Keep live observations and the operator callable in memory, never in the
+    public JSON report. Every later phase must recheck its own OS/file guards.
+    """
     old,new,profile=verified_pair(before,after,uid)
     release.require(isinstance(backup_identity,str) and release.SHA.fullmatch(backup_identity),
                     'An exact preserved backup release is required')
@@ -84,9 +89,18 @@ def preflight(before,after,uid,backup_identity):
     private=process.private_readiness(old,uid,profile)
     host_jobs=process.job_specs(old,new,uid)
     backup_jobs=process.job_specs(runtime,new,uid,backup_identity=backup_identity)
-    observed=cutover.preflight(host_jobs+backup_jobs,uid,run_command)
-    digest=hashlib.sha256(json.dumps(dict(jobs=observed,routing=route,plan_sha256=plan['sha256'],private=private),sort_keys=True,separators=(',',':')).encode()).hexdigest()
-    return dict(schema=1,phase='installed-upgrade-preflight',before=before,after=after,uid=uid,
+    candidate_jobs=process.job_specs(new,new,uid)
+    entries=host_jobs+backup_jobs
+    candidate_entries=candidate_jobs+backup_jobs
+    cutover.validate_entries(candidate_entries)
+    observed=cutover.preflight(entries,uid,run_command)
+    # Bind the candidate's factory outputs as well as the running old jobs.
+    # Paths are explicitly encoded; no closure/callable/private payload enters
+    # the report or its digest input.
+    candidate_metadata=[dict(generated=str(path),specification=spec) for path,spec in candidate_entries]
+    digest=hashlib.sha256(json.dumps(dict(jobs=observed,candidate_jobs=candidate_metadata,
+        routing=route,plan_sha256=plan['sha256'],private=private),sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    report=dict(schema=1,phase='installed-upgrade-preflight',before=before,after=after,uid=uid,
         origin=profile['origin'],trusted_root_sha256=profile['trusted_root_sha256'],
         backup_identity=backup_identity,backup_base_release=runtime['identity'],preflight_sha256=digest,
         plan_sha256=plan['sha256'],
@@ -94,6 +108,13 @@ def preflight(before,after,uid,backup_identity):
         routing_sha256=route['config_sha256'],unrelated_routing_sha256=route['unrelated_sha256'],public_route_verified=True,
         jobs=10,protected_job_files=20,tracked_processes=len(observed['observation']['tracked']['pids']),
         services_changed=False,network_started=False,data_written=False)
+    return dict(old=old,new=new,profile=profile,backup_runtime=runtime,backup_binding=binding,
+        operator=invoke,command=run_command,entries=entries,candidate_entries=candidate_entries,
+        plan=plan,private_baseline=private,observed=observed,routing=route,report=report)
+
+
+def preflight(before,after,uid,backup_identity):
+    return prepare_context(before,after,uid,backup_identity)['report']
 
 
 def root_context(before):
