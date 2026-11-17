@@ -63,7 +63,8 @@ def preflight(before,after,uid,backup_identity):
     # Only verified new source is imported in this parent. Old host/backup
     # factories run in separate old-bound interpreters after credentials drop.
     required={'tools/mods/mod_host_upgrade_process.py','tools/mods/mod_host_cutover.py',
-              'tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py','tools/mods/hosting/upgrade-job-specs-mac.py'}
+              'tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py','tools/mods/hosting/upgrade-job-specs-mac.py',
+              'tools/mods/hosting/migrate-private-generation-mac.py'}
     release.require(required <= new['descriptor']['source_files'].keys(),'Incomplete installed upgrade coordinator')
     sys.path.insert(0,str(new['root']/'source/tools/mods'))
     import mod_host_upgrade_process as process
@@ -79,13 +80,15 @@ def preflight(before,after,uid,backup_identity):
     invoke=routing.operator(old,new)
     route=routing.snapshot(invoke('status'),profile['origin'])
     release.require(route['phase']=='public','The workshop route requires explicit recovery before normal preflight')
+    plan=process.migration_plan(new,uid,before,profile)
     host_jobs=process.job_specs(old,new,uid)
     backup_jobs=process.job_specs(runtime,new,uid,backup_identity=backup_identity)
     observed=cutover.preflight(host_jobs+backup_jobs,uid,run_command)
-    digest=hashlib.sha256(json.dumps(dict(jobs=observed,routing=route),sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    digest=hashlib.sha256(json.dumps(dict(jobs=observed,routing=route,plan_sha256=plan['sha256']),sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return dict(schema=1,phase='installed-upgrade-preflight',before=before,after=after,uid=uid,
         origin=profile['origin'],trusted_root_sha256=profile['trusted_root_sha256'],
         backup_identity=backup_identity,backup_base_release=runtime['identity'],preflight_sha256=digest,
+        plan_sha256=plan['sha256'],
         routing_sha256=route['config_sha256'],unrelated_routing_sha256=route['unrelated_sha256'],public_route_verified=True,
         jobs=10,protected_job_files=20,tracked_processes=len(observed['observation']['tracked']['pids']),
         services_changed=False,network_started=False,data_written=False)

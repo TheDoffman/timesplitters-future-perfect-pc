@@ -6,6 +6,7 @@ import subprocess
 import sys
 import time
 import re
+import hashlib
 
 from mod_package import read_json,require
 from mod_system_host import ROOT
@@ -54,7 +55,7 @@ def _context(runtime,current,uid,name):
     require(sys.platform=='darwin' and os.geteuid()==ROOT_UID and type(uid) is int and uid>=600,
             'Installed upgrade children require root and a locked service identity')
     require(all(isinstance(v.get('identity'),str) and re.fullmatch('[0-9a-f]{64}',v['identity']) for v in (runtime,current))
-            and name in ('upgrade-job-specs-mac.py','force-upgrade-backup-mac.py')
+            and name in ('upgrade-job-specs-mac.py','force-upgrade-backup-mac.py','migrate-private-generation-mac.py')
             and runtime['uid']==current['uid']==uid
             and runtime['root']==ROOT/'releases'/runtime['identity']
             and current['root']==ROOT/'releases'/current['identity']
@@ -65,7 +66,57 @@ def _context(runtime,current,uid,name):
             'Installed upgrade Python entry point differs')
     options=dict(user=uid,group=uid,extra_groups=[],cwd=runtime['root'],
         env=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(ROOT/'data'),TMPDIR=str(ROOT/'data'),LC_ALL='C',TZ='UTC'))
-    return [str(python),'-I','-S','-B',str(program)],options
+    # Only the locked configuration helper needs this verified runtime's pinned
+    # application packages (signing validation). User site/PYTHONPATH stay off.
+    flags=['-I','-B'] if name=='migrate-private-generation-mac.py' else ['-I','-S','-B']
+    return [str(python),*flags,str(program)],options
+
+
+def checked_migration_plan(data,before,after,profile):
+    from mod_host_migration import FIELDS,GUARDS,PRODUCER,wire
+    require(isinstance(data,dict) and set(data)=={'manifest','sha256','files','services_changed'}
+            and type(data['files']) is int and data['files']==len(FIELDS) and data['services_changed'] is False,
+            'Private migration inspection report differs')
+    manifest=data['manifest']
+    require(isinstance(manifest,dict) and set(manifest)=={'schema','producer','before','after','origin','guards','files'}
+            and type(manifest['schema']) is int and manifest['schema']==1 and manifest['producer']==PRODUCER
+            and manifest['before']==before and manifest['after']==after and before!=after
+            and manifest['origin']==profile['origin'] and isinstance(manifest['guards'],dict)
+            and set(manifest['guards'])==set(GUARDS) and all(isinstance(v,str) and re.fullmatch('[0-9a-f]{64}',v) for v in manifest['guards'].values())
+            and manifest['guards']['host/trusted-root.json']==profile['trusted_root_sha256']
+            and isinstance(manifest['files'],dict) and set(manifest['files'])==set(FIELDS),
+            'Private migration plan changes the admitted authority or output set')
+    for record in manifest['files'].values():
+        require(isinstance(record,dict) and set(record)=={'before','after'} and record['before']!=record['after']
+                and all(isinstance(v,str) and re.fullmatch('[0-9a-f]{64}',v) for v in record.values()),
+                'Invalid private migration file fingerprints')
+    require(isinstance(data['sha256'],str) and data['sha256']==hashlib.sha256(wire(manifest)).hexdigest(),
+            'Private migration plan fingerprint differs')
+    return data
+
+
+def migration_plan(current,uid,before,profile):
+    require(isinstance(before,str) and re.fullmatch('[0-9a-f]{64}',before) and before!=current['identity'],
+            'Invalid private migration base generation')
+    arguments,options=_context(current,current,uid,'migrate-private-generation-mac.py')
+    arguments += ['--inspect','--from-release',before]
+    data=read_json(_capture(arguments,options,timeout=30,limit=16384))
+    return checked_migration_plan(data,before,current['identity'],profile)
+
+
+def migration_step(current,uid,before,nonce,plan_sha256,*,rollback=False):
+    require(all(isinstance(v,str) and re.fullmatch('[0-9a-f]{64}',v) for v in (before,nonce,plan_sha256))
+            and before!=current['identity'] and type(rollback) is bool,'Invalid fixed private migration request')
+    arguments,options=_context(current,current,uid,'migrate-private-generation-mac.py')
+    arguments += ['--rollback' if rollback else '--apply','--from-release',before,'--nonce',nonce]
+    result=read_json(_capture(arguments,options,timeout=30,limit=8192))
+    require(isinstance(result,dict) and set(result)=={'schema','phase','plan_sha256','before','after','files',
+            'services_changed','repository_modified','keys_modified'} and type(result['schema']) is int and result['schema']==1
+            and result['phase']==('rolled-back' if rollback else 'applied') and result['plan_sha256']==plan_sha256
+            and result['before']==before and result['after']==current['identity'] and type(result['files']) is int and result['files']==6
+            and all(result[k] is False for k in ('services_changed','repository_modified','keys_modified')),
+            'Private migration result differs from the requested generation/plan')
+    return result
 
 
 def job_specs(runtime,current,uid,*,backup_identity=None):
@@ -107,14 +158,19 @@ def forced_backup(runtime,current,uid,backup_identity,*,quiesced_at):
             and type(quiesced_at) is int and 0<=quiesced_at<=time.time(), 'Invalid quiescent backup request')
     arguments += ['--capture','--backup-release',backup_identity]
     report=read_json(_capture(arguments,options,timeout=1800,limit=8192))
+    return checked_backup_receipt(report,runtime['identity'],uid,backup_identity,quiesced_at)
+
+
+def checked_backup_receipt(report,base_release,uid,backup_identity,quiesced_at,*,clock=time.time):
     require(isinstance(report,dict) and set(report)=={'schema','producer','identity','base_release','uid','status','backup',
             'verified_manifest_sha256','created','started','finished','bytes','forced','verified'}
             and type(report['schema']) is int and report['schema']==1 and report['producer']=='tsfp-upgrade-backup-v1'
-            and report['identity']==backup_identity and report['base_release']==runtime['identity']
+            and report['identity']==backup_identity and report['base_release']==base_release
             and type(report['uid']) is int and report['uid']==uid and report['status']=='captured'
             and report['forced'] is True and report['verified'] is True
             and all(type(report[k]) is int for k in ('created','started','finished','bytes'))
-            and quiesced_at<=report['started']<=report['created']<=report['finished']<=time.time()
+            and type(quiesced_at) is int and quiesced_at>=0
+            and quiesced_at<=report['started']<=report['created']<=report['finished']<=clock()
             and 0<report['bytes']<=8*1024**3 and isinstance(report['verified_manifest_sha256'],str)
             and len(report['verified_manifest_sha256'])==64
             and all(c in '0123456789abcdef' for c in report['verified_manifest_sha256'])

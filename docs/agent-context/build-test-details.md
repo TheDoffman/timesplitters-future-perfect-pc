@@ -1889,3 +1889,12 @@ probes pass at4b; CI43840628389 passes23 jobs/two intentional skips. A55-second
 unmodded Mac replay reaches Arcade gameplay and exits0 with retained synthetic
 profile hashes unchanged. The earlier modded menu signal11 remains undetermined;
 controlled diagnostic capture is not its reproduction or fix.
+
+Upgrade admission: test_upgrade_admission.py exercises protected proof files and
+the real journal/worker proof reader in private POSIX directories, with simulated
+job/backup actions and explicit credential simulation. It refuses bad captures,
+changed plans, re-exposed routing, reappearing workers and unknown proof/pending
+files. test_upgrade_process.py verifies fixed locked migration child flags,
+bounded transport, six-output plans and exact apply/rollback receipts. Windows
+skips actual POSIX filesystem cases; native Mac/Linux runs are required. These
+internal phases do not enable a production upgrade CLI or prove a live cutover.

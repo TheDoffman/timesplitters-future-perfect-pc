@@ -37,11 +37,12 @@ def routing_receipt(value, baseline):
     return value
 
 
-def replay(events, clock, baseline, before, after):
+def replay(events, clock, baseline, before, after,uid,backup_identity,backup_base_release):
     routes.baseline(baseline)
     require(isinstance(events, list) and len(events) <= 64, 'Cutover event budget exceeded')
     stopped = [];pending = None;quiescent = False;settled = False;previous = 0
     suspended=False;route_pending=None;restored=False;access=None;access_time=None
+    quiesced_at=None;checked_at=None;backup=None
     order = stop_order()
     for event in events:
         require(isinstance(event, dict) and set(event) == {'kind','label','time','data'}
@@ -67,6 +68,7 @@ def replay(events, clock, baseline, before, after):
                     # Re-exposure during an interrupted upgrade can be suspended
                     # again, but invalidates any earlier private admission.
                     suspended=False;restored=False;access=None;access_time=None
+                    quiescent=False;quiesced_at=None;checked_at=None;backup=None
                 route_pending=expose
             else:
                 require(route_pending is expose,'Routing observation lacks its matching durable intent')
@@ -98,25 +100,35 @@ def replay(events, clock, baseline, before, after):
                     and label is None and pending is None and stopped == order,
                     'Cutover quiescence lacks complete stop observations')
             quiescent = True
+            quiesced_at=event['time'];checked_at=event['time']
+        elif kind=='quiescence-rechecked':
+            require(data is None and label is None and suspended and route_pending is None
+                    and pending is None and quiescent and stopped==order,'Quiescence recheck lacks stopped state')
+            checked_at=event['time']
+        elif kind=='backup-verified':
+            require(label is None and suspended and route_pending is None and pending is None
+                    and quiescent,'Backup verification requires observed quiescence')
+            from mod_host_upgrade_process import checked_backup_receipt
+            backup=checked_backup_receipt(data,backup_base_release,uid,backup_identity,quiesced_at,clock=lambda:event['time'])
         else:
             require(kind == 'settled' and data is None and label is None and pending is None
                     and route_pending is None and not suspended,'Invalid cutover settlement')
             settled = True
     return dict(stopped=stopped,pending=pending,quiescent=quiescent,settled=settled,
                 routing_suspended=suspended,routing_pending=route_pending,routing_restored=restored,
-                access=access,access_time=access_time)
+                access=access,access_time=access_time,quiesced_at=quiesced_at,checked_at=checked_at,backup=backup)
 
 
 def checked(data, clock):
     value = read_json(data)
     require(isinstance(value, dict) and set(value) == {'schema','producer','before','after','uid','nonce',
-            'plan_sha256','preflight_sha256','boot_id','tracked','routing','events'} and type(value['schema']) is int
+            'plan_sha256','preflight_sha256','boot_id','tracked','routing','backup_identity','backup_base_release','events'} and type(value['schema']) is int
             and value['schema'] == 2 and value['producer'] == 'tsfp-root-cutover-v2'
             and type(value['uid']) is int and value['uid'] >= 600 and value['before'] != value['after']
             and all(isinstance(value[k], str) and SHA.fullmatch(value[k]) for k in
-                    ('before','after','nonce','plan_sha256','preflight_sha256','boot_id'))
+                    ('before','after','nonce','plan_sha256','preflight_sha256','boot_id','backup_identity','backup_base_release'))
             and data == wire(value), 'Preserving unknown cutover history')
-    replay(value['events'],clock,value['routing'],value['before'],value['after'])
+    replay(value['events'],clock,value['routing'],value['before'],value['after'],value['uid'],value['backup_identity'],value['backup_base_release'])
     cutover.checked_tracking(value['tracked'])
     return value
 
@@ -189,7 +201,8 @@ class Journal:
         return self._replay(self._decode(self.current)['events'])
 
     def _replay(self,events):
-        return replay(events,self.clock,self.base['routing'],self.base['before'],self.base['after'])
+        return replay(events,self.clock,self.base['routing'],self.base['before'],self.base['after'],self.base['uid'],
+                      self.base['backup_identity'],self.base['backup_base_release'])
 
     def record(self, kind, label=None, data=None):
         """Persist intent before a stop, and observation only after OS verification.
@@ -244,9 +257,9 @@ class Journal:
 
 
 @contextmanager
-def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracked, routing, *, clock=time.time,recover_pending=False):
+def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracked, routing,backup_identity,backup_base_release, *, clock=time.time,recover_pending=False):
     require(os.geteuid() == cutover.ROOT_UID, 'Cutover journal requires root')
-    require(all(isinstance(v, str) and SHA.fullmatch(v) for v in (before,after,nonce,plan_sha256,preflight_sha256))
+    require(all(isinstance(v, str) and SHA.fullmatch(v) for v in (before,after,nonce,plan_sha256,preflight_sha256,backup_identity,backup_base_release))
             and before != after and type(uid) is int and uid >= 600, 'Invalid cutover transaction identity')
     cutover.checked_tracking(tracked)
     routes.baseline(routing)
@@ -279,11 +292,12 @@ def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracke
             if other in ('.cutover.lock',name,pending):continue
             data, _ = cutover.protected_bytes(directory/other, 0o600, MAX_BYTES)
             history = checked(data, clock)
-            require(history['nonce']+'.json' == other and replay(history['events'],clock,history['routing'],history['before'],history['after'])['settled'],
+            require(history['nonce']+'.json' == other and replay(history['events'],clock,history['routing'],history['before'],history['after'],
+                    history['uid'],history['backup_identity'],history['backup_base_release'])['settled'],
                     'Existing cutover requires recovery before another transaction')
         base = dict(schema=2,producer='tsfp-root-cutover-v2',before=before,after=after,uid=uid,
                     nonce=nonce,plan_sha256=plan_sha256,preflight_sha256=preflight_sha256,
-                    tracked=tracked,routing=routing,boot_id=boot_identity())
+                    tracked=tracked,routing=routing,backup_identity=backup_identity,backup_base_release=backup_base_release,boot_id=boot_identity())
         yield Journal(directory,fd,lock,name,base,clock,recover_pending)
     finally:
         if lock is not None:os.close(lock)

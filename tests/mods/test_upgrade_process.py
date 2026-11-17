@@ -12,7 +12,60 @@ import pytest
 SOURCE=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(SOURCE/'tools/mods'))
 import mod_host_upgrade_process as process
+import mod_host_migration as migration
 from mod_package import ModError
+
+
+def migration_report(profile):
+    import hashlib
+    manifest=dict(schema=1,producer=migration.PRODUCER,before='a'*64,after='b'*64,origin=profile['origin'],
+        guards={name:'9'*64 for name in migration.GUARDS},
+        files={name:dict(before='1'*64,after='2'*64) for name in migration.FIELDS})
+    return dict(manifest=manifest,sha256=hashlib.sha256(migration.wire(manifest)).hexdigest(),files=6,services_changed=False)
+
+
+@pytest.mark.parametrize('damage',[None,'origin','root','extra-file','unchanged-file','hash','boolean','payload'])
+def test_private_plan_protocol_binds_origin_root_and_exact_six_outputs(verified,monkeypatch,damage):
+    _,current=verified;profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='9'*64)
+    report=migration_report(profile)
+    if damage=='origin':report['manifest']['origin']='https://foreign.example'
+    elif damage=='root':report['manifest']['guards']['host/trusted-root.json']='8'*64
+    elif damage=='extra-file':report['manifest']['files']['host/key.pem']=dict(before='1'*64,after='2'*64)
+    elif damage=='unchanged-file':report['manifest']['files'][migration.FIELDS[0]]['after']='1'*64
+    elif damage=='hash':report['sha256']='0'*64
+    elif damage=='boolean':report['files']=True
+    elif damage=='payload':report['private_config']='secret-canary'
+    def capture(arguments,options,*,timeout,limit):
+        assert arguments[:3]==[str(current['python']),'-I','-B'] and '-S' not in arguments
+        assert arguments[-3:]==['--inspect','--from-release','a'*64]
+        assert options['user']==options['group']==600 and options['extra_groups']==[]
+        assert timeout==30 and limit==16384
+        return json.dumps(report).encode()
+    monkeypatch.setattr(process,'_capture',capture)
+    if damage:
+        with pytest.raises(ModError):process.migration_plan(current,600,'a'*64,profile)
+    else:assert process.migration_plan(current,600,'a'*64,profile)==report
+
+
+@pytest.mark.parametrize('rollback',[False,True])
+@pytest.mark.parametrize('damage',[None,'phase','plan','keys','repository','services','unknown','files'])
+def test_private_mutation_protocol_checks_exact_result_without_secret_payloads(verified,monkeypatch,rollback,damage):
+    _,current=verified
+    result=dict(schema=1,phase='rolled-back' if rollback else 'applied',plan_sha256='d'*64,before='a'*64,after='b'*64,
+                files=6,services_changed=False,repository_modified=False,keys_modified=False)
+    if damage=='phase':result['phase']='inspected'
+    elif damage=='plan':result['plan_sha256']='e'*64
+    elif damage in ('keys','repository','services'):result[damage+'_modified' if damage!='services' else 'services_changed']=True
+    elif damage=='unknown':result['payload']='secret-canary'
+    elif damage=='files':result['files']=True
+    def capture(arguments,options,*,timeout,limit):
+        assert arguments[-5:]==['--rollback' if rollback else '--apply','--from-release','a'*64,'--nonce','c'*64]
+        assert options['user']==600 and timeout==30 and limit==8192
+        return json.dumps(result).encode()
+    monkeypatch.setattr(process,'_capture',capture)
+    if damage:
+        with pytest.raises(ModError):process.migration_step(current,600,'a'*64,'c'*64,'d'*64,rollback=rollback)
+    else:assert process.migration_step(current,600,'a'*64,'c'*64,'d'*64,rollback=rollback)==result
 
 
 @pytest.mark.parametrize('case', ['success','stderr','nonzero','stdout-overflow','stderr-overflow','timeout','selector-failed'])
@@ -44,7 +97,8 @@ def verified(monkeypatch):
         root=process.ROOT/'releases'/identity
         return dict(root=root,identity=identity,uid=600,python=root/'runtime/Frameworks/Python.framework/Versions/3.12/bin/python3.12',
                     descriptor=dict(source_files={name:{} for name in ('tools/mods/hosting/upgrade-job-specs-mac.py',
-                                                                        'tools/mods/hosting/force-upgrade-backup-mac.py')}))
+                                                                        'tools/mods/hosting/force-upgrade-backup-mac.py',
+                                                                        'tools/mods/hosting/migrate-private-generation-mac.py')}))
     return entry('a'*64),entry('b'*64)
 
 
@@ -139,7 +193,7 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     old,new,backup_runtime=entry(before),entry(after),entry(retained)
     new['descriptor']=dict(source_files={key:{} for key in ('tools/mods/mod_host_upgrade_process.py',
         'tools/mods/mod_host_cutover.py','tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py',
-        'tools/mods/hosting/upgrade-job-specs-mac.py')})
+        'tools/mods/hosting/upgrade-job-specs-mac.py','tools/mods/hosting/migrate-private-generation-mac.py')})
     profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='f'*64)
     monkeypatch.setattr(upgrade,'verified_pair',lambda *args:(old,new,profile))
     monkeypatch.setattr(upgrade.release,'installed',lambda identity,uid:backup_runtime if identity==retained and uid==600 else pytest.fail('Unexpected retained runtime'))
@@ -153,7 +207,7 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     def observed(entries,uid,command):
         assert entries==['host','backup'] and uid==600
         return dict(files={'only':'attested'},observation=dict(tracked=dict(pids=[123],groups=[123])))
-    monkeypatch.setitem(sys.modules,'mod_host_upgrade_process',SimpleNamespace(job_specs=job_specs))
+    monkeypatch.setitem(sys.modules,'mod_host_upgrade_process',SimpleNamespace(job_specs=job_specs,migration_plan=lambda *args:dict(sha256='9'*64)))
     monkeypatch.setitem(sys.modules,'mod_host_cutover',SimpleNamespace(preflight=observed))
     binding=dict(uid=600,gid=600,base_release=retained,python=str(backup_runtime['python']))
     monkeypatch.setitem(sys.modules,'mod_backup_release',SimpleNamespace(installed=lambda folder:({},binding)))

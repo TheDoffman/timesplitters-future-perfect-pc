@@ -23,6 +23,7 @@ def transaction(private_posix_path, monkeypatch, workshop_routing):
     monkeypatch.setattr(journal, 'boot_identity', lambda:'f'*64)
     return dict(before='a'*64, after='b'*64, uid=600, nonce='c'*64,
                 plan_sha256='d'*64, preflight_sha256='e'*64,
+                backup_identity='8'*64,backup_base_release='7'*64,
                 tracked=dict(pids=[123],groups=[123]),routing=workshop_routing['baseline'],clock=lambda:1000)
 
 
@@ -154,7 +155,7 @@ def test_changed_boot_refuses_existing_transaction_and_unprivileged_use_writes_n
     dict(kind='stop-observed',label='foreign',time=1),dict(kind='settled',label=None,time=True),
     dict(kind='settled',label=None,time=1001),dict(kind='unknown',label=None,time=1)])
 def test_invalid_event_sequences_are_refused_without_filesystem_access(event,workshop_routing):
-    with pytest.raises(ModError):journal.replay([dict(event,data=None)],lambda:1000,workshop_routing['baseline'],'a'*64,'b'*64)
+    with pytest.raises(ModError):journal.replay([dict(event,data=None)],lambda:1000,workshop_routing['baseline'],'a'*64,'b'*64,600,'8'*64,'7'*64)
 
 
 def test_root_journal_encoding_and_replay_contract_without_filesystem_access(workshop_routing):
@@ -167,8 +168,8 @@ def test_root_journal_encoding_and_replay_contract_without_filesystem_access(wor
     for label in journal.stop_order():
         events.extend([dict(kind='stop-intent',label=label,time=1,data=None),dict(kind='stop-observed',label=label,time=1,data=None)])
     events.append(dict(kind='quiescent',label=None,time=2,data=None))
-    assert journal.replay(events,lambda:1000,baseline,'a'*64,'b'*64)['quiescent']
-    with pytest.raises(ModError):journal.replay(events+[events[-1]],lambda:1000,baseline,'a'*64,'b'*64)
+    assert journal.replay(events,lambda:1000,baseline,'a'*64,'b'*64,600,'8'*64,'7'*64)['quiescent']
+    with pytest.raises(ModError):journal.replay(events+[events[-1]],lambda:1000,baseline,'a'*64,'b'*64,600,'8'*64,'7'*64)
 
 
 def test_real_routing_adapter_commits_intent_before_action_and_rechecks_live_suspension(transaction,workshop_routing):

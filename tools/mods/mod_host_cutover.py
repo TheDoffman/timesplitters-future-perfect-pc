@@ -311,5 +311,5 @@ def quiesce(entries, uid, journal, command, *, routing, clock=time.monotonic, sl
     journal.require_suspended(routing)
     require(all(label_state(path,spec,command) is None for path,spec in entries),
             'A cutover label reappeared after process observation')
-    if not state['quiescent']:state = journal.record('quiescent')
+    state=journal.record('quiescence-rechecked' if state['quiescent'] else 'quiescent')
     return state

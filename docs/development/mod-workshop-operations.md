@@ -53,8 +53,8 @@ acceptance, an installed release or active-generation migration. Exact receipts
 and pins are in STATUS. Do not regenerate this frozen candidate merely because
 later documentation or client commits change HEAD.
 
-Before cutover, the preserving migration still needs to be implemented and
-accepted: verify the current sealed generation and exact job/config bindings;
+Before cutover, the preserving upgrade still needs integrated activation and
+acceptance: verify the current sealed generation and exact job/config bindings;
 complete and verify a fresh recovery capture; stage and admit the candidate
 under UID600; stop the fixed monitors/workers with proven child cleanup; migrate
 only the declared generation-bound configuration, markers and job files; then
@@ -62,6 +62,24 @@ verify private readiness, scanner controls, persistent jobs and public signed
 reads. Preserve the origin/root keys, accounts, uploads, audit, catalog version
 floor and revocations throughout. A cutover journal must distinguish safe
 rollback from uncertain partial state; never clear state to force admission.
+
+The internal backup/admission phase now binds the independent backup descriptor
+and base runtime in the Root journal. Quiescence records its original timestamp;
+rechecks preserve that timestamp and independently record their observation time.
+A supervised UID600 child must force and independently verify a new snapshot
+after shutdown. Its exact receipt is journaled before another live routing/job/
+descendant check. Only then may Root issue the fixed0644 migration proof with
+the backup manifest hash, boot identity and migration plan. The worker independently
+enforces30-second proof and300-second backup freshness. Existing foreign proofs
+and interrupted proof writes are preserved and refused. These are internal phases;
+the public upgrade command still provides inspection/preflight only.
+
+Preflight obtains a digest-only six-file migration plan from the locked installed
+child and binds its hash alongside job and routing observations. Apply/rollback
+transport admits only exact fixed helper results with unchanged keys/repository/
+services. The migration helper alone uses isolated Python with the verified
+runtime's signing packages; metadata/backup helpers retain isolated no-site Python.
+Root never reads private configuration payloads through these reports.
 
 The pending backup installation independently binds its sealed code to the old7be
 runtime, not to the active host initialization marker. Finish its existing ceremony

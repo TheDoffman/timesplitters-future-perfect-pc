@@ -204,6 +204,7 @@ def test_label_shutdown_uses_durable_intents_and_requires_observed_quiescence(pr
     arguments = dict(before='a'*64, after='b'*64, uid=600, nonce='c'*64, plan_sha256='d'*64,
                      preflight_sha256='e'*64, tracked=dict(pids=list(range(123,133)),groups=list(range(123,133))),
                      routing=workshop_routing['baseline'])
+    arguments.update(backup_identity='8'*64,backup_base_release='7'*64)
     ticks = iter(range(1000))
 
     def command(arguments):
