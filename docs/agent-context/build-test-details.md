@@ -1995,3 +1995,6 @@ boolean policy aliases, changed plans/observations/factories, namespace/capacity
 and cross-boot/missing-after-event cases preserve evidence and refuse. Mac/Linux
 POSIX runs are required; Windows skips protected filesystem cases. Preflight
 composition tests retain the unchanged digest contract through the shared helper.
+Pure verified-input tests fail on any migration inspection, private readiness,
+route status or live job preflight; recovery composition separately rechecks its
+argument binding before fresh verification and historical reconstruction.

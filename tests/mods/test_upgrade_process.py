@@ -267,8 +267,14 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     def validate(entries):assert entries==candidate_entries+backup_entries
     private=dict(catalog_version=42)
     plan=dict(sha256='9'*64,manifest={'retained':'plan'})
+    def initial_plan(*args):
+        if retain_context=='inputs':pytest.fail('Private migration inspection in pure input verification')
+        return plan
+    def initial_readiness(*args):
+        if retain_context=='inputs':pytest.fail('Private readiness in pure input verification')
+        return private
     monkeypatch.setitem(sys.modules,'mod_host_upgrade_process',SimpleNamespace(job_specs=job_specs,
-        migration_plan=lambda *args:plan,private_readiness=lambda *args:private))
+        migration_plan=initial_plan,private_readiness=initial_readiness))
     monkeypatch.setitem(sys.modules,'mod_host_cutover',SimpleNamespace(preflight=observed,validate_entries=validate))
     binding=dict(uid=600,gid=600,base_release=retained,python=str(backup_runtime['python']))
     monkeypatch.setitem(sys.modules,'mod_backup_release',SimpleNamespace(installed=lambda folder:({},binding)))

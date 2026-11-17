@@ -1,3 +1,33 @@
+Persisted upgrade context/reconstruction (2026-11-16; source105a7bf9/dbff3ec7;
+not deployed): mod_host_upgrade_context seals canonical Root600 metadata under
+Root700 upgrade-contexts (32 files,64KiB each) before the first transaction event.
+It binds original boot/nonce/generations/backup, hash-only migration plan, private
+baseline, routing and twenty-file/ten-job observations to the existing preflight
+digest. Both saved job sets must match newly verified factory outputs byte-for-
+byte; stored specifications never become executable commands. Missing artifacts
+cannot be recreated after events. Exact adoption is explicit; partial/foreign/
+linked/noncanonical/changed-policy/capacity failures preserve the artifact.
+
+Reconstruction under the same held lease restores historical plan/observations
+and retains fresh caller-verified closures, backup binding, factories and fixed
+transports. A separate Python process reconstructs successfully in the fixture.
+The installed entry now separates verified_inputs from initial private/live
+preflight and provides prepare_recovery_context: arguments match the held journal
+before re-verification, then historical metadata is loaded. Recovery does not
+re-run migration inspection/private readiness/live preflight against a changed
+generation, and saved observations never substitute for fresh per-phase OS proof.
+
+At105a7bf9 actual Mac/Linux context/process/coordinator/journal checks pass149
+each (67.90s/83.59s). Finaldbff3ec7 context/process/host-release integration passes
+168 Mac/1.18s and148 Linux/20 unprivileged-only fixture skips0.96s (WSL UID0).
+Windows context/process/scope passes231/28 POSIX skips0.56s. Final pure-input
+private-read guards pass three focused Windows cases. All protected-file tests
+use real filesystem/journal/lease operations with explicit authority and sealed-
+factory simulation; these are not installed Root/UID600 recovery acceptance.
+No live service, route, private data, key or authentication ceremony changed.
+CLI lease/action construction, reboot recovery, pending-forward reversal and
+installed deployment/public/game/SDK/multiplayer/release acceptance remain open.
+
 New/installed-old/new data compatibility (2026-11-16; new83b9c8b7, old601c63c6,
 installed7be977f9; UID501 disposable acceptance): current code creates real hashed
 owner/creator accounts and sessions, owner-created/cancelled/pending invitations,
