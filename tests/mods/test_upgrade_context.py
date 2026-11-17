@@ -1,5 +1,6 @@
 """Protected metadata persistence; simulated authority and sealed factory inputs."""
 import json
+import importlib.util
 import os
 import subprocess
 from pathlib import Path
@@ -101,6 +102,27 @@ with journal.transaction(**packet['arguments'],clock=lambda:1000000000) as state
         capture_output=True,text=True,timeout=15)
     assert result.returncode==0,result.stderr
     assert json.loads(result.stdout)==dict(version=42,plan=item['context']['plan']['sha256'],phase='historical-upgrade-context-reconstructed')
+
+
+def test_installed_recovery_composition_reverifies_inputs_without_initial_private_preflight(saved_inputs,monkeypatch):
+    import mod_host_upgrade_process as process
+    item=saved_inputs;calls=[]
+    spec=importlib.util.spec_from_file_location('recovery_context_entry',SOURCE/'tools/mods/hosting/upgrade-installed-host-mac.py')
+    entry=importlib.util.module_from_spec(spec);spec.loader.exec_module(entry)
+    def verified(*args):calls.append(args);return dict(item['fresh'])
+    def forbidden(*args,**kwargs):pytest.fail('Initial private/live preflight was invoked during recovery')
+    monkeypatch.setattr(entry,'verified_inputs',verified)
+    monkeypatch.setattr(process,'migration_plan',forbidden)
+    monkeypatch.setattr(process,'private_readiness',forbidden)
+    monkeypatch.setattr(cutover,'preflight',forbidden)
+    with storage.transaction(**item['arguments']) as journal:
+        contexts.seal(journal,item['context'])
+        before=journal.current
+        with pytest.raises(ValueError):entry.prepare_recovery_context('0'*64,'b'*64,600,'a'*64,journal)
+        assert not calls
+        restored=entry.prepare_recovery_context('a'*64,'b'*64,600,'a'*64,journal)
+        assert calls==[('a'*64,'b'*64,600,'a'*64)] and restored['plan']==item['context']['plan']
+        assert journal.current==before
 
 
 @pytest.mark.parametrize('damage',['mode','link','hardlink','fifo','partial','nonce','extra','plan','observed','jobs','private','noncanonical','bool-alias'])

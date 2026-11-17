@@ -184,6 +184,12 @@ as though they were still the base generation, issue migration authority, or
 treat historical job/PID metadata as current OS proof. Subsequent phase guards
 remain mandatory. Immutable entry-point lease/recovery construction, reboot
 recovery and apply CLI integration are still unfinished.
+The internal installed-entry `verified_inputs` separates closure/binding/factory
+verification from initial route/private/live preflight. `prepare_recovery_context`
+first matches the held journal arguments, repeats that pure input verification,
+then reconstructs the artifact; it does not re-run migration inspection, private
+readiness or current job preflight against the changed generation. CLI lease
+construction and action wiring remain open.
 
 The internal `mod_host_upgrade_coordinator.apply_private` composes the forward
 phases under an already-held Root journal lease. It binds retained context to

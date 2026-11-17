@@ -233,7 +233,7 @@ def test_backup_factory_uses_its_independent_retained_runtime(verified,monkeypat
     assert process.job_specs(runtime,current,600,backup_identity=identity)[0][1]['Label']=='org.timesplitters.workshop.backup'
 
 
-@pytest.mark.parametrize('retain_context',[False,True])
+@pytest.mark.parametrize('retain_context',[False,True,'inputs'])
 def test_preflight_verifies_independent_backup_binding_and_combines_only_attested_job_metadata(monkeypatch,retain_context):
     from types import SimpleNamespace
     spec=importlib.util.spec_from_file_location('upgrade_preflight_composition',SOURCE/'tools/mods/hosting/upgrade-installed-host-mac.py')
@@ -261,6 +261,7 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
         return old_entries if runtime is old else candidate_entries if runtime is new else backup_entries
     observation=dict(files={'only':'attested'},observation=dict(tracked=dict(pids=[123],groups=[123])))
     def observed(entries,uid,command):
+        if retain_context=='inputs':pytest.fail('Live observation in pure input verification')
         assert entries==old_entries+backup_entries and uid==600
         return observation
     def validate(entries):assert entries==candidate_entries+backup_entries
@@ -273,8 +274,17 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     monkeypatch.setitem(sys.modules,'mod_backup_release',SimpleNamespace(installed=lambda folder:({},binding)))
     monkeypatch.setitem(sys.modules,'mod_host_watch',SimpleNamespace(run_command=lambda _:pytest.fail('Unexpected real command')))
     route=dict(schema=1,origin=profile['origin'],phase='public',config_sha256='e'*64,unrelated_sha256='f'*64)
-    invoke=lambda action:b'{}'
+    def invoke(action):
+        if retain_context=='inputs':pytest.fail('Routing observation in pure input verification')
+        return b'{}'
     monkeypatch.setitem(sys.modules,'mod_host_routing',SimpleNamespace(operator=lambda *_:invoke,snapshot=lambda *_:route))
+    if retain_context=='inputs':
+        fresh=upgrade.verified_inputs(before,after,600,backup_id)
+        assert fresh['old'] is old and fresh['new'] is new and fresh['backup_runtime'] is backup_runtime
+        assert fresh['operator'] is invoke and fresh['candidate_entries']==candidate_entries+backup_entries
+        assert not {'observed','routing','plan','private_baseline','report'} & fresh.keys()
+        assert calls==[(before,{}),(retained,dict(backup_identity=backup_id)),(after,{})]
+        return
     if retain_context:
         context=upgrade.prepare_context(before,after,600,backup_id)
         assert context['old'] is old and context['new'] is new and context['profile'] is profile

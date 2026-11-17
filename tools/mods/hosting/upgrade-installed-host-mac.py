@@ -55,12 +55,8 @@ def inspection(before,after,uid):
         services_changed=False,network_started=False,data_written=False)
 
 
-def prepare_context(before,after,uid,backup_identity):
-    """Retain verified inputs for orchestration; this does not authorize effects.
-
-    Keep live observations and the operator callable in memory, never in the
-    public JSON report. Every later phase must recheck its own OS/file guards.
-    """
+def verified_inputs(before,after,uid,backup_identity):
+    """Reverify closures/bindings and derive pure factories without private reads."""
     old,new,profile=verified_pair(before,after,uid)
     release.require(isinstance(backup_identity,str) and release.SHA.fullmatch(backup_identity),
                     'An exact preserved backup release is required')
@@ -75,7 +71,6 @@ def prepare_context(before,after,uid,backup_identity):
     import mod_host_cutover as cutover
     import mod_backup_release as backup
     import mod_host_routing as routing
-    from mod_host_upgrade_context import preflight_digest
     from mod_host_watch import run_command
     folder=release.INSTALLED_ROOT/'backup-releases'/backup_identity
     _,binding=backup.installed(folder)
@@ -83,32 +78,57 @@ def prepare_context(before,after,uid,backup_identity):
     runtime=release.installed(binding['base_release'],uid)
     release.require(binding['python']==str(runtime['python']),'Preserved backup runtime binding differs')
     invoke=routing.operator(old,new)
-    route=routing.snapshot(invoke('status'),profile['origin'])
-    release.require(route['phase']=='public','The workshop route requires explicit recovery before normal preflight')
-    plan=process.migration_plan(new,uid,before,profile)
-    private=process.private_readiness(old,uid,profile)
     host_jobs=process.job_specs(old,new,uid)
     backup_jobs=process.job_specs(runtime,new,uid,backup_identity=backup_identity)
     candidate_jobs=process.job_specs(new,new,uid)
     entries=host_jobs+backup_jobs
     candidate_entries=candidate_jobs+backup_jobs
     cutover.validate_entries(candidate_entries)
-    observed=cutover.preflight(entries,uid,run_command)
+    return dict(old=old,new=new,profile=profile,backup_runtime=runtime,backup_binding=binding,
+        operator=invoke,command=run_command,entries=entries,candidate_entries=candidate_entries)
+
+
+def prepare_context(before,after,uid,backup_identity):
+    """Retain initial private/live preflight after independently verifying inputs."""
+    context=verified_inputs(before,after,uid,backup_identity)
+    import mod_host_upgrade_process as process
+    import mod_host_cutover as cutover
+    import mod_host_routing as routing
+    from mod_host_upgrade_context import preflight_digest
+    old,new,profile=context['old'],context['new'],context['profile']
+    route=routing.snapshot(context['operator']('status'),profile['origin'])
+    release.require(route['phase']=='public','The workshop route requires explicit recovery before normal preflight')
+    plan=process.migration_plan(new,uid,before,profile)
+    private=process.private_readiness(old,uid,profile)
+    observed=cutover.preflight(context['entries'],uid,context['command'])
     # Bind the candidate's factory outputs as well as the running old jobs.
     # Paths are explicitly encoded; no closure/callable/private payload enters
     # the report or its digest input.
-    digest=preflight_digest(observed,candidate_entries,route,plan,private)
+    digest=preflight_digest(observed,context['candidate_entries'],route,plan,private)
     report=dict(schema=1,phase='installed-upgrade-preflight',before=before,after=after,uid=uid,
         origin=profile['origin'],trusted_root_sha256=profile['trusted_root_sha256'],
-        backup_identity=backup_identity,backup_base_release=runtime['identity'],preflight_sha256=digest,
+        backup_identity=backup_identity,backup_base_release=context['backup_runtime']['identity'],preflight_sha256=digest,
         plan_sha256=plan['sha256'],
         private_baseline=private,
         routing_sha256=route['config_sha256'],unrelated_routing_sha256=route['unrelated_sha256'],public_route_verified=True,
         jobs=10,protected_job_files=20,tracked_processes=len(observed['observation']['tracked']['pids']),
         services_changed=False,network_started=False,data_written=False)
-    return dict(old=old,new=new,profile=profile,backup_runtime=runtime,backup_binding=binding,
-        operator=invoke,command=run_command,entries=entries,candidate_entries=candidate_entries,
-        plan=plan,private_baseline=private,observed=observed,routing=route,report=report)
+    return dict(context,plan=plan,private_baseline=private,observed=observed,routing=route,report=report)
+
+
+def prepare_recovery_context(before,after,uid,backup_identity,journal):
+    """Reverify code/factories, then read historical metadata under the Root lease.
+
+    Initial private inspection would reject a partially migrated configuration;
+    recovery instead uses only the original journal-bound plan and baseline.
+    """
+    journal.state()
+    release.require(all(journal.base[key]==value for key,value in
+        (('before',before),('after',after),('uid',uid),('backup_identity',backup_identity))),
+        'Recovery arguments differ from the held upgrade journal')
+    fresh=verified_inputs(before,after,uid,backup_identity)
+    from mod_host_upgrade_context import reconstruct
+    return reconstruct(journal,fresh)
 
 
 def preflight(before,after,uid,backup_identity):
