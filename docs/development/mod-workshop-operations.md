@@ -204,6 +204,17 @@ Completed checkpoints are revalidated, not rewritten; completed OS stops, bootst
 restart signals are not repeated. Process/context reconstruction, reboot recovery,
 pending-forward-to-reverse resolution and the installed CLI remain open.
 
+Disposable new/installed-old/new data acceptance at source83b9c8b7 uses the actual
+installed old7be977f9 Python/source601c63c6 as UID501, between current-code writes
+and verification. Existing authentication/roles, newer invitations/rate counters,
+queued uploads, Lua/PCM packages, report decisions, revocation and signed catalog
+sequence1->2->3->4 survive; archives and SQLite integrity remain intact. The old
+API's missing PCM-review endpoint returns404. This is in-process WSGI and fixture
+scanning/signing against disposable data, not live UID600/configuration or public
+transport acceptance. Source/runtime inventory and artifact hashes, including the
+four symlink targets that UID501 cannot reverify, are recorded in STATUS. Full
+installed Root verification remains unchanged; no permissions were loosened.
+
 `mod_host_upgrade_process.py` bounds those metadata children to15 seconds/64KiB
 stdout and the forced-backup child to1800 seconds/8KiB stdout; stderr is separately
 bounded to8KiB and must be empty on success. It uses clean fixed environments,

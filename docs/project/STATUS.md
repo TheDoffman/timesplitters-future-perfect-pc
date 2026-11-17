@@ -1,3 +1,36 @@
+New/installed-old/new data compatibility (2026-11-16; new83b9c8b7, old601c63c6,
+installed7be977f9; UID501 disposable acceptance): current code creates real hashed
+owner/creator accounts and sessions, owner-created/cancelled/pending invitations,
+approved mixed Lua/PCM content, another queued upload, a report and signed catalog
+v1. The ACTUAL installed old Python and old source authenticate existing sessions,
+enforce roles and upload ownership, redeem the newer pending invitation, process/
+approve the queued upload, close the report and revoke the first package. Its
+signed exports advance v2 thenv3, retain the new approved package and deny the
+revoked blob. Returning to current code preserves the old login/logout writes,
+closed report history, original archive bytes, SQLite/foreign-key integrity, newer
+rate counters and owner invitations; signed export advances tov4 with revocation
+retained. No fixture credentials appear in audit/public snapshots. The old API
+returns404 for the newer PCM-review route; it does not fabricate review output.
+
+The probe verifies47 current and27 installed-old core Python files against the
+exact Git revisions and rejects cross-generation imports. Before/after it checks
+the exact installed runtime inventory,3335 regular-file hashes/modes and metadata
+for four Root symlinks. UID501 cannot readlink those macOS mode000 links, so their
+targets were NOT reverified; the full installed Root admission remains required.
+Runtime receipt SHA a0aed054dc52660b9591f70a5483ea10bd3362fe747f483041dc7dfef44df8f0;
+Python SHA e3fc86a89c17412d1dcebbbbdd40dd4cd4d3edb210eec5c69577355807657e06.
+
+Retained ignored artifacts: logs/host-data-compatibility-probe.py SHA
+bdf31bb8b84c8e4c57c96a95b211e822d3105b8b73f04f0bf54d8bcb24601089;
+report JSON SHA175cc634110a55182a9cad039e3a795ce483a5973318dc38fbdbd41650f8f174.
+The isolated fixture and its generated signing keys are removed after acceptance.
+This uses actual SQLite, password hashing, archive validation, signatures and
+in-process WSGI with a FIXTURE scanner; no live repository/key/config access,
+network listener, service/job operation or public routing change. It establishes
+these data/API behaviors across actual source/runtime generations, not actual
+UID600 permissions, isolated antivirus acceptance, installed configuration rollback,
+public transport or reboot recovery. The full goal remains unfinished.
+
 Private rollback composition (2026-11-16; sourcee1446923/cd547f88; not deployed):
 rollback_private consumes the same verified retained context/Root lease. From a
 completed candidate layout it can stop a partially or fully started candidate,
