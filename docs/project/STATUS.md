@@ -1,3 +1,42 @@
+Routing journal integration/recovery (2026-11-16; sourcee8d72ab5; not deployed):
+Root journal v2 binds the saved public routing baseline and typed routing/stop/
+private-access events. It commits intent before invoking the transition adapter,
+accepts only matching observations, and supports inert repeated recovery reads.
+Stops require recorded suspension and quiesce now checks live routing before the
+sequence, before each next stop and at final quiescence. Re-exposure halts progress;
+explicit re-suspension invalidates prior private admission. Restoration requires
+a verified-private-access digest for the before/after generation, fresh within300s
+at intent/observation; after additionally requires all old stops observed. The
+coordinator must perform those checks before recording their digest. Settlement
+cannot hide pending routing/stops or confirmed suspension. An unapplied suspension
+can be cancelled only against the exact original public state before any stops.
+
+Explicit recover_pending=True promotes only one complete canonical append to the
+exact committed base/history in the same native boot, under the global root lease.
+It rechecks both files before replace/fsync. Truncated, foreign, duplicated and
+multi-event pending records remain untouched; undeployed v1 is preserved/refused.
+Metadata promotion never proves a current OS outcome. The live routing/job/process
+checks still govern every subsequent action. No production journal was created.
+Focused journal/routing/cutover/CI-scope tests pass Windows229/54 POSIX skips0.33s,
+actual Mac283 pass1.07s and Linux283 pass1.57s, using private HOME filesystem/lease
+fixtures and simulated authority/OS actions. Logs routing-journal-{mac,linux}.txt
+are copied under ignored Windows logs. Full root coordinator/activation remains open.
+
+Prior d9a4c509 CI43979565593 is terminal21 success/2 skip/2 failures: Linux Vulkan
+133692411131 fails only native resource recovery[run] with generic Script worker
+terminated;1632 other cases pass/51 skip474.20s. Aggregate follows that failure.
+This is a different failure from the repaired backup fixture. Unchanged targeted
+local Linux recovery cases pass2/11.25s; that does not establish cause or repair.
+Sourcece7bf150 separates unavailable owned-process usage from observed exits and
+includes only the trusted native exit status in fault text. No worker stderr,
+payloads, deadlines, resource budgets, pins, confinement or acceptance is changed.
+The existing hostile crash fixture now requires status99. Actual native checks
+pass Windows5 fault cases18.22s plus2 recovery cases16.14s, Mac7 combined17.15s,
+Linux7 combined22.79s. Logs worker-exit-diagnostics-{mac,linux}.txt and Windows
+recovery evidence are retained. Native CI recovery causality and the older Mac
+pre-match signal11 remain unresolved stability gates; local retries are not fixes.
+No live route, job, private configuration, signing key or frozen ceremony changed.
+
 Selective routing contract (2026-11-16; source09917a98; not deployed):
 mod_host_routing parses the exact workshop8443 HTTPS proxy and distinguishes
 public/private/absent states. It refuses partial/foreign/aliased managed routes,
