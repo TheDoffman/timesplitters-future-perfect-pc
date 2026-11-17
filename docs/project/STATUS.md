@@ -1,3 +1,29 @@
+Native watchdog startup race (2026-11-16; regressiona2e34948, fix1144206b;
+not released): a standalone driver compiles the ACTUAL production watchdog and
+Linux seal, without Lua/input or a test seal. strace delays real rseq syscall entry
+100ms; the old main thread installs TSYNC while watchdog libc initialization is
+still pending. The trace records rseq EPERM, fatal glibc writev/tgkill also denied,
+then SIGSEGV. The checked-in regression on unchanged startup fails (-11,0.50s).
+The fix waits for the thread's trusted entry: POSIX release/acquire readiness and
+equivalent Windows Interlocked publication. No syscall/profile, resource/deadline,
+image-pin validation or confinement allowance changes. The same delayed test
+passes0.96s and asserts both libc registrations complete before TSYNC.
+
+Actual native worker/confinement/session/match/factory/cache suites at1144206b pass
+Windows271/11 skips131.90s, Mac275/7 skips75.36s and Linux276/6 skips87.92s. They
+include previously failing factory other-thread, match coalescing and cache recovery
+cases, plus hostile syscall/handle/budget/death tests. Scope selection passes160/
+one Linux-only regression skip on Windows0.23s. Logs watchdog-native-{windows,mac,
+linux}.txt and the failing-before trace/test are retained under ignored logs.
+This proves the reproduced race and fix, not attribution of every earlier CI
+failure. The older Mac main-game signal11 and final exact-source game/release/
+physical acceptance remain open. strace is installed for the Linux CI regression.
+
+Prior2703205d CI44000501447 completed successfully (23 success/two intentional skips;
+its final job snapshot was all success/two skips). That run predates this fix and
+does not prove it. No public workshop job, route, private data, key, frozen runtime
+or pending local authentication ceremony was changed. Full goal remains active.
+
 Private readiness/restart admission (2026-11-16; sourcea466a20e/cc4b5eff; not deployed):
 The existing immutable loopback/signature checker now has exact UID600 supervised
 transport (110s/8KiB), preserving release, origin/root, role health and catalog floor.

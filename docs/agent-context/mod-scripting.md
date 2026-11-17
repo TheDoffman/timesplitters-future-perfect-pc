@@ -12,6 +12,14 @@ code; startup waits with acquire semantics before returning to the caller. Windo
 uses the equivalent Interlocked readiness publication. No thread creation,
 syscall allowance,500ms deadline, sandbox/profile, helper pin or resource limit
 is loosened. The checked-in regression fails on a2e34948 with SIGSEGV (-11).
+At1144206b the delayed real registration test passes0.96s. Actual native worker/
+confinement/session/match/factory/cache checks pass Windows271/11 skips131.90s,
+Mac275/7 skips75.36s and Linux276/6 skips87.92s. These include the earlier failing
+factory other-thread and match-coalescing cases. A successful run does not prove
+every prior intermittent failure has this cause; the older Mac game crash remains
+open. glibc's upstream [fatal registration check](https://sourceware.org/pipermail/glibc-cvs/2021q4/075936.html)
+supports the observed trace; actual rseq/writev/tgkill denials and SIGSEGV were
+captured locally with the production policy before changing watchdog startup.
 
 Actual game consumer link (2026-11-16): full Windows/Mac/Linux game builds at
 03473783 failed because game.cmake omitted mod_process_identity.cpp; standalone
