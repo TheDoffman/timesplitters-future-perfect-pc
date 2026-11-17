@@ -66,7 +66,7 @@ def running(flow,monkeypatch):
     def start(*,resume=False):
         return activation.start_private_services(item.state,current,item.case.exchange,entries,command,item.routing['invoke'],resume=resume)
     return SimpleNamespace(flow=item,loaded=loaded,effects=effects,scanner=scanner,mode=mode,foreign=foreign,
-                           start=start,current=current,command=command,scan=scan)
+                           start=start,current=current,command=command,scan=scan,pids=pids)
 
 
 def test_startup_loads_only_fixed_jobs_after_controls_and_blocks_public_restoration(running):

@@ -35,6 +35,9 @@ def flow(prepared,workshop_routing,monkeypatch):
         name=argv[-1].removeprefix('system/')
         return 113,'Bad request.\nCould not find service "'+name+'" in domain for system\n'
     with journal.transaction(**arguments) as state:
+        state.record('baseline-private-verified',data=dict(schema=1,phase='private-services-verified',release='a'*64,uid=600,
+            origin=workshop_routing['baseline']['origin'],trusted_root_sha256='9'*64,catalog_version=40,release_count=3,
+            role_health_verified=True,transport='private-loopback-http',public_endpoint_verified=False))
         routes.transition(state.base['routing'],False,workshop_routing['invoke'],state.routing_event)
         for label in journal.stop_order():state.record('stop-intent',label);state.record('stop-observed',label)
         state.record('quiescent')

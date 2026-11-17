@@ -119,6 +119,7 @@ CPU_TOOLS = {
     'tools/mods/mod_host_upgrade_layout.py', 'tests/mods/test_upgrade_layout.py',
     'tests/mods/test_upgrade_flow.py',
     'tools/mods/mod_host_upgrade_activation.py', 'tests/mods/test_upgrade_activation.py',
+    'tests/mods/test_upgrade_acceptance.py',
     'tools/mods/mod_public_sandbox.py', 'tests/mods/test_public_sandbox.py',
     'tools/mods/mod_service_watch.py', 'tools/mods/hosting/Gatewayfile',
     'tools/mods/hosting/gateway-service-mac.py', 'tests/mods/test_gateway_service.py',

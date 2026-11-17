@@ -31,7 +31,7 @@ def prepared(private_posix_path,monkeypatch,request):
             elif role=='definitions':path=root/'monitor/definitions.plist'
             else:path=root/'monitor'/role/('monitor.plist' if monitor else 'worker.plist')
             generation=before if role=='backup' else release
-            result.append((path,dict(Label=label,ProgramArguments=[str(generation/'runtime/Frameworks/Python.framework/Versions/3.12/bin/python3.12'),
+            result.append((path,dict(Label=label,KeepAlive=monitor or role in ('api','gateway','publication'),ProgramArguments=[str(generation/'runtime/Frameworks/Python.framework/Versions/3.12/bin/python3.12'),
                 '-I','-S','-B',str(generation/'source/bootstrap.py'),'--role',role])))
         return result
     old=entries(before);new=entries(after)

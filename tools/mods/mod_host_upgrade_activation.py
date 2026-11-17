@@ -3,6 +3,7 @@ import hashlib
 import os
 import stat
 import subprocess
+import time
 
 import mod_host_cutover as cutover
 import mod_host_cutover_journal as journal_code
@@ -214,3 +215,80 @@ def start_private_services(journal,current,layout,entries,command,routing,*,resu
     journal.require_suspended(routing);_observe_known(journal,entries,command)
     return dict(phase='private-jobs-loaded',release=current['identity'],generation=generation,jobs=10,
                 scanner_verified=True,readiness_verified=False,public_endpoint_started=False)
+
+
+def admit_private_services(journal,current,layout,entries,profile,command,routing,*,resume=False,
+                           clock=time.monotonic,sleep=time.sleep,timeout=110):
+    """Check signed loopback readiness across seven journaled fixed-label restarts.
+
+    The caller already verified installed closures and loaded private services.
+    No routing action occurs here; the final fresh access digest admits only the
+    separate selective public restoration primitive.
+    """
+    state=journal.state();base=journal.base;generation=state['config']
+    require(type(resume) is bool and type(timeout) is int and 1<=timeout<=110
+            and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity()
+            and layout.journal is journal and current['identity']==base[generation] and current['uid']==base['uid']
+            and state['started']==journal_code.start_order() and state['start_pending'] is None
+            and state['private_baseline'] is not None
+            and all(profile[key]==state['private_baseline'][key] for key in ('origin','trusted_root_sha256')),
+            'Invalid private upgrade admission context')
+    require(resume or (not state['restarted'] and state['restart_pending'] is None),
+            'Interrupted restart acceptance requires explicit recovery')
+    cutover.validate_entries(entries);fixed_monitor_files(layout,generation)
+    files=cutover.job_files(entries);by_label={spec['Label']:(path,spec) for path,spec in entries}
+    require(all(by_label[label][1].get('KeepAlive') is True for label in journal_code.restart_order()),
+            'Restart targets differ from the fixed persistent policy')
+    def guard():
+        journal.require_suspended(routing);fixed_monitor_files(layout,generation);cutover.job_files(entries,files)
+    def ready():
+        guard();state=journal.state()
+        if state['scanner'] is None or not 0<=journal.clock()-state['scanner_time']<=300:
+            start_private_services(journal,current,layout,entries,command,routing,resume=True)
+        result=process.private_readiness(current,base['uid'],profile,floor=journal.state()['catalog_floor'])
+        process.checked_private_result(result,current['identity'],base['uid'],profile,floor=journal.state()['catalog_floor'])
+        guard();_observe_known(journal,entries,command)
+        journal.record('private-readiness-verified',generation,result)
+    def wait_restart(label,pending):
+        path,spec=by_label[label];deadline=clock()+timeout
+        while True:
+            guard();observed=cutover.label_state(path,spec,command)
+            code,output=command(['/bin/ps','-axo','pid=,ppid=,pgid=,uid='])
+            require(code==0,'Cannot observe restart cleanup')
+            rows=cutover.process_rows(output);old=pending['tracked']
+            gone=(not set(old['pids']).intersection(rows)
+                  and not set(old['groups']).intersection(group for _,group,_ in rows.values()))
+            if observed is not None and observed['pid'] is not None and observed['pid']!=pending['pid'] and gone:
+                require(cutover.label_state(path,spec,command)==observed,'Restart identity changed during cleanup observation')
+                journal.record('restart-observed',label,dict(pid=observed['pid'],old_tree_exited=True))
+                return
+            require(clock()<deadline,'Private restart or old-tree cleanup remains unresolved')
+            sleep(.5)
+    if journal.state()['restart_pending'] is None:ready()
+    for label in journal_code.restart_order():
+        state=journal.state();guard()
+        if label in state['restarted']:continue
+        pending=state['restart_pending']
+        if pending is not None:
+            require(resume and pending['label']==label,'Another restart remains unresolved')
+        else:
+            if state['private_ready'] is None or not 0<=journal.clock()-state['private_time']<=300:ready()
+            observed=_observe_known(journal,entries,command)[label]
+            pid=observed['pid'];require(type(pid) is int and pid>1,'Restart target is not running')
+            code,output=command(['/bin/ps','-axo','pid=,ppid=,pgid=,uid='])
+            require(code==0,'Cannot bind the old restart tree')
+            rows=cutover.process_rows(output);tracked=cutover.tracked_processes({pid},rows,base['uid'])
+            owner=0 if label.endswith('.monitor') else base['uid']
+            require(all(rows[value][2]==owner for value in tracked['pids']),
+                    'Restart process tree owner differs from its fixed role')
+            guard();journal.record('restart-intent',label,dict(pid=pid,tracked=tracked))
+            pending=journal.state()['restart_pending']
+            try:command(['/bin/launchctl','kill','SIGKILL','system/'+label])
+            except (OSError,ValueError,subprocess.SubprocessError):pass
+        wait_restart(label,pending);ready()
+    guard();state=journal.state()
+    require(state['activation_ready'] and state['private_ready'] is not None,'Private restart acceptance is incomplete')
+    _observe_known(journal,entries,command)
+    journal.record('access-verified',data=dict(release=current['identity'],sha256=fingerprint(journal_code.wire(state['private_ready']))))
+    return dict(phase='private-upgrade-admitted',release=current['identity'],generation=generation,jobs=10,restarts=7,
+                catalog_version=state['catalog_floor'],readiness_verified=True,public_endpoint_started=False)

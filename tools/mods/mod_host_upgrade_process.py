@@ -56,7 +56,7 @@ def _context(runtime,current,uid,name):
             'Installed upgrade children require root and a locked service identity')
     require(all(isinstance(v.get('identity'),str) and re.fullmatch('[0-9a-f]{64}',v['identity']) for v in (runtime,current))
             and name in ('upgrade-job-specs-mac.py','force-upgrade-backup-mac.py','migrate-private-generation-mac.py',
-                         'accept-installed-scanner-mac.py')
+                         'accept-installed-scanner-mac.py','accept-private-host-services-mac.py')
             and runtime['uid']==current['uid']==uid
             and runtime['root']==ROOT/'releases'/runtime['identity']
             and current['root']==ROOT/'releases'/current['identity']
@@ -69,7 +69,8 @@ def _context(runtime,current,uid,name):
         env=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(ROOT/'data'),TMPDIR=str(ROOT/'data'),LC_ALL='C',TZ='UTC'))
     # Configuration/scanner helpers use the verified runtime's application
     # packages. User site/PYTHONPATH stay off; metadata/backup remain no-site.
-    flags=['-I','-B'] if name in ('migrate-private-generation-mac.py','accept-installed-scanner-mac.py') else ['-I','-S','-B']
+    flags=['-I','-B'] if name in ('migrate-private-generation-mac.py','accept-installed-scanner-mac.py',
+                                'accept-private-host-services-mac.py') else ['-I','-S','-B']
     return [str(python),*flags,str(program)],options
 
 
@@ -141,6 +142,26 @@ def scanner_check(current,uid):
     arguments,options=_context(current,current,uid,'accept-installed-scanner-mac.py')
     result=read_json(_capture(arguments,options,timeout=900,limit=8192))
     return checked_scanner_result(result,current['identity'],uid)
+
+
+def checked_private_result(result,release,uid,profile,*,floor=1):
+    require(type(floor) is int and floor>=1 and isinstance(result,dict) and set(result)=={'schema','phase','release','uid',
+            'origin','trusted_root_sha256','catalog_version','release_count','role_health_verified','transport','public_endpoint_verified'}
+            and type(result['schema']) is int and result['schema']==1 and result['phase']=='private-services-verified'
+            and result['release']==release and type(result['uid']) is int and result['uid']==uid
+            and result['origin']==profile['origin'] and result['trusted_root_sha256']==profile['trusted_root_sha256']
+            and isinstance(result['trusted_root_sha256'],str) and re.fullmatch('[0-9a-f]{64}',result['trusted_root_sha256'])
+            and type(result['catalog_version']) is int and floor<=result['catalog_version']<2**63
+            and type(result['release_count']) is int and 0<=result['release_count']<=1000
+            and result['role_health_verified'] is True and result['transport']=='private-loopback-http'
+            and result['public_endpoint_verified'] is False,'Private readiness changes the admitted authority or catalog floor')
+    return result
+
+
+def private_readiness(current,uid,profile,*,floor=1):
+    arguments,options=_context(current,current,uid,'accept-private-host-services-mac.py')
+    result=read_json(_capture(arguments,options,timeout=110,limit=8192))
+    return checked_private_result(result,current['identity'],uid,profile,floor=floor)
 
 
 def job_specs(runtime,current,uid,*,backup_identity=None):

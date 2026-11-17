@@ -300,11 +300,35 @@ recorded jobs, fixed policy identities and suspended routing are rechecked aroun
 numeric process-tree observations. The four fixed monitor directories and13
 policy files stay pinned while separate health metadata updates. No sampled PID
 is signalled. The journal invalidates quiescence at the first startup intent and
-blocks private-access/public-restoration/settlement while jobs have started.
+blocks private-access/public-restoration/settlement after startup until admission
+has verified fresh readiness and all seven restart checks.
 This phase returns readiness_verified=false: private health/scanner readiness,
 seven restart checks, controlled stop/rollback after startup, health-history
 checkpointing, reboot recovery and final public admission remain unfinished.
 There is still no installed apply CLI and no production job uses this phase yet.
+
+`private_readiness` supervises the existing installed loopback/signature checker
+as UID600 under isolated verified Python, with a110-second/8KiB budget. Its exact
+report binds release/UID, origin/root, role health, catalog version and private
+transport. The read-only preflight includes the old generation's verified report
+in its digest and returns it as `private_baseline`. A coordinator must record
+`baseline-private-verified` before shutdown; startup requires this baseline.
+
+`admit_private_services` checks new readiness against that authority and a
+monotonically increasing catalog floor. Three long-lived host workers then four
+monitors each require a durable restart intent, one fixed-label launchctl SIGKILL,
+a new PID and exit of the observed old tree/groups. The parent never signals a
+sampled PID. Nonzero/timeout results are resolved by actual job/process observation;
+an unresolved outcome stays pending. Explicit resume observes that same restart
+without reissuing the signal. Every completed restart requires another fresh
+signed loopback/role-health check. AV controls renew when expired.
+
+Only a fresh report after all seven checks admits the exact private-access digest.
+The selective routing primitive rechecks both AV/private freshness and the digest
+at restoration intent and observation, preventing stale admission or changed
+evidence from enabling public service. This function does not change routing.
+Controlled post-start shutdown/rollback, health-history checkpointing, reboot
+recovery, the full installed apply CLI and production acceptance remain open.
 
 The v2 routing callback is directly compatible with the selective transition
 primitive. It persists intent before the action, permits only matching observed

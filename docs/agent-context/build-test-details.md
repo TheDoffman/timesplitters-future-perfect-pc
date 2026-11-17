@@ -1939,3 +1939,12 @@ new captures or another quiescent record. Expired AV controls can be renewed on
 explicit resume after re-observing the known private job/process trees.
 Retirement/startup revalidate Root700 on both archive store and nonce directory;
 changed traversal modes refuse proof consumption before an intent is recorded.
+test_upgrade_acceptance.py combines the real journal/files/admission gates with
+simulated loopback-readiness and fixed OS effects. A pre-shutdown baseline binds
+authority/catalog floor. Seven KeepAlive labels require new PIDs and old-tree/
+group exit, intent before one fixed-label SIGKILL, and monotonic signed readiness
+after every restart. Lost observations resume without another signal. Catalog,
+authority, health, cleanup and freshness failures remain private. Renewal rechecks
+AV/readiness without repeating completed restarts. This is not installed Root
+readiness or actual process restart evidence; existing helper tests cover its
+signature/loopback implementation separately.

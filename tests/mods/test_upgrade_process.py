@@ -24,6 +24,30 @@ def migration_report(profile):
     return dict(manifest=manifest,sha256=hashlib.sha256(migration.wire(manifest)).hexdigest(),files=6,services_changed=False)
 
 
+@pytest.mark.parametrize('damage',[None,'uid','release','root','origin','rollback','boolean','public','health','unknown'])
+def test_private_readiness_protocol_binds_floor_origin_root_and_exact_loopback_evidence(verified,monkeypatch,damage):
+    _,current=verified;profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='9'*64)
+    report=dict(schema=1,phase='private-services-verified',release=current['identity'],uid=600,**profile,
+        catalog_version=42,release_count=3,role_health_verified=True,transport='private-loopback-http',public_endpoint_verified=False)
+    if damage=='uid':report['uid']=True
+    elif damage=='release':report['release']='0'*64
+    elif damage=='root':report['trusted_root_sha256']='0'*64
+    elif damage=='origin':report['origin']='https://foreign.example'
+    elif damage=='rollback':report['catalog_version']=39
+    elif damage=='boolean':report['catalog_version']=True
+    elif damage=='public':report['public_endpoint_verified']=True
+    elif damage=='health':report['role_health_verified']=False
+    elif damage=='unknown':report['private']='canary'
+    def capture(arguments,options,*,timeout,limit):
+        assert arguments==[str(current['python']),'-I','-B',str(current['root']/'source/tools/mods/hosting/accept-private-host-services-mac.py')]
+        assert options['user']==options['group']==600 and options['extra_groups']==[] and timeout==110 and limit==8192
+        return json.dumps(report).encode()
+    monkeypatch.setattr(process,'_capture',capture)
+    if damage:
+        with pytest.raises(ModError):process.private_readiness(current,600,profile,floor=40)
+    else:assert process.private_readiness(current,600,profile,floor=40)==report
+
+
 @pytest.mark.parametrize('damage',[None,'uid','release','clean','eicar','missing-engine','temporary','network','unknown'])
 def test_scanner_control_protocol_requires_exact_isolated_release_and_fail_closed_results(verified,monkeypatch,damage):
     _,current=verified
@@ -123,7 +147,8 @@ def verified(monkeypatch):
                     descriptor=dict(source_files={name:{} for name in ('tools/mods/hosting/upgrade-job-specs-mac.py',
                                                                         'tools/mods/hosting/force-upgrade-backup-mac.py',
                                                                         'tools/mods/hosting/migrate-private-generation-mac.py',
-                                                                        'tools/mods/hosting/accept-installed-scanner-mac.py')}))
+                                                                        'tools/mods/hosting/accept-installed-scanner-mac.py',
+                                                                        'tools/mods/hosting/accept-private-host-services-mac.py')}))
     return entry('a'*64),entry('b'*64)
 
 
@@ -232,7 +257,9 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     def observed(entries,uid,command):
         assert entries==['host','backup'] and uid==600
         return dict(files={'only':'attested'},observation=dict(tracked=dict(pids=[123],groups=[123])))
-    monkeypatch.setitem(sys.modules,'mod_host_upgrade_process',SimpleNamespace(job_specs=job_specs,migration_plan=lambda *args:dict(sha256='9'*64)))
+    private=dict(catalog_version=42)
+    monkeypatch.setitem(sys.modules,'mod_host_upgrade_process',SimpleNamespace(job_specs=job_specs,
+        migration_plan=lambda *args:dict(sha256='9'*64),private_readiness=lambda *args:private))
     monkeypatch.setitem(sys.modules,'mod_host_cutover',SimpleNamespace(preflight=observed))
     binding=dict(uid=600,gid=600,base_release=retained,python=str(backup_runtime['python']))
     monkeypatch.setitem(sys.modules,'mod_backup_release',SimpleNamespace(installed=lambda folder:({},binding)))
@@ -244,6 +271,7 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     assert report['jobs']==10 and report['protected_job_files']==20 and report['backup_base_release']==retained
     assert len(report['preflight_sha256'])==64 and not report['data_written'] and not report['services_changed']
     assert report['public_route_verified'] and report['unrelated_routing_sha256']=='f'*64
+    assert report['private_baseline']==private
 
 
 def test_job_reader_default_plan_and_ordinary_active_refusal(monkeypatch):
