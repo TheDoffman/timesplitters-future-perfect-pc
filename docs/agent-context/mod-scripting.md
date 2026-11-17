@@ -1,3 +1,13 @@
+Watchdog startup/seal regression (2026-11-16): test_watchdog_startup.py compiles
+the actual production watchdog+Linux seal with native_watchdog_startup.c, then
+strace delays the real libc rseq syscall entry by100ms. No source payload, test
+seal, injected syscall error or relaxed policy is involved. Delayed thread libc
+initialization can cross the TSYNC seal: rseq then returns EPERM; glibc's fatal
+writev/tgkill are also denied and the process receives SIGSEGV. The pre-fix
+standalone trace reproduces that outcome. The regression requires clean startup
+with the unchanged filter and limits; Linux CI installs strace. It is Linux x64
+only; ordinary native worker/confinement checks remain required on every host.
+
 Actual game consumer link (2026-11-16): full Windows/Mac/Linux game builds at
 03473783 failed because game.cmake omitted mod_process_identity.cpp; standalone
 src/mods/CMakeLists.txt already included it, so helper/native checks had not

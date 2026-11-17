@@ -141,6 +141,7 @@ CPU_TOOLS = {
     'tools/mods/hosting/requirements-signing.txt', 'tests/mods/conftest.py', 'tests/mods/test_catalog_trust.py',
     'tests/mods/test_native_trust_fixtures.py',
     'tools/build/build-mod-worker.py', 'tools/mods/mod_script_protocol.py', 'tests/mods/test_script_worker.py',
+    'tests/mods/test_watchdog_startup.py', 'tests/mods/native_watchdog_startup.c',
     'config/mods/lua-source.json', 'src/mods/CMakeLists.txt', 'src/mods/mod_script.c', 'src/mods/mod_script.h',
     'src/mods/mod_wave.c', 'src/mods/mod_wave.h', 'tests/mods/test_wave_input.py', 'tests/mods/native_wave_fuzz.c',
     'src/mods/mod_worker.c', 'src/mods/mod_watchdog.c', 'src/mods/mod_watchdog.h',
