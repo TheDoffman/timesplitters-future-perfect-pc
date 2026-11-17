@@ -28,6 +28,12 @@ def stop_order():
         v for v in labels if not v.endswith(('.monitor', '.backup'))]
 
 
+def start_order():
+    labels=jobs()
+    return [value for value in labels if value.endswith('.monitor')]+['org.timesplitters.workshop.backup']+[
+        value for value in labels if not value.endswith(('.monitor','.backup'))]
+
+
 def routing_receipt(value, baseline):
     require(isinstance(value,dict) and set(value)=={*baseline,'expose'} and type(value['expose']) is bool
             and type(value['schema']) is int and value['schema']==1 and value['origin']==baseline['origin']
@@ -46,6 +52,8 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
     quiesced_at=None;checked_at=None;backup=None
     config='before';config_pending=None;layout_sha=None;layout_pending=None;layout_complete=None
     monitor='before';boots={label:'before' for label in jobs() if not label.endswith('.backup')}
+    retired={};retire_pending=None;scanner=None;scanner_time=None
+    started=[];start_pending=None;activation_generation=None
     order = stop_order()
     for event in events:
         require(isinstance(event, dict) and set(event) == {'kind','label','time','data'}
@@ -57,7 +65,8 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         if kind in ('routing-intent','routing-observed','routing-unchanged'):
             require(label is None and pending is None,'Routing cannot cross a pending service stop')
             receipt=routing_receipt(data,baseline);expose=receipt['expose']
-            require(not expose or (config_pending is None and layout_pending is None),
+            require(not expose or (config_pending is None and layout_pending is None and retire_pending is None
+                    and start_pending is None and not started),
                     'Public restoration cannot cross a pending protected operation')
             if kind=='routing-unchanged':
                 require(route_pending is False and not stopped and not suspended and not expose
@@ -87,6 +96,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                 route_pending=None
         elif kind=='access-verified':
             require(label is None and pending is None and suspended and route_pending is not False
+                    and retire_pending is None and start_pending is None and not started
                     and isinstance(data,dict) and set(data)=={'release','sha256'}
                     and data['release'] in (before,after) and isinstance(data['sha256'],str) and SHA.fullmatch(data['sha256'])
                     and (data['release']==before or quiescent),'Private access verification lacks the required stopped state')
@@ -120,6 +130,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                     and quiescent,'Backup verification requires observed quiescence')
             from mod_host_upgrade_process import checked_backup_receipt
             backup=checked_backup_receipt(data,backup_base_release,uid,backup_identity,quiesced_at,clock=lambda:event['time'])
+            retired={};scanner=None;scanner_time=None
         elif kind=='layout-prepared':
             require(label is None and isinstance(data,str) and SHA.fullmatch(data) and layout_sha is None
                     and quiescent and suspended and route_pending is None and pending is None
@@ -175,9 +186,46 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                     and data['backup_changed'] is False and data['services_started'] is False,
                     'Protected layout result differs from complete observed effects')
             layout_complete=target
+        elif kind in ('proof-retire-intent','proof-retire-observed'):
+            require(label in ('before','after') and label==config==monitor==layout_complete
+                    and layout_sha is not None and all(value==label for value in boots.values())
+                    and quiescent and suspended and pending is None and route_pending is None
+                    and config_pending is None and layout_pending is None and not started and start_pending is None
+                    and (data is None or (isinstance(data,str) and SHA.fullmatch(data))),
+                    'Proof retirement lacks complete quiescent generation context')
+            if kind=='proof-retire-intent':
+                require(retire_pending is None and label not in retired,'Another proof retirement remains unresolved')
+                retire_pending=dict(generation=label,sha256=data)
+            else:
+                require(retire_pending==dict(generation=label,sha256=data),'Proof retirement observation lacks intent')
+                retired[label]=data;retire_pending=None
+        elif kind=='scanner-verified':
+            require(label in retired and label==config==monitor==layout_complete and suspended and route_pending is None
+                    and config_pending is None and layout_pending is None and retire_pending is None
+                    and (quiescent or activation_generation==label),'Scanner admission lacks retired-proof generation context')
+            from mod_host_upgrade_process import checked_scanner_result
+            checked_scanner_result(data,before if label=='before' else after,uid)
+            scanner=data;scanner_time=event['time']
+        elif kind in ('start-intent','start-observed'):
+            require(label in jobs() and data is not None and config_pending is None and layout_pending is None
+                    and retire_pending is None and suspended and route_pending is None and pending is None
+                    and layout_complete==config==monitor and config in retired and scanner is not None,
+                    'Private startup lacks complete admitted generation context')
+            if kind=='start-intent':
+                require(data==config and start_pending is None and len(started)<len(start_order())
+                        and label==start_order()[len(started)] and (quiescent or activation_generation==config)
+                        and 0<=event['time']-scanner_time<=300,'Private startup is out of order or scanner admission expired')
+                start_pending=label;activation_generation=config;quiescent=False;checked_at=None;access=None;access_time=None
+            else:
+                require(start_pending==label and isinstance(data,dict) and set(data)=={'path','pid'}
+                        and isinstance(data['path'],str) and 0<len(data['path'])<=2048
+                        and (data['pid'] is None or (type(data['pid']) is int and 1<data['pid']<2**31)),
+                        'Private startup observation lacks its fixed pending intent')
+                started.append(label);start_pending=None
         else:
             require(kind == 'settled' and data is None and label is None and pending is None
                     and route_pending is None and not suspended and config_pending is None and layout_pending is None
+                    and retire_pending is None and start_pending is None and not started
                     and (layout_sha is None or (layout_complete==config and monitor==config
                         and all(value==config for value in boots.values()))),'Invalid cutover settlement')
             settled = True
@@ -185,7 +233,9 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                 routing_suspended=suspended,routing_pending=route_pending,routing_restored=restored,
                 access=access,access_time=access_time,quiesced_at=quiesced_at,checked_at=checked_at,backup=backup,
                 config=config,config_pending=config_pending,layout_sha256=layout_sha,layout_pending=layout_pending,
-                layout_complete=layout_complete,monitor=monitor,boots=boots)
+                layout_complete=layout_complete,monitor=monitor,boots=boots,retired_proofs=retired,
+                retire_pending=retire_pending,scanner=scanner,scanner_time=scanner_time,started=started,
+                start_pending=start_pending,activation_generation=activation_generation)
 
 
 def checked(data, clock):

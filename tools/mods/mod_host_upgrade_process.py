@@ -55,7 +55,8 @@ def _context(runtime,current,uid,name):
     require(sys.platform=='darwin' and os.geteuid()==ROOT_UID and type(uid) is int and uid>=600,
             'Installed upgrade children require root and a locked service identity')
     require(all(isinstance(v.get('identity'),str) and re.fullmatch('[0-9a-f]{64}',v['identity']) for v in (runtime,current))
-            and name in ('upgrade-job-specs-mac.py','force-upgrade-backup-mac.py','migrate-private-generation-mac.py')
+            and name in ('upgrade-job-specs-mac.py','force-upgrade-backup-mac.py','migrate-private-generation-mac.py',
+                         'accept-installed-scanner-mac.py')
             and runtime['uid']==current['uid']==uid
             and runtime['root']==ROOT/'releases'/runtime['identity']
             and current['root']==ROOT/'releases'/current['identity']
@@ -68,7 +69,7 @@ def _context(runtime,current,uid,name):
         env=dict(PATH='/usr/bin:/bin:/usr/sbin:/sbin',HOME=str(ROOT/'data'),TMPDIR=str(ROOT/'data'),LC_ALL='C',TZ='UTC'))
     # Only the locked configuration helper needs this verified runtime's pinned
     # application packages (signing validation). User site/PYTHONPATH stay off.
-    flags=['-I','-B'] if name=='migrate-private-generation-mac.py' else ['-I','-S','-B']
+    flags=['-I','-B'] if name in ('migrate-private-generation-mac.py','accept-installed-scanner-mac.py') else ['-I','-S','-B']
     return [str(python),*flags,str(program)],options
 
 
@@ -121,6 +122,25 @@ def checked_migration_result(result,before,after,plan_sha256,*,rollback=False):
             and all(result[k] is False for k in ('services_changed','repository_modified','keys_modified')),
             'Private migration result differs from the requested generation/plan')
     return result
+
+
+def checked_scanner_result(result,release,uid):
+    require(isinstance(result,dict) and set(result)=={'schema','phase','uid','release','version','results',
+            'temporary_state_removed','services_started','network_started'}
+            and type(result['schema']) is int and result['schema']==1 and result['phase']=='scanner-admitted'
+            and type(result['uid']) is int and result['uid']==uid and result['release']==release
+            and isinstance(result['version'],str) and result['version'].startswith('ClamAV ')
+            and len(result['version'])<=512 and not any(c in result['version'] for c in '\r\n\0')
+            and result['results']==dict(clean='clean',blocked='blocked',empty_database='error',missing_engine='error')
+            and result['temporary_state_removed'] is True and result['services_started'] is False
+            and result['network_started'] is False,'Installed scanner controls differ from the fixed release')
+    return result
+
+
+def scanner_check(current,uid):
+    arguments,options=_context(current,current,uid,'accept-installed-scanner-mac.py')
+    result=read_json(_capture(arguments,options,timeout=900,limit=8192))
+    return checked_scanner_result(result,current['identity'],uid)
 
 
 def job_specs(runtime,current,uid,*,backup_identity=None):

@@ -24,6 +24,30 @@ def migration_report(profile):
     return dict(manifest=manifest,sha256=hashlib.sha256(migration.wire(manifest)).hexdigest(),files=6,services_changed=False)
 
 
+@pytest.mark.parametrize('damage',[None,'uid','release','clean','eicar','missing-engine','temporary','network','unknown'])
+def test_scanner_control_protocol_requires_exact_isolated_release_and_fail_closed_results(verified,monkeypatch,damage):
+    _,current=verified
+    report=dict(schema=1,phase='scanner-admitted',uid=600,release=current['identity'],version='ClamAV fixture',
+        results=dict(clean='clean',blocked='blocked',empty_database='error',missing_engine='error'),
+        temporary_state_removed=True,services_started=False,network_started=False)
+    if damage=='uid':report['uid']=True
+    elif damage=='release':report['release']='0'*64
+    elif damage=='clean':report['results']['clean']='error'
+    elif damage=='eicar':report['results']['blocked']='clean'
+    elif damage=='missing-engine':report['results']['missing_engine']='clean'
+    elif damage=='temporary':report['temporary_state_removed']=False
+    elif damage=='network':report['network_started']=True
+    elif damage=='unknown':report['private']='canary'
+    def capture(arguments,options,*,timeout,limit):
+        assert arguments==[str(current['python']),'-I','-B',str(current['root']/'source/tools/mods/hosting/accept-installed-scanner-mac.py')]
+        assert options['user']==options['group']==600 and options['extra_groups']==[] and timeout==900 and limit==8192
+        return json.dumps(report).encode()
+    monkeypatch.setattr(process,'_capture',capture)
+    if damage:
+        with pytest.raises(ModError):process.scanner_check(current,600)
+    else:assert process.scanner_check(current,600)==report
+
+
 @pytest.mark.parametrize('damage',[None,'origin','root','extra-file','unchanged-file','hash','boolean','payload'])
 def test_private_plan_protocol_binds_origin_root_and_exact_six_outputs(verified,monkeypatch,damage):
     _,current=verified;profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='9'*64)
@@ -98,7 +122,8 @@ def verified(monkeypatch):
         return dict(root=root,identity=identity,uid=600,python=root/'runtime/Frameworks/Python.framework/Versions/3.12/bin/python3.12',
                     descriptor=dict(source_files={name:{} for name in ('tools/mods/hosting/upgrade-job-specs-mac.py',
                                                                         'tools/mods/hosting/force-upgrade-backup-mac.py',
-                                                                        'tools/mods/hosting/migrate-private-generation-mac.py')}))
+                                                                        'tools/mods/hosting/migrate-private-generation-mac.py',
+                                                                        'tools/mods/hosting/accept-installed-scanner-mac.py')}))
     return entry('a'*64),entry('b'*64)
 
 

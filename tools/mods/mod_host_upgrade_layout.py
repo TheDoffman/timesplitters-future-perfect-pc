@@ -271,8 +271,12 @@ class Layout:
             if 'upgrade-quiescence.json' in observed:
                 from mod_host_upgrade_admission import checked_existing
                 checked_existing(self.journal,cutover.protected_bytes(path/'upgrade-quiescence.json',0o644,8192)[0])
-            require('upgrade-quiescence.json' not in original or 'upgrade-quiescence.json' in observed
-                    or stable(observed)==stable(manifest['after_monitor']),
+            missing_original='upgrade-quiescence.json' in original and 'upgrade-quiescence.json' not in observed
+            retired=False
+            if missing_original and stable(observed)==stable(original):
+                from mod_host_upgrade_activation import retired_original_proof
+                retired=retired_original_proof(self.journal,self.folder,'before')
+            require(not missing_original or retired or stable(observed)==stable(manifest['after_monitor']),
                     'Preserving a missing original migration proof')
             if stable(observed)==stable(original):found[name]='before'
             else:

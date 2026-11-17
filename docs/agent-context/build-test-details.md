@@ -1924,3 +1924,11 @@ proof hash/nonce/boot/UID is refused before invoking the private migration child
 Flow staging is deferred until after the real journal's capture/proof, matching
 the intended Root sequence and pinning an original proof in the manifest. Missing
 original proofs are refused; recorded fresh replacements still permit recovery.
+test_upgrade_activation.py combines the real journal/proof archive/fixed monitor
+files with simulated scanner and launchd/process responses. It requires proof
+retirement, exact AV controls and intent-before-bootstrap; uncertain pending jobs
+are observed on explicit resume, never blindly loaded again. Known absent outcomes
+remain pending for separate recovery. The fixed runtime's AV helper transport
+protocol is covered by test_upgrade_process.py. Health metadata may update while
+static policy identities remain pinned; loaded jobs do not establish readiness,
+restart acceptance or permission to expose the workshop publicly.

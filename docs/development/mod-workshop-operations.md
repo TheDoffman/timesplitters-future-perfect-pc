@@ -276,6 +276,36 @@ The locked worker still independently enforces its short admission lifetime.
 Activation, post-start health-history checkpointing, reboot recovery and installed
 acceptance remain unfinished; these internal phases are not a live upgrade CLI.
 
+`mod_host_upgrade_activation.py` implements private startup only. Under the global
+Root journal lease it retires the fixed active migration proof before any bootstrap.
+Intent binds its hash or verified absence; existing authority moves into the
+Root700 layout folder and becomes0600. Explicit resume recognizes only that
+pending archive, including a crash between rename and permission tightening.
+Foreign destinations or changed proofs are preserved/refused. Missing original
+monitor proofs are recognized only through their retained, recorded archive.
+
+The fixed installed AV helper runs as the locked identity under isolated Python
+with the verified runtime's packages. Its900-second/8KiB transport returns exact
+clean/EICAR/error-control results and removed-fixture status. The parent verifies
+that helper/scanner descendants have exited or belong only to recorded job trees;
+escaped dedicated-UID processes block further startup. A successful report is
+journaled and must be fresh within300 seconds for every new startup intent.
+
+Four monitors precede the unchanged backup job and remaining five workers. Each
+bootstrap has a durable intent before the one fixed launchctl command; actual
+loaded binding, rather than command exit status, governs observation. Explicit
+resume can observe a previously loaded pending job without repeating bootstrap.
+A pending absent/uncertain outcome is preserved for separate recovery. Already
+recorded jobs, fixed policy identities and suspended routing are rechecked around
+numeric process-tree observations. The four fixed monitor directories and13
+policy files stay pinned while separate health metadata updates. No sampled PID
+is signalled. The journal invalidates quiescence at the first startup intent and
+blocks private-access/public-restoration/settlement while jobs have started.
+This phase returns readiness_verified=false: private health/scanner readiness,
+seven restart checks, controlled stop/rollback after startup, health-history
+checkpointing, reboot recovery and final public admission remain unfinished.
+There is still no installed apply CLI and no production job uses this phase yet.
+
 The v2 routing callback is directly compatible with the selective transition
 primitive. It persists intent before the action, permits only matching observed
 results, and makes already-recorded recovery observations inert. Stops require a
