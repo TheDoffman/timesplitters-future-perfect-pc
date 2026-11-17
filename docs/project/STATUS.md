@@ -1,3 +1,31 @@
+Private rollback composition (2026-11-16; sourcee1446923/cd547f88; not deployed):
+rollback_private consumes the same verified retained context/Root lease. From a
+completed candidate layout it can stop a partially or fully started candidate,
+including unresolved restart/shutdown observations, checkpoint bounded monitor
+history, reverse the monitor/boot files, force a fresh preserved-runtime capture
+in the restored tree, roll back six private configuration files, retire proof,
+and admit old services through AV/readiness/seven restarts at the current catalog
+floor. Current repository data is retained; no database backup restore occurs.
+Ingress stays suspended. It can also cancel a prepared layout before migration
+without private configuration writes. Pending forward migration/file exchange,
+reboot, restored public routing and settled transactions require their separate
+recovery paths and are not reinterpreted as reverse authority.
+
+Actual Mac/Linux coordinator plus flow/cutover/admission/startup/readiness/shutdown
+checks pass161 each (116.31s/140.33s). Lost stop/checkpoint/exchange/migration/start/
+restart observations resume without duplicate OS stops/bootstraps/signals; a lost
+rollback migration result receives a fresh proof after another capture. Tests
+preserve opaque candidate temporary history and original historical receipts.
+Old AV rejection and signed-catalog regression keep restoration denied; renewed
+acceptance resumes without reloading known jobs. Old proof retirement also makes
+prepared-cancellation recovery explicit if AV fails before any bootstrap.
+These use actual protected files/journals/proof readers with simulated credentials,
+OS responses, children and private writes. They are not installed Root/UID600 or
+live old-code/new-data evidence. No production job/routing/private-data mutation
+occurred. Installed context construction/reconstruction, pending-forward reversal
+resolution, reboot recovery, deployment/public acceptance and the full game/SDK/
+multiplayer/release requirements remain open.
+
 Forward private upgrade composition (2026-11-16; source8b0baab7/0969d2ab;
 not deployed): mod_host_upgrade_coordinator.apply_private now consumes the verified
 retained context under an already-held Root journal lease. It rejects foreign
