@@ -1,3 +1,39 @@
+Private readiness/restart admission (2026-11-16; sourcea466a20e/cc4b5eff; not deployed):
+The existing immutable loopback/signature checker now has exact UID600 supervised
+transport (110s/8KiB), preserving release, origin/root, role health and catalog floor.
+Read-only preflight includes the old verified private baseline in its digest.
+The journal requires that baseline before shutdown/startup and monotonically
+raises the observed catalog floor. New admission performs seven fixed KeepAlive
+restarts: three host workers and four monitors, with intent before one launchctl
+label SIGKILL. It requires a present, correctly owned new PID/tree and exit of all
+observed old PIDs/groups, followed by signed private readiness after every restart.
+Nonzero/timeout outcomes use actual observation; pending recovery does not signal
+again. Fresh AV/private evidence after all seven checks admits only the exact
+readiness digest. Selective restoration rechecks both freshness windows/digest at
+intent and observation. The admission function itself never changes public routing.
+
+Combined upgrade/readiness-helper checks pass275 Mac/29.12s and275 Linux/36.79s;
+Windows plus CI-scope passes280/155 POSIX skips1.51s at a466a20e. Final present-PID/
+role-owner checks atcc4b5eff pass12 acceptance cases Mac/14.44s and Linux/18.47s;
+Windows12 skips0.13s. Journal/files/proof/routing effects are real private HOME
+fixtures; loopback acceptance reports, launchd/process effects and credentials
+are simulated. Existing helper signature/HTTP tests run in the combined set.
+These do not prove installed Root/UID600 restart acceptance or production cutover.
+Post-start controlled shutdown/rollback, health-history checkpointing, reboot
+recovery, complete apply CLI and live scanner/readiness/public acceptance remain open.
+
+Priorbf2ae8a9 CI43996785270 is terminal21 success/two intentional skips/two failures.
+Linux Vulkan133750901298 fails native factory[other-thread] (Factory line138:
+status==1) and match ticks/death coalescing (worker exited status139);1758 pass/
+51 skip295.91s. Aggregate follows Linux. The native owned-process code maps normal
+exit or128+signal, so139 is consistent with SIGSEGV but no stack/cause is captured.
+The failures are native game/script tests; this run predates the readiness changes
+above. Earlier intermittent recovery/startup
+failures and Mac signal11 remain unresolved release gates. No sandbox rules,
+resource budgets, deadlines, helper pins or retries were relaxed to suppress them.
+Existing Mac backup zsh29800/sudo29803 remains at sudo -v (10h18m observed), and
+Windows WorkshopSignIn45300 remains live; no duplicate prompt or live host mutation.
+
 Private startup authority (2026-11-16; source3b4e1e72/d21bdf63/c6d0e4d1/5f20ab7c;
 not deployed): the internal activation phase retires active migration authority
 under durable intent, archives known proof bytes in Root700 storage at0600, and
