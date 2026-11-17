@@ -280,13 +280,15 @@ def quiesce(entries, uid, journal, command, *, routing, clock=time.monotonic, sl
                     'Cutover process changed after preflight; explicit recovery required')
         job_files(entries, files)
         journal.require_suspended(routing)
-        if state['pending'] is None:state = journal.record('stop-intent', label)
+        new_stop=state['pending'] is None
+        if new_stop:state = journal.record('stop-intent', label)
         require(state['pending'] == label, 'Cutover pending intent differs')
-        if current is not None:
+        if current is not None and new_stop:
             try:command(['/bin/launchctl', 'bootout', 'system/'+label])
             except subprocess.TimeoutExpired:pass
             # The exit code or timeout cannot prove the OS operation's outcome.
-            # Observe this same label, without retrying bootout in this call.
+            # Observe this same label. A later invocation with this pending
+            # intent also observes only; it must never repeat the stop.
         deadline = clock()+timeout
         while True:
             remaining = label_state(path, spec, command)

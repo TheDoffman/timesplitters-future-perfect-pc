@@ -247,11 +247,18 @@ def test_label_shutdown_uses_durable_intents_and_requires_observed_quiescence(pr
                 assert state.state()['pending'] == storage.stop_order()[0]
                 assert len([v for v in calls if v[1]=='bootout']) == 1
             if outcome in ('timeout-live','escaped-process','route-reappeared'):
+                if outcome=='timeout-live':
+                    # A still-loaded pending stop is observed, never reissued.
+                    with pytest.raises(ModError):
+                        cutover.quiesce(entries,600,state,command,routing=workshop_routing['invoke'],clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)
+                    assert len([v for v in calls if v[1]=='bootout'])==1
+                    loaded[storage.stop_order()[0]]=False
                 if outcome=='route-reappeared':
                     assert len([v for v in calls if v[1]=='bootout'])==1
                     routes.transition(state.base['routing'],False,workshop_routing['invoke'],state.routing_event)
                 outcome='success'
                 assert cutover.quiesce(entries,600,state,command,routing=workshop_routing['invoke'],clock=lambda:next(ticks),sleep=lambda _:None,timeout=1)['quiescent']
+                if outcome=='success':assert len([v for v in calls if v[1]=='bootout'])==len(set(v[-1] for v in calls if v[1]=='bootout'))
 
 
 @pytest.mark.parametrize('code,output', [(1,'permission denied'), (113,''), (113,'Bad request.\nother service\n'), (127,'command not found')])

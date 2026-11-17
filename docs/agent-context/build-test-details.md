@@ -1964,3 +1964,13 @@ different UID; no sampled process is signalled. A complete checkpoint written
 before a lost journal commit is adopted only on explicit validated resume.
 Incomplete shutdown excludes new AV/startup events until its stop history and
 process cleanup are complete; the scanner-event guard has a direct negative case.
+
+test_upgrade_coordinator.py runs composed forward phases with actual journals,
+protected files, proof retirement and migration-proof reads; OS job/process
+responses, credentials, scanner/readiness and private-child writes are simulated.
+It starts from observed old-job state, forces a verified capture, exchanges files,
+loads ten private jobs and checks seven restarts while ingress stays suspended.
+Lost migration/layout/start/restart observations require explicit resume; OS
+effects are not duplicated. A lost migration result is retried only after fresh
+capture/proof. Context/boot/authority changes refuse before effects. Initial-stop
+tests also keep a still-loaded pending bootout observation-only across calls.

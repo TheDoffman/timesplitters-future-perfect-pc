@@ -22,25 +22,33 @@ pytestmark=pytest.mark.parametrize('prepared',['deferred'],indirect=True)
 
 
 @pytest.fixture
-def flow(prepared,workshop_routing,monkeypatch):
+def flow(prepared,workshop_routing,monkeypatch,request):
     case=prepared;now=[1000000000];calls=[];private=['before']
+    fresh=getattr(request,'param',None)=='fresh'
+    plan=None
+    if fresh:
+        from test_upgrade_admission import plan_report
+        plan=plan_report(workshop_routing['baseline']['origin'])
     monkeypatch.setattr(journal,'boot_identity',lambda:'f'*64)
     monkeypatch.setattr(migration,'boot_identity',lambda:'f'*64)
     monkeypatch.setattr(migration,'ROOT_UID',os.geteuid())
     arguments=dict(before='a'*64,after='b'*64,uid=600,nonce='c'*64,plan_sha256='d'*64,preflight_sha256='e'*64,
         tracked=dict(pids=[],groups=[]),routing=workshop_routing['baseline'],backup_identity='8'*64,
         backup_base_release='7'*64,clock=lambda:now[0])
+    if fresh:arguments.update(plan_sha256=plan['sha256'],tracked=dict(pids=list(range(100,110)),groups=list(range(100,110))))
     def command(argv):
         if argv[0]=='/bin/ps':return 0,'1 0 1 0\n'
         name=argv[-1].removeprefix('system/')
         return 113,'Bad request.\nCould not find service "'+name+'" in domain for system\n'
     with journal.transaction(**arguments) as state:
-        state.record('baseline-private-verified',data=dict(schema=1,phase='private-services-verified',release='a'*64,uid=600,
+        baseline=dict(schema=1,phase='private-services-verified',release='a'*64,uid=600,
             origin=workshop_routing['baseline']['origin'],trusted_root_sha256='9'*64,catalog_version=40,release_count=3,
-            role_health_verified=True,transport='private-loopback-http',public_endpoint_verified=False))
-        routes.transition(state.base['routing'],False,workshop_routing['invoke'],state.routing_event)
-        for label in journal.stop_order():state.record('stop-intent',label);state.record('stop-observed',label)
-        state.record('quiescent')
+            role_health_verified=True,transport='private-loopback-http',public_endpoint_verified=False)
+        if not fresh:
+            state.record('baseline-private-verified',data=baseline)
+            routes.transition(state.base['routing'],False,workshop_routing['invoke'],state.routing_event)
+            for label in journal.stop_order():state.record('stop-intent',label);state.record('stop-observed',label)
+            state.record('quiescent')
         def capture_and_prove():
             receipt=dict(schema=1,producer='tsfp-upgrade-backup-v1',identity='8'*64,base_release='7'*64,uid=600,
                 status='captured',backup='snapshot-'+('d'*32)+'-'+str(now[0])+'-00000001',
@@ -48,13 +56,14 @@ def flow(prepared,workshop_routing,monkeypatch):
                 bytes=100,forced=True,verified=True)
             state.record('backup-verified',data=receipt)
             proof=dict(schema=1,producer=admission.PRODUCER,before='a'*64,after='b'*64,uid=600,nonce='c'*64,
-                plan_sha256='d'*64,backup_sha256=receipt['verified_manifest_sha256'],time=now[0],
+                plan_sha256=state.base['plan_sha256'],backup_sha256=receipt['verified_manifest_sha256'],time=now[0],
                 stopped_jobs=migration.jobs(),quiesced_at=state.state()['quiesced_at'],backup_verified_at=now[0],boot_id='f'*64)
             previous,identity=admission._existing(state)
             admission._publish(state,proof,previous,identity)
             return proof
-        capture_and_prove();case.exchange.journal=state
-        case.fingerprint=case.exchange.prepare()
+        if not fresh:capture_and_prove()
+        case.exchange.journal=state
+        case.fingerprint=None if fresh else case.exchange.prepare()
         gate=lambda:layout.quiescence_gate(state,case.old,command,workshop_routing['invoke'])
         current=dict(identity='b'*64,uid=600)
         def child(current,uid,before,nonce,plan_sha256,*,rollback):
@@ -75,7 +84,7 @@ def flow(prepared,workshop_routing,monkeypatch):
         def run(direction,*,resume=False):
             return layout.configuration_and_exchange(state,current,case.exchange,direction,gate,resume=resume)
         yield SimpleNamespace(case=case,state=state,now=now,calls=calls,private=private,run=run,gate=gate,
-            capture=capture_and_prove,child=child,routing=workshop_routing,arguments=arguments)
+            capture=capture_and_prove,child=child,routing=workshop_routing,arguments=arguments,plan=plan,baseline=baseline)
 
 
 def test_full_journaled_apply_reverse_and_restoration_requires_matching_generation(flow):

@@ -165,6 +165,26 @@ objects/callables are never serialized in the public report. Retaining context
 does not authorize effects or replace later per-phase file/process/routing guards;
 there is still no apply CLI or reboot-recovery path.
 
+The internal `mod_host_upgrade_coordinator.apply_private` composes the forward
+phases under an already-held Root journal lease. It binds retained context to
+that exact journal, rejects cross-boot/foreign/rollback/restoration state, records
+the original private baseline, suspends only workshop ingress, observes old-job
+quiescence, forces and verifies a preserved-runtime backup, then prepares and
+journals the protected layout before configuration/file exchange. It retires
+migration authority, checks the scanner, loads ten private jobs and performs the
+seven restart/readiness checks. It returns fresh private admission with ingress
+still suspended. Public restoration, public HTTPS checks, installed context/lease
+construction and reboot recovery remain separate unfinished integration work.
+
+An existing forward operation requires explicit resume. Once configuration is
+durably after, a partial protected exchange can finish without a new migration
+proof through its deliberately mixed boot files. A lost private migration result
+instead requires fresh quiescence/capture/proof before the locked idempotent
+step. Pending startup/restart effects remain observation-only on resume. Initial
+old-job shutdown now also never repeats a bootout with a durable pending intent;
+a still-loaded pending job remains unresolved until authoritative absence. This
+internal composer neither exposes a CLI nor performs automatic rollback on error.
+
 `mod_host_upgrade_process.py` bounds those metadata children to15 seconds/64KiB
 stdout and the forced-backup child to1800 seconds/8KiB stdout; stderr is separately
 bounded to8KiB and must be empty on success. It uses clean fixed environments,
