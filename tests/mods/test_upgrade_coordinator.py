@@ -1,5 +1,6 @@
 """Composed real journal/files/proofs; credentials, launchd and children simulated."""
 import json
+import plistlib
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -15,6 +16,7 @@ import mod_host_cutover_journal as storage
 import mod_host_routing as routes
 import mod_host_upgrade_coordinator as coordinator
 import mod_host_upgrade_process as process
+import mod_host_upgrade_shutdown as shutdown
 from mod_package import ModError
 
 pytestmark=[pytest.mark.parametrize('prepared',['deferred'],indirect=True),
@@ -24,22 +26,22 @@ pytestmark=[pytest.mark.parametrize('prepared',['deferred'],indirect=True),
 @pytest.fixture
 def machine(flow,monkeypatch):
     item=flow;state=item.state;old=item.case.old;new=item.case.new
+    monkeypatch.setattr(shutdown,'boot_identity',lambda:'f'*64)
     loaded={spec['Label']:(path,spec,100+index) for index,(path,spec) in enumerate(old)}
-    targets={str(path):(path,spec) for path,spec in new}
     stops=[];starts=[];kills=[];captures=[];scans=[]
     def command(argv):
         if argv[0]=='/bin/ps':
             return 0,'1 0 1 0\n'+''.join(f'{pid} 1 {pid} {0 if label.endswith(".monitor") else 600}\n'
                 for label,(_,_,pid) in loaded.items())
         if argv[1]=='bootstrap':
-            path,spec=targets[argv[-1]];label=spec['Label']
+            path=Path(argv[-1]);spec=plistlib.loads(path.read_bytes());label=spec['Label']
             assert state.state()['start_pending']==label
             assert not (item.case.root/'monitor/upgrade-quiescence.json').exists()
             starts.append(label);loaded[label]=(path,spec,200+len(starts))
             return 0,''
         label=argv[-1].removeprefix('system/')
         if argv[1]=='bootout':
-            assert state.state()['pending']==label
+            assert label in (state.state()['pending'],state.state()['shutdown_pending'])
             stops.append(label);del loaded[label];return 0,''
         if argv[1]=='kill':
             assert state.state()['restart_pending']['label']==label
@@ -135,3 +137,62 @@ def test_foreign_context_is_refused_before_routing_or_service_effects(machine,da
     assert not item.stops and not item.starts and not item.kills and not item.captures
     assert json.loads(item.state.current)['events']==[]
     assert routes.snapshot(item.context['operator']('status'),item.context['routing']['origin'])==item.context['routing']
+
+
+def test_composed_reversal_preserves_candidate_history_and_readmits_old_services_at_current_floor(machine):
+    item=machine;coordinator.apply_private(item.state,item.context);item.flow.now[0]+=60
+    temporary=item.flow.case.root/'monitor'/('.scan-'+'1'*32)
+    temporary.write_bytes(b'{');temporary.chmod(0o600)
+    result=coordinator.rollback_private(item.state,item.context)
+    assert result['generation']=='before' and result['catalog_version']==42
+    assert item.flow.private==['before'] and item.flow.calls==['apply','rollback']
+    assert len(item.captures)==2 and item.scans==['b'*64,'a'*64]
+    assert item.stops==storage.stop_order()*2 and item.starts==storage.start_order()*2
+    assert item.kills==storage.restart_order()*2
+    folder=item.flow.case.root/'upgrade-layouts'/('c'*64)
+    assert (folder/'monitor-after'/temporary.name).read_bytes()==b'{'
+    assert (item.flow.case.root/'monitor/deployments/old-receipt.json').exists()
+    item.state.require_suspended(item.context['operator'])
+    with pytest.raises(ModError):coordinator.apply_private(item.state,item.context,resume=True)
+    with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context)
+    coordinator.rollback_private(item.state,item.context,resume=True)
+    assert len(item.starts)==20 and len(item.kills)==14 and len(item.captures)==2
+    routes.transition(item.state.base['routing'],True,item.context['operator'],item.state.routing_event)
+    item.state.record('settled')
+    assert 128<len(json.loads(item.state.current)['events'])<=storage.MAX_EVENTS
+
+
+@pytest.mark.parametrize('kind',['shutdown-stop-observed','monitor-checkpoint','layout-observed',
+    'migration-observed','start-observed','restart-observed'])
+def test_reversal_observation_loss_recovers_without_duplicate_stops_starts_or_kills(machine,monkeypatch,kind):
+    item=machine;coordinator.apply_private(item.state,item.context);item.flow.now[0]+=60
+    record=item.state.record;failed=[]
+    def interrupt(event,*args,**kwargs):
+        if event==kind and not failed:
+            failed.append(True);raise OSError('lost reversal observation')
+        return record(event,*args,**kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(item.state,'record',interrupt)
+        with pytest.raises(OSError):coordinator.rollback_private(item.state,item.context)
+    assert failed and not item.state.state()['settled']
+    with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context)
+    item.flow.now[0]+=40
+    coordinator.rollback_private(item.state,item.context,resume=True)
+    assert item.flow.private==['before'] and item.state.state()['catalog_floor']==42
+    assert item.stops==storage.stop_order()*2 and item.starts==storage.start_order()*2
+    assert item.kills==storage.restart_order()*2
+    assert len(item.captures)==(3 if kind=='migration-observed' else 2)
+
+
+def test_reversal_of_partial_candidate_startup_observes_known_jobs_without_starting_remaining_candidate_jobs(machine,monkeypatch):
+    item=machine;record=item.state.record
+    def interrupt(kind,*args,**kwargs):
+        if kind=='start-observed':raise OSError('lost first candidate startup observation')
+        return record(kind,*args,**kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(item.state,'record',interrupt)
+        with pytest.raises(OSError):coordinator.apply_private(item.state,item.context)
+    assert len(item.starts)==1 and item.state.state()['start_pending']
+    result=coordinator.rollback_private(item.state,item.context)
+    assert result['generation']=='before' and len(item.starts)==11
+    assert item.flow.private==['before'] and len(item.kills)==7

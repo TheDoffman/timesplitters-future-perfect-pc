@@ -185,6 +185,23 @@ old-job shutdown now also never repeats a bootout with a durable pending intent;
 a still-loaded pending job remains unresolved until authoritative absence. This
 internal composer neither exposes a CLI nor performs automatic rollback on error.
 
+The separate internal `rollback_private` reverses a completed candidate layout,
+including interrupted candidate startup/restart and pending reverse effects.
+Pending forward configuration/file operations must first be resolved in their
+original direction; a settled or restored public transaction is not reused.
+The caller still owns the exact same-boot Root lease/context. Known candidate
+jobs stop through journaled shutdown, followed by a bounded monitor checkpoint.
+The old monitor/boot files are restored before a fresh retained-runtime capture
+publishes current migration authority in that restored tree. The private rollback
+then consumes that fresh proof, avoiding stale authority restored from the old
+archive. This preserves current repository data rather than restoring a backup.
+Old services must pass fresh AV/readiness and seven restarts at the retained
+catalog floor; ingress remains suspended for separate public acceptance.
+Existing shutdown/reversal/old-startup work requires explicit resume. Completed
+checkpoints are revalidated, not rewritten; completed OS stops, bootstraps and
+restart signals are not repeated. Process/context reconstruction, reboot recovery,
+pending-forward-to-reverse resolution and the installed CLI remain open.
+
 `mod_host_upgrade_process.py` bounds those metadata children to15 seconds/64KiB
 stdout and the forced-backup child to1800 seconds/8KiB stdout; stderr is separately
 bounded to8KiB and must be empty on success. It uses clean fixed environments,

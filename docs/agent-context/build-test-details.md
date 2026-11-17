@@ -1974,3 +1974,11 @@ Lost migration/layout/start/restart observations require explicit resume; OS
 effects are not duplicated. A lost migration result is retried only after fresh
 capture/proof. Context/boot/authority changes refuse before effects. Initial-stop
 tests also keep a still-loaded pending bootout observation-only across calls.
+
+Coordinator rollback cases preserve opaque candidate monitor history, refresh
+proof only after restoring old monitor/boot files, and admit old services at the
+current catalog floor without restoring repository data. Lost shutdown/checkpoint/
+exchange/migration/start/restart observations require resume without duplicate OS
+effects. A partial candidate bootstrap can be stopped without loading its remaining
+jobs. These remain credential/OS/child simulations with actual protected metadata
+and files, not installed UID600 or live old-code/new-data compatibility evidence.
