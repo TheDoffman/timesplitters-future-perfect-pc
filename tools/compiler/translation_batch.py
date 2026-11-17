@@ -11,13 +11,30 @@ import re
 import struct
 import sys
 
-# Match the continuation publisher: bound compiler work without splitting bodies.
-MAX_CHUNK_BODY_BYTES=512*1024
-
 from generation_output import write_if_changed
 from translation_helpers import seh, nonlocal_jumps
 from translation_names import identifier
 import translation_layout as layout
+
+
+# Function count alone does not bound optimizer memory (especially for SIMD).
+# Match the continuation publisher's body budget; never split a function body.
+MAX_CHUNK_BODY_BYTES = 512 * 1024
+
+
+def _chunks(records, count):
+    pending = []
+    body_bytes = 0
+    for record in records:
+        size = len(record[2].encode('utf-8'))
+        if pending and (len(pending) >= count or body_bytes + size > MAX_CHUNK_BODY_BYTES):
+            yield pending
+            pending = []
+            body_bytes = 0
+        pending.append(record)
+        body_bytes += size
+    if pending:
+        yield pending
 
 
 def xbe_title(data, path):
@@ -191,15 +208,7 @@ class BatchTranslator:
             if items:
                 header+=['',f'/* {label}. */']+[f'void {items[address]}(void);  /* 0x{address:08X} */' for address in sorted(items)]
         header+=['','#endif /* RECOMP_FUNCS_H */','']
-        chunks=[];pending=[];pending_bytes=0
-        for record in records:
-            body_bytes=len(record[2].encode('utf-8'))
-            if pending and (len(pending)>=chunk_size or pending_bytes+body_bytes>MAX_CHUNK_BODY_BYTES):
-                chunks.append(pending);pending=[];pending_bytes=0
-            pending.append(record);pending_bytes+=body_bytes
-            if pending_bytes>=MAX_CHUNK_BODY_BYTES:
-                chunks.append(pending);pending=[];pending_bytes=0
-        if pending:chunks.append(pending)
+        chunks=list(_chunks(records,chunk_size))
         outputs={header_name:'\n'.join(header),**runtime_headers}
         files=[str(destination/header_name)]
         for index,chunk in enumerate(chunks):

@@ -1,3 +1,80 @@
+Sun repair main integration with5426485f: Windows Release/debug build passes;
+42 targeted checks pass with2Mac skips. Newer crosshair/FOV/tutorial changes
+remain intact. Published preview package remains the earlier tested snapshot.
+
+Local preview0.6.3-sun-fix.1 is packaged under build/releases, with normal
+launcher1.6.2 and matching symbols/source/licenses. All1529 package hashes pass;
+the packaged EXE completes140s in mission1 at1280x720/FOV73 with all7 isolated
+preference files unchanged and obsolete comparison flag ignored. The wider-FOV
+backward path leaves the sun visible at the cave edge; it is not another full
+occlusion acceptance. No publish/merge; Desktop Sun Fix Preview shortcut uses
+the local stage and a junction to the single existing game-data copy. Separate
+preview saves/settings leave the existing installation untouched.
+
+Sun/visibility repair (commit e7de0247, base1375e144):
+the optional Fidelity Comparison preset has been removed at the user's request,
+including menus, startup config patch, settings overrides and preset-only tests.
+Normal saved settings apply directly; obsolete pc-fidelity.ini files are ignored.
+The independent highest-fit unconstrained allocator and patch3001 GPU visibility
+repair remain. Prior Windows immediate/deferred mission runs restore authored
+sun/glow with50 visible samples and0 behind the cave roof. Original tutorial
+shadows, assets and gameplay remain intact. Native Mac/Linux/GL GPU acceptance
+is pending. Removal validation is recorded in the canonical guide:
+docs/agent-context/fidelity-comparison.md.
+
+Weapon FOV now uses a40-100 degree reference angle in one-degree steps,55
+original, like Vertical FOV. Exact legacy percentages retained until edited;
+V5 persists degrees and crosshair. Shared launcher preserves both formats.
+Windows game/launcher builds, focused tests and actual32:9 main/pause/gameplay
+checks pass; native Mac/Linux visual acceptance pending.
+See docs/agent-context/video-options.md.
+
+Crosshair sizing (local feature/hud-crosshair-size, base1375e144): staged
+View & HUD and launcher slider25-150%, default100%. HUD Scale removed from
+menus and rendering; original automatic HUD fitting retained. V4 legacy HUD
+field loads but is ignored and normalized to100 on save. Windows game/launcher
+builds, focused tests and actual32:9 main/pause checks pass. Mac/Linux visual
+acceptance pending. See
+docs/agent-context/hud-sizing.md.
+
+Keyboard binding right-edge inset (base64eb0399): native list/paging row bounds
+now stop1% inside the panel, keeping selection highlights and Alternate
+bindings clear of the border. Windows build passes. Both frontend and pause
+use the shared builder; see docs/agent-context/pause-settings.md.
+
+Settings panel alignment (branch follow-up, base6239ce95): Audio and Controls
+now share Video's top inset in frontend and pause menus. Native body leading
+leaves footer space; cached slider geometry and font sizes are preserved.
+Keyboard action labels and both binding columns are vertically centered in
+selection rows. Windows build and16 focused checks pass (two Mac-only checks
+skipped); frontend/pause roots, Controller slider and binding pages1/2 checked
+at1280x720. Native Mac/Linux visual checks remain pending.
+See docs/agent-context/pause-settings.md. Existing local preview updated.
+
+Pause Settings consolidation (branch follow-up on fix/pause-menu-glass-backdrop,
+base20d0f5ef): native pause Controls row becomes Settings; Audio row is hidden
+without layout height. The hub uses the main Settings order Audio/Video/Controls,
+retaining child native save/cancel/confirmation behavior and returning to the hub.
+The injected Quit to Desktop rows and confirmation callbacks are removed from
+all menus. Original Quit/Restart and update/Story layout hooks remain. Windows
+build and58 menu checks pass. Actual first-mission root/hub/three-child Back
+navigation, fresh-pause root reset and main Desktop-row removal passed. Shared
+source/native-display contracts are implemented; Mac/Linux visual checks pending.
+
+Pause glass scaling follow-up (local, uncommitted):2731 scopes native capture
+and backdrop to full-canvas placement. Seven aspect-ratio scope tests pass;
+final Windows build,11 UI placement checks,21 context and2 patch-stack checks
+pass. Actual640x480,3440x1440 and3840x2160 gameplay/pause/resume/reopen captures
+show full glass and intact heading. Existing preview shortcut updated; personal
+saves/settings retained. Native Mac/Linux and split-screen acceptance pending.
+
+Pause-menu glass restoration (local, uncommitted; base c1e67e42): shared
+patch2730 mirrors level-zero offscreen GPU CopyRects, preserving the native
+filtered picture, animation and menu layout. No artwork/settings/save changes.
+Windows build,12 rendering/HLE checks,21 context and3 patch-stack checks pass.
+Actual1280x720 Story pause/resume/reopen captures show moving glass with scene.
+Other hosts/split-screen pending; see docs/agent-context/pause-glass.md.
+
 Control-preset rollback and high-FPS interaction repairs (2026-11-12,
 branch revert/control-presets; original base e7cb1016, reference c511f1e9 before
 PR528): removes Modern presets, profile button/axis seeding and repair,
@@ -44731,3 +44808,40 @@ corrupted weapon-record producer or establish a common cause for all six dumps;
 the older Downloads build still lacks matching local symbols. Nothing has been
 published or pushed. Ignored audit, exact receipts, run wrappers and logs are
 under logs/crash-lifecycle-validation.json and logs/crash-lifecycle-*.
+
+
+## 2026-11-17: Merge current main into native multiplayer UI
+
+Integrated origin/main b00de49e into feature/native-multiplayer-ui at14c395dd,
+retaining0.7.0-beta.1 and the Online actor/weapon repairs. Pause Settings return
+routing composes with the native multiplayer/Story factory and Arcade join /
+migration adapters. Compiler batching uses main's shared byte-bound helper and
+retains both partition/UTF-8 and compiled body/dispatch identity tests. Historical
+patch subsets retain both branches' dependency exclusions. Guides/backlog retain
+both histories; batching details moved to a linked guide to meet64KiB limits.
+
+Validation exposed an existing branch omission:9ee19013 optimized the canonical
+register aliases without updating the compatibility template. Additive0261
+synchronizes the template after0260, without changing canonical guest behavior.
+The exact patch-tail fixture/index now includes it. No pristine snapshot or
+generated guest C was edited. The complete merged patch stack verifies/applies.
+
+Windows11 x64, MSVC14.42.34433:85 graphics/layout/framebuffer/allocator/runtime
+contracts pass after applying main's runtime patches. The broad merge suite
+initially returned233 passed,3 Mac-only skips and9 failures in990.8s: one visibility
+check ran before runtime preparation; eight historical upgrades reached a stale
+header-parity assertion. Follow-up header/compiler/visibility/fresh full-stack
+checks return72 passed; its two stale-index failures were corrected by staging
+and refreshing the new patch. Final index/CI-scope/backlog checks return116 passed.
+All eight retained upgraded source fixtures were revalidated with0261, including
+calendar/status/header parity, pause-glass presence and repeated application.
+The complete historical transition suite was not repeated after that repair;
+its already completed transitions were retained. Logs/receipts remain ignored
+under logs/main-sync-*. The initial sandbox run was stopped and superseded by
+native-handle validation. No unhandled validation failures remain.
+
+No game rebuild, gameplay session, installed update or publication was performed
+for this source merge. Existing executable provenance predates main integration.
+Native Mac/Linux build and scene acceptance remain pending; Windows compile
+contracts do not substitute for those host checks. Personal settings, saves,
+canonical fixtures and source assets are preserved.

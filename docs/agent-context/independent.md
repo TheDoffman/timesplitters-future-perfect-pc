@@ -1,3 +1,4 @@
+[Unconstrained contiguous placement and constrained DMA](guest-memory-services.md).
 # Independent tooling contracts
 
 Handle/object lifetime and kernel binding now use [original providers](kernel-objects.md). Native object-manager exports and other kernel/device services remain replacement work.
@@ -302,13 +303,14 @@ XBE bridge establishes the compiler import path for compatibility modules.
 
 ## Generated C grouping
 
-PR #508's ordinary-publisher byte budget and Windows worker cap have been reverted.
-The shared pipeline and ordinary batch publisher default to 1,000 functions per
-file and split by function count only. Explicit `--split` values remain supported.
+The pipeline and ordinary publisher retain1,000-function defaults and explicit
+`--split`. Fidelity validation reintroduces the512KiB ordinary body budget after
+measured C1002 failures at100 functions/file; each whole body and ordering remain
+unchanged. The Windows driver worker-cap rollback remains in place.
 The pre-existing continuation publisher's byte bound is unchanged. `tsfp.ps1`
 retains CMake project parallelism 4 and normal Release optimization, without
-`-CompileJobs` or a driver-supplied `CL_MPCount`. This restores the earlier compiler
-memory exposure; no new full-build memory or timing measurement is claimed.
+`-CompileJobs` or a driver-supplied `CL_MPCount`. Local bounded-batch Release compilation now links the game successfully; this
+is a correctness/build result, not a measured compiler performance improvement.
 
 Generation hashes cover own translation/diagnostic tools and bridges. Native
 integer/bit/product fixtures cover widths, carry, snapshots and division faults, with ML64 shift/rotate
@@ -970,4 +972,4 @@ Stage0247 adds read-only tsfp_thread_stack_bounds metadata queries for
 worker slices; heap extents require active tracked owners. Bounds do not trust
 cloned TIB hints or pin lifetime; allocation/release policy is unchanged.
 
-Regular split batches also cap body text at512KiB, preserving oversized functions intact. test_translation_batch checks exact body/dispatch identity and compiled execution across partitions.
+[Batch limits](compiler-batching.md).

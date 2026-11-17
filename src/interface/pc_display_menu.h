@@ -1,6 +1,9 @@
 #ifndef TSFP_PC_DISPLAY_MENU_H
 #define TSFP_PC_DISPLAY_MENU_H
 #include <stdint.h>
+void pc_visibility_begin(void (*original)(void));
+void pc_visibility_end(void (*original)(void));
+int pc_visibility_result(uint32_t index,uint32_t result_va,uint32_t stamp_va);
 #define PC_DISPLAY_MENU_CALLBACK 0x00012008u
 void pc_display_menu_finish(void (*original)(void));
 void pc_display_menu_button(void (*original)(void));
@@ -89,6 +92,7 @@ void pc_display_menu_team_draw(void (*original)(void));
 void pc_display_menu_team_tick(void (*original)(void));
 void pc_display_camera(void (*original)(void));
 void pc_display_camera_feed(void (*original)(void));
+void pc_display_pause_glass(void (*original)(void),uint32_t tag);
 void pc_display_ui(void (*original)(void),uint32_t tag);
 void pc_display_scope(void (*original)(void),uint32_t tag);
 int pc_display_scope_mask(void (*original)(void));

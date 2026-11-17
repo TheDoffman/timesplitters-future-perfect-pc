@@ -1,5 +1,12 @@
 /* Production display model and guest callbacks with isolated settings and RAM.
  * Original menu drawing/input functions are stubs; no game data is needed. */
+#include <stdint.h>
+static unsigned visibility_begin_calls,visibility_end_calls,visibility_result_calls;
+static uint32_t visibility_index,visibility_pixels;
+static int visibility_accepted,visibility_ready;
+void host_VisibilityBegin(void){visibility_begin_calls++;}
+void host_VisibilityEnd(uint32_t index,int accepted){visibility_end_calls++;visibility_index=index;visibility_accepted=accepted;}
+int xbox_D3D8VisibilityResult(uint32_t index,uint32_t *pixels){visibility_result_calls++;visibility_index=index;if(visibility_ready==1)*pixels=visibility_pixels;return visibility_ready;}
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -147,7 +154,8 @@ void sub_0003FA10(void) {
     CHECK(row_alignment_test);g_eax=WORD_AT(0x6b93b4);WORD_AT(0x6b93b4)=WORD_AT(g_esp+4);g_esp+=4;
 }
 void sub_0003FCF0(void) {
-    CHECK(row_alignment_test || update_notice_test);FLOAT_AT(WORD_AT(g_esp+4))=80.f;
+    const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
+    CHECK(row_alignment_test || update_notice_test || (caption[0]>='0' && caption[0]<='9'));FLOAT_AT(WORD_AT(g_esp+4))=80.f;
     FLOAT_AT(WORD_AT(g_esp+8))=WORD_AT(0x6b93b4)==2?14.f:10.f;g_esp+=4;
 }
 void sub_000718E0(void) {CHECK(row_alignment_test);g_eax=0x600400;g_esp+=4;}
@@ -469,6 +477,8 @@ void sub_00079D60_gen(void) {
     g_eax=0x200000+(id==UINT32_MAX?255u:id)*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;WORD_AT(g_eax+0x20)=WORD_AT(g_esp+4u);WORD_AT(g_eax+0x50)=WORD_AT(g_esp+20u);g_esp+=4;
 }
 void sub_00041DC0(void) {
+    const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
+    if(caption[0]>='0' && caption[0]<='9') {g_esp+=4;return;}
     CHECK(update_notice_test);
     CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+12)),"UPDATE AVAILABLE - OPEN THE LAUNCHER"));
     CHECK(FLOAT_AT(g_esp+4)==280.f && FLOAT_AT(g_esp+8)==398.f);
@@ -496,7 +506,7 @@ static void button_probe(void)
 static void reload(const char *text)
 {
     FILE *f=fopen(path,"wb");CHECK(f);CHECK(fputs(text,f)>=0);CHECK(!fclose(f));
-    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;weapon_fov=PC_WEAPON_FOV_DEFAULT;
+    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;weapon_fov=PC_WEAPON_FOV_DEFAULT;weapon_angle=0;crosshair_size=100;
     pc_display_current();
 }
 static void content(const char *expected)
@@ -510,6 +520,29 @@ static void nested_match_options(void) {
     pc_network_bots_menu(sub_002C78F0_gen);
     CHECK(WORD_AT(0x78ad2c)==9);
     g_esp+=4;
+}
+static void visibility_original_begin(void){g_esp+=4;g_eax=0x1234;}
+static void visibility_original_end(void){g_esp+=8;g_eax=0;}
+static void visibility_original_failure(void){g_esp+=8;g_eax=0x8007000e;}
+static void visibility_guest_checks(void) {
+    g_esp=0x10000;pc_visibility_begin(visibility_original_begin);
+    assert(g_esp==0x10004 && g_eax==0x1234 && visibility_begin_calls==1);
+    g_esp=0x10000;WORD_AT(g_esp+4)=123;
+    pc_visibility_end(visibility_original_end);
+    assert(g_esp==0x10008 && !g_eax && visibility_end_calls==1 && visibility_index==123 && visibility_accepted);
+    g_esp=0x10000;WORD_AT(g_esp+4)=124;
+    pc_visibility_end(visibility_original_failure);
+    assert(g_esp==0x10008 && g_eax==0x8007000e && !visibility_accepted && visibility_index==124);
+    WORD_AT(0x20000)=77;visibility_ready=0;
+    assert(!pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==77);
+    visibility_ready=1;visibility_pixels=321;
+    assert(pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==321);
+    visibility_pixels=0;
+    assert(pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==0);
+    unsigned calls=visibility_result_calls;
+    assert(!pc_visibility_result(123,0x20000,0x20008) && visibility_result_calls==calls);
+    assert(!pc_visibility_result(123,0xfffffff0u,0) && visibility_result_calls==calls);
+    assert(g_esp==0x10008 && g_eax==0x8007000e);
 }
 int main(int argc,char **argv)
 {
@@ -863,8 +896,8 @@ int main(int argc,char **argv)
     content("TSFP_DISPLAY_V2 1280 720 70\n");
     /* Weapon aperture is staged across tabs, applies live, and persists separately from world FOV. */
     refresh(DISPLAY_VIEW,0);
-    for(int i=0;i<50;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==150);
-    for(int i=0;i<50;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==80);
+    for(int i=0;i<100;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==100);
+    for(int i=0;i<100;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==40);
     slider_capture_enabled=1;
     memset(menu_slider_tracks,0,sizeof menu_slider_tracks);
     WORD_AT(0x700008)=weapon_fov_row;
@@ -873,21 +906,21 @@ int main(int argc,char **argv)
     WORD_AT(0x300198)=weapon_fov_row;
     pointer.left=1;
     CHECK(menu_slider_pointer(0x300000,pointer,2,348,8,1920,1080));
-    CHECK(staged_weapon_fov==115 && staged_fov==70 && pc_display_weapon_fov()==100);
+    CHECK(staged_weapon_fov==70 && staged_fov==70 && pc_display_weapon_fov()==100);
     pointer.left=0;CHECK(!menu_slider_pointer(0x300000,pointer,0,348,8,1920,1080));
     slider_capture_enabled=0;
-    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==150);
+    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==100);
     for(int i=0;i<4;i++)call(TICK_CB,12,0x40000);
-    CHECK(staged_weapon_fov==130 && pc_display_weapon_fov()==100 && display_dirty());
+    CHECK(staged_weapon_fov==96 && pc_display_weapon_fov()==100 && display_dirty());
     refresh(DISPLAY_HOME,0);refresh(DISPLAY_VIEW,0);
-    CHECK(staged_weapon_fov==130);
-    call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==130 && pc_display_fov()==70 && !display_dirty());
-    content("TSFP_DISPLAY_V3 1280 720 70 130\n");
-    for(int i=0;i<6;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
+    CHECK(staged_weapon_fov==96);
+    call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov_degrees()==96 && pc_display_fov()==70 && !display_dirty());
+    content("TSFP_DISPLAY_V5 1280 720 70 96 100\n");
+    for(int i=0;i<41;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
     /* A failed SMAA save also rolls back every Apply-only graphics field. */
     TsfpGraphicsOptions before_failed_batch=pc_graphics_get();
     staged_anisotropy=4;staged_ao=!before_failed_batch.ambient_occlusion;staged_cache=!before_failed_batch.shader_cache;
-    staged_msaa=4;staged_weapon_fov=150;
+    staged_msaa=4;staged_weapon_fov=100;
     refresh(DISPLAY_HOME,0);staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
     refresh(DISPLAY_GRAPHICS,0);WORD_AT(post_aa_row+0xc8)=2;smaa_save_ok=0;
     call(SELECT_CB,3,0);
@@ -897,7 +930,7 @@ int main(int argc,char **argv)
     CHECK(graphics_options.anisotropy==before_failed_batch.anisotropy &&
           graphics_options.ambient_occlusion==before_failed_batch.ambient_occlusion &&
           graphics_options.shader_cache==before_failed_batch.shader_cache);
-    smaa_save_ok=1;staged_weapon_fov=100;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
+    smaa_save_ok=1;staged_weapon_fov=55;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
     staged_anisotropy=graphics_options.anisotropy;staged_ao=graphics_options.ambient_occlusion;staged_cache=graphics_options.shader_cache;
     refresh(DISPLAY_GRAPHICS,0);call(TICK_CB,11,0);CHECK(!display_dirty());
     WORD_AT(post_aa_row+0xc8)=2;read_choices();refresh(DISPLAY_VIEW,0);
@@ -991,16 +1024,17 @@ int main(int argc,char **argv)
     g_esp=0x700000;WORD_AT(g_esp+20)=0x2cbe10;WORD_AT(g_esp+4)=0x510000;
     pc_display_menu_button(button_probe);
     CHECK(observed_builder_flags==0x26200 && WORD_AT(0x500028)==0x32200 && g_esp==0x700004);
-    /* Both native insertion sites put Video immediately before Controls,
-     * preserving the Controls call frame and its result. */
+    /* Main Settings retains Video/Controls; pause consolidates them into a
+     * single Settings callback while preserving the original row ABI. */
     for(unsigned i=0;i<2;i++) {
         uint32_t callback=i?0x2ec1a0u:0x2cbe50u;
         g_esp=0x700000;WORD_AT(g_esp)=i?0x2f561cu:0x2cc116u;
         WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+20)=callback;
         observed_callback_count=0;
         pc_display_menu_button(button_probe);
-        CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
-        CHECK(observed_callbacks[1]==callback && WORD_AT(0x700014)==callback);
+        if(i)CHECK(observed_callback_count==1 && observed_callbacks[0]==PAUSE_SETTINGS_OPEN);
+        else CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK && observed_callbacks[1]==callback);
+        CHECK(WORD_AT(0x700014)==callback);
         CHECK(WORD_AT(0x700004)==0x510000 && g_esp==0x700004 && g_eax==0x510000);
     }
     /* Pause Options supplies its own centered (or split-screen) style.
@@ -1013,7 +1047,7 @@ int main(int argc,char **argv)
         WORD_AT(g_esp+12)=1u;
         pc_display_menu_button(button_probe);
         CHECK(observed_builder_flags==style && WORD_AT(0x500028)==style);
-        CHECK(observed_row_flags==1u && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
+        CHECK(observed_row_flags==0x21u && !WORD_AT(0x5100b0) && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
     }
     g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;WORD_AT(g_esp+16)=bits(54.f);
     pc_display_menu_button(button_probe);
@@ -1336,12 +1370,12 @@ int main(int argc,char **argv)
     /* Keep the root header fixed as content height changes; modal pages
      * retain their own native centring. */
     controls_tab=0;controls_anchor_ready=0;
-    WORD_AT(controls_menu+0x68)=bits(200.f);WORD_AT(controls_menu+0x64)=bits(12.f);
-    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
-    WORD_AT(controls_menu+0x68)=bits(120.f);WORD_AT(controls_menu+0x64)=bits(0.f);
-    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
-    WORD_AT(controls_menu+0x68)=bits(240.f);controls_anchor();
-    CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
+    WORD_AT(controls_menu+0x68)=bits(53.f);WORD_AT(controls_menu+0x64)=bits(12.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
+    WORD_AT(controls_menu+0x68)=bits(47.f);WORD_AT(controls_menu+0x64)=bits(0.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
+    WORD_AT(controls_menu+0x68)=bits(58.f);controls_anchor();
+    CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
     controls_tab=2;kb_page=KB_CAPTURE;WORD_AT(controls_menu+0x64)=bits(55.f);
     controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==55.f);
     { /* Section shortcuts work from a setting row, once per press, without
@@ -1767,7 +1801,30 @@ int main(int argc,char **argv)
         CHECK(!mp_native_passthrough && mp_ui.page==MP_BROWSER && online_request.action==PC_OM_LEAVE);
         native_retire_fixture=online_poll_fixture=online_request_test=0;
     }
+
+    visibility_guest_checks();
     VirtualFree(mem,0,MEM_RELEASE);
+    reload("TSFP_DISPLAY_V4 1280 720 65 120 75 50\n");
+    CHECK(pc_display_crosshair_size()==50 && pc_display_weapon_fov()==120);
+    CHECK(!pc_display_set_crosshair_size(26) && !pc_display_set_crosshair_size(151));
+    CHECK(pc_display_set_crosshair_size(45) && pc_display_save());
+    content("TSFP_DISPLAY_V4 1280 720 65 120 100 45\n");
+    CHECK(pc_display_set_crosshair_size(100) && pc_display_save());
+    content("TSFP_DISPLAY_V3 1280 720 65 120\n");
+    reload("TSFP_DISPLAY_V3 1280 720 65 130\n");
+    CHECK(pc_display_weapon_fov_legacy_percent()==130 && pc_display_weapon_fov_degrees()==68);
+    CHECK(pc_display_set_weapon_fov_degrees(68) && pc_display_save());
+    content("TSFP_DISPLAY_V3 1280 720 65 130\n"); /* No-op keeps exact legacy aperture. */
+    CHECK(!pc_display_set_weapon_fov_degrees(39) && !pc_display_set_weapon_fov_degrees(101));
+    CHECK(pc_display_set_weapon_fov_degrees(70) && pc_display_save());
+    content("TSFP_DISPLAY_V5 1280 720 65 70 100\n");
+    reload("TSFP_DISPLAY_V5 1280 720 65 70 50\n");
+    CHECK(pc_display_weapon_fov_degrees()==70 && pc_display_weapon_fov_legacy_percent()==0 && pc_display_crosshair_size()==50);
+    CHECK(fabsf(pc_display_weapon_fov_scale()-tanf(70*.00872664626f)/tanf(55*.00872664626f))<.00001f);
+    CHECK(pc_display_set_weapon_fov_degrees(55) && pc_display_set_crosshair_size(100) && pc_display_save());
+    content("TSFP_DISPLAY_V2 1280 720 65\n");
+    reload("TSFP_DISPLAY_V5 1280 720 65 101 50\n");CHECK(pc_display_weapon_fov_degrees()==55 && pc_display_crosshair_size()==100);
+    reload("TSFP_DISPLAY_V5 1280 720 65 70 50 trailing\n");CHECK(pc_display_weapon_fov_degrees()==55);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
 }

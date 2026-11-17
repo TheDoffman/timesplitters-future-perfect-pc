@@ -1,5 +1,5 @@
 from project_paths import source_file as repo_file
-"""Compile the production Quit to Desktop guest adapter on either host."""
+"""Compile shared menu/navigation adapters on either host."""
 
 
 import os
@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize("fixture,native", [
-    (fixture,native) for fixture in ('quit_menu','story_menu','story_lobby','story_drop_state','story_browser','multiplayer_exit')
+    (fixture,native) for fixture in ('pause_settings','story_menu','story_lobby','story_drop_state','story_browser','multiplayer_exit')
     for native in (False,True)] + [('story_browser','network')])
 def test_quit_menu(tmp_path, native, fixture):
     compiler, env = native_compiler(tmp_path)

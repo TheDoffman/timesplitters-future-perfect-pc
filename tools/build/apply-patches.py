@@ -227,6 +227,11 @@ def patch_records(paths):
     if execution_host:
         paths.remove(execution_host)
         paths.append(execution_host)
+    # Keep the compatibility template identical to the project register header.
+    register_header = by_name.get('0261-register-header-template.patch')
+    if register_header:
+        paths.remove(register_header)
+        paths.append(register_header)
     # SMAA extends the final config writer after native timing migrations.
     smaa = by_name.get('2470-smaa-antialiasing.patch')
     if smaa:
@@ -339,6 +344,16 @@ def patch_records(paths):
     if rollback_controls:
         paths.remove(rollback_controls)
         paths.append(rollback_controls)
+
+    # Offscreen CopyRects extends the final shared screen-copy/resolve path,
+    # including the late-applied temporal map and MSAA synchronization patches.
+    # Visibility queries follow the final shared renderer extensions.
+    for name in ('2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch',
+                 '3001-host-visibility-queries.patch'):
+        pause_patch = by_name.get(name)
+        if pause_patch:
+            paths.remove(pause_patch)
+            paths.append(pause_patch)
 
     records = []
     for patch in paths:

@@ -164,6 +164,37 @@ uint32_t tsfp_physical_allocate_range(tsfp_allocations *s, uint32_t bytes,
         align_up(bytes ? bytes : 1u, 4096), align, OWN_PHYSICAL, (uint64_t)high + 1u);
     leave(s); return address;
 }
+uint32_t tsfp_physical_allocate_high_range(tsfp_allocations *s, uint32_t bytes,
+    uint32_t align, uint32_t low, uint32_t high) {
+    uint32_t address = 0;
+    if (!s || low > high) return 0;
+    if (align < 4096) align = 4096;
+    if (!power_two(align)) return 0;
+    enter(s);
+    tsfp_allocation_arena *a = &s->physical;
+    uint64_t floor = low > a->begin ? low : a->begin;
+    uint64_t limit = (uint64_t)high + 1u;
+    uint64_t span = align_up(bytes ? bytes : 1u, 4096);
+    if (limit > a->end) limit = a->end;
+    if (s->active && a->memory && a->count < a->capacity) {
+        for (size_t i = a->count;; --i) {
+            uint64_t gap = i && a->records[i-1].end > floor
+                ? a->records[i-1].end : floor;
+            if (limit >= span) {
+                uint64_t next = (limit - span) & ~((uint64_t)align - 1u);
+                if (next >= gap) {
+                    address = publish(a, i, next, next + span,
+                        (uint32_t)next, bytes, OWN_PHYSICAL);
+                    break;
+                }
+            }
+            if (!i) break;
+            if (limit > a->records[i-1].begin) limit = a->records[i-1].begin;
+            if (limit <= floor) break;
+        }
+    }
+    leave(s); return address;
+}
 uint32_t tsfp_physical_allocate_at(tsfp_allocations *s, uint32_t address, uint32_t bytes) {
     uint32_t result = 0;
     uint64_t begin = address & ~UINT32_C(4095);

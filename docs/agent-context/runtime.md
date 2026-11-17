@@ -1,12 +1,10 @@
-[Sticks](controller-deadzones.md).
-[2990](control-presets.md).
-[Tools](developer-tools-integration.md).
+[Pad](controller-deadzones.md); [tools](developer-tools-integration.md).
 [MP](native-multiplayer-menu.md).
 
-[FOV filter](video-options.md); [Uplink](native-uplink.md).
-[UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
-
-[Effect depth](native-effect-depth.md).
+[Video](video-options.md); [Uplink](native-uplink.md).
+[UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
+[Sun](fidelity-comparison.md); [Aim](hud-sizing.md).
+[Depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
 [MP hooks](multiplayer-exit.md)
 2465 wraps356800 for rewards;
@@ -67,7 +65,7 @@ shared Story adapter so a guest's blocked movie advance does not release its
 still-rendered stream at99BB7. Real load teardown and other modes retain the
 original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
 
-# Runtime ([MSAA](smaa.md))
+# [Runtime](pause-glass.md)
 
 Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
 the patch loader orders it after native minigun/timing wrappers. It preserves

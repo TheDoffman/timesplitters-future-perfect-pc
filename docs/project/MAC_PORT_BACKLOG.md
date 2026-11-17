@@ -1,3 +1,10 @@
+Native multiplayer/main integration (2026-11-17, uncommitted): shared pause
+Settings and native multiplayer factory routes are composed; no host adapter
+change. Additive compiler patch0261 restores compatibility-template parity with
+the existing canonical register aliases; canonical guest behavior is unchanged.
+Windows compile/contract validation is recorded in STATUS. Native Mac/Linux
+build and gameplay acceptance remain pending.
+
 Lobby-name text sizing (2026-11-12, local aftercbd52cae): **Awaiting validation**
 on native Mac/Linux. Shared MP_CREATE field value/placeholder uses70% native
 scale; label, native field bounds and stored name are preserved. No OS adapter
@@ -148,6 +155,58 @@ build/input and remote join remain unverified. Invite Only listing/admission and
 private component installation need the separate private backend/source; no
 server code was added to normal client packages. See [current evidence](STATUS.md)
 and [owning guide](../agent-context/native-multiplayer-menu.md).
+
+Sun/visibility repair (Awaiting validation on Mac, commit e7de0247):
+the user-requested removal of the optional comparison preset applies to shared
+settings and both guest/native menus; no Mac-specific preset remains. Normal
+saved options remain authoritative; obsolete sidecars are ignored.
+Shared visibility cache, original SDK wrappers, allocator repair and D3D11,
+Vulkan/legacyGL adapters remain. Prior Windows mission sun/roof checks pass;
+native Mac/Linux/GL GPU counts, occlusion and cleanup still await validation.
+No assets, colours or gameplay policy are changed. See fidelity-comparison.md.
+
+Weapon FOV now uses a40-100 degree reference angle in one-degree steps,55
+original, like Vertical FOV. Exact legacy percentages retained until edited;
+V5 persists degrees and crosshair. Shared launcher preserves both formats.
+Windows game/launcher builds, focused tests and actual32:9 main/pause/gameplay
+checks pass; native Mac/Linux visual acceptance pending.
+See docs/agent-context/video-options.md.
+
+Crosshair sizing (local feature/hud-crosshair-size, base1375e144): staged
+View & HUD and launcher slider25-150%, default100%. HUD Scale removed from
+menus and rendering; original automatic HUD fitting retained. V4 legacy HUD
+field loads but is ignored and normalized to100 on save. Windows game/launcher
+builds, focused tests and actual32:9 main/pause checks pass. Mac/Linux visual
+acceptance pending. See
+docs/agent-context/hud-sizing.md.
+
+Keyboard binding right-edge inset (base64eb0399): shared native builder
+endpoints; no host adapter. Windows build passes; Mac/Linux actual visual
+acceptance pending. See docs/agent-context/pause-settings.md.
+
+Settings panel/binding alignment (base6239ce95): shared canvas-percent anchors,
+native builder leading and measured glyph centering require no host adapter.
+Windows build and16 focused checks pass. Native Mac/Linux visual acceptance
+remains pending, including aspect/resolution changes. See
+docs/agent-context/pause-settings.md for source and test contracts.
+
+Pause Settings consolidation (branch follow-up, base20d0f5ef): IMPLEMENTED / VALIDATION
+PENDING on native Mac/Linux. Shared menu hub and factory return policy retain
+native child save/cancel routines; no host adapter is needed. Desktop-exit rows
+and callbacks removed for every host. Windows build and both standalone adapter
+defines pass; actual native navigation/rendering and split-screen remain pending.
+See docs/agent-context/pause-settings.md. Historical MAC-031 marked retired.
+
+Pause glass scaling2731 (uncommitted): shared capture/backdrop placement helper
+and native-display wrappers require no OS adapter. Scope tests cover seven
+ratios; Mac/Linux actual rendering still needs validation, including split-screen.
+
+Pause-menu glass restoration (uncommitted, base c1e67e42): IMPLEMENTED / VALIDATION
+PENDING on native Mac/Linux. Shared patch2730 extends HLE CopyRects and common
+RHI screen-copy passes; Windows D3D11 and Vulkan hosts share the implementation.
+Legacy GL retains E_NOTIMPL screen-copy fallback. Windows GPU pixel contracts
+pass; native Mac/Linux visual acceptance remains: pause/resume/reopen in Story
+and Arcade, split-screen, aspect/resolution changes. See pause-glass.md.
 
 Full control-preset rollback (local, base e7cb1016): shared2990 removes sampler
 preset/semantic layers and restores original defaults/profile initialization and
@@ -1244,7 +1303,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-028 | Preserve frontend camera FOV (#82) | Awaiting validation |
 | MAC-029 | Skippable idle demo video (#50) | Awaiting validation |
 | MAC-030 | Menu mouse selection (#86) | Awaiting validation |
-| MAC-031 | Quit to Desktop menu entries | Awaiting validation |
+| MAC-031 | Quit to Desktop menu entries (retired) | Not applicable |
 | MAC-032 | Responsive menu backgrounds and scope masks | Awaiting validation |
 | MAC-033 | Full-display transition fades | Awaiting validation |
 | MAC-034 | Plain improvement form handoff | Not applicable |
@@ -5136,32 +5195,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   on Apple Silicon with Clang. This does not verify native window input, rendering
   or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
 
-### MAC-031 — Quit to Desktop menu entries
+### MAC-031 — Quit to Desktop menu entries (retired)
 
-- **Status:** Awaiting validation
-- **PC behavior:** Main Story/Arcade menu and Pause append Quit to Desktop.
-  The game's confirmation screen defaults to Cancel, supports normal menu
-  controls, and posts WM_CLOSE only after confirmation. Existing Quit retains
-  its return-to-menu behavior. Only player one's menus expose desktop exit.
-- **Source:** Commit `e18baa9` on the #86 menu controls branch;
-  `src/interface/pc_quit_menu.inc`, `src/interface/pc_display_menu.c/.h`, `quit-desktop.patch`,
-  and `tests/graphics/quit_menu.c` / `tests/graphics/test_quit_menu.py`.
-- **Native adaptation (2026-10-17, `codex/mac-quit-desktop`):** Enabled shared
-  menu insertion and confirmation callbacks on Mac. Confirm queues SDL_QUIT;
-  the main-thread event pump owns normal process exit. Cancel, Back, player-one
-  checks, failed-post retry and duplicate-confirm protection remain shared.
-  Both guest dispatch variants and real SDL queue tests pass.
-  [Native evidence](STATUS.md#native-quit-to-desktop-2026-10-17).
-- **Remaining:** Pause Cancel/Back/Confirm and mouse-confirm checks. Main-menu
-  keyboard Cancel/Back/Confirm now passes; exit code is 0 after SDL shutdown.
-  A wide gameplay run also shows the Pause entry, but does not establish its exit.
-- **Acceptance:** Cancel and Back restore main/Pause without exiting; Pause
-  stays paused; confirmed exit closes normally from both screens with mouse
-  and keyboard/controller. Verify menu layout at supported aspect ratios.
-  Windows evidence belongs to the issue #86 entry in `docs/project/STATUS.md`.
-- **Local source check (2026-10-17):** Guest quit-confirmation C fixture with a mocked close callback passed
-  on Apple Silicon with Clang. This does not verify native window input, rendering
-  or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
+- **Status:** Not applicable
+- Retired by user request,2026-11-13, pause Settings follow-up.
+- Shared menu insertion, desktop confirmation callbacks and the old quit fixture
+  were removed. Ordinary host window close/shutdown remains unchanged. The legacy
+  quit-desktop patch still supplies the menu-finalization hooks used by update
+  notices and Story pause layout; it no longer adds an exit action.
+- Replacement: `src/interface/pc_pause_settings.inc` and its shared fixture;
+  see [pause Settings](../agent-context/pause-settings.md). Native visual checks
+  concern the new hub/child returns rather than the retired confirmation page.
 
 ### MAC-049 — Spirit skull and eye rendering (#17)
 

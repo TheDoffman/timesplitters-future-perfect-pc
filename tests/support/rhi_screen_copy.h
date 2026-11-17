@@ -64,6 +64,35 @@ static void rhi_screen_copy_test(RhiView *restore_target) {
         IDirect3DTexture8 *texture=NULL;
         CHECK(d3d8_CreateTextureImpl(8,6,1,D3DUSAGE_RENDERTARGET,D3DFMT_LIN_A8R8G8B8,&texture)==S_OK);
         RhiView *dest=rhi_view_create(((D3D8Texture *)texture)->image,RHI_VIEW_RENDER_TARGET,NULL);CHECK(dest);
+        /* Offscreen source has its own logical dimensions, independent of
+         * the game's viewport. Preserve partial-copy offsets and BGRA bytes. */
+        IDirect3DTexture8 *offscreen_texture=NULL;
+        CHECK(d3d8_CreateTextureImpl(16,12,1,D3DUSAGE_RENDERTARGET,D3DFMT_LIN_A8R8G8B8,&offscreen_texture)==S_OK);
+        CHECK(xbox_D3D8CopyBackBufferToTexture(offscreen_texture)==S_OK);
+        RhiView *offscreen_dest=rhi_view_create(((D3D8Texture *)offscreen_texture)->image,RHI_VIEW_RENDER_TARGET,NULL);
+        CHECK(offscreen_dest);
+        const float zero[4]={0,0,0,1};rhi_clear_color(dest,zero);
+        RECT native_rect={2,3,6,6};POINT native_at={1,2};
+        rhi_set_render_target(restore_target,NULL);rhi_set_viewports(1,&original);
+        CHECK(xbox_D3D8CopyTextureRectToTexture(texture,offscreen_texture,&native_rect,&native_at)==S_OK);
+        unsigned char copied_pixels[8*6*4];
+        CHECK(rhi_image_readback(((D3D8Texture *)texture)->image,0,copied_pixels,8*4)==0);
+        for(unsigned y=0;y<6;y++)for(unsigned x=0;x<8;x++) {
+            unsigned char expected[4]={0,0,0,255};
+            if(x>=1&&x<5&&y>=2&&y<5)copy_texel((x+1)*scale+scale/2,(y+1)*scale+scale/2,expected);
+            unsigned order[4]={2,1,0,3};
+            for(unsigned c=0;c<4;c++)CHECK(copied_pixels[(y*8+x)*4+c]==expected[order[c]]);
+        }
+        RhiOutputState restored_offscreen;rhi_output_save(&restored_offscreen);
+        CHECK(rhi_output_color_is(&restored_offscreen,restore_target));
+        CHECK(restored_offscreen.viewport_count==1 && memcmp(restored_offscreen.viewports,&original,sizeof original)==0);
+        rhi_output_restore(&restored_offscreen);
+        rhi_clear_color(dest,zero);
+        CHECK(xbox_D3D8CopyTextureRectToTexture(texture,offscreen_texture,&native_rect,NULL)==S_OK);
+        POINT native_origin={native_rect.left,native_rect.top};
+        copy_expect(texture,&native_rect,&native_origin,1);
+        CHECK(xbox_D3D8CopyTextureRectToTexture(texture,texture,&native_rect,&native_at)==E_INVALIDARG);
+        rhi_view_destroy(offscreen_dest);offscreen_texture->lpVtbl->Release(offscreen_texture);
         const float black[4]={0,0,0,1};
         for(unsigned test=0;test<=sizeof cases/sizeof cases[0];test++) {
             rhi_clear_color(dest,black);

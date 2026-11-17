@@ -14,6 +14,23 @@ static void ui_place(int placement,uint32_t tag)
     host_SetTwoDPlacement(placement,tag);
     ui_placement=placement;ui_tag=tag;
 }
+/* Pause capture/filter taps and its animated backdrop are texture pixels,
+ * including quarter-size rectangles that must not inherit centered HUD
+ * placement. Preserve the native viewport/UVs and restore the menu scope. */
+static RECOMP_TLS unsigned pause_glass_depth;
+void pc_display_pause_glass(void (*original)(void),uint32_t tag)
+{
+    if(tag==0x002F3460u) {
+        /* The backdrop also draws the native header. Only its picture blit
+         * below is a texture-space pass; retain the enclosing text scope. */
+        pause_glass_depth++;original();pause_glass_depth--;return;
+    }
+    int old=ui_placement;uint32_t old_tag=ui_tag;
+    ui_place(1,tag);
+    original();
+    ui_place(old,old_tag);
+}
+
 /* US sub_000C8120 composes a camera before its optional texture copy.
  * Camera flag 8 identifies a texture feed; flag 0x400000 renders it into a
  * corner of the back buffer and copies that corner instead of binding an RT.
@@ -404,7 +421,7 @@ void pc_display_scope(void (*original)(void),uint32_t tag)
 static int aim_full_view(void)
 {
     uint32_t view=WORD_AT(0x007E71C8u);
-    return pc_display_wide_now() && pc_display_hud_scale()>0.f &&
+    return (pc_display_wide_now() || pc_display_crosshair_size()!=100) && pc_display_hud_scale()>0.f &&
         guest_call(sub_001CDAE0,0)==1 && guest_writable(view,0x24) &&
         WORD_AT(view)==0 && (WORD_AT(view+4u)==639 || WORD_AT(view+4u)==640) &&
         WORD_AT(view+0x14u)==0 && (WORD_AT(view+0x18u)==479 || WORD_AT(view+0x18u)==480);
@@ -433,6 +450,7 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
     memcpy(xy,saved,points*2*sizeof(float));
     if(kind!=2) {
         pc_ui_aim_shape(xy,points,pc_display_hud_scale());
+        pc_ui_aim_size(xy,points,pc_display_crosshair_size()*.01f);
         for(unsigned i=0;i<points*2;i++)memcpy(&WORD_AT(frame+offset+i*4),&xy[i],4);
     }
     ui_place(anchor,caller);original();ui_place(old,old_tag);
@@ -463,6 +481,10 @@ void pc_display_weapon_effect(void (*original)(void),unsigned kind)
 {
     uint32_t frame=g_esp,caller=WORD_AT(frame),addresses[8],saved[8];
     unsigned points=2;int lock=0,gradient=0,composite=0;
+    if(kind==0 && pause_glass_depth && caller==0x002F3592u) {
+        int old=ui_placement;uint32_t old_tag=ui_tag;
+        ui_place(1,caller);original();ui_place(old,old_tag);return;
+    }
     if(kind==0) {
         lock=caller==0x0013871Bu || caller==0x0013874Au;
         /* Ghost Gun living-actor reveal (US sub_00122F10): this rectangle

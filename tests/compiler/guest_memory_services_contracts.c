@@ -70,7 +70,7 @@ static void allocation_checks(void) {
             assert(result);
             base=k==TSFP_MM_STACK?result-bytes:result;
             if(k==TSFP_MM_CONTIGUOUS) {
-                assert(base==PHYS_BASE+0x10000 && allocations.physical.count==2);
+                assert(base==PHYS_BASE+PHYS_SIZE-0x2000-((bytes?bytes:1)+4095u)/4096u*4096u && allocations.physical.count==2);
                 for(uint32_t j=0;j<bytes;++j)assert(!physical[base-PHYS_BASE+j]);
             } else {
                 assert(base==0x4000 && allocations.heap.count==1);
@@ -106,6 +106,42 @@ static void allocation_checks(void) {
     assert(tsfp_guest_mm_physical(&mm,0x1234)==0x1234);
     tsfp_allocations_stop(&allocations);
     assert(!tsfp_guest_mm_allocate(&mm,TSFP_MM_SYSTEM,1));
+}
+/* Replay measured startup pressure: unconstrained surfaces and a large game
+ * pool must leave room for the original lazy, 24-bit visibility reports. */
+static void dma_checks(void) {
+    enum { SIZE=64*1024*1024 };
+    unsigned char *storage=(unsigned char *)malloc(SIZE);
+    tsfp_allocations owner={0};tsfp_allocation_config config={0};
+    tsfp_allocation_record hr[4],pr[128];tsfp_guest_mm context={0};
+    assert(storage);memset(storage,0x7a,SIZE);
+    config.ram=ram;config.ram_size=RAM_SIZE;config.heap_begin=0x4000;config.reserve_begin=0x18000;
+    config.physical=storage;config.physical_base=PHYS_BASE;config.physical_size=SIZE;
+    config.physical_begin=PHYS_BASE+0x100000;config.physical_end=PHYS_BASE+SIZE-0x20000;
+    config.protected_begin=PHYS_BASE+0x10000;config.protected_end=PHYS_BASE+0x11000;
+    assert(tsfp_allocations_init(&owner,&config,hr,4,pr,128));
+    context.vm.allocations=&owner;context.physical_base=PHYS_BASE;context.physical_size=SIZE;
+    const uint32_t sizes[]={0x60,0x100000,0x3000,0x12c000,0x12c000,0x12c000,0x80000,0x80000,0x80000};
+    for(unsigned i=0;i<sizeof(sizes)/sizeof(*sizes);++i)
+        assert(tsfp_guest_mm_contiguous_ex(&context,sizes[i],0,UINT32_MAX,4096));
+    uint32_t pool=tsfp_guest_mm_allocate(&context,TSFP_MM_CONTIGUOUS,0x2cec000);
+    assert(pool && tsfp_guest_mm_size(&context,pool)==0x2cec000);
+    storage[pool-PHYS_BASE]=0x5a;
+    uint32_t reports[64];
+    for(unsigned i=0;i<64;++i) {
+        reports[i]=tsfp_guest_mm_contiguous_ex(&context,4096,0,0x00ffffff,4096);
+        assert(reports[i]>=PHYS_BASE+0x100000 && reports[i]+4095<=PHYS_BASE+0x00ffffff);
+        assert(!(reports[i]&4095) && tsfp_guest_mm_size(&context,reports[i])==4096);
+        assert(!storage[reports[i]-PHYS_BASE]);
+    }
+    assert(storage[pool-PHYS_BASE]==0x5a);
+    tsfp_guest_mm_release(&context,TSFP_MM_CONTIGUOUS,reports[17]);
+    assert(tsfp_guest_mm_contiguous_ex(&context,4096,0,0x00ffffff,4096)==reports[17]);
+    assert(!tsfp_physical_allocate_high_range(&owner,UINT32_MAX,4096,0,UINT32_MAX));
+    assert(tsfp_physical_allocate_high_range(&owner,4096,3,0,UINT32_MAX)); /* API normalizes sub-page alignment. */
+    assert(!tsfp_physical_allocate_high_range(&owner,4096,8193,0,UINT32_MAX));
+    assert(!tsfp_physical_allocate_high_range(&owner,4096,4096,0x80200000,0x801fffff));
+    tsfp_allocations_stop(&owner);free(storage);
 }
 static void statistics_checks(void) {
     const uint32_t invalid[]={0,1,RAM_SIZE-35,RAM_SIZE,UINT32_MAX-2,UINT32_MAX};
@@ -177,6 +213,7 @@ static void access_checks(void) {
 int main(int argc,char **argv) {
     assert(argc==2);
     if(!strcmp(argv[1],"allocation"))allocation_checks();
+    else if(!strcmp(argv[1],"dma"))dma_checks();
     else if(!strcmp(argv[1],"statistics"))statistics_checks();
     else if(!strcmp(argv[1],"gpu"))gpu_checks();
     else if(!strcmp(argv[1],"access"))access_checks();

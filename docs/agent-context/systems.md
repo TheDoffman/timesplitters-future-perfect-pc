@@ -3,12 +3,10 @@
 [Tex](texture-preference.md); [arms](video-options.md).
 
 [Uplink](native-uplink.md#throw-impulse); [IDs](online-player-identities.md). [Text](native-multiplayer-menu.md).
-Networking: `pc_network_enabled()` reads startup config once,
-then uses shared atomic flags for indirect dispatch. The System Link
-menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
-its own flag. Missing launch files are not retried on every guest call, and an
-explicit disconnect does not re-import stale startup credentials. Windows, Mac
-and Linux share this policy. See `tests/network/network_eligibility.c`.
+[Network startup](network-performance.md): one-time config read, atomic dispatch;
+LAN enables explicitly, Online publishes connect/disconnect. No stale re-import.
+Shared Windows/Mac/Linux; fixture: `tests/network/network_eligibility.c`.
+[Sun/visibility](fidelity-comparison.md): optional preset removed; normal settings restored.
 
 [Tools](developer-tools-integration.md).
 
@@ -19,7 +17,7 @@ and Linux share this policy. See `tests/network/network_eligibility.c`.
 [Display](video-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
-# [Systems](video-options.md)
+# [Aim](hud-sizing.md)
 
 [SDL](linux-game.md).
 

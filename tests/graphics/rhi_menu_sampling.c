@@ -34,6 +34,7 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
     if(!s)fprintf(stderr,"Shader failure: %s\n",errors);
     CHECK(s);return s;
 }
+#include "rhi_visibility.h"
 #include "rhi_depth_replay.h"
 #include "rhi_texture_resources.h"
 #include "rhi_xbox_textures.h"
@@ -172,6 +173,7 @@ int main(void) {
     test_msaa_targets();
     test_msaa_shared_depth();
     test_msaa_scaled_target();
+    test_visibility_queries();
     rhi_device_destroy();
 #ifdef RHI_VULKAN_SDL
     SDL_DestroyWindow(window);SDL_Quit();

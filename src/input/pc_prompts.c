@@ -94,6 +94,13 @@ void pc_prompts_controller_layout_end(void) { if(controller_layout_depth)--contr
 int pc_prompts_keyboard_active(void)
 {
     if(controller_layout_depth)return 0;
+    /* Opt-in render probes use real glyph paths without a physical gamepad.
+     * Ordinary launches and actual input-device selection retain their state. */
+    const char *preview=getenv("TSFP_TEST_PROMPT_DEVICE");
+    if(preview && (getenv("TSFP_PC_INPUT_STATE") || getenv("TSFP_NATIVE_TEST_KEYS"))) {
+        if(!strcmp(preview,"controller"))return 0;
+        if(!strcmp(preview,"keyboard"))return 1;
+    }
     int value;
     AcquireSRWLockShared(&prompt_lock);
     value=keyboard_active;

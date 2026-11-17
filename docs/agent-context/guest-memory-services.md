@@ -24,7 +24,13 @@ Contiguous free first tries physical ownership, then retains the historical
 heap fallback. Other frees use heap ownership; ignored free sizes/tags remain
 ignored. Queries use the allocator's remaining requested-byte count, including
 its existing physical/heap behavior, not the native OS-region-size query.
-Extended contiguous allocation retains the project's 0206 narrow-range fixed
+Unconstrained guest contiguous allocations now use highest-fit placement to
+leave low addresses available for later24-bit DMA reports. The original opening
+scene allocates a45MiB game pool before lazily requesting report pages below16MiB;
+lowest-fit placement exhausted that range in measured release snapshots. This
+correction is under runtime validation; it does not synthesize visibility pixels.
+Generic physical allocation APIs retain lowest-fit behavior.
+Extended constrained allocation retains the project's 0206 narrow-range fixed
 placement rule and inclusive bounded-placement rule, with the same collision,
 alignment, protected-range and overflow rejection. Allocation protection hints
 do not change already mapped guest storage; IO physical/protection hints do not

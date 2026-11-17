@@ -1,0 +1,244 @@
+diff --git a/src/d3d/d3d8_xbox.h b/src/d3d/d3d8_xbox.h
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -1265,6 +1265,7 @@
+ HRESULT xbox_D3D8PrepareSharedDepthTarget(IDirect3DTexture8 *texture,
+                                          IDirect3DSurface8 *depth);
+ HRESULT       xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst);
++HRESULT xbox_D3D8CopyTextureRectToTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src, const RECT *rect, const POINT *at);
+ HRESULT       xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+                                                IDirect3DTexture8 *src, const RECT *region);
+ /* The same for one of CopyRects' rectangles: `src` in the title's own
+diff --git a/src/hle/hle_d3d8_record.h b/src/hle/hle_d3d8_record.h
+--- a/src/hle/hle_d3d8_record.h
++++ b/src/hle/hle_d3d8_record.h
+@@ -141,6 +141,7 @@
+ HRESULT host_CopyBackBufferToTexture(IDirect3DTexture8 *dst);
+ HRESULT host_CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *src,
+                                          const POINT *at);
++HRESULT host_CopyTextureRectToTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src, const RECT *rect, const POINT *at);
+ HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+                                      IDirect3DTexture8 *src, const RECT *region);
+ 
+diff --git a/src/hle/hle_d3d8_record.c b/src/hle/hle_d3d8_record.c
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1988,7 +1988,9 @@
+     if (hle_d3d8_interp_predicting) return;
+ #endif
+ 
+-    if (p->has_rect == 2)
++    if (p->has_rect == 3)
++        host_CopyTextureRectToTexture(p->dst,p->source,&p->src,&p->at);
++    else if (p->has_rect == 2)
+         host_CopyTextureRegionScaled(p->dst, p->source, &p->src);
+     else if (p->has_rect)
+         host_CopyBackBufferRectToTexture(p->dst, &p->src, &p->at);
+@@ -2027,6 +2029,28 @@
+     return xbox_D3D8CopyBackBufferRectToTexture(dst, src, at);
+ }
+ 
++HRESULT host_CopyTextureRectToTexture(IDirect3DTexture8 *dst,
++    IDirect3DTexture8 *src, const RECT *rect, const POINT *at)
++{
++    if (!rect) return E_INVALIDARG;
++    if (hle_d3d8_defer_recording()) {
++        dq_screen_copy p;
++        memset(&p,0,sizeof p);
++        p.dst=dst;p.source=src;p.has_rect=3;p.src=*rect;
++        p.at=at?*at:(POINT){rect->left,rect->top};
++        hle_d3d8_defer_op(op_screen_copy,&p,sizeof p);
++        return S_OK;
++    }
++    if (hle_d3d8_interp_rec) {
++        dq_screen_copy p;
++        memset(&p,0,sizeof p);
++        p.dst=dst;p.source=src;p.has_rect=3;p.src=*rect;
++        p.at=at?*at:(POINT){rect->left,rect->top};
++        hle_d3d8_interp_op(op_screen_copy,&p,sizeof p);
++    }
++    return xbox_D3D8CopyTextureRectToTexture(dst,src,rect,at);
++}
++
+ HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+                                      IDirect3DTexture8 *src, const RECT *region)
+ {
+diff --git a/src/d3d/d3d8_screencopy.c b/src/d3d/d3d8_screencopy.c
+--- a/src/d3d/d3d8_screencopy.c
++++ b/src/d3d/d3d8_screencopy.c
+@@ -191,11 +191,20 @@
+  * pixels, to the same size at `at` in the texture -- CopyRects does not
+  * scale. */
+ static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at,
+-                               RhiView *source, const RECT *scaled_region);
++                               RhiView *source, const RECT *scaled_region, UINT source_w, UINT source_h);
+ 
+ HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst)
+ {
+-    return copy_to_texture(dst, NULL, NULL, NULL, NULL);
++    return copy_to_texture(dst, NULL, NULL, NULL, NULL, 0, 0);
++}
++
++HRESULT xbox_D3D8CopyTextureRectToTexture(IDirect3DTexture8 *dst,
++    IDirect3DTexture8 *src, const RECT *rect, const POINT *at)
++{
++    D3D8Texture *texture=(D3D8Texture *)src;
++    if (!texture || !texture->srv || !rect || src==dst) return E_INVALIDARG;
++    POINT origin={rect->left,rect->top};
++    return copy_to_texture(dst,rect,at?at:&origin,texture->srv,NULL,texture->width,texture->height);
+ }
+ 
+ HRESULT xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+@@ -210,13 +218,13 @@
+     physical.right=(LONG)((double)region->right*desc.width/texture->width);
+     physical.top=(LONG)((double)region->top*desc.height/texture->height);
+     physical.bottom=(LONG)((double)region->bottom*desc.height/texture->height);
+-    return copy_to_texture(dst, NULL, NULL, texture->srv, &physical);
++    return copy_to_texture(dst, NULL, NULL, texture->srv, &physical,texture->width,texture->height);
+ }
+ 
+ HRESULT xbox_D3D8CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *src,
+                                              const POINT *at)
+ {
+-    return copy_to_texture(dst, src, at, NULL, NULL);
++    return copy_to_texture(dst, src, at, NULL, NULL, 0, 0);
+ }
+ 
+ /* Snapshot an offscreen colour image before a draw samples its own target.
+@@ -224,11 +232,11 @@
+ HRESULT d3d8_CopyTextureView(IDirect3DTexture8 *dst, RhiView *source)
+ {
+     if (!source) return E_INVALIDARG;
+-    return copy_to_texture(dst, NULL, NULL, source, NULL);
++    return copy_to_texture(dst, NULL, NULL, source, NULL, 0, 0);
+ }
+ 
+ static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at,
+-                               RhiView *source, const RECT *scaled_region)
++                               RhiView *source, const RECT *scaled_region, UINT source_w, UINT source_h)
+ {
+     D3D8Texture *tex = (D3D8Texture *)dst;
+     RhiImage *dst_image;
+@@ -298,7 +306,8 @@
+          * back/guest frame pixels. A title drawing its handheld's map into
+          * a corner of the back buffer and copying that corner out got the
+          * whole frame squeezed into the texture, map and all. */
+-        UINT guest_w = d3d8_GetGuestWidth(), guest_h = d3d8_GetGuestHeight();
++        UINT guest_w = source?source_w:d3d8_GetGuestWidth();
++        UINT guest_h = source?source_h:d3d8_GetGuestHeight();
+         float kx = guest_w ? (float)back_w / (float)guest_w : 1.0f;
+         float ky = guest_h ? (float)back_h / (float)guest_h : 1.0f;
+         TsfpScreenCopyRect clipped;
+diff --git a/src/d3d/d3d8_gl.c b/src/d3d/d3d8_gl.c
+--- a/src/d3d/d3d8_gl.c
++++ b/src/d3d/d3d8_gl.c
+@@ -1087,6 +1087,13 @@
+         g_scissor_rect = rects[0];
+ }
+ 
++HRESULT xbox_D3D8CopyTextureRectToTexture(IDirect3DTexture8 *dst,
++    IDirect3DTexture8 *src, const RECT *rect, const POINT *at)
++{
++    (void)dst;(void)src;(void)rect;(void)at;
++    return E_NOTIMPL; /* Legacy GL has no screen-copy adapter. */
++}
++
+ HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst)
+ {
+     (void)dst;
+diff --git a/src/hle/hle_d3d8_texture.c b/src/hle/hle_d3d8_texture.c
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -1219,6 +1219,20 @@
+  * texture drawn into and then bound samples what was drawn. A texture already
+  * cached as an ordinary one is recreated as a render target. NULL (counted)
+  * if the texture is not one this file can mirror. */
++/* Only an existing GPU source is authoritative. Never promote a CPU-only
++ * texture here: its native uploaded copy must remain intact. */
++IDirect3DTexture8 *hle_d3d8_rendered_texture(uint32_t va)
++{
++    for (int i=0;i<g_texture_count;i++) {
++        texture_entry *e=&g_textures[i];
++        if(e->host && e->rendered && e->va==va && e->data==HLE_MEM32(va+4) &&
++           e->format==HLE_MEM32(va+12) && e->size==HLE_MEM32(va+16)) {
++            e->used_swap=hle_d3d8_shadow_swaps();return e->host;
++        }
++    }
++    return NULL;
++}
++
+ IDirect3DTexture8 *hle_d3d8_render_texture(IDirect3DDevice8 *dev, uint32_t va)
+ {
+     unsigned long now = hle_d3d8_shadow_swaps();
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -3803,6 +3803,7 @@
+  * Xbox (Cxbx-Reloaded, CxbxImpl_SetRenderTarget), a new target resets the
+  * viewport to all of it. */
+ IDirect3DTexture8 *hle_d3d8_render_texture(IDirect3DDevice8 *dev, uint32_t va);
++IDirect3DTexture8 *hle_d3d8_rendered_texture(uint32_t va);
+ IDirect3DCubeTexture8 *hle_d3d8_render_cube(IDirect3DDevice8 *dev, uint32_t va);
+ int hle_d3d8_cube_face(uint32_t parent_va, uint32_t surface_va,
+                        uint32_t *face, uint32_t *level);
+@@ -4401,11 +4402,38 @@
+  * Only that case. A copy between two of the title's own surfaces is left to
+  * the title, whose result the host never sees anyway, and is counted so a
+  * title that needs more than this says so in the log. */
++#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
++/* Preserve CopyRects' pixels and destination offsets, including partial copies.
++ * Unsupported/CPU-only sources retain the original native result. */
++static int shadow_copy_texture_rects(uint32_t src,uint32_t dst,UINT sw,UINT sh,
++    UINT dw,UINT dh,uint32_t rects,UINT count,uint32_t points)
++{
++    IDirect3DTexture8 *source=hle_d3d8_rendered_texture(src);
++    if (!source || count>16 || (count && !rects)) return 0;
++    IDirect3DTexture8 *target=hle_d3d8_render_texture(g_shadow,dst);
++    if (!target) return 0;
++    if (!count) {
++        RECT r={0,0,(LONG)(sw<dw?sw:dw),(LONG)(sh<dh?sh:dh)};
++        POINT p={0,0};
++        return SUCCEEDED(host_CopyTextureRectToTexture(target,source,&r,&p));
++    }
++    for (UINT i=0;i<count;i++) {
++        RECT r={(LONG)HLE_MEM32(rects+i*16),(LONG)HLE_MEM32(rects+i*16+4),
++                (LONG)HLE_MEM32(rects+i*16+8),(LONG)HLE_MEM32(rects+i*16+12)};
++        POINT p={points?(LONG)HLE_MEM32(points+i*8):r.left,
++                 points?(LONG)HLE_MEM32(points+i*8+4):r.top};
++        if (FAILED(host_CopyTextureRectToTexture(target,source,&r,&p))) return 0;
++    }
++    return 1;
++}
++#endif
+ HLE_EXPORT(D3DDevice_CopyRects)
+ {
+     static int seen;
+ #if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
+     uint32_t src = HLE_ARG(0), dst = HLE_ARG(3);
++    /* The native XDK body consumes its count/pointer stack arguments. */
++    uint32_t rects_va=HLE_ARG(1),count=HLE_ARG(2),points_va=HLE_ARG(4);
+     static IDirect3DTexture8 *map_source;
+     static unsigned long map_source_swap;
+ #endif
+@@ -4442,7 +4470,6 @@
+              * corner of the back buffer and copies that corner into the
+              * handheld's screen; copying the whole frame showed the frame
+              * there instead of the map. */
+-            uint32_t rects_va = HLE_ARG(1), count = HLE_ARG(2), points_va = HLE_ARG(4);
+             static int said_rect;
+ 
+             if (tex && rects_va && count) {
+@@ -4504,6 +4531,13 @@
+                             "copying the host frame into texture 0x%08X (%ux%u)\n",
+                             dst_parent, dw, dh);
+             }
++        } else if (src_parent && dst_parent && src_parent!=dst_parent &&
++                   HLE_MEM32(src_parent+4)==HLE_MEM32(src+4) &&
++                   HLE_MEM32(dst_parent+4)==HLE_MEM32(dst+4) && sw && sh && dw && dh &&
++                   shadow_copy_texture_rects(src_parent,dst_parent,sw,sh,dw,dh,
++                       rects_va,count,points_va)) {
++            /* Pause reads a filtered offscreen scene, not the back buffer. */
++            elsewhere++;
+         } else {
+             elsewhere++;
+             if (dst == g_backbuffer_va || !dst_parent) {
