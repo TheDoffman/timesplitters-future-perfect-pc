@@ -196,3 +196,67 @@ def test_reversal_of_partial_candidate_startup_observes_known_jobs_without_start
     result=coordinator.rollback_private(item.state,item.context)
     assert result['generation']=='before' and len(item.starts)==11
     assert item.flow.private==['before'] and len(item.kills)==7
+
+
+@pytest.mark.parametrize('failure',['scanner','catalog'])
+def test_old_generation_failure_stays_private_until_fresh_acceptance_passes(machine,monkeypatch,failure):
+    item=machine;coordinator.apply_private(item.state,item.context)
+    scanner,ready=process.scanner_check,process.private_readiness
+    def scan(current,uid):
+        result=scanner(current,uid)
+        if current['identity']=='a'*64:result['results']['blocked']='clean'
+        return result
+    def regressed(current,uid,profile,*,floor):
+        result=ready(current,uid,profile,floor=floor)
+        if current['identity']=='a'*64:result['catalog_version']=39
+        return result
+    with monkeypatch.context() as patch:
+        patch.setattr(process,'scanner_check',scan if failure=='scanner' else scanner)
+        patch.setattr(process,'private_readiness',regressed if failure=='catalog' else ready)
+        with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context)
+    assert item.flow.private==['before'] and item.state.state()['catalog_floor']==42
+    assert not item.state.state()['activation_ready']
+    item.state.require_suspended(item.context['operator'])
+    with pytest.raises(ModError):routes.transition(item.state.base['routing'],True,item.context['operator'],item.state.routing_event)
+    assert len(item.starts)==(10 if failure=='scanner' else 20) and len(item.kills)==7
+    coordinator.rollback_private(item.state,item.context,resume=True)
+    assert len(item.starts)==20 and len(item.kills)==14 and len(item.captures)==2
+
+
+@pytest.mark.parametrize('fail_old_scanner',[False,True])
+def test_cancel_prepared_layout_before_migration_readmits_original_services_without_private_writes(machine,monkeypatch,fail_old_scanner):
+    item=machine;record=item.state.record
+    def interrupt(kind,*args,**kwargs):
+        if kind=='migration-intent':raise OSError('stopped before private migration intent')
+        return record(kind,*args,**kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(item.state,'record',interrupt)
+        with pytest.raises(OSError):coordinator.apply_private(item.state,item.context)
+    assert item.state.state()['layout_complete']=='before' and item.flow.calls==[]
+    if fail_old_scanner:
+        scan=process.scanner_check
+        def reject(current,uid):
+            result=scan(current,uid);result['results']['blocked']='clean';return result
+        with monkeypatch.context() as patch:
+            patch.setattr(process,'scanner_check',reject)
+            with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context)
+        with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context)
+        result=coordinator.rollback_private(item.state,item.context,resume=True)
+    else:result=coordinator.rollback_private(item.state,item.context)
+    assert result['generation']=='before' and item.flow.private==['before'] and item.flow.calls==[]
+    assert len(item.starts)==10 and len(item.kills)==7 and len(item.captures)==1
+    assert item.scans==['a'*64]*(2 if fail_old_scanner else 1)
+    assert (item.flow.case.root/'monitor/deployments/old-receipt.json').exists()
+
+
+def test_pending_forward_migration_is_not_reinterpreted_as_rollback(machine,monkeypatch):
+    item=machine;record=item.state.record
+    def interrupt(kind,*args,**kwargs):
+        if kind=='migration-observed':raise OSError('lost forward migration result')
+        return record(kind,*args,**kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(item.state,'record',interrupt)
+        with pytest.raises(OSError):coordinator.apply_private(item.state,item.context)
+    committed=item.state.current
+    with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context,resume=True)
+    assert item.state.current==committed and not item.starts and len(item.captures)==1

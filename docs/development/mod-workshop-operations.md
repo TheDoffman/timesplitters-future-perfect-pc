@@ -198,7 +198,9 @@ archive. This preserves current repository data rather than restoring a backup.
 Old services must pass fresh AV/readiness and seven restarts at the retained
 catalog floor; ingress remains suspended for separate public acceptance.
 Existing shutdown/reversal/old-startup work requires explicit resume. Completed
-checkpoints are revalidated, not rewritten; completed OS stops, bootstraps and
+or pending old-generation proof retirement also requires explicit resume if old
+AV admission fails before the first bootstrap, including prepared cancellation.
+Completed checkpoints are revalidated, not rewritten; completed OS stops, bootstraps and
 restart signals are not repeated. Process/context reconstruction, reboot recovery,
 pending-forward-to-reverse resolution and the installed CLI remain open.
 

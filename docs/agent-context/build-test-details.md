@@ -1982,3 +1982,7 @@ exchange/migration/start/restart observations require resume without duplicate O
 effects. A partial candidate bootstrap can be stopped without loading its remaining
 jobs. These remain credential/OS/child simulations with actual protected metadata
 and files, not installed UID600 or live old-code/new-data compatibility evidence.
+Old-generation AV rejection and catalog regression block public restoration until
+fresh acceptance succeeds. A prepared layout can be cancelled before migration
+without private configuration writes; pending forward migration is preserved and
+refused by rollback even on explicit resume.

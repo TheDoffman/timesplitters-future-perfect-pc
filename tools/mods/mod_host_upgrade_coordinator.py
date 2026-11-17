@@ -114,7 +114,9 @@ def rollback_private(journal,context,*,resume=False):
             and state['private_baseline']==context['private_baseline'],
             'Resolve forward or routing recovery before reversing a prepared upgrade')
     history=read_json(journal.current)['events']
-    reversing=state['shutdown'] is not None or state['activation_generation']=='before' or any(
+    reversing=(state['shutdown'] is not None or state['activation_generation']=='before'
+        or 'before' in state['retired_proofs']
+        or (state['retire_pending'] is not None and state['retire_pending']['generation']=='before')) or any(
         event['kind'] in ('migration-intent','layout-intent','layout-complete')
         and isinstance(event['label'],str) and event['label'].startswith('rollback') for event in history)
     require(resume or not reversing,'An existing reversal requires explicit recovery')
@@ -136,7 +138,7 @@ def rollback_private(journal,context,*,resume=False):
                 shutdown.checkpoint_monitor(journal,exchange,new_entries,gate,resume=resume)
             else:exchange._locations()
     state=journal.state()
-    require(state['quiescent'] and not state['started'] and state['start_pending'] is None
+    require((state['quiescent'] and not state['started'] and state['start_pending'] is None)
             or (state['config']=='before' and state['layout_complete']=='before'
                 and state['activation_generation']=='before' and resume),
             'Rollback requires observed shutdown or known old-generation startup recovery')
