@@ -21,6 +21,11 @@ from mod_package import ModError
 pytestmark=pytest.mark.parametrize('prepared',['deferred'],indirect=True)
 
 
+@pytest.fixture(autouse=True)
+def simulated_boot(monkeypatch):
+    monkeypatch.setattr(activation,'boot_identity',lambda:'f'*64)
+
+
 @pytest.fixture
 def running(flow,monkeypatch):
     item=flow;item.run('apply');loaded={};effects=[];scanner=[];mode=[None];foreign=[False]

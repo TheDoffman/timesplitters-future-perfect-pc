@@ -1932,3 +1932,5 @@ remain pending for separate recovery. The fixed runtime's AV helper transport
 protocol is covered by test_upgrade_process.py. Health metadata may update while
 static policy identities remain pinned; loaded jobs do not establish readiness,
 restart acceptance or permission to expose the workshop publicly.
+Activation fixtures explicitly bind the same simulated boot across all imported
+entry points; production native boot/context checks remain unchanged.
