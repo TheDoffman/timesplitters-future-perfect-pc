@@ -1,4 +1,4 @@
-Private startup authority (2026-11-16; source3b4e1e72/d21bdf63/c6d0e4d1;
+Private startup authority (2026-11-16; source3b4e1e72/d21bdf63/c6d0e4d1/5f20ab7c;
 not deployed): the internal activation phase retires active migration authority
 under durable intent, archives known proof bytes in Root700 storage at0600, and
 supports explicit recovery after rename/chmod/observation interruption. Foreign
@@ -22,7 +22,11 @@ Activation/proof/archive/journal tests pass14 Mac/5.82s and14 Linux/7.69s after 
 fixture explicitly binds all imported boot readers to the simulated boot. Expanded
 combined activation/flow/layout/admission/process/cutover/journal checks pass242
 Mac/15.08s and242 Linux/20.67s atc6d0e4d1; Windows plus CI-scope passes259/143
-POSIX skips0.64s. Filesystem/journal effects are real private HOME fixtures; authority,
+POSIX skips0.64s.
+Final custody checks at5f20ab7c revalidate Root700 on the store/nonce folder before
+consuming a proof and during startup/recovery:17 activation checks pass Mac/7.36s,
+Linux/9.88s; Windows17 POSIX skips0.13s. Filesystem/journal effects use real private
+HOME fixtures; authority,
 scanner results, launchd and process responses are simulated. These do not prove
 installed UID600 AV admission or production startup. Private readiness, seven
 restarts, controlled post-start stop/rollback, health-history checkpointing,
