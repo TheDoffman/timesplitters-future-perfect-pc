@@ -1951,3 +1951,11 @@ signature/loopback implementation separately.
 Restart completion also requires the new PID in the numeric process table with
 the fixed role's owner throughout its observed tree. Stale launchd PIDs and an
 unfinished privilege drop stay pending; explicit resume does not signal again.
+test_upgrade_shutdown.py exercises actual journal/files/checkpoints/reverse exchange
+with simulated launchd/processes, AV and readiness. Stop intents bind the active
+generation and current process trees, retaining pending-restart trees. All labels,
+old groups and dedicated-UID processes must exit before another quiescent record.
+Checkpoint tests preserve bounded valid health and known Root monitor temporaries,
+refuse arbitrary/changed history, and complete a reverse/start/readiness/public
+memory-routing cycle with the catalog floor retained. Full reversal exceeds128
+events, so the journal is now bounded to256 events/128KiB (32 transactions).

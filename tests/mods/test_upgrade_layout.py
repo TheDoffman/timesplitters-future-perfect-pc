@@ -1,5 +1,6 @@
 """Actual protected filesystem exchange; simulated authority and effect journal."""
 import os
+import json
 from pathlib import Path
 import plistlib
 import sys
@@ -47,7 +48,9 @@ def prepared(private_posix_path,monkeypatch,request):
     # Unrecognized root-owned historical records must survive whole-directory archival.
     (root/'monitor/deployments').mkdir(mode=0o700)
     write(root/'monitor/deployments/old-receipt.json',b'{"historical":true}',0o600)
-    write(root/'monitor/api/health.json',b'{"old-health":true}',0o644)
+    api=next(spec['Label'] for _,spec in old if spec['Label'].split('.')[3]=='api' and not spec['Label'].endswith('.monitor'))
+    write(root/'monitor/api/health.json',json.dumps(dict(schema=1,uid=600,service=api,role='api',policy='root-system-host-v1',
+        release=str(before),time=1000000000,status='idle')).encode(),0o644)
     base=dict(before=before.name,after=after.name,uid=600,nonce='c'*64,boot_id='f'*64)
     journal=SimpleNamespace(base=base,state=lambda:dict(quiescent=True))
     exchange=layout.Layout(journal,before,after,old,new)

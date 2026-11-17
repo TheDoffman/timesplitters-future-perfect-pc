@@ -31,7 +31,7 @@ def checked_existing(journal,data):
             'stopped_jobs','quiesced_at','backup_verified_at','boot_id'}
     history=read_json(journal.current)['events']
     captures=[entry['data'] for entry in history if entry['kind']=='backup-verified']
-    quiesced={entry['time'] for entry in history if entry['kind']=='quiescent'}
+    quiesced={entry['time'] for entry in history if entry['kind'] in ('quiescent','shutdown-complete')}
     require(isinstance(value,dict) and set(value)==fields and type(value['schema']) is int and value['schema']==1
             and value['producer']==PRODUCER and all(type(value[k]) is type(base[k]) and value[k]==base[k]
                 for k in ('before','after','uid','nonce','plan_sha256','boot_id'))

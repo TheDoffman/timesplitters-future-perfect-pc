@@ -14,8 +14,8 @@ from mod_host_migration import boot_identity, jobs
 from mod_package import ModError, read_json, require
 
 MAX_JOURNALS = 32
-MAX_BYTES = 65536
-MAX_EVENTS = 128
+MAX_BYTES = 131072
+MAX_EVENTS = 256
 SHA = re.compile('[0-9a-f]{64}\\Z')
 
 
@@ -62,6 +62,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
     retired={};retire_pending=None;scanner=None;scanner_time=None
     started=[];start_pending=None;activation_generation=None
     private_baseline=None;catalog_floor=1;private_ready=None;private_time=None;restarted=[];restart_pending=None;activation_ready=False
+    shutdown=None;shutdown_stopped=[];shutdown_pending=None;shutdown_complete=False;monitor_checkpoints={}
     order = stop_order()
     for event in events:
         require(isinstance(event, dict) and set(event) == {'kind','label','time','data'}
@@ -81,7 +82,8 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
             require(label is None and pending is None,'Routing cannot cross a pending service stop')
             receipt=routing_receipt(data,baseline);expose=receipt['expose']
             require(not expose or (config_pending is None and layout_pending is None and retire_pending is None
-                    and start_pending is None and restart_pending is None and (not started or activation_ready)),
+                    and start_pending is None and restart_pending is None and (shutdown is None or shutdown_complete)
+                    and (not started or activation_ready)),
                     'Public restoration cannot cross a pending protected operation')
             if expose and started:
                 require(private_ready is not None and access is not None and 0<=event['time']-private_time<=300
@@ -117,6 +119,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         elif kind=='access-verified':
             require(label is None and pending is None and suspended and route_pending is not False
                     and retire_pending is None and start_pending is None and restart_pending is None
+                    and (shutdown is None or shutdown_complete)
                     and (not started or activation_ready)
                     and isinstance(data,dict) and set(data)=={'release','sha256'}
                     and data['release'] in (before,after) and isinstance(data['sha256'],str) and SHA.fullmatch(data['sha256'])
@@ -244,6 +247,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                         and label==start_order()[len(started)] and (quiescent or activation_generation==config)
                         and 0<=event['time']-scanner_time<=300,'Private startup is out of order or scanner admission expired')
                 start_pending=label;activation_generation=config;quiescent=False;checked_at=None;access=None;access_time=None
+                shutdown=None;shutdown_stopped=[];shutdown_pending=None;shutdown_complete=False
             else:
                 require(start_pending==label and isinstance(data,dict) and set(data)=={'path','pid'}
                         and isinstance(data['path'],str) and 0<len(data['path'])<=2048
@@ -253,7 +257,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         elif kind=='private-readiness-verified':
             require(label==config==monitor==layout_complete and activation_generation==config and started==start_order()
                     and start_pending is None and restart_pending is None and config_pending is None and layout_pending is None
-                    and retire_pending is None and route_pending is None and suspended and private_baseline is not None
+                    and retire_pending is None and route_pending is None and suspended and private_baseline is not None and shutdown is None
                     and scanner is not None and 0<=event['time']-scanner_time<=300,
                     'Private readiness lacks complete fresh private startup context')
             from mod_host_upgrade_process import checked_private_result
@@ -262,7 +266,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
             activation_ready=restarted==restart_order()
         elif kind in ('restart-intent','restart-observed'):
             require(label in restart_order() and started==start_order() and start_pending is None and suspended
-                    and route_pending is None and config_pending is None and layout_pending is None and retire_pending is None,
+                    and route_pending is None and config_pending is None and layout_pending is None and retire_pending is None and shutdown is None,
                     'Restart lacks complete private job context')
             if kind=='restart-intent':
                 require(restart_pending is None and len(restarted)<len(restart_order()) and label==restart_order()[len(restarted)]
@@ -278,10 +282,45 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                         and data['pid']!=restart_pending['pid'] and data['old_tree_exited'] is True,
                         'Restart observation lacks a new process and old-tree cleanup')
                 restarted.append(label);restart_pending=None
+        elif kind=='shutdown-intent':
+            require(label==config==monitor==layout_complete and activation_generation==config and shutdown is None
+                    and (started or start_pending is not None) and suspended and route_pending is None
+                    and config_pending is None and layout_pending is None and retire_pending is None
+                    and isinstance(data,dict) and set(data)=={'tracked','loaded'} and isinstance(data['tracked'],list)
+                    and 1<=len(data['tracked'])<=2 and isinstance(data['loaded'],list) and data['loaded']==sorted(set(data['loaded']))
+                    and set(data['loaded'])<=set(started+([start_pending] if start_pending else [])),
+                    'Shutdown context differs from known private startup')
+            for tracked in data['tracked']:cutover.checked_tracking(tracked)
+            shutdown=dict(generation=label,**data);shutdown_stopped=[];shutdown_pending=None;shutdown_complete=False
+            activation_ready=False;private_ready=None;private_time=None;access=None;access_time=None
+        elif kind in ('shutdown-stop-intent','shutdown-stop-observed'):
+            require(shutdown is not None and not shutdown_complete and data is None and suspended and route_pending is None,
+                    'Private shutdown lacks its durable generation context')
+            if kind=='shutdown-stop-intent':
+                require(shutdown_pending is None and len(shutdown_stopped)<len(order) and label==order[len(shutdown_stopped)],
+                        'Private shutdown stop order differs')
+                shutdown_pending=label
+            else:
+                require(shutdown_pending==label,'Private shutdown observation lacks its intent')
+                shutdown_stopped.append(label);shutdown_pending=None
+        elif kind=='shutdown-complete':
+            require(shutdown is not None and label==shutdown['generation']==config and data is None
+                    and shutdown_stopped==order and shutdown_pending is None and not shutdown_complete
+                    and suspended and route_pending is None,'Private shutdown lacks all fixed stop observations')
+            shutdown_complete=True;started=[];start_pending=None;activation_generation=None;scanner=None;scanner_time=None
+            restarted=[];restart_pending=None;private_ready=None;private_time=None;activation_ready=False;retired={};backup=None
+            quiescent=True;quiesced_at=event['time'];checked_at=event['time']
+        elif kind=='monitor-checkpoint':
+            require(label==config==monitor==layout_complete and shutdown_complete and shutdown is not None
+                    and quiescent and not started and start_pending is None and shutdown_pending is None
+                    and suspended and route_pending is None and isinstance(data,str) and SHA.fullmatch(data),
+                    'Monitor history checkpoint lacks completed private shutdown')
+            monitor_checkpoints[label]=data
         else:
             require(kind == 'settled' and data is None and label is None and pending is None
                     and route_pending is None and not suspended and config_pending is None and layout_pending is None
                     and retire_pending is None and start_pending is None and restart_pending is None
+                    and (shutdown is None or shutdown_complete)
                     and (not started or activation_ready)
                     and (layout_sha is None or (layout_complete==config and monitor==config
                         and all(value==config for value in boots.values()))),'Invalid cutover settlement')
@@ -294,7 +333,9 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                 retire_pending=retire_pending,scanner=scanner,scanner_time=scanner_time,started=started,
                 start_pending=start_pending,activation_generation=activation_generation,private_baseline=private_baseline,
                 catalog_floor=catalog_floor,private_ready=private_ready,private_time=private_time,restarted=restarted,
-                restart_pending=restart_pending,activation_ready=activation_ready)
+                restart_pending=restart_pending,activation_ready=activation_ready,shutdown=shutdown,
+                shutdown_stopped=shutdown_stopped,shutdown_pending=shutdown_pending,shutdown_complete=shutdown_complete,
+                monitor_checkpoints=monitor_checkpoints)
 
 
 def checked(data, clock):

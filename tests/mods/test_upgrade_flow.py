@@ -49,7 +49,7 @@ def flow(prepared,workshop_routing,monkeypatch):
             state.record('backup-verified',data=receipt)
             proof=dict(schema=1,producer=admission.PRODUCER,before='a'*64,after='b'*64,uid=600,nonce='c'*64,
                 plan_sha256='d'*64,backup_sha256=receipt['verified_manifest_sha256'],time=now[0],
-                stopped_jobs=migration.jobs(),quiesced_at=1000000000,backup_verified_at=now[0],boot_id='f'*64)
+                stopped_jobs=migration.jobs(),quiesced_at=state.state()['quiesced_at'],backup_verified_at=now[0],boot_id='f'*64)
             previous,identity=admission._existing(state)
             admission._publish(state,proof,previous,identity)
             return proof

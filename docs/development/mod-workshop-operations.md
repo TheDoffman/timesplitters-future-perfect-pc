@@ -266,7 +266,7 @@ file effects retain their exact pending operation. Public access/restoration and
 settlement must match the complete configuration/layout generation. Suspension
 can still contain re-exposure while a protected effect is pending.
 
-The bounded Root history is now128 events/64KiB per transaction; a complete
+The original private file-flow bound was128 events/64KiB per transaction; a complete
 apply/reverse/restoration exceeds the former64-event limit. Known proof refresh
 is the sole exception to monitor inventory identity stability: a Root0644 proof
 must match this transaction's recorded backup hash/time, shutdown, boot, plan and
@@ -329,6 +329,34 @@ at restoration intent and observation, preventing stale admission or changed
 evidence from enabling public service. This function does not change routing.
 Controlled post-start shutdown/rollback, health-history checkpointing, reboot
 recovery, the full installed apply CLI and production acceptance remain open.
+
+`mod_host_upgrade_shutdown.py` now implements controlled post-start shutdown and
+monitor-history checkpointing. It snapshots current fixed labels/process trees
+and retains any unresolved restart tree, then stops monitors before backup and
+workers. Each bootout has durable intent and observed exact native absence.
+Explicit resume observes a pending stop without repeating bootout. Changed PIDs,
+bindings, reappearing labels and uncertainty preserve state; all tracked groups
+and every dedicated-UID process must exit before shutdown completion. Unrecorded
+UID processes prevent quiescence after the known jobs are safely stopped. A
+pending startup that never loaded can be cancelled through this observed shutdown.
+
+After shutdown, a new Root-only checkpoint binds the active monitor inventory to
+the original layout digest. Static policy identities stay fixed; only typed
+generation-bound health reports may change. The exact Root atomic-write namespaces
+`.scan-<32hex>` and `<role>/.health-<32hex>` may remain as bounded opaque evidence
+after a killed writer; those files are preserved without loading/deleting their
+partial bytes. Other unknown/linked/changed history is refused. Reverse exchange
+recognizes only the checkpoint hash recorded in the global Root journal and
+archives the entire new directory before restoring the old one. Fresh backup/
+proof after shutdown binds its new quiescence time; expired authority in the
+restored old directory needs explicit fresh capture before private rollback.
+
+Catalog floor is retained across shutdown/reverse/restart. The old generation
+must again retire proof, pass AV, load fixed jobs, complete readiness/seven restarts
+and pass public-admission freshness gates. The full history now allows256 events/
+128KiB per transaction, at most32 transactions; a complete post-start reversal
+exceeds128 events. These internal phases still require installed acceptance,
+reboot recovery and full apply-CLI integration before live deployment.
 
 The v2 routing callback is directly compatible with the selective transition
 primitive. It persists intent before the action, permits only matching observed

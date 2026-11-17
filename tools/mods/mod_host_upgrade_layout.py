@@ -159,11 +159,11 @@ def _new(directory,name,data,mode):
     finally:os.close(fd)
 
 
-def _check_payloads(directory,expected,*,allow_proof=False):
+def _check_payloads(directory,expected,*,allow_proof=False,history=None):
     observed=snapshot(directory)
     directories={'','api','publication','gateway'}
     extra={'upgrade-quiescence.json'} if allow_proof and 'upgrade-quiescence.json' in observed else set()
-    require(set(observed)==directories|set(expected)|extra,'Staged monitor inventory differs')
+    require(set(observed)==(set(history) if history is not None else directories|set(expected))|extra,'Staged monitor inventory differs')
     require(all(observed[name][-1]==0o755 for name in directories),'Staged monitor directory mode differs')
     for name,data in expected.items():
         found,_=cutover.protected_bytes(directory/name,0o600,32768)
@@ -263,6 +263,11 @@ class Layout:
         data,_=cutover.protected_bytes(self.folder/'manifest.json',0o600,65536)
         require(data==self.manifest,'Protected layout manifest changed')
         manifest=read_json(data);original=manifest['monitor'];found={}
+        candidates=dict(before=original,after=manifest['after_monitor'])
+        checkpoints=self.journal.state().get('monitor_checkpoints',{})
+        if checkpoints:
+            from mod_host_upgrade_shutdown import read_checkpoint
+            for generation,sha in checkpoints.items():candidates[generation]=read_checkpoint(self,generation,sha)
         require(manifest['backup']==self._backup(),'Preserved backup job identities changed')
         for name,path in (('active',cutover.ROOT/'monitor'),('saved',self.saved),('staged',self.staged)):
             try:observed=snapshot(path)
@@ -271,17 +276,15 @@ class Layout:
             if 'upgrade-quiescence.json' in observed:
                 from mod_host_upgrade_admission import checked_existing
                 checked_existing(self.journal,cutover.protected_bytes(path/'upgrade-quiescence.json',0o644,8192)[0])
-            missing_original='upgrade-quiescence.json' in original and 'upgrade-quiescence.json' not in observed
-            retired=False
-            if missing_original and stable(observed)==stable(original):
+            matches=[generation for generation,value in candidates.items() if stable(observed)==stable(value)]
+            require(len(matches)==1,'Preserving changed protected monitor evidence')
+            generation=matches[0]
+            missing_original=generation=='before' and 'upgrade-quiescence.json' in original and 'upgrade-quiescence.json' not in observed
+            if missing_original:
                 from mod_host_upgrade_activation import retired_original_proof
-                retired=retired_original_proof(self.journal,self.folder,'before')
-            require(not missing_original or retired or stable(observed)==stable(manifest['after_monitor']),
-                    'Preserving a missing original migration proof')
-            if stable(observed)==stable(original):found[name]='before'
-            else:
-                require(stable(observed)==stable(manifest['after_monitor']),'Preserving changed protected monitor evidence')
-                _check_payloads(path,self.after,allow_proof=True);found[name]='after'
+                require(retired_original_proof(self.journal,self.folder,'before'),'Preserving a missing original migration proof')
+            if generation=='after':_check_payloads(path,self.after,allow_proof=True,history=candidates['after'] if 'after' in checkpoints else None)
+            found[name]=generation
         require(sorted(v for v in found.values() if v is not None)==['after','before']
                 and found['saved'] in (None,'before') and found['staged'] in (None,'after'),
                 'Preserving unknown or duplicate protected monitor generations')
