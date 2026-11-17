@@ -124,13 +124,13 @@ static int arcade_join_retire_body(uint32_t actor,uint32_t body,unsigned humans,
     if(!guest_writable(body,0x154u) || WORD_AT(body+0x7cu)!=actor ||
        (WORD_AT(body+0x28u)&0x80000000u))return 1; /* Already retired; never destroy a reused foreign body. */
     /* Use the complete original retirement, including navigation reservations,
-       inventory and mode-object callbacks. Keep this actor row's place for its
-       replacement, rather than letting registry removal swap another bot in. */
+       inventory and mode-object callbacks. Leave the retired actor unlisted
+       until construction succeeds: restoring the old list here publishes a
+       null body if the replacement cannot be constructed this frame. */
     const uint32_t count=WORD_AT(0x74c37cu),configs[]={0x7de400u,0x7de340u,0x774044u,0x78ad58u};
-    uint32_t registry[32],old_humans=WORD_AT(0x790950u),old_bots=WORD_AT(0x7a2958u);
+    uint32_t old_humans=WORD_AT(0x790950u),old_bots=WORD_AT(0x7a2958u);
     uint8_t population[4][3];
     if(count>32u)return 0;
-    memcpy(registry,(const void *)((uintptr_t)0x7a3580u+g_xbox_mem_offset),count*4u);
     for(unsigned i=0;i<4u;i++) {
         uint8_t *config=(uint8_t *)((uintptr_t)configs[i]+g_xbox_mem_offset);
         memcpy(population[i],config,3);config[0]=(uint8_t)humans;config[2]=(uint8_t)bots;
@@ -139,8 +139,6 @@ static int arcade_join_retire_body(uint32_t actor,uint32_t body,unsigned humans,
     guest_call(sub_0015DDA0,1,body);
     WORD_AT(0x790950u)=old_humans;WORD_AT(0x7a2958u)=old_bots;
     for(unsigned i=0;i<4u;i++)memcpy((void *)((uintptr_t)configs[i]+g_xbox_mem_offset),population[i],3);
-    memcpy((void *)((uintptr_t)0x7a3580u+g_xbox_mem_offset),registry,count*4u);
-    WORD_AT(0x74c37cu)=count;
     return 1;
 }
 static void arcade_join_register_actor(uint32_t actor,uint32_t body)
@@ -156,6 +154,18 @@ static void arcade_join_register_actor(uint32_t actor,uint32_t body)
         WORD_AT(0x7a3580u+at*4u)=WORD_AT(0x7a3580u+(at-1u)*4u);at--;
     }
     WORD_AT(0x7a3580u+at*4u)=actor;
+}
+static int arcade_join_unlist_actor(uint32_t actor)
+{
+    const unsigned count=WORD_AT(0x74c37cu);
+    if(count>32u)return 0;
+    unsigned remaining=0;
+    for(unsigned i=0;i<count;i++) {
+        const uint32_t entry=WORD_AT(0x7a3580u+i*4u);
+        if(entry!=actor)WORD_AT(0x7a3580u+remaining++*4u)=entry;
+    }
+    WORD_AT(0x74c37cu)=remaining;
+    return 1;
 }
 void pc_arcade_join_frame(const PcArcadeControlState *control)
 {
@@ -188,9 +198,21 @@ void pc_arcade_join_frame(const PcArcadeControlState *control)
             arcade_join_team_mask|=1u<<slot;
         }
         if(slot>=old || !WORD_AT(arcade_join_context_pool+slot*0x1584u+0x14u)) {
+            if(WORD_AT(0x74c37cu)>32u)continue;
             /* Unused actor rows may contain sentinels, not a live bot body. */
             if(slot>=old && slot<old+old_bots && previous &&
                !arcade_join_retire_body(actor,previous,old,old_bots))continue;
+            /* A previously retired/reused body cannot be passed to BCC0.
+               Unlist by the stable actor identity before clearing its row. */
+            if(!arcade_join_unlist_actor(actor))continue;
+            /* Bot-table ownership ends with retirement, even if human
+               construction must be retried after the population changes. */
+            if(slot>=old && slot<old+old_bots) {
+                const unsigned removed=slot-old;
+                for(unsigned i=removed;i+1u<old_bots;i++)
+                    WORD_AT(0x7a2d00u+i*4u)=WORD_AT(0x7a2d00u+(i+1u)*4u);
+                WORD_AT(0x7a2d00u+(old_bots-1u)*4u)=0;
+            }
             memset((void *)((uintptr_t)actor+g_xbox_mem_offset),0,0xea0u);
             /* D2FD0's loop clears the current-context global and writes camera
                defaults. A mid-round remote allocation must preserve the
@@ -204,12 +226,6 @@ void pc_arcade_join_frame(const PcArcadeControlState *control)
             for(unsigned i=0;i<6u;i++)WORD_AT(globals[i])=values[i];
             const uint32_t human=WORD_AT(actor);
             if(!human)continue;
-            if(slot<old+old_bots) {
-                const unsigned removed=slot-old;
-                for(unsigned i=removed;i+1u<old_bots;i++)
-                    WORD_AT(0x7a2d00u+i*4u)=WORD_AT(0x7a2d00u+(i+1u)*4u);
-                WORD_AT(0x7a2d00u+(old_bots-1u)*4u)=0;
-            }
             arcade_join_register_actor(actor,human);
         }
         arcade_join_owners[slot]=owner;arcade_join_owner_ips[slot]=ip;

@@ -30,6 +30,7 @@ void sub_0015BCA0(void){
 }
 static unsigned removed_bodies;
 static unsigned starts;
+static int fail_next_construct;
 static uint32_t expected_go_node=0x774180u+3u*0x30cu;
 void sub_00357B80(void){REQUIRE(WORD_AT(g_esp+4u)==expected_go_node);starts++;g_esp+=4;}
 void sub_0015DDA0(void){
@@ -68,7 +69,12 @@ void sub_000D2FD0_gen(void){
     REQUIRE(g_edi==3 && !g_esi && g_ebx==0x40000u);
     REQUIRE(WORD_AT(g_esp+0x10u)==3 && WORD_AT(g_esp+0x14u)==3*0x1584u);
     REQUIRE(WORD_AT(0x40000u+3*0x1584u+0xf74u)==0x80000u+3*0x3e0u);
-    construct_slot(g_edi);g_ebp=0xeeeeu;g_edi=0xdddd;g_esi=0xcccc;g_ebx=0xbbbb;
+    /* No consumer may observe a retired body while its replacement is built. */
+    for(unsigned i=0;i<WORD_AT(0x74c37cu);i++)
+        REQUIRE(WORD_AT(0x7a3580u+i*4u)!=0x10000u+3u*0xea0u);
+    if(fail_next_construct)fail_next_construct=0;
+    else construct_slot(g_edi);
+    g_ebp=0xeeeeu;g_edi=0xdddd;g_esi=0xcccc;g_ebx=0xbbbb;
     WORD_AT(0x7b0c7cu)=0;WORD_AT(0x7b0cb8u)=0x9999u;
     REQUIRE(pc_arcade_join_context_tail());
 }
@@ -126,7 +132,13 @@ int main(void){
     WORD_AT(0x7b0c7cu)=0x40000u;WORD_AT(0x7b0cb8u)=0x1234u;
     PcArcadeControlState control={0};control.native_count=3;
     for(unsigned i=0;i<3;i++)control.native_peers[i].native_id=i;
+    fail_next_construct=1;
     pc_arcade_join_frame(&control);
+    REQUIRE(!WORD_AT(actor) && WORD_AT(0x74c37cu)==8);
+    for(unsigned i=0;i<8;i++)REQUIRE(WORD_AT(0x7a3580u+i*4u)!=actor);
+    REQUIRE(removed_bodies==1 && starts==0);
+    REQUIRE(WORD_AT(0x7a2d00u)==bot+0x1000u && !WORD_AT(0x7a2d00u+20u));
+    fixture_time+=1;pc_arcade_join_frame(&control);
     REQUIRE(g_esp==0x3f000 && g_ebp==8 && g_edi==7 && g_esi==6 && g_ebx==5);
     REQUIRE(WORD_AT(0x7b0c7cu)==0x40000u && WORD_AT(0x7b0cb8u)==0x1234u);
     REQUIRE(world.memory[0x7de400u]==4 && world.memory[0x7de402u]==5);

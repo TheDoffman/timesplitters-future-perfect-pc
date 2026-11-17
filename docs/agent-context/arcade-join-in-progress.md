@@ -28,9 +28,10 @@ registers. It skips the bulk clearing and global input-reset tail. Ordinary entr
 executes the full original function. The adapter reserves each context's local
 auxiliary storage and supplies the loop frame; no generated C is hand edited.
 Bot conversion runs original `15DDA0` retirement under the old population to
-release navigation reservations, inventory and mode-object ownership. It retains
-the registered actor row and compacts the original bot body table without moving
-remaining actor IDs. Single-player construction preserves the running context
+release navigation reservations, inventory and mode-object ownership. It leaves
+the retired actor unlisted until replacement construction succeeds and compacts
+the original bot body table at retirement, including failed construction/retry,
+without moving remaining actor IDs. Single-player construction preserves the running context
 and camera globals. Only actual bot slots run retirement: unused actor rows can
 contain nonzero sentinels. `15BCA0` registers an absent replacement actor once,
 retaining human-before-bot registry order without moving actor IDs.

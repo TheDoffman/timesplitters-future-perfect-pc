@@ -516,6 +516,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
 #include "pc_audio_menu.inc"
 #include "pc_profile_accept.inc"
 #include "pc_weapon_slots_guest.inc"
+#include "pc_network_bot_lifecycle.inc"
 
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "pc_character_corpses.inc"
@@ -551,9 +552,8 @@ int pc_network_bots_preserve_corpse(uint32_t entity,uint32_t spawn)
     return 0;
 }
 
-/* Recreate only a missing guest body using the same constructor as the
- * original Arcade initializer. Keep the existing actor-list entry and scores;
- * never run guest AI decisions or add a duplicate entry to 0x7A3580. */
+/* Recreate only a missing guest body using the original Arcade constructor.
+ * Publish its actor-list entry only after construction, retaining scores. */
 uint32_t pc_network_bots_revive(unsigned slot)
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -570,9 +570,11 @@ uint32_t pc_network_bots_revive(unsigned slot)
     variant=(uint32_t)(int32_t)*(int8_t *)((uintptr_t)(0x007de444u+slot)+g_xbox_mem_offset);
     entity=guest_call(sub_000DAC30,10,character,character,(uint32_t)slot,
         0u,0u,0u,0u,UINT32_MAX,1u,variant);
-    if(!entity || !guest_writable(entity,0x25cu) || WORD_AT(actor)!=entity) return 0;
+    if(!entity || !guest_writable(entity,0x25cu) || WORD_AT(actor)!=entity ||
+       WORD_AT(entity+0x7cu)!=actor) return 0;
     WORD_AT(0x007a2d00u+(slot-humans)*4u)=entity;
     guest_call(sub_000D7570,1,actor);
+    pc_network_bots_register_body(actor,entity);
     return entity;
 #else
     (void)slot;return 0;
@@ -824,6 +826,10 @@ void pc_network_bots_pose_weapons(uint32_t entity)
     if(!guest_writable(entity,0x2e8u)) return;
     memcpy(&health,(void *)((uintptr_t)(entity+0x1ccu)+g_xbox_mem_offset),4);
     if(health>0.f && (WORD_AT(entity+0x28u)&1u)) {
+        const uint32_t owner=WORD_AT(entity+0x7cu);
+        /* Validate ownership before native routines dereference the hands. */
+        if(WORD_AT(entity+0x20u)!=8u || !guest_writable(owner,0xea0u) ||
+           WORD_AT(owner)!=entity || (WORD_AT(entity+0x28u)&0x80000000u))return;
         /* Only after the engine has allocated/evaluated this frame's bones. */
         guest_call(sub_001BE870,2,entity,0u);
         guest_call(sub_001BE870,2,entity,1u);

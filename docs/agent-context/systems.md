@@ -1,4 +1,5 @@
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
+[Actors](network-actor-lifetime.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
 [Uplink](native-uplink.md#throw-impulse); [IDs](online-player-identities.md). [Text](native-multiplayer-menu.md).
@@ -22,9 +23,9 @@ and Linux share this policy. See `tests/network/network_eligibility.c`.
 
 [SDL](linux-game.md).
 
-Native input self-tests use click/Escape capture after F1 became the optional
-Developer Tools shortcut. This changes only synthetic test events in
-src/native/input_sdl.c; Linux passes, native Mac execution remains pending.
+SDL self-tests use click/Escape capture; F1 opens optional Developer Tools.
+Only synthetic events in src/native/input_sdl.c change. Linux passes;
+Mac execution pending.
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 

@@ -3344,6 +3344,26 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Actor/body lifetime repair (2026-11-17, uncommitted;
+  Awaiting validation):** Shared `pc_network_bot_lifecycle.inc` unlists retired
+  Online Arcade guest bots and releases their owned weapon models before body
+  reuse. Revival registers the constructed body once; `pc_arcade_join_guest.inc`
+  no longer restores a retired actor while a failed human replacement waits to
+  retry. `pc_display_menu.c` checks body/actor ownership before native weapon
+  posing. Windows and TSFP_NATIVE_NETWORK use the same source; no Mac adapter is
+  needed. Deterministic tests cover both definitions and original US roster
+  routines. Native Mac build, real bot death/respawn, late joining, migration,
+  rendered weapons and corpse acceptance remain pending. Historical crash
+  causality is not established by these fixtures. See
+  [the lifetime contract](../agent-context/network-actor-lifetime.md) and STATUS
+  for actual host validation.
+
+  Windows Release build/built-in checks and189 focused checks pass. Isolated
+  Release scenes25/58 with two humans/six bots and200ms private relay delay pass;
+  approved Debug community late admission and a guest departure also pass.
+  These Windows results do not verify native Mac/Linux execution or prove the
+  original corrupted-record producer. The installed game was not replaced.
+
 - **Story flag version ownership repair (2026-11-01, PR #451 / 7ebf2082):** Shared
   menu code now calls the diagnostics-owned `pc_build_version()` used by the
   watermark, rather than reading a private definition from another build

@@ -44608,3 +44608,126 @@ outside the game repository. Tests use Diagnostics only, leaving live matches
 and production history untouched. Final read-only check confirms the production
 dashboard responds, Diagnostics is stopped, all owned game processes exited and
 Helldivers2 is still running.
+
+
+## 2026-11-16: Online multiplayer crash reproduction remains unresolved
+
+Windows x64/D3D11 tests used the supported US XBE and unchanged Original60
+executable `3994cfb0b9d473a600228f1402e3e30516654e9850f90fa676d7c08eec8bb0ac`,
+built from clean `46f1a2d0`; investigation checkout base is `9ee19013` on
+`fix/online-latency-crashes`, dependent on the unmerged Online beta branch.
+Exact matching PDB GUID/age resolves the November14 incidents to
+`sub_001BC890+0x1CE` and `sub_0009A060+0x1B8`.
+
+- Two isolated players/six bots completed120seconds of baseline observation.
+- Two isolated players/six bots completed180seconds with200ms per forwarded
+  packet in a local private relay; the queue recorded260783 authenticated
+  replies,260782 forwarded before cleanup. Bot health/spawn samples changed.
+- Three-player community play completed180seconds of stress including an owned
+  guest disconnect. Earlier readiness-check failures left native processes alive
+  and are excluded from passing results; their intended client delay was not
+  independently recorded.
+- The four-player community case verified300ms outgoing client delay with
+  per-companion counters. A late join changed all four live engines to four
+  humans/five bots. The initial host later returned to the frontend while
+  another peer became host, failing the connection-state assertion. Native
+  processes remained alive except the deliberately terminated third guest.
+  This disconnect/migration is distinct from an access-violation reproduction.
+
+Neither target C0000005 crash was reproduced; no runtime fix is verified or
+installed. The second dump's captured call stack shows a null body argument
+from the original actor-list walker. Read-only live sampling also observed brief
+listed actors with no body during respawn/join work, but did not establish that
+those observations persist across a consumer boundary or cause either crash.
+The earlier invalid weapon-record origin remains undetermined. No speculative
+actor pruning, index clamping or crash-site guards were installed.
+
+All gameplay cases used the fixture's Vietnam scene48. Saturday's scenes25/58,
+physical human WAN activity, native Mac and Linux remain unvalidated by these
+runs. Community routing followed the client configuration; injected delay is
+not a physical-WAN acceptance claim. Tests used disposable copies of Test Lab
+with explicit isolated settings/save paths and capped4MiB process logs, preserving
+personal settings/saves and the canonical fixture. All run locks and known test
+partition images were cleaned; no owned community test rooms remain.
+Bounded scripts, per-run provenance and detailed findings remain ignored under
+`logs/online-crash-analysis-20261116.md` and `logs/online-bots-latency-*`.
+
+Online actor lifetime repairs (2026-11-17, uncommitted on
+fix/online-latency-crashes, base9ee19013): fixes two source-level lifecycle
+defects found while investigating the November14 and Downloads reports. Lazy
+bot-to-human replacement no longer restores a retired actor to the native
+update list before successful construction. Stable actor removal also covers an
+already retired/reused body; bot-table compaction happens before a possible
+construction failure/retry. Guest bot world destruction now releases its native
+list membership and owned held models before body reuse, clears only matching
+links, and revival registers once after successful original construction. The
+shared weapon pose bridge validates type8/alive/reciprocal ownership before
+calling either native hand routine. Scores, definitions, human/host/Story paths
+and foreign or callback-replaced objects retain their ownership.
+
+Windows/x64 MSVC14.42.34433 final focused suite:189 passed, covering original
+US15BCA0/15BCC0/D8C00, asset-free Windows/native variants, deliberate failing
+controls, replacement construction failure/retry, existing Story/corpse/limb/
+dispatch/promotion behavior, CI selection and backlog integrity. Sandbox-only
+loopback failure was rerun successfully with native handles; fixture extraction,
+declaration order and missing type8 metadata were corrected before the final
+run. Repository context/index check passes against9ee19013. No runtime patch,
+pristine vendor or generated guest C was edited by hand. The complete patch
+stack verified before generation. Supported US XBE hash verified; regenerated
+15838/15863 functions with zero translation failures.
+
+Supported Windows Release build and built-in checks completed; a direct script
+invocation with an explicit success/exception boundary exited0. Executable
+SHA-25693cde006c9f9402b55ffb7814ddb488117594eca11339d403d249cac46ea7dc4;
+verified multiplayer identity9a32ac0f3076886b81725fa74726c0480b546c0e08474b0a6a5c0efee45ca099.
+Host: Windows11 Pro10.0.26300 x64, MSVC14.42.34433, Windows SDK10.0.22621,
+D3D11. Hardware inventory includes RTX5090 driver32.0.16.2101 and Intel graphics;
+the active adapter was not independently identified. No GPU completion/scanout
+or performance claim follows from the asynchronous samples.
+
+Release paired gameplay on both Saturday scenes25 and58 passes: two humans,
+six bots, Original60, private local relay with configured200ms packet delay,
+120-second observation after setup/movement. Scene25 completed267.5s total with
+33813 samples and463 distinct aggregate bot health/spawn states; scene58
+completed264.4s with33796 samples and254 such states. Both games remained in
+phase15/play7 until owned cleanup, without the target access violations or
+registry-address alarms. Corresponding Debug runs also pass (239.7s/33449
+samples on25;263.7s/33391 on58), including repeated bot deaths/respawns.
+
+The separately approved configured-community-relay Debug test passes: three
+initial humans/six bots, fourth player joining during play, then intentional
+termination of the third guest. Four humans/five bots were admitted; the host
+and surviving guests retained phase15/play7. Total290.5s,37329 samples; after235s,
+the host/existing guest/late guest show363/304/315 distinct bot position/health/
+spawn states, establishing continued replica updates after admission. All four
+isolated companions recorded active300ms outgoing-delay hooks and packet
+counters. This is a single-PC synthetic-delay check, not physical-WAN acceptance.
+Legacy local-harness setup failures before gameplay were excluded from passes.
+
+All test locks and disposable partition images are removed. The community
+runner left four test-owned companion trees behind their disconnect dialogs;
+graceful close and dialog-post attempts did not end them. Their script paths,
+telemetry PIDs and parent game PIDs were verified before terminating only those
+owned trees. No other processes were stopped. Remote room retirement was not
+independently queried after client shutdown. Personal saves/settings and the
+canonical fixture were preserved; the installed game remains unchanged. Removed
+1081576960 bytes of task-created temporary Debug executables/PDBs after Release
+validation; retained logs/provenance and the rebuilt Release executable.
+
+Build evidence: the complete patch stack verified; one original unitDD1B0
+(recomp_0096.c,2708 instructions) took about20minutes in MSVC/O2. Scheduling
+experiments were confined to ignored MSBuild imports. Its completed
+current-source object was SHA-verified and explicitly reused for the final link
+after MSBuild invalidated tracking; all other units used ordinary Release
+compilation. No optimization or repository build defaults were changed. The
+diagnostic Debug build needed a temporary override removing incompatible/RTC1
+only from tsfp_guest_maps, whose existing CMake adds/O2 in Debug. This does not
+establish an unmodified clean Debug build. The old3994cfb0 executable's matching
+symbols were preserved before normal symbol packaging replaced its archive.
+
+Native Mac/Linux builds and physical scene/weapon/corpse acceptance remain
+pending (MAC-013). These verified source defects do not identify the historical
+corrupted weapon-record producer or establish a common cause for all six dumps;
+the older Downloads build still lacks matching local symbols. Nothing has been
+published or pushed. Ignored audit, exact receipts, run wrappers and logs are
+under logs/crash-lifecycle-validation.json and logs/crash-lifecycle-*.

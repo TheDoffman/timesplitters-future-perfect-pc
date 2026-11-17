@@ -1,4 +1,5 @@
 [Pads](controller-deadzones.md). [IDs](online-player-identities.md). [TLS](native-multiplayer-menu.md).
+[Actors](network-actor-lifetime.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
 [Arms](video-options.md).
@@ -24,11 +25,10 @@ Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
 Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
 `test_audio_output_gain.py`: mute/queue retention, Windows capture.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
-`test_controller_profile.py` executes native key/pad guards and the runtime key
-dispatcher: freecam neutralizes gameplay while retaining raw camera keys. Both
-host defines cover automatic/assigned pad blocking/resume and existing ownership,
-disconnect/focus/parser cases. It runs alongside Developer Tools flight/mouse
-coverage in runtime CI. Patch2630 follows2620.
+`test_controller_profile.py` runs native key/pad guards and dispatch: freecam
+neutralizes gameplay but retains raw camera keys. Both host defines cover
+automatic/assigned pad blocking/resume, ownership and disconnect/focus/parser.
+Runtime CI also covers Developer Tools flight/mouse. Patch2630 follows2620.
 
 `test_developer_tools.py` runs in runtime CI: sidebar tab/dock centers at
 1x/1.5x/2x, both docks, independent vertical scaling and retained painted extents
