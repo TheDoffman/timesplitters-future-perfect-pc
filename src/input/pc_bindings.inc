@@ -458,6 +458,38 @@ static int pc_debug_bool(const char *object, const char *name)
     return value && end-value>=4 && !strncmp(value,"true",4) && ws(value+4)==end;
 }
 
+void pc_settings_view_read(PcViewSettings *settings)
+{
+    recomp_bindings_init();memset(settings,0,sizeof *settings);
+    char *text=g_have_path?read_file(g_path):NULL;
+    const char *view=text?pc_member(text,"developer_view",NULL):NULL;
+    if(view&&*view=='{') {
+        settings->hide_hud=pc_debug_bool(view,"hide_hud");
+        settings->hide_watermark=pc_debug_bool(view,"hide_watermark");
+        settings->hide_viewmodel=pc_debug_bool(view,"hide_viewmodel");
+    }
+    free(text);
+}
+int pc_settings_view_save(const PcViewSettings *settings,char *error,size_t bytes)
+{
+    recomp_bindings_init();
+    char *text=g_have_path?read_file(g_path):NULL;
+    const char *view=text?pc_member(text,"developer_view",NULL):NULL;
+    int ok=text&&*ws(text)=='{';
+    if(ok&&!view)ok=pc_replace_member(&text,ws(text),"developer_view","{}");
+    const char *names[]={"hide_hud","hide_watermark","hide_viewmodel"};
+    const int values[]={settings->hide_hud,settings->hide_watermark,settings->hide_viewmodel};
+    for(unsigned i=0;ok&&i<3;i++) {
+        view=pc_member(text,"developer_view",NULL);
+        ok=(values[i]==0||values[i]==1)&&view&&*view=='{'&&
+            pc_replace_member(&text,view,names[i],values[i]?"true":"false");
+    }
+    if(ok)ok=pc_write_config(text);
+    free(text);
+    if(!ok)snprintf(error,bytes,"Could not save view settings. Your previous settings were kept.");
+    return ok;
+}
+
 int pc_settings_menu_visible(void)
 {
     char *text;

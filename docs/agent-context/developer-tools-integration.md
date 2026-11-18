@@ -2,12 +2,13 @@
 
 ## Viewmodel visibility
 
-Settings > Video Settings > View & HUD includes a live, session-only
+Settings > Video Settings > View & HUD includes a live, persisted
 "Show first-person viewmodel" switch. `PcDeveloperState.hide_viewmodel`
 defaults off and the existing `pc_developer_viewmodel_draw` hook omits only
 the owned viewport's weapons/hands; weapon updates remain native. Freecam
 still hides them independently. The switch requires gameplay and multiplayer
-Tools permission; permission removal or Tools disable clears it. Shared source
+Tools permission; permission removal or Tools disable suppresses its effect,
+preserving the saved preference for when Tools is available again. Shared source
 serves Windows, Mac and Linux without a new patch or generated-code change.
 
 `tests/input/test_developer_tools.py` covers the live switch, independent
@@ -15,6 +16,31 @@ freecam/manual visibility, Tools-disable and multiplayer-denial resets. Its
 guest fixture checks the actual shared draw gate, owned versus other viewports,
 invalid ownership and multiplayer guards. These extend the existing CI route;
 native Mac/Linux visual acceptance is separate.
+
+## Settings
+
+All preferences exposed in the Settings tab persist. Input controls and
+bindings use the existing controls JSON save path. Staged Video options still
+require Apply (and Keep for a resolution preview); subtitles use native profile
+saving. Fullscreen now uses `pc_display_save_fullscreen` and the checked host
+setter; texture style uses `tsfp_texture_save_4k`. Both participate in video
+batch failure rollback, including host fullscreen refusal.
+
+The three immediate visibility switches use `PcViewSettings` and the
+`developer_view` object in the routed controls JSON. `pc_settings_view_read` /
+`pc_settings_view_save` in `pc_bindings.inc` share the Windows backup/atomic
+replacement and native POSIX writer. Missing values default to visible;
+unknown object members and unrelated JSON survive saves. Failed saves keep
+the current preference and report an error. The sidebar shows saved choices;
+`pc_developer_get` composes them with temporary freecam, opt-in and match-policy
+overrides. No file access occurs per rendered frame after the first load.
+Tools-tab cheats, camera modes and game speed remain session state.
+
+Existing CI routes cover a fresh-process visibility/input reload in
+`tests/input/pc_settings.c`, simulated sidebar reload/save refusal/freecam
+independence in `tests/input/developer_tools.c`, and actual fullscreen/texture
+files plus rollback in `tests/graphics/fov_settings.c`. Mac/Linux use shared
+policy and existing storage/window adapters; native host acceptance is pending.
 
 Current widget, video and host-policy contracts continue in [systems continuation](systems-continuation.md).
 The sections below retain the Developer Tools branch history while the owning

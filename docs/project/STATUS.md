@@ -1,3 +1,29 @@
+## Developer Tools Settings persistence (2026-11-18)
+
+Local uncommitted `dev-tools-settings`, base98c6e7574595bf6dd4ebe487460da40c95cc1fb2.
+Windows x64; MSVC14.42.34433 / Visual Studio2022; common D3D11 frontend,
+SDL3.4.16 input. Scoped to the Settings tab. Input/bindings retain their existing
+save paths; Video drafts retain Apply/Keep. Fullscreen and texture style now
+use the shared persistent setters with batch rollback. HUD, watermark and
+viewmodel choices save immediately into the routed controls JSON and reload
+on the next launch. Disabling Tools, host denial and freecam do not overwrite
+these preferences; temporary effects are composed separately.
+
+Validation:14 Developer Tools/FOV cases passed;2 macOS compile contracts skipped
+on Windows. All51 controller-profile cases passed. The supported Windows
+Release build exited0, including standard build checks, identity sealing and
+crash-symbol archival. The settings integration test verifies visibility and
+input reload in a fresh child process, unknown JSON preservation, backup/write
+failure behavior and controls-editor preservation. FOV fixtures check actual
+fullscreen/texture files, failed writes and refused fullscreen rollback.
+Full patch validation, context refresh/check and diff whitespace checks pass.
+
+Personal settings and saves were preserved. No game scene testing was run;
+native Mac/Linux builds, restart/window behavior and physical-device acceptance
+remain unverified. Existing native storage/window adapters implement the shared
+path; see [handoff](MAC_PORT_BACKLOG.md). Nothing committed or pushed; other-device
+synchronization is unverified.
+
 ## Developer Tools viewmodel visibility (2026-11-18)
 
 Local uncommitted `dev-tools-settings`, base main32706dace. Windows x64,

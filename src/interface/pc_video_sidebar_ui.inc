@@ -173,7 +173,7 @@ static void sidebar_video_settings(void) {
             if(!sidebar_video_wait&&!sidebar_video_snapshot.preview)sidebar_widget(UI_SLIDER,5,0,0,31,sidebar_y,378,27,"Field of view slider");
             sidebar_text_style(31,sidebar_y+22,110,18,UI_MUTED,"Narrower",10,400,0);sidebar_text_style(309,sidebar_y+22,100,18,UI_MUTED,"Wider",10,400,2);sidebar_y+=44;
         }
-        PcDeveloperState visibility;pc_developer_get(&visibility);
+        PcViewSettings visibility;developer_view_get(&visibility);
         sidebar_toggle("Show first-person viewmodel",NULL,!visibility.hide_viewmodel,gameplay&&pc_developer_tools_allowed(),SETTINGS,6);
         sidebar_toggle("HUD & UI",NULL,!visibility.hide_hud,1,SETTINGS,4);
         sidebar_toggle("Version watermark",NULL,!visibility.hide_watermark,1,SETTINGS,5);

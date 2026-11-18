@@ -1552,6 +1552,11 @@ int main(int argc,char **argv)
     WORD_AT(0x76b108)=WORD_AT(0x76b140)=0;WORD_AT(0x78ad2c)=9;
     /* Real sidebar adapter: save on guest thread, confirm/revert previews,
        preserve existing settings on a failed batch, and use native subtitles. */
+    WNDCLASSA sidebar_class={0};sidebar_class.lpfnWndProc=fullscreen_test_proc;
+    sidebar_class.hInstance=GetModuleHandle(NULL);sidebar_class.lpszClassName="SidebarFullscreenFixture";
+    CHECK(RegisterClassA(&sidebar_class));
+    fixture_window=CreateWindowA(sidebar_class.lpszClassName,"Sidebar",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,sidebar_class.hInstance,NULL);
+    CHECK(fixture_window);
     sidebar_open=1;video_sample_at=video_modes_at=0;g_esp=0x700000;
     video_sidebar_tick();CHECK(sidebar_video_observed.available&&sidebar_video_observed.mode_count>1);
     PcVideoValues saved=sidebar_video_observed.current,edit=saved;
@@ -1584,8 +1589,31 @@ int main(int argc,char **argv)
     CHECK(graphics_options.msaa==4&&graphics_options.supersampling==1&&!graphics_options.shader_cache);
     CHECK(pc_post_aa_get()==(unsigned)edit.value[VIDEO_AA]&&tsfp_texture_is_4k());
     CHECK(pc_feed_enabled()==edit.value[VIDEO_FEED]&&pc_counter_enabled()==edit.value[VIDEO_COUNTER]);
-    CHECK(requested_rate==120&&sidebar_fullscreen&&sidebar_video_observed.restart);
+    CHECK(requested_rate==120&&pc_display_fullscreen()&&sidebar_video_observed.restart);
+    {
+        FILE *file=fopen(runtime_path,"rb");CHECK(file);char text[8192]={0};fread(text,1,sizeof text-1,file);fclose(file);
+        CHECK(strstr(text,"fullscreen = 1"));
+        file=fopen(texture_path,"rb");CHECK(file);memset(text,0,sizeof text);fread(text,1,sizeof text-1,file);fclose(file);
+        CHECK(strstr(text,"TSFP_TEXTURES_V1 1"));
+    }
     sidebar_video_queued=(PcVideoRequest){9,VIDEO_CLEAR_CACHE,edit};int old_clears=cache_clear_calls;video_sidebar_tick();CHECK(cache_clear_calls==old_clears+1);
+    /* Fullscreen/texture write failures and host refusal retain the old batch. */
+    saved=sidebar_video_observed.current;edit=saved;edit.value[VIDEO_FULLSCREEN]=0;
+    edit.value[VIDEO_TEXTURE]=0;edit.value[VIDEO_FOV]=66;
+    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_READONLY));
+    sidebar_video_queued=(PcVideoRequest){10,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_NORMAL));
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_READONLY));
+    sidebar_video_queued=(PcVideoRequest){11,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));fullscreen_request_ok=0;
+    sidebar_video_queued=(PcVideoRequest){12,VIDEO_APPLY,edit};video_sidebar_tick();fullscreen_request_ok=1;
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    sidebar_video_queued=(PcVideoRequest){13,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==66&&!pc_display_fullscreen()&&!tsfp_texture_is_4k());
+    CHECK(DestroyWindow(fixture_window));fixture_window=NULL;
+    CHECK(UnregisterClassA(sidebar_class.lpszClassName,sidebar_class.hInstance));
     {
         const uint32_t menu=0x200000u;
         lobby_profile_index=3;lobby_profile_text=0x3b0000u;mp_ui.name_custom=0;

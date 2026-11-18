@@ -1,4 +1,13 @@
-Developer viewmodel visibility (2026-11-18, uncommitted dev-tools-settings):
+Developer Settings persistence (2026-11-18, uncommitted after98c6e757):
+**Awaiting validation** on native Mac/Linux. Shared `pc_bindings.inc` persists
+HUD/watermark/viewmodel choices through the existing native atomic controls
+writer. `pc_developer.c` separates saved preferences from temporary overrides;
+`pc_video_sidebar.inc` reuses the shared texture save and fullscreen save/set
+adapters. No new OS adapter is needed. Native acceptance: save every Settings
+category, relaunch, verify values, freecam/Tools permission transitions and
+failed-write retention. Windows regression/build evidence is in [STATUS](STATUS.md).
+
+Developer viewmodel visibility (2026-11-18, after98c6e757 dev-tools-settings):
 **Awaiting validation** on native Mac/Linux. The shared Developer Tools View & HUD
 switch uses `src/interface/pc_video_sidebar_ui.inc`, `pc_developer.c`/`.h`
 and the existing `pc_developer_guest.inc` draw gate on all hosts. No new OS

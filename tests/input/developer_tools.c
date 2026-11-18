@@ -27,6 +27,12 @@ static PcMenuPointer pointer;
 static PcDebugOptions debug;
 static float test_ui_scale=1.f;
 static PcSettings persisted;static int persisted_valid;
+static PcViewSettings saved_view;static int view_save_ok=1;
+void pc_settings_view_read(PcViewSettings *out) {*out=saved_view;}
+int pc_settings_view_save(const PcViewSettings *value,char *error,size_t bytes) {
+    if(!view_save_ok){snprintf(error,bytes,"Could not save view settings.");return 0;}
+    saved_view=*value;return 1;
+}
 const char *const pc_action_labels[PC_ACTION_COUNT]={
     "Fire","Action","3","4","5","6","7","8","9","10","11","12",
     "13","14","15","16","17","18","19","20","21","22","23","24",
@@ -231,7 +237,11 @@ int main(void) {
     pc_developer_get(&s);assert(!s.hide_viewmodel);
     click(UI_ACTION,SETTINGS,6);assert(drawn("Show first-person viewmodel"));
     pc_developer_get(&s);assert(s.hide_viewmodel&&!s.freecam);
-    assert(!sidebar_video_dirty()); /* Live session switch, independent of video drafts. */
+    assert(!sidebar_video_dirty()&&saved_view.hide_viewmodel); /* Saved live, independent of video drafts. */
+    view_loaded=0;memset(&view_preferences,0,sizeof view_preferences);
+    pc_developer_get(&s);assert(s.hide_viewmodel); /* Reload from persisted preferences. */
+    view_save_ok=0;click(UI_ACTION,SETTINGS,6);pc_developer_get(&s);
+    assert(s.hide_viewmodel&&saved_view.hide_viewmodel);view_save_ok=1;
     pc_developer_close();key('N');pc_developer_get(&s);assert(s.freecam&&s.hide_viewmodel);
     key('N');pc_developer_get(&s);assert(!s.freecam&&s.hide_viewmodel);
     pc_developer_toggle();
@@ -239,6 +249,7 @@ int main(void) {
     click(UI_ACTION,SETTINGS,6);
     assert(pc_developer_set_enabled(0));pc_developer_get(&s);assert(!s.hide_viewmodel);
     assert(pc_developer_set_enabled(1));pc_developer_toggle();
+    pc_developer_get(&s);assert(s.hide_viewmodel); /* Disabling Tools preserves the preference. */
     click(UI_ACTION,SETTINGS,6);
     pc_developer_match_policy(1,0);
     pc_developer_get(&s);assert(!s.hide_viewmodel);
@@ -249,6 +260,12 @@ int main(void) {
     assert(!sidebar_video_dirty()); /* Session visibility applies immediately. */
     click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
     assert(pc_developer_hud_visible()&&pc_developer_watermark_visible());
+    click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
+    view_loaded=0;memset(&view_preferences,0,sizeof view_preferences);
+    assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible());
+    pc_developer_match_policy(0,0);pc_developer_close();key('N');key('N');pc_developer_toggle();
+    assert(!pc_developer_hud_visible()&&saved_view.hide_hud); /* Freecam leaves manual HUD choice intact. */
+    click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
     pc_developer_match_policy(0,0);
     click(UI_STEP,5,1);assert(sidebar_video_draft.value[VIDEO_FOV]==56);
     click(UI_NUMBER,5,0);type("85");key(13);assert(sidebar_video_draft.value[VIDEO_FOV]==85);

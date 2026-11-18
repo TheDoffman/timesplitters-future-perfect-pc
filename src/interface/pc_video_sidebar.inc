@@ -16,7 +16,7 @@ static PcVideoValues video_read(void) {
     extern void sub_00069640(void);uint32_t profile=guest_call(sub_00069640,0);
     v.value[VIDEO_SUBTITLES]=(guest_writable(profile,0x134)?WORD_AT(profile+0x130):WORD_AT(0x007613DCu))!=0;
     v.value[VIDEO_FEED]=pc_feed_enabled();v.value[VIDEO_COUNTER]=pc_counter_enabled();
-    v.value[VIDEO_FULLSCREEN]=pc_controls_developer_is_fullscreen();return v;
+    v.value[VIDEO_FULLSCREEN]=pc_display_fullscreen();return v;
 }
 static int video_valid(const PcVideoValues *v) {
     if(!pc_display_valid((PcDisplayMode){v->width,v->height}) ||
@@ -43,6 +43,8 @@ static int video_save(const PcVideoValues *v,const PcVideoValues *before) {
     int aa=v->value[VIDEO_AA]!=before->value[VIDEO_AA];
     int feed=v->value[VIDEO_FEED]!=before->value[VIDEO_FEED],counter=v->value[VIDEO_COUNTER]!=before->value[VIDEO_COUNTER];
     int display_saved=0,rate_saved=0,graphics_saved=0,aa_saved=0,feed_saved=0,counter_saved=0;
+    int fullscreen=v->value[VIDEO_FULLSCREEN]!=before->value[VIDEO_FULLSCREEN],fullscreen_saved=0;
+    int texture=v->value[VIDEO_TEXTURE]!=before->value[VIDEO_TEXTURE],texture_saved=0;
     g.msaa=v->value[VIDEO_MSAA];g.supersampling=v->value[VIDEO_SS];g.anisotropy=v->value[VIDEO_AF];
     g.ambient_occlusion=v->value[VIDEO_AO];g.shader_cache=v->value[VIDEO_CACHE];
     pc_display_set_fov(v->value[VIDEO_FOV]);
@@ -52,6 +54,9 @@ static int video_save(const PcVideoValues *v,const PcVideoValues *before) {
     if(aa){if(!pc_post_aa_set((unsigned)v->value[VIDEO_AA]))goto failed;aa_saved=1;}
     if(feed){if(!pc_feed_set_enabled(v->value[VIDEO_FEED]))goto failed;feed_saved=1;}
     if(counter){if(!pc_counter_set_enabled(v->value[VIDEO_COUNTER]))goto failed;counter_saved=1;}
+    if(fullscreen){if(!pc_display_save_fullscreen(v->value[VIDEO_FULLSCREEN]))goto failed;fullscreen_saved=1;}
+    if(texture){if(!tsfp_texture_save_4k(v->value[VIDEO_TEXTURE]))goto failed;texture_saved=1;}
+    if(fullscreen&&!pc_display_set_fullscreen(v->value[VIDEO_FULLSCREEN]))goto failed;
     /* Publish nonsaving/guest state only after every fallible write succeeds. */
     if(rate)recomp_config_request_native_rate(v->value[VIDEO_RATE]);
     if(v->value[VIDEO_SUBTITLES]!=before->value[VIDEO_SUBTITLES]) {
@@ -60,13 +65,14 @@ static int video_save(const PcVideoValues *v,const PcVideoValues *before) {
         if(guest_writable(profile,0x134)){WORD_AT(profile+0x130)=(uint32_t)v->value[VIDEO_SUBTITLES];WORD_AT(0x0078AD24u)|=0x10000u;}
     }
     if(feed)pc_feed_clear(&kill_feed);
-    tsfp_texture_set_4k(v->value[VIDEO_TEXTURE]);
-    if(v->value[VIDEO_FULLSCREEN]!=pc_controls_developer_is_fullscreen())pc_controls_developer_fullscreen();
     video_preview_deadline=0;
     video_host.restart=v->value[VIDEO_MSAA]!=video_running_msaa||v->value[VIDEO_SS]!=video_running_ss;
     snprintf(video_host.message,sizeof video_host.message,video_host.restart?"Video settings saved. Restart to apply MSAA / supersampling.":"Video settings saved.");return 1;
 failed: {
     int restored=1;
+    if(fullscreen&&pc_display_fullscreen()!=before->value[VIDEO_FULLSCREEN]&&!pc_display_set_fullscreen(before->value[VIDEO_FULLSCREEN]))restored=0;
+    if(texture_saved&&!tsfp_texture_save_4k(before->value[VIDEO_TEXTURE]))restored=0;
+    if(fullscreen_saved&&!pc_display_save_fullscreen(before->value[VIDEO_FULLSCREEN]))restored=0;
     if(counter_saved&&!pc_counter_set_enabled(before->value[VIDEO_COUNTER]))restored=0;
     if(feed_saved&&!pc_feed_set_enabled(before->value[VIDEO_FEED]))restored=0;
     if(aa_saved&&!pc_post_aa_set((unsigned)before->value[VIDEO_AA]))restored=0;
