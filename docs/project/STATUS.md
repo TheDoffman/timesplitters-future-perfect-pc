@@ -1,3 +1,27 @@
+Recipient-encrypted file staging (2026-11-18; sourcebe2e3eed; not deployed):
+new-only private chunked encryption requires verified plaintext size/hash and an
+independently authenticated ciphertext hash for recovery. Per-file ephemeral
+X25519/HKDF-SHA256 and bounded AES-GCM frames authenticate order/header/terminal;
+the plaintext digest stays encrypted. Decryption checks ciphertext before any
+plaintext output and again over the actual consumed bytes. A valid ciphertext
+swap after the initial hash is refused. Windows file identity checks accommodate
+its different path-stat/held-file ctime meanings without relaxing content hashes.
+
+Selected cipher/recipient/portable-trust/CI checks: Windows265 passed/1 skipped
+in116.99s, Linux262/4 in10.66s, Mac262/4 in8.40s. The first Mac attempt correctly
+refused all31 file checks at1.83GiB free. Removed only1466 inventoried, inactive,
+regular task-owned .o/.pch files under this checkout's build/macos/CMakeFiles
+(726089728 allocated bytes); executable, dSYM, source, settings and saves remain.
+Unchanged tests then passed with the real2GiB headroom guard and2.39GiB free.
+
+A disposable1048595-byte file encrypted by actual MacUID501 recovered identically
+on Windows using its DPAPI-protected recipient, and on Linux using the portable
+recipient without a Windows account or decrypted private-key file. CipherSHA256:
+f6c2c841c4d1599ec0663c9e16d2ce21a92947e12a6faea6a32be7ec433b5194.
+These are fixture proofs only. No production recipient, encrypted snapshot export,
+transport, scheduled off-device copy or production restore drill is established.
+Host services/routing and the frozen9e3 candidate remain unchanged. Full goal active.
+
 Backup recipient custody foundation (2026-11-18; sourcea7200510; not deployed):
 new independently generated X25519 recipient is bound to canonical workshop
 origin/root SHA, public identity and matching private material. RSA signing keys
