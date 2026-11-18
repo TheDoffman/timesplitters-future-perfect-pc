@@ -91,6 +91,7 @@ CPU_TOOLS = {
     'tools/mods/mod_portable_recovery.py', 'tools/mods/hosting/portable-workshop-recovery.py',
     'tests/mods/test_portable_recovery.py',
     'tools/mods/mod_backup_recipient.py', 'tests/mods/test_backup_recipient.py',
+    'tools/mods/mod_backup_custody.py', 'tools/mods/hosting/backup-recipient-windows.py', 'tests/mods/test_backup_custody.py',
     'tools/mods/mod_backup_cipher.py', 'tests/mods/test_backup_cipher.py',
     'tools/mods/mod_backup_archive.py', 'tests/mods/test_backup_archive.py',
     'tools/mods/mod_backup_exports.py', 'tests/mods/test_backup_exports.py',

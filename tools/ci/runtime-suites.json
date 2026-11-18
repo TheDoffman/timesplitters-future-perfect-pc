@@ -43,6 +43,7 @@
       "tests/mods/test_windows_recovery.py",
       "tests/mods/test_portable_recovery.py",
       "tests/mods/test_backup_recipient.py",
+      "tests/mods/test_backup_custody.py",
       "tests/mods/test_backup_cipher.py",
       "tests/mods/test_backup_archive.py",
       "tests/mods/test_backup_exports.py",

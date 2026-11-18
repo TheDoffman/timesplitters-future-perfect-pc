@@ -1,3 +1,32 @@
+Independent backup-key custody/window source (2026-11-18; production setup
+not yet run): new-only private preparation generates a separate X25519 recipient
+and account-scoped DPAPI store, pins exact account/public files and workshop
+origin/root in a hashed preparation record. Preparation is not portable recovery.
+A local masked passphrase window clears fields before background work; it keeps
+passwords in-process and sends only success/failure through its UI queue.
+
+Completion decrypts the actual passphrase-encrypted recovery file, compares the
+recovered key with the account-held key and revalidates inputs before writing
+custody.json last. A real child os._exit99 after ciphertext creation/before the
+marker proves original-password retry preserves the exact file/key; a different
+password cannot replace it. Existing/changed/foreign/aliased states fail closed.
+Repeated completed verification does not rewrite files. No plaintext private key,
+passphrase or exception data is printed or stored outside the encrypted stores.
+
+Independent check-portable uses only a private bounded encrypted file, recorded
+cipher/key fingerprints, origin/root and local TTY passphrase. It needs no DPAPI
+store and writes no key material. It does not activate a recipient, host job or
+schedule. The signing-key recovery ceremony remains separate and unchanged.
+Production recovery readiness will be recorded only after user entry/verification.
+
+Windows custody/recipient/CI selection passes232 with1 non-Windows-only skip
+in93.50s, including real DPAPI, crash recovery, tamper/new-only checks and a hidden
+Tk UI test of masking, field clearing, secret-free labels and visible buttons.
+Initial12 custody checks pass64.98s; canonical-marker/UI additions pass2 in12.23s.
+Native Linux and actual cross-account encrypted-file confirmation follow below.
+No production backup key/window, Mac writer, task, deployment or public route has
+been created/changed by this source checkpoint. Broader full-goal gates remain.
+
 Native frozen Windows receiver and disposable scheduler acceptance (2026-11-18;
 frozen runtime sourceeb2afb55, corrected management sourceab8b5413): new private
 runtime preparation succeeds with827 files/48198692 bytes, including dependency

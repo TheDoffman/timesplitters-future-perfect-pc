@@ -8,12 +8,63 @@ do not need it. Keep backups outside every served publication directory. They
 contain password hashes, account identities, ownership and private moderation
 history; use private storage and an independently protected off-device copy.
 
+## Backup-key preparation and local recovery window
+
+`mod_backup_custody` binds the independent X25519 backup recipient to a new
+private Windows account store and a passphrase-encrypted portable recovery file.
+The CLI/window is `hosting/backup-recipient-windows.py`. Only the public
+recipient record is intended for the Mac host; the DPAPI account file stays
+off-host. This does not reuse or modify the workshop signing-key ceremony.
+
+`prepare DIRECTORY --origin HTTPS_ORIGIN --trusted-root-sha256 RECORDED_PIN`
+creates the new private directory, generates the independent recipient, writes
+its account-scoped DPAPI store and records the exact store hashes/profile/public
+identity in `preparation.json`. Its SHA256 is returned for the next step. Existing
+paths, incomplete state, aliases, foreign entries and changed account files are
+preserved and refused. Preparation alone is not a usable portable recovery.
+Use persistent private local storage, outside served, cloud-managed and temp
+folders, for real custody.
+
+`gui DIRECTORY --origin HTTPS_ORIGIN --trusted-root-sha256 RECORDED_PIN
+--preparation-sha256 RECORDED_PREPARATION_SHA` opens the local Windows recovery
+window. Enter and confirm a16–256-character recovery passphrase there. The window
+masks and clears both fields, sends only a success boolean through its in-process
+UI queue and prints no passphrase or exception details. The worker operates in
+this same process; passphrases are not put in subprocess arguments, files, pipes
+or chat. The passphrase must be saved separately by the operator.
+
+Completion writes `recipient-recovery.enc.json`, decrypts that actual encrypted
+file and compares the recovered key to the account-held key before committing
+`custody.json` last. Interruption after ciphertext creation leaves an uncommitted
+file: a retry must authenticate that same file with its original passphrase,
+never replace it with a different key/password. Changed or malformed completion
+records fail closed. A completed recheck leaves file identity/mtime/content
+unchanged. The completion report contains only public IDs/hashes and explicitly
+does not claim cross-host recovery or service activation. No task, server,
+upload permission, public key installation or network request is enabled.
+
+`status` uses the same directory/profile/preparation SHA and returns only the
+public readiness summary. An incomplete store is not ready. Keep a protected
+copy of the encrypted recovery file outside this Windows disk. The file is
+portable; the independent verification command is:
+
+```text
+python tools/mods/hosting/backup-recipient-windows.py check-portable PRIVATE_ENCRYPTED_FILE --origin HTTPS_ORIGIN --trusted-root-sha256 RECORDED_PIN --recovery-sha256 RECORDED_FILE_SHA --key-id RECORDED_KEY_ID
+```
+
+Despite its filename, `check-portable` runs on Windows or POSIX, requires a local
+TTY passphrase prompt and does not read a Windows account store, activate a key
+or write plaintext private material. It checks the private bounded ciphertext's
+independently recorded SHA256 before unsealing, then verifies origin/root/key ID.
+Actual production off-device recovery/copy and host integration remain required;
+the user's original signing-key recovery verification is preserved.
+
 ## Off-device recipient custody foundation
 
 `mod_backup_recipient` implements the independent recipient key needed before
 encrypted off-device copies can be automated. This is an internal foundation,
-not a deployed exporter, transport or scheduled copy. No production recipient
-has been created. The existing signing-key portable recovery file is unchanged.
+not a deployed exporter, transport or scheduled copy. Actual production custody
+and integration evidence is in STATUS. The signing-key recovery file is unchanged.
 
 The recipient is X25519, separately generated from every RSA signing key. Its
 public record binds the canonical HTTPS workshop origin, independently supplied
