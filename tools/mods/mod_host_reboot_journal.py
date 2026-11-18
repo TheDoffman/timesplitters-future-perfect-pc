@@ -72,7 +72,7 @@ def receipt(value,baseline):
     return value
 
 
-def event(state,entry,*,original_boot,uid,backup_identity,routing,order,nonce,layout_sha256):
+def event(state,entry,*,original_boot,uid,backup_identity,backup_base_release,routing,order,nonce,layout_sha256):
     kind,label,data=entry['kind'],entry['label'],entry['data']
     if kind=='reboot-observed':
         require(label is None and isinstance(original_boot,str) and SHA.fullmatch(original_boot)
@@ -86,7 +86,7 @@ def event(state,entry,*,original_boot,uid,backup_identity,routing,order,nonce,la
         require(observed['boot_id'] not in [original_boot,*seen],'Reboot preparation cannot reuse an earlier boot')
         return dict(boot_id=observed['boot_id'],prior_boots=seen,context_sha256=data['context_sha256'],observation=observed,
             routing_pending=None,routing_suspended=False,routing=None,stopped=[],pending=None,quiescent=False,quiesced_at=None,
-            layout_checkpoint=None)
+            layout_checkpoint=None,backup_pending=None,backup=None,backup_time=None)
     if kind=='reboot-layout-verified':
         require(state is not None and state['quiescent'] and label is None and isinstance(data,dict)
                 and set(data)=={'boot_id','original_boot','nonce','layout_sha256','context_sha256','checkpoint_sha256'}
@@ -95,6 +95,21 @@ def event(state,entry,*,original_boot,uid,backup_identity,routing,order,nonce,la
                 and isinstance(data['checkpoint_sha256'],str) and SHA.fullmatch(data['checkpoint_sha256'])
                 and state['layout_checkpoint'] is None,'Reboot layout checkpoint lacks exact stopped-generation binding')
         return dict(state,layout_checkpoint=data)
+    if kind in ('reboot-backup-intent','reboot-backup-verified'):
+        require(state is not None and state['quiescent'] and state['layout_checkpoint'] is not None and label is None,
+                'Reboot backup lacks stopped verified-layout context')
+        sha=state['layout_checkpoint']['checkpoint_sha256']
+        if kind=='reboot-backup-intent':
+            require(state['backup_pending'] is None and isinstance(data,dict) and set(data)=={'checkpoint_sha256'}
+                    and data['checkpoint_sha256']==sha,'Another reboot backup intent remains unresolved')
+            return dict(state,backup_pending=dict(checkpoint_sha256=sha,time=entry['time']))
+        require(state['backup_pending'] is not None and isinstance(data,dict) and set(data)=={'checkpoint_sha256','receipt'}
+                and data['checkpoint_sha256']==sha,'Reboot backup receipt lacks its exact intent')
+        from mod_host_upgrade_process import checked_backup_receipt
+        report=checked_backup_receipt(data['receipt'],backup_base_release,uid,backup_identity,
+            max(state['quiesced_at'],state['backup_pending']['time']),clock=lambda:entry['time'])
+        require(0<=entry['time']-report['finished']<=300,'Reboot backup verification expired before recording')
+        return dict(state,backup_pending=None,backup=report,backup_time=entry['time'])
     require(state is not None and not state['quiescent'],'Reboot preparation lacks a current unfinished observation')
     state=dict(state)
     if kind in ('reboot-routing-intent','reboot-routing-observed'):

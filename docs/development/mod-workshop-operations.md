@@ -119,6 +119,21 @@ receipt/hash before returning historical inventory metadata. Ordinary upgrade
 effects remain blocked; this checkpoint does not grant migration/startup/settlement
 or expose an operational reboot CLI.
 
+`mod_host_reboot_backup.capture` requires the sealed current-boot layout checkpoint
+and independently verified preserved backup runtime/binding. It rechecks that
+checkpoint against fresh layout/quiescence observations, journals intent, invokes
+the existing fixed locked-UID child to force and independently verify a snapshot,
+then rechecks layout, origins, routing and descendant/UID exit. The typed receipt
+must match backup identity/base runtime/UID/size/timing and a fresh verification.
+`reboot-backup-verified` binds that receipt to the exact layout checkpoint, leaving
+the ordinary frame's backup/admission unchanged. Existing work requires explicit
+resume: a receipt verified within300 seconds may be reused after fresh guards;
+otherwise another verified snapshot is requested. A lost/uncertain result remains
+pending, and a new request on explicit resume requires fresh quiescence first.
+Still-running capture children or unknown backup-pool artifacts prevent admission;
+timeouts are never treated as proof of failure or cleanup. This phase grants no
+ordinary migration/startup/public-restoration/settlement authority or reboot CLI.
+
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
 requires `--host-release` with an exact installed identity. The newly verified

@@ -46,6 +46,9 @@ partial/aliased/changed/capacity artifacts stay preserved. Hash/epoch/journal
 bindings and refused ordinary effects remain mandatory after checkpoint sealing.
 Standalone composed checkpoint tests explicitly import simulated_boot as well as
 machine/flow/prepared, so the initial private startup retains its strict boot check.
+test_reboot_backup.py checks the preserved runtime binding, explicit fresh reuse/
+renewal, lost-receipt recovery, post-child quiescence/checkpoint changes and typed
+receipt replay. Reboot backup does not update ordinary frame/migration authority.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

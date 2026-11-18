@@ -34,6 +34,7 @@
       "tests/mods/test_reboot_prepare.py",
       "tests/mods/test_reboot_layout.py",
       "tests/mods/test_reboot_checkpoint.py",
+      "tests/mods/test_reboot_backup.py",
       "tests/mods/test_upgrade_context.py",
       "tests/mods/test_installed_scanner_admission.py",
       "tests/mods/test_public_host_profile.py",

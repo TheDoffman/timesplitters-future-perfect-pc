@@ -77,7 +77,8 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         if isinstance(kind,str) and kind.startswith('reboot-'):
             import mod_host_reboot_journal as reboot_history
             reboot=reboot_history.event(reboot,event,original_boot=original_boot,uid=uid,
-                backup_identity=backup_identity,routing=baseline,order=order,nonce=original_nonce,layout_sha256=layout_sha)
+                backup_identity=backup_identity,backup_base_release=backup_base_release,
+                routing=baseline,order=order,nonce=original_nonce,layout_sha256=layout_sha)
             continue
         require(reboot is None,'Operational continuation requires explicit reboot admission')
         if kind=='baseline-private-verified':
