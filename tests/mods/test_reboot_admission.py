@@ -113,3 +113,15 @@ def test_quiescence_ignores_an_unrelated_reused_preboot_pid(admitted):
         if argv[0]=='/bin/ps':output+='100 1 100 501\n'
         return code,output
     layouts.quiescence_gate(case.journal,case.fresh['candidate_entries'],reused,case.fresh['operator'])
+
+
+@pytest.mark.parametrize('rebooted',['archive','install','boot','migration','retire','start','restart','public'],indirect=True)
+def test_known_preboot_pending_effects_reconcile_before_new_private_and_public_acceptance(admitted):
+    case=admitted;original=json.loads(case.original)['events']
+    pending=case.journal.state()['layout_pending']
+    coordinator.apply_private(case.journal,case.fresh,resume=True)
+    coordinator.restore_public(case.journal,case.fresh,resume=True)
+    assert case.journal.state()['settled'] and case.journal.state()['config']=='after'
+    if pending is not None:
+        assert sum(event['kind']=='layout-intent' and event['label']==pending for event in json.loads(case.journal.current)['events'])==1
+    assert json.loads(case.journal.current)['events'][:len(original)]==original

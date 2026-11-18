@@ -2,6 +2,7 @@
 import copy
 import json
 import os
+import plistlib
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -31,9 +32,22 @@ pytestmark=[pytest.mark.parametrize('prepared',['deferred'],indirect=True),
 
 @pytest.fixture
 def rebooted(machine,monkeypatch,request):
-    item=machine;early=getattr(request,'param',None)=='early'
+    item=machine;phase=getattr(request,'param',None);early=phase=='early'
     original_files=cutover.job_files(item.context['entries'])
-    if not early:coordinator.apply_private(item.state,item.context)
+    if phase in ('archive','install','boot','migration','retire','start','restart','public'):
+        record=item.state.record
+        def interrupted(kind,label=None,data=None):
+            fail=(kind=='layout-observed' and ((phase in ('archive','install') and label=='apply-'+phase)
+                or (phase=='boot' and label.startswith('apply-org.')))) or kind==dict(migration='migration-observed',
+                retire='proof-retire-observed',start='start-observed',restart='restart-observed',public='public-readiness-verified').get(phase)
+            if fail:raise OSError('lost pre-reboot effect observation')
+            return record(kind,label,data)
+        with monkeypatch.context() as patch:
+            patch.setattr(item.state,'record',interrupted)
+            with pytest.raises(OSError):
+                coordinator.apply_private(item.state,item.context)
+                if phase=='public':coordinator.restore_public(item.state,item.context)
+    elif not early:coordinator.apply_private(item.state,item.context)
     item.flow.now[0]+=10  # New quiescence must not reuse the pre-boot timestamp.
     # The Root lease/process identity is simulated; all protected history and
     # monitor/layout files are the actual result of the composed private phase.
@@ -43,7 +57,9 @@ def rebooted(machine,monkeypatch,request):
         original_observations=dict(files=original_files),private_baseline=item.context['private_baseline']))
     item.state.observation_boot='e'*64
     item.loaded.clear()
-    for index,(path,spec) in enumerate(item.context['entries' if early else 'candidate_entries']):item.loaded[spec['Label']]=(path,spec,900+index)
+    for index,(_,spec) in enumerate(item.context['entries']):
+        path=cutover.LAUNCHD/(spec['Label']+'.plist');spec=plistlib.loads(path.read_bytes())
+        item.loaded[spec['Label']]=(path,spec,900+index)
     original=item.context['command']
     def command(argv):
         if argv[:2]==['/bin/launchctl','bootout'] and item.state.state()['reboot']['admitted'] is None:

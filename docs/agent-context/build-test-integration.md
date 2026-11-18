@@ -65,6 +65,9 @@ limit;512 events remain bounded by the unchanged128KiB journal cap. The composed
 case checks successful complete history, and ordinary flow still tests exhaustion.
 Proof metadata rejects malformed/cross-boot capture bindings; a reused old PID
 owned by an unrelated user must not become current cleanup authority.
+Composed pending cases interrupt migration, archive/install/boot exchanges, proof
+retirement, startup, restart and public observation before a simulated reboot;
+fresh boot jobs are reconstructed from actual boot files, including known mixes.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.
