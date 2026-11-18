@@ -1,3 +1,18 @@
+Production backup-key preparation (2026-11-18; source59c64881): the active
+source-pinned public workshop profile/root validates. A new independent backup
+recipient is prepared in persistent, private Windows account storage outside the
+checkout/temp/served directories. Its DPAPI store and hashed preparation marker
+are committed locally; no plaintext key is written. This is preparation only.
+
+The local “TimeSplitters backup key recovery” window is observed live and awaits
+the user's recovery passphrase. No portable recovery/completion marker exists at
+this checkpoint. User input is requested only in that window; no passphrase is
+read by the assistant, supplied in command arguments, captured from widgets or
+stored in logs. The public recipient has not been installed on the Mac, and no
+production backup task/job or route has been enabled. Independent recovery/copy,
+capacity, protected capture/export and complete release gates remain open.
+Original signing-key recovery and existing private/public routing are unchanged.
+
 Independent backup-key custody/window source (2026-11-18; production setup
 not yet run): new-only private preparation generates a separate X25519 recipient
 and account-scoped DPAPI store, pins exact account/public files and workshop
