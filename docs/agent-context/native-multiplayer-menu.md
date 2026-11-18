@@ -25,6 +25,9 @@ its original painter. The label omits Server RTT at the user's request, but the
 measurement remains the directory exchange described above.
 Latency uses the stock detail font0x12 and integer-coordinate painter42490,
 matching the mode/population lines rather than the bold font3/direct painter.
+Browser row drawing stops once the active page changes, preventing closing rows
+from overwriting the destination page's heading via page-scoped latency buffers.
+The native fixture checks a stale browser draw after entering Create.
 Local menu IPC is version4, with a signed server_rtt_ms field (-1..60000): lobby
 size248 and state size7908. Old ABI states are refused; game and companion must
 be rebuilt together. Shared Windows/Mac/Linux code needs no new OS adapter.

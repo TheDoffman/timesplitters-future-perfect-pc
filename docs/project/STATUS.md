@@ -1,3 +1,29 @@
+Multiplayer player guide refresh (2026-11-17, local after35751486): replaced
+the separate Online window/server-script instructions with native Online,
+Private Server and LAN flows, invite/code distinctions, port requirements,
+latency meaning and troubleshooting. Four unedited Windows game-window PNGs
+under docs/assets/multiplayer-* show the chooser, browser, Lobby Options and
+Join Server. The browser uses a local display-only example directory; its
+lobbies and1ms measurements are examples, not public-service measurements.
+No public lobby or router mapping was created. The bounded capture used a
+disposable unlocked Test Lab profile, isolated controls/display/runtime/online
+settings, disabled UPnP and recycled its virtual disks after shutdown.
+
+Capture exposed stale browser row drawing overwriting the next page's heading
+with latency text. Shared mp_match_draw now returns after leaving MP_BROWSER;
+the native fixture checks that Lobby Options survives that stale draw.
+Windows x64 Release rebuild via tsfp.ps1 passes the complete patch validation
+and built-in build checks; affected FOV/native-menu tests:5passed,2Mac-only
+skips. Repository-context/backlog checks:22passed; all8 guide links/images exist
+and changed task files pass whitespace checks. Actual rebuilt-game capture
+confirms the heading fix and all four screens.
+Native Mac/Linux build/visual acceptance and cross-network gameplay were not run.
+Source:35751486 plus the uncommitted shared draw guard; version remains0.6.2.
+US XBE SHA256:3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc.
+Capture EXE SHA256:42068784228a6bf56b43cb027ab20850f159587249670e030863b8df6e038221.
+Compatibility:8f04eed3abc9e5b58d4c1f978db0d414c9e8cb1bf317792c6c10de2312bac838.
+This is menu/documentation evidence, not multiplayer stability acceptance.
+
 Sun repair main integration with5426485f: Windows Release/debug build passes;
 42 targeted checks pass with2Mac skips. Newer crosshair/FOV/tutorial changes
 remain intact. Published preview package remains the earlier tested snapshot.

@@ -423,6 +423,8 @@ static void mp_latency_draw(uint32_t menu,float x,float y,const PcOnlineMenuLobb
 static void mp_match_draw(void)
 {
     const uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u),rect=WORD_AT(g_esp+12u);
+    /* Outgoing browser rows must not write into another page's text buffers. */
+    if(mp_ui.page!=MP_BROWSER){g_esp+=4u;return;}
     if(!guest_writable(item,0x18u) || WORD_AT(item+0x14u)<100u){g_esp+=4u;return;}
     const unsigned index=WORD_AT(item+0x14u)-100u;
     if(index>=mp_ui.state.count){g_esp+=4u;return;}

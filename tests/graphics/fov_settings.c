@@ -1626,6 +1626,11 @@ int main(int argc,char **argv)
          WORD_AT(menu+0xf4u)=opacity;
          CHECK(latency_draws==2);row_alignment_test=latency_draw_test=0;}
         CHECK(!strcmp((const char *)(g_xbox_mem_offset+online_label),"Online"));
+        { /* A browser row can tick after Create has become the active page. */
+          mp_ui.page=MP_CREATE;const uint32_t heading=mp_text(30,"Lobby Options");
+          guest_call(mp_match_draw,3,menu,0x200200u,0x600000u);
+          CHECK(!strcmp((const char *)(g_xbox_mem_offset+heading),"Lobby Options"));
+          mp_ui.page=MP_BROWSER;}
         CHECK(mp_descriptor(MP_NETWORK)!=mp_descriptor(MP_BROWSER));
         /* The native browser owns a single continuous list, not paged cards
            with connection/debug actions mixed into the match choices. */

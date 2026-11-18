@@ -1,3 +1,12 @@
+Multiplayer guide/capture follow-up (2026-11-17, local after35751486):
+**Awaiting validation** under MAC-013 on native Mac/Linux. Shared
+src/interface/pc_multiplayer_menu.inc stops stale browser draws after a page
+change, preserving the destination heading. No OS adapter change is needed;
+the player guide covers the common native menus. Windows regression/build and
+four actual menu captures pass; Mac/Linux build and browser-to-Create visual
+acceptance remain pending. See [evidence](STATUS.md) and
+[contracts](../agent-context/native-multiplayer-menu.md).
+
 Native multiplayer/main integration (2026-11-17, uncommitted): shared pause
 Settings and native multiplayer factory routes are composed; no host adapter
 change. Additive compiler patch0261 restores compatibility-template parity with
