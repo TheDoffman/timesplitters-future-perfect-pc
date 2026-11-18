@@ -1,3 +1,38 @@
+Public HTTPS upgrade verifier (2026-11-18; source087578e2, integrationfe72e5e6;
+not deployed): the fixed installed UID600 helper verifies the source-pinned root,
+signed local catalog checkpoint, direct public HTTPS/CA/hostname validation,
+catalog floor/version identity and every retained local revocation. All protected
+host roles must be healthy. Only three bounded credential-free GETs per transport
+are allowed. Root validates a bounded versions/hashes/counts report through the
+fixed child transport; no signing packages or networking enter the Root parent.
+No-site isolated metadata transport import is verified independently. This helper
+does not yet restore public routing or settle the upgrade journal.
+
+Focused helper/private/protocol/CI-scope tests pass280/seven POSIX skips on Windows
+2.71s,287 on native Mac1.24s and287 on Linux1.33s. Tests use actual fixture RSA
+signatures, fake transports and health observations; they reject certificate
+failure, redirects, size overruns, invalid signatures, changed same-version bytes,
+forgotten revocations, older catalogs, stale roles and altered child reports.
+An ordinary UID501 read-only probe of the real Mac loopback and public HTTPS
+passes atfe72e5e6: both signed catalog107, metadata SHA
+e31d83eaf2931a3e61e71d076f163b1639b86542ae87bc8aad649bd179fe4638,
+five revocations with list SHA
+4f00bc71861959502eeed49273975ce06617f997eaf838f40bcb2845855c89f7,
+zero approved releases. This is actual TLS/signature transport evidence, not
+installed UID600/helper/Root cutover or off-network client acceptance.
+
+Main advanced to32706dac (V-Sync) during integration. Mergefe72e5e6 retains both
+additions and moves incoming bounded-guide links to the existing integration
+leaves. Complete patch application succeeds on all three task checkouts. Focused
+V-Sync/helper/protocol/context tests pass129/seven skips Windows8.73s and135/one
+Windows-only swap-chain skip each on Mac2.60s/Linux2.55s. Full launcher builds and
+real creator backend checks pass Windows62.38s, native Mac125 shared UI groups
+and Linux126. These do not establish physical gameplay or a published release.
+The existing backup setup remains an actual live zsh29800/sudo29803 at sudo -v;
+no replacement prompt or frozen setup edits were made. Live jobs, private data,
+keys and routing are unchanged. Public restoration/reboot/pending-forward reverse,
+installed acceptance, final creator/game/multiplayer/SDK/release work remain open.
+
 ## V-Sync playable Windows test build (2026-11-18)
 
 Local feature/vsync at main9bdab5f5 plus its staged changes. Fresh supported-US
