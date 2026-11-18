@@ -1,3 +1,33 @@
+Backup recipient custody foundation (2026-11-18; sourcea7200510; not deployed):
+new independently generated X25519 recipient is bound to canonical workshop
+origin/root SHA, public identity and matching private material. RSA signing keys
+cannot be used for this role. Windows new-only stores use actual account-scoped
+DPAPI and private NTFS ACLs, ciphertext before public completion record; partial,
+existing, foreign and different-valid-encrypted-key stores refuse/preserve.
+Portable key recovery uses a distinct canonical bounded4KiB/8KiB format,
+scrypt-n131072-r8-p1 and AES-256-GCM with authenticated public binding. Low-order
+keys, malformed/schema/size/profile input before KDF, tampering, wrong passwords
+and private/public mismatch are covered. Signing authority recovery is unchanged.
+
+New recipient/portable-trust/CI-scope checks pass234 with1 non-Windows-import skip
+on Windows36.06s,231 with4 Windows-only skips on Mac8.54s and Linux10.18s. Actual
+Windows DPAPI fixture export was transferred to both native checkouts: MacUID501
+and WSL/root recover the same disposable recipient and ECDH challenge result
+without Windows account access or writing decrypted private material. Envelope
+SHA9f8d28ee8f95f4f3db45338f1341cbd7affa39097634db4310079a625bbd854a.
+These keys are disposable test fixtures; no production recipient was created.
+No encrypted repository archive/host provisioning/transport/retention/scheduler
+is deployed by this component. Those integration and restore-drill gates remain.
+
+Frozen candidate factory check (UID501, retained actual7be Python, d11ca04b/9e3):
+all9 old factory plists match current protected boot bytes; all9 future definitions
+match after only release-path substitution. Both generations produce13 protected
+monitor payloads; preserved backup definition is pure metadata, not admission.
+Fresh child module paths stay within the intended generation and retained Python
+binding passes. No UID600/kernel or Root acceptance is inferred; nothing started,
+stopped or rerouted. The frozen9e3/D11 candidate remains unchanged and uninstalled;
+it does not include the newer independent recipient module.
+
 Explicit reboot command (2026-11-18; sourced11ca04b; not installed): immutable
 entry now accepts --recover-boot with private resume/rollback or separate public
 restore. It re-verifies closures/backup/factories before the original existing
