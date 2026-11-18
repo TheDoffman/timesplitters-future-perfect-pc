@@ -12,6 +12,18 @@ from online_private import Directory, LobbyError, LocalDirectory, certificate, s
 VERSION = 'a' * 64
 
 
+def test_private_listener_bind_never_reverse_resolves_hostname(monkeypatch):
+    import online_private
+    def forbidden(*_):
+        raise AssertionError('A numeric private listener must not wait for reverse DNS')
+    monkeypatch.setattr(socket,'getfqdn',forbidden)
+    server=online_private.Server(('127.0.0.1',0),Directory())
+    try:
+        assert server.server_name=='127.0.0.1'
+        assert server.server_port==server.server_address[1] and server.server_port>0
+    finally:server.server_close()
+
+
 def request(action, sequence=1, **values):
     data = dict(sequence=sequence, action=action, mode=1, source=1, public=True,
                 port=0, name='My Lobby', code='', address='192.0.2.1', fingerprint='')

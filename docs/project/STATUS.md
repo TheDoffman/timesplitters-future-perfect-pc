@@ -45039,3 +45039,14 @@ Modified Python files compile. No game rebuild needed for this companion-only
 repair. Mac CI confirmation follows the pushed change; physical Mac/Linux and
 external-network gameplay acceptance remain separate. No personal settings,
 saves or real router mappings were changed.
+
+Mac rerun44210270422 at a4c0f43e passed the new resolver regressions but still
+hit the same20s hosting deadline. Slow private-directory cases fell from70-85s
+to35-50s, revealing a second synchronous lookup: HTTPServer.server_bind calls
+socket.getfqdn on the listener address. A new regression rejects any reverse
+lookup and reproduces that exact call before the repair. The private Server now
+uses TCPServer's numeric bind directly, retaining address/port metadata and its
+existing NTFS/Windows exclusive-bind behavior. TLS pins, invitations, rate limits,
+authentication and test deadlines are unchanged. Windows affected suite now
+84 passed in24.45s; Python compile/context/whitespace checks pass. Updated Mac CI
+confirmation follows the push; VERSION remains0.6.2.

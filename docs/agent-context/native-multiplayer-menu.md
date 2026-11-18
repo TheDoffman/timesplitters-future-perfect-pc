@@ -84,6 +84,9 @@ routed address and omits supplemental hints. This fixes an unbounded startup
 path exposed by Mac CI; test_online_host.py injects a stalled resolver and checks
 bounded completion, retry admission and fast secondary-interface preservation.
 The real private-host/TLS/relay lifecycle remains covered by test_online_private.py.
+The numeric private listener binds through TCPServer rather than HTTPServer's
+getfqdn reverse lookup; server_name/server_port retain the bound address/port.
+Invitations and TLS identity use explicit addresses/pins, never reverse DNS.
 `PRIVATE_CONNECT` tries local
 loopback, those numeric LAN hints (same TCP port,1s each), then the public URL;
 every candidate must verify the same certificate pin before any request. Server

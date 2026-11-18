@@ -7,6 +7,7 @@ UDP relay lets lobby hosts and guests connect outward to the directory owner.
 import hashlib
 import hmac
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from socketserver import TCPServer
 import ipaddress
 import json
 import os
@@ -372,7 +373,10 @@ class Server(ThreadingHTTPServer):
     def server_bind(self):
         if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
-        super().server_bind()
+        # HTTPServer.server_bind performs getfqdn(), which can block for many
+        # DNS retry intervals. Invitations use explicit addresses and TLS pins.
+        TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
 
     def __init__(self, address, directory):
         self.directory = directory
