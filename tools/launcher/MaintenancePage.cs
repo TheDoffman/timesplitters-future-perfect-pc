@@ -26,16 +26,17 @@ namespace TimeSplitters.Launcher
         public event Action<bool> Selected;
         bool busy,restoringSelection;
         int selectedIndex;
-        public MaintenanceArea(MaintenancePage repair,MaintenancePage diagnostics)
+        public MaintenanceArea(MaintenancePage repair,MaintenancePage diagnostics,ConsolePage console=null)
         {
             View.Margin=new Thickness(30,24,30,20);
             Ui.Theme(View);Ui.Tabs(View);
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});View.RowDefinitions.Add(new RowDefinition {Height=new GridLength(1,GridUnitType.Star)});
-            var heading=PageTheme.Header("INSTALLATION CARE","Repair / Verify","Check your installation, restore release files and collect diagnostics for support.");View.Children.Add(heading);
+            var heading=PageTheme.Header("GAME SUPPORT","Tools & Logs","Verify and repair your installation, review diagnostics and watch live game output.");View.Children.Add(heading);
             Tabs.Name="MaintenanceTabs";
-            AutomationProperties.SetName(Tabs,"Repair and diagnostics");
+            AutomationProperties.SetName(Tabs,"Repair, system reports and console");
             Tabs.Items.Add(new TabItem {Header=new TextBlock {Text="Repair / Verify"},Name="RepairTab",Content=repair.View});
-            Tabs.Items.Add(new TabItem {Header=new TextBlock {Text="Diagnostics"},Name="DiagnosticsTab",Content=diagnostics.View});
+            Tabs.Items.Add(new TabItem {Header=new TextBlock {Text="System & Reports"},Name="DiagnosticsTab",Content=diagnostics.View});
+            if(console!=null)Tabs.Items.Add(new TabItem {Header=new TextBlock {Text="Console"},Name="ConsoleTab",Content=console.View});
             Tabs.SelectedIndex=0;Grid.SetRow(Tabs,1);View.Children.Add(Tabs);
             Tabs.SelectionChanged+=(s,e)=> {
                 if(!Ui.From(e,Tabs) || restoringSelection)return;
@@ -76,7 +77,7 @@ namespace TimeSplitters.Launcher
             View.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
             View.RowDefinitions.Add(new RowDefinition { Height=new GridLength(1,GridUnitType.Star) });
             View.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
-            var heading=PageTheme.Header(diagnostics?"SUPPORT CENTER":"INSTALLATION CARE",diagnostics?"Diagnostics":"Repair / Verify",
+            var heading=PageTheme.Header(diagnostics?"SUPPORT CENTER":"INSTALLATION CARE",diagnostics?"System & Reports":"Repair / Verify",
                 diagnostics?"Review your system report and prepare a GitHub issue.":"Check your installation. Restore release files when something needs attention.");if(!embedded)View.Children.Add(heading);
             Report=new TextBox { Name=diagnostics?"DiagnosticsReport":"VerificationReport",IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,VerticalContentAlignment=VerticalAlignment.Top,
                 Background=Brush("#0B1826"),BorderThickness=new Thickness(0),FontFamily=Ui.Monospace,FontSize=12,Padding=new Thickness(12) };

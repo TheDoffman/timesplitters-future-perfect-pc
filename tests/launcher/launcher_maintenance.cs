@@ -264,8 +264,9 @@ public static class LauncherMaintenanceChecks
                         Require(host.Visibility==System.Windows.Visibility.Visible && settings.Visibility==System.Windows.Visibility.Collapsed && System.Windows.Window.GetWindow((System.Windows.DependencyObject)host.Content)==ui.Window);
                         Require(((System.Windows.Controls.Border)ui.Window.FindName("SidebarPanel")).Visibility==System.Windows.Visibility.Visible);
                         var tabs=Descendants<System.Windows.Controls.TabControl>((System.Windows.DependencyObject)host.Content).Single();
-                        Require(tabs.Items.Count==2 && tabs.SelectedIndex==0);
-                        Require(((System.Windows.Controls.TextBlock)((System.Windows.Controls.TabItem)tabs.Items[0]).Header).Text=="Repair / Verify" && ((System.Windows.Controls.TextBlock)((System.Windows.Controls.TabItem)tabs.Items[1]).Header).Text=="Diagnostics");
+                        Require(tabs.Items.Count==3 && tabs.SelectedIndex==0);
+                        Require(ui.Window.FindName("ConsoleNav")==null && ui.Window.FindName("ConsoleHost")==null);
+                        Require(((System.Windows.Controls.TextBlock)((System.Windows.Controls.TabItem)tabs.Items[0]).Header).Text=="Repair / Verify" && ((System.Windows.Controls.TextBlock)((System.Windows.Controls.TabItem)tabs.Items[1]).Header).Text=="System & Reports");
                         var repair=(System.Windows.DependencyObject)((System.Windows.Controls.TabItem)tabs.Items[0]).Content;
                         var diagnostics=(System.Windows.DependencyObject)((System.Windows.Controls.TabItem)tabs.Items[1]).Content;
                         var repairLogs=Descendants<System.Windows.Controls.Button>(repair).Single(c=>c.Name=="MaintenanceLogs");
@@ -278,6 +279,10 @@ public static class LauncherMaintenanceChecks
                         Require(Descendants<System.Windows.Controls.TextBlock>(diagnostics).Any(c=>c.Text.Contains("local launcher log folder")));
                         tabs.SelectedIndex=0;repairLogs.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));tabs.SelectedIndex=1;
                         Require(report.Text=="Retained diagnostics report" && verification.Text=="Retained verification result" && ReferenceEquals(host.Content,area));
+                        ui.ShowConsole();Require(tabs.SelectedIndex==2 && host.Visibility==System.Windows.Visibility.Visible);
+                        var console=(System.Windows.DependencyObject)((System.Windows.Controls.TabItem)tabs.Items[2]).Content;
+                        Require(Descendants<System.Windows.Controls.TextBox>(console).Single(c=>c.Name=="GameConsoleOutput").IsReadOnly);
+                        ui.ShowMaintenance(true);Require(report.Text=="Retained diagnostics report" && verification.Text=="Retained verification result");
                         var busy=typeof(LauncherWindow).GetField("busy",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
                         var refresh=typeof(LauncherWindow).GetMethod("Refresh",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
                         try{busy.SetValue(ui,true);refresh.Invoke(ui,null);Require(tabs.IsEnabled && repairLogs.IsEnabled && diagnosticLogs.IsEnabled);tabs.SelectedIndex=0;Require(tabs.SelectedIndex==1 && Descendants<System.Windows.Controls.Button>(diagnostics).Single(c=>c.Name=="CancelMaintenance").IsEnabled);}finally{busy.SetValue(ui,false);refresh.Invoke(ui,null);}

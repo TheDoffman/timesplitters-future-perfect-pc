@@ -176,7 +176,7 @@ namespace TimeSplitters.Launcher
         public static async Task Drain(Stream input,string path)
         {
             using(var output=new FileStream(path,FileMode.Create,FileAccess.Write,FileShare.Read)){var buffer=new byte[65536];long budget=4*1024*1024;int count;
-                while((count=await input.ReadAsync(buffer,0,buffer.Length))>0){int keep=(int)Math.Min(budget,count);if(keep>0)await output.WriteAsync(buffer,0,keep);budget-=keep;}}
+                while((count=await input.ReadAsync(buffer,0,buffer.Length))>0){int keep=(int)Math.Min(budget,count);if(keep>0){await output.WriteAsync(buffer,0,keep);await output.FlushAsync();}budget-=keep;}}
         }
         public static VerificationResult Verify(string root,CancellationToken token)
         {
