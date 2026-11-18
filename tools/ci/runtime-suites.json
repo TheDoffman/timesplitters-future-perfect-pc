@@ -42,6 +42,7 @@
       "tests/mods/test_public_host_profile.py",
       "tests/mods/test_windows_recovery.py",
       "tests/mods/test_portable_recovery.py",
+      "tests/mods/test_backup_recipient.py",
       "tests/mods/test_wave_input.py",
       "tests/mods/test_audio_source.py",
       "tests/mods/test_audio_assets.py",

@@ -8,6 +8,41 @@ do not need it. Keep backups outside every served publication directory. They
 contain password hashes, account identities, ownership and private moderation
 history; use private storage and an independently protected off-device copy.
 
+## Off-device recipient custody foundation
+
+`mod_backup_recipient` implements the independent recipient key needed before
+encrypted off-device copies can be automated. This is an internal foundation,
+not a deployed exporter, transport or scheduled copy. No production recipient
+has been created. The existing signing-key portable recovery file is unchanged.
+
+The recipient is X25519, separately generated from every RSA signing key. Its
+public record binds the canonical HTTPS workshop origin, independently supplied
+root SHA256, algorithm, raw public key and domain-separated key ID. Low-order
+public keys, foreign profiles and mismatched private/public material are refused.
+Only that public record is intended for the host; the private key must stay off
+the host. Passing a signing private key as a recipient is rejected.
+
+Windows creation/import uses a new private NTFS directory and account-scoped
+DPAPI through the existing recovery ACL helper. Private bytes are never written
+unencrypted. The public completion record is written last, and exact two-member
+inventory is required when loading. Existing, partial or foreign stores remain
+preserved; no adoption/repair or replacement occurs. Choose private local storage
+outside cloud-sync folders when this component is integrated into operator tools.
+Keep the portable envelope outside this exact two-file account store.
+
+Portable recipient recovery uses a separate, bounded canonical envelope with
+scrypt-n131072-r8-p1 and AES-256-GCM, fresh32-byte salt/12-byte nonce, and the full
+public recipient as authenticated associated data. It is not interchangeable
+with signing-authority recovery. Expected origin/root pin, format and size checks
+precede the KDF. Wrong passphrases, tampering and changed public identity refuse
+recovery. Secret payloads are bounded to4KiB and envelopes to8KiB. Private keys
+exist only in memory, DPAPI ciphertext or this authenticated encrypted envelope.
+
+Actual encrypted repository archive creation, host recipient provisioning, SSH
+or other authenticated transfer, receiver retention, unattended scheduling,
+production key custody and an off-device restore drill still need integration
+and deployment. Component checks do not establish automatic backup operation.
+
 ## Capture
 
 The repository and backup parent must already be owned by the current service

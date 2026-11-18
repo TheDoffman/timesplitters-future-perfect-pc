@@ -84,6 +84,13 @@ lease; transport, closure admission and system processes remain simulated.
 Unstaged reversal prepares only a manifest, then starts old services directly,
 without applying candidate configuration. It still needs fresh AV/readiness and
 seven restarts; ordinary unprepared rollback without reboot admission is refused.
+test_backup_recipient.py covers independent X25519 identity, canonical origin/
+root pin and private/public binding, low-order rejection, pre-KDF size/schema/
+profile refusal, tamper/wrong-passphrase failure, and portable recovery. Actual
+Windows cases use DPAPI/private NTFS ACLs, preserve existing/partial stores and
+refuse a different valid encrypted key or unknown member. Other hosts verify the
+portable format and refuse Windows-only import. No production recipient exists;
+archive encryption, transport, retention and scheduling are not implemented here.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.
