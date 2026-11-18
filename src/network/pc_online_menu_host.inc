@@ -8,7 +8,8 @@ static int online_menu_write(const char *suffix,const void *data,size_t bytes)
     FILE *file=fopen(temporary,"wb");if(!file)return 0;
     int ok=fwrite(data,1,bytes,file)==bytes;if(fclose(file))ok=0;
     if(ok)ok=PC_ONLINE_MENU_REPLACE(temporary,path);
-    if(!ok)remove(temporary);return ok;
+    if(!ok)remove(temporary);
+    return ok;
 }
 int pc_online_menu_start(void)
 {

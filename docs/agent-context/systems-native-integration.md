@@ -1,5 +1,9 @@
 # Native network and UI integration
 
+POSIX startup retains its original UTF8 boot labels. Online-menu publication
+keeps failed-write cleanup and its unconditional return on separate lines so
+GCC's misleading-indentation warning remains enabled under -Werror.
+
 [Sync telemetry](network-sync-telemetry.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
 [Actors](network-actor-lifetime.md).

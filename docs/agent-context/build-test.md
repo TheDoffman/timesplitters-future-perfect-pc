@@ -1,4 +1,5 @@
 [Workshop/native test routes](build-test-integration.md).
+Online IPC/GCC: test_online_menu.py; warnings remain errors.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.

@@ -15,7 +15,7 @@ Mod startup/storage and window-thread drain: [contracts](mod-scripting.md).
 [Mod scripting and game bridge](mod-scripting.md): restricted API, title hooks and activation gates.
 The initial non-team adapter reports team0; original actor team identity stays private.
 The match bridge checks compiled game pins before privately staging helpers; see mod-scripting.md.
-POSIX startup retains its original UTF8 boot labels.
+IPC/GCC: systems-native-integration.md.
 
 <!-- packet:start -->
 Tracked policy: `src/input/` owns controls, bindings and prompts;
