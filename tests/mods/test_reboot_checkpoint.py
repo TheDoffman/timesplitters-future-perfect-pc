@@ -46,7 +46,7 @@ def rebooted(machine,monkeypatch,request):
     for index,(path,spec) in enumerate(item.context['entries' if early else 'candidate_entries']):item.loaded[spec['Label']]=(path,spec,900+index)
     original=item.context['command']
     def command(argv):
-        if argv[:2]==['/bin/launchctl','bootout']:
+        if argv[:2]==['/bin/launchctl','bootout'] and item.state.state()['reboot']['admitted'] is None:
             label=argv[-1].removeprefix('system/')
             assert item.state.state()['reboot']['pending']==label
             item.loaded.pop(label,None);return 0,''

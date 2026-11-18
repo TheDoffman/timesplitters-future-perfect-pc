@@ -58,6 +58,8 @@ test_reboot_admission.py composes the typed fresh-backup/checkpoint handoff with
 ordinary forward/rollback/public restoration, historical inventory after moves,
 event-time freshness and original/current lease refusal. New boot readiness must
 be established afresh; original transaction/directions/catalog floor stay bound.
+The shared reboot command fixture validates reboot stop intent before admission;
+after admission it delegates to the ordinary shutdown fixture's own intent checks.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.
