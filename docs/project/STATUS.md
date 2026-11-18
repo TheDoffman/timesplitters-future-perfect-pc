@@ -1,3 +1,59 @@
+Fresh managed export producer/selection (2026-11-18; source89268460,
+implementation6aa1bd19; not deployed): the POSIX producer binds an existing managed
+snapshot pool ID/policy hash, recipient/origin/root and separate bounded export
+cache. It selects/verifies the latest complete snapshot under the source lease,
+records its private source plan before encryption, and preserves capture time in
+the receipt. Unchanged snapshots keep their ciphertext/success time; future or
+nonadvancing captures refuse. Plaintext capture remains the separate existing job.
+
+Producer and receiver reuse the same SQLite database/schema/lease validation,
+transactions, ciphertext inspection and exact-file retention. Optional producer
+plans use enforced foreign keys; existing receiver schemas and five-field fixed
+SSH bindings remain valid. A new producer-kind binding selects send-current with
+a fixed producer root, without network metadata choosing paths or source kinds.
+The public current pointer contains only pool/export identity, capture time and
+cipher-receipt hash; plaintext source hashes stay in the private journal. Durable
+previous/next/temp publication intent supports reconstruction of only its owned
+metadata temporary, preserving partial ciphertext and changed/foreign objects.
+
+Shared read leases allow encryption while an export is sent; publication and
+retention defer until an exclusive upgrade succeeds. The read-only sender uses
+neither private journal nor plaintext source. Standalone binary send commands
+have a30-minute hard process watchdog, including stalled stdout/teardown. Producer
+CLI init/tick/status and direct/managed receiver producer-source options are in
+source; no protected job, OS schedule, new permission or production key is installed.
+
+Final Linux/root producer/receiver/export/transport/archive/file/host/pool/CI
+selection passes309 in16.48s; actual Windows250 pass/59 POSIX skips in479.56s.
+Initial Linux230 checks at6aa pass4.03s before the added binding/watchdog cases.
+Coverage includes newest-source selection with old plaintext rotation, unchanged
+staleness, source-policy exchange, private-journal-free read-only delivery, busy
+reader deferral, successive managed receiver generations, capacity preservation,
+partial ciphertext plus healthy retry, publication boundaries and CLI operation.
+A real child blocked in stdout is killed at the shortened test-only watchdog
+with exit124; its shared lease is then reacquired exclusively. Context/compile/
+whitespace checks pass. No game rebuild is needed for these operator-only changes.
+
+Additional actual Linux children os._exit(99), without Python cleanup, after local
+cipher receipt completion/before journal admission and after pointer replacement/
+before intent settlement. Reopening both caches verifies/publishes the known copy,
+keeps one verified generation and removes only the old export without encrypting
+again. Disposable cipher SHAs a219989db1dbabd1c42d97226b92b0ea49ac878af2c7b4adfc2b305f7f274b20
+and c913ca7b4cdc94064fde78bd79058bccb848a11f6da991cb1ad5450e3f481a3d.
+These prove process-death recovery, not physical power-loss/boot acceptance.
+
+Mac latest read-only probe reports121110528bytes free and source3113943c; this
+producer change is not yet synchronized or verified there because of capacity.
+No new Mac backup writer was run or its2GiB reserve weakened. Original protected
+backup authentication and the separate OBS-installer cleanup choice remain pending;
+no unapproved cache/data deletion occurred. Prior frozen9e3/current live services
+and routing are unchanged. Real SSH fixed-bundle/managed receiver proofs from the
+previous checkpoints remain their original scope: new producer-mode SSH on the
+user Mac is still unrun. Source-only fresh selection does not establish deployed
+unattended backups. Production custody/access, OS schedules/failure delivery,
+Mac capacity, service/cutover/recovery/physical boot, remaining SDK/MP/content/
+stability/public3-host acceptance and final release remain required. Main untouched.
+
 Managed encrypted receiver/retention (2026-11-18; source596b1e99; not deployed):
 new immutable private pool binds recipient/origin/root, fixed SSH source settings,
 capacity/keep/interval and UUID. Bounded1MiB SQLite FULL/DELETE journal and exclusive
