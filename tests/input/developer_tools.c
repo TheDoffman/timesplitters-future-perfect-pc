@@ -238,7 +238,6 @@ int main(void) {
     click(UI_ACTION,SETTINGS,6);assert(drawn("Show first-person viewmodel"));
     pc_developer_get(&s);assert(s.hide_viewmodel&&!s.freecam);
     assert(!sidebar_video_dirty()&&saved_view.hide_viewmodel); /* Saved live, independent of video drafts. */
-    view_loaded=0;memset(&view_preferences,0,sizeof view_preferences);
     pc_developer_get(&s);assert(s.hide_viewmodel); /* Reload from persisted preferences. */
     view_save_ok=0;click(UI_ACTION,SETTINGS,6);pc_developer_get(&s);
     assert(s.hide_viewmodel&&saved_view.hide_viewmodel);view_save_ok=1;
@@ -261,8 +260,10 @@ int main(void) {
     click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
     assert(pc_developer_hud_visible()&&pc_developer_watermark_visible());
     click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
-    view_loaded=0;memset(&view_preferences,0,sizeof view_preferences);
     assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible());
+    assert(pc_developer_set_enabled(0));
+    assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible());
+    assert(pc_developer_set_enabled(1));pc_developer_toggle();
     pc_developer_match_policy(0,0);pc_developer_close();key('N');key('N');pc_developer_toggle();
     assert(!pc_developer_hud_visible()&&saved_view.hide_hud); /* Freecam leaves manual HUD choice intact. */
     click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);

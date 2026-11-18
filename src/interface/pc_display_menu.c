@@ -507,6 +507,8 @@ static int restart_baseline_set,running_msaa=1,running_supersampling;
 static uint32_t post_aa_row;
 static uint32_t apply_row;
 static uint32_t rate_row,subtitle_row,feed_row,counter_row;
+static uint32_t hud_row,watermark_row;
+static PcViewSettings visibility_shown;
 static unsigned staged_subtitles,applied_subtitles;
 static uint32_t resolution_row, aspect_row;
 static uint32_t texture_row;
@@ -517,6 +519,7 @@ static char status[192];
 #define TEXT_BYTES 192
 #define MODE_TEXT_BASE 32
 #define VSYNC_TEXT_BASE (MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+4)
+#define VISIBILITY_TEXT_BASE (VSYNC_TEXT_BASE+3)
 #define TEXT_ADDRESS(i) (storage+64u+(uint32_t)(i)*TEXT_BYTES)
 static uint32_t text_at(int i,const char *format,...)
 {
@@ -547,7 +550,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
        WORD_AT(menu+4)!=storage || !guest_writable(item,0x8c) ||
        WORD_AT(item+0x88)!=menu || (WORD_AT(item+0x28)&5u))return;
     unsigned id=WORD_AT(item+0x14);
-    if(!(id<=2u || (id>=7u && id<=14u) || (id>=100u && id<=105u)))return;
+    if(!(id<=2u || (id>=7u && id<=14u) || id==16u || id==17u || (id>=100u && id<=105u)))return;
     uint32_t sounds=WORD_AT(0x007BA178u);
     if(WORD_AT(0x007BA16Cu) && guest_writable(sounds,12))
         guest_call(sub_00021780,1,WORD_AT(sounds+8));
@@ -1240,6 +1243,7 @@ static void update_apply(void)
 #include "pc_audio_tabs.inc"
 static void labels(void)
 {
+    hud_row=watermark_row=0;
     vsync_row=window_mode_row=weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     /* Section rebuilds keep the same tab strip; retain hits until repaint. */
     if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART) {video_tab_bounds_valid=0;video_pending_tab=-1;}
@@ -1302,6 +1306,17 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(13,"Off"));
         guest_call(sub_000717D0,1,text_at(14,"On"));
         guest_call(sub_00075430,2,subtitle_row,staged_subtitles);
+        PcViewSettings visibility;pc_settings_view_read(&visibility);visibility_shown=visibility;
+        uint32_t *rows[]={&hud_row,&watermark_row};
+        const char *names[]={"HUD & UI","Version watermark"};
+        const int hidden[]={visibility.hide_hud,visibility.hide_watermark};
+        for(unsigned i=0;i<2;i++) {
+            *rows[i]=guest_call(sub_00079D60_gen,6,text_at(VISIBILITY_TEXT_BASE+i,"%s",names[i]),16u+i,0u,0u,0u,0u);
+            guest_call(sub_0007D480,2,0x8400u,0u);
+            guest_call(sub_000717D0,1,TEXT_ADDRESS(13));
+            guest_call(sub_000717D0,1,TEXT_ADDRESS(14));
+            guest_call(sub_00075430,2,*rows[i],(uint32_t)!hidden[i]);
+        }
         feed_row=guest_call(sub_00079D60_gen,6,text_at(15,"Kill Feed"),10u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
         guest_call(sub_000717D0,1,text_at(16,"Off"));
@@ -1337,6 +1352,22 @@ static void read_choices(void)
     if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART)return;
     if(page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED)graphics_read_choices();
     counter_read_choice();
+    if(hud_row||watermark_row) {
+        PcViewSettings before,desired;pc_settings_view_read(&before);desired=before;
+        if(hud_row&&WORD_AT(hud_row+0xc8)<=1u&&WORD_AT(hud_row+0xc8)!=(uint32_t)!visibility_shown.hide_hud)
+            desired.hide_hud=!WORD_AT(hud_row+0xc8);
+        if(watermark_row&&WORD_AT(watermark_row+0xc8)<=1u&&WORD_AT(watermark_row+0xc8)!=(uint32_t)!visibility_shown.hide_watermark)
+            desired.hide_watermark=!WORD_AT(watermark_row+0xc8);
+        if((desired.hide_hud!=before.hide_hud||desired.hide_watermark!=before.hide_watermark)&&
+           !pc_settings_view_save(&desired,status,sizeof status)) {
+            desired=before;
+        }
+        if(hud_row&&WORD_AT(hud_row+0xc8)!=(uint32_t)!desired.hide_hud)
+            guest_call(sub_00075430,2,hud_row,(uint32_t)!desired.hide_hud);
+        if(watermark_row&&WORD_AT(watermark_row+0xc8)!=(uint32_t)!desired.hide_watermark)
+            guest_call(sub_00075430,2,watermark_row,(uint32_t)!desired.hide_watermark);
+        visibility_shown=desired;
+    }
     if(vsync_row && WORD_AT(vsync_row+0xc8)<=1u)staged_vsync=(int)WORD_AT(vsync_row+0xc8);
     if(window_mode_row && WORD_AT(window_mode_row+0xc8)<=1u)staged_fullscreen=(int)WORD_AT(window_mode_row+0xc8);
     if(resolution_row) {
@@ -1379,6 +1410,7 @@ static void build_menu(void)
 }
 static void refresh(int next,int selected)
 {
+    hud_row=watermark_row=0;
     page=next;vsync_row=weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     guest_call(sub_00078980,1,current_menu);
     /* Guest rebuild restores old choices by row ID. Reapply every staged value,
@@ -1603,9 +1635,9 @@ static void activate(void)
     GuestRegisters r; uint32_t source=WORD_AT(g_esp+4);
     save_registers(&r);
     if(!storage) {
-        storage=xbox_HeapAlloc(64+TEXT_BYTES*(VSYNC_TEXT_BASE+3),4);
+        storage=xbox_HeapAlloc(64+TEXT_BYTES*(VISIBILITY_TEXT_BASE+2),4);
         if(storage) {
-            memset((void *)((uintptr_t)storage+g_xbox_mem_offset),0,64+TEXT_BYTES*(VSYNC_TEXT_BASE+3));
+            memset((void *)((uintptr_t)storage+g_xbox_mem_offset),0,64+TEXT_BYTES*(VISIBILITY_TEXT_BASE+2));
             WORD_AT(storage)=BUILD_CB; WORD_AT(storage+4)=TICK_CB;
         }
     }

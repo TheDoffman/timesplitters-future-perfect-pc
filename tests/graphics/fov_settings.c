@@ -31,6 +31,13 @@ int pc_controls_developer_is_fullscreen(void){return sidebar_fullscreen;}
 void pc_controls_developer_fullscreen(void){sidebar_fullscreen=!sidebar_fullscreen;}
 void pc_developer_get(PcDeveloperState *out) {*out=(PcDeveloperState){0,0,0,0,1.,0};}
 static int developer_hud_visible=1;
+static PcViewSettings view_preferences;
+static int view_save_ok=1;
+void pc_settings_view_read(PcViewSettings *out){*out=view_preferences;}
+int pc_settings_view_save(const PcViewSettings *value,char *error,size_t bytes){
+    if(!view_save_ok){snprintf(error,bytes,"Could not save view settings.");return 0;}
+    view_preferences=*value;return 1;
+}
 int pc_developer_hud_visible(void) {return developer_hud_visible;}
 void pc_developer_close(void) {assert(!"unexpected Developer Tools close");}
 void pc_developer_report(const char *message) {(void)message;assert(!"unexpected developer request");}
@@ -765,6 +772,7 @@ int main(int argc,char **argv)
             CHECK(menu_video_tabs_poll(current_menu) && video_pending_tab==2);
             WORD_AT(current_menu+0x1b0)=3;menu_video_tabs_flush();
             CHECK(page==DISPLAY_VIEW && video_pending_tab==-1);
+            CHECK(hud_row&&watermark_row); /* Frontend and paused menu share both controls. */
             CHECK(!menu_video_tabs_poll(current_menu)); /* Held click cannot repeat. */
             tab_pointer.left=0;menu_video_tabs_poll(current_menu);
             tab_pointer.x=397.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(current_menu));
@@ -898,6 +906,23 @@ int main(int argc,char **argv)
     CHECK(!display_dirty() && staged_fov==55 && staged_rate==0 && texture_choice==0);
     content("TSFP_DISPLAY_V1 1280 720\n");
     refresh(DISPLAY_VIEW,0);
+    CHECK(hud_row&&watermark_row&&WORD_AT(hud_row+0x14)==16u&&WORD_AT(watermark_row+0x14)==17u);
+    CHECK(WORD_AT(hud_row+0xc8)==1u&&WORD_AT(watermark_row+0xc8)==1u);
+    view_preferences.hide_watermark=1;read_choices(); /* A Dev Tools edit refreshes the open native menu. */
+    CHECK(!WORD_AT(watermark_row+0xc8)&&view_preferences.hide_watermark);
+    view_preferences.hide_watermark=0;read_choices();CHECK(WORD_AT(watermark_row+0xc8)==1u);
+    view_preferences.hide_viewmodel=1; /* Preserve the independent Tools preference. */
+    WORD_AT(hud_row+0xc8)=0;call(TICK_CB,16,0);
+    WORD_AT(watermark_row+0xc8)=0;call(TICK_CB,17,0);
+    CHECK(view_preferences.hide_hud&&view_preferences.hide_watermark&&view_preferences.hide_viewmodel&&!display_dirty());
+    refresh(DISPLAY_GRAPHICS,0);CHECK(!hud_row&&!watermark_row);
+    refresh(DISPLAY_VIEW,0);CHECK(!WORD_AT(hud_row+0xc8)&&!WORD_AT(watermark_row+0xc8));
+    view_save_ok=0;WORD_AT(hud_row+0xc8)=1;WORD_AT(watermark_row+0xc8)=1;call(TICK_CB,16,0);
+    CHECK(view_preferences.hide_hud&&view_preferences.hide_watermark&&*status);
+    CHECK(!WORD_AT(hud_row+0xc8)&&!WORD_AT(watermark_row+0xc8));view_save_ok=1;
+    WORD_AT(hud_row+0xc8)=1;WORD_AT(watermark_row+0xc8)=1;call(TICK_CB,17,0);
+    CHECK(!view_preferences.hide_hud&&!view_preferences.hide_watermark&&view_preferences.hide_viewmodel);
+    view_preferences.hide_viewmodel=0;*status=0;
     for(int i=0;i<100;i++)call(TICK_CB,2,0x80000);CHECK(staged_fov==100 && pc_display_fov()==55);
     for(int i=0;i<100;i++)call(TICK_CB,2,0x40000);CHECK(staged_fov==40);
     WORD_AT(0x70000c)=0x400000;

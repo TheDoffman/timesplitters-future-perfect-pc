@@ -1,3 +1,13 @@
+Regular Video Options HUD/watermark controls (2026-11-18, uncommitted after0e196ee9):
+**Awaiting validation** on native Mac/Linux. Shared `pc_display_menu.c` adds
+the Off/On rows to frontend/pause View & HUD. `pc_bindings.inc` owns one cached,
+persisted preference for both native and Developer Tools menus; `pc_developer.c`
+applies HUD/watermark choices even without Tools opt-in. Existing native storage,
+HUD and watermark callbacks already provide the adapters; no new OS code is
+required. Native acceptance: frontend/pause toggles, relaunch, denied-write
+retention, Tools disabled, both menus open and freecam transitions. See
+[Windows checks and remaining gaps](STATUS.md).
+
 Developer Settings persistence (2026-11-18, uncommitted after98c6e757):
 **Awaiting validation** on native Mac/Linux. Shared `pc_bindings.inc` persists
 HUD/watermark/viewmodel choices through the existing native atomic controls

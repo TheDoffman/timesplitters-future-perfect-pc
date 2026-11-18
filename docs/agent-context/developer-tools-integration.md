@@ -32,8 +32,12 @@ The three immediate visibility switches use `PcViewSettings` and the
 replacement and native POSIX writer. Missing values default to visible;
 unknown object members and unrelated JSON survive saves. Failed saves keep
 the current preference and report an error. The sidebar shows saved choices;
-`pc_developer_get` composes them with temporary freecam, opt-in and match-policy
-overrides. No file access occurs per rendered frame after the first load.
+`pc_developer_get` applies saved HUD/watermark choices even with Tools disabled.
+Freecam suppression and viewmodel hiding retain opt-in/match-policy guards.
+The input owner caches preferences under its binding lock, initialized at
+startup and updated after successful saves; no per-frame file reads occur.
+Regular Video Options shares the HUD/watermark choices and updates an open
+Dev Tools sidebar immediately. See [native rows](video-options.md#hud-and-version-watermark-visibility).
 Tools-tab cheats, camera modes and game speed remain session state.
 
 Existing CI routes cover a fresh-process visibility/input reload in

@@ -193,6 +193,8 @@ int main(int argc,char **argv)
         CHECK(pc_settings_view_save(&view,error,sizeof error));
         memset(&restored,0,sizeof restored);pc_settings_view_read(&restored);
         CHECK(restored.hide_hud&&restored.hide_watermark&&restored.hide_viewmodel);
+        CHECK(pc_settings_developer_save(0,error,sizeof error));
+        CHECK(pc_developer_hud_visible()==0&&pc_developer_watermark_visible()==0);
         CHECK(pc_settings_save(&settings,error,sizeof error)); /* Other editors retain visibility. */
         pc_settings_view_read(&restored);CHECK(restored.hide_hud&&restored.hide_watermark&&restored.hide_viewmodel);
         saved=load(path);CHECK(saved&&strstr(saved,"retained_mouse")&&strstr(saved,"future_view_key"));free(saved);

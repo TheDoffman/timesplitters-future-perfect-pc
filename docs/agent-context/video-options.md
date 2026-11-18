@@ -1,3 +1,24 @@
+## HUD and version watermark visibility
+
+Frontend and pause Video Options > View & HUD include HUD & UI (ID16) and
+Version watermark (ID17), with Off/On choices. These save immediately, like
+Kill Feed; they do not require Apply or Developer Tools opt-in. Both menus
+share the `developer_view` controls-JSON preferences with Dev Tools. The native
+rows compare against their displayed baseline, so a newer Dev Tools edit is
+reflected without a stale native row saving over it. Save failure restores
+the selectors and reports an error. Changing these preserves viewmodel choice.
+Captions occupy two dedicated slots after the V-Sync text, beyond resolution
+labels; the shared guest allocation includes those slots. Both rows use the
+existing native choice widgets and click feedback. No new patch is required.
+
+`pc_settings_view_read` now returns the input-owner's lock-protected cache,
+loaded during binding initialization and published only after a successful
+atomic save. `pc_developer_get` always applies saved HUD/watermark preferences;
+only temporary freecam HUD suppression and viewmodel hiding require Tools.
+The existing input/FOV/settings CI routes cover both native menu contexts,
+cross-menu synchronization, save failure, unknown JSON preservation and reload.
+Native Mac/Linux visuals remain a separate acceptance check.
+
 ## Optional V-Sync (2026-11-17)
 
 Video Options > Display (frontend and pause) includes Off/On row14. It stages

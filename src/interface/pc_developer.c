@@ -17,8 +17,6 @@ static void (*audio_set_speed)(float);
 /* Retained for a possible return to the named lobby disclaimer. */
 static int lobby_disclaimer_enabled;
 static PcDeveloperState state={.speed=1.,.manual_speed=1.,.slow_speed=.5,.fast_speed=2.,.audio_speed=1};
-static PcViewSettings view_preferences;
-static int view_loaded;
 static int gameplay,story,network,movie_active,match_tools_allowed;
 /* Presentation-thread-owned navigation and settings drafts. */
 enum { HOME, SETTINGS, KEYBOARD, DEBUG, LOGS };
@@ -112,27 +110,21 @@ void pc_developer_toggle(void) {
 }
 void pc_developer_close(void) {if(InterlockedExchange(&opened,0))pc_controls_developer_release();pc_controls_menu_mode(0);}
 static void developer_view_get(PcViewSettings *out) {
-    AcquireSRWLockShared(&dev_lock);int loaded=view_loaded;ReleaseSRWLockShared(&dev_lock);
-    if(!loaded) {
-        PcViewSettings saved;pc_settings_view_read(&saved);
-        AcquireSRWLockExclusive(&dev_lock);
-        if(!view_loaded){view_preferences=saved;view_loaded=1;}
-        ReleaseSRWLockExclusive(&dev_lock);
-    }
-    AcquireSRWLockShared(&dev_lock);*out=view_preferences;ReleaseSRWLockShared(&dev_lock);
+    pc_settings_view_read(out);
 }
 void pc_developer_get(PcDeveloperState *out) {
     PcViewSettings view;developer_view_get(&view);
     int enabled=pc_developer_enabled();
     AcquireSRWLockShared(&dev_lock);*out=state;
-    out->hide_hud=enabled&&(view.hide_hud||state.hide_hud);
-    out->hide_watermark=enabled&&view.hide_watermark;
+    out->hide_hud=view.hide_hud||(enabled&&state.hide_hud);
+    out->hide_watermark=view.hide_watermark;
     out->hide_viewmodel=enabled&&(!network||match_tools_allowed)&&view.hide_viewmodel;
     ReleaseSRWLockShared(&dev_lock);
 }
 static void developer_view_toggle(int row) {
     PcViewSettings desired;char error[160];
-    AcquireSRWLockShared(&dev_lock);desired=view_preferences;
+    developer_view_get(&desired);
+    AcquireSRWLockShared(&dev_lock);
     int available=row!=6||(gameplay&&(!network||match_tools_allowed));
     ReleaseSRWLockShared(&dev_lock);
     if(!available)return;
@@ -140,7 +132,6 @@ static void developer_view_toggle(int row) {
     else if(row==5)desired.hide_watermark=!desired.hide_watermark;
     else desired.hide_viewmodel=!desired.hide_viewmodel;
     if(!pc_settings_view_save(&desired,error,sizeof error)){pc_developer_report(error);return;}
-    AcquireSRWLockExclusive(&dev_lock);view_preferences=desired;ReleaseSRWLockExclusive(&dev_lock);
 }
 double pc_developer_speed(void) {
     int enabled=pc_developer_enabled();double speed;

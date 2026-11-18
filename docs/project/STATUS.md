@@ -1,3 +1,30 @@
+## Regular Video Options visibility (2026-11-18)
+
+Local uncommitted `dev-tools-settings`, base0e196ee96e074639d2b02604a4dc9a12f146d810.
+Windows x64, MSVC14.42.34433 / Visual Studio2022, common D3D11 frontend and
+SDL3.4.16 input. Frontend and pause Video Options > View & HUD now include
+HUD & UI and Version watermark Off/On controls. They save immediately and share
+the existing controls-JSON preferences with Dev Tools. Saved visibility applies
+without Tools opt-in. One binding-owner cache publishes after atomic saves;
+open menus synchronize without overwriting newer edits. Viewmodel behavior
+and independent preferences are preserved.
+
+Validation:65 Developer Tools/FOV/controller-profile cases passed;2 macOS-only
+compile contracts skipped. The updated FOV suite also passed all5 Windows
+cases, followed by a final baseline pass after the selector synchronization
+refinement. Tests cover both frontend/pause rows, Off/On, cross-menu edits,
+failed-save selector recovery, viewmodel preservation and disabled Tools.
+The supported Windows Release build exited0 after compiling the final source,
+running standard checks (including real JSON/fresh-process settings tests),
+sealing the executable and archiving matching crash symbols. Full patch-stack,
+repository-context and diff-whitespace checks pass.
+
+Personal saves/settings were preserved. No live-game scene/visual testing was
+run. Native Mac/Linux build, physical input, layout and relaunch acceptance
+remain unverified; no new platform adapter is required. See the
+[platform handoff](MAC_PORT_BACKLOG.md). Nothing committed/pushed in this task;
+other-device synchronization remains unverified.
+
 ## Developer Tools Settings persistence (2026-11-18)
 
 Local uncommitted `dev-tools-settings`, base98c6e7574595bf6dd4ebe487460da40c95cc1fb2.

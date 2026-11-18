@@ -19,6 +19,7 @@ static SRWLOCK g_pc_weapon_lock=SRWLOCK_INIT;
 static PcWeaponKeys g_pc_weapon_keys;
 static unsigned long long now_ms(void);
 static int g_pc_developer_enabled;
+static PcViewSettings g_pc_view_settings;
 int pc_weapon_slot_take(void)
 {
     int active=pc_controls_weapon_slots_active(),slot;
@@ -460,15 +461,20 @@ static int pc_debug_bool(const char *object, const char *name)
 
 void pc_settings_view_read(PcViewSettings *settings)
 {
-    recomp_bindings_init();memset(settings,0,sizeof *settings);
-    char *text=g_have_path?read_file(g_path):NULL;
+    recomp_bindings_init();
+    AcquireSRWLockShared(&g_pc_bindings_lock);*settings=g_pc_view_settings;
+    ReleaseSRWLockShared(&g_pc_bindings_lock);
+}
+static void pc_settings_view_load(const char *text)
+{
+    PcViewSettings *settings=&g_pc_view_settings;
+    memset(settings,0,sizeof *settings);
     const char *view=text?pc_member(text,"developer_view",NULL):NULL;
     if(view&&*view=='{') {
         settings->hide_hud=pc_debug_bool(view,"hide_hud");
         settings->hide_watermark=pc_debug_bool(view,"hide_watermark");
         settings->hide_viewmodel=pc_debug_bool(view,"hide_viewmodel");
     }
-    free(text);
 }
 int pc_settings_view_save(const PcViewSettings *settings,char *error,size_t bytes)
 {
@@ -486,6 +492,10 @@ int pc_settings_view_save(const PcViewSettings *settings,char *error,size_t byte
     }
     if(ok)ok=pc_write_config(text);
     free(text);
+    if(ok) {
+        AcquireSRWLockExclusive(&g_pc_bindings_lock);g_pc_view_settings=*settings;
+        ReleaseSRWLockExclusive(&g_pc_bindings_lock);
+    }
     if(!ok)snprintf(error,bytes,"Could not save view settings. Your previous settings were kept.");
     return ok;
 }
@@ -642,6 +652,7 @@ failure:
  * until the player saves. The launcher uses the same migration policy. */
 static void pc_weapon_bindings_migrate(const char *text)
 {
+    pc_settings_view_load(text);
     const char *controller=pc_controller(text);
     const char *bindings=controller?pc_member(controller,"bindings",NULL):NULL;
     Controller *c=&g_ctl[0];

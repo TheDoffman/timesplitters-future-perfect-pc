@@ -914,7 +914,7 @@ profile save, batch rollback and resolution Keep/timeout/close behavior.
 The real-font fixture also evicts the full glyph cache and verifies that a
 tracked semibold title recreates identical pixels after video labels replace it.
 
-[Tools persistence](developer-tools-integration.md#settings).
+[HUD tests](video-options.md#hud-and-version-watermark-visibility).
 
 Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
 tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_saves.cs
