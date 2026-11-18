@@ -48,6 +48,7 @@
       "tests/mods/test_backup_exports.py",
       "tests/mods/test_backup_transport.py",
       "tests/mods/test_backup_receiver.py",
+      "tests/mods/test_backup_producer.py",
       "tests/mods/test_wave_input.py",
       "tests/mods/test_audio_source.py",
       "tests/mods/test_audio_assets.py",

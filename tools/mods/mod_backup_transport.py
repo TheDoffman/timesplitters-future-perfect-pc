@@ -25,7 +25,8 @@ def remote_path(value):
     return value
 
 
-def ssh_command(host, python, entry, bundle, record, service_origin, pin):
+def ssh_command(host, python, entry, bundle, record, service_origin, pin, *, producer=False):
+    require(type(producer) is bool, 'Invalid SSH backup source kind')
     require(isinstance(host, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,252}', host),
             'Use a configured SSH host alias')
     for value in (python, entry, bundle, record):
@@ -33,7 +34,7 @@ def ssh_command(host, python, entry, bundle, record, service_origin, pin):
     executable = (Path(os.environ['SystemRoot']) / 'System32/OpenSSH/ssh.exe'
                   if os.name == 'nt' else Path('/usr/bin/ssh'))
     require(executable.is_file(), 'System OpenSSH client is unavailable')
-    args = [python, '-B', entry, 'send', '--bundle', bundle, '--recipient-record', record,
+    args = [python, '-B', entry, 'send-current' if producer else 'send', '--producer' if producer else '--bundle', bundle, '--recipient-record', record,
             '--origin', service_origin, '--trusted-root-sha256', pin]
     command = ' '.join(shlex.quote(arg) for arg in args)
     return [str(executable), '-T', '-a', '-x', '-oBatchMode=yes', '-oStrictHostKeyChecking=yes',
@@ -143,9 +144,9 @@ def process_stream(command, seconds):
 
 
 def receive_ssh(host, python, entry, bundle, remote_record, destination, recipient,
-                service_origin, pin, *, seconds=MAX_SECONDS, accept_receipt=None):
+                service_origin, pin, *, seconds=MAX_SECONDS, accept_receipt=None, producer=False):
     exports.recipients.checked_public(recipient, service_origin, pin)
-    command = ssh_command(host, python, entry, bundle, remote_record, service_origin, pin)
+    command = ssh_command(host, python, entry, bundle, remote_record, service_origin, pin, producer=producer)
     with process_stream(command, seconds) as (stream, verify):
         return exports.receive_stream(stream, destination, recipient, service_origin, pin,
                                       verify_transport=verify, accept_receipt=accept_receipt)

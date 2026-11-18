@@ -43,6 +43,61 @@ or other authenticated transfer, receiver retention, unattended scheduling,
 production key custody and an off-device restore drill still need integration
 and deployment. Component checks do not establish automatic backup operation.
 
+## Fresh managed export selection
+
+`mod_backup_producer` consumes the existing POSIX managed snapshot pool; it does
+not capture the live repository or replace the separate capture job. Its new
+private cache binds the exact source pool ID/policy hash, repository separation,
+recipient/origin/root, capacity and retention. Each tick locks the source pool,
+selects its newest complete snapshot and verifies every payload/SQLite reference.
+Unchanged snapshots keep their existing ciphertext and success time. Changed
+snapshots must advance capture time; the export receipt carries that capture time,
+so re-encrypting an old snapshot cannot make it appear newly captured.
+
+Producer and receiver share the same bounded SQLite lease/schema validation,
+transaction, copy inspection and exact-file retention implementation. The producer
+adds a source plan recorded before encryption and an atomic publication intent.
+A known complete local export can recover after process interruption even before
+its cipher receipt was copied into the journal; it must match its protected source
+plan/time and recipient. Failed partial ciphertext remains private and capacity
+counted. Capacity reserves the old verified export plus the incoming file and
+metadata; the2GiB physical staging floor remains enforced.
+
+A small `current.json` pointer binds only the producer UUID, export folder, capture
+time and ciphertext-receipt hash. The private plaintext manifest hash stays in
+the producer journal. Publication first records its previous/next values and a
+new metadata temporary filename durably, then fsyncs/atomically replaces the
+pointer. Recovery reconstructs only that journal-owned metadata temporary file;
+partial encrypted backups and unrecognized files are never removed by this step.
+Changed pointers/foreign output refuse work. Old exports retire only after the
+new pointer is published and a verified newest copy remains.
+
+An immutable zero-byte lease file admits shared read-only senders. The producer
+can encrypt while readers hold that lease; publication/retention require its
+exclusive upgrade. Busy readers defer publication without recopying or deleting
+the prior public export. Senders use only producer policy, the current pointer,
+lease and encrypted two-file export; they do not open the plaintext source or
+private journal. Standalone binary sender commands have a30-minute hard process
+watchdog, including failure/teardown, so a stalled client cannot hold the lease
+forever. The receiver still requires full transfer/hash checks and zero sender exit.
+
+Operator entry `tools/mods/hosting/backup-producer.py init|tick|status` takes
+`--pool PRIVATE_EXPORT_CACHE --recipient-record PRIVATE_PUBLIC_JSON --origin
+HTTPS_ORIGIN --trusted-root-sha256 RECORDED_ROOT_SHA`. Only `init` takes
+`--snapshot-pool MANAGED_SNAPSHOT_POOL`, `--keep` and `--maximum-bytes`. Status
+exits3 for a stale/missing published export; tick exits4 if publication is deferred.
+`backup-transfer.py send-current --producer PRIVATE_EXPORT_CACHE` selects the
+published export with binary-only stdout. A receiver can be initialized with
+`--remote-producer ABSOLUTE_EXPORT_CACHE` instead of `--remote-bundle`; its stored
+SSH binding records this source kind, with no mutable remote path supplied by
+network metadata. Existing five-field fixed-bundle policies remain accepted.
+
+This supplies repeatable fresh selection and transfer entry points, not deployed
+OS scheduling or least-privilege access. Production recipient custody, protected
+producer/sender installation, schedule/failure delivery, physical Mac capacity and
+actual production restore/boot acceptance remain open. Frozen earlier host/backup
+bundles are unchanged and do not contain this new code.
+
 ## Managed off-device receiver
 
 `mod_backup_receiver` adds a new private receiver pool, immutable binding and a
@@ -100,9 +155,9 @@ exit2 with generic output. No secrets/private paths are printed in reports.
 No scheduled task is installed by this tool. Production recipient custody,
 protected sender installation/least-privilege access, recurring fresh export
 selection, OS scheduling/failure delivery and a production recovery drill remain
-unfinished. The currently configured remote bundle is immutable: repeated ticks
-recognize it as already held, rather than claiming a newly captured backup. A
-future protected producer must supply fresh exports through admitted selection.
+unfinished. Fixed-bundle bindings remain immutable and recognize already-held copies. The
+producer binding above supplies fresh selection in source; its protected
+installation and OS schedules still require deployment.
 
 ## Immutable exports and authenticated operator transfer
 

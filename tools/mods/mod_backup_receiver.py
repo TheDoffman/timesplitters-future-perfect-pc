@@ -55,19 +55,24 @@ def initialize(pool, recipient, service_origin, pin, remote, *, keep=7, interval
     pool = exports.new_directory(pool)
     with cipher.outgoing(pool / POLICY, len(encode(value))) as output:
         output.write(encode(value))
-    fd = os.open(pool / DATABASE, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    os.close(fd)
-    with closing(sqlite3.connect(pool / DATABASE, isolation_level=None)) as db:
-        db.execute('PRAGMA page_size=4096')
-        db.execute('PRAGMA synchronous=FULL')
-        db.execute('PRAGMA max_page_count=256')
-        with transaction(db):
-            for statement in SCHEMA.values():
-                db.execute(statement)
-            db.execute('INSERT INTO meta VALUES(1,?,-1,-1,-1,?)', (value['pool_id'], 'initialized'))
+    create_database(pool / DATABASE, SCHEMA, value['pool_id'])
     exports.sync(pool)
     exports.sync(pool.parent)
     return value
+
+
+def create_database(path, schema, pool_id):
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    os.close(fd)
+    with closing(sqlite3.connect(path, isolation_level=None)) as db:
+        db.execute('PRAGMA page_size=4096')
+        db.execute('PRAGMA foreign_keys=ON')
+        db.execute('PRAGMA synchronous=FULL')
+        db.execute('PRAGMA max_page_count=256')
+        with transaction(db):
+            for statement in schema.values():
+                db.execute(statement)
+            db.execute('INSERT INTO meta(singleton,pool_id,last_attempt,last_success,highwater,last_result) VALUES(1,?,-1,-1,-1,?)', (pool_id, 'initialized'))
 
 
 def check_policy(value, recipient, service_origin, pin):
@@ -82,9 +87,11 @@ def check_policy(value, recipient, service_origin, pin):
             and type(value['maximum_bytes']) is int and 0 < value['maximum_bytes'] <= 32 * cipher.MAX_WIRE,
             'Invalid receiver limits')
     remote = value['remote']
-    require(isinstance(remote, dict) and set(remote) == {'host', 'python', 'entry', 'bundle', 'record'},
+    require(isinstance(remote, dict) and set(remote) in ({'host', 'python', 'entry', 'bundle', 'record'},
+            {'host', 'python', 'entry', 'bundle', 'record', 'kind'}) and remote.get('kind', 'bundle') in ('bundle', 'producer'),
             'Invalid fixed receiver SSH settings')
-    transport.ssh_command(*(remote[key] for key in ('host', 'python', 'entry', 'bundle', 'record')), service_origin, pin)
+    transport.ssh_command(*(remote[key] for key in ('host', 'python', 'entry', 'bundle', 'record')), service_origin, pin,
+                          producer=remote.get('kind', 'bundle') == 'producer')
 
 
 @contextmanager
@@ -116,6 +123,30 @@ def layout(pool, settings):
 
 
 @contextmanager
+def database(path, schema):
+    before = cipher.regular(path, MAX_DB)
+    db = sqlite3.connect((path).as_uri() + '?mode=rw', uri=True, timeout=0, isolation_level=None)
+    db.row_factory = sqlite3.Row
+    try:
+        db.execute('PRAGMA trusted_schema=OFF')
+        db.execute('PRAGMA foreign_keys=ON')
+        db.execute('PRAGMA synchronous=FULL')
+        require(db.execute('PRAGMA journal_mode').fetchone()[0] == 'delete', 'Unexpected receiver journal mode')
+        require(db.execute('PRAGMA locking_mode=EXCLUSIVE').fetchone()[0] == 'exclusive', 'Receiver lease unavailable')
+        with transaction(db):
+            observed = {row['name']: row['sql'] for row in db.execute("SELECT name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'")}
+            require(observed == schema and db.execute('PRAGMA page_size').fetchone()[0] == 4096
+                    and db.execute('PRAGMA quick_check').fetchone()[0] == 'ok'
+                    and not db.execute('PRAGMA foreign_key_check').fetchall(), 'Unknown or corrupt receiver journal')
+        after = cipher.regular(path, MAX_DB)
+        require((before.st_dev, before.st_ino) == (after.st_dev, after.st_ino), 'Receiver journal identity changed')
+        require(db.execute('PRAGMA max_page_count=256').fetchone()[0] == 256, 'Receiver journal budget exceeded')
+        yield db
+    finally:
+        db.close()
+
+
+@contextmanager
 def opened(pool, recipient, service_origin, pin):
     pool = cipher.private_path(Path(pool) / POLICY).parent
     wire = read_private(pool / POLICY, MAX_POLICY)
@@ -123,29 +154,13 @@ def opened(pool, recipient, service_origin, pin):
     require(encode(settings) == wire, 'Noncanonical receiver policy')
     check_policy(settings, recipient, service_origin, pin)
     layout(pool, settings)
-    before = cipher.regular(pool / DATABASE, MAX_DB)
-    db = sqlite3.connect((pool / DATABASE).as_uri() + '?mode=rw', uri=True, timeout=0, isolation_level=None)
-    db.row_factory = sqlite3.Row
-    try:
-        db.execute('PRAGMA trusted_schema=OFF')
-        db.execute('PRAGMA synchronous=FULL')
-        require(db.execute('PRAGMA journal_mode').fetchone()[0] == 'delete', 'Unexpected receiver journal mode')
-        require(db.execute('PRAGMA locking_mode=EXCLUSIVE').fetchone()[0] == 'exclusive', 'Receiver lease unavailable')
-        with transaction(db):
-            observed = {row['name']: row['sql'] for row in db.execute("SELECT name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'")}
-            require(observed == SCHEMA and db.execute('PRAGMA page_size').fetchone()[0] == 4096
-                    and db.execute('PRAGMA quick_check').fetchone()[0] == 'ok', 'Unknown or corrupt receiver journal')
-            meta = state(db, settings)
-        after = cipher.regular(pool / DATABASE, MAX_DB)
-        require((before.st_dev, before.st_ino) == (after.st_dev, after.st_ino), 'Receiver journal identity changed')
-        require(db.execute('PRAGMA max_page_count=256').fetchone()[0] == 256, 'Receiver journal budget exceeded')
+    with database(pool / DATABASE, SCHEMA) as db:
+        state(db, settings)
         rows = copies(db, settings, recipient, service_origin, pin)
         require(layout(pool, settings) == {row['name'] for row in rows if (pool / row['name']).exists() or (pool / row['name']).is_symlink()},
                 'Preserving unrecorded receiver copy')
         yield pool, settings, db
         require(read_private(pool / POLICY, MAX_POLICY) == wire, 'Receiver policy changed during operation')
-    finally:
-        db.close()
 
 
 def state(db, settings):
@@ -375,5 +390,6 @@ def run_ssh(pool, recipient, service_origin, pin, *, force=False, seconds=transp
     def receive(destination, accept, settings):
         remote = settings['remote']  # Use only the policy admitted under the journal lease.
         return transport.receive_ssh(*(remote[key] for key in ('host', 'python', 'entry', 'bundle', 'record')),
-                                     destination, recipient, service_origin, pin, seconds=seconds, accept_receipt=accept)
+                                     destination, recipient, service_origin, pin, seconds=seconds, accept_receipt=accept,
+                                     producer=remote.get('kind', 'bundle') == 'producer')
     return run(pool, recipient, service_origin, pin, receive, force=force)

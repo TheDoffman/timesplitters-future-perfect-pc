@@ -78,6 +78,10 @@ def test_ssh_arguments_require_pinned_host_and_quote_each_remote_argument():
         with pytest.raises(ModError):
             transport.remote_path(path)
     assert transport.remote_path('/private/mods/日本語') == '/private/mods/日本語'
+    latest = transport.ssh_command('fixture-mac', '/python', '/entry', '/producer', '/record', ORIGIN, PIN, producer=True)
+    assert shlex.split(latest[-1])[3:6] == ['send-current', '--producer', '/producer']
+    with pytest.raises(ModError):
+        transport.ssh_command('fixture-mac', '/python', '/entry', '/producer', '/record', ORIGIN, PIN, producer='yes')
 
 
 def test_operator_cli_send_has_only_binary_stdout_and_generic_failures(case):

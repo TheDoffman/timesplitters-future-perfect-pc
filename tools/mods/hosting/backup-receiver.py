@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--remote-python')
     parser.add_argument('--remote-entry')
     parser.add_argument('--remote-bundle')
+    parser.add_argument('--remote-producer')
     parser.add_argument('--remote-recipient-record')
     parser.add_argument('--keep', type=int, default=7)
     parser.add_argument('--interval', type=int, default=86400)
@@ -37,8 +38,11 @@ def main():
         recipient = read_json(wire)
         require(encode(recipient) == wire, 'Noncanonical recipient record')
         receiver.exports.recipients.checked_public(recipient, args.origin, args.trusted_root_sha256)
+        require(not (args.remote_bundle and args.remote_producer), 'Choose one fixed remote source kind')
         remote = dict(host=args.ssh_host, python=args.remote_python, entry=args.remote_entry,
-                      bundle=args.remote_bundle, record=args.remote_recipient_record)
+                      bundle=args.remote_bundle or args.remote_producer, record=args.remote_recipient_record)
+        if args.remote_producer:
+            remote['kind'] = 'producer'
         if args.operation == 'init':
             require(all(remote.values()) and not args.force and args.seconds == receiver.transport.MAX_SECONDS,
                     'Supply fixed SSH settings only when initializing')
