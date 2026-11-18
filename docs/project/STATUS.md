@@ -1,3 +1,44 @@
+Streaming encrypted snapshot export (2026-11-18; source6f173278; not deployed):
+mod_backup_archive connects verified POSIX SQLite/blob snapshots to bounded
+recipient encryption without a second plaintext archive on the source host.
+Canonical1MiB-bounded inventory and fixed sorted concatenation accept only the
+existing fixed snapshot names/4096-member/8GiB payload ceilings. File encryption
+now permits that payload plus1MiB+12 bytes framing and exposes a trusted bounded
+reader adapter; file callers retain their identity/hash checks. Pure inventory
+and read-only SQLite/schema/reference validation are shared with ordinary backup
+verification. Extraction authenticates the decrypted local receipt before output,
+checks the actual consumed digest against valid-file swaps, verifies each member
+and SQLite before writing the manifest, and preserves incomplete/existing output.
+A recovered snapshot still needs normal conservative restore/reconciliation.
+
+Actual MacUID501 and Linux/root expanded archive/file/host/pool/service/install
+checks each pass113 (7.94s/12.52s). Windows shared cipher checks pass31 with13
+POSIX skips at the earlier archive checkpoint; final CI-scope/16 POSIX archive
+selection passes177 with16 skips in0.35s. Archive coverage includes a real
+multi-chunk SQLite/blob round trip, traversal/duplicate/noncanonical/oversized
+metadata, truncation/trailing/wrong hash, corrupt payloads, changed inventory,
+valid archive replacement after prehash, unknown DB schema, linked/existing
+outputs, bounded reads and disk reserve refusal. Context/whitespace checks pass.
+
+Mac free space again crossed below2GiB during the first expanded pass, correctly
+causing file/upload reserve refusals (27 failed/30 setup errors,56 passed); Linux
+was unaffected. Removed only verified task-generated, terminal pytest289/290
+fixtures (174751744 allocated bytes). Rerun of unchanged source passes113 with
+real reserve checks; cleanup free space2312904704 bytes. No personal files touched.
+
+Actual disposable Mac snapshot streamed directly to1070107-byte ciphertext,
+received/decrypted by Windows using its account-protected key, then recovered
+from that transferred ciphertext by Linux using the portable recipient without
+Windows credentials or decrypted key files. Extracted2-file snapshot matches its
+private manifest pin, blob bytes match and conservative restore holds publication
+and marks the previously approved release scan-error for fresh review. CipherSHA:
+9a89bceab93cdcc415a567d1beaaf9d2826e47615d8b325454de9a01805451a1.
+No production recipient/data/export/transfer schedule was created. Existing frozen
+9e3 host bundle and live services/routing remain unchanged. Original backup setup
+sudo PID29803 remains alive after1d21h28m, noninteractive sudo still requires a
+password; no duplicate prompt or protected action was attempted. Actual protected
+deployment, reboot, unattended off-device copies and full release gates remain.
+
 Recipient-encrypted file staging (2026-11-18; sourcebe2e3eed; not deployed):
 new-only private chunked encryption requires verified plaintext size/hash and an
 independently authenticated ciphertext hash for recovery. Per-file ephemeral
