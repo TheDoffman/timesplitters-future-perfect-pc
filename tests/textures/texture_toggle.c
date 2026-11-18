@@ -29,6 +29,10 @@ static unsigned rebinds;
 static struct {void *image;} *g_cur_rt;
 static void rebind_stage_srvs(void *image) {(void)image;rebinds++;}
 #include "texture_binding_sync.inc"
+/* This texture-only fixture keeps the existing interval; preference behavior
+ * is covered by vsync_settings.c and the backend integration fixtures. */
+#include "graphics/pc_vsync_settings.h"
+int pc_vsync_enabled(void) {return 0;}
 /* Texture presentation has no active Developer Tools overlay. */
 static struct { unsigned swap_width,swap_height; } g_device_state;
 static void d3d8_overlay_draw_developer(unsigned width,unsigned height) {(void)width;(void)height;}
