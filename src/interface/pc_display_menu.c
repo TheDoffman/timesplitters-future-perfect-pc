@@ -1819,6 +1819,12 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
+    case QUIT_OPEN_CB: return quit_open;
+    case QUIT_BUILD_CB: return quit_build;
+    case QUIT_SELECT_CB: return quit_select;
+    case QUIT_BACK_CB: return quit_back;
+#endif
     case PAUSE_SETTINGS_OPEN: return pause_settings_open;
     case PAUSE_SETTINGS_BUILD: return pause_settings_build;
     case PAUSE_SETTINGS_BACK: return pause_settings_back;
