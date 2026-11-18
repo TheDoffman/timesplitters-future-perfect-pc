@@ -1,5 +1,5 @@
-Mod-platform/main integration (2026-11-18; featureb2dd371c plus main7cb24a98;
-validation in progress): resolved16 overlapping files by retaining mod workshop,
+Mod-platform/main integration (2026-11-18; mergebe9893b1, GCC3634b6e9,
+compiler fixture9dfb25d6): resolved16 overlapping files by retaining mod workshop,
 creator/library checks and both preview routes alongside the new live Console,
 Tools & Logs gameplay navigation, network-sync telemetry and native multiplayer
 changes. Both Mods/Console pages dispose on close; Mods stays disabled while busy,
@@ -17,9 +17,22 @@ this integration does not publish a release or change Main itself.
 Windows full build-launcher.ps1 -Test passes63.74s, including real creator backend,
 shared workshop/library/creator UI and live-console/maintenance/session checks.
 Selected mod-game/runtime/bootstrap plus network/menu checks pass100/two skips
-39.46s. The separate Windows patch-history/compiler/launcher/crash check invocation
-is still running; native Mac/Linux crash and launcher integration checks remain
-pending. Live workshop services/routing/data/keys are unchanged.
+39.46s. The separate Windows patch-history/compiler/launcher/crash invocation
+finished with240 passes/31 subtests and one compiler fixture failure. That incoming
+fixture patched a constant after the existing API had bound its default; it now
+passes its intended160-byte budget explicitly, preserving all body/dispatch/
+compiled-execution assertions. The full compiler suite then passes14 tests on
+Windows2.34s, native Mac1.52s and Linux1.17s. The long patch-history suite passed.
+
+Actual Mac POSIX crash/export/network checks pass69/eight skips26.06s. Linux's
+same selection initially passed69/seven skips with one GCC-Werror failure in
+upstream online IPC cleanup. Separating its unconditional return fixes the warning
+without changing flags or behavior; the complete online-menu file passes52/0.38s.
+Native launcher builds using each host's existing pinned SDK8.0.426 pass124 shared
+checks on Mac and125 on Linux, including real creator backend checks. These are
+build/native-contract results, not new physical gameplay acceptance. Mac currently
+reports10GiB free, clearing the earlier disk minimum blocker; the increase was not
+attributed to task cleanup. Live workshop services/routing/data/keys are unchanged.
 
 Authenticated private upgrade commands (2026-11-18; sourcea84b9b2e/ccd505f0;
 not deployed): the immutable installed entry now exposes --apply-private,
