@@ -197,3 +197,6 @@ tutorial_layout. Windows supported build and26 layout/read-scope/icon tests pass
 Isolated1280x720 and2560x720 Story captures verify native controller glyphs,
 common column centres, row gaps and stable panel height. Physical-device input
 selection retains its existing path; native Mac/Linux visual checks pending.
+
+Linux CI runs the V-Sync contracts after test-rhi-linux.py prepares and patches
+the runtime; the earlier SDK-isolation group intentionally runs without it.
