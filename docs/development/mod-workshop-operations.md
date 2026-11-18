@@ -54,14 +54,18 @@ public-restoration or settlement authority. Existing same-boot guards remain.
 original history selected by nonce, releases, UID, backup and prior boot. A
 pre-lock history hash is rechecked under the lease; the original boot header and
 saved observations are preserved. The lease exposes the distinct current boot
-only for fresh observation and refuses every upgrade event. A complete validated
+for observation and narrowly scoped preparation, refusing ordinary upgrade events.
+A dedicated typed adapter records only fresh reboot observation, selective routing
+suspension, ordered fixed-label stop intent/result and confirmed quiescence. An
+ordinary upgrade event cannot follow reboot preparation without separate explicit
+admission. A complete validated
 single pending metadata append may be promoted only when explicitly requested;
 that promotion does not prove any current OS effect. Changed boots, missing or
 foreign histories and competing leases are refused. Normal transaction and
 operational same-boot guards are unchanged. Recovery constructors cannot recreate
 history that vanished after inventory, and new-only constructors cannot adopt a
 file that appeared after inventory. This metadata phase does not yet permit
-operational reboot takeover or expose a reboot CLI.
+ordinary migration/startup/settlement after reboot or expose a reboot CLI.
 
 `read_reboot_context` validates the original Root700/600 context through that
 observation lease, retaining its original binding, plan hash, private baseline,
@@ -72,6 +76,19 @@ This reader cannot seal/adopt context, create directories or invoke private/live
 preflight. Ordinary reconstruction and every service-effect boot guard remain
 strictly same-boot. The old metadata plus a fresh job snapshot are inputs for
 future explicit takeover, not permission to continue effects after a restart.
+
+The internal `mod_host_reboot_prepare.prepare` verifies that metadata against the
+fresh installed pair, records a new boot observation, suspends only public8443,
+then stops the ten fixed labels in monitor-first order. It uses only fresh
+current-boot PID/group observations for identity and cleanup; it never signals a
+sampled PID or uses pre-boot tracking. Protected origin files and private443 routing
+are rechecked throughout. Pending stops are observed on explicit resume without
+another bootout; unknown replacement jobs, changing files and escaped workers
+preserve uncertainty instead of admitting cleanup. Repeated physical restarts
+require another fresh observation chained to the prior preparation boot while
+retaining the original journal header/context. Quiescence does not grant private
+migration, service startup, public restoration or settlement authority. Monitor/
+layout re-admission, fresh backup/proof and operational reboot CLI remain pending.
 
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It

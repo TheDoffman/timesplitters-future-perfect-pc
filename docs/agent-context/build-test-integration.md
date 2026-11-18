@@ -31,6 +31,11 @@ preservation and refusal of ordinary reconstruction, sealing or directory creati
 Historical observation comparisons use canonical JSON bytes: persisted file
 stamps are arrays, while a fresh in-memory protected-file fixture uses tuples.
 This normalization changes the test comparison, not the stored metadata contract.
+test_reboot_prepare.py composes original metadata with fresh boot/process samples,
+selective suspension and ten fixed-label stops. Lost observations resume under a
+new lease without duplicate actions; unknown files/orphan workers block cleanup.
+Another restart replaces PID authority, preserving the original history. Typed
+replay mutations reject changed bindings/order, exposure and ordinary settlement.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

@@ -51,7 +51,7 @@ def routing_receipt(value, baseline):
     return value
 
 
-def replay(events, clock, baseline, before, after,uid,backup_identity,backup_base_release,plan_sha256):
+def replay(events, clock, baseline, before, after,uid,backup_identity,backup_base_release,plan_sha256,*,original_boot=None):
     routes.baseline(baseline)
     require(isinstance(events, list) and len(events) <= MAX_EVENTS, 'Cutover event budget exceeded')
     stopped = [];pending = None;quiescent = False;settled = False;previous = 0
@@ -64,6 +64,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
     private_baseline=None;catalog_floor=1;private_ready=None;private_time=None;restarted=[];restart_pending=None;activation_ready=False
     shutdown=None;shutdown_stopped=[];shutdown_pending=None;shutdown_complete=False;monitor_checkpoints={}
     public_ready=None;public_time=None
+    reboot=None
     order = stop_order()
     for event in events:
         require(isinstance(event, dict) and set(event) == {'kind','label','time','data'}
@@ -73,6 +74,12 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         kind, label = event['kind'], event['label']
         data=event['data']
         if kind not in ('public-readiness-verified','settled'):public_ready=None;public_time=None
+        if isinstance(kind,str) and kind.startswith('reboot-'):
+            import mod_host_reboot_journal as reboot_history
+            reboot=reboot_history.event(reboot,event,original_boot=original_boot,uid=uid,
+                backup_identity=backup_identity,routing=baseline,order=order)
+            continue
+        require(reboot is None,'Operational continuation requires explicit reboot admission')
         if kind=='baseline-private-verified':
             require(label is None and private_baseline is None and not stopped and not suspended and route_pending is None
                     and not restored and layout_sha is None and isinstance(data,dict),
@@ -380,7 +387,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                 catalog_floor=catalog_floor,private_ready=private_ready,private_time=private_time,restarted=restarted,
                 restart_pending=restart_pending,activation_ready=activation_ready,shutdown=shutdown,
                 shutdown_stopped=shutdown_stopped,shutdown_pending=shutdown_pending,shutdown_complete=shutdown_complete,
-                monitor_checkpoints=monitor_checkpoints,public_ready=public_ready,public_time=public_time)
+                monitor_checkpoints=monitor_checkpoints,public_ready=public_ready,public_time=public_time,reboot=reboot)
 
 
 def checked(data, clock):
@@ -392,7 +399,7 @@ def checked(data, clock):
             and all(isinstance(value[k], str) and SHA.fullmatch(value[k]) for k in
                     ('before','after','nonce','plan_sha256','preflight_sha256','boot_id','backup_identity','backup_base_release'))
             and data == wire(value), 'Preserving unknown cutover history')
-    replay(value['events'],clock,value['routing'],value['before'],value['after'],value['uid'],value['backup_identity'],value['backup_base_release'],value['plan_sha256'])
+    replay(value['events'],clock,value['routing'],value['before'],value['after'],value['uid'],value['backup_identity'],value['backup_base_release'],value['plan_sha256'],original_boot=value['boot_id'])
     cutover.checked_tracking(value['tracked'])
     return value
 
@@ -474,7 +481,7 @@ class Journal:
 
     def _replay(self,events):
         return replay(events,self.clock,self.base['routing'],self.base['before'],self.base['after'],self.base['uid'],
-                      self.base['backup_identity'],self.base['backup_base_release'],self.base['plan_sha256'])
+                      self.base['backup_identity'],self.base['backup_base_release'],self.base['plan_sha256'],original_boot=self.base['boot_id'])
 
     def record(self, kind, label=None, data=None):
         """Persist intent before a stop, and observation only after OS verification.
@@ -485,6 +492,21 @@ class Journal:
         final activation, or when a prepared transaction made no service change.
         """
         require(self.observation_boot is None,'Reboot observation lease cannot record upgrade effects')
+        require(not (isinstance(kind,str) and kind.startswith('reboot-')),'Use the explicit reboot observation journal adapter')
+        return self._record(kind,label,data)
+
+    def record_reboot(self,kind,label=None,data=None):
+        """Persist only typed current-boot preparation under the original lease."""
+        require(os.geteuid()==cutover.ROOT_UID and self.observation_boot is not None and boot_identity()==self.observation_boot
+                and isinstance(kind,str) and kind.startswith('reboot-'),'Use the exact current reboot observation lease')
+        current=self.state()['reboot']
+        if kind=='reboot-observed':
+            require(isinstance(data,dict) and isinstance(data.get('observation'),dict)
+                    and data['observation'].get('boot_id')==self.observation_boot,'Reboot snapshot differs from the held current boot')
+        else:require(current is not None and current['boot_id']==self.observation_boot,'Reboot preparation belongs to another boot')
+        return self._record(kind,label,read_json(wire(data)))
+
+    def _record(self,kind,label,data):
         self.state()
         value = self._decode(self.current)
         value['events'].append(dict(kind=kind,label=label,time=int(self.clock()),data=data))
@@ -599,7 +621,7 @@ def _transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, track
             data, _ = cutover.protected_bytes(directory/other, 0o600, MAX_BYTES)
             history = checked(data, clock)
             require(history['nonce']+'.json' == other and replay(history['events'],clock,history['routing'],history['before'],history['after'],
-                    history['uid'],history['backup_identity'],history['backup_base_release'],history['plan_sha256'])['settled'],
+                    history['uid'],history['backup_identity'],history['backup_base_release'],history['plan_sha256'],original_boot=history['boot_id'])['settled'],
                     'Existing cutover requires recovery before another transaction')
         base = dict(schema=2,producer='tsfp-root-cutover-v2',before=before,after=after,uid=uid,
                     nonce=nonce,plan_sha256=plan_sha256,preflight_sha256=preflight_sha256,
@@ -627,11 +649,12 @@ def transaction(before,after,uid,nonce,plan_sha256,preflight_sha256,tracked,rout
 
 @contextmanager
 def reboot_observation_lease(nonce,before,after,uid,backup_identity,prior_boot,*,clock=time.time,recover_pending=False):
-    """Lease exact old metadata for fresh observation, never operational recovery.
+    """Lease exact original metadata for observation and narrow reboot preparation.
 
     A separately requested complete pending append may be promoted as metadata;
-    this does not prove any current OS effect. No upgrade event can be recorded,
-    and all existing operational same-boot guards remain in force.
+    this does not prove any current OS effect. Ordinary upgrade events remain
+    refused. Only the typed current-boot adapter can record reboot preparation;
+    all existing migration/startup/settlement boot guards remain in force.
     """
     require(os.geteuid()==cutover.ROOT_UID and isinstance(nonce,str) and SHA.fullmatch(nonce)
             and isinstance(prior_boot,str) and SHA.fullmatch(prior_boot) and type(recover_pending) is bool,

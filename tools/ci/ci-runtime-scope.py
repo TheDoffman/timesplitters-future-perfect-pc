@@ -116,6 +116,7 @@ CPU_TOOLS = {
     'tools/mods/mod_host_cutover.py', 'tests/mods/test_host_cutover.py',
     'tools/mods/mod_host_reboot_observation.py', 'tests/mods/test_host_reboot_observation.py',
     'tests/mods/test_reboot_observation_lease.py',
+    'tools/mods/mod_host_reboot_journal.py', 'tools/mods/mod_host_reboot_prepare.py', 'tests/mods/test_reboot_prepare.py',
     'tools/mods/mod_host_routing.py', 'tests/mods/test_host_routing.py',
     'tools/mods/mod_host_cutover_journal.py', 'tests/mods/test_host_cutover_journal.py',
     'tools/mods/mod_host_upgrade_admission.py', 'tests/mods/test_upgrade_admission.py',
