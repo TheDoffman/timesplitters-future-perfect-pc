@@ -40,6 +40,10 @@ test_reboot_layout.py exercises read-only active/archive/install/boot positions,
 typed updated health, opaque partial-write preservation and refusal of policy/
 backup/process/routing changes. Observation Layout cannot prepare/move/exchange.
 checked_monitor_history is shared with ordinary shutdown checkpoint validation.
+test_reboot_checkpoint.py composes actual private upgrade files/history with
+simulated restart/quiescence. Known complete checkpoint recovery is explicit;
+partial/aliased/changed/capacity artifacts stay preserved. Hash/epoch/journal
+bindings and refused ordinary effects remain mandatory after checkpoint sealing.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

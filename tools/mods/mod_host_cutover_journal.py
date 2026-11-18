@@ -51,7 +51,7 @@ def routing_receipt(value, baseline):
     return value
 
 
-def replay(events, clock, baseline, before, after,uid,backup_identity,backup_base_release,plan_sha256,*,original_boot=None):
+def replay(events, clock, baseline, before, after,uid,backup_identity,backup_base_release,plan_sha256,*,original_boot=None,original_nonce=None):
     routes.baseline(baseline)
     require(isinstance(events, list) and len(events) <= MAX_EVENTS, 'Cutover event budget exceeded')
     stopped = [];pending = None;quiescent = False;settled = False;previous = 0
@@ -77,7 +77,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         if isinstance(kind,str) and kind.startswith('reboot-'):
             import mod_host_reboot_journal as reboot_history
             reboot=reboot_history.event(reboot,event,original_boot=original_boot,uid=uid,
-                backup_identity=backup_identity,routing=baseline,order=order)
+                backup_identity=backup_identity,routing=baseline,order=order,nonce=original_nonce,layout_sha256=layout_sha)
             continue
         require(reboot is None,'Operational continuation requires explicit reboot admission')
         if kind=='baseline-private-verified':
@@ -399,7 +399,7 @@ def checked(data, clock):
             and all(isinstance(value[k], str) and SHA.fullmatch(value[k]) for k in
                     ('before','after','nonce','plan_sha256','preflight_sha256','boot_id','backup_identity','backup_base_release'))
             and data == wire(value), 'Preserving unknown cutover history')
-    replay(value['events'],clock,value['routing'],value['before'],value['after'],value['uid'],value['backup_identity'],value['backup_base_release'],value['plan_sha256'],original_boot=value['boot_id'])
+    replay(value['events'],clock,value['routing'],value['before'],value['after'],value['uid'],value['backup_identity'],value['backup_base_release'],value['plan_sha256'],original_boot=value['boot_id'],original_nonce=value['nonce'])
     cutover.checked_tracking(value['tracked'])
     return value
 
@@ -481,7 +481,7 @@ class Journal:
 
     def _replay(self,events):
         return replay(events,self.clock,self.base['routing'],self.base['before'],self.base['after'],self.base['uid'],
-                      self.base['backup_identity'],self.base['backup_base_release'],self.base['plan_sha256'],original_boot=self.base['boot_id'])
+                      self.base['backup_identity'],self.base['backup_base_release'],self.base['plan_sha256'],original_boot=self.base['boot_id'],original_nonce=self.base['nonce'])
 
     def record(self, kind, label=None, data=None):
         """Persist intent before a stop, and observation only after OS verification.
@@ -621,7 +621,7 @@ def _transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, track
             data, _ = cutover.protected_bytes(directory/other, 0o600, MAX_BYTES)
             history = checked(data, clock)
             require(history['nonce']+'.json' == other and replay(history['events'],clock,history['routing'],history['before'],history['after'],
-                    history['uid'],history['backup_identity'],history['backup_base_release'],history['plan_sha256'],original_boot=history['boot_id'])['settled'],
+                    history['uid'],history['backup_identity'],history['backup_base_release'],history['plan_sha256'],original_boot=history['boot_id'],original_nonce=history['nonce'])['settled'],
                     'Existing cutover requires recovery before another transaction')
         base = dict(schema=2,producer='tsfp-root-cutover-v2',before=before,after=after,uid=uid,
                     nonce=nonce,plan_sha256=plan_sha256,preflight_sha256=preflight_sha256,

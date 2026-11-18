@@ -107,6 +107,18 @@ observation Layout refuses preparation, exchange and internal moves before any
 callback or write. Sealing/admitting the new checkpoint and granting ordinary
 post-reboot migration/startup authority remain separate unfinished steps.
 
+`mod_host_reboot_checkpoint.seal` repeats that read before and after writing a
+canonical Root600 checkpoint under Root700 `reboot-checkpoints` (at most32 files,
+64KiB each). Names bind the original nonce and current boot. Exact existing bytes
+may be adopted only with explicit resume, including a crash after file completion
+but before its journal observation. Partial/foreign/linked/wrong-mode files and
+unknown/full namespaces are preserved and refused. The typed `reboot-layout-verified`
+event binds checkpoint SHA, original/current boot, nonce, context SHA and original
+layout SHA only after current reboot quiescence. The loader verifies that exact
+receipt/hash before returning historical inventory metadata. Ordinary upgrade
+effects remain blocked; this checkpoint does not grant migration/startup/settlement
+or expose an operational reboot CLI.
+
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
 requires `--host-release` with an exact installed identity. The newly verified

@@ -72,7 +72,7 @@ def receipt(value,baseline):
     return value
 
 
-def event(state,entry,*,original_boot,uid,backup_identity,routing,order):
+def event(state,entry,*,original_boot,uid,backup_identity,routing,order,nonce,layout_sha256):
     kind,label,data=entry['kind'],entry['label'],entry['data']
     if kind=='reboot-observed':
         require(label is None and isinstance(original_boot,str) and SHA.fullmatch(original_boot)
@@ -85,7 +85,16 @@ def event(state,entry,*,original_boot,uid,backup_identity,routing,order):
         seen=[] if state is None else state['prior_boots']+[state['boot_id']]
         require(observed['boot_id'] not in [original_boot,*seen],'Reboot preparation cannot reuse an earlier boot')
         return dict(boot_id=observed['boot_id'],prior_boots=seen,context_sha256=data['context_sha256'],observation=observed,
-            routing_pending=None,routing_suspended=False,routing=None,stopped=[],pending=None,quiescent=False,quiesced_at=None)
+            routing_pending=None,routing_suspended=False,routing=None,stopped=[],pending=None,quiescent=False,quiesced_at=None,
+            layout_checkpoint=None)
+    if kind=='reboot-layout-verified':
+        require(state is not None and state['quiescent'] and label is None and isinstance(data,dict)
+                and set(data)=={'boot_id','original_boot','nonce','layout_sha256','context_sha256','checkpoint_sha256'}
+                and data['boot_id']==state['boot_id'] and data['original_boot']==original_boot and data['nonce']==nonce
+                and layout_sha256 is not None and data['layout_sha256']==layout_sha256 and data['context_sha256']==state['context_sha256']
+                and isinstance(data['checkpoint_sha256'],str) and SHA.fullmatch(data['checkpoint_sha256'])
+                and state['layout_checkpoint'] is None,'Reboot layout checkpoint lacks exact stopped-generation binding')
+        return dict(state,layout_checkpoint=data)
     require(state is not None and not state['quiescent'],'Reboot preparation lacks a current unfinished observation')
     state=dict(state)
     if kind in ('reboot-routing-intent','reboot-routing-observed'):
