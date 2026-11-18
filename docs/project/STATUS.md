@@ -1,4 +1,4 @@
-Vulkan pending-query result correction (2026-11-18; source commit follows):
+Vulkan pending-query result correction (2026-11-18; source5b5428c7):
 a native fixture compiling the unchanged production Vulkan visibility include
 fails at the expected pending0 result after an explicit VK_NOT_READY, while its
 caller output remains unchanged. Previously every non-success code became-1.
@@ -7,6 +7,10 @@ a later successful poll. Real device errors/overflow remain failures; zero is a
 valid completed sum, and no blocking wait or fabricated count is introduced.
 Final Windows native visibility/diagnostic/CI selection passes203 in1.63s,
 including the new real-include fixture and existing GL/cache/queue cases.
+Native Linux passes the same203 checks in0.57s at matching source. An identical
+final fixture compiled against old047 source exits-6 at the pending assertion;
+the corrected include exits0. The fixed fixture also passes actual Linux
+ASan/UBSan. This is direct adapter-causality evidence, not a GPU/game replay.
 
 The separate live Linux software-Vulkan control at source047eae3f completes
 four independent4096-cycle runs (16384 total) on llvmpipe LLVM20.1.2. Source SHA:
