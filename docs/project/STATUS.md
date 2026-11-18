@@ -1,3 +1,41 @@
+Reboot observation foundation (2026-11-18; sourcef5b4324e/3f075552/6f7480e7,
+test comparison12e501c3; not deployed): a new Root reader verifies all ten boot
+files and the unchanged generated backup job against the verified before/after
+factories. It binds loaded commands to their actual protected origin, observes
+labels twice around a fresh numeric process sample and refuses escaped service
+workers or changing files/PIDs/boot. Known mixed generations, absent jobs and
+loaded jobs without running PIDs remain observations, not health admission.
+Only prior boot identity is accepted; prior PID/group tracking cannot enter.
+
+reboot_observation_lease opens the original exact journal under the global lock,
+checks its pre-lock hash and original boot/release/UID/backup binding, preserves
+its header and refuses every upgrade-event append. A complete known single
+pending metadata append may be promoted only explicitly, without OS authority.
+Normal transactions and operational boot guards remain unchanged. Recovery cannot
+recreate history that vanished after directory inventory; new-only creation
+cannot adopt a history file that appeared after inventory.
+
+read_reboot_context reads only existing canonical Root700/600 metadata through
+that lease. It retains original binding/plan/authority/factory comparisons and
+labels old observations explicitly, returning no operational context or commands.
+Missing/foreign/changed artifacts are preserved/refused; ordinary reconstruction,
+sealing and directory creation remain forbidden through this observation path.
+All three helpers import under isolated no-site Python without signing packages.
+Explicit operational takeover, monitor/layout re-admission and reboot CLI remain
+unfinished; no reboot or production job/route/data/key change was performed.
+
+Actual native observer/cutover/CI-scope tests pass249 Mac0.91s/Linux1.19s. Lease/
+observer/journal/context/command/scope checks pass275 Mac0.87s/Linux1.35s before
+the new context reader. Expanded checks including all coordinator cases then
+pass323 with one assertion failure per host (Mac126.07s/Linux154.16s): the new
+test compared in-memory tuple stamps with persisted JSON arrays. Its comparison
+now uses canonical JSON; production bytes/guards were unchanged. The complete
+affected context/lease/observer/command/scope selection then passes240 Mac0.61s
+and240 Linux0.77s; Windows181/59 POSIX skips0.42s. Protected filesystem operations
+are real; credentials, launchd, process samples and reboot identities are fixture
+simulations. Both reboot test files and the context tests are explicitly in native
+CI. These checks do not establish actual installed Root/UID600 or physical boot.
+
 Pending forward-to-rollback recovery (2026-11-18; source3ab3d86f; not deployed):
 explicit rollback resume now finishes a recorded forward migration or protected
 file exchange in its original direction under verified quiescence, then reverses
