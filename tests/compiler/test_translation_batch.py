@@ -260,7 +260,7 @@ def test_default_support_header_publication_and_missing_input_preservation(tmp_p
     assert (output/support.name).read_text()=='updated support'
 
 
-def test_split_body_bytes_preserves_exact_bodies_dispatch_and_execution(tmp_path,monkeypatch):
+def test_split_body_bytes_preserves_exact_bodies_dispatch_and_execution(tmp_path):
     batch,_=fixture(tmp_path)
     original=batch.translator.translate_function
     def translate(address,info):
@@ -270,8 +270,7 @@ def test_split_body_bytes_preserves_exact_bodies_dispatch_and_execution(tmp_path
     kwargs=dict(chunk_size=1000,manual={0x1010},keep_bodies={0x1010:'guest_kept'})
     baseline=tmp_path/'baseline';split=tmp_path/'split'
     batch.translate_batch_split(list(batch.func_db.items()),baseline,**kwargs)
-    monkeypatch.setattr(own,'MAX_CHUNK_BODY_BYTES',160)
-    stats=batch.translate_batch_split(list(batch.func_db.items()),split,**kwargs)
+    stats=batch.translate_batch_split(list(batch.func_db.items()),split,max_chunk_bytes=160,**kwargs)
     assert stats['num_chunks']==3
     marker='#include <math.h>\n\n'
     payload=lambda p:p.read_text(encoding='utf-8').split(marker,1)[1]

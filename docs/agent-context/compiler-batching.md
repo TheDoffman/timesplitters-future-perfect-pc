@@ -17,3 +17,9 @@ alias selection from9ee19013. Additive patch0261-register-header-template
 synchronizes the compatibility runtime template after0260; it does not change
 the canonical header or guest behavior. Full-stack upgrades and
 `test_runtime_header.py` require exact template/header identity.
+# Integration fixture contract
+
+The split/body/dispatch execution fixture passes max_chunk_bytes=160 explicitly.
+The default remains 512 KiB; monkeypatching the module constant cannot change an
+already-bound Python default argument. Exact body/dispatch/declaration comparisons
+and compiled execution checks remain intact.

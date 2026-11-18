@@ -1,5 +1,6 @@
 [Workshop/native test routes](build-test-integration.md).
 Online IPC/GCC: test_online_menu.py; warnings remain errors.
+Chunk-bound execution uses explicit max_chunk_bytes: compiler-batching.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.
