@@ -18,7 +18,7 @@ MAX_BYTES=65536
 def selection(journal):
     state=journal.state();reboot=state['reboot']
     require(os.geteuid()==cutover.ROOT_UID and reboot is not None and reboot['quiescent']
-            and journal.observation_boot==boot_identity()==reboot['boot_id'] and state['layout_sha256'] is not None,
+            and journal.observation_boot==boot_identity()==reboot['boot_id'],
             'Seal reboot evidence only under current stopped Root authority')
     return dict(boot_id=reboot['boot_id'],original_boot=journal.base['boot_id'],nonce=journal.base['nonce'],
                 layout_sha256=state['layout_sha256'],context_sha256=reboot['context_sha256'])
@@ -54,7 +54,8 @@ def checked(data,binding):
             and value['services_started'] is value['files_changed'] is value['operational_admission'] is False
             and isinstance(value['locations'],dict) and set(value['locations'])=={'active','saved','staged'}
             and all(side in (None,'before','after') for side in value['locations'].values())
-            and sorted(side for side in value['locations'].values() if side is not None)==['after','before']
+            and sorted(side for side in value['locations'].values() if side is not None)==(['before'] if binding['layout_sha256'] is None else ['after','before'])
+            and (binding['layout_sha256'] is not None or value['locations']==dict(active='before',saved=None,staged=None))
             and value['locations']['saved'] in (None,'before') and value['locations']['staged'] in (None,'after')
             and isinstance(value['inventories'],dict) and set(value['inventories'])=={key for key,side in value['locations'].items() if side is not None},
             'Reboot checkpoint differs from its exact observation binding')

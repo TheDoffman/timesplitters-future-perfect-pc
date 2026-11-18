@@ -22,12 +22,14 @@ pytestmark=[pytest.mark.parametrize('prepared',['deferred'],indirect=True),
             pytest.mark.parametrize('flow',['fresh'],indirect=True)]
 
 
+@pytest.mark.parametrize('rebooted',['early','applied'],indirect=True)
 def test_reboot_capture_preserves_independent_binding_and_reuses_only_fresh_receipt(rebooted):
     case=rebooted;checkpoints.seal(case.journal,case.fresh)
     count=len(case.item.captures);original=case.journal.state()['backup']
     result=backup.capture(case.journal,case.fresh)
     assert result['operational_admission'] is False and result['reused'] is False and len(case.item.captures)==count+1
     assert result['receipt']['identity']==case.journal.base['backup_identity'] and result['receipt']['base_release']=='7'*64
+    assert result['receipt']['started']>=case.journal.state()['reboot']['quiesced_at']
     assert case.journal.state()['backup']==original  # Old frame authority is not upgraded by this phase.
     with pytest.raises(ModError):backup.capture(case.journal,case.fresh)
     committed=case.journal.current

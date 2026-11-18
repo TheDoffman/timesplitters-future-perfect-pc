@@ -1,3 +1,10 @@
+Reboot backup gate (2026-11-18; source f0553259; not deployed): focused native
+backup/checkpoint/preparation/journal checks pass72 Mac58.01s and72 Linux72.60s.
+These cover preserved runtime/binding, explicit fresh reuse and renewal, lost
+receipt recovery, typed receipt mutations, changed checkpoint and post-child
+dedicated-UID process refusal. Ordinary migration/startup authority remains blocked.
+The public installed generation and original pending backup setup are unchanged.
+
 Reboot layout/checkpoint gate (2026-11-18; source17c7a7b1/e40c5385,
 fixture4b4e4559; not deployed): Layout now has an explicit observation mode bound
 to current reboot quiescence. It opens the original prepared manifest without

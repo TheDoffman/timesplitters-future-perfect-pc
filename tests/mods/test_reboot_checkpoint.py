@@ -30,16 +30,20 @@ pytestmark=[pytest.mark.parametrize('prepared',['deferred'],indirect=True),
 
 
 @pytest.fixture
-def rebooted(machine,monkeypatch):
-    item=machine;coordinator.apply_private(item.state,item.context)
+def rebooted(machine,monkeypatch,request):
+    item=machine;early=getattr(request,'param',None)=='early'
+    original_files=cutover.job_files(item.context['entries'])
+    if not early:coordinator.apply_private(item.state,item.context)
+    item.flow.now[0]+=10  # New quiescence must not reuse the pre-boot timestamp.
     # The Root lease/process identity is simulated; all protected history and
     # monitor/layout files are the actual result of the composed private phase.
     for module in (storage,migration,observations,reboot_prepare,reboot_layout,checkpoint,layouts):
         monkeypatch.setattr(module,'boot_identity',lambda:'e'*64)
-    monkeypatch.setattr(contexts,'read_reboot_context',lambda *_:dict(context_sha256='9'*64))
+    monkeypatch.setattr(contexts,'read_reboot_context',lambda *_:dict(context_sha256='9'*64,
+        original_observations=dict(files=original_files)))
     item.state.observation_boot='e'*64
     item.loaded.clear()
-    for index,(path,spec) in enumerate(item.context['candidate_entries']):item.loaded[spec['Label']]=(path,spec,900+index)
+    for index,(path,spec) in enumerate(item.context['entries' if early else 'candidate_entries']):item.loaded[spec['Label']]=(path,spec,900+index)
     original=item.context['command']
     def command(argv):
         if argv[:2]==['/bin/launchctl','bootout']:
@@ -51,6 +55,51 @@ def rebooted(machine,monkeypatch):
     reboot_prepare.prepare(item.state,fresh)
     return SimpleNamespace(item=item,journal=item.state,fresh=fresh,
         path=cutover.ROOT/'reboot-checkpoints'/('c'*64+'-'+'e'*64+'.json'))
+
+
+@pytest.mark.parametrize('rebooted',['early'],indirect=True)
+def test_early_restart_seals_original_tree_without_creating_or_adopting_staging(rebooted):
+    case=rebooted;root=cutover.ROOT;before=layouts.snapshot(root/'monitor')
+    assert not (root/'upgrade-layouts').exists()
+    result=checkpoint.seal(case.journal,case.fresh)
+    report=checkpoint.load(case.journal,result['checkpoint_sha256'])
+    assert result['layout_sha256'] is None and report['locations']==dict(active='before',saved=None,staged=None)
+    assert report['inventories']==dict(active=before) and layouts.snapshot(root/'monitor')==before
+    assert not (root/'upgrade-layouts').exists() and case.journal.state()['layout_sha256'] is None
+    assert checkpoint.seal(case.journal,case.fresh,resume=True)==result
+    with pytest.raises(ModError):case.journal.record('settled')
+
+
+@pytest.mark.parametrize('rebooted',['early'],indirect=True)
+@pytest.mark.parametrize('fault',['partial-staging','linked-staging','store-mode','policy','identical-replacement','mixed-boot','bad-health','foreign-proof','orphan'])
+def test_early_restart_preserves_unrecorded_staging_or_foreign_original_evidence(rebooted,fault):
+    case=rebooted;root=cutover.ROOT;preserved=None
+    if fault in ('partial-staging','linked-staging','store-mode'):
+        parent=root/'upgrade-layouts';parent.mkdir(mode=0o755 if fault=='store-mode' else 0o700)
+        if fault=='partial-staging':
+            preserved=parent/case.journal.base['nonce'];preserved.mkdir(mode=0o700)
+            (preserved/'manifest.json').write_bytes(b'{')
+        elif fault=='linked-staging':
+            preserved=parent/case.journal.base['nonce'];preserved.symlink_to(root/'monitor',target_is_directory=True)
+    elif fault=='policy':
+        (root/'monitor/api/monitor.json').write_bytes(b'{}')
+    elif fault=='identical-replacement':
+        path=root/'monitor/api/worker.plist';data=path.read_bytes();path.rename(root/'original-worker.plist')
+        path.write_bytes(data);path.chmod(0o600)
+    elif fault=='mixed-boot':
+        path,spec=case.fresh['candidate_entries'][0]
+        import plistlib
+        target=cutover.LAUNCHD/(spec['Label']+'.plist');target.write_bytes(plistlib.dumps(spec));target.chmod(0o644)
+    elif fault=='bad-health':
+        path=root/'monitor/api/health.json';path.write_bytes(b'{}');path.chmod(0o644)
+    elif fault=='foreign-proof':
+        path=root/'monitor/upgrade-quiescence.json';path.write_bytes(b'{}');path.chmod(0o644)
+    else:case.item.loaded['foreign']=(Path('/unknown'),dict(Label='foreign'),999)
+    before=layouts.snapshot(root/'monitor')
+    with pytest.raises((ModError,OSError)):checkpoint.seal(case.journal,case.fresh)
+    assert layouts.snapshot(root/'monitor')==before and not case.path.exists()
+    assert case.journal.state()['reboot']['layout_checkpoint'] is None
+    if preserved is not None:assert preserved.exists() or preserved.is_symlink()
 
 
 def test_sealed_checkpoint_binds_original_and_current_boot_without_effect_authority(rebooted):

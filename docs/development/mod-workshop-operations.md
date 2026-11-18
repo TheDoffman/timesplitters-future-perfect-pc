@@ -107,6 +107,18 @@ observation Layout refuses preparation, exchange and internal moves before any
 callback or write. Metadata checkpoint sealing is described below; granting
 ordinary post-reboot migration/startup authority remains unfinished.
 
+Before any protected layout was recorded, the same reader observes only the
+original active generation. All twenty original job/backup file identities must
+still match the sealed context and all thirteen factory policies/markers must
+match. Bounded Root-owned history is retained as in ordinary new preparation;
+health records and any migration proof are checked independently. No manifest or
+staging tree is created. An existing nonce staging directory (including partial
+or linked output) is preserved and refused, even if its bytes look familiar.
+Mixed boot generations cannot be adopted without recorded protected effects.
+The checkpoint records a null layout SHA and only the before inventory for this
+case; it still grants no ordinary effects. Fresh backup capture works with either
+this unstaged checkpoint or a prepared two-generation checkpoint.
+
 `mod_host_reboot_checkpoint.seal` repeats that read before and after writing a
 canonical Root600 checkpoint under Root700 `reboot-checkpoints` (at most32 files,
 64KiB each). Names bind the original nonce and current boot. Exact existing bytes

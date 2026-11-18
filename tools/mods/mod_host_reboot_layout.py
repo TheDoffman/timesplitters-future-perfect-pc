@@ -1,5 +1,6 @@
 """Read stopped monitor/layout generations after reboot; no file exchange."""
 import os
+import stat
 
 import mod_host_cutover as cutover
 import mod_host_cutover_journal as storage
@@ -14,11 +15,53 @@ from mod_host_migration import boot_identity
 from mod_package import ModError,read_json,require
 
 
+def _unprepared(journal,fresh,metadata):
+    """Observe the original tree only when no protected staging was recorded.
+
+    No manifest is synthesized or adopted. An interrupted staging directory is
+    preserved for inspection, even if its files happen to match the factories.
+    """
+    base=journal.base;state=journal.state();folder=cutover.ROOT/'upgrade-layouts'
+    require(state['layout_sha256'] is None and state['config']=='before' and state['config_pending'] is None
+            and state['layout_pending'] is None and state['layout_complete'] is None and state['monitor']=='before'
+            and all(value=='before' for value in state['boots'].values()),
+            'Unprepared reboot history contains protected generation effects')
+    def absent():
+        try:parent=cutover.protected_directory(folder)
+        except FileNotFoundError:return
+        try:
+            require(stat.S_IMODE(os.fstat(parent).st_mode)==0o700,'Unsafe protected layout store')
+            try:os.stat(base['nonce'],dir_fd=parent,follow_symlinks=False)
+            except FileNotFoundError:return
+            require(False,'Preserving unrecorded protected staging after reboot')
+        finally:os.close(parent)
+    absent()
+    original=metadata['original_observations']['files']
+    # Original policy/backup file identities stay exact. Boot jobs may have
+    # updated typed health records, but cannot replace their protected policy.
+    current=cutover.job_files(fresh['entries'])
+    require(storage.wire(current)==storage.wire(original),
+            'Unprepared reboot changed original protected job identities')
+    for name,expected in layouts.payloads(fresh['entries'],fresh['old']['root'],base['uid']).items():
+        data,_=cutover.protected_bytes(cutover.ROOT/'monitor'/name,0o600,32768)
+        require(read_json(data)==read_json(expected) if name.endswith('.json') else data==expected,
+                'Unprepared reboot monitor policy differs from its original factory')
+    active=cutover.ROOT/'monitor';baseline=layouts.snapshot(active)
+    proof=active/'upgrade-quiescence.json'
+    if 'upgrade-quiescence.json' in baseline:
+        admission.checked_existing(journal,cutover.protected_bytes(proof,0o644,8192)[0])
+    inventory=shutdown.checked_monitor_history(journal,active,baseline,fresh['entries'],'before')
+    absent()
+    require(layouts.snapshot(active)==inventory and storage.wire(cutover.job_files(fresh['entries']))==storage.wire(original),
+            'Unprepared reboot evidence changed during observation')
+    return dict(active='before',saved=None,staged=None),dict(active=inventory)
+
+
 def read(journal,fresh):
     base=journal.base;state=journal.state();reboot=state['reboot']
     require(os.geteuid()==cutover.ROOT_UID and reboot is not None and reboot['quiescent']
-            and journal.observation_boot==reboot['boot_id']==boot_identity() and state['layout_sha256'] is not None,
-            'Read prepared reboot layout only after current quiescence')
+            and journal.observation_boot==reboot['boot_id']==boot_identity(),
+            'Read reboot layout only after current quiescence')
     metadata=contexts.read_reboot_context(journal,fresh)
     require(metadata['context_sha256']==reboot['context_sha256'],'Reboot layout changes original context')
     choices=observations.policies(fresh['entries'],fresh['candidate_entries'])
@@ -35,6 +78,16 @@ def read(journal,fresh):
         require(route['phase']!='public' and route['unrelated_sha256']==base['routing']['unrelated_sha256'],
                 'Public or unrelated routing changed during reboot layout observation')
     guard()
+    if state['layout_sha256'] is None:
+        found,inventories=_unprepared(journal,fresh,metadata)
+        guard()
+        require(contexts.read_reboot_context(journal,fresh)['context_sha256']==metadata['context_sha256'],
+                'Original recovery context changed during unprepared observation')
+        result=dict(schema=1,phase='reboot-layout-observed',nonce=base['nonce'],boot_id=reboot['boot_id'],original_boot=base['boot_id'],
+            context_sha256=reboot['context_sha256'],layout_sha256=None,locations=found,inventories=inventories,
+            services_started=False,files_changed=False,operational_admission=False)
+        require(len(storage.wire(result))<=65536,'Reboot layout observation exceeds budget')
+        return result
     layout=layouts.Layout(journal,cutover.ROOT/'releases'/base['before'],cutover.ROOT/'releases'/base['after'],
         fresh['entries'],fresh['candidate_entries'],observation=True)
     activation.private_layout_storage(layout.folder);layout.reopen(state['layout_sha256'])

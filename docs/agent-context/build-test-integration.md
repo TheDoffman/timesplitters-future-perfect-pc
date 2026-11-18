@@ -49,6 +49,11 @@ machine/flow/prepared, so the initial private startup retains its strict boot ch
 test_reboot_backup.py checks the preserved runtime binding, explicit fresh reuse/
 renewal, lost-receipt recovery, post-child quiescence/checkpoint changes and typed
 receipt replay. Reboot backup does not update ordinary frame/migration authority.
+Early-reboot checkpoint cases require original policy/backup file identities,
+factory markers, typed health, no nonce staging directory and no protected effect
+history. Partial/linked staging, wrong store mode, replaced policy, mixed boot,
+foreign proof and dedicated-UID orphans stay preserved/refused. The composed
+backup fixture uses the new epoch's later quiescence, including unstaged recovery.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

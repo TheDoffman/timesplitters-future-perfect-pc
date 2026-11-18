@@ -91,7 +91,7 @@ def event(state,entry,*,original_boot,uid,backup_identity,backup_base_release,ro
         require(state is not None and state['quiescent'] and label is None and isinstance(data,dict)
                 and set(data)=={'boot_id','original_boot','nonce','layout_sha256','context_sha256','checkpoint_sha256'}
                 and data['boot_id']==state['boot_id'] and data['original_boot']==original_boot and data['nonce']==nonce
-                and layout_sha256 is not None and data['layout_sha256']==layout_sha256 and data['context_sha256']==state['context_sha256']
+                and data['layout_sha256']==layout_sha256 and data['context_sha256']==state['context_sha256']
                 and isinstance(data['checkpoint_sha256'],str) and SHA.fullmatch(data['checkpoint_sha256'])
                 and state['layout_checkpoint'] is None,'Reboot layout checkpoint lacks exact stopped-generation binding')
         return dict(state,layout_checkpoint=data)
