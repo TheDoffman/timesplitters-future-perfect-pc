@@ -159,6 +159,7 @@ def unpack_snapshot(source, destination, *, plain_sha256):
         stable()
         # Inventory is written last. A partial extraction lacks a valid snapshot
         # manifest and cannot be adopted as a completed backup by its presence.
+        backup.verify_database(output, manifest)
         backup.write_json(output / backup.MANIFEST, manifest)
         result = backup.verify_snapshot(output)
         backup.sync_directory(output)

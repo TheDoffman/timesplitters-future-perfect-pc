@@ -235,6 +235,20 @@ def backup_manifest(backup):
     return source, manifest, total
 
 
+def verify_database(source, manifest):
+    """Read-only schema/reference admission of a hash-checked snapshot DB."""
+    # Only immutable snapshots are opened this way. The live repository always
+    # uses ordinary SQLite locking. A WAL-mode snapshot must not gain sidecars.
+    with closing(sqlite3.connect((source/'catalog.sqlite').as_uri()+'?mode=ro&immutable=1',uri=True,timeout=3)) as db:
+        db.row_factory=sqlite3.Row
+        db.execute('PRAGMA trusted_schema=OFF');db.execute('PRAGMA foreign_keys=ON')
+        refs, _ = inventory(db)
+        for name, (sha, required) in refs.items():
+            require(not required or name in manifest['files'], 'Snapshot database refers to a missing package')
+            if name in manifest['files']:
+                require(manifest['files'][name]['sha256'] == sha, 'Snapshot package identity mismatch')
+
+
 def verify_snapshot(backup):
     """Read-only full file/hash/schema/reference check; never creates SQLite WAL."""
     source, manifest, total = backup_manifest(backup)
@@ -257,16 +271,7 @@ def verify_snapshot(backup):
             require((after.st_size, after.st_mtime_ns, after.st_ctime_ns) ==
                     (held.st_size, held.st_mtime_ns, held.st_ctime_ns)
                     and digest.hexdigest() == expected['sha256'], 'Backup integrity check failed')
-    # Only immutable snapshots are opened this way. The live repository always
-    # uses ordinary SQLite locking. A WAL-mode snapshot must not gain sidecars.
-    with closing(sqlite3.connect((source/'catalog.sqlite').as_uri()+'?mode=ro&immutable=1',uri=True,timeout=3)) as db:
-        db.row_factory=sqlite3.Row
-        db.execute('PRAGMA trusted_schema=OFF');db.execute('PRAGMA foreign_keys=ON')
-        refs, _ = inventory(db)
-        for name, (sha, required) in refs.items():
-            require(not required or name in manifest['files'], 'Snapshot database refers to a missing package')
-            if name in manifest['files']:
-                require(manifest['files'][name]['sha256'] == sha, 'Snapshot package identity mismatch')
+    verify_database(source, manifest)
     require(backup_manifest(source)[1] == manifest, 'Backup manifest changed during verification')
     return dict(backup=str(source),created=manifest['created'],files=len(manifest['files']),bytes=total,
                 manifest_sha256=hashlib.sha256((source/MANIFEST).read_bytes()).hexdigest())

@@ -1,4 +1,5 @@
 """Real private snapshot export/recovery, bounded framing and interruption refusal."""
+from contextlib import contextmanager
 import hashlib
 import os
 from pathlib import Path
@@ -28,7 +29,8 @@ def case(tmp_path):
     root.chmod(0o700)
     repository = Repository(root / 'repository')
     repository.root.chmod(0o700)
-    data = b'backup opaque blob fixture' * ((cipher.CHUNK + 17) // 26 + 1)
+    seed = b'backup opaque blob fixture'
+    data = (seed * ((cipher.CHUNK + 17 + len(seed) - 1) // len(seed)))[:cipher.CHUNK + 17]
     sha = hashlib.sha256(data).hexdigest()
     write(repository.root / 'blobs' / (sha + '.zip'), data)
     with repository.db() as db:
@@ -65,7 +67,8 @@ def test_real_snapshot_stream_encrypt_decrypt_unpack_restore_keeps_barrier(case)
     backup.restore(extracted, restored)
     assert (restored / backup.BARRIER).is_file()
     assert backup.verify_snapshot(source) == report['snapshot']
-    assert (plain.read_bytes()) == packed(case)
+    assert plain.read_bytes() == packed(case)
+    assert plain.stat().st_size > cipher.CHUNK
     for member in extracted.rglob('*'):
         assert member.stat().st_mode & 0o077 == 0
 
@@ -168,3 +171,74 @@ def test_reader_never_accepts_unbounded_reads_and_detects_manifest_change(case):
     with pytest.raises(ModError, match='inventory changed'):
         reader.read(1)
     reader.close()
+
+
+def test_valid_archive_swap_after_first_hash_cannot_commit_inventory(case, monkeypatch):
+    root, _, _, _ = case
+    wire = packed(case)
+    prefix = len(archive.MAGIC) + 4
+    length = struct.unpack('>I', wire[len(archive.MAGIC):prefix])[0]
+    manifest = cipher.read_json(wire[prefix:prefix + length])
+    manifest['created'] += 1
+    changed = archive.header(manifest)[0] + wire[prefix + length:]
+    assert len(changed) == len(wire)
+    plain = root / 'archive'
+    write(plain, wire)
+    real = cipher.incoming
+
+    @contextmanager
+    def replace_after_hash(path, maximum):
+        with real(path, maximum) as (stream, size, stable):
+            class Swap:
+                def read(self, count):
+                    return stream.read(count)
+
+                def seek(self, offset):
+                    write(plain, changed)
+                    return stream.seek(offset)
+            # Model cached timestamps, keeping the actual-consumed hash mandatory.
+            yield Swap(), size, lambda: None
+
+    monkeypatch.setattr(cipher, 'incoming', replace_after_hash)
+    output = root / 'partial-swap'
+    with pytest.raises(ModError, match='changed after receipt'):
+        archive.unpack_snapshot(plain, output, plain_sha256=cipher.digest(wire))
+    assert output.exists() and not (output / backup.MANIFEST).exists()
+
+
+def test_unknown_database_schema_cannot_commit_inventory(case):
+    import sqlite3
+    root, source, _, _ = case
+    with sqlite3.connect(source / 'catalog.sqlite') as db:
+        db.execute('CREATE TABLE unknown_private_schema (x)')
+    path = source / backup.MANIFEST
+    manifest = cipher.read_json(path.read_bytes())
+    data = (source / 'catalog.sqlite').read_bytes()
+    manifest['files']['catalog.sqlite'] = dict(size=len(data), sha256=cipher.digest(data))
+    write(path, encode(manifest))
+    wire = packed(case)
+    plain = root / 'archive'
+    write(plain, wire)
+    output = root / 'partial-schema'
+    with pytest.raises(ModError, match='Unknown database schema'):
+        archive.unpack_snapshot(plain, output, plain_sha256=cipher.digest(wire))
+    assert output.exists() and not (output / backup.MANIFEST).exists()
+    with pytest.raises(ModError, match='Unknown database schema'):
+        archive.encrypt_snapshot(source, root / 'never-encrypted', case[3], ORIGIN, PIN)
+    assert not (root / 'never-encrypted').exists()
+
+
+def test_linked_destination_preserves_outside_folder(case):
+    root, _, _, _ = case
+    wire = packed(case)
+    plain = root / 'archive'
+    write(plain, wire)
+    outside = root / 'outside'
+    outside.mkdir(mode=0o700)
+    write(outside / 'keep', b'preserved')
+    output = root / 'linked'
+    output.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ModError):
+        archive.unpack_snapshot(plain, output, plain_sha256=cipher.digest(wire))
+    assert sorted(path.name for path in outside.iterdir()) == ['keep']
+    assert (outside / 'keep').read_bytes() == b'preserved'

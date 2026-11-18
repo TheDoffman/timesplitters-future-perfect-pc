@@ -65,7 +65,8 @@ authenticated ciphertext SHA. Pass its returned private plaintext SHA to
 checks hash/framing/inventory/size before creating a new0700 directory, refuses
 all existing destinations, checks2GiB headroom, writes only fixed allowed names
 as0600 files, verifies each hash and rechecks the actual consumed archive digest.
-The manifest is written after all members verify. Partial output is preserved
+The manifest is written after all members and the shared SQLite/schema/reference
+checks verify. A changed valid archive after the first hash is also refused. Partial output is preserved
 and must not be adopted. Full snapshot/database verification is still required
 before success. This is a private snapshot, not a serving repository: the normal
 `mod_backup.restore` authentication reset and publication-reconciliation barrier
