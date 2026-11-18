@@ -1,3 +1,29 @@
+Pending forward-to-rollback recovery (2026-11-18; source3ab3d86f; not deployed):
+explicit rollback resume now finishes a recorded forward migration or protected
+file exchange in its original direction under verified quiescence, then reverses
+it without starting candidate jobs. Pending private migration re-observation
+requires fresh retained-runtime capture/proof; known mixed-file exchange does not
+invent migration authority through mixed monitor/boot files. Completed forward
+layout is durably observed before old-tree restoration and fresh rollback proof.
+Ordinary rollback without resume preserves the pending effect and refuses it.
+Existing reversal, routing, identity and quiescence guards remain mandatory.
+
+Actual native coordinator suites pass44 on Mac125.41s and44 on Linux151.51s.
+Nine boundary cases cover lost intent/result records in migration, archive,
+install, boot-file exchange and layout completion, then explicit rollback after
+1000 simulated elapsed seconds. Each ends with old services privately admitted
+and public verification/settlement; no candidate starts occur. Captures, fixed
+stops, old starts and restart counts are checked. The tests use real journal/
+protected-file operations with simulated credentials, OS commands and children.
+Windows CLI/protocol/CI-scope regressions pass281/12 POSIX skips0.50s; its44
+coordinator cases are correctly POSIX-only. This is not installed Root/UID600
+or physical-reboot acceptance. All production jobs/routes/data/keys are unchanged.
+
+The original scheduled-backup setup remains live as zsh29800/sudo29803 at sudo -v
+(reobserved after1d17h34m); the user was asked to finish that original prompt.
+No duplicate ceremony or protected change was started. Reboot recovery, installed
+upgrade acceptance and the full creator/game/multiplayer/release gates remain open.
+
 Public restoration/recovery composition (2026-11-18; source11cec341/f296f49f,
 CLI9c3f1e30 and replayddc083ba; not deployed): the newly verified public checker
 now observes either installed host generation using an exact --host-release

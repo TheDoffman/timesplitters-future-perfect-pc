@@ -302,8 +302,9 @@ Existing shutdown/reversal/old-startup work requires explicit resume. Completed
 or pending old-generation proof retirement also requires explicit resume if old
 AV admission fails before the first bootstrap, including prepared cancellation.
 Completed checkpoints are revalidated, not rewritten; completed OS stops, bootstraps and
-restart signals are not repeated. Process/context reconstruction, reboot recovery,
-pending-forward-to-reverse resolution and installed CLI acceptance remain open.
+restart signals are not repeated. Process/context reconstruction and explicit
+pending-forward resolution are implemented. Reboot recovery and actual installed
+CLI acceptance remain open.
 
 Disposable new/installed-old/new data acceptance at source83b9c8b7 uses the actual
 installed old7be977f9 Python/source601c63c6 as UID501, between current-code writes
