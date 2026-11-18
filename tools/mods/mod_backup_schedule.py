@@ -16,7 +16,7 @@ SCRIPT = Path(__file__).parent / 'hosting/schedule-backup-receiver-windows.ps1'
 
 
 def powershell(operation, spec=None, fingerprint=None):
-    require(os.name == 'nt' and operation in ('Identity', 'Install', 'Run', 'Status', 'Remove'), 'Unknown Windows scheduler operation')
+    require(os.name == 'nt' and operation in ('Identity', 'Validate', 'Install', 'Run', 'Status', 'Remove'), 'Unknown Windows scheduler operation')
     executable = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
     args = [str(executable), '-NoProfile', '-NonInteractive', '-File', str(SCRIPT), '-Operation', operation]
     if spec is not None:
@@ -104,7 +104,7 @@ def prepare(destination, frozen, runtime_sha256, control, binding_sha256):
 
 
 def manage(operation, directory, expected_sha256):
-    require(operation in ('Install', 'Run', 'Status', 'Remove'), 'Unknown backup schedule operation')
+    require(operation in ('Validate', 'Install', 'Run', 'Status', 'Remove'), 'Unknown backup schedule operation')
     worker.receiver.cipher.checked_sha(expected_sha256)
     directory = worker.receiver.cipher.private_path(Path(directory) / SPEC).parent
     require(set(p.name for p in worker.islice(directory.iterdir(), 2)) == {SPEC}, 'Preserving foreign schedule metadata')
@@ -112,7 +112,7 @@ def manage(operation, directory, expected_sha256):
     require(worker.receiver.cipher.digest(wire) == expected_sha256, 'Schedule fingerprint differs')
     value = check(read_json(wire))
     require(encode(value) == wire, 'Noncanonical schedule metadata')
-    if operation in ('Install', 'Run'):
+    if operation in ('Validate', 'Install', 'Run'):
         ready(value)
     # Status/removal remain available when the runtime is damaged, using this
     # trusted operator helper and strict task/action/principal/security identity.

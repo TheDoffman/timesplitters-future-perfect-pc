@@ -1,3 +1,40 @@
+Native frozen Windows receiver and disposable scheduler acceptance (2026-11-18;
+frozen runtime sourceeb2afb55, corrected management source follows): new private
+runtime preparation succeeds with827 files/48198692 bytes, including dependency
+licenses. Manifest SHA2566ad56ffafccfcefb8c2d60c8d426ee7d0636fa69bf0cea432bc8e7df230e7058.
+An actual copied interpreter runs-I-S-B from unrelated CWD with invalid
+PYTHONHOME/PYTHONPATH, verifies its exact initial search path/private ACLs and
+passes actual AES-GCM admission. A copied pythonw worker then actually receives
+the Mac's existing read-only fixed-bundle SSH fixture: exit0/healthy and one
+verified complete cipher copy. This uses disposable data, not production keys.
+
+The native scheduler exposed two representation differences: it resolves the
+principal to a Windows account name and converts a UTC boundary to a local
+explicit offset. Validation now resolves the same SID and compares the exact
+UTC instant. Different SID, changed instant and unqualified time still refuse;
+task action/settings, protected user/SYSTEM ACL and other trigger checks remain.
+Added validation-only CLI/API path creates no registration. Native regression
+checks exercise actual account/time normalization and no-registration validation.
+
+An actual temporary InteractiveToken/LUA task is registered, strictly verified,
+started, finishes0 with worker health ok, then is removed. A fresh full lifecycle
+also refuses duplicate registration and proves the existing task unchanged before
+running/removing it. A separate COM lookup confirms the exact task is absent.
+No permanent fixture or production task remains, and runtime/worker/receiver data
+are preserved privately. The frozen worker is sourceeb2afb55; task-management
+normalization corrections are separate source (next commit), so this is not a
+final same-source production release or an unattended/physical reboot proof.
+
+Final Windows manifest/schedule/native/CI scope checks pass201 in8.47s after
+the CI-account fixture adjustment. Linux at sourceeb2afb55
+passes309 with9 Windows-only skips in6.14s; correction confirmation follows below.
+No gameplay rebuild is needed for these operator-only changes. Mac read-only
+probe now shows118980KiB free; original sudo29803/zsh29800 with matching Nov16
+birth remain live. No Mac source writer, disk-floor reduction, personal file
+removal, duplicate password prompt, host job or public routing change occurred.
+Production backup recipient custody, protected capture/export, independent live
+recovery, physical boot and the broader creator/game/release gates remain open.
+
 Frozen Windows backup runtime/schedule candidate (2026-11-18; not deployed):
 new-only operator preparation copies the active x64 CPython3.12 standard runtime,
 crypto packages/licenses and committed worker source closure into a private

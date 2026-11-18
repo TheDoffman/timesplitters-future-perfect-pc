@@ -22,7 +22,7 @@ def main():
     prepare.add_argument('--runtime-sha256', required=True)
     prepare.add_argument('--control', required=True)
     prepare.add_argument('--binding-sha256', required=True)
-    for operation in ('install', 'run', 'status', 'remove'):
+    for operation in ('validate', 'install', 'run', 'status', 'remove'):
         command = commands.add_parser(operation)
         command.add_argument('directory')
         command.add_argument('--schedule-sha256', required=True)

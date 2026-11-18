@@ -1,5 +1,5 @@
 param(
-    [Parameter(Mandatory=$true)][ValidateSet('Identity','Install','Run','Status','Remove')][string]$Operation,
+    [Parameter(Mandatory=$true)][ValidateSet('Identity','Validate','Install','Run','Status','Remove')][string]$Operation,
     [string]$Spec,
     [string]$Sha256
 )
@@ -26,9 +26,27 @@ $service = New-Object -ComObject Schedule.Service
 $service.Connect()
 $folder = $service.GetFolder('\')
 
+function Test-OwnerSid([string]$identity) {
+    if ($identity -eq $sid) { return $true }
+    try {
+        $account = [Security.Principal.NTAccount]::new($identity)
+        return $account.Translate([Security.Principal.SecurityIdentifier]).Value -eq $sid
+    } catch { return $false }
+}
+
+function Test-Boundary([string]$actual,[string]$expected) {
+    # The scheduler normalizes a UTC boundary into the machine's local offset.
+    # Compare the same instant, while refusing an ambiguous unqualified time.
+    if ($actual -notmatch '\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:Z|[+-]\d\d:\d\d)\z') { return $false }
+    try {
+        $culture = [Globalization.CultureInfo]::InvariantCulture
+        return [DateTimeOffset]::Parse($actual,$culture).UtcDateTime.Ticks -eq [DateTimeOffset]::Parse($expected,$culture).UtcDateTime.Ticks
+    } catch { return $false }
+}
+
 function Assert-Definition($definition) {
     if ($definition.RegistrationInfo.Description -ne $description -or
-        $definition.Principal.UserId -ne $sid -or $definition.Principal.LogonType -ne 3 -or
+        -not (Test-OwnerSid $definition.Principal.UserId) -or $definition.Principal.LogonType -ne 3 -or
         $definition.Principal.RunLevel -ne 0 -or $definition.Actions.Count -ne 1 -or
         $definition.Triggers.Count -ne 2) { throw 'Preserving foreign task definition' }
     $action = $definition.Actions.Item(1)
@@ -45,11 +63,11 @@ function Assert-Definition($definition) {
         $settings.RestartCount -ne 0) { throw 'Preserving changed task settings' }
     $daily = $definition.Triggers.Item(1)
     $logon = $definition.Triggers.Item(2)
-    if ($daily.Type -ne 2 -or $daily.DaysInterval -ne 1 -or $daily.StartBoundary -ne $value.start_boundary -or
+    if ($daily.Type -ne 2 -or $daily.DaysInterval -ne 1 -or -not (Test-Boundary $daily.StartBoundary $value.start_boundary) -or
         $daily.Repetition.Interval -ne 'PT1H' -or $daily.Repetition.Duration -ne 'P1D' -or
         $daily.Repetition.StopAtDurationEnd -or -not $daily.Enabled -or
         $daily.EndBoundary -or $logon.StartBoundary -or $logon.EndBoundary -or $logon.Repetition.Interval -or
-        $logon.Repetition.Duration -or $logon.Type -ne 9 -or $logon.UserId -ne $sid -or
+        $logon.Repetition.Duration -or $logon.Type -ne 9 -or -not (Test-OwnerSid $logon.UserId) -or
         $logon.Delay -ne 'PT1M' -or -not $logon.Enabled) {
         throw 'Preserving changed task triggers'
     }
@@ -58,13 +76,15 @@ function Assert-Definition($definition) {
 function Assert-Task($task) {
     Assert-Definition $task.Definition
     $security = [Security.AccessControl.RawSecurityDescriptor]::new($task.GetSecurityDescriptor(5))
-    if ($security.Owner.Value -ne $sid -or $security.DiscretionaryAcl.Count -ne 2) {
+    if ($security.Owner.Value -ne $sid -or $security.DiscretionaryAcl.Count -ne 2 -or
+        ($security.ControlFlags -band [Security.AccessControl.ControlFlags]::DiscretionaryAclProtected) -eq 0) {
         throw 'Preserving foreign task security'
     }
     $seen = @{}
     foreach ($ace in $security.DiscretionaryAcl) {
         $principal = $ace.SecurityIdentifier.Value
-        if (($principal -ne $sid -and $principal -ne 'S-1-5-18') -or $seen.ContainsKey($principal) -or
+        if (-not ($ace -is [Security.AccessControl.CommonAce]) -or
+            ($principal -ne $sid -and $principal -ne 'S-1-5-18') -or $seen.ContainsKey($principal) -or
             $ace.AceQualifier -ne [Security.AccessControl.AceQualifier]::AccessAllowed -or
             $ace.AccessMask -ne 0x1f01ff -or $ace.AceFlags -ne [Security.AccessControl.AceFlags]::None) {
             throw 'Preserving changed task security'
@@ -73,7 +93,7 @@ function Assert-Task($task) {
     }
 }
 
-if ($Operation -eq 'Install') {
+if ($Operation -eq 'Install' -or $Operation -eq 'Validate') {
     # TASK_CREATE only. No overwrite, update or registration trigger. The first
     # timer is deliberately in the future; manual native acceptance is explicit.
     $definition = $service.NewTask(0)
@@ -111,6 +131,11 @@ if ($Operation -eq 'Install') {
     $logon.Enabled = $true
     Assert-Definition $definition
     $sddl = 'O:' + $sid + 'D:P(A;;FA;;;SY)(A;;FA;;;' + $sid + ')'
+    if ($Operation -eq 'Validate') {
+        $null = $folder.RegisterTaskDefinition($name,$definition,1,$sid,$null,3,$sddl)
+        @{schema=1;phase='backup-schedule-validated';job_id=$value.job_id;services_started=$false} | ConvertTo-Json -Compress
+        exit 0
+    }
     $task = $folder.RegisterTaskDefinition($name,$definition,18,$sid,$null,3,$sddl)
     Assert-Task $task
 } else {

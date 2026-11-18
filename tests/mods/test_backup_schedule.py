@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import uuid
 
 import pytest
 
@@ -81,6 +82,58 @@ def test_install_and_start_require_fresh_verified_backup(stored, monkeypatch):
         raise ModError('Receiver backup is stale')
     monkeypatch.setattr(schedule, 'ready', refuse)
     monkeypatch.setattr(schedule, 'powershell', lambda *a: pytest.fail('An unready backup must not be scheduled'))
-    for operation in ('Install', 'Run'):
+    for operation in ('Validate', 'Install', 'Run'):
         with pytest.raises(ModError, match='stale'):
             schedule.manage(operation, path, pin)
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows task-definition normalization, without registration')
+def test_native_validation_accepts_windows_normalized_owner_without_creating_task(tmp_path, spec):
+    from mod_windows_recovery import private
+    spec['sid'] = schedule.powershell('Identity')['sid']
+    if not spec['sid'].startswith('S-1-5-21-'):
+        pytest.skip('This schedule targets an interactive user account')
+    spec['job_id'] = uuid.uuid4().hex
+    directory = private(tmp_path / 'native-task-validation', create=True)
+    file = directory / schedule.SPEC
+    wire = encode(spec)
+    file.write_bytes(wire)
+    pin = hashlib.sha256(wire).hexdigest()
+    result = schedule.powershell('Validate', file, pin)
+    assert result['phase'] == 'backup-schedule-validated' and result['services_started'] is False
+    # TASK_VALIDATE_ONLY leaves no registration to manage. No existing task is
+    # selected: this job name uses a fresh UUID for this disposable definition.
+    with pytest.raises(ModError):
+        schedule.powershell('Status', file, pin)
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Actual .NET SID and explicit-offset time normalization')
+def test_native_identity_and_timezone_equivalence_reject_different_authority(tmp_path):
+    script = tmp_path / 'semantic-task-check.ps1'
+    script.write_text('''
+param([string]$Source)
+$ErrorActionPreference='Stop'
+$tokens=$null; $errors=$null
+$tree=[Management.Automation.Language.Parser]::ParseFile($Source,[ref]$tokens,[ref]$errors)
+if ($errors.Count -gt 0) { throw 'Task helper parsing failed' }
+foreach ($name in @('Test-OwnerSid','Test-Boundary')) {
+    $functions=@($tree.FindAll({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true))
+    if ($functions.Count -ne 1) { throw 'Unknown native semantic helper' }
+    . ([ScriptBlock]::Create($functions[0].Extent.Text))
+}
+$identity=[Security.Principal.WindowsIdentity]::GetCurrent()
+$sid=$identity.User.Value
+if (-not (Test-OwnerSid $sid) -or -not (Test-OwnerSid $identity.Name) -or (Test-OwnerSid 'S-1-0-0')) {
+    throw 'Windows account normalization changed authority'
+}
+$expected='2026-11-18T17:23:47+00:00'
+if (-not (Test-Boundary '2026-11-18T12:23:47-05:00' $expected) -or
+    -not (Test-Boundary '2026-11-18T17:23:47Z' $expected) -or
+    (Test-Boundary '2026-11-18T12:23:48-05:00' $expected) -or
+    (Test-Boundary '2026-11-18T12:23:47' $expected) -or
+    (Test-Boundary 'invalid' $expected)) { throw 'UTC instant normalization changed schedule' }
+''', encoding='utf-8')
+    executable = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+    result = subprocess.run([str(executable), '-NoProfile', '-NonInteractive', '-File', str(script), str(schedule.SCRIPT)],
+                            capture_output=True, timeout=30)
+    assert result.returncode == 0, result.stderr.decode(errors='replace')

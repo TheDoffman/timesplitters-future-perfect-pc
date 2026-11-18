@@ -129,6 +129,7 @@ After a real worker receive and runtime check, prepare a separate schedule:
 
 ```powershell
 python tools/mods/hosting/backup-schedule-windows.py prepare PRIVATE_SCHEDULE --runtime PRIVATE_RUNTIME --runtime-sha256 RECORDED_RUNTIME_SHA --control PRIVATE_WORKER --binding-sha256 RECORDED_BINDING_SHA
+python tools/mods/hosting/backup-schedule-windows.py validate PRIVATE_SCHEDULE --schedule-sha256 RECORDED_SCHEDULE_SHA
 python tools/mods/hosting/backup-schedule-windows.py install PRIVATE_SCHEDULE --schedule-sha256 RECORDED_SCHEDULE_SHA
 ```
 
@@ -144,8 +145,12 @@ still needs its separate protected persistent service.
 
 The task has only current-user/SYSTEM full control. Run/status/remove check its
 exact principal/action/description, settings, two fixed triggers and security
-descriptor. Foreign/changed tasks remain untouched. Existing registrations are
-never updated. `run`, `status` and `remove` take the same private schedule and
+descriptor. Windows normalizes its stored user to an account name and its UTC
+boundary to a local offset: native validation resolves the same SID and compares
+explicit-offset instants, refusing a different account, changed instant or an
+ambiguous time. The protected task DACL permits only exact user/SYSTEM common
+full-control ACEs. Foreign/changed tasks remain untouched. Existing registrations
+are never updated. `validate` uses TASK_VALIDATE_ONLY without creating a task. `run`, `status` and `remove` take the same private schedule and
 its SHA256. Removal stops only this verified task and leaves runtime, worker,
 backups and schedule metadata intact. Status/removal use the trusted operator
 helper without executing the frozen runtime, so a damaged runtime can still be
