@@ -20,8 +20,35 @@ import http.client
 import ipaddress
 import json
 import socket
+import threading
 from online_client import Client
 
+_hint_lookup_lock = threading.Lock()
+
+
+def _hostname_ipv4_addresses():
+    """Optional interface hints cannot wait for the OS resolver's DNS retries."""
+    guard = _hint_lookup_lock
+    if not guard.acquire(blocking=False):
+        return ()
+    done = threading.Event()
+    addresses = []
+    def resolve():
+        try:
+            addresses.extend(item[4][0] for item in socket.getaddrinfo(
+                socket.gethostname(), None, socket.AF_INET, socket.SOCK_STREAM))
+        except OSError:
+            pass
+        finally:
+            guard.release()
+            done.set()
+    worker = threading.Thread(target=resolve, daemon=True, name='online-interface-hints')
+    try:
+        worker.start()
+    except RuntimeError:
+        guard.release()
+        return ()
+    return tuple(addresses) if done.wait(.25) else ()
 
 
 def lan_ipv4(value):
@@ -42,11 +69,7 @@ def local_ipv4_addresses(public_address):
             addresses.append(route.getsockname()[0])
     except OSError:
         pass
-    try:
-        addresses.extend(item[4][0] for item in socket.getaddrinfo(
-            socket.gethostname(), None, socket.AF_INET, socket.SOCK_STREAM))
-    except OSError:
-        pass
+    addresses.extend(_hostname_ipv4_addresses())
     return tuple(dict.fromkeys(value for value in addresses if lan_ipv4(value)))[:4]
 
 

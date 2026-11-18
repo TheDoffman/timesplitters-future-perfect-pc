@@ -77,7 +77,14 @@ existing certificate/key without replacing either, detects the public IPv4 and
 returns a pinned server invitation plus a separate loopback URL for its owner.
 Private invitations may additionally carry up to4 RFC1918 IPv4 local_addresses.
 `online_host.local_ipv4_addresses` gathers the routed interface and hostname's
-IPv4 interfaces without sending discovery traffic. `PRIVATE_CONNECT` tries local
+IPv4 interfaces without sending discovery traffic. Optional hostname resolution
+waits at most250ms on a daemon worker; one outstanding lookup per companion
+prevents stalled OS DNS retries accumulating threads. Timeout/failure keeps the
+routed address and omits supplemental hints. This fixes an unbounded startup
+path exposed by Mac CI; test_online_host.py injects a stalled resolver and checks
+bounded completion, retry admission and fast secondary-interface preservation.
+The real private-host/TLS/relay lifecycle remains covered by test_online_private.py.
+`PRIVATE_CONNECT` tries local
 loopback, those numeric LAN hints (same TCP port,1s each), then the public URL;
 every candidate must verify the same certificate pin before any request. Server
 HTTP errors stop rather than changing endpoint. Old invitations remain valid.

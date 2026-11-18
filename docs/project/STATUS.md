@@ -45016,3 +45016,26 @@ cb4abf9ea1419130c7889c3a03f4850d3ce8f50acda7dd6055e6f38204c9ec1d.
 Compatibility:c39dc55cb3d2724cd0f601af58dd1954de2fd3ffda584743912bc26cd7f433db.
 Ignored log: logs/native-multiplayer-pr-build.log. No gameplay acceptance or
 Mac/Linux rebuild for this version correction; existing host limits remain.
+
+## 2026-11-17: PR569 private-host DNS startup repair
+
+CI run44207395326 at head00add2fc failed Mac runtime shard3/3: native private
+hosting remained BUSY at the fixture's20s deadline; other private-directory
+fixtures took70-85s. PR validation failed solely because that runtime job failed;
+the other selected checks passed. Startup synchronously resolved the local host
+name for optional LAN hints with no resolver deadline. An injected stalled
+resolver reproduced blocked completion locally before the fix.
+
+online_host now gives supplemental hostname resolution250ms on one daemon
+worker per companion, retaining the numeric routed-interface hint on timeout.
+Concurrent/repeated calls cannot accumulate resolver workers, and a quick lookup
+still returns deduplicated RFC1918 secondary interfaces. Directory TLS, routing,
+credentials, heartbeat deadlines and the20s test deadline remain unchanged.
+No OS-specific adapter or gameplay/binary change is needed. VERSION remains0.6.2.
+
+Windows11 x64/Python3.14:83 host/private-directory/native-menu tests passed
+in32.79s, including actual TLS/UDP relay lifecycle and the stalled resolver test.
+Modified Python files compile. No game rebuild needed for this companion-only
+repair. Mac CI confirmation follows the pushed change; physical Mac/Linux and
+external-network gameplay acceptance remain separate. No personal settings,
+saves or real router mappings were changed.
