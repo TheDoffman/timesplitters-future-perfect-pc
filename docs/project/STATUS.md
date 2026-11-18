@@ -1,3 +1,58 @@
+Managed encrypted receiver/retention (2026-11-18; source596b1e99; not deployed):
+new immutable private pool binds recipient/origin/root, fixed SSH source settings,
+capacity/keep/interval and UUID. Bounded1MiB SQLite FULL/DELETE journal and exclusive
+connection lease span committed transfer phases. Exact schema/pool/files/counters
+are validated;64KiB policy,64 total copies and bounded rollback/receipt metadata
+have explicit limits. Remote receipt admission is recorded before output through
+the new optional encrypted-receiver callback. Neither SSH settings nor filesystem
+paths come from remote receipts. High-water copy/strict timestamp progression,
+known-ID consistency, future skew, physical reserve and aggregate capacity checks
+precede a new payload. Exact duplicates never refresh success/freshness metadata.
+
+New copies must finish authenticated transport and full ciphertext/profile checks
+before durable admission. A crash after receipt commit can recover only its known,
+pre-bound complete attempt. Failed partials remain private and capacity-counted;
+later healthy work can proceed. Retention verifies the retained high-water copy,
+records old directory/file identities, then removes only its exact two old files.
+Partial deletion resumes; identical-byte inode replacements/foreign content refuse
+and stay intact. Old good copies are never predeleted for capacity. Daily due time,
+hourly retry floor, immutable configuration, stale-export reporting and CLI exit
+codes are implemented; no OS task is installed. Export age is not source DB age.
+The fixed immutable remote bundle does not yet select recurring fresh snapshots.
+
+Actual Windows final receiver/export/transport/CI selection passes218 with1 POSIX
+producer skip in396.19s; Linux/root219 passes in2.74s. Fourteen receiver regressions
+cover real SQLite/schema, due/rotation/capacity, replay/skew/identity, duplicate
+staleness, partial preservation and continued success, crash admission, interrupted
+retention, replacement/foreign/corrupt copies, pool exchange, CLI immutable policy
+and an actual competing-process lease across commits. An earlier14-case Windows
+checkpoint passed359.44s; final combined run supersedes it. Context/compile/diff
+checks pass. No game rebuild or Main merge is part of this operator change.
+
+Actual managed Windows CLI with stored private policy ran SSH to the ordinary Mac
+read-only sender: first stored one fixture copy, forced duplicate reported
+source-unchanged with identical last_success, and third tick was not-due. Pool
+6d6fefd2d89a4abab056dc633018c485; received cipherSHA remains
+296a50aef09fcd8f7137d92343b47defe25ad77065bda242047d984d52ee4ca0.
+This is the disposable Linux-produced export, not production data. Separate real
+Windows and Linux child processes each os._exit(99) at two boundaries, bypassing
+Python cleanup: after completed transfer receipt and after the first retention
+unlink. Both native parents recover without another copy, retain exactly one
+verified payload and finish only the known old-directory removal. These prove
+process-death recovery; actual Mac service boot/power-loss acceptance is separate.
+
+Mac code synced cleanly; writing tests remain unrun at the new source because
+physical free space fell to483291136bytes (about450MiB). During the observed
+interval CloudKit cache allocation grew796643328bytes; this task's source cache
+grew only1077248bytes and other observed release cache stayed unchanged. CloudKit
+and other tasks are untouched. The two OBS installer-cache cleanup choices remain
+pending, not deleted; their952524800 allocated bytes alone would now be insufficient
+for the enforced2GiB reserve. Original shell29800 and sudo29803 still match their
+Nov16 birth/argv (Setup scheduled backups.command / sudo -v); no extra prompt,
+protected install, service/routing change or production recipient creation occurred.
+Full goal, fresh producer selection, scheduling/failure delivery, protected access,
+production recovery/cutover/reboot, SDK/MP/content/stability and release remain open.
+
 Immutable encrypted exports and operator SSH reception (2026-11-18;
 sourced50b4d57; not deployed): new-only private two-file bundles commit canonical
 bounded receipts only after ciphertext hash/size/recipient/framing verification.
