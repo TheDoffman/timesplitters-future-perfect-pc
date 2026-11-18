@@ -5233,7 +5233,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-031 — Main-menu Quit to Desktop
 
 - **Status:** Awaiting validation
-- Uncommitted restoration2026-11-18: the earlier pause-only removal also removed
+- PR572 restoration2026-11-18: the earlier pause-only removal also removed
   the main-menu exit. Shared `pc_main_quit.inc`, called only by the main frontend
   finalizer, restores the row and Cancel-first confirmation; pause remains free
   of desktop-exit rows. Callbacks123FB..123FE are separate verified padding.

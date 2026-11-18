@@ -1,4 +1,4 @@
-Main-menu desktop exit restoration (2026-11-18, uncommitted): restored Quit to Desktop only at the frontend builder, with player0 ownership and native Cancel-first confirmation. Pause Settings and pause desktop-exit removal remain intact. New callback padding verified against the supported US executable; shared fixtures and full production-menu tests pass:36 passed,28 skipped (platform/local game-data contracts). Rebuilt-game acceptance pending.
+Main-menu desktop exit restoration (2026-11-18, PR572): restored Quit to Desktop only at the frontend builder, with player0 ownership and native Cancel-first confirmation. Pause Settings and pause desktop-exit removal remain intact. New callback padding verified against the supported US executable; shared fixtures and full production-menu tests pass:36 passed,28 skipped (platform/local game-data contracts). Rebuilt-game acceptance pending.
 
 ## V-Sync playable Windows test build (2026-11-18)
 
