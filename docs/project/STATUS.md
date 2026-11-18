@@ -1,3 +1,36 @@
+Authenticated private upgrade commands (2026-11-18; sourcea84b9b2e/ccd505f0;
+not deployed): the immutable installed entry now exposes --apply-private,
+--resume-private and --rollback-private (with --resume for an existing rollback).
+Apply repeats preflight, requires the expected digest and unused64hex nonce,
+owns a new-only Root journal lease, reattests twenty files, seals context before
+events, then dispatches private apply. Recovery verifies fresh immutable inputs,
+reads same-boot historical arguments and opens only that exact existing journal;
+it may explicitly promote one complete known pending append, reconstruct context
+and dispatch resume/rollback. Missing history cannot become a new transaction.
+An unused journal left by failed context admission can resume only after exact
+initial re-preflight; a full matching context can be adopted, partial bytes stay
+preserved. All private actions leave public ingress suspended.
+
+Actual Mac command/journal/context/process/host-release checks pass222/1.53s;
+Linux202/20 unprivileged-only fixture skips1.86s (WSL UID0). Windows command/
+journal/process/scope checks pass247/46 POSIX skips0.72s. Tests use real protected
+files, context/journal leases and fresh recovery selection, with verified closures
+and service effects simulated; CLI option/authentication ordering is checked
+separately. A changed journal base between historical read and lease is refused.
+The first native run correctly rejected stale preflight using the entry's base
+ValueError; its test expected a narrower subtype and was corrected without
+changing the guard. The priorff8ad5c7 CI44014012524 completed successfully.
+
+Mac source synchronization initially failed at111MiB free. An unused generated
+acceptance copy build/public-workshop-acceptance-c662/retry-runtime-260d was
+verified canonical, task-contained, owner-matching and unopened, then removed
+(1412 files/544809960 logical bytes). Free space rose to664117248 bytes. The
+authoritative build/game data and all live workshop data/keys were untouched.
+This permits focused code tests but is still below the live host's enforced2GiB
+minimum. Public restoration/HTTPS acceptance, reboot recovery, pending-forward
+reversal resolution and installed deployment/full creator/game/SDK/multiplayer/
+release acceptance remain unfinished. No production job or route was changed.
+
 Persisted upgrade context/reconstruction (2026-11-16; source105a7bf9/dbff3ec7;
 not deployed): mod_host_upgrade_context seals canonical Root600 metadata under
 Root700 upgrade-contexts (32 files,64KiB each) before the first transaction event.
