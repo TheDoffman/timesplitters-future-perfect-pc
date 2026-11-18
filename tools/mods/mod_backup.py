@@ -192,18 +192,15 @@ def snapshot(repository, destination, *, maximum_total=MAX_TOTAL):
     return {'backup': str(output), 'files': len(files), 'bytes': total}
 
 
-def backup_manifest(backup):
-    """Strict layout/metadata preflight without changing or trusting payloads."""
-    source = private_directory(backup)
-    regular(source / MANIFEST, 4 * 1024**2)
-    manifest = read_json((source / MANIFEST).read_bytes())
+def checked_manifest(manifest):
+    """Validate the bounded snapshot inventory without opening payload paths."""
     require(isinstance(manifest, dict) and set(manifest) == {'schema', 'created', 'files'} and type(manifest['schema']) is int
             and manifest['schema'] == 1 and type(manifest['created']) is int, 'Invalid backup manifest')
     files = manifest['files']
     require(isinstance(files, dict) and 0 < len(files) <= MAX_FILES and 'catalog.sqlite' in files, 'Invalid backup inventory')
     total = 0
     for name, record in files.items():
-        require(name == 'catalog.sqlite' or re.fullmatch(r'blobs/[0-9a-f]{64}\.zip|incoming/[0-9a-f]{32}\.ready', name),
+        require(isinstance(name, str) and (name == 'catalog.sqlite' or re.fullmatch(r'blobs/[0-9a-f]{64}\.zip|incoming/[0-9a-f]{32}\.ready', name)),
                 'Unexpected backup path')
         require(isinstance(record, dict) and set(record) == {'sha256', 'size'}
                 and isinstance(record['sha256'], str) and SHA.fullmatch(record['sha256'])
@@ -211,6 +208,16 @@ def backup_manifest(backup):
                 'Invalid backup file metadata')
         total += record['size']
     require(total <= MAX_TOTAL, 'Backup storage budget exceeded')
+    return total
+
+
+def backup_manifest(backup):
+    """Strict layout/metadata preflight without changing or trusting payloads."""
+    source = private_directory(backup)
+    regular(source / MANIFEST, 4 * 1024**2)
+    manifest = read_json((source / MANIFEST).read_bytes())
+    total = checked_manifest(manifest)
+    files = manifest['files']
     # Fixed three-level layout only. Never follow a link or accept extra files.
     observed = set()
     for entry in source.iterdir():

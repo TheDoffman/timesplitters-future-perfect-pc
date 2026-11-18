@@ -44,6 +44,7 @@
       "tests/mods/test_portable_recovery.py",
       "tests/mods/test_backup_recipient.py",
       "tests/mods/test_backup_cipher.py",
+      "tests/mods/test_backup_archive.py",
       "tests/mods/test_wave_input.py",
       "tests/mods/test_audio_source.py",
       "tests/mods/test_audio_assets.py",

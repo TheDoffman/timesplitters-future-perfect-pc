@@ -28,7 +28,7 @@ MAGIC=b'TSFPBE1\n'
 TYPE='tsfp-backup-file-v1'
 DOMAIN=b'TSFP-BACKUP-FILE-V1\0'
 CHUNK=1024*1024
-MAX_PLAIN=8*1024**3
+MAX_PLAIN=8*1024**3+1024**2+12  # Snapshot payload budget plus bounded archive framing.
 MAX_HEADER=4096
 MIN_FREE=2*1024**3
 MAX_WIRE=MAX_PLAIN+16*((MAX_PLAIN+CHUNK-1)//CHUNK+1)+32+MAX_HEADER+len(MAGIC)+4
@@ -125,6 +125,19 @@ def wire_size(header,length):
 
 
 def encrypt_file(source,destination,recipient,service_origin,pin,*,plain_bytes,plain_sha256):
+    with incoming(source,MAX_PLAIN) as (input,size,stable):
+        require(size==plain_bytes,'Verified backup size differs before encryption')
+        return encrypt_stream(input,destination,recipient,service_origin,pin,
+                              plain_bytes=plain_bytes,plain_sha256=plain_sha256,verify_source=stable)
+
+
+def encrypt_stream(input,destination,recipient,service_origin,pin,*,plain_bytes,plain_sha256,verify_source):
+    """Encrypt a trusted bounded reader, checking its preverified digest at EOF.
+
+    Readers must return requested lengths (or EOF); verify_source must refuse any
+    source/inventory change. No plaintext archive or unbounded buffer is created.
+    """
+    require(callable(verify_source),'A source stability check is required')
     checked_sha(plain_sha256)
     require(type(plain_bytes) is int and 0<=plain_bytes<=MAX_PLAIN,'Invalid backup plaintext size')
     recipients.checked_public(recipient,service_origin,pin)
@@ -135,19 +148,17 @@ def encrypt_file(source,destination,recipient,service_origin,pin,*,plain_bytes,p
         salt=b64(secrets.token_bytes(32)),nonce=b64(secrets.token_bytes(8)),plain_bytes=plain_bytes)
     wire=encode(header);checked_header(wire,service_origin,pin);cipher=derive(ephemeral.exchange(public),header,wire)
     encrypted=hashlib.sha256();plain=hashlib.sha256()
-    with incoming(source,MAX_PLAIN) as (input,size,stable):
-        require(size==plain_bytes,'Verified backup size differs before encryption')
-        with outgoing(destination,wire_size(header,len(wire))) as output:
-            def write(data):output.write(data);encrypted.update(data)
-            write(MAGIC+struct.pack('>I',len(wire))+wire)
-            index=0;remaining=size
-            while remaining:
-                length=min(CHUNK,remaining);data=input.read(length)
-                require(len(data)==length,'Backup plaintext was truncated')
-                nonce,aad=parameters(header,wire,index,length);write(cipher.encrypt(nonce,data,aad));plain.update(data)
-                remaining-=length;index+=1
-            require(input.read(1)==b'' and plain.hexdigest()==plain_sha256,'Verified backup plaintext changed')
-            stable();nonce,aad=parameters(header,wire,index,0);write(cipher.encrypt(nonce,plain.digest(),aad))
+    with outgoing(destination,wire_size(header,len(wire))) as output:
+        def write(data):output.write(data);encrypted.update(data)
+        write(MAGIC+struct.pack('>I',len(wire))+wire)
+        index=0;remaining=plain_bytes
+        while remaining:
+            length=min(CHUNK,remaining);data=input.read(length)
+            require(len(data)==length,'Backup plaintext was truncated')
+            nonce,aad=parameters(header,wire,index,length);write(cipher.encrypt(nonce,data,aad));plain.update(data)
+            remaining-=length;index+=1
+        require(input.read(1)==b'' and plain.hexdigest()==plain_sha256,'Verified backup plaintext changed')
+        verify_source();nonce,aad=parameters(header,wire,index,0);write(cipher.encrypt(nonce,plain.digest(),aad))
     return dict(schema=1,phase='backup-file-encrypted',bytes=wire_size(header,len(wire)),plain_bytes=plain_bytes,
                 plain_sha256=plain_sha256,cipher_sha256=encrypted.hexdigest(),key_id=recipient['key_id'])
 

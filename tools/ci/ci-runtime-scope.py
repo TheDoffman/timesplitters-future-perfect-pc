@@ -92,6 +92,7 @@ CPU_TOOLS = {
     'tests/mods/test_portable_recovery.py',
     'tools/mods/mod_backup_recipient.py', 'tests/mods/test_backup_recipient.py',
     'tools/mods/mod_backup_cipher.py', 'tests/mods/test_backup_cipher.py',
+    'tools/mods/mod_backup_archive.py', 'tests/mods/test_backup_archive.py',
     'tools/mods/hosting/locked-service-bootstrap-mac.py', 'tests/mods/test_locked_service_bootstrap.py',
     'tools/mods/mod_server.py', 'tools/mods/mod-workshop.py',
     'tools/mods/mod_publication.py', 'tools/mods/hosting/host-mac.py',

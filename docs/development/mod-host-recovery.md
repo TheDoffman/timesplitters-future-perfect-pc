@@ -43,6 +43,40 @@ or other authenticated transfer, receiver retention, unattended scheduling,
 production key custody and an off-device restore drill still need integration
 and deployment. Component checks do not establish automatic backup operation.
 
+## Streaming snapshot archives
+
+`mod_backup_archive.encrypt_snapshot` connects verified POSIX snapshots to the
+recipient file cipher. It first verifies SQLite/schema/references and every
+snapshot file, then hashes the deterministic archive stream and encrypts a fresh
+stream while rechecking every file and inventory. Bounded reads avoid creating
+a second plaintext archive on the host. It returns private local metadata only;
+transport, authenticated receiver receipts and scheduling remain separate work.
+
+The framing is fixed magic `TSFPBA1\n`, a big-endian32-bit canonical JSON manifest
+length (maximum1MiB), the strict existing snapshot manifest, and concatenated
+payloads in sorted inventory order. There are no archive-provided file headers,
+permissions, links or executable hooks. The existing4096-member/8GiB payload and
+per-file ceilings remain; the encryption ceiling includes the bounded manifest
+and12-byte framing overhead so a maximum-size snapshot remains representable.
+
+On a POSIX recovery host, first call `decrypt_file` with the independently
+authenticated ciphertext SHA. Pass its returned private plaintext SHA to
+`unpack_snapshot`; never take this digest from an untrusted archive. Extraction
+checks hash/framing/inventory/size before creating a new0700 directory, refuses
+all existing destinations, checks2GiB headroom, writes only fixed allowed names
+as0600 files, verifies each hash and rechecks the actual consumed archive digest.
+The manifest is written after all members verify. Partial output is preserved
+and must not be adopted. Full snapshot/database verification is still required
+before success. This is a private snapshot, not a serving repository: the normal
+`mod_backup.restore` authentication reset and publication-reconciliation barrier
+remain mandatory. Windows retains ciphertext; extraction is POSIX host recovery.
+
+`test_backup_archive.py` checks a real SQLite/blob snapshot through encryption,
+decryption, extraction and conservative restore, plus traversal, duplicate JSON,
+noncanonical/oversized metadata, truncation/trailing bytes, wrong receipts,
+corrupt members, inventory mutation, existing targets and low-space refusal.
+These are component checks, not production transfer/deployment acceptance.
+
 ## Recipient-encrypted file staging
 
 `mod_backup_cipher.encrypt_file` and `decrypt_file` implement the bounded file
@@ -55,7 +89,7 @@ are refused. Failure keeps private partial output for inspection; its existence
 is not completion and it must never be restored or adopted automatically.
 
 The version1 framing uses a canonical4KiB-bounded header with recipient/profile,
-plaintext length (up to8GiB), ephemeral public key,32-byte salt and8-byte nonce
+plaintext length (8GiB payload plus1MiB+12 bytes archive framing), ephemeral public key,32-byte salt and8-byte nonce
 prefix. A fresh X25519 exchange feeds HKDF-SHA256 with a file-specific header
 binding. Each at-most1MiB AES-256-GCM chunk uses the prefix plus a unique32-bit
 big-endian counter; associated data binds domain/header/index/plain chunk length.
