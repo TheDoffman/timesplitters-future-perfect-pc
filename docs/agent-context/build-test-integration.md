@@ -16,6 +16,11 @@ Pending forward configuration/archive/install/boot/completion cases now request
 explicit rollback resume: finish only the known forward effect, refresh authority
 when needed, then reverse without starting any candidate jobs. Native fixtures
 cover intent/result loss and expired proofs for all these boundaries.
+test_host_reboot_observation.py uses real protected boot/backup files with fake
+launchd and numeric process samples. Mixed verified generations and absent jobs
+are observations only; pre-boot PIDs cannot enter its API. Unknown origins,
+escaped service processes, file/PID/boot changes and backup rebinding are refused.
+The module/tests select native CI; cross-boot journal takeover is not implemented.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

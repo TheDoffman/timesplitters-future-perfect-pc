@@ -114,6 +114,7 @@ CPU_TOOLS = {
     'tools/mods/mod_live_publication.py', 'tools/mods/hosting/live-publication-mac.py', 'tests/mods/test_live_publication.py',
     'tools/mods/mod_host_watch.py', 'tests/mods/test_publication_service.py',
     'tools/mods/mod_host_cutover.py', 'tests/mods/test_host_cutover.py',
+    'tools/mods/mod_host_reboot_observation.py', 'tests/mods/test_host_reboot_observation.py',
     'tools/mods/mod_host_routing.py', 'tests/mods/test_host_routing.py',
     'tools/mods/mod_host_cutover_journal.py', 'tests/mods/test_host_cutover_journal.py',
     'tools/mods/mod_host_upgrade_admission.py', 'tests/mods/test_upgrade_admission.py',

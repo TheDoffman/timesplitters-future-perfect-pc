@@ -36,6 +36,20 @@ separately from the file. It does not back up the repository.
 
 ## Upgrading the deployed generation
 
+The internal `mod_host_reboot_observation.observe` reader is the fresh-observation
+part of reboot recovery. The immutable caller must first verify both release
+closures and hold the original recovery lease. It accepts the prior boot identity,
+never prior PID/group tracking. It verifies all ten protected boot files and the
+unchanged generated backup job against the two fixed factory outputs, reports
+each known generation independently, binds loaded commands to their actual
+protected origin, and observes labels twice around a fresh numeric process sample.
+Escaped dedicated-UID workers and changing jobs/files/boot identity are refused.
+The report permits absent jobs and a known mix of boot generations; it does not
+claim those services are healthy or the monitor tree is complete. Full monitor/
+layout re-admission and explicit cross-boot journal takeover remain pending.
+This reader writes nothing, starts or stops nothing, and grants no migration,
+public-restoration or settlement authority. Existing same-boot guards remain.
+
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
 requires `--host-release` with an exact installed identity. The newly verified
