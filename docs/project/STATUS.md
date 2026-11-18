@@ -1,3 +1,56 @@
+Immutable encrypted exports and operator SSH reception (2026-11-18;
+sourced50b4d57; not deployed): new-only private two-file bundles commit canonical
+bounded receipts only after ciphertext hash/size/recipient/framing verification.
+Metadata contains no plaintext hashes, inventory, secrets or local paths. Fixed
+binary transfer framing supports fragmented bounded reads, strict authority and
+size/profile checking, no trailing bytes and completion only after successful
+authenticated sender exit. Partial/existing/foreign output remains preserved.
+Source actual-consumed ciphertext is checked again during sending. Source
+snapshots remain POSIX; private reception/inspection work on Windows as well.
+
+System SSH uses existing known-host trust, batch/strict checking, no host-key
+autoupdate, fresh nonmultiplexed sessions and no local commands/backgrounding,
+agent/X11/port forwarding. Fixed absolute remote paths are separately quoted
+(including Unicode/spaces/shell punctuation); aliases cannot contain options or
+shell syntax. A30-minute maximum child deadline, bounded two-chunk stdout queue,
+8KiB diagnostic ceiling and zero-exit gate precede receiver receipt commit. CLI
+export/verify/send/receive has binary-only send stdout and generic failure output.
+No password handling or arbitrary command option is exposed by the entry point.
+
+Windows export/transfer checks pass27 with1 POSIX-producer skip (36.13s). Final
+transport/CI selection at committed source passes183 in11.70s; Linux passes205
+combined checks in1.41s. These cover fragmented multi-chunk receive/decryption,
+malformed/duplicate/noncanonical/foreign receipts, payload/header corruption,
+truncation/trailing data, incomplete/foreign/existing output, real process timeout,
+noisy/failed senders after valid bytes, bounded pipes and operator CLI stdout.
+Context/compile/whitespace checks pass. Windows first test run preceded the final
+SSH/pipe refinements; its unchanged exporter checks and final transport rerun
+are distinguished here rather than claiming one final combined Windows run.
+
+Mac source synced cleanly, but free space fell to about1.55GiB. The real2GiB
+reserve correctly refused fixture encryption:179 selected read-only/scope checks
+pass and26 fixture setups error solely at reserve checks. No limit was weakened.
+Original sudo PID29803 remains live after1d21h48m; no duplicate prompt/protected
+operation occurred. Read-only cache inspection found two unused duplicate OBS
+32.2.2 installer copies (952524800 allocated bytes total), with installed OBS32.1.2
+intact. Explicit user cleanup choice is pending; those caches are not deleted.
+
+A Linux-produced disposable snapshot export was copied privately to the Mac for
+its read-only sender test while local producer capacity is unavailable. Actual
+Windows receive CLI ran system OpenSSH to that sender, committed an exact matching
+1070107-byte encrypted bundle and decrypted with its real DPAPI-protected fixture
+key. Effective ssh -G policy confirms strict/batch, no forwarding/local command,
+backgrounding or multiplex master. The received Windows copy returned to Linux,
+recovered using the portable key without Windows account access or decrypted
+key files, then extracted/restored two files with the publication barrier and
+fresh scan/review requirement retained. CipherSHA256:
+296a50aef09fcd8f7137d92343b47defe25ad77065bda242047d984d52ee4ca0.
+Fixture export4804f680ac354d94aa34b9e3c7e9a63b; no production recipient/data used.
+This proves an actual operator transfer, not Mac local producer capacity,
+protected installation, least-privilege production read access, retention,
+scheduling or production disaster recovery. Frozen9e3 and all live jobs/routing
+remain unchanged. Full goal, physical reboot and public release remain pending.
+
 Streaming encrypted snapshot export (2026-11-18; source6f173278; not deployed):
 mod_backup_archive connects verified POSIX SQLite/blob snapshots to bounded
 recipient encryption without a second plaintext archive on the source host.
