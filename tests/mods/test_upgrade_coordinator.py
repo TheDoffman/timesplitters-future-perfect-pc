@@ -331,14 +331,35 @@ def test_cancel_prepared_layout_before_migration_readmits_original_services_with
     assert (item.flow.case.root/'monitor/deployments/old-receipt.json').exists()
 
 
-def test_pending_forward_migration_is_not_reinterpreted_as_rollback(machine,monkeypatch):
-    item=machine;record=item.state.record
+@pytest.mark.parametrize('phase',['migration-intent','migration-observed','archive-intent','archive-observed',
+                                 'install-intent','install-observed','boot-intent','boot-observed','layout-complete'])
+def test_pending_forward_effect_is_completed_in_its_original_direction_before_explicit_rollback(machine,monkeypatch,phase):
+    item=machine;record=item.state.record;failed=[]
     def interrupt(kind,*args,**kwargs):
-        if kind=='migration-observed':raise OSError('lost forward migration result')
+        label=args[0] if args else None
+        selected=kind==phase if phase.startswith(('migration-','layout-')) else (
+            kind=='layout-'+phase.rsplit('-',1)[1] and isinstance(label,str)
+            and (label=='apply-'+phase.split('-')[0] if not phase.startswith('boot-')
+                 else label.startswith('apply-org.timesplitters.')))
+        if selected and not failed:
+            failed.append(True)
+            if kind.endswith('-intent'):record(kind,*args,**kwargs)
+            raise OSError('lost forward phase')
         return record(kind,*args,**kwargs)
     with monkeypatch.context() as patch:
         patch.setattr(item.state,'record',interrupt)
         with pytest.raises(OSError):coordinator.apply_private(item.state,item.context)
     committed=item.state.current
-    with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context,resume=True)
+    assert failed and not item.starts and not item.kills
+    with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context)
     assert item.state.current==committed and not item.starts and len(item.captures)==1
+    item.flow.now[0]+=1000
+    result=coordinator.rollback_private(item.state,item.context,resume=True)
+    assert result['generation']=='before' and item.flow.private==['before']
+    assert item.state.state()['config_pending'] is None and item.state.state()['layout_pending'] is None
+    assert item.stops==storage.stop_order() and item.starts==storage.start_order() and item.kills==storage.restart_order()
+    assert item.scans==['a'*64] and len(item.captures)==(3 if phase.startswith('migration-') else 2)
+    assert item.flow.calls[-1]=='rollback' and 'apply' in item.flow.calls
+    item.state.require_suspended(item.context['operator'])
+    coordinator.restore_public(item.state,item.context)
+    assert item.state.state()['settled']

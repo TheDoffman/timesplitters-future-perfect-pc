@@ -12,6 +12,10 @@ forward/reverse public restoration, lost observation/settlement and expired resu
 must not repeat routing/jobs. Replay mutations reject typed-time/identity/role/
 floor changes, unrecorded exposure, missing public evidence and stale settlement.
 test_upgrade_command.py checks existing-only authenticated restoration dispatch.
+Pending forward configuration/archive/install/boot/completion cases now request
+explicit rollback resume: finish only the known forward effect, refresh authority
+when needed, then reverse without starting any candidate jobs. Native fixtures
+cover intent/result loss and expired proofs for all these boundaries.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

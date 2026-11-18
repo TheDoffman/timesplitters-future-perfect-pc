@@ -277,12 +277,19 @@ instead requires fresh quiescence/capture/proof before the locked idempotent
 step. Pending startup/restart effects remain observation-only on resume. Initial
 old-job shutdown now also never repeats a bootout with a durable pending intent;
 a still-loaded pending job remains unresolved until authoritative absence. This
-internal composer neither exposes a CLI nor performs automatic rollback on error.
+composer is used by the explicit CLI and never guesses an automatic rollback.
 
 The separate internal `rollback_private` reverses a completed candidate layout,
 including interrupted candidate startup/restart and pending reverse effects.
-Pending forward configuration/file operations must first be resolved in their
-original direction; a settled or restored public transaction is not reused.
+With explicit `--rollback-private --resume`, pending forward configuration/file
+operations are first resolved in their original direction under observed
+quiescence. A pending migration result requires a fresh retained-runtime capture
+and proof; a known mixed file exchange completes from its recorded intent without
+inventing private migration authority through mixed files. Candidate jobs are
+never started just to permit reversal. Once the forward layout is fully observed,
+ordinary reversal restores the old tree and refreshes authority for private
+rollback. An ordinary rollback without resume preserves the pending effect and
+refuses it. A settled or restored public transaction is not reused.
 The caller still owns the exact same-boot Root lease/context. Known candidate
 jobs stop through journaled shutdown, followed by a bounded monitor checkpoint.
 The old monitor/boot files are restored before a fresh retained-runtime capture

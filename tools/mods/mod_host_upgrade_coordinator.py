@@ -1,7 +1,7 @@
 """Compose verified upgrade phases under the caller's already-held Root lease.
 
-No CLI imports this until installed recovery is integrated. Closure verification
-and journal creation belong to the immutable entry point, before calling here.
+Closure verification and journal/context admission belong to the immutable entry
+point, before calling here. Private and public phases are explicitly selected.
 Failures preserve the pending history and suspended ingress for explicit recovery.
 """
 import os
@@ -102,8 +102,9 @@ def apply_private(journal,context,*,resume=False):
 def rollback_private(journal,context,*,resume=False):
     """Reverse a completed candidate layout and admit the preserved old services.
 
-    Finish pending forward migration/file exchange in its original direction
-    first. This phase accepts pending candidate startup/restart/shutdown and
+    Explicit resume resolves pending forward migration/file exchange in its
+    original direction before reversal, without starting candidate jobs. This
+    phase also accepts pending candidate startup/restart/shutdown and
     pending reverse effects. It never restores repository data from a backup:
     the old service must pass readiness against the retained current data.
     """
@@ -111,8 +112,8 @@ def rollback_private(journal,context,*,resume=False):
     checked_context(journal,context)
     state=journal.state();base=journal.base
     require(not state['settled'] and not state['routing_restored'] and state['routing_pending'] is None
-            and state['layout_sha256'] is not None and state['config_pending'] in (None,'rollback')
-            and (state['layout_pending'] is None or state['layout_pending'].startswith('rollback-'))
+            and state['layout_sha256'] is not None and state['config_pending'] in (None,'apply','rollback')
+            and (state['layout_pending'] is None or state['layout_pending'].startswith(('apply-','rollback-')))
             and state['private_baseline']==context['private_baseline'],
             'Resolve forward or routing recovery before reversing a prepared upgrade')
     history=read_json(journal.current)['events']
@@ -122,12 +123,27 @@ def rollback_private(journal,context,*,resume=False):
         event['kind'] in ('migration-intent','layout-intent','layout-complete')
         and isinstance(event['label'],str) and event['label'].startswith('rollback') for event in history)
     require(resume or not reversing,'An existing reversal requires explicit recovery')
+    forward_pending=(state['config_pending']=='apply'
+        or (state['layout_pending'] is not None and state['layout_pending'].startswith('apply-'))
+        or (not reversing and state['config']=='after' and state['layout_complete']!='after'))
+    require(not forward_pending or (resume and not reversing and state['quiescent'] and not state['started']
+            and state['start_pending'] is None and state['shutdown'] is None and state['retire_pending'] is None),
+            'Pending forward effects require explicit quiescent resolution before rollback')
     invoke,command=context['operator'],context['command']
     journal.require_suspended(invoke)
     old_entries,new_entries=context['entries'],context['candidate_entries']
     exchange=layouts.Layout(journal,context['old']['root'],context['new']['root'],old_entries,new_entries)
     exchange.reopen(state['layout_sha256'])
     gate=lambda:layouts.quiescence_gate(journal,old_entries,command,invoke)
+    if forward_pending:
+        gate()
+        if state['config']=='before' or state['config_pending']=='apply':
+            admission.capture_and_admit(journal,old_entries,context['backup_runtime'],context['new'],
+                context['profile'],context['plan'],invoke,command)
+        layouts.configuration_and_exchange(journal,context['new'],exchange,'apply',gate,resume=True)
+        state=journal.state()
+        require(state['config']=='after' and state['layout_complete']=='after' and state['layout_pending'] is None
+                and state['config_pending'] is None,'Forward effects remain unresolved; preserving them before rollback')
     if state['config']=='after' and state['layout_complete']=='after':
         if state['retire_pending'] is not None:
             require(resume,'Pending proof retirement requires explicit recovery')
