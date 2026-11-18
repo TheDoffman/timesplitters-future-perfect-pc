@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "1dc634d77e7396b26eca6f4fdd884db9fce795581e9d52ad1a059889a113b120",
+  "loaderSha256": "de19b96d8dada3564ffb0908bf62be9f5e822cdf0a2d81f93eefe7c99962a758",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -3929,6 +3929,17 @@
         "src/hle/hle_d3d8.c",
         "src/hle/hle_d3d8_record.c",
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "3040-vsync-settings.patch",
+      "path": "patches/graphics/rendering/3040-vsync-settings.patch",
+      "sha256": "0f3a50d8787aaa997e82b1ecf22ece1bfec731588a325bea7e9ccbd91f1e2273",
+      "targets": [
+        "src/config/recomp_config.c\r",
+        "src/config/recomp_config.h\r",
+        "src/d3d/d3d8_device.c\r",
+        "src/d3d/d3d8_gl.c\r"
       ]
     }
   ]

@@ -1,3 +1,7 @@
+V-Sync: shared Display checkbox/GameSettings.VSync persists runtime.conf `vsync`;
+Save/Cancel, draft tracking and transactions are shared by WPF/Avalonia. FPS/VRR
+choices remain independent. See [Video Options](video-options.md#optional-v-sync-2026-11-17).
+
 [Sync telemetry](network-sync-telemetry.md).
 Integration version policy (2026-11-17): native multiplayer merges into main
 with VERSION0.6.2, per user request. Main's0.6.3-sun-fix.1 was accidental;

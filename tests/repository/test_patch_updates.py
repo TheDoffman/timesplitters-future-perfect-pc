@@ -168,9 +168,9 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
-        if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
+        if patch.name in ('3040-vsync-settings.patch', '2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
         if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch', '2401-linux-vulkan-foundation.patch', '2402-linux-native-game.patch', '2403-linux-native-crypto.patch', '2404-linux-hle-renderer.patch', '2405-linux-runtime-link.patch', '2406-native-vblank-alias.patch', '2407-vulkan12-compatibility.patch', '2408-vulkan-descriptor-capacity.patch', '2409-linux-late-frame-pacing.patch', '2411-vulkan-upload-efficiency.patch', '2412-native-desktop-media.patch'):
@@ -246,9 +246,9 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
-        if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
+        if patch.name in ('3040-vsync-settings.patch', '2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
         if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch', '2401-linux-vulkan-foundation.patch', '2402-linux-native-game.patch', '2403-linux-native-crypto.patch', '2404-linux-hle-renderer.patch', '2405-linux-runtime-link.patch', '2406-native-vblank-alias.patch', '2407-vulkan12-compatibility.patch', '2408-vulkan-descriptor-capacity.patch', '2409-linux-late-frame-pacing.patch', '2411-vulkan-upload-efficiency.patch', '2412-native-desktop-media.patch'):
@@ -373,9 +373,9 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
-        if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
+        if patch.name in ('3040-vsync-settings.patch', '2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
         if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch', '2401-linux-vulkan-foundation.patch', '2402-linux-native-game.patch', '2403-linux-native-crypto.patch', '2404-linux-hle-renderer.patch', '2405-linux-runtime-link.patch', '2406-native-vblank-alias.patch', '2407-vulkan12-compatibility.patch', '2408-vulkan-descriptor-capacity.patch', '2409-linux-late-frame-pacing.patch', '2411-vulkan-upload-efficiency.patch', '2412-native-desktop-media.patch'):
@@ -436,9 +436,9 @@ def texture_branch_patches(tmp_path):
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
-        if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
+        if patch.name in ('3040-vsync-settings.patch', '2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
         if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch',
@@ -457,9 +457,9 @@ def main_branch_patches(tmp_path):
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
-        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
+        if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
-        if patch.name in ('2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
+        if patch.name in ('3040-vsync-settings.patch', '2470-smaa-antialiasing.patch', '2240-arcade-kill-feed.patch', '2480-kill-feed-attribution.patch',
                           '2480-kill-feed-firing-scope.patch'):
             continue  # These historical subsets predate SMAA and the optional feed/wrappers.
         if patch.name in ('2090-repository-source-layout.patch', '2140-native-online.patch',
@@ -732,7 +732,7 @@ def test_graphics_branch_round_trip_preserves_local_edits(checkout, tmp_path, cr
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
-        if patch.name in ('2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
+        if patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
             continue  # This baseline predates shared MSAA/effect-depth dependencies.
         if not (prefix.isdigit() and 2495 <= int(prefix) <= 2517):
             shutil.copyfile(patch, baseline / patch.name)

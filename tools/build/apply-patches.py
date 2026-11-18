@@ -355,6 +355,13 @@ def patch_records(paths):
             paths.remove(pause_patch)
             paths.append(pause_patch)
 
+    # V-sync extends the final config and shared presentation paths, including
+    # late SMAA/native HUD and control-rollback compatibility context.
+    vsync = by_name.get('3040-vsync-settings.patch')
+    if vsync:
+        paths.remove(vsync)
+        paths.append(vsync)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
