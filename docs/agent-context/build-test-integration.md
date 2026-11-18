@@ -60,6 +60,11 @@ event-time freshness and original/current lease refusal. New boot readiness must
 be established afresh; original transaction/directions/catalog floor stay bound.
 The shared reboot command fixture validates reboot stop intent before admission;
 after admission it delegates to the ordinary shutdown fixture's own intent checks.
+Applied-upgrade/reboot/forward/rollback/public settlement exceeds the old256-event
+limit;512 events remain bounded by the unchanged128KiB journal cap. The composed
+case checks successful complete history, and ordinary flow still tests exhaustion.
+Proof metadata rejects malformed/cross-boot capture bindings; a reused old PID
+owned by an unrelated user must not become current cleanup authority.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

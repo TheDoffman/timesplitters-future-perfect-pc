@@ -16,7 +16,9 @@ import mod_host_cutover_journal as storage
 import mod_host_reboot_admission as admission
 import mod_host_reboot_checkpoint as checkpoints
 import mod_host_upgrade_activation as activation
+import mod_host_upgrade_admission as proofs
 import mod_host_upgrade_coordinator as coordinator
+import mod_host_upgrade_layout as layouts
 import mod_host_upgrade_shutdown as shutdown
 from mod_package import ModError
 
@@ -50,6 +52,9 @@ def test_new_boot_preserves_history_and_reestablishes_private_startup_before_pub
     result=coordinator.restore_public(state,case.fresh,resume=True)
     assert result['generation']==('before' if reverse else 'after') and state.state()['settled']
     assert state.base==case.original_base and storage.operational_boot(state)=='e'*64
+    if reverse and any(event['kind']=='layout-prepared' for event in original):
+        assert 256<len(json.loads(state.current)['events'])<=storage.MAX_EVENTS
+    assert len(state.current)<=storage.MAX_BYTES
 
 
 def test_admission_retains_historical_checkpoint_after_layout_moves_and_expires_only_at_event(admitted):
@@ -88,3 +93,23 @@ def test_later_boot_or_missing_current_lease_cannot_use_admitted_history(admitte
     case.journal.observation_boot=None
     with pytest.raises(ModError):storage.operational_boot(case.journal)
     with pytest.raises(ModError):case.journal.record('settled')
+
+
+def test_migration_proof_requires_capture_and_quiescence_from_its_own_boot(admitted):
+    case=admitted;base=case.journal.base;frame=case.journal.state();report=frame['backup']
+    value=dict(schema=1,producer=proofs.PRODUCER,**{key:base[key] for key in ('before','after','uid','nonce','plan_sha256')},
+        backup_sha256=report['verified_manifest_sha256'],time=int(case.journal.clock()),stopped_jobs=proofs.migration.jobs(),
+        quiesced_at=frame['quiesced_at'],backup_verified_at=report['finished'],boot_id='e'*64)
+    assert proofs.checked_existing(case.journal,storage.wire(value))==value
+    for boot in ('f'*64,'9'*64,[],True):
+        with pytest.raises(ModError):proofs.checked_existing(case.journal,storage.wire(dict(value,boot_id=boot)))
+
+
+def test_quiescence_ignores_an_unrelated_reused_preboot_pid(admitted):
+    case=admitted;command=case.fresh['command']
+    assert 100 in case.journal.base['tracked']['pids'] and 100 not in storage.operational_tracking(case.journal)['pids']
+    def reused(argv):
+        code,output=command(argv)
+        if argv[0]=='/bin/ps':output+='100 1 100 501\n'
+        return code,output
+    layouts.quiescence_gate(case.journal,case.fresh['candidate_entries'],reused,case.fresh['operator'])

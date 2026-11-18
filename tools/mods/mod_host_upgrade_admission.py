@@ -41,6 +41,7 @@ def checked_existing(journal,data):
             and value['producer']==PRODUCER and all(type(value[k]) is type(base[k]) and value[k]==base[k]
                 for k in ('before','after','uid','nonce','plan_sha256'))
             and value['stopped_jobs']==migration.jobs()
+            and isinstance(value['boot_id'],str) and storage.SHA.fullmatch(value['boot_id'])
             and all(type(value[k]) is int for k in ('time','quiesced_at','backup_verified_at'))
             and 0<=value['quiesced_at']<=value['backup_verified_at']<=value['time']<=journal.clock()
             and (value['quiesced_at'],value['boot_id']) in quiesced and any(record['verified_manifest_sha256']==value['backup_sha256']

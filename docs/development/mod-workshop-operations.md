@@ -641,7 +641,7 @@ restored old directory needs explicit fresh capture before private rollback.
 
 Catalog floor is retained across shutdown/reverse/restart. The old generation
 must again retire proof, pass AV, load fixed jobs, complete readiness/seven restarts
-and pass public-admission freshness gates. The full history now allows256 events/
+and pass public-admission freshness gates. The full history now allows512 events/
 128KiB per transaction, at most32 transactions; a complete post-start reversal
 exceeds128 events. These internal phases still require installed acceptance,
 reboot recovery and actual public restoration acceptance before live deployment.

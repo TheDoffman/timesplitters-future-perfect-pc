@@ -15,7 +15,7 @@ from mod_package import ModError, read_json, require
 
 MAX_JOURNALS = 32
 MAX_BYTES = 131072
-MAX_EVENTS = 256
+MAX_EVENTS = 512
 SHA = re.compile('[0-9a-f]{64}\\Z')
 
 
