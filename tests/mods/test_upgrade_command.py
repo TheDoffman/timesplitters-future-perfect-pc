@@ -61,7 +61,7 @@ def test_fresh_apply_seals_under_lease_and_recovery_uses_historical_context(comm
 
 def test_stale_preflight_and_missing_recovery_do_not_create_history_or_run_effects(command):
     item,entry,calls,run=command
-    with pytest.raises(ModError):run('apply',expected_preflight='0'*64)
+    with pytest.raises(ValueError,match='Fresh preflight differs'):run('apply',expected_preflight='0'*64)
     assert not (cutover.ROOT/'upgrades').exists() and not item['path'].exists() and calls==['initial']
     calls.clear()
     with pytest.raises(FileNotFoundError):run('resume')
