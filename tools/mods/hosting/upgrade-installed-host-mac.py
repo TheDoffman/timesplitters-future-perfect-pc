@@ -64,6 +64,7 @@ def verified_inputs(before,after,uid,backup_identity):
     # factories run in separate old-bound interpreters after credentials drop.
     required={'tools/mods/mod_host_upgrade_process.py','tools/mods/mod_host_upgrade_context.py','tools/mods/mod_host_cutover.py',
               'tools/mods/mod_host_cutover_journal.py','tools/mods/mod_host_upgrade_coordinator.py',
+              'tools/mods/mod_host_reboot_journal.py',
               'tools/mods/mod_host_upgrade_admission.py','tools/mods/mod_host_upgrade_activation.py',
               'tools/mods/mod_host_upgrade_layout.py','tools/mods/mod_host_upgrade_shutdown.py',
               'tools/mods/mod_host_migration.py','tools/mods/hosting/force-upgrade-backup-mac.py',

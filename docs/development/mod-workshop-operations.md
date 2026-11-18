@@ -89,6 +89,9 @@ require another fresh observation chained to the prior preparation boot while
 retaining the original journal header/context. Quiescence does not grant private
 migration, service startup, public restoration or settlement authority. Monitor/
 layout re-admission, fresh backup/proof and operational reboot CLI remain pending.
+The installed upgrade entry's mandatory verified-source inventory now includes
+the typed reboot journal parser, because reading any recovery history may select
+that parser. An incomplete candidate is refused before journal/OS effects.
 
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
