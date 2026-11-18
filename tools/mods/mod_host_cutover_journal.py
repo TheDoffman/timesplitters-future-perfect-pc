@@ -398,14 +398,20 @@ def checked(data, clock):
 
 
 class Journal:
-    def __init__(self, directory, fd, lock, name, base, clock, recover_pending=False):
+    def __init__(self, directory, fd, lock, name, base, clock, recover_pending=False,*,
+                 observation_boot=None,expected_history=None,allow_create=True,require_new=False):
         self.directory, self.fd, self.name, self.base, self.clock = directory, fd, name, base, clock
         self.lock = lock
+        self.observation_boot=observation_boot
         try:
             self.current = self._read()
         except FileNotFoundError:
+            if not allow_create:raise
             self.current = wire(dict(base, events=[]))
             self._new(name, self.current)
+        else:require(not require_new,'A new apply cannot adopt an existing journal')
+        require(expected_history is None or hashlib.sha256(self.current).hexdigest()==expected_history,
+                'Reboot history changed before acquiring its lease')
         self._decode(self.current)
         if recover_pending:self.recover_pending()
 
@@ -461,6 +467,8 @@ class Journal:
         return True
 
     def state(self):
+        require(self.observation_boot is None or boot_identity()==self.observation_boot,
+                'Current boot changed during reboot observation')
         require(self._read() == self.current, 'Cutover journal changed concurrently')
         return self._replay(self._decode(self.current)['events'])
 
@@ -476,6 +484,7 @@ class Journal:
         Settlement is recorded only after the caller verifies restoration or
         final activation, or when a prepared transaction made no service change.
         """
+        require(self.observation_boot is None,'Reboot observation lease cannot record upgrade effects')
         self.state()
         value = self._decode(self.current)
         value['events'].append(dict(kind=kind,label=label,time=int(self.clock()),data=data))
@@ -546,7 +555,7 @@ def recovery_arguments(nonce,before,after,uid,backup_identity,*,clock=time.time)
 
 
 @contextmanager
-def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracked, routing,backup_identity,backup_base_release, *, clock=time.time,recover_pending=False,existing_only=False,new_only=False):
+def _transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracked, routing,backup_identity,backup_base_release, *, clock=time.time,recover_pending=False,existing_only=False,new_only=False,observation_boot=None,original_boot=None,expected_history=None):
     require(os.geteuid() == cutover.ROOT_UID, 'Cutover journal requires root')
     require(all(isinstance(v, str) and SHA.fullmatch(v) for v in (before,after,nonce,plan_sha256,preflight_sha256,backup_identity,backup_base_release))
             and before != after and type(uid) is int and uid >= 600, 'Invalid cutover transaction identity')
@@ -554,6 +563,10 @@ def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracke
     routes.baseline(routing)
     require(all(type(v) is bool for v in (recover_pending,existing_only,new_only)) and not (existing_only and new_only),
             'Choose explicit journal creation or recovery')
+    observational=observation_boot is not None or original_boot is not None or expected_history is not None
+    require(not observational or (existing_only and not new_only and all(isinstance(v,str) and SHA.fullmatch(v)
+            for v in (observation_boot,original_boot,expected_history)) and original_boot!=observation_boot
+            and observation_boot==boot_identity()),'Invalid reboot observation lease')
     import fcntl
     if not existing_only:
         parent = cutover.protected_directory(cutover.ROOT)
@@ -590,8 +603,49 @@ def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracke
                     'Existing cutover requires recovery before another transaction')
         base = dict(schema=2,producer='tsfp-root-cutover-v2',before=before,after=after,uid=uid,
                     nonce=nonce,plan_sha256=plan_sha256,preflight_sha256=preflight_sha256,
-                    tracked=tracked,routing=routing,backup_identity=backup_identity,backup_base_release=backup_base_release,boot_id=boot_identity())
-        yield Journal(directory,fd,lock,name,base,clock,recover_pending)
+                    tracked=tracked,routing=routing,backup_identity=backup_identity,backup_base_release=backup_base_release,
+                    boot_id=original_boot if observational else boot_identity())
+        journal=Journal(directory,fd,lock,name,base,clock,recover_pending,observation_boot=observation_boot,
+            expected_history=expected_history,allow_create=not existing_only,require_new=new_only)
+        if observational:
+            require(not journal.state()['settled'] and boot_identity()==observation_boot,
+                    'Reboot observation requires unsettled history and the selected current boot')
+        yield journal
     finally:
         if lock is not None:os.close(lock)
         os.close(fd)
+
+
+@contextmanager
+def transaction(before,after,uid,nonce,plan_sha256,preflight_sha256,tracked,routing,backup_identity,backup_base_release,*,
+                clock=time.time,recover_pending=False,existing_only=False,new_only=False):
+    """Normal transactions retain their original strict same-boot admission."""
+    with _transaction(before,after,uid,nonce,plan_sha256,preflight_sha256,tracked,routing,backup_identity,backup_base_release,
+            clock=clock,recover_pending=recover_pending,existing_only=existing_only,new_only=new_only) as journal:
+        yield journal
+
+
+@contextmanager
+def reboot_observation_lease(nonce,before,after,uid,backup_identity,prior_boot,*,clock=time.time,recover_pending=False):
+    """Lease exact old metadata for fresh observation, never operational recovery.
+
+    A separately requested complete pending append may be promoted as metadata;
+    this does not prove any current OS effect. No upgrade event can be recorded,
+    and all existing operational same-boot guards remain in force.
+    """
+    require(os.geteuid()==cutover.ROOT_UID and isinstance(nonce,str) and SHA.fullmatch(nonce)
+            and isinstance(prior_boot,str) and SHA.fullmatch(prior_boot) and type(recover_pending) is bool,
+            'Choose an exact Root reboot observation')
+    current=boot_identity()
+    require(isinstance(current,str) and SHA.fullmatch(current) and current!=prior_boot,
+            'Reboot observation requires a different current boot')
+    path=cutover.ROOT/'upgrades'/(nonce+'.json')
+    payload,_=cutover.protected_bytes(path,0o600,MAX_BYTES);value=checked(payload,clock)
+    require(all(type(value[key]) is type(expected) and value[key]==expected for key,expected in
+                (('nonce',nonce),('before',before),('after',after),('uid',uid),('backup_identity',backup_identity),('boot_id',prior_boot))),
+            'Reboot history differs from the selected original transaction')
+    arguments={key:value[key] for key in ('before','after','uid','nonce','plan_sha256','preflight_sha256',
+        'tracked','routing','backup_identity','backup_base_release')}
+    with _transaction(**arguments,clock=clock,recover_pending=recover_pending,existing_only=True,
+            observation_boot=current,original_boot=prior_boot,expected_history=hashlib.sha256(payload).hexdigest()) as journal:
+        yield journal

@@ -50,6 +50,19 @@ layout re-admission and explicit cross-boot journal takeover remain pending.
 This reader writes nothing, starts or stops nothing, and grants no migration,
 public-restoration or settlement authority. Existing same-boot guards remain.
 
+`reboot_observation_lease` holds the same global Root lock while opening exact
+original history selected by nonce, releases, UID, backup and prior boot. A
+pre-lock history hash is rechecked under the lease; the original boot header and
+saved observations are preserved. The lease exposes the distinct current boot
+only for fresh observation and refuses every upgrade event. A complete validated
+single pending metadata append may be promoted only when explicitly requested;
+that promotion does not prove any current OS effect. Changed boots, missing or
+foreign histories and competing leases are refused. Normal transaction and
+operational same-boot guards are unchanged. Recovery constructors cannot recreate
+history that vanished after inventory, and new-only constructors cannot adopt a
+file that appeared after inventory. This metadata phase does not yet permit
+operational reboot takeover or expose a reboot CLI.
+
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
 requires `--host-release` with an exact installed identity. The newly verified

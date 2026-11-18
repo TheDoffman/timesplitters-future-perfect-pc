@@ -21,6 +21,10 @@ launchd and numeric process samples. Mixed verified generations and absent jobs
 are observations only; pre-boot PIDs cannot enter its API. Unknown origins,
 escaped service processes, file/PID/boot changes and backup rebinding are refused.
 The module/tests select native CI; cross-boot journal takeover is not implemented.
+test_reboot_observation_lease.py exercises original-history/boot preservation,
+global lease exclusion, explicit one-append metadata promotion, refused upgrade
+events, changed selection/boot and new-only/existing-only constructor races.
+Observation leases do not enable operational cross-boot recovery.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

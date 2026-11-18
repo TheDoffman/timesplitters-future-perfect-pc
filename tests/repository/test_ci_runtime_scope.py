@@ -152,6 +152,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tests/mods/test_host_cutover.py'], {'native'}),
     (['tools/mods/mod_host_reboot_observation.py'], {'native'}),
     (['tests/mods/test_host_reboot_observation.py'], {'native'}),
+    (['tests/mods/test_reboot_observation_lease.py'], {'native'}),
     (['tools/mods/mod_host_routing.py','tests/mods/test_host_routing.py'], {'native'}),
     (['tools/mods/mod_host_cutover_journal.py','tests/mods/test_host_cutover_journal.py'], {'native'}),
     (['tools/mods/mod_host_upgrade_coordinator.py','tests/mods/test_upgrade_coordinator.py'], {'native'}),

@@ -30,6 +30,7 @@
       "tests/mods/test_private_service_readiness.py",
       "tests/mods/test_public_service_readiness.py",
       "tests/mods/test_host_reboot_observation.py",
+      "tests/mods/test_reboot_observation_lease.py",
       "tests/mods/test_installed_scanner_admission.py",
       "tests/mods/test_public_host_profile.py",
       "tests/mods/test_windows_recovery.py",
