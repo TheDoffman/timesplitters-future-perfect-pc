@@ -104,8 +104,8 @@ history must remain unchanged; original migration proofs must be known historica
 evidence or have a recorded retained retirement. The original manifest/boot binding
 is never rewritten. The result reports positions and inventories only. This
 observation Layout refuses preparation, exchange and internal moves before any
-callback or write. Sealing/admitting the new checkpoint and granting ordinary
-post-reboot migration/startup authority remain separate unfinished steps.
+callback or write. Metadata checkpoint sealing is described below; granting
+ordinary post-reboot migration/startup authority remains unfinished.
 
 `mod_host_reboot_checkpoint.seal` repeats that read before and after writing a
 canonical Root600 checkpoint under Root700 `reboot-checkpoints` (at most32 files,
