@@ -101,6 +101,63 @@ producer/sender installation, schedule/failure delivery, physical Mac capacity a
 actual production restore/boot acceptance remain open. Frozen earlier host/backup
 bundles are unchanged and do not contain this new code.
 
+## Independent Windows runtime and scheduled reception
+
+`mod_backup_runtime` and `hosting/backup-schedule-windows.py freeze SOURCE OUTPUT`
+prepare a new private Windows x64 operator runtime from the active Python3.12
+installation and clean committed Git source. This copies the bounded standard
+library/DLLs, crypto dependencies with their licenses and the local worker import
+closure; it does not copy game assets, private keys, receiver data or the entire
+checkout. Existing output is never adopted/replaced. Partial preparation remains
+private for inspection. The output parent must already have the private
+current-user/SYSTEM ACL. Keep this outside OneDrive/cloud-managed game folders.
+
+`runtime.json` is the completion marker and records the source commit, exact
+Python version and all file sizes/SHA256s within4096 files/128MiB. The caller
+records its independent SHA256. The copied `python312._pth` allows only Lib,
+DLLs and the runtime itself, without site import; Task actions also pass-I-S-B.
+The stdlib-only bootstrap rejects aliases/hardlinks, changed/foreign files and
+directories, duplicate or unsafe manifest names, changed search paths and
+version/flag mismatches. It admits only fingerprinted source, attaches its
+Windows lifetime job before any helper, verifies the complete private ACL tree,
+then loads crypto. `--check-runtime` exercises actual AES-GCM under the isolated
+interpreter. No development Python, package installation, CWD or Codex session
+is required by the eventual scheduled action. This is account-scoped integrity
+and lifetime control, not isolation from the trusted Windows account itself.
+
+After a real worker receive and runtime check, prepare a separate schedule:
+
+```powershell
+python tools/mods/hosting/backup-schedule-windows.py prepare PRIVATE_SCHEDULE --runtime PRIVATE_RUNTIME --runtime-sha256 RECORDED_RUNTIME_SHA --control PRIVATE_WORKER --binding-sha256 RECORDED_BINDING_SHA
+python tools/mods/hosting/backup-schedule-windows.py install PRIVATE_SCHEDULE --schedule-sha256 RECORDED_SCHEDULE_SHA
+```
+
+Preparation requires a healthy recent worker and non-stale verified receiver
+copy. The immutable schedule pins its job UUID, Windows SID, runtime manifest,
+worker binding, canonical paths, exact pythonw action/arguments and UTC timer
+boundary. Install uses TASK_CREATE (no overwrite), InteractiveToken and least
+privilege. It stores no login password. The hourly timer plus logon catch-up
+uses IgnoreNew, StartWhenAvailable, no waking and a35-minute task limit; the
+worker's own32-minute hard deadline and kill-on-close job stop descendants.
+**Windows must be awake and this account logged in.** Unattended Mac capture
+still needs its separate protected persistent service.
+
+The task has only current-user/SYSTEM full control. Run/status/remove check its
+exact principal/action/description, settings, two fixed triggers and security
+descriptor. Foreign/changed tasks remain untouched. Existing registrations are
+never updated. `run`, `status` and `remove` take the same private schedule and
+its SHA256. Removal stops only this verified task and leaves runtime, worker,
+backups and schedule metadata intact. Status/removal use the trusted operator
+helper without executing the frozen runtime, so a damaged runtime can still be
+retired. Registration and explicit starts repeat fresh-backup/runtime admission.
+The public workshop, Mac services and existing user tasks are not selected.
+
+Source tests cover tampered inventories, import injection, changed action pins,
+new-only state and removal without executing damaged runtime code. Native
+Windows freeze/task/SSH acceptance is recorded in STATUS; source tests alone do
+not prove an installed or unattended production backup. Production recipient
+custody, protected capture/export jobs and physical boot/recovery remain gates.
+
 ## Receiver worker health and Windows lifetime
 
 `mod_backup_worker` creates a new private control directory beside (never inside)
@@ -143,9 +200,9 @@ inspection. It checks owner and exact current-user/SYSTEM full-control rules
 on every descendant and refuses junctions/reparse points before descending; it
 does not repair permissions or authorize existing foreign files.
 
-This worker is source implementation, not an installed scheduled task. The
-frozen independent operator runtime, task registration, production recipient
-custody and actual unattended/off-device production acceptance remain required.
+Worker/runtime/task preparation is source implementation, not an installed
+production backup. Production recipient custody and actual unattended/off-device
+production acceptance remain required.
 No production backup job or public routing is changed by these commands.
 
 ## Managed off-device receiver

@@ -50,6 +50,8 @@
       "tests/mods/test_backup_receiver.py",
       "tests/mods/test_backup_producer.py",
       "tests/mods/test_backup_worker.py",
+      "tests/mods/test_backup_runtime.py",
+      "tests/mods/test_backup_schedule.py",
       "tests/mods/test_windows_job.py",
       "tests/mods/test_wave_input.py",
       "tests/mods/test_audio_source.py",

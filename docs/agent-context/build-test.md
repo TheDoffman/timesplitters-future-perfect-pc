@@ -1,7 +1,7 @@
 [Workshop/native/V-Sync test routes](build-test-integration.md).
 Reboot command/composition: build-test-integration.md; IPC: test_online_menu.py.
 Recipients: test_backup_recipient.py; guide below.
-Backup worker: test_backup_worker.py; Windows lifetime: test_windows_job.py.
+Backup: test_backup_{worker,runtime,schedule}.py; Windows: test_windows_job.py.
 Chunk-bound execution uses explicit max_chunk_bytes: compiler-batching.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).

@@ -1,3 +1,29 @@
+Frozen Windows backup runtime/schedule candidate (2026-11-18; not deployed):
+new-only operator preparation copies the active x64 CPython3.12 standard runtime,
+crypto packages/licenses and committed worker source closure into a private
+bounded independent tree. Completion SHA pins every file plus isolated _pth
+search paths. The stdlib bootstrap rejects unsafe/changed/foreign inventory,
+checks interpreter flags/version/search paths and private NTFS tree, attaches
+its lifetime job before helpers and runs fixed worker actions with a hard limit.
+No Codex, development checkout or external package environment is needed by the
+scheduled action. Existing game/player packages and Mac services are unchanged.
+
+Schedule source pins current-user SID, runtime/binding hashes, exact pythonw
+arguments and future UTC timer. New-only InteractiveToken/LUA registration uses
+hourly/logon triggers, IgnoreNew, catch-up, no wake,35-minute limit and exact
+current-user/SYSTEM task ACL. Status/start/removal verify task authority before
+acting; removal can retire a damaged runtime without executing it. Preparation
+and explicit starts require fresh verified backup/runtime admission. Windows
+must remain awake with this account logged in; this is not unattended Mac capture.
+
+Portable manifest/action/authority/removal tests plus CI scope pass199 on
+Windows in5.85s (22 behavior checks plus177 CI checks); helper identity/parser
+check passes. Native freeze/isolated worker/actual Task Scheduler lifecycle
+acceptance remains pending below. No task or new runtime is installed yet.
+Production recipient custody, protected Mac capture/export jobs, capacity/admin
+authentication, physical boot/recovery and full creator/game/public release
+acceptance remain open. Prior frozen9e3 and live601/7be stay unchanged.
+
 Bound receiver worker and Windows lifetime preparation (2026-11-18; source
 ed0f03e8; not deployed): new worker control is separate from the strict
 receiver pool and pins job/pool identity, exact receiver policy, public recipient,
