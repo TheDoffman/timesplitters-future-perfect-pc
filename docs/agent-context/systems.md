@@ -3,7 +3,7 @@ Worker/link/lease: mod-scripting.md; audio: ../development/mod-audio-scripting.m
 
 
 [Sun/visibility repair](fidelity-comparison.md).
-[Native network/UI integration](systems-native-integration.md).
+[Native network/UI/V-Sync integration](systems-native-integration.md).
 
 Mod startup/storage and window-thread drain: [contracts](mod-scripting.md).
 

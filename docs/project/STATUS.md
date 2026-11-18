@@ -1,3 +1,60 @@
+## V-Sync playable Windows test build (2026-11-18)
+
+Local feature/vsync at main9bdab5f5 plus its staged changes. Fresh supported-US
+XBE generation completed:15838/15863 functions,0failed. MSVC x64 Release linked
+successfully with unchanged O2/Ob2 optimization. Standard build checks passed:
+replay/ghost targets, networking/Discord/hang policy, clear/texture format and
+all texture-toggle modes, display, both input-prompt profiles, save paths,
+controls, settings and debug dialogs. The executable is sealed against its
+content identity and matching crash symbols are archived with the test build.
+
+The initial unrestricted compile and two-worker retry hit C1002/C1060 compiler
+heap failures. Resuming with one native compiler worker completed the remaining
+objects and all targets. Low C: free space prompted a separate D: build directory;
+source/settings/saves stayed in their original locations. Local ignored receipts
+and logs record exact paths and commands. No code-generation or optimization
+workaround was incorporated into the V-Sync feature.
+
+The bounded one-hour Test Lab session launched with isolated settings/saves and
+a responsive TimeSplitters FP window. D3D11 reported600guest presents,0skips and
+0failures; the Video Options callback opened. This verifies startup/presentation,
+not physical tearing elimination or gameplay at each FPS. The user confirmed
+the playable V-Sync build works on 2026-11-18 and authorized PR/merge. Native
+Mac/Linux GPU validation remains pending.
+
+## Optional V-Sync (2026-11-17, local feature/vsync)
+
+Base main9bdab5f5; Windows x64 on this computer. Added Off/On in frontend/pause
+Video Options > Display and shared launcher Display settings. Default Off keeps
+existing presentation. Saves publish live only after an atomic runtime.conf
+write; staged Back and failed-batch rollback are covered. No personal saves,
+settings or other checkouts were changed. No publication/push/merge performed.
+
+Windows validation: full supported Windows PowerShell launcher build and all
+isolated launcher regression groups passed (including V-Sync Save/Cancel and
+FPS/VRR independence). The production menu fixture passes staging, tab changes,
+failed saves and texture-failure rollback. WARP's real DXGI swap chain is called
+with interval1 and no tearing flag while On, interval0 while Off; repeated changes,
+resize and unchanged 60-original/120/180/240 target preferences pass. These are
+renderer/configuration contracts, not gameplay-at-each-FPS measurements. Existing
+SMAA WARP/hardware, active-source CMake configuration and graphics-option fixtures
+pass. Actual modified d3d8_device.c, recomp_config.c and pc_display_menu.c pass
+MSVC C11 syntax compilation; this is not a complete game link or playable build.
+
+Ubuntu24.04/WSL cc -Wall/-Wextra/-Werror compiles and runs the shared POSIX
+saved/live-state, unknown-key, duplicate-key, failed-write and binary-refusal
+fixture from both startup states. The production GL swap adapter also passes
+with a fake driver on Windows and Linux (toggle, context recovery, bounded driver
+failure). Linux production recomp_config.c writes/reads the same preference;
+its standalone compile suppresses existing unused-function/format-truncation
+warnings in the unrelated frame-rate header. Native Linux/Mac GPU, complete game builds,
+physical tearing, gameplay/loading/pause at the supported rates and monitor/
+compositor behavior remain unverified. See MAC-131. Historical native/control/Mac upgrades pass3cases; graphics baseline branch
+round trips pass both LF/CRLF cases. Context/index and backlog registry checks
+pass. All4 texture-branch round trips pass (LF/CRLF and both core.autocrlf modes),
+including preservation of local edits. The earlier broad patch run was stopped
+after discovering obsolete historical-baseline dependencies; the affected
+upgrade and round-trip cases were corrected and rerun successfully.
 Mod-platform/main integration (2026-11-18; mergebe9893b1, GCC3634b6e9,
 compiler fixture9dfb25d6): resolved16 overlapping files by retaining mod workshop,
 creator/library checks and both preview routes alongside the new live Console,

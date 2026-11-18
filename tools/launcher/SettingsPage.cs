@@ -60,7 +60,7 @@ namespace TimeSplitters.Launcher
         readonly CheckBox dialogueFocus;
         readonly ComboBox impactRange;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
+        readonly CheckBox enabled, invert, fullscreen, vrr, vsync, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
         readonly TextBlock performanceAdvice,developerToolsShortcut;
         readonly StackPanel consoleScalePanel;
@@ -299,6 +299,7 @@ namespace TimeSplitters.Launcher
             Ui.Tip(ambientOcclusion,"Half-resolution contact shadows. Can be combined with MSAA and post-process anti-aliasing.");qualityLeft.Children.Add(ambientOcclusion);
             shaderCache=Check("Shader cache",model.ShaderCache);shaderCache.Name="ShaderCache";
             Ui.Tip(shaderCache,"Reuses compiled shaders between launches to reduce compilation stalls.");advanced.Children.Add(shaderCache);
+            vsync=Check("V-Sync",model.VSync);vsync.Name="VSync";Ui.Tip(vsync,"Synchronizes presentation with the display to reduce tearing. May increase input latency and limit FPS to the display refresh rate. Overrides the unsynchronized VRR path while on. Save applies on the next launch; in-game Apply works immediately.");Field(displayLeft,"Synchronization",vsync);
             vrr=Check("Variable refresh rate (fullscreen)",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("FPS / Ping",model.ShowCounter);fps.Name="FpsPingCounter";Ui.Tip(fps,"Shows FPS and, during online play, network ping in milliseconds. Also available in the in-game Video Options.");
             var clearCache=Button("Clear shader cache");clearCache.Name="ClearShaderCache";
             clearCache.Click+=(sender,args)=>{try { int count=model.ClearShaderCache();status.Text="Shader cache cleared ("+count+" files)."; } catch(Exception ex) {status.Text=ex.Message;}};
@@ -392,7 +393,7 @@ namespace TimeSplitters.Launcher
             tabs.Items.Add(new TabItem { Header="View & HUD",Content=Scroll(viewHud) });
             tabs.Items.Add(new TabItem { Header="General",Content=Scroll(general) });
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,dialogueFocus,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,vsync,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,dialogueFocus,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling,impactRange})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
             Ui.ValueChanged(crosshairSize,RefreshSaveState);
@@ -402,7 +403,7 @@ namespace TimeSplitters.Launcher
         string Draft()
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
-                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
+                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,vsync.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
                 skipSplashes.IsChecked,developerTools.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
                 audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
@@ -558,7 +559,7 @@ namespace TimeSplitters.Launcher
                 model.SetPlayerDevices(new[]{Devices[device.SelectedIndex]}.Concat(localDevices.Select(x=>Devices[x.SelectedIndex+1])).ToArray());
                 model.VerticalFov=(int)Math.Round(fov.Value);
                 model.CrosshairSize=(int)Math.Round(crosshairSize.Value);
-                model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
+                model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.VSync=vsync.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
                 model.Msaa=new[]{1,2,4,8}[msaa.SelectedIndex];model.PostAntiAliasing=edgeSmoothing.SelectedIndex;
                 model.Supersampling=supersampling.SelectedIndex;
                 model.AmbientOcclusion=ambientOcclusion.IsChecked==true?1:0;model.ShaderCache=shaderCache.IsChecked==true;

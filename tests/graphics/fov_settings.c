@@ -76,6 +76,9 @@ int pc_graphics_set(const TsfpGraphicsOptions *o){if(!graphics_save_ok)return 0;
 static int counter_enabled,counter_save_ok=1;
 int pc_counter_enabled(void) { return counter_enabled; }
 int pc_counter_set_enabled(int value) { if(!counter_save_ok)return 0;counter_enabled=!!value;return 1; }
+static int vsync_preference,vsync_save_ok=1;
+int pc_vsync_enabled(void){return vsync_preference;}
+int pc_vsync_set_enabled(int enabled){if(!vsync_save_ok)return 0;vsync_preference=enabled;return 1;}
 static int smaa_preference,smaa_save_ok=1;
 int pc_smaa_enabled(void){return smaa_preference;}
 int pc_smaa_set_enabled(int enabled){if(!smaa_save_ok)return 0;smaa_preference=enabled;return 1;}
@@ -642,7 +645,7 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==8 && separators==2 && separator_positions[0]==1 && separator_positions[1]==6 && window_mode_row && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    CHECK(page==DISPLAY_HOME && built_row_count==9 && separators==2 && separator_positions[0]==1 && separator_positions[1]==7 && window_mode_row && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
     CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==UINT32_MAX && built_ids[7]==108 && built_ids[8]==3);
@@ -855,6 +858,22 @@ int main(int argc,char **argv)
 
     refresh(DISPLAY_HOME,0);
     call(SELECT_CB,3,0);CHECK(requested_rate==-1 && pc_frame_rate_read()==-1);
+    /* V-sync is staged, survives section changes, and never changes the FPS
+       clock. Back discards it; failed saves leave Apply active. */
+    CHECK(vsync_row && !pc_vsync_enabled() && WORD_AT(vsync_row+0xc8)==0);
+    WORD_AT(vsync_row+0xc8)=1;call(TICK_CB,14,0);
+    CHECK(display_dirty() && !pc_vsync_enabled());
+    refresh(DISPLAY_VIEW,0);refresh(DISPLAY_HOME,0);
+    CHECK(WORD_AT(vsync_row+0xc8)==1 && !pc_vsync_enabled());
+    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    CHECK(!staged_vsync && !pc_vsync_enabled() && !display_dirty());
+    WORD_AT(vsync_row+0xc8)=1;call(TICK_CB,14,0);vsync_save_ok=0;
+    call(SELECT_CB,3,0);CHECK(!pc_vsync_enabled() && display_dirty() && *status);
+    vsync_save_ok=1;call(SELECT_CB,3,0);
+    CHECK(pc_vsync_enabled() && !display_dirty() && requested_rate==-1);
+    WORD_AT(vsync_row+0xc8)=0;call(TICK_CB,14,0);call(SELECT_CB,3,0);
+    CHECK(!pc_vsync_enabled() && !display_dirty());
+
     for(unsigned a=1;a<PC_DISPLAY_ASPECT_COUNT;a++) {
         WORD_AT(aspect_row+0xc8)=a;call(TICK_CB,0,0);
         CHECK(selected_aspect==(int)a && mode_count>0);
@@ -972,10 +991,11 @@ int main(int argc,char **argv)
     if(!texture_name)texture_name=strrchr(texture_path,'/');
     CHECK(texture_name);strcpy(texture_name+1,"pc-textures.ini");
     CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_READONLY));
-    staged_aa=1;call(SELECT_CB,3,0);
+    staged_aa=1;WORD_AT(vsync_row+0xc8)=1;call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==70 && requested_rate==120 && tsfp_texture_is_4k() && WORD_AT(0x400130)==1);
     CHECK(display_dirty() && *status && staged_aa==1 && applied_aa==0 && pc_post_aa_get()==0);
-    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));staged_aa=0;call(SELECT_CB,3,0);
+    CHECK(!pc_vsync_enabled() && applied_vsync==0 && staged_vsync==1);
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));WORD_AT(vsync_row+0xc8)=0;staged_vsync=0;staged_aa=0;call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==75 && requested_rate==180 && !tsfp_texture_is_4k() && !WORD_AT(0x400130));
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     /* Resolution preview defers the complete batch until Keep. */

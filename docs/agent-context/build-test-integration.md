@@ -15,7 +15,7 @@ Epoch/GCC/dependency reuse: build-test-details.md.
 [Actors](network-actor-lifetime.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
-[Arms](video-options.md).
+[Arms/V-Sync](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).

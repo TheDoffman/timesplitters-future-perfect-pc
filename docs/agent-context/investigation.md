@@ -8,6 +8,10 @@ paths, redirected files and byte-limit violations still fail closed. Run
 `node --test tests/repository/repository-context.test.mjs` as well as the Python
 checker when extending context topics; the PR scope job runs both.
 
+V-Sync patch3040 follows the final config/render dependencies. The context index
+tail and historical patch-migration fixtures track that order; old SMAA-free
+inputs exclude V-Sync until their complete-stack upgrade.
+
 Historical-upgrade fixtures exclude3010 capture and3020 join wrappers from the
 old subset because those need the later renderer/Story wrapper context; the
 Mac-only subset also predates3030 Story browser wrappers. Both

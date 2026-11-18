@@ -7,7 +7,7 @@ GCC's misleading-indentation warning remains enabled under -Werror.
 [Sync telemetry](network-sync-telemetry.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
 [Actors](network-actor-lifetime.md).
-[Tex](texture-preference.md); [arms](video-options.md).
+[Tex](texture-preference.md); [arms/V-Sync](video-options.md).
 
 [Uplink](native-uplink.md#throw-impulse); [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
 [Network startup](network-performance.md): one-time config read, atomic dispatch;

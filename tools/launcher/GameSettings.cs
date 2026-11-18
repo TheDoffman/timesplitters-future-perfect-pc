@@ -64,7 +64,7 @@ namespace TimeSplitters.Launcher
             }
         }
         public string DiscordApplicationId = "1561627743353962566";
-        public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes, DeveloperToolsEnabled;
+        public bool MouseEnabled = true, InvertY, Fullscreen, VSync, Vrr = true, FpsOverlay, SkipStartupSplashes, DeveloperToolsEnabled;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
         public int CrosshairSize = 100;
@@ -286,6 +286,7 @@ namespace TimeSplitters.Launcher
             model.Smaa = Number(settings, "smaa", 0) != 0;
             model.Fullscreen = Number(settings, "fullscreen", 0) != 0;
             model.Vrr = Number(settings, "vrr", 1) != 0;
+            model.VSync = Number(settings, "vsync", 0) != 0;
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
             string graphicsOptions = Text(model.originals[Files[6]]);
             if (graphicsOptions.Length > 0) {
@@ -541,7 +542,7 @@ namespace TimeSplitters.Launcher
             Map(value)["language_pack"] = LanguagePack;
             if (!document.TryGetValue("debug", out value)) document["debug"] = value = new Dictionary<string, object>();
             Map(value)["show_counter"] = ShowCounter;
-            var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
+            var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"vsync",VSync?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
             var payload = new[] { Json.Encode(document) + "\n", (WeaponFovDegrees!=0 ? "TSFP_DISPLAY_V5 "+Width+" "+Height+" "+VerticalFov+" "+WeaponFovDegrees+" "+CrosshairSize : CrosshairSize!=100 ? "TSFP_DISPLAY_V4 "+Width+" "+Height+" "+VerticalFov+" "+WeaponFov+" "+100+" "+CrosshairSize : WeaponFov != 100 ? "TSFP_DISPLAY_V3 " + Width + " " + Height + " " + VerticalFov + " " + WeaponFov : VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),

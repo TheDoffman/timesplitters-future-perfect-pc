@@ -317,3 +317,14 @@ def test_allocation_evidence_follows_allocator_and_boot(tmp_path):
     observer = ordered.index('2150-allocation-history.patch')
     assert all(ordered.index(name) < observer for name in names[1:4])
     assert observer < ordered.index('2090-repository-source-layout.patch')
+
+
+def test_vsync_follows_final_shared_config_and_present_paths(tmp_path):
+    names=['3040-vsync-settings.patch','2470-smaa-antialiasing.patch',
+           '2516-native-resolution-hud.patch','2990-rollback-control-presets.patch']
+    paths=[]
+    for name in names:
+        patch(tmp_path,name,BASE,BASE.replace('alpha=0','alpha=1'))
+        paths.append(tmp_path/name)
+    ordered=[record['name'] for record in installer.patch_records(paths)]
+    assert ordered[-1]=='3040-vsync-settings.patch'

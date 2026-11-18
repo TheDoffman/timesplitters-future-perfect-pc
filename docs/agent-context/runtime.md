@@ -18,7 +18,7 @@ Contract/tests: ../development/mod-audio-input.md.
 [Pad](controller-deadzones.md); [tools](developer-tools-integration.md).
 [MP](native-multiplayer-menu.md).
 
-[Video](video-options.md); [Uplink](native-uplink.md).
+[V-Sync](video-options.md);[Uplink](native-uplink.md).
 [UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
 [Sun](fidelity-comparison.md); [Aim](hud-sizing.md).
 [Depth](native-effect-depth.md).

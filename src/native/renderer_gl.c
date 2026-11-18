@@ -27,6 +27,7 @@
 #include "graphics/guest_scissor.h"
 static PcCombinerConstants native_float_constants;
 #include "graphics/present_metrics.h"
+#include "graphics/pc_vsync_settings.h"
 #include "settings_macos.h"
 #include "pc_display.h"
 #include "pc_ui_layout.h"
@@ -1326,7 +1327,7 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
     }
     tsfp_renderer_host_bind(g.window, native_debug_release);
     SDL_GL_MakeCurrent(g.window, g.glctx);
-    SDL_GL_SetSwapInterval(g_present_interval);
+    SDL_GL_SetSwapInterval((int)pc_vsync_present_interval(g_present_interval));
 
     fprintf(stderr, "[d3d8_gl] GL %s / GLSL %s\n",
             glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -1464,7 +1465,7 @@ void xbox_D3D8SetPresentInterval(UINT interval)
 {
     g_present_interval = interval;
     if (g.glctx)
-        {NATIVE_GL_SCOPE;SDL_GL_SetSwapInterval((int)interval);}
+        {NATIVE_GL_SCOPE;SDL_GL_SetSwapInterval((int)pc_vsync_present_interval(interval));}
 }
 
 void d3d8_PresentFrame(void)
