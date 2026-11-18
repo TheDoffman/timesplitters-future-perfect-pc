@@ -20,9 +20,9 @@ An actual temporary InteractiveToken/LUA task is registered, strictly verified,
 started, finishes0 with worker health ok, then is removed. A fresh full lifecycle
 also refuses duplicate registration and proves the existing task unchanged before
 running/removing it. A separate COM lookup confirms the exact task is absent.
-No permanent fixture or production task remains, and runtime/worker/receiver data
-are preserved privately. The frozen worker is sourceeb2afb55; task-management
-normalization corrections are separate source (next commit), so this is not a
+No temporary test task remains; no production backup task was installed.
+Runtime/worker/receiver data remain private. The frozen worker is sourceeb2afb55;
+task-management corrections are sourceab8b5413, so this is not a
 final same-source production release or an unattended/physical reboot proof.
 
 Final Windows manifest/schedule/native/CI scope checks pass201 in8.47s after
