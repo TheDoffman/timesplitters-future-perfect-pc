@@ -1035,14 +1035,15 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
 
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
+[Console tests](launcher.md).
 
-[2x tests](original-upscale.md).
+[2x](original-upscale.md).
 
 [Linux CI](linux-game.md#ci-package-mirror).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
 
-Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
+Patch tests: Mac omits2620/2625; Story uses production guards.
 
 [PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).
