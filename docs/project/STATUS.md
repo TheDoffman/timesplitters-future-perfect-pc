@@ -1,3 +1,33 @@
+Operational reboot admission (2026-11-18; source8b0922b6/4f7cb1bb, coverage909b48f8,
+guardc1d3e775; internal, not deployed): verified checkpoint, fresh locked backup
+and original context/private baseline now admit the actual current boot under
+the original lease. Replay preserves configuration/layout intent, direction and
+catalog floor but discards old startup/readiness/restart/shutdown authority.
+Ordinary helpers require the original or explicitly admitted actual boot and use
+current-boot process tracking. Original header/context remain unchanged; migration
+proof metadata matches backup/quiescence in its own recorded epoch. Historical
+reboot inventory supports subsequent moves and null-layout-to-new-preparation.
+The bounded journal permits512 events/unchanged128KiB, because a real complete
+upgrade/reboot/recovery/reversal exceeds256. Exhaustion still refuses/preserves.
+
+Focused admission checks pass9 Mac58.65s/Linux72.96s, then17 interrupted-phase
+checks pass Mac87.77s/Linux107.49s. Expanded18-file tests at909b48f8 complete with
+670 passed/1 failed on Mac399.69s and Linux477.90s. All25 composed admission cases
+pass, including forward/direct reversal from interrupted migration, archive,
+install, mixed boot exchange, proof retirement, startup, restart and public
+observation. Direct reversal starts only old-generation jobs. The single failure
+was KeyError for a minimal observation state missing its admission field; c1d3e775
+now refuses it explicitly with ModError and adds a portable guard regression.
+The affected layout/journal/CI-scope rerun passes234 Mac1.01s/Linux1.49s; the entire
+18-file native selection was not repeated after that one guard correction.
+Windows current18-file selection passes336 with336 POSIX skips1.05s.
+Exact07ff9bff CI44290024260 is terminal23 successes/2 skips; newer source
+requires its own CI. These are isolated files and simulated service/boot tests,
+not installedRoot/UID600 or physical boot acceptance. Immutable CLI integration,
+fresh candidate sealing/deployment and full release gates remain unfinished.
+The original protected backup setup still waits at its original sudo-v prompt;
+installed601/7be services and public routing are unchanged.
+
 Unstaged reboot evidence (2026-11-18; source149b371a; not deployed): an early
 restart can seal only the original before tree, with null original layout SHA,
 without creating or adopting a staging area. All20 original job/backup identities
