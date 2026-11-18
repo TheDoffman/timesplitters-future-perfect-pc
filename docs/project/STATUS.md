@@ -1,3 +1,5 @@
+Launcher PR571 review follow-up (2026-11-18): Windows Play holds busy during game monitoring. Tools & Logs now remains enabled in that state; MonitorGame refreshes navigation on entry/exit. The maintenance UI test covers gameplay navigation, Console selection and disabled repair/settings actions.
+
 Launcher label follow-up (2026-11-18): Diagnostics is now System & Reports in the shared Tools & Logs tab, standalone heading and accessibility group label. Internal identifiers and report behavior are preserved.
 
 Launcher Tools & Logs follow-up (2026-11-18): combined Repair / Verify, Diagnostics and Console under one sidebar entry on both hosts. Removed standalone Console host/navigation and embedded its page without a duplicate header. Existing repair cancellation, diagnostics and draft retention behavior preserved. Windows full launcher regression suite and six Python launcher checks pass; Linux Avalonia cross-build passes. Installed launcher updated with a local backup. Native runtime acceptance remains pending.

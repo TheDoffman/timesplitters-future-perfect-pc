@@ -288,6 +288,15 @@ public static class LauncherMaintenanceChecks
                         try{busy.SetValue(ui,true);refresh.Invoke(ui,null);Require(tabs.IsEnabled && repairLogs.IsEnabled && diagnosticLogs.IsEnabled);tabs.SelectedIndex=0;Require(tabs.SelectedIndex==1 && Descendants<System.Windows.Controls.Button>(diagnostics).Single(c=>c.Name=="CancelMaintenance").IsEnabled);}finally{busy.SetValue(ui,false);refresh.Invoke(ui,null);}
                         ((System.Windows.Controls.Button)ui.Window.FindName("RepairNav")).RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(tabs.SelectedIndex==0 && tabs.IsEnabled);
                         ui.ShowMaintenance(true);Require(host.Visibility==System.Windows.Visibility.Visible && tabs.SelectedIndex==1 && report.Text=="Retained diagnostics report");
+                        var monitoring=typeof(LauncherWindow).GetField("gameMonitoring",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+                        try {
+                            busy.SetValue(ui,true);monitoring.SetValue(ui,true);refresh.Invoke(ui,null);
+                            var tools=(System.Windows.Controls.Button)ui.Window.FindName("RepairNav");Require(tools.IsEnabled);
+                            tools.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                            tabs.SelectedIndex=2;Require(tabs.SelectedIndex==2 && host.Visibility==System.Windows.Visibility.Visible);
+                            Require(!Descendants<System.Windows.Controls.Button>(repair).Single(c=>c.Name=="RepairGameFiles").IsEnabled);
+                            Require(!((System.Windows.Controls.Button)ui.Window.FindName("SettingsNav")).IsEnabled);
+                        } finally {monitoring.SetValue(ui,false);busy.SetValue(ui,false);refresh.Invoke(ui,null);}
                         var checking=typeof(LauncherWindow).GetField("checking",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
                         try{checking.SetValue(ui,true);refresh.Invoke(ui,null);((System.Windows.Controls.Button)ui.Window.FindName("RepairNav")).RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(tabs.SelectedIndex==0 && repairLogs.IsEnabled);}finally{checking.SetValue(ui,false);refresh.Invoke(ui,null);}
 

@@ -728,7 +728,8 @@ namespace TimeSplitters.Launcher
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
-            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
+            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
+            Button("RepairNav").IsEnabled = !busy || gameMonitoring;
             if(maintenanceArea!=null)maintenanceArea.SetBusy(busy && !gameMonitoring);
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy((busy && !gameMonitoring) || checking,Core.GameRunning());
@@ -917,6 +918,7 @@ namespace TimeSplitters.Launcher
             gameMonitoring=true;
             try
             {
+                Refresh();
                 SetStatus("Starting game…");
                 // Process.Start has succeeded. Do not delay taskbar minimization
                 // while waiting for a detectable game window; cleanup still must.
@@ -949,7 +951,7 @@ namespace TimeSplitters.Launcher
             }
             finally
             {
-                gameMonitoring=false;
+                gameMonitoring=false;Refresh();
                 if (minimizedForGame) { Window.WindowState = previousState; Window.Activate(); }
             }
             await Task.Run(() => Core.FinishGameSession(root, observedBuild, gameWindowShown, process.ExitCode));
