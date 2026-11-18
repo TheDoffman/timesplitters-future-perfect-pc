@@ -91,8 +91,8 @@ preserve uncertainty instead of admitting cleanup. Repeated physical restarts
 require another fresh observation chained to the prior preparation boot while
 retaining the original journal header/context. Quiescence does not grant private
 migration, service startup, public restoration or settlement authority. The
-following layout/backup/admission gates are separate; an installed reboot CLI
-remains pending.
+following layout/backup/admission gates and explicit command are separate;
+installed reboot acceptance remains pending.
 The installed upgrade entry's mandatory verified-source inventory now includes
 the typed reboot journal parser, because reading any recovery history may select
 that parser. An incomplete candidate is refused before journal/OS effects.
@@ -163,9 +163,8 @@ remain historical. Migration proof metadata is matched to backup/quiescence in
 its actual recorded boot, while new proofs carry the admitted current boot.
 Historical reboot inventories feed subsequent file-move recovery, followed by
 any newer ordinary shutdown checkpoint. Unstaged checkpoints remain readable
-after new preparation records its manifest. No installed reboot CLI or physical
-boot acceptance is established by this internal implementation; native composed
-validation is recorded separately in STATUS.
+after new preparation records its manifest. Installed command and physical boot
+acceptance are recorded separately in STATUS; the candidate command follows.
 
 The installed-source command now implements explicit `--recover-boot ORIGINAL`
 with `--resume-private`, `--rollback-private` or `--restore-public`. ORIGINAL is
@@ -393,7 +392,7 @@ combined ten-entry set with the unchanged backup. The preflight digest binds
 these target specifications as well as the observed running old jobs. Internal
 objects/callables are never serialized in the public report. Retaining context
 does not authorize effects or replace later per-phase file/process/routing guards;
-the CLI does not yet provide reboot recovery; public restoration is described above.
+explicit reboot recovery and public restoration are described above.
 
 `mod_host_upgrade_context` persists only bounded upgrade metadata under Root700
 `upgrade-contexts/<nonce>.json` (Root600, maximum32 files/64KiB each). Its shared
@@ -406,14 +405,14 @@ Only a new, event-free held Root transaction can create an absent artifact;
 an exact existing artifact can be adopted only on explicit resume. Partial,
 foreign, linked, replaced, over-capacity or noncanonical artifacts are preserved.
 
-Reconstruction requires an already-held same-boot journal lease and caller-verified
+Reconstruction requires an original or explicitly admitted current-boot journal lease and caller-verified
 old/new/backup closures, bindings, factories and fixed transports. It checks the
 original preflight digest and restores historical plan/baseline/observations while
 retaining the fresh callable objects. It does not inspect current private files
 as though they were still the base generation, issue migration authority, or
 treat historical job/PID metadata as current OS proof. Subsequent phase guards
 remain mandatory. Private CLI lease construction is implemented; installed
-acceptance and reboot recovery remain unfinished; public restoration is above.
+acceptance remains unfinished; reboot recovery and public restoration are above.
 The internal installed-entry `verified_inputs` separates closure/binding/factory
 verification from initial route/private/live preflight. `prepare_recovery_context`
 first matches the held journal arguments, repeats that pure input verification,
@@ -423,14 +422,14 @@ actions now own the lease and use the same verified reconstruction contract.
 
 The internal `mod_host_upgrade_coordinator.apply_private` composes the forward
 phases under an already-held Root journal lease. It binds retained context to
-that exact journal, rejects cross-boot/foreign/rollback/restoration state, records
+that exact journal, rejects unadmitted-boot/foreign/rollback/restoration state, records
 the original private baseline, suspends only workshop ingress, observes old-job
 quiescence, forces and verifies a preserved-runtime backup, then prepares and
 journals the protected layout before configuration/file exchange. It retires
 migration authority, checks the scanner, loads ten private jobs and performs the
 seven restart/readiness checks. It returns fresh private admission with ingress
-still suspended. Public restoration, public HTTPS checks, installed acceptance
-and reboot recovery remain separate unfinished integration work.
+still suspended. Public restoration, public HTTPS checks and reboot recovery are
+separate explicit phases; installed acceptance remains unfinished.
 
 An existing forward operation requires explicit resume. Once configuration is
 durably after, a partial protected exchange can finish without a new migration
@@ -452,7 +451,7 @@ never started just to permit reversal. Once the forward layout is fully observed
 ordinary reversal restores the old tree and refreshes authority for private
 rollback. An ordinary rollback without resume preserves the pending effect and
 refuses it. A settled or restored public transaction is not reused.
-The caller still owns the exact same-boot Root lease/context. Known candidate
+The caller still owns the exact admitted current-boot Root lease/context. Known candidate
 jobs stop through journaled shutdown, followed by a bounded monitor checkpoint.
 The old monitor/boot files are restored before a fresh retained-runtime capture
 publishes current migration authority in that restored tree. The private rollback
@@ -598,7 +597,7 @@ nonce. Active and archived proofs are checked identically. This allows explicit
 fresh recapture after proof expiry while preserving all other recorded files.
 The locked worker still independently enforces its short admission lifetime.
 Activation and post-start health-history checkpointing are composed by private
-CLI actions; reboot recovery and installed acceptance remain unfinished.
+CLI actions; explicit reboot recovery is above and installed acceptance remains unfinished.
 
 `mod_host_upgrade_activation.py` implements private startup only. Under the global
 Root journal lease it retires the fixed active migration proof before any bootstrap.

@@ -1,3 +1,34 @@
+Explicit reboot command (2026-11-18; sourced11ca04b; not installed): immutable
+entry now accepts --recover-boot with private resume/rollback or separate public
+restore. It re-verifies closures/backup/factories before the original existing
+exclusive lease; new/unfinished boot preparation and admission precede real
+context reconstruction. Current admitted recovery skips duplicate preparation;
+restore refuses an unadmitted boot. Initial private/live preflight is never used
+against migrated data. Missing/foreign/same-current-boot history and illegal
+action/boot options refuse before effects, and authentication still precedes
+dispatch. Every reboot phase module is mandatory in the verified source inventory.
+Early unstaged rollback binds a manifest and starts only old services, without
+candidate configuration migration; all fresh private acceptance remains required.
+
+Native command/protocol plus12 full sealed-context/phase cases pass167 Mac62.83s
+and167 Linux76.80s. Dispatch/acquisition tests use a real exclusive lease with
+simulated phases; composed tests use real original preflight digest, context,
+journal/proof/layout files and phase composition, retaining the fixture-held
+lease. Code closure admission, launchd, process control, scanner and locked child
+transport remain simulated. Existing coordinator/flow/layout/admission regressions
+pass123 Mac292.54s/Linux353.17s. Windows corresponding scopes plus CI selection
+pass305 with162 POSIX skips0.76s. No actual reboot or protected deployment occurred.
+
+Fresh UID501 frozen candidate9e3daa7b62bbc6f113b81cb452727bdc6a51d2309550c5d8453b3a305f21ca72
+binds exact sourced11ca04b1f9f7f8e53acc9234fe6d892bde77ecd,104 source and3339 runtime
+files,151500811 logical bytes. Its staging plan and the retained installed7be
+Python/installer plan both pass without --apply. The frozen staged interpreter
+with -I-S-B passes --help, rejects invalid recovery combinations with exit2 and
+refuses ordinary-operator recovery at administrator authentication (exit2).
+The new release is not installed; no jobs/routing changed. Prior frozen4fc/14d
+artifacts remain untouched. Original protected backup setup authentication,
+actual Root/UID600 cutover/recovery, physical boot and full release gates remain.
+
 Operational reboot admission (2026-11-18; source8b0922b6/4f7cb1bb, coverage909b48f8,
 guardc1d3e775; internal, not deployed): verified checkpoint, fresh locked backup
 and original context/private baseline now admit the actual current boot under
