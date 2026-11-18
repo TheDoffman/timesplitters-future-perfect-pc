@@ -160,13 +160,16 @@ def send_stream(folder, output, recipient, service_origin, pin):
     return receipt
 
 
-def receive_stream(stream, destination, recipient, service_origin, pin, *, verify_transport):
+def receive_stream(stream, destination, recipient, service_origin, pin, *, verify_transport, accept_receipt=None):
     require(callable(verify_transport), 'Authenticated transport completion check is required')
     require(bounded_read(stream, len(MAGIC)) == MAGIC, 'Unknown backup transfer magic')
     length = struct.unpack('>I', bounded_read(stream, 4))[0]
     require(0 < length <= MAX_RECEIPT, 'Backup transfer receipt exceeds budget')
     wire = bounded_read(stream, length)
     value = checked_receipt(wire, recipient, service_origin, pin)
+    if accept_receipt is not None:
+        require(callable(accept_receipt), 'Invalid backup receipt admission check')
+        accept_receipt(value)  # Managed receivers durably bind intent before any output.
     destination = cipher.private_path(destination)
     require(shutil.disk_usage(destination.parent).free >= value['cipher_bytes'] + len(wire) + cipher.MIN_FREE,
             'Insufficient backup reception headroom')

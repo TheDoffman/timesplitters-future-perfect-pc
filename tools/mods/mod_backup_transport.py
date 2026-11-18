@@ -143,9 +143,9 @@ def process_stream(command, seconds):
 
 
 def receive_ssh(host, python, entry, bundle, remote_record, destination, recipient,
-                service_origin, pin, *, seconds=MAX_SECONDS):
+                service_origin, pin, *, seconds=MAX_SECONDS, accept_receipt=None):
     exports.recipients.checked_public(recipient, service_origin, pin)
     command = ssh_command(host, python, entry, bundle, remote_record, service_origin, pin)
     with process_stream(command, seconds) as (stream, verify):
         return exports.receive_stream(stream, destination, recipient, service_origin, pin,
-                                      verify_transport=verify)
+                                      verify_transport=verify, accept_receipt=accept_receipt)

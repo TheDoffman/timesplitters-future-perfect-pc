@@ -43,6 +43,67 @@ or other authenticated transfer, receiver retention, unattended scheduling,
 production key custody and an off-device restore drill still need integration
 and deployment. Component checks do not establish automatic backup operation.
 
+## Managed off-device receiver
+
+`mod_backup_receiver` adds a new private receiver pool, immutable binding and a
+bounded transactional journal around encrypted reception. Initialization binds
+the exact recipient/origin/root, pool UUID, fixed SSH alias/interpreter/helper/
+bundle/recipient-record paths, keep count(1..32), interval(1h..7d) and logical
+ciphertext capacity(up to32 maximum-size files; default one maximum-size file).
+No existing directory is adopted. Windows requires private NTFS ACLs; POSIX uses
+owned0700 directories/0600 files. Ciphertext capacity excludes at most4MiB of
+bounded journal/receipt overhead; the2GiB physical free-space floor still applies.
+
+SQLite FULL synchronous transactions record each new attempt and its exact
+validated remote receipt before file creation. The1MiB journal uses a known
+schema,4096-byte pages, DELETE rollback journal and an exclusive connection lease
+held across committed phases, so a second process cannot receive/retain at once.
+Unknown files/schema/pool exchanges, corrupt metadata and unrecorded copy folders
+refuse work and stay intact. See [SQLite locking semantics](https://www.sqlite.org/pragma.html#pragma_locking_mode).
+
+Only receipt-last completed copies matching their pre-recorded attempt can be
+admitted. A crash after successful transfer but before journal admission can
+recover that known complete copy without downloading it again. Incomplete copies
+remain failed/private, count against capacity and are never automatically adopted
+or deleted. Later healthy attempts may proceed while capacity remains;64 total
+managed/failed entries require operator inspection. A failed transfer never
+removes a previous verified copy to make space. Configure capacity for both the
+retained set and one incoming file; an undersized pool intentionally refuses.
+
+Export creation timestamps must strictly advance; older/equal-time alternate
+exports, changed known IDs and dates more than5minutes in the future refuse before
+output. An exact already-held receipt aborts the duplicate transfer and reports
+source-unchanged; it does not refresh the last success or export age. Timestamps
+are export metadata, not independent proof of the source database's freshness.
+Daily due checks and at-most-hourly failed/unchanged retries are separate from
+OS task installation. Time rollback refuses work. No public metadata floor or
+revocation reconciliation rule is relaxed by backup receiver status.
+
+Retention begins only after a newer copy is fully verified and durably admitted.
+It verifies the retained high-water copy, records exact old directory/file
+identities before removal and unlinks only the two owned payload/receipt files.
+An interrupted deletion resumes its known remaining effects; replaced files or
+unexpected content are preserved even if bytes match. No recursive removal or
+foreign-path selection is used. These transactions support process interruption;
+physical power-loss/reboot/storage durability acceptance remains a separate gate.
+
+Operator entry `tools/mods/hosting/backup-receiver.py` takes `init`, `tick`, or
+`status` with `--pool NEW_PRIVATE_POOL --recipient-record PRIVATE_PUBLIC_JSON
+--origin HTTPS_ORIGIN --trusted-root-sha256 RECORDED_ROOT_SHA`. Only `init` accepts
+the fixed SSH options documented below plus `--keep`, `--interval` and
+`--maximum-bytes`. Later ticks use only that stored binding; `--force` bypasses
+due-time checks and `--seconds` lowers the SSH deadline. Status verifies stored
+complete copies, prints bounded counts/times and exits3 when no export exists or
+its creation time is older than twice the configured interval. Other failures
+exit2 with generic output. No secrets/private paths are printed in reports.
+
+No scheduled task is installed by this tool. Production recipient custody,
+protected sender installation/least-privilege access, recurring fresh export
+selection, OS scheduling/failure delivery and a production recovery drill remain
+unfinished. The currently configured remote bundle is immutable: repeated ticks
+recognize it as already held, rather than claiming a newly captured backup. A
+future protected producer must supply fresh exports through admitted selection.
+
 ## Immutable exports and authenticated operator transfer
 
 `mod_backup_exports` produces new private two-file bundles: encrypted `payload.bin`
