@@ -23,9 +23,15 @@ Windows custody/recipient/CI selection passes232 with1 non-Windows-only skip
 in93.50s, including real DPAPI, crash recovery, tamper/new-only checks and a hidden
 Tk UI test of masking, field clearing, secret-free labels and visible buttons.
 Initial12 custody checks pass64.98s; canonical-marker/UI additions pass2 in12.23s.
-Native Linux and actual cross-account encrypted-file confirmation follow below.
-No production backup key/window, Mac writer, task, deployment or public route has
-been created/changed by this source checkpoint. Broader full-goal gates remain.
+Native Linux custody/recipient/portable-recovery/CI selection at source2f191f36
+passes237 with12 Windows-only skips in12.04s. An actual Windows-prepared portable
+fixture is copied by itself into a new private Linux directory and independently
+verified without a Windows store/DPAPI or plaintext output. Fixture key ID:
+28dbc58ae82d9351bfe35dfcbae44161b5b43da1959a55fd78794bcd998d53e6;
+cipher SHA894ce62a29dde4d6c4a8ac40c3cac799f51e8f6fb52ae9d5c303cd8aada5741d.
+This is fixture account-independence, not production off-device recovery.
+No production backup key/window, Mac writer, task, deployment or public route was
+created/changed at this source checkpoint. Broader full-goal gates remain.
 
 Native frozen Windows receiver and disposable scheduler acceptance (2026-11-18;
 frozen runtime sourceeb2afb55, corrected management sourceab8b5413): new private
