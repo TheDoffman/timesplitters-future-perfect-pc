@@ -34,7 +34,7 @@ def case(tmp_path):
     with repository.db() as db:
         db.execute('INSERT INTO releases VALUES(?,?,?,?,?,?)',
                    (sha, 'fixture', '1.0.0', '{}', 'approved', '{}'))
-    snapshot = root / 'snapshot' 
+    snapshot = root / 'snapshot'
     backup.snapshot(repository.root, snapshot)
     key = X25519PrivateKey.generate()
     return root, snapshot, key, recipients.public(key, ORIGIN, PIN)
