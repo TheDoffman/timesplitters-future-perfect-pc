@@ -1,3 +1,26 @@
+Unstaged reboot evidence (2026-11-18; source149b371a; not deployed): an early
+restart can seal only the original before tree, with null original layout SHA,
+without creating or adopting a staging area. All20 original job/backup identities
+and13 factory policies/markers remain bound. Partial/linked staging, wrong store
+mode, replaced policy, mixed boot, invalid health/foreign proof and UID600 orphans
+are preserved/refused. The composed fixture uses new quiescence10 seconds later
+than the original boot, and backup capture validates that current epoch.
+Focused native checkpoint/backup/layout checks pass48 Mac58.45s and48 Linux72.61s;
+Windows expanded selection passes299 with233 POSIX skips0.88s. Ordinary recovery
+effects remain blocked pending explicit operational admission and immutable CLI.
+Expanded13-file reboot/ordinary layout/shutdown/coordinator/context/command/
+journal/lease/protocol/CI-scope regression passes532 Mac211.85s and532 Linux253.48s.
+Both runs use actual protected fixture files with simulated service/boot authority;
+they do not perform a physical reboot or upgrade the installed workshop.
+
+Read-only ordinary MacUID501 public HTTPS and loopback signed catalog111 match
+at149b371a, retaining5 revocations and0 approved releases; root pin remains
+b52e5d499648b84e8f5e84bb7b0a539426e6ff706f396d94baf7dfee19f73d27.
+This is not installedUID600 upgrade admission. Services/routing are unchanged.
+Previous sourcea2de8c89 CI44286161112 is terminal23 successes/2 skips, including
+Linux Vulkan, all3 launcher packages and aggregate validation; newer source is
+not covered by that run.
+
 Reboot backup gate (2026-11-18; source f0553259; not deployed): focused native
 backup/checkpoint/preparation/journal checks pass72 Mac58.01s and72 Linux72.60s.
 These cover preserved runtime/binding, explicit fresh reuse and renewal, lost
