@@ -409,7 +409,7 @@ def operational_boot(journal):
         require(journal.base['boot_id']==current and getattr(journal,'observation_boot',None) is None,
                 'Upgrade requires its original boot or explicit reboot admission')
     else:
-        require(reboot['admitted'] is not None and reboot['boot_id']==current
+        require(reboot.get('admitted') is not None and reboot['boot_id']==current
                 and getattr(journal,'observation_boot',None)==current,
                 'Upgrade requires its exact admitted current-boot lease')
     return current

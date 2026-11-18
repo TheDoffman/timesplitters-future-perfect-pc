@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,6 +13,14 @@ import mod_host_cutover_journal as journal
 import mod_host_migration as migration
 import mod_host_routing as routes
 from mod_package import ModError
+
+
+def test_observation_only_state_without_admission_cannot_grant_operational_boot(monkeypatch):
+    monkeypatch.setattr(journal,'boot_identity',lambda:'e'*64)
+    state=SimpleNamespace(base=dict(boot_id='f'*64),observation_boot='e'*64,
+        state=lambda:dict(reboot=dict(boot_id='e'*64)))
+    with pytest.raises(ModError):journal.operational_boot(state)
+    with pytest.raises(ModError):journal.operational_tracking(state)
 
 
 @pytest.fixture

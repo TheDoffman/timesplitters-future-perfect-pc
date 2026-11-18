@@ -70,6 +70,8 @@ retirement, startup, restart and public observation before a simulated reboot;
 fresh boot jobs are reconstructed from actual boot files, including known mixes.
 Each interrupted phase also reverses directly: new startup intents must select
 only the restored old generation, without an intermediate candidate startup.
+An observation-only state without an admission field refuses operational boot
+and tracking with ModError; it cannot reach an effect through a missing field.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

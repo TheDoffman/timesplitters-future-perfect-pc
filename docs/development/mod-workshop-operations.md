@@ -45,8 +45,9 @@ each known generation independently, binds loaded commands to their actual
 protected origin, and observes labels twice around a fresh numeric process sample.
 Escaped dedicated-UID workers and changing jobs/files/boot identity are refused.
 The report permits absent jobs and a known mix of boot generations; it does not
-claim those services are healthy or the monitor tree is complete. Full monitor/
-layout re-admission and explicit cross-boot journal takeover remain pending.
+claim those services are healthy or the monitor tree is complete. The separate
+monitor/layout, backup and operational admission gates are described below;
+installed CLI and physical boot acceptance remain pending.
 This reader writes nothing, starts or stops nothing, and grants no migration,
 public-restoration or settlement authority. Existing same-boot guards remain.
 
@@ -54,7 +55,8 @@ public-restoration or settlement authority. Existing same-boot guards remain.
 original history selected by nonce, releases, UID, backup and prior boot. A
 pre-lock history hash is rechecked under the lease; the original boot header and
 saved observations are preserved. The lease exposes the distinct current boot
-for observation and narrowly scoped preparation, refusing ordinary upgrade events.
+for observation and narrowly scoped preparation, refusing ordinary upgrade events
+until the separate explicit current-boot admission below.
 A dedicated typed adapter records only fresh reboot observation, selective routing
 suspension, ordered fixed-label stop intent/result and confirmed quiescence. An
 ordinary upgrade event cannot follow reboot preparation without separate explicit
@@ -62,10 +64,11 @@ admission. A complete validated
 single pending metadata append may be promoted only when explicitly requested;
 that promotion does not prove any current OS effect. Changed boots, missing or
 foreign histories and competing leases are refused. Normal transaction and
-operational same-boot guards are unchanged. Recovery constructors cannot recreate
+operational boot guards require the original or explicitly admitted current boot.
+Recovery constructors cannot recreate
 history that vanished after inventory, and new-only constructors cannot adopt a
 file that appeared after inventory. This metadata phase does not yet permit
-ordinary migration/startup/settlement after reboot or expose a reboot CLI.
+ordinary migration/startup/settlement by itself or expose a reboot CLI.
 
 `read_reboot_context` validates the original Root700/600 context through that
 observation lease, retaining its original binding, plan hash, private baseline,
@@ -73,9 +76,9 @@ routing and exact fresh factory comparisons. It returns hash-bound historical
 metadata labelled `original_observations`, not executable job commands or an
 operational context. Missing, foreign or changed contexts are preserved/refused.
 This reader cannot seal/adopt context, create directories or invoke private/live
-preflight. Ordinary reconstruction and every service-effect boot guard remain
-strictly same-boot. The old metadata plus a fresh job snapshot are inputs for
-future explicit takeover, not permission to continue effects after a restart.
+preflight. Ordinary reconstruction and service effects require the original boot
+or the explicitly admitted current boot below. Old metadata plus a fresh job
+snapshot alone do not permit continuing effects after a restart.
 
 The internal `mod_host_reboot_prepare.prepare` verifies that metadata against the
 fresh installed pair, records a new boot observation, suspends only public8443,
@@ -87,8 +90,9 @@ another bootout; unknown replacement jobs, changing files and escaped workers
 preserve uncertainty instead of admitting cleanup. Repeated physical restarts
 require another fresh observation chained to the prior preparation boot while
 retaining the original journal header/context. Quiescence does not grant private
-migration, service startup, public restoration or settlement authority. Monitor/
-layout re-admission, fresh backup/proof and operational reboot CLI remain pending.
+migration, service startup, public restoration or settlement authority. The
+following layout/backup/admission gates are separate; an installed reboot CLI
+remains pending.
 The installed upgrade entry's mandatory verified-source inventory now includes
 the typed reboot journal parser, because reading any recovery history may select
 that parser. An incomplete candidate is refused before journal/OS effects.
@@ -105,7 +109,8 @@ evidence or have a recorded retained retirement. The original manifest/boot bind
 is never rewritten. The result reports positions and inventories only. This
 observation Layout refuses preparation, exchange and internal moves before any
 callback or write. Metadata checkpoint sealing is described below; granting
-ordinary post-reboot migration/startup authority remains unfinished.
+ordinary post-reboot effects requires the separate admission below. Installed
+CLI integration and actual host acceptance remain unfinished.
 
 Before any protected layout was recorded, the same reader observes only the
 original active generation. All twenty original job/backup file identities must
@@ -643,7 +648,9 @@ Catalog floor is retained across shutdown/reverse/restart. The old generation
 must again retire proof, pass AV, load fixed jobs, complete readiness/seven restarts
 and pass public-admission freshness gates. The full history now allows512 events/
 128KiB per transaction, at most32 transactions; a complete post-start reversal
-exceeds128 events. These internal phases still require installed acceptance,
+exceeds128 events, while upgrade/reboot/recovery/reversal can exceed256. Reaching
+either cap preserves the existing history and refuses another append. These
+internal phases still require installed acceptance,
 reboot recovery and actual public restoration acceptance before live deployment.
 
 The v2 routing callback is directly compatible with the selective transition
