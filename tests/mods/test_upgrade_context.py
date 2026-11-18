@@ -95,7 +95,7 @@ def test_reboot_reader_preserves_original_context_without_operational_reconstruc
             observed=contexts.read_reboot_context(journal,fresh)
             assert observed['original_boot']=='f'*64 and observed['boot_id']=='e'*64
             assert observed['operational_authority'] is False and observed['plan']==item['context']['plan']
-            assert observed['original_observations']==item['context']['observed']
+            assert storage.wire(observed['original_observations'])==storage.wire(item['context']['observed'])
             assert not {'observed','report','operator','command'} & observed.keys()
         with pytest.raises(ModError):contexts.reconstruct(journal,fresh)
         with pytest.raises(ModError):contexts.seal(journal,item['context'],resume=True)

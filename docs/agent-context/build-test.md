@@ -1,5 +1,5 @@
 [Workshop/native/V-Sync test routes](build-test-integration.md).
-Reboot lease/context/HTTPS: build-test-integration.md; IPC: test_online_menu.py.
+Reboot context/JSON/HTTPS: build-test-integration.md; IPC: test_online_menu.py.
 Chunk-bound execution uses explicit max_chunk_bytes: compiler-batching.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
