@@ -167,6 +167,37 @@ after new preparation records its manifest. No installed reboot CLI or physical
 boot acceptance is established by this internal implementation; native composed
 validation is recorded separately in STATUS.
 
+The installed-source command now implements explicit `--recover-boot ORIGINAL`
+with `--resume-private`, `--rollback-private` or `--restore-public`. ORIGINAL is
+the original journal header's boot SHA, never a new nonce or the current boot.
+The existing exact `--from-release`, `--backup-release` and `--nonce` remain
+required. Apply, inspect, preflight, malformed boot values and implicit actions
+refuse this option before administrator admission. The immutable installed
+Python/script and local Root authentication checks still precede recovery.
+All six reboot phase modules plus their typed parser must be present in the
+verified candidate source inventory before any factory child or journal effect.
+
+Recovery re-verifies both code closures, backup binding and fixed factories,
+then acquires the existing original journal's exclusive current-boot lease.
+It does not rerun initial private/live preflight against migrated data or adopt
+stored commands. A new or unfinished boot runs fresh preparation and admission;
+an already admitted current boot reconstructs context and resumes its selected
+ordinary phase. The option explicitly requests recovery of known pending effects.
+Public restore requires this boot already admitted and remains a separate action
+after successful private resume/rollback. It cannot implicitly perform private
+recovery, invent missing history or expose an unadmitted boot.
+
+If the restart preceded any protected staging or migration, explicit rollback
+under fresh reboot admission can bind a new manifest and start the unchanged old
+generation directly. It does not apply candidate configuration just to reverse
+it. Protected after staging is retained unused; old startup still retires any
+known proof, passes scanner/private readiness and seven restarts before a
+separate public restoration. Unknown partial staging stays preserved/refused.
+This command implementation is not installed or accepted on the live host yet;
+it requires a freshly sealed candidate containing these exact modules. Do not
+edit an older immutable candidate to add the option or infer physical boot
+acceptance from isolated command tests.
+
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
 requires `--host-release` with an exact installed identity. The newly verified

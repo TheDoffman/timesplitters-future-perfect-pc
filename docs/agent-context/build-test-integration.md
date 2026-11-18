@@ -72,6 +72,18 @@ Each interrupted phase also reverses directly: new startup intents must select
 only the restored old generation, without an intermediate candidate startup.
 An observation-only state without an admission field refuses operational boot
 and tracking with ModError; it cannot reach an effect through a missing field.
+test_upgrade_command covers --recover-boot argument/auth ordering and dispatch
+under the actual existing exclusive lease, with phase effects simulated. New and
+interrupted/prior-boot admission require preparation; public restore requires
+this boot already admitted. Missing/foreign/same-boot history cannot be adopted.
+test_upgrade_process requires every reboot module in the sealed inventory.
+test_reboot_command uses fresh-bound fixture metadata with an actual preflight
+digest and sealed original context, exercising real admission/reconstruction/
+coordinator files and public restoration. Its adapter reuses the fixture's held
+lease; transport, closure admission and system processes remain simulated.
+Unstaged reversal prepares only a manifest, then starts old services directly,
+without applying candidate configuration. It still needs fresh AV/readiness and
+seven restarts; ordinary unprepared rollback without reboot admission is refused.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

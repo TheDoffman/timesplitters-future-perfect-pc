@@ -111,8 +111,13 @@ def rollback_private(journal,context,*,resume=False):
     require(type(resume) is bool,'Choose explicit rollback recovery')
     checked_context(journal,context)
     state=journal.state();base=journal.base
+    reboot=state['reboot']
+    unstaged=(state['layout_sha256'] is None and reboot is not None and reboot['admitted'] is not None
+        and state['config']=='before' and state['config_pending'] is None and state['layout_pending'] is None
+        and state['layout_complete'] is None and state['monitor']=='before' and state['quiescent']
+        and all(value=='before' for value in state['boots'].values()) and not state['started'] and state['start_pending'] is None)
     require(not state['settled'] and not state['routing_restored'] and state['routing_pending'] is None
-            and state['layout_sha256'] is not None and state['config_pending'] in (None,'apply','rollback')
+            and (state['layout_sha256'] is not None or unstaged) and state['config_pending'] in (None,'apply','rollback')
             and (state['layout_pending'] is None or state['layout_pending'].startswith(('apply-','rollback-')))
             and state['private_baseline']==context['private_baseline'],
             'Resolve forward or routing recovery before reversing a prepared upgrade')
@@ -133,8 +138,14 @@ def rollback_private(journal,context,*,resume=False):
     journal.require_suspended(invoke)
     old_entries,new_entries=context['entries'],context['candidate_entries']
     exchange=layouts.Layout(journal,context['old']['root'],context['new']['root'],old_entries,new_entries)
-    exchange.reopen(state['layout_sha256'])
     gate=lambda:layouts.quiescence_gate(journal,old_entries,command,invoke)
+    if unstaged:
+        # No candidate configuration or boot policy was applied. Bind the old
+        # tree to a protected manifest, then admit old startup directly; do not
+        # migrate forward merely to permit an early cancellation.
+        gate();fingerprint=exchange.prepare();gate();journal.record('layout-prepared',data=fingerprint)
+        state=journal.state()
+    else:exchange.reopen(state['layout_sha256'])
     if forward_pending:
         gate()
         if state['config']=='before' or state['config_pending']=='apply':

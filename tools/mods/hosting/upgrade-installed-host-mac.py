@@ -65,6 +65,9 @@ def verified_inputs(before,after,uid,backup_identity):
     required={'tools/mods/mod_host_upgrade_process.py','tools/mods/mod_host_upgrade_context.py','tools/mods/mod_host_cutover.py',
               'tools/mods/mod_host_cutover_journal.py','tools/mods/mod_host_upgrade_coordinator.py',
               'tools/mods/mod_host_reboot_journal.py',
+              'tools/mods/mod_host_reboot_observation.py','tools/mods/mod_host_reboot_prepare.py',
+              'tools/mods/mod_host_reboot_layout.py','tools/mods/mod_host_reboot_checkpoint.py',
+              'tools/mods/mod_host_reboot_backup.py','tools/mods/mod_host_reboot_admission.py',
               'tools/mods/mod_host_upgrade_admission.py','tools/mods/mod_host_upgrade_activation.py',
               'tools/mods/mod_host_upgrade_layout.py','tools/mods/mod_host_upgrade_shutdown.py',
               'tools/mods/mod_host_migration.py','tools/mods/hosting/force-upgrade-backup-mac.py',
@@ -142,7 +145,31 @@ def preflight(before,after,uid,backup_identity):
     return prepare_context(before,after,uid,backup_identity)['report']
 
 
-def run_action(before,after,uid,backup_identity,action,nonce,*,expected_preflight=None,resume_action=False):
+def run_reboot_action(before,after,uid,backup_identity,action,nonce,original_boot,fresh):
+    """Recover only original existing history, under its exact current-boot lease."""
+    release.require(action in ('resume','rollback','restore'),'Choose an explicit reboot recovery action')
+    import mod_host_cutover_journal as storage
+    import mod_host_reboot_prepare as preparation
+    import mod_host_reboot_admission as admission
+    import mod_host_upgrade_context as contexts
+    import mod_host_upgrade_coordinator as coordinator
+    with storage.reboot_observation_lease(nonce,before,after,uid,backup_identity,original_boot,recover_pending=True) as journal:
+        reboot=journal.state()['reboot']
+        admitted=reboot is not None and reboot['boot_id']==journal.observation_boot and reboot['admitted'] is not None
+        if not admitted:
+            release.require(action in ('resume','rollback'),
+                'Admit this boot through explicit private resume or rollback before restoring public access')
+            preparation.prepare(journal,fresh,resume=reboot is not None)
+            admission.admit(journal,fresh,resume=True)
+        context=contexts.reconstruct(journal,fresh)
+        if action=='restore':result=coordinator.restore_public(journal,context,resume=True)
+        elif action=='rollback':result=coordinator.rollback_private(journal,context,resume=True)
+        else:result=coordinator.apply_private(journal,context,resume=True)
+        return dict(result,schema=1,nonce=nonce,before=before,after=after,uid=uid,
+                    original_boot=original_boot,recovered_boot=journal.observation_boot)
+
+
+def run_action(before,after,uid,backup_identity,action,nonce,*,expected_preflight=None,resume_action=False,recover_boot=None):
     """Own the exact journal lease and sealed context before upgrade effects.
 
     Authentication/immutable entry-point admission precedes this call. Public
@@ -152,10 +179,15 @@ def run_action(before,after,uid,backup_identity,action,nonce,*,expected_prefligh
         and type(resume_action) is bool and (not resume_action or action in ('rollback','restore'))
         and ((action=='apply' and isinstance(expected_preflight,str) and release.SHA.fullmatch(expected_preflight))
              or (action!='apply' and expected_preflight is None)), 'Choose an exact private upgrade action and transaction')
+    release.require(recover_boot is None or (action in ('resume','rollback','restore')
+        and isinstance(recover_boot,str) and release.SHA.fullmatch(recover_boot)),
+        'Choose an exact original boot only for explicit recovery actions')
     # These calls verify both closures and the independent backup before any
     # coordinator/journal imports from the selected immutable new source.
     context=prepare_context(before,after,uid,backup_identity) if action=='apply' else None
     fresh=verified_inputs(before,after,uid,backup_identity) if context is None else None
+    if recover_boot is not None:
+        return run_reboot_action(before,after,uid,backup_identity,action,nonce,recover_boot,fresh)
     import mod_host_cutover as cutover
     import mod_host_cutover_journal as storage
     import mod_host_upgrade_context as contexts
@@ -215,12 +247,13 @@ def main():
     parser.add_argument('--backup-release')
     parser.add_argument('--nonce')
     parser.add_argument('--expected-preflight')
+    parser.add_argument('--recover-boot',help='Original journal boot SHA for explicit recovery after a Mac restart')
     parser.add_argument('--resume',action='store_true',help='Resume an already-started rollback or public restoration')
     args=parser.parse_args()
     try:
         private=args.apply_private or args.resume_private or args.rollback_private or args.restore_public
         if not (args.inspect or args.preflight or private):
-            release.require(all(value is None for value in (args.from_release,args.backup_release,args.nonce,args.expected_preflight))
+            release.require(all(value is None for value in (args.from_release,args.backup_release,args.nonce,args.expected_preflight,args.recover_boot))
                 and not args.resume,'Choose an explicit installed upgrade action')
             value=dict(schema=1,phase='plan-only',installed_releases=2,jobs=10,services_changed=False,
                        network_started=False,data_written=False)
@@ -233,11 +266,15 @@ def main():
                             or (not args.apply_private and args.expected_preflight is None),'A fresh apply requires its expected preflight digest')
             release.require(not args.resume or args.rollback_private or args.restore_public,
                             'Use --resume only with --rollback-private or --restore-public')
+            release.require(args.recover_boot is None or ((args.resume_private or args.rollback_private or args.restore_public)
+                and isinstance(args.recover_boot,str) and release.SHA.fullmatch(args.recover_boot)),
+                'Use --recover-boot only with a recovery action and exact original boot SHA')
             after,uid=root_context(args.from_release)
             if private:
                 mode='apply' if args.apply_private else 'resume' if args.resume_private else 'restore' if args.restore_public else 'rollback'
-                value=run_action(args.from_release,after,uid,args.backup_release,mode,args.nonce,
-                    expected_preflight=args.expected_preflight,resume_action=args.resume)
+                options=dict(expected_preflight=args.expected_preflight,resume_action=args.resume)
+                if args.recover_boot is not None:options['recover_boot']=args.recover_boot
+                value=run_action(args.from_release,after,uid,args.backup_release,mode,args.nonce,**options)
             else:value=preflight(args.from_release,after,uid,args.backup_release) if args.preflight else inspection(args.from_release,after,uid)
         print(json.dumps(value,indent=2));return 0
     except (OSError,ValueError,subprocess.SubprocessError) as error:

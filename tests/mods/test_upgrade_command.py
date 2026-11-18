@@ -3,6 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+from contextlib import contextmanager
 
 import pytest
 from test_host_cutover import protected_jobs
@@ -14,6 +15,9 @@ import mod_host_cutover as cutover
 import mod_host_cutover_journal as storage
 import mod_host_upgrade_context as contexts
 import mod_host_upgrade_coordinator as coordinator
+import mod_host_migration as migration
+import mod_host_reboot_prepare as reboot_preparation
+import mod_host_reboot_admission as reboot_admission
 from mod_package import ModError
 
 
@@ -107,6 +111,10 @@ def test_unused_transaction_requires_exact_context_recovery_and_preserves_partia
 
 
 @pytest.mark.parametrize('arguments',[
+    ['--recover-boot','f'*64],
+    ['--preflight','--from-release','a'*64,'--backup-release','8'*64,'--recover-boot','f'*64],
+    ['--apply-private','--from-release','a'*64,'--backup-release','8'*64,'--nonce','c'*64,'--expected-preflight','e'*64,'--recover-boot','f'*64],
+    ['--resume-private','--from-release','a'*64,'--backup-release','8'*64,'--nonce','c'*64,'--recover-boot','../bad'],
     ['--nonce','c'*64],['--apply-private','--from-release','a'*64,'--backup-release','a'*64,'--nonce','c'*64],
     ['--inspect','--from-release','a'*64,'--nonce','c'*64],
     ['--preflight','--from-release','a'*64,'--backup-release','a'*64,'--resume'],
@@ -139,3 +147,79 @@ def test_private_cli_authentication_precedes_action_and_valid_arguments_dispatch
     assert entry.main()==0 and json.loads(capsys.readouterr().out)['public_endpoint_started'] is False
     assert calls[-1]==(('a'*64,'b'*64,600,'8'*64,mode,'c'*64),
         dict(expected_preflight='e'*64 if mode=='apply' else None,resume_action=resuming))
+
+
+@pytest.mark.parametrize('flag,mode',[('--resume-private','resume'),('--rollback-private','rollback'),('--restore-public','restore')])
+def test_reboot_cli_authenticates_before_forwarding_exact_original_boot(monkeypatch,capsys,flag,mode):
+    entry=entry_module();calls=[]
+    monkeypatch.setattr(sys,'argv',['upgrade',flag,'--from-release','a'*64,'--backup-release','8'*64,
+        '--nonce','c'*64,'--recover-boot','f'*64])
+    monkeypatch.setattr(entry,'root_context',lambda *_:(_ for _ in ()).throw(ValueError('authentication refused')))
+    monkeypatch.setattr(entry,'run_action',lambda *a,**k:pytest.fail('Dispatched before authentication'))
+    assert entry.main()==2;capsys.readouterr()
+    monkeypatch.setattr(entry,'root_context',lambda *_:('b'*64,600))
+    def run(*args,**kwargs):calls.append((args,kwargs));return dict(phase='fixture-reboot')
+    monkeypatch.setattr(entry,'run_action',run)
+    assert entry.main()==0 and json.loads(capsys.readouterr().out)['phase']=='fixture-reboot'
+    assert calls==[(('a'*64,'b'*64,600,'8'*64,mode,'c'*64),
+        dict(expected_preflight=None,resume_action=False,recover_boot='f'*64))]
+
+
+@pytest.mark.parametrize('action',['resume','rollback','restore'])
+@pytest.mark.parametrize('admission_state',[None,'preparing','admitted','prior-admitted'])
+def test_reboot_dispatch_uses_original_existing_exclusive_lease_without_initial_preflight(command,monkeypatch,action,admission_state):
+    item,entry,calls,run=command
+    already_admitted=admission_state=='admitted'
+    run('apply',expected_preflight=item['arguments']['preflight_sha256']);calls.clear()
+    journal_path=cutover.ROOT/'upgrades'/('c'*64+'.json');original=journal_path.read_bytes();context=item['path'].read_bytes()
+    monkeypatch.setattr(storage,'boot_identity',lambda:'e'*64);monkeypatch.setattr(migration,'boot_identity',lambda:'e'*64)
+    real_lease=storage.reboot_observation_lease
+    @contextmanager
+    def lease(*args,**kwargs):
+        with real_lease(*args,**kwargs) as journal:
+            assert journal.base['boot_id']=='f'*64 and journal.observation_boot=='e'*64 and journal.current==original
+            if admission_state is not None:
+                state=journal.state()
+                monkeypatch.setattr(journal,'state',lambda:dict(state,reboot=dict(
+                    boot_id=('9' if admission_state=='prior-admitted' else 'e')*64,
+                    admitted=dict(time=1000000000) if admission_state in ('admitted','prior-admitted') else None)))
+            yield journal
+    monkeypatch.setattr(storage,'reboot_observation_lease',lease)
+    def prepare(journal,fresh,*,resume):calls.append(('prepare-boot',resume))
+    def admit(journal,fresh,*,resume):calls.append(('admit-boot',resume))
+    def reconstruct(journal,fresh):
+        calls.append('reconstruct')
+        return dict(item['context'],report=dict(item['context']['report'],phase='historical-upgrade-context-reconstructed'))
+    monkeypatch.setattr(reboot_preparation,'prepare',prepare);monkeypatch.setattr(reboot_admission,'admit',admit)
+    monkeypatch.setattr(contexts,'reconstruct',reconstruct)
+    monkeypatch.setattr(entry,'prepare_context',lambda *_:pytest.fail('Initial/private preflight during reboot recovery'))
+    if action=='restore' and not already_admitted:
+        with pytest.raises(ValueError,match='private resume or rollback'):run(action,recover_boot='f'*64)
+        assert calls==['verified']
+    else:
+        result=run(action,recover_boot='f'*64)
+        assert result['original_boot']=='f'*64 and result['recovered_boot']=='e'*64
+        expected=['verified']+([] if already_admitted else [('prepare-boot',admission_state is not None),('admit-boot',True)])+[
+            'reconstruct',(action if action!='resume' else 'apply',True,'historical-upgrade-context-reconstructed')]
+        assert calls==expected
+    assert journal_path.read_bytes()==original and item['path'].read_bytes()==context
+
+
+@pytest.mark.parametrize('original_boot',['f'*64,'9'*64,'e'*64])
+def test_reboot_dispatch_does_not_create_missing_or_adopt_wrong_history(command,monkeypatch,original_boot):
+    item,entry,calls,run=command
+    if original_boot!='f'*64:
+        run('apply',expected_preflight=item['arguments']['preflight_sha256']);calls.clear()
+    monkeypatch.setattr(storage,'boot_identity',lambda:'e'*64);monkeypatch.setattr(migration,'boot_identity',lambda:'e'*64)
+    with pytest.raises((OSError,ValueError)):run('resume',recover_boot=original_boot)
+    assert calls==['verified']
+    if original_boot=='f'*64:assert not (cutover.ROOT/'upgrades').exists()
+
+
+@pytest.mark.parametrize('action,boot',[('apply','f'*64),('resume','../bad'),('rollback',True),('restore',[])])
+def test_invalid_direct_reboot_selection_refuses_before_preflight_or_input_verification(monkeypatch,action,boot):
+    entry=entry_module()
+    monkeypatch.setattr(entry,'prepare_context',lambda *_:pytest.fail('Unexpected initial preflight'))
+    monkeypatch.setattr(entry,'verified_inputs',lambda *_:pytest.fail('Unexpected input verification'))
+    with pytest.raises(ValueError):entry.run_action('a'*64,'b'*64,600,'8'*64,action,'c'*64,
+        expected_preflight='e'*64 if action=='apply' else None,recover_boot=boot)

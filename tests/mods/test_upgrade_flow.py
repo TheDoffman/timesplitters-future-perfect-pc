@@ -11,6 +11,8 @@ from test_upgrade_layout import prepared
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'tools/mods'))
 import mod_host_cutover_journal as journal
+import mod_host_cutover as cutover
+import mod_host_upgrade_context as contexts
 import mod_host_migration as migration
 import mod_host_routing as routes
 import mod_host_upgrade_admission as admission
@@ -24,7 +26,8 @@ pytestmark=pytest.mark.parametrize('prepared',['deferred'],indirect=True)
 @pytest.fixture
 def flow(prepared,workshop_routing,monkeypatch,request):
     case=prepared;now=[1000000000];calls=[];private=['before']
-    fresh=getattr(request,'param',None)=='fresh'
+    bound=getattr(request,'param',None)=='fresh-bound'
+    fresh=getattr(request,'param',None) in ('fresh','fresh-bound')
     plan=None
     if fresh:
         from test_upgrade_admission import plan_report
@@ -36,14 +39,19 @@ def flow(prepared,workshop_routing,monkeypatch,request):
         tracked=dict(pids=[],groups=[]),routing=workshop_routing['baseline'],backup_identity='8'*64,
         backup_base_release='7'*64,clock=lambda:now[0])
     if fresh:arguments.update(plan_sha256=plan['sha256'],tracked=dict(pids=list(range(100,110)),groups=list(range(100,110))))
+    baseline=dict(schema=1,phase='private-services-verified',release='a'*64,uid=600,
+        origin=workshop_routing['baseline']['origin'],trusted_root_sha256='9'*64,catalog_version=40,release_count=3,
+        role_health_verified=True,transport='private-loopback-http',public_endpoint_verified=False)
+    observed=None
+    if bound:
+        observed=dict(files=cutover.job_files(case.old),observation=dict(tracked=arguments['tracked'],
+            jobs={spec['Label']:dict(path=str(path),pid=100+index) for index,(path,spec) in enumerate(case.old)}))
+        arguments['preflight_sha256']=contexts.preflight_digest(observed,case.new,arguments['routing'],plan,baseline)
     def command(argv):
         if argv[0]=='/bin/ps':return 0,'1 0 1 0\n'
         name=argv[-1].removeprefix('system/')
         return 113,'Bad request.\nCould not find service "'+name+'" in domain for system\n'
     with journal.transaction(**arguments) as state:
-        baseline=dict(schema=1,phase='private-services-verified',release='a'*64,uid=600,
-            origin=workshop_routing['baseline']['origin'],trusted_root_sha256='9'*64,catalog_version=40,release_count=3,
-            role_health_verified=True,transport='private-loopback-http',public_endpoint_verified=False)
         if not fresh:
             state.record('baseline-private-verified',data=baseline)
             routes.transition(state.base['routing'],False,workshop_routing['invoke'],state.routing_event)
@@ -84,7 +92,7 @@ def flow(prepared,workshop_routing,monkeypatch,request):
         def run(direction,*,resume=False):
             return layout.configuration_and_exchange(state,current,case.exchange,direction,gate,resume=resume)
         yield SimpleNamespace(case=case,state=state,now=now,calls=calls,private=private,run=run,gate=gate,
-            capture=capture_and_prove,child=child,routing=workshop_routing,arguments=arguments,plan=plan,baseline=baseline)
+            capture=capture_and_prove,child=child,routing=workshop_routing,arguments=arguments,plan=plan,baseline=baseline,observed=observed)
 
 
 def test_full_journaled_apply_reverse_and_restoration_requires_matching_generation(flow):

@@ -89,7 +89,7 @@ def machine(flow,monkeypatch,public_upgrade_report):
     report={key:state.base[key] for key in ('before','after','uid','backup_identity','backup_base_release','plan_sha256','preflight_sha256')}
     context=dict(old=old_release,new=new_release,profile=profile,backup_runtime=runtime,backup_binding=binding,
         operator=item.routing['invoke'],command=command,entries=old,candidate_entries=new,plan=item.plan,
-        private_baseline=item.baseline,observed=dict(observation=dict(tracked=state.base['tracked'])),
+        private_baseline=item.baseline,observed=item.observed or dict(observation=dict(tracked=state.base['tracked'])),
         routing=state.base['routing'],report=report)
     return SimpleNamespace(flow=item,state=state,context=context,loaded=loaded,stops=stops,starts=starts,
         kills=kills,captures=captures,scans=scans)

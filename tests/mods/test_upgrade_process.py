@@ -271,7 +271,7 @@ def test_backup_factory_uses_its_independent_retained_runtime(verified,monkeypat
     assert process.job_specs(runtime,current,600,backup_identity=identity)[0][1]['Label']=='org.timesplitters.workshop.backup'
 
 
-@pytest.mark.parametrize('retain_context',[False,True,'inputs'])
+@pytest.mark.parametrize('retain_context',[False,True,'inputs','missing-reboot'])
 def test_preflight_verifies_independent_backup_binding_and_combines_only_attested_job_metadata(monkeypatch,retain_context):
     from types import SimpleNamespace
     spec=importlib.util.spec_from_file_location('upgrade_preflight_composition',SOURCE/'tools/mods/hosting/upgrade-installed-host-mac.py')
@@ -284,6 +284,9 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
         'tools/mods/mod_host_upgrade_context.py',
         'tools/mods/mod_host_cutover_journal.py','tools/mods/mod_host_upgrade_coordinator.py',
         'tools/mods/mod_host_reboot_journal.py',
+        'tools/mods/mod_host_reboot_observation.py','tools/mods/mod_host_reboot_prepare.py',
+        'tools/mods/mod_host_reboot_layout.py','tools/mods/mod_host_reboot_checkpoint.py',
+        'tools/mods/mod_host_reboot_backup.py','tools/mods/mod_host_reboot_admission.py',
         'tools/mods/mod_host_upgrade_admission.py','tools/mods/mod_host_upgrade_activation.py',
         'tools/mods/mod_host_upgrade_layout.py','tools/mods/mod_host_upgrade_shutdown.py',
         'tools/mods/mod_host_migration.py','tools/mods/hosting/force-upgrade-backup-mac.py',
@@ -293,6 +296,11 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
         'tools/mods/hosting/upgrade-job-specs-mac.py','tools/mods/hosting/migrate-private-generation-mac.py')})
     profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='f'*64)
     monkeypatch.setattr(upgrade,'verified_pair',lambda *args:(old,new,profile))
+    if retain_context=='missing-reboot':
+        del new['descriptor']['source_files']['tools/mods/mod_host_reboot_admission.py']
+        with pytest.raises(ValueError,match='Incomplete installed upgrade coordinator'):
+            upgrade.verified_inputs(before,after,600,backup_id)
+        return
     monkeypatch.setattr(upgrade.release,'installed',lambda identity,uid:backup_runtime if identity==retained and uid==600 else pytest.fail('Unexpected retained runtime'))
     monkeypatch.setattr(upgrade.release,'INSTALLED_ROOT',process.ROOT)
     monkeypatch.setattr(sys,'path',list(sys.path))

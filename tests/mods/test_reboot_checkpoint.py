@@ -34,6 +34,8 @@ pytestmark=[pytest.mark.parametrize('prepared',['deferred'],indirect=True),
 def rebooted(machine,monkeypatch,request):
     item=machine;phase=getattr(request,'param',None);early=phase=='early'
     original_files=cutover.job_files(item.context['entries'])
+    bound=item.flow.observed is not None
+    if bound:contexts.seal(item.state,item.context)
     if phase in ('archive','install','boot','migration','retire','start','restart','public'):
         record=item.state.record
         def interrupted(kind,label=None,data=None):
@@ -53,8 +55,9 @@ def rebooted(machine,monkeypatch,request):
     # monitor/layout files are the actual result of the composed private phase.
     for module in (storage,migration,observations,reboot_prepare,reboot_layout,checkpoint,layouts):
         monkeypatch.setattr(module,'boot_identity',lambda:'e'*64)
-    monkeypatch.setattr(contexts,'read_reboot_context',lambda *_:dict(context_sha256='9'*64,
-        original_observations=dict(files=original_files),private_baseline=item.context['private_baseline']))
+    if not bound:
+        monkeypatch.setattr(contexts,'read_reboot_context',lambda *_:dict(context_sha256='9'*64,
+            original_observations=dict(files=original_files),private_baseline=item.context['private_baseline']))
     item.state.observation_boot='e'*64
     item.loaded.clear()
     for index,(_,spec) in enumerate(item.context['entries']):
