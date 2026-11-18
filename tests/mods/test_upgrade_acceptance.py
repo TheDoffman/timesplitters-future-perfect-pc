@@ -63,12 +63,14 @@ def accepting(running,monkeypatch):
                            ticks=ticks,damage=damage,admit=admit,command=command)
 
 
-def test_seven_restarts_and_signed_floor_admit_only_fresh_selective_restoration(accepting):
+def test_seven_restarts_and_signed_floor_admit_only_fresh_selective_restoration(accepting,public_upgrade_report):
     case=accepting;state=case.case.flow.state;result=case.admit()
     assert case.kills==journal_code.restart_order() and len(case.checks)==8
     assert case.checks==[40]+[42]*7 and result['catalog_version']==42
     assert state.state()['activation_ready'] and result['public_endpoint_started'] is False
     routes.transition(state.base['routing'],True,case.case.flow.routing['invoke'],state.routing_event)
+    with pytest.raises(ModError):state.record('settled')
+    state.record('public-readiness-verified',state.state()['config'],public_upgrade_report(state))
     state.record('settled');assert state.state()['settled']
 
 

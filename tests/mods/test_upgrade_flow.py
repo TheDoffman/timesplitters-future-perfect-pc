@@ -95,9 +95,10 @@ def test_full_journaled_apply_reverse_and_restoration_requires_matching_generati
     item.run('rollback')
     assert item.private==['before'] and state.state()['config']=='before' and item.calls==['apply','rollback']
     state.record('access-verified',data=dict(release='a'*64,sha256='9'*64))
-    routes.transition(state.base['routing'],True,item.routing['invoke'],state.routing_event)
-    state.record('settled')
-    assert state.state()['settled'] and 64<len(json.loads(state.current)['events'])<=journal.MAX_EVENTS
+    # File/config reversal alone cannot expose or settle a stopped host.
+    with pytest.raises(ModError):routes.transition(state.base['routing'],True,item.routing['invoke'],state.routing_event)
+    with pytest.raises(ModError):state.record('settled')
+    assert not state.state()['settled'] and 64<len(json.loads(state.current)['events'])<=journal.MAX_EVENTS
 
 
 @pytest.mark.parametrize('operation',['archive','install','boot'])

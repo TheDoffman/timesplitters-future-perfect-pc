@@ -1,5 +1,5 @@
 SDK: ../development/mod-creator-tools.md; ops: ../development/mod-workshop-operations.md.
-HTTPS acceptance: ops; both generations/checkpoints; routing pending.
+HTTPS restoration: ops; both generations, pending intent/fresh proof; CLI pending.
 register-installed-host-mac.py derives9 protected jobs: staging bootstrap,
 source-pinned private readiness and7 restarts precede boot-file installation.
 601 repair passes private checks,9 jobs and post-seal verification (STATUS).

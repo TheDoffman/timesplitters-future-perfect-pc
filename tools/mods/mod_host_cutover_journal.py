@@ -63,6 +63,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
     started=[];start_pending=None;activation_generation=None
     private_baseline=None;catalog_floor=1;private_ready=None;private_time=None;restarted=[];restart_pending=None;activation_ready=False
     shutdown=None;shutdown_stopped=[];shutdown_pending=None;shutdown_complete=False;monitor_checkpoints={}
+    public_ready=None;public_time=None
     order = stop_order()
     for event in events:
         require(isinstance(event, dict) and set(event) == {'kind','label','time','data'}
@@ -71,6 +72,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         previous = event['time']
         kind, label = event['kind'], event['label']
         data=event['data']
+        if kind not in ('public-readiness-verified','settled'):public_ready=None;public_time=None
         if kind=='baseline-private-verified':
             require(label is None and private_baseline is None and not stopped and not suspended and route_pending is None
                     and not restored and layout_sha is None and isinstance(data,dict),
@@ -85,6 +87,8 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                     and start_pending is None and restart_pending is None and (shutdown is None or shutdown_complete)
                     and (not started or activation_ready)),
                     'Public restoration cannot cross a pending protected operation')
+            require(not expose or layout_sha is None or (started==start_order() and activation_ready),
+                    'Protected upgrades require complete private startup before public restoration')
             if expose and started:
                 require(private_ready is not None and access is not None and 0<=event['time']-private_time<=300
                         and 0<=event['time']-scanner_time<=300
@@ -284,6 +288,43 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                         and data['pid']!=restart_pending['pid'] and data['old_tree_exited'] is True,
                         'Restart observation lacks a new process and old-tree cleanup')
                 restarted.append(label);restart_pending=None
+        elif kind=='restoration-readiness-verified':
+            require(label==config==monitor==layout_complete==activation_generation and layout_sha is not None
+                    and started==start_order() and restarted==restart_order() and activation_ready
+                    and all(value==config for value in boots.values()) and private_baseline is not None
+                    and pending is None and start_pending is None and restart_pending is None
+                    and config_pending is None and layout_pending is None and retire_pending is None and shutdown is None
+                    and ((suspended and route_pending is not False) or (restored and route_pending is None))
+                    and isinstance(data,dict) and set(data)=={'routing','scanner','private','scanner_checked_at','private_checked_at'}
+                    and isinstance(data['routing'],dict),
+                    'Public restoration refresh lacks a complete admitted generation')
+            receipt=routing_receipt(dict(expose=True,**data['routing']),baseline)
+            require(receipt['phase']!='public' or restored or route_pending is True,
+                    'Unrecorded public exposure cannot be adopted as restoration')
+            for name in ('scanner_checked_at','private_checked_at'):
+                require(type(data[name]) is int and 0<=event['time']-data[name]<=300,
+                        'Restoration admission evidence expired or is from the future')
+            require(data['scanner_checked_at']<=data['private_checked_at'],'Restoration evidence order differs')
+            from mod_host_upgrade_process import checked_scanner_result,checked_private_result
+            identity=before if config=='before' else after
+            checked_scanner_result(data['scanner'],identity,uid)
+            checked_private_result(data['private'],identity,uid,private_baseline,floor=catalog_floor)
+            scanner=data['scanner'];scanner_time=data['scanner_checked_at']
+            private_ready=data['private'];private_time=data['private_checked_at'];catalog_floor=private_ready['catalog_version']
+            access=dict(release=identity,sha256=hashlib.sha256(wire(private_ready)).hexdigest());access_time=private_time
+        elif kind=='public-readiness-verified':
+            require(label==config==monitor==layout_complete==activation_generation and layout_sha is not None
+                    and restored and not suspended and route_pending is None and pending is None
+                    and started==start_order() and restarted==restart_order() and activation_ready
+                    and start_pending is None and restart_pending is None and retire_pending is None
+                    and config_pending is None and layout_pending is None and shutdown is None
+                    and all(value==config for value in boots.values()) and private_baseline is not None
+                    and private_ready is not None and scanner is not None
+                    and 0<=event['time']-private_time<=300 and 0<=event['time']-scanner_time<=300,
+                    'Public acceptance lacks fresh complete restored services')
+            from mod_host_upgrade_process import checked_public_result
+            checked_public_result(data,before if config=='before' else after,uid,private_baseline,floor=catalog_floor)
+            public_ready=data;public_time=event['time'];catalog_floor=data['public']['catalog_version']
         elif kind=='shutdown-intent':
             require(label==config==monitor==layout_complete and activation_generation==config and shutdown is None
                     and (started or start_pending is not None) and suspended and route_pending is None
@@ -324,6 +365,8 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                     and retire_pending is None and start_pending is None and restart_pending is None
                     and (shutdown is None or shutdown_complete)
                     and (not started or activation_ready)
+                    and (layout_sha is None or (public_ready is not None and restored
+                        and 0<=event['time']-public_time<=300))
                     and (layout_sha is None or (layout_complete==config and monitor==config
                         and all(value==config for value in boots.values()))),'Invalid cutover settlement')
             settled = True
@@ -337,7 +380,7 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                 catalog_floor=catalog_floor,private_ready=private_ready,private_time=private_time,restarted=restarted,
                 restart_pending=restart_pending,activation_ready=activation_ready,shutdown=shutdown,
                 shutdown_stopped=shutdown_stopped,shutdown_pending=shutdown_pending,shutdown_complete=shutdown_complete,
-                monitor_checkpoints=monitor_checkpoints)
+                monitor_checkpoints=monitor_checkpoints,public_ready=public_ready,public_time=public_time)
 
 
 def checked(data, clock):

@@ -24,7 +24,7 @@ pytestmark=[pytest.mark.parametrize('prepared',['deferred'],indirect=True),
 
 
 @pytest.fixture
-def machine(flow,monkeypatch):
+def machine(flow,monkeypatch,public_upgrade_report):
     item=flow;state=item.state;old=item.case.old;new=item.case.new
     monkeypatch.setattr(shutdown,'boot_identity',lambda:'f'*64)
     loaded={spec['Label']:(path,spec,100+index) for index,(path,spec) in enumerate(old)}
@@ -61,7 +61,7 @@ def machine(flow,monkeypatch):
             verified_manifest_sha256=format(len(captures),'064x'),created=now,started=now,finished=now,
             bytes=100,forced=True,verified=True)
     def scanner(current,uid):
-        assert not loaded
+        assert not loaded or state.state()['activation_ready']
         scans.append(current['identity'])
         return dict(schema=1,phase='scanner-admitted',uid=uid,release=current['identity'],version='ClamAV fixture',
             results=dict(clean='clean',blocked='blocked',empty_database='error',missing_engine='error'),
@@ -73,6 +73,12 @@ def machine(flow,monkeypatch):
     monkeypatch.setattr(process,'forced_backup',backup)
     monkeypatch.setattr(process,'scanner_check',scanner)
     monkeypatch.setattr(process,'private_readiness',ready)
+    def public(current,uid,authority,*,floor,host_release):
+        assert current['identity']=='b'*64 and host_release==state.base[state.state()['config']]
+        assert uid==600 and authority==profile and floor==state.state()['catalog_floor']
+        assert routes.snapshot(item.routing['invoke']('status'),profile['origin'])['phase']=='public'
+        return public_upgrade_report(state)
+    monkeypatch.setattr(process,'public_readiness',public)
     root=item.case.root
     def release(identity):return dict(identity=identity,uid=600,root=root/'releases'/identity,python=root/identity/'python')
     old_release,new_release,runtime=release('a'*64),release('b'*64),release('7'*64)
@@ -99,8 +105,50 @@ def test_composed_upgrade_captures_before_migration_and_stays_private_until_sepa
     # Fresh admission can be resumed without another capture, stop/start or kill.
     coordinator.apply_private(item.state,item.context,resume=True)
     assert len(item.captures)==1 and len(item.stops)==len(item.starts)==10 and len(item.kills)==7
-    routes.transition(item.state.base['routing'],True,item.context['operator'],item.state.routing_event)
-    item.state.record('settled');assert item.state.state()['settled']
+    result=coordinator.restore_public(item.state,item.context)
+    assert result['generation']=='after' and result['public_endpoint_verified'] and item.state.state()['settled']
+
+
+@pytest.mark.parametrize('lost',['routing-observed','public-readiness-verified','settled'])
+@pytest.mark.parametrize('reverse',[False,True])
+def test_expired_interrupted_restoration_is_reobserved_without_repeating_routes_or_jobs(machine,monkeypatch,lost,reverse):
+    item=machine;coordinator.apply_private(item.state,item.context)
+    if reverse:coordinator.rollback_private(item.state,item.context)
+    actions=[];original=item.context['operator'];record=item.state.record;failed=[]
+    def invoke(action):
+        if action!='status':actions.append(action)
+        return original(action)
+    item.context['operator']=invoke
+    def interrupt(event,*args,**kwargs):
+        if event==lost and not failed:failed.append(True);raise OSError('lost observation')
+        return record(event,*args,**kwargs)
+    counts=(len(item.stops),len(item.starts),len(item.kills),len(item.captures))
+    with monkeypatch.context() as patch:
+        patch.setattr(item.state,'record',interrupt)
+        with pytest.raises(OSError):coordinator.restore_public(item.state,item.context)
+    assert actions==['restore'] and failed and not item.state.state()['settled']
+    assert item.state.state()['routing_pending'] is (True if lost=='routing-observed' else None)
+    with pytest.raises(ModError):coordinator.restore_public(item.state,item.context)
+    item.flow.now[0]+=1000
+    result=coordinator.restore_public(item.state,item.context,resume=True)
+    assert result['generation']==('before' if reverse else 'after') and item.state.state()['settled']
+    assert actions==['restore'] and counts==(len(item.stops),len(item.starts),len(item.kills),len(item.captures))
+
+
+@pytest.mark.parametrize('fault',['before-activation','unrecorded-public','unrelated-route','bad-public-report','stale-scan'])
+def test_restoration_preserves_unadmitted_or_changed_state(machine,monkeypatch,fault):
+    item=machine
+    if fault!='before-activation':coordinator.apply_private(item.state,item.context)
+    if fault=='unrecorded-public':item.context['operator']('restore')
+    elif fault=='unrelated-route':item.flow.routing['value']['TCP']['1234']={'HTTPS':True}
+    elif fault=='bad-public-report':monkeypatch.setattr(process,'public_readiness',lambda *a,**k:{})
+    elif fault=='stale-scan':
+        original=process.private_readiness
+        def private(*args,**kwargs):
+            result=original(*args,**kwargs);item.flow.now[0]+=301;return result
+        monkeypatch.setattr(process,'private_readiness',private)
+    with pytest.raises((ModError,ValueError)):coordinator.restore_public(item.state,item.context)
+    assert not item.state.state()['settled']
 
 
 @pytest.mark.parametrize('kind',['migration-observed','layout-observed','start-observed','restart-observed'])
@@ -157,8 +205,8 @@ def test_composed_reversal_preserves_candidate_history_and_readmits_old_services
     with pytest.raises(ModError):coordinator.rollback_private(item.state,item.context)
     coordinator.rollback_private(item.state,item.context,resume=True)
     assert len(item.starts)==20 and len(item.kills)==14 and len(item.captures)==2
-    routes.transition(item.state.base['routing'],True,item.context['operator'],item.state.routing_event)
-    item.state.record('settled')
+    result=coordinator.restore_public(item.state,item.context)
+    assert result['generation']=='before' and result['public_endpoint_verified'] and item.state.state()['settled']
     assert 128<len(json.loads(item.state.current)['events'])<=storage.MAX_EVENTS
 
 

@@ -43,3 +43,16 @@ def workshop_routing():
             assert action=='restore';value.clear();value.update(copy.deepcopy(original))
         return b''
     return dict(baseline=routes.snapshot(invoke('status'),origin),invoke=invoke,value=value)
+
+
+@pytest.fixture
+def public_upgrade_report():
+    """Typed child evidence only; never a real TLS or service-health assertion."""
+    def report(journal):
+        state=journal.state();profile=state['private_baseline']
+        checkpoint=dict(catalog_version=state['catalog_floor'],metadata_sha256='1'*64,
+                        revocations_sha256='2'*64,revocation_count=5)
+        return dict(schema=1,phase='public-services-verified',release=journal.base[state['config']],uid=journal.base['uid'],
+            origin=profile['origin'],trusted_root_sha256=profile['trusted_root_sha256'],loopback=dict(checkpoint),public=dict(checkpoint),
+            release_count=0,revocations_preserved=True,role_health_verified=True,transport='public-https',public_endpoint_verified=True)
+    return report

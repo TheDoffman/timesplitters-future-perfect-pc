@@ -55,9 +55,24 @@ The local checkpoint constrains the public signature: no version rollback,
 different metadata at the same version or forgotten local revocations. All
 protected host-role health checks must also pass. The bounded report contains
 only versions, hashes, counts and authority/health evidence. Root receives this
-report without networking or loading signing packages. This new helper does not
-restore routing, settle a transaction or authorize deployment; those integration
-and actual installed UID600 acceptance steps remain pending.
+report without networking or loading signing packages. The helper alone cannot
+restore routing, settle a transaction or authorize deployment.
+
+The internal `restore_public` coordinator now requires the existing held same-boot
+Root transaction, complete forward or reversed layout, all ten jobs and seven
+completed restart checks. It reattests monitor/boot files, observes all jobs and
+service descendants and preserves unrelated routing. It refreshes scanner and
+signed private readiness before restoring only8443. A separate durable refresh
+event retains the actual scanner/private check times, permitting explicit recovery
+of an expired pending restoration without repeating migrations or job operations.
+An already-observed public result is re-observed; a timeout is never interpreted
+as evidence that routing remained off. After restoration the new verifier checks
+the selected generation over HTTPS. Only fresh public evidence plus another
+protected-file/job/route observation can settle the journal. File/config exchange
+alone can neither expose nor settle an upgraded stopped host. If public acceptance
+fails, the recorded restoration remains unresolved for explicit recovery; this
+phase never guesses an automatic rollback. CLI integration and actual installed
+Root/UID600 restoration acceptance remain pending.
 
 The current installer can stage a new immutable release alongside the running
 one. It does not switch active services. The initializer requires its exact

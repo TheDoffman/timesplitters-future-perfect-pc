@@ -73,7 +73,7 @@ def stopping(running,monkeypatch):
     return SimpleNamespace(case=case,flow=item,stops=stops,mode=mode,command=command,stop=stop,gate=gate,checkpoint=checkpoint,admit=admit,health=health)
 
 
-def test_full_started_upgrade_shutdown_checkpoint_reverse_and_old_private_admission(stopping):
+def test_full_started_upgrade_shutdown_checkpoint_reverse_and_old_private_admission(stopping,public_upgrade_report):
     case=stopping;item=case.flow;case.admit();case.health();item.now[0]+=60
     case.stop();assert case.stops==journal_code.stop_order() and item.state.state()['quiescent'] and not case.case.loaded
     temporary=item.case.root/'monitor'/('.scan-'+'1'*32);temporary.write_bytes(b'{');temporary.chmod(0o600)
@@ -87,6 +87,8 @@ def test_full_started_upgrade_shutdown_checkpoint_reverse_and_old_private_admiss
     activation.start_private_services(item.state,current,item.case.exchange,item.case.old,case.command,item.routing['invoke'])
     case.admit()
     routes.transition(item.state.base['routing'],True,item.routing['invoke'],item.state.routing_event)
+    with pytest.raises(ModError):item.state.record('settled')
+    item.state.record('public-readiness-verified',item.state.state()['config'],public_upgrade_report(item.state))
     item.state.record('settled')
     assert item.state.state()['catalog_floor']==42 and item.state.state()['settled']
     assert 128<len(json.loads(item.state.current)['events'])<=journal_code.MAX_EVENTS
