@@ -1,3 +1,40 @@
+Reboot layout/checkpoint gate (2026-11-18; source17c7a7b1/e40c5385,
+fixture4b4e4559; not deployed): Layout now has an explicit observation mode bound
+to current reboot quiescence. It opens the original prepared manifest without
+changing its original boot binding and refuses prepare/exchange/internal moves
+before callbacks or writes. The shared checked_monitor_history reader retains
+ordinary shutdown validation while permitting typed active health changes after
+boot; static policies/directory identities and archived records remain fixed.
+Known Root temporary writes stay opaque and preserved. Reboot layout reads
+recheck routing, fresh descendant/UID exit, boot/backup origins and context hash,
+then report unambiguous active/saved/staged generations and inventories only.
+
+Canonical Root600 evidence is sealed under Root700 reboot-checkpoints, at most32
+files/64KiB each, with nonce/current-boot names. Read verification surrounds the
+write. A typed reboot-layout-verified event binds original/current boot, nonce,
+context SHA, original layout SHA and checkpoint SHA; hash-checked loading returns
+historical metadata without granting ordinary migration/startup/settlement.
+Exact complete unjournaled files can be adopted only with explicit resume;
+partial, foreign, linked, wrong-mode, changed and capacity artifacts are refused
+and preserved. No migration authority or operational reboot CLI is implemented.
+
+Actual native expanded reboot/layout/checkpoint, ordinary layout/shutdown,
+coordinator, journal, context, command, protocol and CI-scope tests pass508 on
+Mac175.92s and508 on Linux213.75s. Windows297/211 POSIX skips0.89s. New read-only
+layout cases pass16 Mac0.56s/Linux0.66s across before/after and interrupted
+archive/install/boot positions, changed health/policy/backup, orphan/routing guards
+and refused writes. Checkpoint cases pass10 Mac24.35s/Linux30.99s, including
+complete-file/lost-journal recovery, idempotent explicit resume, artifact/namespace
+failures, corruption and receipt mutations. The first standalone checkpoint run
+correctly refused startup because its transitive simulated_boot fixture was not
+imported; the fixture import was corrected without changing production guards.
+These tests use real protected files/history with simulated boot/identity/OS and
+child effects. New modules import with isolated no-site Python and no signing
+packages. All live services/routes/data/keys are unchanged. Fresh retained-runtime
+backup/proof, operational epoch admission and actual installed/physical boot/full
+creator-game release acceptance remain open. Earlier004c1583 CI44281253123 passed
+all23 jobs with two intended skips; that result does not cover this newer source.
+
 Journaled reboot preparation (2026-11-18; source38c8de5c/3757423e; not deployed):
 typed reboot events preserve the original header/context and pre-boot event
 prefix. Only the current observation lease can record new-boot observations,
