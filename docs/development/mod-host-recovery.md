@@ -101,6 +101,53 @@ producer/sender installation, schedule/failure delivery, physical Mac capacity a
 actual production restore/boot acceptance remain open. Frozen earlier host/backup
 bundles are unchanged and do not contain this new code.
 
+## Receiver worker health and Windows lifetime
+
+`mod_backup_worker` creates a new private control directory beside (never inside)
+the receiver pool. Its completion marker binds a job UUID, canonical absolute
+pool path, pool identity, exact canonical policy SHA256, public recipient,
+workshop origin/root pin and bounded transfer deadline. The independently
+recorded binding SHA256 is required for every tick/status command. No password,
+private recipient key, remote stderr or file content is recorded in health.
+Unknown, overlapping, partial or changed control state is preserved and refused.
+The receiver checks the bound policy under its own lease before journal recovery,
+retention, attempt creation or SSH. Thus changing its remote host/path or
+retention limits requires deliberate new authority rather than silently changing
+a scheduled worker. Existing unscheduled receiver callers retain their API.
+
+A separate bounded private SQLite health journal holds an exclusive lease across
+the complete attempt. It commits `running` before any receiver call, then `ok`,
+`stale` or generic `failed`. Only a non-stale verified result advances worker
+last-success time; duplicate old exports keep their original capture age. A
+process death leaves durable `running` health for the next inspection; another
+invocation can recover after the OS releases the lease. Inspection refuses an
+active lease, reports missed attempts after two hours and rejects a backwards
+clock. It does not send notifications or recover a production repository.
+
+`hosting/backup-receiver-worker.py` provides `init`, `tick` and `status`. Init
+requires `--pool`, `--recipient-record`, `--origin` and
+`--trusted-root-sha256`; tick/status use only `--binding-sha256`. Tick currently
+requires Windows and runs in a fresh dedicated process. Before any PowerShell or
+SSH helper it joins an unnamed, non-inheritable Windows job with
+`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`, retaining its handle until OS process exit.
+It sets no breakaway flags. A hard deadline exits the worker with124; normal
+healthy, stale and failed outcomes use0,3,2 respectively. Its descendants die
+with it even if the scheduler forcibly terminates it. This controls lifetime,
+not privilege: it is not a restricted token or a malware sandbox. Never attach
+this job from a shared process such as the launcher, Codex or pytest itself.
+[Microsoft job-object documentation](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects)
+describes the underlying process and last-handle behavior.
+
+The Windows private-file helper now supports bounded, read-only `-Tree`
+inspection. It checks owner and exact current-user/SYSTEM full-control rules
+on every descendant and refuses junctions/reparse points before descending; it
+does not repair permissions or authorize existing foreign files.
+
+This worker is source implementation, not an installed scheduled task. The
+frozen independent operator runtime, task registration, production recipient
+custody and actual unattended/off-device production acceptance remain required.
+No production backup job or public routing is changed by these commands.
+
 ## Managed off-device receiver
 
 `mod_backup_receiver` adds a new private receiver pool, immutable binding and a

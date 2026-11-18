@@ -43,20 +43,24 @@ def crypt(value, decrypt=False):
         if output.pbData: free(ctypes.cast(output.pbData, ctypes.c_void_p))
 
 
-def private(path, create=False):
+def private(path, create=False, *, tree=False):
     require(os.name == 'nt', 'Manage this recovery store on Windows')
+    require(type(tree) is bool and not (tree and create), 'Tree inspection cannot create a recovery store')
     path = Path(path).absolute()
     require(all(not p.is_symlink() and not p.is_junction() for p in (path, *path.parents)),
             'Aliased Windows recovery path refused')
     executable = Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'
     script = Path(__file__).with_name('hosting')/'private-recovery-windows.ps1'
     result = subprocess.run([str(executable), '-NoProfile', '-NonInteractive', '-File', str(script),
-                             '-Path', str(path), '-Mode', 'Create' if create else 'Check'],
-                            stdin=subprocess.DEVNULL, capture_output=True, timeout=30)
+                             '-Path', str(path), '-Mode', 'Create' if create else 'Check',
+                             *(['-Tree'] if tree else [])],
+                            stdin=subprocess.DEVNULL, capture_output=True, timeout=30,
+                            creationflags=subprocess.CREATE_NO_WINDOW)
     require(result.returncode == 0 and len(result.stdout) <= 4096 and len(result.stderr) <= 8192,
             'Windows recovery ACL creation or verification failed')
     value = json.loads(result.stdout)
-    require(value.get('schema') == 1 and value.get('private') is True, 'Windows recovery ACL differs')
+    require(value.get('schema') == 1 and value.get('private') is True and value.get('tree') is tree,
+            'Windows recovery ACL differs')
     return path
 
 

@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 
 import pytest
 
@@ -74,3 +75,54 @@ def test_foreign_recovery_acl_is_refused(tmp_path):
     marker=tmp_path/'personal';marker.write_bytes(b'keep')
     with pytest.raises(ModError):recovery.private(tmp_path)
     assert marker.read_bytes()==b'keep'
+
+
+def test_private_tree_checks_every_descendant_without_rewriting_foreign_acl(tmp_path):
+    directory = recovery.private(tmp_path/'tree', create=True)
+    nested = directory/'nested'
+    nested.mkdir()
+    child = nested/'content'
+    child.write_bytes(b'preserve')
+    assert recovery.private(directory, tree=True) == directory
+    # Add a foreign principal only to this disposable child's ACL. Inherited
+    # rules from a copied ACL would instead be recomputed from its private parent.
+    powershell = Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'
+    command = '''
+$ErrorActionPreference='Stop'
+$item=[IO.FileInfo]::new($args[0])
+$acl=$item.GetAccessControl()
+$sid=[Security.Principal.SecurityIdentifier]::new('S-1-1-0')
+$rule=[Security.AccessControl.FileSystemAccessRule]::new($sid,[Security.AccessControl.FileSystemRights]::Read,[Security.AccessControl.AccessControlType]::Allow)
+$acl.AddAccessRule($rule)
+$item.SetAccessControl($acl)
+'''
+    # Use a script file so file paths are arguments, never executable code.
+    script = tmp_path/'foreign-acl.ps1'
+    script.write_text(command, encoding='utf-8')
+    changed = subprocess.run([str(powershell), '-NoProfile', '-NonInteractive', '-File', str(script), str(child)],
+                             capture_output=True, timeout=30)
+    assert changed.returncode == 0, changed.stderr.decode(errors='replace')
+    with pytest.raises(ModError):
+        recovery.private(child)
+    with pytest.raises(ModError):
+        recovery.private(directory, tree=True)
+    assert child.read_bytes() == b'preserve'
+    with pytest.raises(ModError):
+        recovery.private(child)
+
+
+def test_tree_refuses_junction_without_touching_outside_files(tmp_path):
+    directory = recovery.private(tmp_path/'private-tree', create=True)
+    outside = tmp_path/'outside'
+    outside.mkdir()
+    marker = outside/'personal'
+    marker.write_bytes(b'preserve')
+    junction = directory/'junction'
+    result = subprocess.run(['cmd', '/c', 'mklink', '/J', str(junction), str(outside)], capture_output=True)
+    assert result.returncode == 0
+    try:
+        with pytest.raises(ModError):
+            recovery.private(directory, tree=True)
+        assert marker.read_bytes() == b'preserve'
+    finally:
+        junction.rmdir()  # Removes this directory junction, never its target.

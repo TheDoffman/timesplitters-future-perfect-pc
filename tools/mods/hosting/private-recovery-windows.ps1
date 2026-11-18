@@ -1,8 +1,10 @@
 param(
     [Parameter(Mandatory=$true)][string]$Path,
-    [Parameter(Mandatory=$true)][ValidateSet('Create','Check')][string]$Mode
+    [Parameter(Mandatory=$true)][ValidateSet('Create','Check')][string]$Mode,
+    [switch]$Tree
 )
 $ErrorActionPreference = 'Stop'
+if ($Tree -and $Mode -ne 'Check') { throw 'Tree inspection cannot change access rules' }
 # Use Windows PowerShell/.NET Framework for atomic directory creation with its
 # private ACL already attached. Never relax or replace an existing directory ACL.
 $fullPath = [IO.Path]::GetFullPath($Path)
@@ -31,7 +33,7 @@ if ($Mode -eq 'Create') {
     }
     $null = [IO.Directory]::CreateDirectory($fullPath,$security)
 }
-$item = Get-Item -LiteralPath $fullPath -Force
+function Assert-PrivateItem($item) {
 if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Aliased recovery path refused' }
 $acl = $item.GetAccessControl()
 if ($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $userSid.Value) { throw 'Recovery owner differs' }
@@ -48,4 +50,22 @@ foreach ($rule in $rules) {
     $seen[$sid] = $true
 }
 if ($Mode -eq 'Create' -and -not $acl.AreAccessRulesProtected) { throw 'Recovery inheritance is not protected' }
-@{schema=1;private=$true;owner=$userSid.Value;created=($Mode -eq 'Create')} | ConvertTo-Json -Compress
+}
+$item = Get-Item -LiteralPath $fullPath -Force
+Assert-PrivateItem $item
+$checked = 1
+if ($Tree) {
+    if (-not ($item -is [IO.DirectoryInfo])) { throw 'A private tree root must be a directory' }
+    $pending = [Collections.Generic.Stack[IO.DirectoryInfo]]::new()
+    $pending.Push($item)
+    while ($pending.Count -gt 0) {
+        $directory = $pending.Pop()
+        foreach ($child in $directory.EnumerateFileSystemInfos()) {
+            $checked++
+            if ($checked -gt 8192) { throw 'Private tree exceeds inspection budget' }
+            Assert-PrivateItem $child
+            if ($child -is [IO.DirectoryInfo]) { $pending.Push($child) }
+        }
+    }
+}
+@{schema=1;private=$true;owner=$userSid.Value;created=($Mode -eq 'Create');checked=$checked;tree=[bool]$Tree} | ConvertTo-Json -Compress

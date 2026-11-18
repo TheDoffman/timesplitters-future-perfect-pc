@@ -1,3 +1,35 @@
+Bound receiver worker and Windows lifetime preparation (2026-11-18; source
+commit follows; not deployed): new worker control is separate from the strict
+receiver pool and pins job/pool identity, exact receiver policy, public recipient,
+origin/root and deadline. Receiver policy hash is checked before database recovery,
+retention or network work. Durable bounded health/lease records running, healthy,
+stale or generic failure; overlap cannot start another download or change the
+active attempt. Actual interrupted-process and stale/duplicate tests distinguish
+worker health from a fresh captured backup. No private key or remote stderr is
+stored in health. CLI init/tick/status prepares execution, not OS registration.
+
+A fresh dedicated Windows worker joins an unnamed non-inheritable kill-on-close
+job before spawning helpers. Actual Windows normal exit, exception and forced
+termination all reap its child, observed through retained process handles. A hard
+worker deadline bounds stuck helper/teardown time; hidden ACL helpers support
+future pythonw execution. The private NTFS helper adds bounded read-only tree
+inspection and refuses foreign descendant ACLs/junctions without repairing them.
+This is process lifetime control, not a privilege sandbox.
+
+Windows worker cases passed seven initial checks and a separate actual os._exit99
+recovery case; the latter selection plus CI scope passed178 in24.02s. Three
+actual Windows job lifetime cases pass. Expanded receiver/transport/ACL rerun and
+Linux confirmation are pending below. The first ACL mutation fixture used module
+autoload unavailable in Python's PowerShell environment; it now uses .NET file
+security directly and reruns, without changing the ACL verifier.
+
+Frozen independent operator runtime, OS task registration, production recipient
+custody, Mac deployment and unattended backup/restore/boot acceptance remain
+required. Current Mac read-only storage is109648KiB free; no Mac writer, personal
+file deletion, production service change, duplicate sudo prompt or routing change
+is part of this source work. Broader SDK/content/multiplayer/stability and final
+three-host public release acceptance remain open. VERSION remains0.6.2.
+
 Fresh managed export producer/selection (2026-11-18; source89268460,
 implementation6aa1bd19; not deployed): the POSIX producer binds an existing managed
 snapshot pool ID/policy hash, recipient/origin/root and separate bounded export

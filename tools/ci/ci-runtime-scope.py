@@ -95,6 +95,8 @@ CPU_TOOLS = {
     'tools/mods/mod_backup_archive.py', 'tests/mods/test_backup_archive.py',
     'tools/mods/mod_backup_exports.py', 'tests/mods/test_backup_exports.py',
     'tools/mods/mod_backup_receiver.py', 'tools/mods/hosting/backup-receiver.py', 'tests/mods/test_backup_receiver.py',
+    'tools/mods/mod_backup_worker.py', 'tools/mods/hosting/backup-receiver-worker.py', 'tests/mods/test_backup_worker.py',
+    'tools/mods/mod_windows_job.py', 'tests/mods/test_windows_job.py',
     'tools/mods/mod_backup_producer.py', 'tools/mods/hosting/backup-producer.py', 'tests/mods/test_backup_producer.py',
     'tools/mods/mod_backup_transport.py', 'tools/mods/hosting/backup-transfer.py', 'tests/mods/test_backup_transport.py',
     'tools/mods/hosting/locked-service-bootstrap-mac.py', 'tests/mods/test_locked_service_bootstrap.py',

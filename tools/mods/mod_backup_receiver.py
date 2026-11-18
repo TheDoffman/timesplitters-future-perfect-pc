@@ -147,9 +147,12 @@ def database(path, schema):
 
 
 @contextmanager
-def opened(pool, recipient, service_origin, pin):
+def opened(pool, recipient, service_origin, pin, *, policy_sha256=None):
     pool = cipher.private_path(Path(pool) / POLICY).parent
     wire = read_private(pool / POLICY, MAX_POLICY)
+    if policy_sha256 is not None:
+        cipher.checked_sha(policy_sha256)
+        require(cipher.digest(wire) == policy_sha256, 'Receiver policy differs from the scheduled binding')
     settings = read_json(wire)
     require(encode(settings) == wire, 'Noncanonical receiver policy')
     check_policy(settings, recipient, service_origin, pin)
@@ -324,12 +327,12 @@ def report(db, settings, now):
                 stale_export=age is None or age > 2 * settings['interval'], copies=counts)
 
 
-def run(pool, recipient, service_origin, pin, receive, *, force=False, clock=time.time):
+def run(pool, recipient, service_origin, pin, receive, *, force=False, clock=time.time, policy_sha256=None):
     """Trusted receive(destination, accept_receipt, policy) uses receipt-last reception."""
     require(type(force) is bool and callable(receive), 'Invalid receiver worker')
     now = int(clock())
     require(0 <= now < 10**12, 'Invalid receiver clock')
-    with opened(pool, recipient, service_origin, pin) as (pool, settings, db):
+    with opened(pool, recipient, service_origin, pin, policy_sha256=policy_sha256) as (pool, settings, db):
         require(now >= state(db, settings)['last_attempt'], 'Receiver clock moved backwards')
         recover(pool, settings, db, recipient, service_origin, pin, now)
         retain(pool, settings, db, recipient, service_origin, pin)
@@ -386,10 +389,10 @@ def run(pool, recipient, service_origin, pin, receive, *, force=False, clock=tim
         return report(db, settings, now)
 
 
-def run_ssh(pool, recipient, service_origin, pin, *, force=False, seconds=transport.MAX_SECONDS):
+def run_ssh(pool, recipient, service_origin, pin, *, force=False, seconds=transport.MAX_SECONDS, policy_sha256=None):
     def receive(destination, accept, settings):
         remote = settings['remote']  # Use only the policy admitted under the journal lease.
         return transport.receive_ssh(*(remote[key] for key in ('host', 'python', 'entry', 'bundle', 'record')),
                                      destination, recipient, service_origin, pin, seconds=seconds, accept_receipt=accept,
                                      producer=remote.get('kind', 'bundle') == 'producer')
-    return run(pool, recipient, service_origin, pin, receive, force=force)
+    return run(pool, recipient, service_origin, pin, receive, force=force, policy_sha256=policy_sha256)
