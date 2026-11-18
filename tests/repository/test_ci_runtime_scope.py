@@ -166,6 +166,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tests/mods/test_job_registration.py'], {'native'}),
     (['tools/mods/hosting/accept-private-host-services-mac.py'], {'native'}),
     (['tests/mods/test_private_service_readiness.py'], {'native'}),
+    (['tools/mods/hosting/accept-public-host-services-mac.py'], {'native'}),
+    (['tests/mods/test_public_service_readiness.py'], {'native'}),
     (['tools/mods/hosting/accept-installed-scanner-mac.py'], {'native'}),
     (['tests/mods/test_installed_scanner_admission.py'], {'native'}),
     (['config/mods/public-workshop.json'], {'native'}),

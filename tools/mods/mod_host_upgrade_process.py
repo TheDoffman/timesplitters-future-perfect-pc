@@ -56,7 +56,8 @@ def _context(runtime,current,uid,name):
             'Installed upgrade children require root and a locked service identity')
     require(all(isinstance(v.get('identity'),str) and re.fullmatch('[0-9a-f]{64}',v['identity']) for v in (runtime,current))
             and name in ('upgrade-job-specs-mac.py','force-upgrade-backup-mac.py','migrate-private-generation-mac.py',
-                         'accept-installed-scanner-mac.py','accept-private-host-services-mac.py')
+                         'accept-installed-scanner-mac.py','accept-private-host-services-mac.py',
+                         'accept-public-host-services-mac.py')
             and runtime['uid']==current['uid']==uid
             and runtime['root']==ROOT/'releases'/runtime['identity']
             and current['root']==ROOT/'releases'/current['identity']
@@ -70,7 +71,7 @@ def _context(runtime,current,uid,name):
     # Configuration/scanner helpers use the verified runtime's application
     # packages. User site/PYTHONPATH stay off; metadata/backup remain no-site.
     flags=['-I','-B'] if name in ('migrate-private-generation-mac.py','accept-installed-scanner-mac.py',
-                                'accept-private-host-services-mac.py') else ['-I','-S','-B']
+                                'accept-private-host-services-mac.py','accept-public-host-services-mac.py') else ['-I','-S','-B']
     return [str(python),*flags,str(program)],options
 
 
@@ -162,6 +163,38 @@ def private_readiness(current,uid,profile,*,floor=1):
     arguments,options=_context(current,current,uid,'accept-private-host-services-mac.py')
     result=read_json(_capture(arguments,options,timeout=110,limit=8192))
     return checked_private_result(result,current['identity'],uid,profile,floor=floor)
+
+
+def checked_public_result(result,release,uid,profile,*,floor=1):
+    require(type(floor) is int and 1<=floor<=2**53-1 and isinstance(result,dict)
+            and set(result)=={'schema','phase','release','uid','origin','trusted_root_sha256','loopback','public',
+                             'release_count','revocations_preserved','role_health_verified','transport','public_endpoint_verified'}
+            and type(result['schema']) is int and result['schema']==1 and result['phase']=='public-services-verified'
+            and result['release']==release and type(result['uid']) is int and result['uid']==uid
+            and result['origin']==profile['origin'] and result['trusted_root_sha256']==profile['trusted_root_sha256']
+            and isinstance(result['trusted_root_sha256'],str) and re.fullmatch('[0-9a-f]{64}',result['trusted_root_sha256'])
+            and type(result['release_count']) is int and 0<=result['release_count']<=1000
+            and result['revocations_preserved'] is True and result['role_health_verified'] is True
+            and result['transport']=='public-https' and result['public_endpoint_verified'] is True,
+            'Public acceptance changes the admitted authority or fixed HTTPS evidence')
+    for key in ('loopback','public'):
+        value=result[key]
+        require(isinstance(value,dict) and set(value)=={'catalog_version','metadata_sha256','revocations_sha256','revocation_count'}
+                and type(value['catalog_version']) is int and floor<=value['catalog_version']<=2**53-1
+                and type(value['revocation_count']) is int and 0<=value['revocation_count']<=4000
+                and all(isinstance(value[name],str) and re.fullmatch('[0-9a-f]{64}',value[name])
+                        for name in ('metadata_sha256','revocations_sha256')),'Invalid public catalog checkpoint')
+    local,public=result['loopback'],result['public']
+    require(public['catalog_version']>=local['catalog_version'] and public['revocation_count']>=local['revocation_count']
+            and (public['catalog_version']!=local['catalog_version'] or public==local),
+            'Public catalog lost the live local checkpoint')
+    return result
+
+
+def public_readiness(current,uid,profile,*,floor=1):
+    arguments,options=_context(current,current,uid,'accept-public-host-services-mac.py')
+    result=read_json(_capture(arguments,options,timeout=110,limit=8192))
+    return checked_public_result(result,current['identity'],uid,profile,floor=floor)
 
 
 def job_specs(runtime,current,uid,*,backup_identity=None):

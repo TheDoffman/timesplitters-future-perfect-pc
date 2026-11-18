@@ -36,6 +36,20 @@ separately from the file. It does not back up the repository.
 
 ## Upgrading the deployed generation
 
+`accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
+helper, available through the bounded `public_readiness` child transport. It
+verifies the source-pinned root, reads signed loopback catalog bytes first, then
+requires direct HTTPS with system certificate/hostname validation at the exact
+origin. Only health, catalog and catalog-signature GETs are permitted; redirects,
+proxy environment, authentication and downloaded replacement roots are excluded.
+The local checkpoint constrains the public signature: no version rollback,
+different metadata at the same version or forgotten local revocations. All
+protected host-role health checks must also pass. The bounded report contains
+only versions, hashes, counts and authority/health evidence. Root receives this
+report without networking or loading signing packages. This new helper does not
+restore routing, settle a transaction or authorize deployment; those integration
+and actual installed UID600 acceptance steps remain pending.
+
 The current installer can stage a new immutable release alongside the running
 one. It does not switch active services. The initializer requires its exact
 generation's configuration/marker, and the job registrar refuses existing system

@@ -1,12 +1,12 @@
 SDK: ../development/mod-creator-tools.md; ops: ../development/mod-workshop-operations.md.
-Upgrade private CLI admission: ops; deployment pending.
+HTTPS acceptance: ops; local checkpoint/revocations; routing pending.
 register-installed-host-mac.py derives9 protected jobs: staging bootstrap,
 source-pinned private readiness and7 restarts precede boot-file installation.
 601 repair passes private checks,9 jobs and post-seal verification (STATUS).
 Invites/PCM/Pulse listening: ../development/mod-creator-service.md; deployment pending.
-Separate public Funnel8443/TLS/signed-catalog proof passes; private443 unchanged.
+Public Funnel8443/TLS/catalog proof passes; private443 unchanged.
 Public native3->4->3 gameplay/lifecycle and withdrawal pass on all3 hosts (STATUS).
-Native exit diagnostics: mod-scripting.md; Mac/CI stability remains open.
+Exit diagnostics: mod-scripting.md; Mac/CI stability open.
 Signedv31 retains5 revocations; downloads404. Backup custody/clone restore pass;
 Recovery phase guards: ../development/mod-workshop-operations.md.
 

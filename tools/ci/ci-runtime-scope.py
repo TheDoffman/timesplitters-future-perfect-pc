@@ -82,6 +82,7 @@ CPU_TOOLS = {
     'tools/mods/hosting/prepare-installed-host-mac.py', 'tests/mods/test_prepare_installed_host.py',
     'tools/mods/hosting/register-installed-host-mac.py', 'tests/mods/test_job_registration.py',
     'tools/mods/hosting/accept-private-host-services-mac.py', 'tests/mods/test_private_service_readiness.py',
+    'tools/mods/hosting/accept-public-host-services-mac.py', 'tests/mods/test_public_service_readiness.py',
     'tools/mods/hosting/accept-installed-scanner-mac.py', 'tests/mods/test_installed_scanner_admission.py',
     'config/mods/public-workshop.json', 'config/mods/public-workshop-root.json',
     'tools/mods/hosting/prepare-launcher-workshop-profile.py', 'tests/mods/test_public_host_profile.py',

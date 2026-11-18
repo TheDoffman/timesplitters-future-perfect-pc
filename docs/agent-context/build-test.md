@@ -1,5 +1,5 @@
 [Workshop/native test routes](build-test-integration.md).
-Online IPC/GCC: test_online_menu.py; warnings remain errors.
+Public HTTPS: test_public_service_readiness.py; IPC/GCC: test_online_menu.py.
 Chunk-bound execution uses explicit max_chunk_bytes: compiler-batching.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).

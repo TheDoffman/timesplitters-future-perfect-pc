@@ -24,6 +24,40 @@ def migration_report(profile):
     return dict(manifest=manifest,sha256=hashlib.sha256(migration.wire(manifest)).hexdigest(),files=6,services_changed=False)
 
 
+@pytest.mark.parametrize('damage',[None,'uid','release','origin','root','floor','rollback','reused-version',
+    'count','boolean','revocations','transport','health','public','unknown','checkpoint-extra','version-limit'])
+def test_public_acceptance_protocol_binds_fixed_child_and_both_catalog_checkpoints(verified,monkeypatch,damage):
+    _,current=verified;profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='9'*64)
+    checkpoint=dict(catalog_version=42,metadata_sha256='1'*64,revocations_sha256='2'*64,revocation_count=3)
+    report=dict(schema=1,phase='public-services-verified',release=current['identity'],uid=600,**profile,
+        loopback=dict(checkpoint),public=dict(checkpoint),release_count=0,revocations_preserved=True,
+        role_health_verified=True,transport='public-https',public_endpoint_verified=True)
+    if damage=='uid':report['uid']=True
+    elif damage=='release':report['release']='0'*64
+    elif damage=='origin':report['origin']='https://foreign.example'
+    elif damage=='root':report['trusted_root_sha256']='0'*64
+    elif damage=='floor':report['loopback']['catalog_version']=39
+    elif damage=='rollback':report['public']['catalog_version']=41
+    elif damage=='reused-version':report['public']['metadata_sha256']='3'*64
+    elif damage=='count':report['public']['revocation_count']=2
+    elif damage=='boolean':report['public']['catalog_version']=True
+    elif damage=='revocations':report['revocations_preserved']=False
+    elif damage=='transport':report['transport']='private-loopback-http'
+    elif damage=='health':report['role_health_verified']=False
+    elif damage=='public':report['public_endpoint_verified']=False
+    elif damage=='unknown':report['private']='canary'
+    elif damage=='checkpoint-extra':report['public']['private']='canary'
+    elif damage=='version-limit':report['public']['catalog_version']=2**53
+    def capture(arguments,options,*,timeout,limit):
+        assert arguments==[str(current['python']),'-I','-B',str(current['root']/'source/tools/mods/hosting/accept-public-host-services-mac.py')]
+        assert options['user']==options['group']==600 and options['extra_groups']==[] and timeout==110 and limit==8192
+        return json.dumps(report).encode()
+    monkeypatch.setattr(process,'_capture',capture)
+    if damage:
+        with pytest.raises(ModError):process.public_readiness(current,600,profile,floor=40)
+    else:assert process.public_readiness(current,600,profile,floor=40)==report
+
+
 @pytest.mark.parametrize('damage',[None,'uid','release','root','origin','rollback','boolean','public','health','unknown'])
 def test_private_readiness_protocol_binds_floor_origin_root_and_exact_loopback_evidence(verified,monkeypatch,damage):
     _,current=verified;profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='9'*64)
@@ -148,7 +182,8 @@ def verified(monkeypatch):
                                                                         'tools/mods/hosting/force-upgrade-backup-mac.py',
                                                                         'tools/mods/hosting/migrate-private-generation-mac.py',
                                                                         'tools/mods/hosting/accept-installed-scanner-mac.py',
-                                                                        'tools/mods/hosting/accept-private-host-services-mac.py')}))
+                                                                        'tools/mods/hosting/accept-private-host-services-mac.py',
+                                                                        'tools/mods/hosting/accept-public-host-services-mac.py')}))
     return entry('a'*64),entry('b'*64)
 
 
