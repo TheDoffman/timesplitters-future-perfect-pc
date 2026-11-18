@@ -103,16 +103,16 @@ def read_checkpoint(layout,generation,sha):
     return value['inventory']
 
 
-def checkpoint_monitor(journal,layout,entries,gate,*,resume=False):
-    """Pin stopped health/history without consuming or deleting temporary files."""
-    from mod_host_upgrade_layout import snapshot,_new
-    state=journal.state();generation=state['config'];base=journal.base
-    require(type(resume) is bool and layout.journal is journal and state['shutdown_complete'] and state['quiescent']
-            and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity(),'Complete private shutdown first')
-    gate();activation.fixed_monitor_files(layout,generation)
-    cutover.validate_entries(entries);manifest=read_json(layout.manifest)
-    baseline=manifest['monitor' if generation=='before' else 'after_monitor']
-    inventory=snapshot(cutover.ROOT/'monitor')
+def checked_monitor_history(journal,directory,baseline,entries,generation):
+    """Read typed history and unchanged policy; grants no effect authority."""
+    from mod_host_upgrade_layout import snapshot
+    base=journal.base
+    require(os.geteuid()==cutover.ROOT_UID and generation in ('before','after')
+            and directory in (cutover.ROOT/'monitor',cutover.ROOT/'upgrade-layouts'/base['nonce']/'monitor-before',
+                              cutover.ROOT/'upgrade-layouts'/base['nonce']/'monitor-after'),
+            'Read only the exact protected monitor history')
+    journal.state();cutover.validate_entries(entries)
+    inventory=snapshot(directory)
     dynamic=HEALTH|{'upgrade-quiescence.json'}
     stable=lambda value:{key:record for key,record in value.items() if key not in dynamic}
     extra=set(inventory)-set(baseline)-HEALTH
@@ -124,7 +124,7 @@ def checkpoint_monitor(journal,layout,entries,gate,*,resume=False):
             and all(name in inventory for name in HEALTH&baseline.keys()),'Preserving unknown or changed monitor history')
     by_role={spec['Label'].split('.')[3]:spec['Label'] for _,spec in entries if not spec['Label'].endswith('.monitor')}
     for name in HEALTH&inventory.keys():
-        data,_=cutover.protected_bytes(cutover.ROOT/'monitor'/name,0o644,8192);value=read_json(data)
+        data,_=cutover.protected_bytes(directory/name,0o644,8192);value=read_json(data)
         role='scan' if name=='scan.json' else name.split('/')[0]
         headers={'schema','uid','service','policy','time','status'}|({'role','release'} if role!='scan' else set())
         require(isinstance(value,dict) and headers<=value.keys()<=headers|{'pid','rss_bytes','reason'}
@@ -137,6 +137,20 @@ def checkpoint_monitor(journal,layout,entries,gate,*,resume=False):
                 and ('rss_bytes' not in value or (type(value['rss_bytes']) is int and 0<=value['rss_bytes']<2**63))
                 and ('reason' not in value or (isinstance(value['reason'],str) and len(value['reason'])<=2048)),
                 'Monitor health history differs from its fixed generation')
+    require(snapshot(directory)==inventory,'Monitor history changed while validating')
+    return inventory
+
+
+def checkpoint_monitor(journal,layout,entries,gate,*,resume=False):
+    """Pin stopped health/history without consuming or deleting temporary files."""
+    from mod_host_upgrade_layout import snapshot,_new
+    state=journal.state();generation=state['config'];base=journal.base
+    require(type(resume) is bool and layout.journal is journal and state['shutdown_complete'] and state['quiescent']
+            and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity(),'Complete private shutdown first')
+    gate();activation.fixed_monitor_files(layout,generation)
+    cutover.validate_entries(entries);manifest=read_json(layout.manifest)
+    baseline=manifest['monitor' if generation=='before' else 'after_monitor']
+    inventory=checked_monitor_history(journal,cutover.ROOT/'monitor',baseline,entries,generation)
     gate();require(snapshot(cutover.ROOT/'monitor')==inventory,'Monitor history changed while checkpointing')
     data=wire(dict(schema=1,producer=PRODUCER,generation=generation,nonce=base['nonce'],
         layout_sha256=hashlib.sha256(layout.manifest).hexdigest(),inventory=inventory))

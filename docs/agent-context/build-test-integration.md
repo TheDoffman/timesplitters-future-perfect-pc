@@ -36,6 +36,10 @@ selective suspension and ten fixed-label stops. Lost observations resume under a
 new lease without duplicate actions; unknown files/orphan workers block cleanup.
 Another restart replaces PID authority, preserving the original history. Typed
 replay mutations reject changed bindings/order, exposure and ordinary settlement.
+test_reboot_layout.py exercises read-only active/archive/install/boot positions,
+typed updated health, opaque partial-write preservation and refusal of policy/
+backup/process/routing changes. Observation Layout cannot prepare/move/exchange.
+checked_monitor_history is shared with ordinary shutdown checkpoint validation.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

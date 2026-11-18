@@ -178,12 +178,19 @@ class Layout:
     supplies a durable record callback and live quiescence gate. Effects never
     bootstrap jobs. Partial/interrupted files are preserved rather than repaired.
     """
-    def __init__(self,journal,before,after,old_entries,new_entries):
+    def __init__(self,journal,before,after,old_entries,new_entries,*,observation=False):
         self.journal=journal;self.old=old_entries;self.new=new_entries
         base=journal.base;uid=base['uid']
-        require(os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity()
+        require(type(observation) is bool,'Choose explicit protected-layout observation')
+        current=boot_identity()
+        reboot=(journal.state().get('reboot') or {}) if observation else {}
+        observing=(observation and getattr(journal,'observation_boot',None)==current and current!=base['boot_id']
+            and reboot.get('boot_id')==current and reboot.get('quiescent') is True)
+        require(os.geteuid()==cutover.ROOT_UID
+                and (observing or (not observation and base['boot_id']==current))
                 and before==cutover.ROOT/'releases'/base['before'] and after==cutover.ROOT/'releases'/base['after'],
                 'Invalid protected layout context')
+        self.observation_only=observation
         self.before=payloads(old_entries,before,uid);self.after=payloads(new_entries,after,uid)
         self.boot={}
         for entries,side in ((old_entries,'before'),(new_entries,'after')):
@@ -210,6 +217,7 @@ class Layout:
 
     def prepare(self):
         """New-only protected staging, without changing any active or boot path."""
+        require(not self.observation_only,'Observation layout cannot prepare protected files')
         require(self.journal.state()['quiescent'],'Protected layout requires observed shutdown')
         cutover.job_files(self.old)
         for name,data in self.before.items():
@@ -245,7 +253,7 @@ class Layout:
         return digest(self.manifest)
 
     def reopen(self,expected):
-        """Adopt only a coordinator-journal-bound, same-boot prepared manifest."""
+        """Read the prepared manifest bound to the original journal and boot."""
         require(isinstance(expected,str) and len(expected)==64,'An exact prepared layout digest is required')
         data,_=cutover.protected_bytes(self.folder/'manifest.json',0o600,65536)
         value=read_json(data);base=self.journal.base
@@ -297,6 +305,7 @@ class Layout:
         before returning. `gate()` must re-observe suspended ingress, all ten
         absent jobs and descendant/UID quiescence before every effect.
         """
+        require(not self.observation_only,'Observation layout cannot exchange protected files')
         require(direction in ('apply','rollback') and type(resume) is bool,'Invalid protected exchange direction')
         operations={direction+'-archive',direction+'-install',*(direction+'-'+label for label in self.boot)}
         require(pending is None or (resume and pending in operations),'Unknown protected exchange intent')
@@ -347,6 +356,7 @@ class Layout:
                     layout_sha256=digest(self.manifest),boot_files=9,backup_changed=False,services_started=False)
 
     def _move(self,source,destination,operation,record,gate):
+        require(not self.observation_only,'Observation layout cannot move protected files')
         gate();record('intent',operation,digest(self.manifest));self._locations()
         first=cutover.protected_directory(source.parent);second=cutover.protected_directory(destination.parent)
         try:

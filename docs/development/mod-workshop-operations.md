@@ -93,6 +93,20 @@ The installed upgrade entry's mandatory verified-source inventory now includes
 the typed reboot journal parser, because reading any recovery history may select
 that parser. An incomplete candidate is refused before journal/OS effects.
 
+`mod_host_reboot_layout.read` rechecks fresh quiescence, private routing, context
+hash and boot/backup identities, then opens the original prepared manifest through
+an explicit observation-only Layout. It reads active/saved/staged directories
+against the two verified factories and their recorded inventories. Active health
+may have changed during boot, but is validated by the same bounded typed-history
+reader used by ordinary shutdown checkpoints. Known Root atomic-write temporaries
+remain opaque and preserved. Static policy, directory identities and archived
+history must remain unchanged; original migration proofs must be known historical
+evidence or have a recorded retained retirement. The original manifest/boot binding
+is never rewritten. The result reports positions and inventories only. This
+observation Layout refuses preparation, exchange and internal moves before any
+callback or write. Sealing/admitting the new checkpoint and granting ordinary
+post-reboot migration/startup authority remain separate unfinished steps.
+
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
 requires `--host-release` with an exact installed identity. The newly verified
