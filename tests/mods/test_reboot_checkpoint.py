@@ -10,6 +10,7 @@ import pytest
 from test_upgrade_layout import prepared
 from test_upgrade_flow import flow
 from test_upgrade_coordinator import machine
+from test_upgrade_activation import simulated_boot
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'tools/mods'))
 import mod_host_cutover as cutover

@@ -44,6 +44,8 @@ test_reboot_checkpoint.py composes actual private upgrade files/history with
 simulated restart/quiescence. Known complete checkpoint recovery is explicit;
 partial/aliased/changed/capacity artifacts stay preserved. Hash/epoch/journal
 bindings and refused ordinary effects remain mandatory after checkpoint sealing.
+Standalone composed checkpoint tests explicitly import simulated_boot as well as
+machine/flow/prepared, so the initial private startup retains its strict boot check.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.
