@@ -44996,3 +44996,23 @@ verified executable/game-content seal. Executable SHA256:
 c46afbc8fb7aaba7410cbaad4f481498cb43a2557ee297c2d28fde8c9a44728e.
 Compatibility:3b7fac2a09dfe233f78807fe35f5bb14ea55af2ef7dfb1f936349c81b79a9a47.
 Log: logs/lobby-rtt-font-build.log (ignored). No commit/push/publication.
+
+## 2026-11-17: Native multiplayer integration PR version policy
+
+User requested a PR from feature/native-multiplayer-ui into main and explicitly
+retained game version0.6.2. Changed the branch VERSION from0.7.0-beta.1 to0.6.2;
+origin/main's0.6.3-sun-fix.1 is an accidental version and is corrected by the PR.
+Historical beta draft records/assets are preserved; no tag, release, asset
+replacement or main merge is part of this request. The native flow is shared
+source; version change does not add a new host adapter or enable Story co-op.
+Windows rebuild/version checks for the correction are recorded below when done.
+Windows11 x64/MSBuild17.12.6: supported Release rebuild and all built-in checks
+passed, including the linked0.6.2 build-version assertion with Story chooser
+disabled. Patches verified with0 runtime updates. Focused version/channel and
+explicit-version preparation tests:15 passed in0.10s. Context/index/whitespace
+checks pass against758871b2. Matching symbols generated; executable/content
+seal verifies. Executable SHA256:
+cb4abf9ea1419130c7889c3a03f4850d3ce8f50acda7dd6055e6f38204c9ec1d.
+Compatibility:c39dc55cb3d2724cd0f601af58dd1954de2fd3ffda584743912bc26cd7f433db.
+Ignored log: logs/native-multiplayer-pr-build.log. No gameplay acceptance or
+Mac/Linux rebuild for this version correction; existing host limits remain.

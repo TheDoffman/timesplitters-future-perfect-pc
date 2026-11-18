@@ -1,5 +1,11 @@
 # Game releases: Stable and named previews
 
+Current integration policy (2026-11-17): merge the native multiplayer work into
+main with `VERSION` kept at `0.6.2`. The `0.6.3-sun-fix.1` value on main was a
+mistake; the user explicitly requests no version increment yet. The earlier
+`0.7.0-beta.1` draft described below remains historical testing material.
+This source integration does not publish a release or replace existing assets.
+
 [Discord release notifications](discord-announcements.md): Stable and previews post to release-updates; announcements is for team posts.
 
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)

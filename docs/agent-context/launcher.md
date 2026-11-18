@@ -1,4 +1,8 @@
 [Sync telemetry](network-sync-telemetry.md).
+Integration version policy (2026-11-17): native multiplayer merges into main
+with VERSION0.6.2, per user request. Main's0.6.3-sun-fix.1 was accidental;
+the earlier0.7.0-beta.1 draft below is historical and does not authorize a
+version increment or publication for this integration.
 Online game beta0.7.0-beta.1 is uploaded as a draft prerelease from46f1a2d0
 on feature/native-multiplayer-ui (release443677772). Beta metadata targets
 Preview/Beta, but drafts stay hidden from launcher discovery. Windows+Linux assets;
