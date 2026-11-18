@@ -1,3 +1,38 @@
+Journaled reboot preparation (2026-11-18; source38c8de5c/3757423e; not deployed):
+typed reboot events preserve the original header/context and pre-boot event
+prefix. Only the current observation lease can record new-boot observations,
+selective public suspension, ordered stop intent/result and quiescence. The
+ordinary upgrade pipeline cannot append after reboot preparation without separate
+admission. Typed validation binds fixed paths/modes/ownership, backup identity,
+loaded origins/current PID tracking, authority and boot sequence; repeated boots
+must retain the original context hash and cannot reuse an earlier boot.
+
+mod_host_reboot_prepare reads the bound context, captures fresh jobs, suspends
+only8443 while preserving unrelated/private443 configuration, stops monitors then
+the remaining fixed jobs, and proves fresh trees/groups and every UID600 process
+gone. No sampled PID is signalled. Pending stops are observed on explicit resume
+without another bootout. Source/job changes and escaped workers preserve failure.
+A further restart requires a fresh observation and replaces PID authority while
+keeping the original history. Quiescence does not admit migration/startup/public
+restoration/settlement; monitor/layout re-admission, fresh proof and reboot CLI
+remain pending. The verified installed inventory now requires the typed parser.
+
+Actual native expanded journal/context/command/coordinator/preparation/CI-scope
+checks pass338 Mac129.08s and338 Linux157.80s, including all existing upgrade/
+rollback cases. New preparation tests alone pass11 Mac2.89s/Linux3.85s, covering
+fresh/already-private routing, lost observations under a new lease, uncertain
+stops without repeated commands, file replacement, orphan workers, another
+restart, and fourteen replay mutations rejecting bindings/order/public exposure/
+ordinary settlement. The fixture initially omitted its imported protected_jobs
+dependency; it was corrected before native execution. Final inventory/protocol/
+command/scope checks pass299 Mac0.49s/Linux0.56s; Windows287/12 POSIX skips0.54s.
+Preparation imports under isolated no-site Python without signing packages.
+These use real protected files/history with simulated credentials, process/boot
+samples, launchd and routing. No host restart or live service/route/data/key change
+was performed. Earlier e0d0e4df CI44277734278 completed all23 successful jobs and
+two intended skips, including Linux Vulkan, runtime, patches, native launchers and
+combined-package/PR validation; that CI result does not cover this newer source.
+
 Reboot observation foundation (2026-11-18; sourcef5b4324e/3f075552/6f7480e7,
 test comparison12e501c3; not deployed): a new Root reader verifies all ten boot
 files and the unchanged generated backup job against the verified before/after
