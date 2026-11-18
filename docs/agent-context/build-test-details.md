@@ -1998,3 +1998,11 @@ composition tests retain the unchanged digest contract through the shared helper
 Pure verified-input tests fail on any migration inspection, private readiness,
 route status or live job preflight; recovery composition separately rechecks its
 argument binding before fresh verification and historical reconstruction.
+
+test_upgrade_command.py checks private CLI authentication/argument admission,
+then dispatch under actual journal leases/context files with verified inputs and
+service effects simulated. Apply requires a fresh matching digest and unused
+nonce. Resume/rollback only reopen same-boot history. Lost context admission in
+an event-free journal permits exact re-preflight/adoption; partial files stay
+preserved. Recovery argument reads do not create history; new-only/existing-only
+lease modes reject wrong selection and changed base metadata before dispatch.

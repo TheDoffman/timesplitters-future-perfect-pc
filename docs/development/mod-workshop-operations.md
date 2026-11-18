@@ -72,7 +72,7 @@ descendant check. Only then may Root issue the fixed0644 migration proof with
 the backup manifest hash, boot identity and migration plan. The worker independently
 enforces30-second proof and300-second backup freshness. Existing foreign proofs
 and interrupted proof writes are preserved and refused. These are internal phases;
-the public upgrade command still provides inspection/preflight only.
+the private upgrade actions below compose them; public restoration is still separate.
 
 Preflight obtains a digest-only six-file migration plan from the locked installed
 child and binds its hash alongside job and routing observations. Apply/rollback
@@ -130,16 +130,38 @@ runtime links are preserved and refused. The existing staging-plan verifier uses
 the same descriptor/component contract. File reads use nonblocking nofollow
 descriptors so special files are rejected without waiting on a FIFO.
 
-`upgrade-installed-host-mac.py` is the upgrade entry point's read-only inspection
-phase. With no arguments it returns a plan without installed/private I/O.
+`upgrade-installed-host-mac.py` is the immutable private upgrade entry point.
+With no arguments it returns a plan without installed/private I/O.
 `--inspect --from-release <exact-sha>` requires Darwin/root, installed Python
 `-I -S -B`, the immutable current entry-point path and verified locked account.
 It verifies both installed closures and requires their public origin/root pin to
 match. New pending-public-acceptance status is allowed; changing authority is
 refused. The resulting report proves installed code/profile compatibility only.
 It does not stop jobs, create a journal, suspend routing, force a backup, migrate
-private state or activate the candidate. There is no apply action yet, and no
-current production ceremony invokes this new entry point.
+private state or activate the candidate. Separate private actions are described
+below; no current production ceremony invokes this new entry point.
+
+`--apply-private --from-release <sha> --backup-release <sha> --nonce <64hex>
+--expected-preflight <sha>` requires the same authenticated installed Darwin/Root
+entry point and isolated Python. It repeats preflight and refuses a changed
+digest before journal creation. The nonce must be unused. Under the global Root
+lease it reattests the original twenty files, seals recovery metadata before any
+event, then runs the composed private apply. Its result leaves ingress suspended.
+
+`--resume-private` takes the same base/backup/nonce but no expected digest. It
+reverifies immutable inputs, reads bounded same-boot historical arguments, opens
+only that existing journal and explicitly recovers a complete known pending
+append, then reconstructs context and resumes apply. It never creates missing
+history. An event-free journal left by context admission failure may repeat the
+initial preflight only if its original digest still matches; exact complete
+context adoption is explicit, while partial/foreign bytes remain refused.
+
+`--rollback-private` uses the same existing-history path and dispatches rollback.
+Add `--resume` only when continuing a rollback already begun. Neither action
+restores public ingress. Invalid options refuse before administrator admission;
+all effect paths require the immutable installed Root/Python admission. The
+commands are implemented but not installed/accepted on the production host.
+Reboot recovery and public restoration/acceptance remain unfinished.
 
 The read-only `--preflight --from-release <sha> --backup-release <sha>` phase
 additionally verifies the preserved eight-file backup closure and its independent
@@ -163,7 +185,7 @@ combined ten-entry set with the unchanged backup. The preflight digest binds
 these target specifications as well as the observed running old jobs. Internal
 objects/callables are never serialized in the public report. Retaining context
 does not authorize effects or replace later per-phase file/process/routing guards;
-there is still no apply CLI or reboot-recovery path.
+the private CLI below does not provide reboot recovery or public restoration.
 
 `mod_host_upgrade_context` persists only bounded upgrade metadata under Root700
 `upgrade-contexts/<nonce>.json` (Root600, maximum32 files/64KiB each). Its shared
@@ -182,14 +204,14 @@ original preflight digest and restores historical plan/baseline/observations whi
 retaining the fresh callable objects. It does not inspect current private files
 as though they were still the base generation, issue migration authority, or
 treat historical job/PID metadata as current OS proof. Subsequent phase guards
-remain mandatory. Immutable entry-point lease/recovery construction, reboot
-recovery and apply CLI integration are still unfinished.
+remain mandatory. Private CLI lease construction is implemented; installed
+acceptance, reboot recovery and public restoration remain unfinished.
 The internal installed-entry `verified_inputs` separates closure/binding/factory
 verification from initial route/private/live preflight. `prepare_recovery_context`
 first matches the held journal arguments, repeats that pure input verification,
 then reconstructs the artifact; it does not re-run migration inspection, private
-readiness or current job preflight against the changed generation. CLI lease
-construction and action wiring remain open.
+readiness or current job preflight against the changed generation. Private CLI
+actions now own the lease and use the same verified reconstruction contract.
 
 The internal `mod_host_upgrade_coordinator.apply_private` composes the forward
 phases under an already-held Root journal lease. It binds retained context to
@@ -199,8 +221,8 @@ quiescence, forces and verifies a preserved-runtime backup, then prepares and
 journals the protected layout before configuration/file exchange. It retires
 migration authority, checks the scanner, loads ten private jobs and performs the
 seven restart/readiness checks. It returns fresh private admission with ingress
-still suspended. Public restoration, public HTTPS checks, installed context/lease
-construction and reboot recovery remain separate unfinished integration work.
+still suspended. Public restoration, public HTTPS checks, installed acceptance
+and reboot recovery remain separate unfinished integration work.
 
 An existing forward operation requires explicit resume. Once configuration is
 durably after, a partial protected exchange can finish without a new migration
@@ -228,7 +250,7 @@ or pending old-generation proof retirement also requires explicit resume if old
 AV admission fails before the first bootstrap, including prepared cancellation.
 Completed checkpoints are revalidated, not rewritten; completed OS stops, bootstraps and
 restart signals are not repeated. Process/context reconstruction, reboot recovery,
-pending-forward-to-reverse resolution and the installed CLI remain open.
+pending-forward-to-reverse resolution and installed CLI acceptance remain open.
 
 Disposable new/installed-old/new data acceptance at source83b9c8b7 uses the actual
 installed old7be977f9 Python/source601c63c6 as UID501, between current-code writes
@@ -337,8 +359,8 @@ rechecks suspended routing and all ten absent labels around numeric descendant/
 group/UID absence; it performs no job stop or startup. Backup bytes and identities
 must remain unchanged. The caller must hold the Root journal lease, verify sealed
 factories/configuration migration, bind the prepared manifest digest and durably
-record every effect. Full activation integration, post-activation rollback
-and production admission remain open; no CLI exposes this phase yet. Reopening a
+record every effect. Private apply/rollback now compose this exchange; installed
+and production admission remain open. Reopening a
 prepared layout requires its exact journal-bound digest and same boot identity.
 
 The journal now records the prepared layout digest, private migration intent/result,
@@ -359,8 +381,8 @@ must match this transaction's recorded backup hash/time, shutdown, boot, plan an
 nonce. Active and archived proofs are checked identically. This allows explicit
 fresh recapture after proof expiry while preserving all other recorded files.
 The locked worker still independently enforces its short admission lifetime.
-Activation, post-start health-history checkpointing, reboot recovery and installed
-acceptance remain unfinished; these internal phases are not a live upgrade CLI.
+Activation and post-start health-history checkpointing are composed by private
+CLI actions; reboot recovery and installed acceptance remain unfinished.
 
 `mod_host_upgrade_activation.py` implements private startup only. Under the global
 Root journal lease it retires the fixed active migration proof before any bootstrap.
@@ -388,10 +410,10 @@ policy files stay pinned while separate health metadata updates. No sampled PID
 is signalled. The journal invalidates quiescence at the first startup intent and
 blocks private-access/public-restoration/settlement after startup until admission
 has verified fresh readiness and all seven restart checks.
-This phase returns readiness_verified=false: private health/scanner readiness,
-seven restart checks, controlled stop/rollback after startup, health-history
-checkpointing, reboot recovery and final public admission remain unfinished.
-There is still no installed apply CLI and no production job uses this phase yet.
+This startup phase returns readiness_verified=false; the private CLI follows it
+with separate readiness/seven-restart admission and can later compose controlled
+stop/checkpoint/rollback. Reboot recovery and final public admission remain open.
+No production job uses this new upgrade phase yet.
 
 `private_readiness` supervises the existing installed loopback/signature checker
 as UID600 under isolated verified Python, with a110-second/8KiB budget. Its exact
@@ -414,7 +436,7 @@ The selective routing primitive rechecks both AV/private freshness and the diges
 at restoration intent and observation, preventing stale admission or changed
 evidence from enabling public service. This function does not change routing.
 Installed post-start shutdown/rollback acceptance, reboot recovery, the full
-installed apply CLI and production acceptance remain open.
+installed private CLI acceptance and production acceptance remain open.
 
 `mod_host_upgrade_shutdown.py` now implements controlled post-start shutdown and
 monitor-history checkpointing. It snapshots current fixed labels/process trees
@@ -442,7 +464,7 @@ must again retire proof, pass AV, load fixed jobs, complete readiness/seven rest
 and pass public-admission freshness gates. The full history now allows256 events/
 128KiB per transaction, at most32 transactions; a complete post-start reversal
 exceeds128 events. These internal phases still require installed acceptance,
-reboot recovery and full apply-CLI integration before live deployment.
+reboot recovery and public restoration integration before live deployment.
 
 The v2 routing callback is directly compatible with the selective transition
 primitive. It persists intent before the action, permits only matching observed
@@ -458,7 +480,8 @@ refresh that verification. The coordinator must produce the actual verified
 report; recording its digest is not itself proof. Settlement requires no pending
 intent and confirmed public restoration (or an unused/cancelled preparation).
 Cancelling an unapplied suspension requires the exact original public state and
-no observed service stops. No CLI currently invokes this mutation pipeline.
+no observed service stops. The private CLI invokes suspension and the composed
+private pipeline; public restoration/settlement are still separate.
 
 The root-only `quiesce` primitive attests those job files, checks the journal's
 UID/boot and addresses only the fixed `system/<label>` targets. It durably writes
@@ -515,8 +538,8 @@ grant that authority. Its app transport drops to the verified original operator
 UID and actual primary GID with empty supplementary groups and a clean environment
 before executing the operator-writable app. It never runs that app as root or
 uses reset/default443. Owner changes require a separate migration contract.
-No CLI exposes these mutations; durable root routing events, recovery and actual
-selective off/on acceptance still must be integrated before live activation.
+Private CLI actions invoke journaled suspension. Public restoration/recovery and
+actual selective off/on acceptance still need integration before live activation.
 
 ## Routine checks
 

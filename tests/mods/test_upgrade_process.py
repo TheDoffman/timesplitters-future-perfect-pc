@@ -244,6 +244,11 @@ def test_preflight_verifies_independent_backup_binding_and_combines_only_atteste
     old,new,backup_runtime=entry(before),entry(after),entry(retained)
     new['descriptor']=dict(source_files={key:{} for key in ('tools/mods/mod_host_upgrade_process.py',
         'tools/mods/mod_host_upgrade_context.py',
+        'tools/mods/mod_host_cutover_journal.py','tools/mods/mod_host_upgrade_coordinator.py',
+        'tools/mods/mod_host_upgrade_admission.py','tools/mods/mod_host_upgrade_activation.py',
+        'tools/mods/mod_host_upgrade_layout.py','tools/mods/mod_host_upgrade_shutdown.py',
+        'tools/mods/mod_host_migration.py','tools/mods/hosting/force-upgrade-backup-mac.py',
+        'tools/mods/hosting/accept-installed-scanner-mac.py','tools/mods/hosting/accept-private-host-services-mac.py',
         'tools/mods/mod_host_cutover.py','tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py',
         'tools/mods/hosting/upgrade-job-specs-mac.py','tools/mods/hosting/migrate-private-generation-mac.py')})
     profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='f'*64)

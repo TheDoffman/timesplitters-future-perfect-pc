@@ -31,6 +31,50 @@ def suspend(state,fixture):
     return routes.transition(state.base['routing'],False,fixture['invoke'],state.routing_event)
 
 
+def test_recovery_only_does_not_create_missing_history_and_new_only_refuses_existing_nonce(transaction):
+    with pytest.raises(FileNotFoundError):
+        with journal.transaction(**transaction,existing_only=True):pass
+    assert not (cutover.ROOT/'upgrades').exists()
+    with journal.transaction(**transaction,new_only=True) as state:original=state.current
+    with pytest.raises(ModError):
+        with journal.transaction(**transaction,new_only=True):pass
+    with journal.transaction(**transaction,existing_only=True) as state:assert state.current==original
+    with pytest.raises(ModError):
+        with journal.transaction(**transaction,new_only=True,existing_only=True):pass
+
+
+def test_recovery_arguments_reopen_the_original_transaction_without_creating_a_new_one(transaction):
+    with pytest.raises(FileNotFoundError):journal.recovery_arguments(transaction['nonce'],'a'*64,'b'*64,600,'8'*64,clock=lambda:1000)
+    assert not (cutover.ROOT/'upgrades').exists()
+    with journal.transaction(**transaction,new_only=True) as state:original=state.current
+    arguments=journal.recovery_arguments(transaction['nonce'],'a'*64,'b'*64,600,'8'*64,clock=lambda:1000)
+    assert arguments=={key:value for key,value in transaction.items() if key!='clock'}
+    with journal.transaction(**arguments,clock=lambda:1000,existing_only=True,recover_pending=True) as state:
+        assert state.current==original
+
+
+@pytest.mark.parametrize('damage',['nonce','before','after','uid','backup','boot'])
+def test_recovery_arguments_refuse_other_identity_or_boot_without_mutating_history(transaction,monkeypatch,damage):
+    with journal.transaction(**transaction,new_only=True) as state:original=state.current
+    values=[transaction['nonce'],'a'*64,'b'*64,600,'8'*64]
+    if damage=='boot':monkeypatch.setattr(journal,'boot_identity',lambda:'0'*64)
+    elif damage=='nonce':values[0]='../escape'
+    elif damage=='uid':values[3]=600.0
+    else:values[{'before':1,'after':2,'backup':4}[damage]]='0'*64
+    with pytest.raises(ModError):journal.recovery_arguments(*values,clock=lambda:1000)
+    assert (cutover.ROOT/'upgrades'/(transaction['nonce']+'.json')).read_bytes()==original
+
+
+def test_changed_journal_base_between_argument_read_and_lease_is_not_adopted(transaction):
+    with journal.transaction(**transaction,new_only=True):pass
+    arguments=journal.recovery_arguments(transaction['nonce'],'a'*64,'b'*64,600,'8'*64,clock=lambda:1000)
+    path=cutover.ROOT/'upgrades'/(transaction['nonce']+'.json')
+    value=json.loads(path.read_bytes());value['plan_sha256']='6'*64;changed=journal.wire(value);path.write_bytes(changed)
+    with pytest.raises(ModError):
+        with journal.transaction(**arguments,clock=lambda:1000,existing_only=True):pass
+    assert path.read_bytes()==changed
+
+
 def restore(state,fixture,*,after=False):
     state.record('access-verified',data=dict(release=state.base['after' if after else 'before'],sha256='9'*64))
     return routes.transition(state.base['routing'],True,fixture['invoke'],state.routing_event)

@@ -1,4 +1,4 @@
-"""Inspect a preserving installed-host upgrade; no activation or service commands."""
+"""Inspect, apply or recover a preserving installed-host upgrade privately."""
 import argparse
 import importlib.util
 import json
@@ -63,6 +63,11 @@ def verified_inputs(before,after,uid,backup_identity):
     # Only verified new source is imported in this parent. Old host/backup
     # factories run in separate old-bound interpreters after credentials drop.
     required={'tools/mods/mod_host_upgrade_process.py','tools/mods/mod_host_upgrade_context.py','tools/mods/mod_host_cutover.py',
+              'tools/mods/mod_host_cutover_journal.py','tools/mods/mod_host_upgrade_coordinator.py',
+              'tools/mods/mod_host_upgrade_admission.py','tools/mods/mod_host_upgrade_activation.py',
+              'tools/mods/mod_host_upgrade_layout.py','tools/mods/mod_host_upgrade_shutdown.py',
+              'tools/mods/mod_host_migration.py','tools/mods/hosting/force-upgrade-backup-mac.py',
+              'tools/mods/hosting/accept-installed-scanner-mac.py','tools/mods/hosting/accept-private-host-services-mac.py',
               'tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py','tools/mods/hosting/upgrade-job-specs-mac.py',
               'tools/mods/hosting/migrate-private-generation-mac.py'}
     release.require(required <= new['descriptor']['source_files'].keys(),'Incomplete installed upgrade coordinator')
@@ -135,6 +140,48 @@ def preflight(before,after,uid,backup_identity):
     return prepare_context(before,after,uid,backup_identity)['report']
 
 
+def run_action(before,after,uid,backup_identity,action,nonce,*,expected_preflight=None,resume_rollback=False):
+    """Own the exact journal lease and sealed context before private effects.
+
+    Authentication/immutable entry-point admission precedes this call. No action
+    restores public ingress. Recovery never selects or creates a new journal.
+    """
+    release.require(action in ('apply','resume','rollback') and isinstance(nonce,str) and release.SHA.fullmatch(nonce)
+        and type(resume_rollback) is bool and (not resume_rollback or action=='rollback')
+        and ((action=='apply' and isinstance(expected_preflight,str) and release.SHA.fullmatch(expected_preflight))
+             or (action!='apply' and expected_preflight is None)), 'Choose an exact private upgrade action and transaction')
+    # These calls verify both closures and the independent backup before any
+    # coordinator/journal imports from the selected immutable new source.
+    context=prepare_context(before,after,uid,backup_identity) if action=='apply' else None
+    fresh=verified_inputs(before,after,uid,backup_identity) if context is None else None
+    import mod_host_cutover as cutover
+    import mod_host_cutover_journal as storage
+    import mod_host_upgrade_context as contexts
+    import mod_host_upgrade_coordinator as coordinator
+    if action=='apply':
+        release.require(context['report']['preflight_sha256']==expected_preflight,'Fresh preflight differs from the expected digest')
+        arguments=dict(before=before,after=after,uid=uid,nonce=nonce,backup_identity=backup_identity,
+            backup_base_release=context['backup_runtime']['identity'],plan_sha256=context['plan']['sha256'],
+            preflight_sha256=expected_preflight,tracked=context['observed']['observation']['tracked'],routing=context['routing'])
+    else:arguments=storage.recovery_arguments(nonce,before,after,uid,backup_identity)
+    with storage.transaction(**arguments,new_only=action=='apply',existing_only=action!='apply',recover_pending=action!='apply') as journal:
+        if action=='apply':
+            cutover.job_files(context['entries'],context['observed']['files'])
+            contexts.seal(journal,context)
+        elif action=='resume' and not json.loads(journal.current)['events']:
+            # A failed context write can leave a journal with no effects. Only
+            # an exact initial re-preflight may complete/adopt its metadata;
+            # partial or foreign context files remain refused by seal.
+            context=prepare_context(before,after,uid,backup_identity)
+            release.require(context['report']['preflight_sha256']==journal.base['preflight_sha256'],
+                'Unused recovery transaction no longer matches initial preflight')
+            contexts.seal(journal,context,resume=True)
+        else:context=contexts.reconstruct(journal,fresh)
+        if action=='rollback':result=coordinator.rollback_private(journal,context,resume=resume_rollback)
+        else:result=coordinator.apply_private(journal,context,resume=action=='resume')
+        return dict(result,schema=1,nonce=nonce,before=before,after=after,uid=uid)
+
+
 def root_context(before):
     release.require(isinstance(before,str) and release.SHA.fullmatch(before),'An exact installed base release is required')
     release.require(sys.platform=='darwin' and os.geteuid()==0,'Use local Mac administrator authentication')
@@ -157,19 +204,36 @@ def main():
     action=parser.add_mutually_exclusive_group()
     action.add_argument('--inspect',action='store_true')
     action.add_argument('--preflight',action='store_true')
+    action.add_argument('--apply-private',action='store_true')
+    action.add_argument('--resume-private',action='store_true')
+    action.add_argument('--rollback-private',action='store_true')
     parser.add_argument('--from-release')
     parser.add_argument('--backup-release')
+    parser.add_argument('--nonce')
+    parser.add_argument('--expected-preflight')
+    parser.add_argument('--resume',action='store_true',help='Resume an already-started private rollback')
     args=parser.parse_args()
     try:
-        if not (args.inspect or args.preflight):
-            release.require(args.from_release is None and args.backup_release is None,'Choose explicit installed upgrade inspection')
+        private=args.apply_private or args.resume_private or args.rollback_private
+        if not (args.inspect or args.preflight or private):
+            release.require(all(value is None for value in (args.from_release,args.backup_release,args.nonce,args.expected_preflight))
+                and not args.resume,'Choose an explicit installed upgrade action')
             value=dict(schema=1,phase='plan-only',installed_releases=2,jobs=10,services_changed=False,
                        network_started=False,data_written=False)
         else:
-            release.require((args.preflight and isinstance(args.backup_release,str) and release.SHA.fullmatch(args.backup_release))
-                            or (args.inspect and args.backup_release is None),'Choose an exact backup release only for preflight')
+            release.require(((args.preflight or private) and isinstance(args.backup_release,str) and release.SHA.fullmatch(args.backup_release))
+                            or (args.inspect and args.backup_release is None),'Choose an exact preserved backup release')
+            release.require((private and isinstance(args.nonce,str) and release.SHA.fullmatch(args.nonce))
+                            or (not private and args.nonce is None),'Choose an exact private transaction nonce')
+            release.require((args.apply_private and isinstance(args.expected_preflight,str) and release.SHA.fullmatch(args.expected_preflight))
+                            or (not args.apply_private and args.expected_preflight is None),'A fresh apply requires its expected preflight digest')
+            release.require(not args.resume or args.rollback_private,'Use --resume only with --rollback-private')
             after,uid=root_context(args.from_release)
-            value=preflight(args.from_release,after,uid,args.backup_release) if args.preflight else inspection(args.from_release,after,uid)
+            if private:
+                mode='apply' if args.apply_private else 'resume' if args.resume_private else 'rollback'
+                value=run_action(args.from_release,after,uid,args.backup_release,mode,args.nonce,
+                    expected_preflight=args.expected_preflight,resume_rollback=args.resume)
+            else:value=preflight(args.from_release,after,uid,args.backup_release) if args.preflight else inspection(args.from_release,after,uid)
         print(json.dumps(value,indent=2));return 0
     except (OSError,ValueError,subprocess.SubprocessError) as error:
         print('Installed host upgrade: '+str(error)[:1000],file=sys.stderr);return 2

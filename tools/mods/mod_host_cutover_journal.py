@@ -484,20 +484,40 @@ class Journal:
         return current
 
 
+def recovery_arguments(nonce,before,after,uid,backup_identity,*,clock=time.time):
+    """Read bounded historical arguments; lease acquisition must revalidate them.
+
+    This creates nothing and performs no service operation. A changed base
+    between this read and acquiring the lease is refused by Journal._decode.
+    """
+    require(os.geteuid()==cutover.ROOT_UID and isinstance(nonce,str) and SHA.fullmatch(nonce),
+            'An exact Root recovery transaction is required')
+    path=cutover.ROOT/'upgrades'/(nonce+'.json')
+    payload,_=cutover.protected_bytes(path,0o600,MAX_BYTES);value=checked(payload,clock)
+    require(value['nonce']==nonce and value['boot_id']==boot_identity()
+            and all(type(value[key]) is type(expected) and value[key]==expected for key,expected in
+                    (('before',before),('after',after),('uid',uid),('backup_identity',backup_identity))),
+            'Recovery history differs from this boot, release or service identity')
+    return {key:value[key] for key in ('before','after','uid','nonce','plan_sha256','preflight_sha256',
+        'tracked','routing','backup_identity','backup_base_release')}
+
+
 @contextmanager
-def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracked, routing,backup_identity,backup_base_release, *, clock=time.time,recover_pending=False):
+def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracked, routing,backup_identity,backup_base_release, *, clock=time.time,recover_pending=False,existing_only=False,new_only=False):
     require(os.geteuid() == cutover.ROOT_UID, 'Cutover journal requires root')
     require(all(isinstance(v, str) and SHA.fullmatch(v) for v in (before,after,nonce,plan_sha256,preflight_sha256,backup_identity,backup_base_release))
             and before != after and type(uid) is int and uid >= 600, 'Invalid cutover transaction identity')
     cutover.checked_tracking(tracked)
     routes.baseline(routing)
-    require(type(recover_pending) is bool,'Choose explicit pending-history recovery')
+    require(all(type(v) is bool for v in (recover_pending,existing_only,new_only)) and not (existing_only and new_only),
+            'Choose explicit journal creation or recovery')
     import fcntl
-    parent = cutover.protected_directory(cutover.ROOT)
-    try:
-        try:os.mkdir('upgrades', mode=0o700, dir_fd=parent);os.fsync(parent)
-        except FileExistsError:pass
-    finally:os.close(parent)
+    if not existing_only:
+        parent = cutover.protected_directory(cutover.ROOT)
+        try:
+            try:os.mkdir('upgrades', mode=0o700, dir_fd=parent);os.fsync(parent)
+            except FileExistsError:pass
+        finally:os.close(parent)
     directory = cutover.ROOT/'upgrades'
     fd = cutover.protected_directory(directory);lock = None
     try:
@@ -514,6 +534,8 @@ def transaction(before, after, uid, nonce, plan_sha256, preflight_sha256, tracke
                 or re.fullmatch('[0-9a-f]{64}\\.json',member)
                 or (recover_pending and member==pending and name in names) for member in names),
                 'Preserving unexpected or unfinished cutover artifacts')
+        require((not existing_only or name in names) and (not new_only or name not in names),
+                'Recovery requires existing history; a new apply requires an unused nonce')
         require(name in names or len([member for member in names if member.endswith('.json')]) < MAX_JOURNALS,
                 'Cutover journal capacity exhausted')
         for other in names:
