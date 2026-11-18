@@ -1,0 +1,44 @@
+name: Mod query lifetime diagnostic
+
+on:
+  push:
+    branches: [feature/mod-platform]
+    paths:
+      - tests/graphics/vulkan_query_lifetime.c
+      - tools/testing/test-vulkan-query-lifetime.py
+      - config/build/vulkan-sdk.json
+      - .github/workflows/mod-query-lifetime.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: query-lifetime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mac-query-lifetime:
+    name: Observe pinned Mac driver query lifetimes
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          lfs: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Observe actual pinned driver without game assets
+        run: |
+          mkdir -p build
+          python -B tools/testing/test-vulkan-query-lifetime.py --setup-sdk --output build/query-lifetime --iterations 4096 --runs 4 --record-only
+      - name: Retain diagnostic evidence including driver failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mac-query-lifetime-${{ github.sha }}
+          path: build/query-lifetime
+          if-no-files-found: warn
+          retention-days: 14

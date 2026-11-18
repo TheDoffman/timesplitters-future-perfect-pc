@@ -5,6 +5,7 @@
     "tests/repository/test_patch_updates.py"
   ],
   "native": [
+    "tests/graphics/test_vulkan_query_lifetime.py",
     "tests/mods/test_mod_workshop.py",
     "tests/mods/test_lua_bundle.py",
     "tests/mods/test_creator_projects.py",

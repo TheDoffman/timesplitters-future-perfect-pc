@@ -7,6 +7,42 @@ their normal behavior. The independent sun/glow and allocation fixes remain.
 Historical preset captures below establish the repair's original evidence,
 not a feature still present in the current build. New checks use normal settings.
 
+## Query lifetime crash investigation
+
+The retained mod/audio game crash PC is in MoltenVK's finishQueries completion
+block. The primary Mac SDK VERSIONS.txt identifies MoltenVK source
+`db66022459ffb663aa2b50f6b018bc2e124f5edf`. That source tracks query-pool pointers
+without retaining them for the Metal completion callback. Upstream fixes that
+ownership in [c0af3a56](https://github.com/KhronosGroup/MoltenVK/commit/c0af3a5658ba03b6006fdeb14efd1b21b2ad91b2).
+This matches the recorded stack pattern; it does not establish the historical
+game crash's cause or a tested game repair. The SDK pin/installed driver and
+normal renderer behavior are unchanged while the candidate is investigated.
+
+`tests/graphics/vulkan_query_lifetime.c` is an asset-free native Vulkan1.2
+diagnostic: record an occlusion-pool reset, submit with a timeline signal, wait
+for that signal, then destroy the pool. Repeated ordinary allocator reuse makes
+an illegal late driver callback observable. It never touches freed application
+memory and does not add a queue-idle wait before each retirement. A final device
+idle drains cleanup. No shaders, game/title addresses, surfaces or saves are used.
+
+`tools/testing/test-vulkan-query-lifetime.py --output NEW_DIRECTORY` builds and
+observes up to8 independent processes with bounded iterations/deadlines. Native
+exit0 alone cannot pass: exact completed counts, scope and timeline evidence are
+required. Crash, timeout, malformed/partial output and unsupported device are
+distinct failed observations. New-only output preserves existing files, and a
+2GiB staging floor is checked before SDK setup/compilation/output creation.
+Mac uses the verified shared SDK (`--setup-sdk` or `--sdk-source-root`); Linux
+uses system Vulkan. An explicit candidate library requires its independently
+recorded SHA256 and an isolated generated ICD; it does not replace an SDK file
+or normal game driver selection.
+
+The separate `mod-query-lifetime.yml` diagnostic workflow runs the pinned Mac
+SDK without game assets and retains all observations. Its explicit
+`--record-only` means a completed diagnostic job can contain failed native
+probes: inspect report.json, never equate the workflow result with a fixed crash.
+Normal graphics/runtime regression jobs remain separate. Patched-driver A/B,
+physical Mac game replay and final release acceptance remain required.
+
 ## Visibility repair (Windows runtime acceptance passed)
 
 Patch3001 preserves original SDK Begin3D4250 and End3D42F0 bodies as `_gen`

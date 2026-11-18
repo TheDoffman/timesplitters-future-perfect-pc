@@ -1,3 +1,25 @@
+Mac query-lifetime diagnostic preparation (2026-11-18; no driver/game change):
+read-only inspection identifies the primary SDK MoltenVK source asdb660224 from
+VERSIONS.txt. That immutable upstream source lacks query-pool ownership across
+Metal completion callbacks; upstream c0af3a56 retains/releases pools around this
+callback. This is consistent with the recorded finishQueries stack, but neither
+the historical game crash cause nor a game fix is established.
+
+Added an asset-free Vulkan1.2 probe that resets64 occlusion slots, submits/waits
+on an explicit timeline value and destroys the completed pool. Repeated ordinary
+allocator reuse exposes illegal late callback access without application UAF.
+No game/assets/saves/shaders/surfaces are used. The runner classifies crashes,
+timeouts, unsupported devices and malformed/incomplete success distinctly; it
+pins an explicit candidate library by SHA and keeps all output new-only. A2GiB
+headroom check precedes setup/compilation/output; no Mac low-disk bypass occurred.
+
+Windows observation/admission/CI selection passes198 in0.27s; native Linux
+compile/execution and the new separate Mac diagnostic workflow follow below.
+The diagnostic workflow deliberately records native failures without making its
+own job fail; inspect the retained report rather than treating that job as a
+fixed-game claim. The SDK pin, installed drivers, normal builds and services are
+unchanged. Physical Mac game replay/patched-driver comparison remain required.
+
 Production backup-key preparation (2026-11-18; source59c64881): the active
 source-pinned public workshop profile/root validates. A new independent backup
 recipient is prepared in persistent, private Windows account storage outside the

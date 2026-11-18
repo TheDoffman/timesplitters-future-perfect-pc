@@ -1,6 +1,7 @@
+Query lifetime diagnostic: fidelity-comparison.md.
 [Workshop/native/V-Sync test routes](build-test-integration.md).
-Reboot command/composition: build-test-integration.md; IPC: test_online_menu.py.
-Custody: test_backup_{recipient,custody}.py; guide below.
+Reboot/IPC: build-test-integration.md; test_online_menu.py.
+Custody: test_backup_{recipient,custody}.py.
 Backup: test_backup_{worker,runtime,schedule}.py (native SID/UTC); Windows jobs: test_windows_job.py.
 Chunk-bound execution uses explicit max_chunk_bytes: compiler-batching.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
