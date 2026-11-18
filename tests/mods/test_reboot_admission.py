@@ -116,12 +116,16 @@ def test_quiescence_ignores_an_unrelated_reused_preboot_pid(admitted):
 
 
 @pytest.mark.parametrize('rebooted',['archive','install','boot','migration','retire','start','restart','public'],indirect=True)
-def test_known_preboot_pending_effects_reconcile_before_new_private_and_public_acceptance(admitted):
+@pytest.mark.parametrize('reverse',[False,True])
+def test_known_preboot_pending_effects_reconcile_before_new_private_and_public_acceptance(admitted,reverse):
     case=admitted;original=json.loads(case.original)['events']
     pending=case.journal.state()['layout_pending']
-    coordinator.apply_private(case.journal,case.fresh,resume=True)
+    if reverse:coordinator.rollback_private(case.journal,case.fresh,resume=True)
+    else:coordinator.apply_private(case.journal,case.fresh,resume=True)
     coordinator.restore_public(case.journal,case.fresh,resume=True)
-    assert case.journal.state()['settled'] and case.journal.state()['config']=='after'
+    generation='before' if reverse else 'after'
+    assert case.journal.state()['settled'] and case.journal.state()['config']==generation
     if pending is not None:
         assert sum(event['kind']=='layout-intent' and event['label']==pending for event in json.loads(case.journal.current)['events'])==1
     assert json.loads(case.journal.current)['events'][:len(original)]==original
+    assert {event['data'] for event in json.loads(case.journal.current)['events'][len(original):] if event['kind']=='start-intent'}=={generation}

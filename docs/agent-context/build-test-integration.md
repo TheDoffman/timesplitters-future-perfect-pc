@@ -68,6 +68,8 @@ owned by an unrelated user must not become current cleanup authority.
 Composed pending cases interrupt migration, archive/install/boot exchanges, proof
 retirement, startup, restart and public observation before a simulated reboot;
 fresh boot jobs are reconstructed from actual boot files, including known mixes.
+Each interrupted phase also reverses directly: new startup intents must select
+only the restored old generation, without an intermediate candidate startup.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.
