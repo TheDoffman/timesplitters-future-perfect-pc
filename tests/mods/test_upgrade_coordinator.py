@@ -1,4 +1,5 @@
 """Composed real journal/files/proofs; credentials, launchd and children simulated."""
+import copy
 import json
 import plistlib
 from pathlib import Path
@@ -149,6 +150,39 @@ def test_restoration_preserves_unadmitted_or_changed_state(machine,monkeypatch,f
         monkeypatch.setattr(process,'private_readiness',private)
     with pytest.raises((ModError,ValueError)):coordinator.restore_public(item.state,item.context)
     assert not item.state.state()['settled']
+
+
+@pytest.mark.parametrize('reverse',[False,True])
+def test_replayed_restoration_requires_exact_fresh_private_and_public_evidence(machine,reverse):
+    item=machine;coordinator.apply_private(item.state,item.context)
+    if reverse:coordinator.rollback_private(item.state,item.context)
+    coordinator.restore_public(item.state,item.context)
+    events=json.loads(item.state.current)['events'];base=item.state.base
+    refresh=next(i for i,event in enumerate(events) if event['kind']=='restoration-readiness-verified')
+    public=next(i for i,event in enumerate(events) if event['kind']=='public-readiness-verified')
+    def replay(value):
+        return storage.replay(value,lambda:item.flow.now[0]+1000,base['routing'],base['before'],base['after'],base['uid'],
+            base['backup_identity'],base['backup_base_release'],base['plan_sha256'])
+    assert replay(events)['settled']
+    for fault in ('scanner-uid','scanner-time','private-time','future','order','route','extra',
+                  'public-origin','public-label','public-floor','public-health','no-public','stale-public'):
+        changed=copy.deepcopy(events);data=changed[refresh]['data'];evidence=changed[public]
+        if fault=='scanner-uid':data['scanner']['uid']=True
+        elif fault=='scanner-time':data['scanner_checked_at']=True
+        elif fault=='private-time':data['private_checked_at']=True
+        elif fault=='future':data['private_checked_at']=changed[refresh]['time']+1
+        elif fault=='order':data['private_checked_at']-=1
+        elif fault=='route':
+            data['routing']['phase']='public';data['routing']['config_sha256']=base['routing']['config_sha256']
+        elif fault=='extra':data['private_config']='canary'
+        elif fault=='public-origin':evidence['data']['origin']='https://foreign.example'
+        elif fault=='public-label':evidence['label']='after' if reverse else 'before'
+        elif fault=='public-floor':evidence['data']['loopback']['catalog_version']=1
+        elif fault=='public-health':evidence['data']['role_health_verified']=False
+        elif fault=='no-public':del changed[public]
+        elif fault=='stale-public':changed[-1]['time']+=301
+        with pytest.raises(ModError,match='.'):
+            replay(changed)
 
 
 @pytest.mark.parametrize('kind',['migration-observed','layout-observed','start-observed','restart-observed'])

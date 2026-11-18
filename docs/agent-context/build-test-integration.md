@@ -7,6 +7,11 @@ signatures and local checkpoints, fake HTTP transports/role observations;
 test_upgrade_process.py checks the fixed UID600 child and exact bounded reports.
 Certificate verification, redirect/size refusal, floor/version reuse and retained
 revocations are required. Native CI selects both the helper and its tests.
+test_upgrade_coordinator.py composes real journal/files with simulated OS/children:
+forward/reverse public restoration, lost observation/settlement and expired resume
+must not repeat routing/jobs. Replay mutations reject typed-time/identity/role/
+floor changes, unrecorded exposure, missing public evidence and stale settlement.
+test_upgrade_command.py checks existing-only authenticated restoration dispatch.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.
