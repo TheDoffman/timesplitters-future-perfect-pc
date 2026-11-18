@@ -1,3 +1,15 @@
+PR569 Linux CI mirror repair (2026-11-17, afterf6cda4e1): original
+run44221725334 exceeded its30-minute budget because the runner's regional
+Ubuntu EC2 mirror took28min7s to download147MB. The first Linux test group
+passed160/2skip; remaining groups never started. All other selected jobs passed.
+A retry also spent several minutes in dependency setup. The Linux job now
+selects Ubuntu's main HTTPS archive through the runner's existing mirror list.
+Package/test lists and strict PR validation are unchanged. This CI-only change
+requires no game rebuild or Mac adapter. Local Windows Python checks for the
+gate, scope, runtime routes, Linux foundation and context:225passed,1skip;
+context and whitespace checks pass. Remote Linux/aggregate acceptance pending.
+See docs/agent-context/linux-game.md#ci-package-mirror.
+
 Multiplayer player guide refresh (2026-11-17, local after35751486): replaced
 the separate Online window/server-script instructions with native Online,
 Private Server and LAN flows, invite/code distinctions, port requirements,

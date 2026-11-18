@@ -1038,7 +1038,7 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[Linux release/CI/POSIX](linux-game.md).
+[Linux CI](linux-game.md#ci-package-mirror).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 

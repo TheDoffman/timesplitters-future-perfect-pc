@@ -1,3 +1,14 @@
+## CI package mirror
+
+The Linux Vulkan job replaces the runner's primary Ubuntu mirror list, when
+present at `/etc/apt/apt-mirrors.txt`, with `https://archive.ubuntu.com/ubuntu`
+before apt update/install. This avoids the regional EC2 mirror that took28min7s
+to download147MB in PR569 run44221725334, exhausting the30-minute job budget.
+Package names, Ubuntu suites, signature verification, security sources and all
+test steps are unchanged. The PR gate still rejects a cancelled Linux job.
+This is hosted CI setup only; game/launcher dependencies and host adapters do
+not change. Verify the subsequent Linux job and aggregate PR validation.
+
 ## Online beta draft acceptance (2026-11-12)
 
 Linuxv0.7.0-beta.1 uses exact Windows source46f1a2d0 and matching network
