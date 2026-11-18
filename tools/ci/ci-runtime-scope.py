@@ -120,6 +120,7 @@ CPU_TOOLS = {
     'tools/mods/mod_host_reboot_layout.py', 'tests/mods/test_reboot_layout.py',
     'tools/mods/mod_host_reboot_checkpoint.py', 'tests/mods/test_reboot_checkpoint.py',
     'tools/mods/mod_host_reboot_backup.py', 'tests/mods/test_reboot_backup.py',
+    'tools/mods/mod_host_reboot_admission.py', 'tests/mods/test_reboot_admission.py',
     'tools/mods/mod_host_routing.py', 'tests/mods/test_host_routing.py',
     'tools/mods/mod_host_cutover_journal.py', 'tests/mods/test_host_cutover_journal.py',
     'tools/mods/mod_host_upgrade_admission.py', 'tests/mods/test_upgrade_admission.py',

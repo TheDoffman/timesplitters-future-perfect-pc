@@ -76,11 +76,22 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
         if kind not in ('public-readiness-verified','settled'):public_ready=None;public_time=None
         if isinstance(kind,str) and kind.startswith('reboot-'):
             import mod_host_reboot_journal as reboot_history
-            reboot=reboot_history.event(reboot,event,original_boot=original_boot,uid=uid,
+            reboot=reboot_history.event(reboot,event,original_boot=original_boot,before=before,uid=uid,
                 backup_identity=backup_identity,backup_base_release=backup_base_release,
                 routing=baseline,order=order,nonce=original_nonce,layout_sha256=layout_sha)
+            if kind=='reboot-admitted':
+                # Retain durable configuration/layout directions and intents.
+                # Every process/readiness claim must be established in this boot.
+                stopped=list(order);pending=None;quiescent=True;quiesced_at=reboot['quiesced_at'];checked_at=event['time']
+                backup=reboot['backup'];suspended=True;route_pending=None;restored=False;access=None;access_time=None
+                retired={};scanner=None;scanner_time=None;started=[];start_pending=None;activation_generation=None
+                private_ready=None;private_time=None;restarted=[];restart_pending=None;activation_ready=False
+                shutdown=None;shutdown_stopped=[];shutdown_pending=None;shutdown_complete=False;monitor_checkpoints={}
+                require(data['private_baseline']['release']==before and (private_baseline is None or private_baseline==data['private_baseline']),
+                        'Reboot continuation changes the original private baseline')
+                private_baseline=data['private_baseline'];catalog_floor=max(catalog_floor,private_baseline['catalog_version'])
             continue
-        require(reboot is None,'Operational continuation requires explicit reboot admission')
+        require(reboot is None or reboot['admitted'] is not None,'Operational continuation requires explicit reboot admission')
         if kind=='baseline-private-verified':
             require(label is None and private_baseline is None and not stopped and not suspended and route_pending is None
                     and not restored and layout_sha is None and isinstance(data,dict),
@@ -391,6 +402,24 @@ def replay(events, clock, baseline, before, after,uid,backup_identity,backup_bas
                 monitor_checkpoints=monitor_checkpoints,public_ready=public_ready,public_time=public_time,reboot=reboot)
 
 
+def operational_boot(journal):
+    """Require the original boot, or exact typed admission in the held new boot."""
+    state=journal.state();reboot=state.get('reboot');current=boot_identity()
+    if reboot is None:
+        require(journal.base['boot_id']==current and getattr(journal,'observation_boot',None) is None,
+                'Upgrade requires its original boot or explicit reboot admission')
+    else:
+        require(reboot['admitted'] is not None and reboot['boot_id']==current
+                and getattr(journal,'observation_boot',None)==current,
+                'Upgrade requires its exact admitted current-boot lease')
+    return current
+
+
+def operational_tracking(journal):
+    operational_boot(journal);reboot=journal.state().get('reboot')
+    return cutover.checked_tracking(journal.base['tracked'] if reboot is None else reboot['observation']['tracked'])
+
+
 def checked(data, clock):
     value = read_json(data)
     require(isinstance(value, dict) and set(value) == {'schema','producer','before','after','uid','nonce',
@@ -492,7 +521,7 @@ class Journal:
         Settlement is recorded only after the caller verifies restoration or
         final activation, or when a prepared transaction made no service change.
         """
-        require(self.observation_boot is None,'Reboot observation lease cannot record upgrade effects')
+        operational_boot(self)
         require(not (isinstance(kind,str) and kind.startswith('reboot-')),'Use the explicit reboot observation journal adapter')
         return self._record(kind,label,data)
 

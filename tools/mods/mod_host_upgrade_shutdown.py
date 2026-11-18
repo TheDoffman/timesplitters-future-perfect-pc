@@ -20,7 +20,7 @@ def stop_private_services(journal,layout,entries,command,routing,*,resume=False,
     """Unload fixed labels once per intent, then prove all descendants/UID gone."""
     state=journal.state();base=journal.base;generation=state['config']
     require(type(resume) is bool and type(timeout) is int and 1<=timeout<=120
-            and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity() and layout.journal is journal
+            and os.geteuid()==cutover.ROOT_UID and storage.operational_boot(journal)==boot_identity() and layout.journal is journal
             and state['layout_complete']==generation==state['monitor'],'Invalid private shutdown context')
     cutover.validate_entries(entries);activation.fixed_monitor_files(layout,generation)
     files=cutover.job_files(entries);journal.require_suspended(routing)
@@ -146,7 +146,7 @@ def checkpoint_monitor(journal,layout,entries,gate,*,resume=False):
     from mod_host_upgrade_layout import snapshot,_new
     state=journal.state();generation=state['config'];base=journal.base
     require(type(resume) is bool and layout.journal is journal and state['shutdown_complete'] and state['quiescent']
-            and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity(),'Complete private shutdown first')
+            and os.geteuid()==cutover.ROOT_UID and storage.operational_boot(journal)==boot_identity(),'Complete private shutdown first')
     gate();activation.fixed_monitor_files(layout,generation)
     cutover.validate_entries(entries);manifest=read_json(layout.manifest)
     baseline=manifest['monitor' if generation=='before' else 'after_monitor']

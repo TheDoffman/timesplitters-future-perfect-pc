@@ -72,7 +72,7 @@ def receipt(value,baseline):
     return value
 
 
-def event(state,entry,*,original_boot,uid,backup_identity,backup_base_release,routing,order,nonce,layout_sha256):
+def event(state,entry,*,original_boot,before,uid,backup_identity,backup_base_release,routing,order,nonce,layout_sha256):
     kind,label,data=entry['kind'],entry['label'],entry['data']
     if kind=='reboot-observed':
         require(label is None and isinstance(original_boot,str) and SHA.fullmatch(original_boot)
@@ -86,7 +86,23 @@ def event(state,entry,*,original_boot,uid,backup_identity,backup_base_release,ro
         require(observed['boot_id'] not in [original_boot,*seen],'Reboot preparation cannot reuse an earlier boot')
         return dict(boot_id=observed['boot_id'],prior_boots=seen,context_sha256=data['context_sha256'],observation=observed,
             routing_pending=None,routing_suspended=False,routing=None,stopped=[],pending=None,quiescent=False,quiesced_at=None,
-            layout_checkpoint=None,backup_pending=None,backup=None,backup_time=None)
+            layout_checkpoint=None,backup_pending=None,backup=None,backup_time=None,admitted=None)
+    if kind=='reboot-admitted':
+        require(state is not None and state['quiescent'] and state['admitted'] is None and label is None
+                and state['layout_checkpoint'] is not None and state['backup_pending'] is None and state['backup'] is not None
+                and 0<=entry['time']-state['backup']['finished']<=300
+                and isinstance(data,dict) and set(data)=={'boot_id','checkpoint_sha256','backup_sha256','private_baseline'}
+                and data['boot_id']==state['boot_id']
+                and data['checkpoint_sha256']==state['layout_checkpoint']['checkpoint_sha256']
+                and data['backup_sha256']==state['backup']['verified_manifest_sha256'],
+                'Reboot continuation lacks fresh stopped-layout and backup admission')
+        from mod_host_upgrade_process import checked_private_result
+        private=data['private_baseline']
+        require(isinstance(private,dict),'Reboot continuation lacks original private baseline')
+        checked_private_result(private,before,uid,
+            dict(origin=routing['origin'],trusted_root_sha256=private.get('trusted_root_sha256')))
+        return dict(state,admitted=dict(data,time=entry['time']))
+    require(state is None or state['admitted'] is None,'Reboot preparation is already admitted for this boot')
     if kind=='reboot-layout-verified':
         require(state is not None and state['quiescent'] and label is None and isinstance(data,dict)
                 and set(data)=={'boot_id','original_boot','nonce','layout_sha256','context_sha256','checkpoint_sha256'}

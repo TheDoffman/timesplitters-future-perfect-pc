@@ -20,8 +20,9 @@ def selection(journal):
     require(os.geteuid()==cutover.ROOT_UID and reboot is not None and reboot['quiescent']
             and journal.observation_boot==boot_identity()==reboot['boot_id'],
             'Seal reboot evidence only under current stopped Root authority')
+    receipt=reboot['layout_checkpoint']
     return dict(boot_id=reboot['boot_id'],original_boot=journal.base['boot_id'],nonce=journal.base['nonce'],
-                layout_sha256=state['layout_sha256'],context_sha256=reboot['context_sha256'])
+                layout_sha256=state['layout_sha256'] if receipt is None else receipt['layout_sha256'],context_sha256=reboot['context_sha256'])
 
 
 def name(binding):return binding['nonce']+'-'+binding['boot_id']+'.json'

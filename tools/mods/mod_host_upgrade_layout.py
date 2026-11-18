@@ -11,6 +11,7 @@ import plistlib
 import stat
 
 import mod_host_cutover as cutover
+import mod_host_cutover_journal as storage
 from mod_host_migration import boot_identity, wire
 from mod_package import read_json, require
 
@@ -26,7 +27,7 @@ def quiescence_gate(journal,entries,command,routing):
     During exchange the boot files are deliberately a known before/after mix.
     Layout verifies those bytes; this gate proves no process can consume them.
     """
-    require(os.geteuid()==cutover.ROOT_UID and journal.base['boot_id']==boot_identity()
+    require(os.geteuid()==cutover.ROOT_UID and storage.operational_boot(journal)==boot_identity()
             and journal.state()['quiescent'],'Protected exchange lacks current root shutdown authority')
     cutover.validate_entries(entries);journal.require_suspended(routing)
     def absent():
@@ -34,7 +35,7 @@ def quiescence_gate(journal,entries,command,routing):
             require(cutover.label_state(path,spec,command) is None,'A fixed job reappeared during protected exchange')
     absent()
     code,output=command(['/bin/ps','-axo','pid=,ppid=,pgid=,uid='])
-    require(code==0 and cutover.processes_gone(journal.base['tracked'],cutover.process_rows(output),journal.base['uid']),
+    require(code==0 and cutover.processes_gone(storage.operational_tracking(journal),cutover.process_rows(output),journal.base['uid']),
             'Service processes reappeared during protected exchange')
     absent();journal.require_suspended(routing)
 
@@ -51,7 +52,7 @@ def configuration_and_exchange(journal,current,layout,direction,gate,*,resume=Fa
     base=journal.base
     require(direction in ('apply','rollback') and type(resume) is bool and layout.journal is journal
             and current['identity']==base['after'] and current['uid']==base['uid']
-            and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity(),
+            and os.geteuid()==cutover.ROOT_UID and storage.operational_boot(journal)==boot_identity(),
             'Invalid journaled configuration/layout context')
     gate();require(layout.manifest is not None,'A complete prepared layout is required')
     fingerprint=digest(layout.manifest);state=journal.state()
@@ -187,7 +188,7 @@ class Layout:
         observing=(observation and getattr(journal,'observation_boot',None)==current and current!=base['boot_id']
             and reboot.get('boot_id')==current and reboot.get('quiescent') is True)
         require(os.geteuid()==cutover.ROOT_UID
-                and (observing or (not observation and base['boot_id']==current))
+                and (observing or (not observation and storage.operational_boot(journal)==current))
                 and before==cutover.ROOT/'releases'/base['before'] and after==cutover.ROOT/'releases'/base['after'],
                 'Invalid protected layout context')
         self.observation_only=observation
@@ -272,6 +273,12 @@ class Layout:
         require(data==self.manifest,'Protected layout manifest changed')
         manifest=read_json(data);original=manifest['monitor'];found={}
         candidates=dict(before=original,after=manifest['after_monitor'])
+        reboot=self.journal.state().get('reboot')
+        if reboot is not None and reboot['admitted'] is not None:
+            from mod_host_reboot_checkpoint import load
+            checkpoint=load(self.journal,reboot['layout_checkpoint']['checkpoint_sha256'])
+            for name,generation in checkpoint['locations'].items():
+                if generation is not None:candidates[generation]=checkpoint['inventories'][name]
         checkpoints=self.journal.state().get('monitor_checkpoints',{})
         if checkpoints:
             from mod_host_upgrade_shutdown import read_checkpoint
@@ -291,7 +298,7 @@ class Layout:
             if missing_original:
                 from mod_host_upgrade_activation import retired_original_proof
                 require(retired_original_proof(self.journal,self.folder,'before'),'Preserving a missing original migration proof')
-            if generation=='after':_check_payloads(path,self.after,allow_proof=True,history=candidates['after'] if 'after' in checkpoints else None)
+            if generation=='after':_check_payloads(path,self.after,allow_proof=True,history=candidates['after'])
             found[name]=generation
         require(sorted(v for v in found.values() if v is not None)==['after','before']
                 and found['saved'] in (None,'before') and found['staged'] in (None,'after'),

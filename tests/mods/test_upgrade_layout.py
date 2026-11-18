@@ -22,6 +22,7 @@ def prepared(private_posix_path,monkeypatch,request):
     (root/'upgrades').mkdir(mode=0o700)
     monkeypatch.setattr(cutover,'ROOT',root);monkeypatch.setattr(cutover,'LAUNCHD',boot)
     monkeypatch.setattr(cutover,'ROOT_UID',os.geteuid());monkeypatch.setattr(layout,'boot_identity',lambda:'f'*64)
+    monkeypatch.setattr(cutover_journal,'boot_identity',lambda:'f'*64)
     before=root/'releases'/('a'*64);after=root/'releases'/('b'*64)
     def entries(release):
         result=[]

@@ -70,7 +70,7 @@ def retire_proof(journal,layout,gate,*,resume=False):
     """Archive the sole active worker authority under a durable Root intent."""
     state=journal.state();generation=state['config']
     require(type(resume) is bool and os.geteuid()==cutover.ROOT_UID and layout.journal is journal
-            and journal.base['boot_id']==boot_identity() and state['layout_complete']==generation
+            and journal_code.operational_boot(journal)==boot_identity() and state['layout_complete']==generation
             and not state['started'] and state['start_pending'] is None,'Invalid proof retirement context')
     private_layout_storage(layout.folder)
     gate();require(layout._locations()['active']==generation,'Active layout generation differs')
@@ -169,7 +169,7 @@ def start_private_services(journal,current,layout,entries,command,routing,*,resu
     Health/scanner readiness and restart acceptance must complete separately.
     """
     state=journal.state();generation=state['config'];base=journal.base
-    require(type(resume) is bool and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity()
+    require(type(resume) is bool and os.geteuid()==cutover.ROOT_UID and journal_code.operational_boot(journal)==boot_identity()
             and layout.journal is journal and current['uid']==base['uid']
             and current['identity']==base[generation] and state['layout_complete']==generation
             and state['monitor']==generation and all(value==generation for value in state['boots'].values())
@@ -227,7 +227,7 @@ def admit_private_services(journal,current,layout,entries,profile,command,routin
     """
     state=journal.state();base=journal.base;generation=state['config']
     require(type(resume) is bool and type(timeout) is int and 1<=timeout<=110
-            and os.geteuid()==cutover.ROOT_UID and base['boot_id']==boot_identity()
+            and os.geteuid()==cutover.ROOT_UID and journal_code.operational_boot(journal)==boot_identity()
             and layout.journal is journal and current['identity']==base[generation] and current['uid']==base['uid']
             and state['started']==journal_code.start_order() and state['start_pending'] is None
             and state['private_baseline'] is not None

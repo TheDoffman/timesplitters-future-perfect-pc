@@ -21,7 +21,7 @@ from mod_package import read_json,require
 def checked_context(journal,context):
     base=journal.base;report=context['report']
     old,current=context['old'],context['new']
-    require(os.geteuid()==cutover.ROOT_UID and base['boot_id']==migration.boot_identity()
+    require(os.geteuid()==cutover.ROOT_UID and history.operational_boot(journal)==migration.boot_identity()
             and all(report[key]==base[key] for key in ('before','after','uid','backup_identity',
                 'backup_base_release','plan_sha256','preflight_sha256'))
             and old['identity']==base['before'] and current['identity']==base['after']

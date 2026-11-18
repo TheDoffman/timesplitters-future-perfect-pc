@@ -34,10 +34,11 @@ def _binding(journal):return {key:journal.base[key] for key in BINDING}
 def _authority(journal,*,observation=False):
     import mod_host_cutover as cutover
     import mod_host_migration as migration
+    import mod_host_cutover_journal as storage
     current=migration.boot_identity()
     require(type(observation) is bool and os.geteuid()==cutover.ROOT_UID
             and ((observation and journal.observation_boot==current and current!=journal.base['boot_id'])
-                 or (not observation and journal.observation_boot is None and journal.base['boot_id']==current)),
+                 or (not observation and storage.operational_boot(journal)==current)),
             'Recovery context requires its exact Root boot authority')
     journal.state()
 

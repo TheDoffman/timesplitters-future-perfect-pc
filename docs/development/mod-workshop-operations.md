@@ -146,6 +146,22 @@ Still-running capture children or unknown backup-pool artifacts prevent admissio
 timeouts are never treated as proof of failure or cleanup. This phase grants no
 ordinary migration/startup/public-restoration/settlement authority or reboot CLI.
 
+`mod_host_reboot_admission.admit` composes checkpoint sealing and a fresh verified
+backup, rechecks stopped layout/context and records typed `reboot-admitted`.
+This internal gate binds current boot/checkpoint/backup and the original private
+baseline. Replay preserves original header, configuration/layout pending intents,
+proof-retirement intent and catalog floor, while replacing old routing/process/
+startup/scanner/readiness/restart/shutdown claims with this stopped boot's state.
+Ordinary helpers require either the original boot or this explicit admitted boot
+under its original held lease. Quiescence uses current-boot tracking; pre-boot PIDs
+remain historical. Migration proof metadata is matched to backup/quiescence in
+its actual recorded boot, while new proofs carry the admitted current boot.
+Historical reboot inventories feed subsequent file-move recovery, followed by
+any newer ordinary shutdown checkpoint. Unstaged checkpoints remain readable
+after new preparation records its manifest. No installed reboot CLI or physical
+boot acceptance is established by this internal implementation; native composed
+validation is recorded separately in STATUS.
+
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
 requires `--host-release` with an exact installed identity. The newly verified

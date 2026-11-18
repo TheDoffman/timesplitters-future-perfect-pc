@@ -7,6 +7,7 @@ This module does not activate services or change private configuration.
 import os
 
 import mod_host_cutover as cutover
+import mod_host_cutover_journal as storage
 import mod_host_migration as migration
 import mod_host_upgrade_process as process
 from mod_package import read_json,require
@@ -30,16 +31,20 @@ def checked_existing(journal,data):
     fields={'schema','producer','before','after','uid','nonce','plan_sha256','backup_sha256','time',
             'stopped_jobs','quiesced_at','backup_verified_at','boot_id'}
     history=read_json(journal.current)['events']
-    captures=[entry['data'] for entry in history if entry['kind']=='backup-verified']
-    quiesced={entry['time'] for entry in history if entry['kind'] in ('quiescent','shutdown-complete')}
+    captures=[];quiesced=set();epoch=base['boot_id']
+    for entry in history:
+        if entry['kind']=='reboot-observed':epoch=entry['data']['observation']['boot_id']
+        elif entry['kind']=='backup-verified':captures.append((entry['data'],epoch))
+        elif entry['kind']=='reboot-backup-verified':captures.append((entry['data']['receipt'],epoch))
+        elif entry['kind'] in ('quiescent','shutdown-complete','reboot-quiescent'):quiesced.add((entry['time'],epoch))
     require(isinstance(value,dict) and set(value)==fields and type(value['schema']) is int and value['schema']==1
             and value['producer']==PRODUCER and all(type(value[k]) is type(base[k]) and value[k]==base[k]
-                for k in ('before','after','uid','nonce','plan_sha256','boot_id'))
+                for k in ('before','after','uid','nonce','plan_sha256'))
             and value['stopped_jobs']==migration.jobs()
             and all(type(value[k]) is int for k in ('time','quiesced_at','backup_verified_at'))
             and 0<=value['quiesced_at']<=value['backup_verified_at']<=value['time']<=journal.clock()
-            and value['quiesced_at'] in quiesced and any(record['verified_manifest_sha256']==value['backup_sha256']
-                and record['finished']==value['backup_verified_at'] for record in captures),
+            and (value['quiesced_at'],value['boot_id']) in quiesced and any(record['verified_manifest_sha256']==value['backup_sha256']
+                and record['finished']==value['backup_verified_at'] and captured_boot==value['boot_id'] for record,captured_boot in captures),
             'Preserving an unknown or foreign migration admission')
     return value
 
@@ -72,7 +77,7 @@ def capture_and_admit(journal,entries,runtime,current,profile,plan,routing,comma
     """
     base=journal.base;uid=base['uid']
     state=journal.state()
-    require(os.geteuid()==cutover.ROOT_UID and base['boot_id']==migration.boot_identity()
+    require(os.geteuid()==cutover.ROOT_UID and storage.operational_boot(journal)==migration.boot_identity()
             and runtime['identity']==base['backup_base_release'] and current['identity']==base['after']
             and runtime['uid']==current['uid']==uid and profile['origin']==base['routing']['origin']
             and not state['started'] and state['start_pending'] is None and state['retire_pending'] is None,
@@ -95,7 +100,7 @@ def capture_and_admit(journal,entries,runtime,current,profile,plan,routing,comma
             and 0<=journal.clock()-report['finished']<=300,'Fresh post-capture quiescence is required')
     value=dict(schema=1,producer=PRODUCER,before=base['before'],after=base['after'],uid=uid,nonce=base['nonce'],
                plan_sha256=base['plan_sha256'],backup_sha256=report['verified_manifest_sha256'],time=int(journal.clock()),
-               stopped_jobs=migration.jobs(),quiesced_at=state['quiesced_at'],backup_verified_at=report['finished'],boot_id=base['boot_id'])
+               stopped_jobs=migration.jobs(),quiesced_at=state['quiesced_at'],backup_verified_at=report['finished'],boot_id=storage.operational_boot(journal))
     _publish(journal,value,previous,identity)
     payload,_=cutover.protected_bytes(cutover.ROOT/'monitor'/NAME,0o644,8192)
     require(payload==migration.wire(value),'Migration admission changed after commit')

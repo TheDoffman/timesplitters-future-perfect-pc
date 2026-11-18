@@ -255,14 +255,14 @@ def quiesce(entries, uid, journal, command, *, routing, clock=time.monotonic, sl
     A new process identity after preflight requires explicit recovery; it is not
     silently added to the original snapshot. No sampled PID is ever signalled.
     """
-    from mod_host_cutover_journal import stop_order
+    from mod_host_cutover_journal import stop_order,operational_boot,operational_tracking
     from mod_host_migration import boot_identity
     require(os.geteuid() == ROOT_UID and journal.base['uid'] == uid
-            and journal.base['boot_id'] == boot_identity()
+            and operational_boot(journal) == boot_identity()
             and type(timeout) is int and 1 <= timeout <= 120, 'Invalid root quiescence context')
     validate_entries(entries)
     files = job_files(entries)
-    tracked = checked_tracking(journal.base['tracked'])
+    tracked = operational_tracking(journal)
     by_label = {spec['Label']:(path,spec) for path,spec in entries}
     state = journal.state()
     require(not state['settled'], 'Cutover transaction is already settled')

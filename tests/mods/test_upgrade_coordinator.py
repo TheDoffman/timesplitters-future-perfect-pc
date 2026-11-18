@@ -56,7 +56,7 @@ def machine(flow,monkeypatch,public_upgrade_report):
             +'\t}\n\tpid = '+str(pid)+'\n}\n')
     def backup(*args,**kwargs):
         frame=state.state();reboot=frame['reboot']
-        quiesced=reboot['quiesced_at'] if reboot is not None and reboot['quiescent'] else frame['quiesced_at']
+        quiesced=max(reboot['quiesced_at'],frame['quiesced_at'] or 0) if reboot is not None and reboot['quiescent'] else frame['quiesced_at']
         assert not loaded and kwargs['quiesced_at']==quiesced
         captures.append(True);now=item.now[0]
         return dict(schema=1,producer='tsfp-upgrade-backup-v1',identity='8'*64,base_release='7'*64,uid=600,

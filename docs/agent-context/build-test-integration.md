@@ -54,6 +54,10 @@ factory markers, typed health, no nonce staging directory and no protected effec
 history. Partial/linked staging, wrong store mode, replaced policy, mixed boot,
 foreign proof and dedicated-UID orphans stay preserved/refused. The composed
 backup fixture uses the new epoch's later quiescence, including unstaged recovery.
+test_reboot_admission.py composes the typed fresh-backup/checkpoint handoff with
+ordinary forward/rollback/public restoration, historical inventory after moves,
+event-time freshness and original/current lease refusal. New boot readiness must
+be established afresh; original transaction/directions/catalog floor stay bound.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

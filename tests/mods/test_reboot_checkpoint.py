@@ -40,7 +40,7 @@ def rebooted(machine,monkeypatch,request):
     for module in (storage,migration,observations,reboot_prepare,reboot_layout,checkpoint,layouts):
         monkeypatch.setattr(module,'boot_identity',lambda:'e'*64)
     monkeypatch.setattr(contexts,'read_reboot_context',lambda *_:dict(context_sha256='9'*64,
-        original_observations=dict(files=original_files)))
+        original_observations=dict(files=original_files),private_baseline=item.context['private_baseline']))
     item.state.observation_boot='e'*64
     item.loaded.clear()
     for index,(path,spec) in enumerate(item.context['entries' if early else 'candidate_entries']):item.loaded[spec['Label']]=(path,spec,900+index)
