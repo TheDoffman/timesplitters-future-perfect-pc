@@ -15,6 +15,17 @@ Q12 values must match the supported XBE's35-entry table. Unavailable metadata
 keeps valid ID-only attribution but zeroes all metadata; failures and retirement
 cannot lend metadata to another binding. It changes no PCM, clocks or permissions.
 Contract/tests: ../development/mod-audio-input.md.
+[Pad](controller-deadzones.md); [tools](developer-tools-integration.md).
+[MP](native-multiplayer-menu.md).
+
+[Video](video-options.md); [Uplink](native-uplink.md).
+[UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
+[Sun](fidelity-comparison.md); [Aim](hud-sizing.md).
+[Depth](native-effect-depth.md).
+[Linux](linux-game.md); [MSAA](smaa.md).
+[MP hooks](multiplayer-exit.md)
+2465 wraps356800 for rewards;
+profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 
 Patch2715 adds opt-in TSFP_MOD_AUDIO_LIFETIME_TRACE=1 (512 metadata records) at
 bind/play/frequency/loop/pause/stop/retire under the existing audio lock. It reads
@@ -24,6 +35,10 @@ sample/model state, exact opt-in, budgets and known-to-unknown generation change
 Actual native gameplay observation remains required. Contract: ../development/mod-audio-input.md.
 
 Audio request reads use shared pc_guest_span queries and guest-RAM/overflow bounds. The native fixture exercises real denied/read-only pages; the earlier menu-local helper was unavailable to the Windows manual unit and failed linking.
+D4BE0/A9070 rejoin wrappers restore a missed camera-end transition once;
+world identity excludes native first-person viewport models before cached-key
+lookup. No wrapper or generated-code change is needed. See
+[contracts](systems-details.md).
 
 Patch2714 clears attribution on native SetBufferData failure; its HRESULT and original data/clock behavior remain unchanged.
 

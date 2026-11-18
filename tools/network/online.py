@@ -18,21 +18,18 @@ else:
 import argparse
 import ctypes
 import importlib.util
-import ipaddress
 import json
 import os
 from pathlib import Path
 import queue
 import threading
 import time
-import tkinter as tk
-from tkinter import messagebox
 
 from online_platform import GameProcess, show_error
 from online_client import Client, Session
-from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
-from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS
-from online_theme import OnlineTheme, build_browser, build_invitation
+from online_arcade_client import ArcadeSession, list_arcade, join_arcade
+from online_host import invitation, parse_invitation
+from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS, service_defaults
 
 
 
@@ -42,6 +39,7 @@ def main():
     parser.add_argument('--result', type=Path, required=True)
     parser.add_argument('--compatibility', required=True)
     parser.add_argument('--mode', choices=('arcade', 'story'), default='arcade')
+    parser.add_argument('--native', action='store_true', help='Use the in-game multiplayer menus')
     args = parser.parse_args()
     result = args.result.resolve()
     private = HANDSHAKES.resolve()
@@ -59,6 +57,13 @@ def main():
         raise ValueError('Online tools and executable have different build identities; rebuild first')
 
     parent = GameProcess(args.pid)
+    if args.native:
+        from online_menu import run
+        run(args,parent)
+        return
+    import tkinter as tk
+    from tkinter import messagebox
+    from online_theme import OnlineTheme, build_browser, build_invitation
     state = Path(os.environ.get('TSFP_ONLINE_SETTINGS', SETTINGS))
     try:
         saved = json.loads(state.read_text())
@@ -69,25 +74,19 @@ def main():
     window.geometry('820x750')
     window.minsize(760, 720)
     theme = OnlineTheme(window)
-    address = tk.StringVar(value=saved.get('directory', 'https://127.0.0.1:30820'))
-    pin = tk.StringVar(value=saved.get('fingerprint', ''))
+    service = service_defaults()
+    address = tk.StringVar(value=saved.get('directory', service['directory']))
+    pin = tk.StringVar(value=saved.get('fingerprint', service['fingerprint']))
     name = tk.StringVar(value=saved.get('name', 'TimeSplitters lobby'))
     port = tk.StringVar(value=str(saved.get('port', 30821)))
     code = tk.StringVar()
     listed = tk.BooleanVar(value=True)
-    automatic = tk.BooleanVar(value=saved.get('automatic_host', True))
-    detect_ip = tk.BooleanVar(value=saved.get('detect_public_address', True))
-    inferred_public = ''
-    try:
-        previous = ipaddress.IPv4Address(Client(address.get()).url.hostname)
-        if not previous.is_loopback:
-            inferred_public = str(previous)
-    except ValueError:
-        pass
-    public_ip = tk.StringVar(value=saved.get('public_address', inferred_public))
-    status = tk.StringVar(value='Ready when you are. Paste an invitation or start a new match.')
+    status = tk.StringVar(value='Ready. Browse lobbies or start a match.' if address.get() else
+        'Enter the shared server address in Directory settings, or paste an invitation.')
     session = [None]
     automation = os.environ.get('TSFP_ONLINE_TEST_COMMAND')
+    requested_transport = ['relay']
+    migrating = [args.mode == 'arcade']
     busy = [False]
     stopping = threading.Event()
     replies = queue.Queue()
@@ -100,8 +99,7 @@ def main():
         temporary = state.with_suffix('.json.tmp')
         temporary.write_text(json.dumps(dict(directory=address.get().strip(), fingerprint=pin.get().strip(),
                                             name=name.get().strip(), port=int(port.get()),
-                                            automatic_host=automatic.get(), public_address=public_ip.get().strip(),
-                                            detect_public_address=detect_ip.get()), indent=2)+'\n')
+                                            automatic_host=False), indent=2)+'\n')
         temporary.replace(state)
 
     def work(action, done):
@@ -135,10 +133,6 @@ def main():
 
     def connected(active):
         session[0] = active
-        if active.local_directory:
-            address.set(active.local_directory.address)
-            pin.set(active.local_directory.fingerprint)
-            public_ip.set(Client(active.local_directory.public_url).url.hostname)
         try:
             save()
             temporary = result.with_suffix('.tmp')
@@ -156,7 +150,8 @@ def main():
     def refresh():
         try:
             directory = client()
-            work(lambda: directory.request('GET', '/v2/lobbies?compatibility='+args.compatibility+'&mode='+args.mode), refreshed)
+            work(lambda: list_arcade(directory, args.compatibility) if migrating[0] else directory.request('GET',
+                 '/v2/lobbies?compatibility='+args.compatibility+'&mode='+args.mode), refreshed)
         except Exception as error:
             status.set(str(error))
 
@@ -167,7 +162,8 @@ def main():
                 address.set(directory_address)
                 pin.set(fingerprint)
             directory = client()
-            work(lambda: Session.join(directory, args.compatibility, join_code, mode=args.mode), connected)
+            work(lambda: join_arcade(directory, args.compatibility, join_code) if migrating[0]
+                 else Session.join(directory, args.compatibility, join_code, mode=args.mode), connected)
         except Exception as error:
             status.set(str(error))
 
@@ -183,14 +179,10 @@ def main():
             host_name, host_port, public = name.get().strip(), int(port.get()), listed.get()
             if not 1024 <= host_port <= 65535:
                 raise ValueError('Choose a UDP port between 1024 and 65535')
-            if automatic.get():
-                public_address = None if detect_ip.get() else public_ip.get().strip()
-                work(lambda: start_match(ROOT, public_address, args.compatibility, host_name, host_port, public, mode=args.mode), connected)
-                status.set('Detecting public IPv4 and starting the directory...' if public_address is None else
-                           'Starting the directory...')
-            else:
-                directory = client()
-                work(lambda: Session.create(directory, args.compatibility, host_name, host_port, public, mode=args.mode), connected)
+            directory = client()
+            work(lambda: ArcadeSession.open(directory, args.compatibility, name=host_name, public=public)
+                 if migrating[0] else Session.create(directory, args.compatibility, host_name, host_port, public,
+                 mode=args.mode, transport=requested_transport[0]), connected)
         except Exception as error:
             status.set(str(error))
 
@@ -198,18 +190,14 @@ def main():
         share = tk.Toplevel(window)
         theme.track(share)
         share.title('Online match hosted')
-        value = getattr(active, 'invitation', invitation(address.get().strip(), pin.get().strip(), active.lobby['code']))
-        build_invitation(share, value, active.lobby['code'], active.lobby['port'])
-
-    def detected(value):
-        public_ip.set(value)
-        status.set('Public IPv4 detected. Forward TCP 30820 and your selected UDP port to this PC.')
+        value = getattr(active, 'invitation', invitation(address.get().strip(), pin.get().strip(), active.lobby.get('lobby_code', active.lobby['code'])))
+        build_invitation(share, value, active.lobby.get('lobby_code', active.lobby['code']), active.lobby['port'],
+                         relayed=active.lobby.get('transport') == 'relay')
 
     browser = build_browser(window, dict(address=address, pin=pin, name=name, port=port,
-        code=code, listed=listed, automatic=automatic, detect_ip=detect_ip,
-        public_ip=public_ip, status=status), dict(refresh=refresh, join_selected=join_selected,
+        code=code, listed=listed, status=status), dict(refresh=refresh, join_selected=join_selected,
         join_code=lambda: join(code.get().strip()), host=host,
-        detect=lambda: work(fetch_public_ipv4, detected), cancel=window.destroy))
+        cancel=window.destroy))
 
     def poll():
         if parent.exited() or result.with_suffix('.stop').exists():
@@ -240,12 +228,11 @@ def main():
         if not test_path.is_relative_to(test_root):
             raise ValueError('Online test command must be inside the isolated network-validation directory')
         command = json.loads(test_path.read_text())
+        requested_transport[0] = command.get('transport', 'direct')
+        migrating[0] = args.mode == 'arcade' and command.get('migration', False)
         address.set(command['directory'])
         pin.set(command.get('fingerprint', ''))
         if command['action'] == 'host':
-            automatic.set(command.get('automatic_host', False))
-            detect_ip.set(command.get('detect_public_address', False))
-            public_ip.set(command.get('public_address', ''))
             port.set(str(command['port']))
             window.after(300, host)
         elif command['action'] == 'join':
@@ -256,12 +243,14 @@ def main():
                 browser.selection_set(command['code'])
                 window.after(300, join_selected)
             directory = client()
-            window.after(300, lambda: work(lambda: directory.request(
-                'GET', '/v2/lobbies?compatibility='+args.compatibility), choose))
+            window.after(300, lambda: work(lambda: list_arcade(directory, args.compatibility) if migrating[0] else
+                directory.request('GET', '/v2/lobbies?compatibility='+args.compatibility), choose))
         elif command['action'] == 'cancel':
             window.after(300, window.destroy)
         else:
             raise ValueError('Unknown online test action')
+    elif address.get():
+        window.after(300, refresh)
     try:
         window.mainloop()
     finally:
@@ -289,5 +278,5 @@ if __name__ == '__main__':
         logs = ROOT / 'Logs'
         logs.mkdir(parents=True, exist_ok=True)
         (logs/'online-error.log').write_text(traceback.format_exc(), encoding='utf-8')
-        show_error(error)
+        if '--native' not in _layout_sys.argv:show_error(error)
         raise

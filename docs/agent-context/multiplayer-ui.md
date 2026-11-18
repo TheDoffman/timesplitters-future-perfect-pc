@@ -1,5 +1,59 @@
 # Multiplayer companion presentation
 
+Server source stays private. See the [client/server boundary](online-client-boundary.md).
+
+## Arcade host migration
+
+Shared Arcade uses authenticated v3 rooms through `ArcadeSession`; Story and
+legacy direct tests retain v2. Native control uses a separate authenticated
+loopback socket, pointer-free checkpoints, engine progress/restore ACKs, dynamic
+host routing and per-epoch key rotation. The native game-thread adapter preserves
+scores, game tick and bot numeric state before committing mapped native peer IDs.
+`3000-arcade-migration-build.patch` enables the shared game adapter. Production
+native Windows Deathmatch tests retain scores/countdown and six fighting,
+respawning bots after two/three-player normal exit/crash and repeated handoff.
+Authenticated native-ID routes let every survivor follow the new host. Pause
+caption/confirmation describe leaving and transferring the match. Physical Mac
+Vulkan crossplay now passes normal/crash/repeated handoffs, results and rematch;
+other modes require their own acceptance. The Mac relay
+service is deployed; client executables require matching rebuilds.
+See [implementation and validation](../development/arcade-host-migration.md).
+
+`pc_arcade_migration_guest.inc` publishes active preparation/graceful-departure
+status through `pc_match_overlay_migration`. The shared final-frame canvas paints
+a centred Migrating host card, independent of HUD/Tools preferences, and clears
+it on commit, closure or leaving gameplay. It does not retain guest pointers,
+capture input, or add a network message. Windows and native GL use the same layout.
+Its visual theme follows the native pause confirmations: black panel, pale
+rounded frame, blue light bars and bold uppercase lettering. Ten draw slots
+include the border, interior, separator, bars and three labels.
+For native common-renderer visual tests, `3010-present-frame-capture.patch`
+captures the swap-chain image immediately before presentation, including late
+host overlays. Raw HLE shadow dumps precede that composition and cannot verify
+the migration card. `pc_present_capture.h` is opt-in, render-thread-only and
+writes two rotating BMPs; the crossplay observer selects it for Vulkan builds.
+
+## Shared relay
+
+`lobby_server.RelayServer` authenticates TSFR envelopes against the live directory
+roster, learns endpoints only on registration and forwards host/guest pairs with
+replay, expiry and token-bucket limits. Separate relay keys never enter public
+listings or owner rosters. `online_transport.Bridge` encapsulates the unchanged
+TSFO game transport and retains player1 routing/authority. Both roles use outbound
+ephemeral sockets; the native loopback handshake is unchanged. `Session.create`
+accepts explicit `transport='relay'`, refuses unsupported directories and waits
+for relay registration before publishing a game handshake. Guests still require
+the actual player's authenticated ACK. Lost relay replies stop the session.
+
+The browser defaults new installations to a shared service, refreshes listings
+on opening and retains saved legacy automatic hosting choices. Public defaults
+come from bundled/identity-hashed `online-service.json` (deployed Mac mini) or env;
+saved user choices win. `install_online_service.py` prepares the five-file
+standalone service and a per-user Mac launch agent without game assets. Optional
+LAN advertisement avoids hairpin routing. See [setup](../development/online-relay.md)
+and `test_online_relay.py` for actual HTTPS/UDP, authorization, isolated installer
+and outbound-only validation. Real-game WAN/release acceptance is separate.
+
 `tools/network/online_theme.py` owns the launcher-colored Tk browser and invitation
 view (`build_browser`, `build_invitation`). `online.py` supplies its existing
 variables and callbacks; identity verification, session/bridge lifetime, port
@@ -114,6 +168,35 @@ same resolved six-partition boundary as Windows. No personal save is recycled.
 scenario. Native observations are batched locally into read-only pages to avoid
 per-field SSH delays. Menu snapshots/captures distinguish input failures from
 protocol failures, and match evidence is saved before disposable-disk cleanup.
+Migration tests wait for a naturally scored checkpoint acknowledged by a survivor.
+`--migration-results --short-match` checks matching final records, an elected-host
+rematch with reset scores/clock and a new round identity, then matching results
+again. Retired player rows may remain in the first result; live native IDs and
+bot rows must be present and unique. `--points` selects a stock point limit;
+team-mode runs confirm the native Select Team screen before sampling gameplay.
+`--rpc-trace` adds a test-only `sitecustomize` exception observer to companion
+Python threads (32 exceptions and512 active progress samples maximum).
+It preserves native compatibility and logs RPC failure classes/status/messages.
+The observer chains the environment's existing Python bootstrap, retaining Mac
+Tk support; enabled/disabled subprocess fixtures check bootstrap preservation,
+the record limit and exclusion of local credentials.
+GUI Python writes to a dedicated test log; only native counter/epoch/phase fields
+are sampled. An exception hook records fatal companion thread failures as well.
+New-round native leases begin when the host starts that round; pre-load progress
+timestamps cannot immediately retire a guest awaiting its first post-load RPC.
+This grants one ordinary lease only: unchanged counters do not renew it, and
+inactive guests remain ineligible to host. Service tests cover resumed/stalled peers.
+Arcade heartbeat RPCs use one-second socket deadlines, so one failed TLS handshake
+can retry inside the four-second engine lease. Recovery sends current native
+progress while omitting stale checkpoint/ACK authority; repeated transport failure
+closes after a bounded3.5-second failure window. Other directory calls retain5s.
+Normal-play acceptance now requires both peers still playing at the window end.
+Arcade heartbeats reuse a per-thread pinned HTTPS connection (HTTP/1.1 opt-in
+keep-alive), avoiding a new handshake for every pulse. Ordinary calls still close.
+Errors discard the connection; reconnects verify the pin before credentials.
+Heartbeat exit closes its cached socket; server idle deadlines/32-worker cap stay.
+Original bot-result/limit CPU fixtures enable TSFP_NATIVE_NETWORK, retaining the
+real compiler OS for the appended divide-error helper rather than forcing Win32.
 
 ## Native multiplayer build and validation (2026-10-30)
 

@@ -19,6 +19,16 @@ int g_tsfp_native_timing_active;
 PcNativeStep g_tsfp_native_step;
 #define NT_WORD(va) (*(volatile uint32_t *)((uintptr_t)(va) + g_xbox_mem_offset))
 #define NT_FLOAT(va) (*(float *)((uintptr_t)(va) + g_xbox_mem_offset))
+#ifdef TSFP_ARCADE_MIGRATION
+extern int g_tsfp_arcade_migrating;
+static void pc_arcade_hold_game_clock(void)
+{
+    if(!g_tsfp_arcade_migrating)return;
+    NT_WORD(0x4e7944u)=0;NT_FLOAT(0x4e794cu)=0.f;
+    g_tsfp_native_step.game_ticks=0;g_tsfp_native_step.game_delta=0.f;
+    g_tsfp_native_step.game_units=0;
+}
+#endif
 #include "pc_native_pose_trace.h"
 #include "pc_native_local_trace.h"
 static uint32_t pc_native_pose_word(uint32_t address) { return NT_WORD(address); }
@@ -144,6 +154,9 @@ static void pc_native_timing_guest(void (*original)(void))
             fprintf(stderr,"[NATIVE-TIMING] 60 FPS original clock applied live\n");
         }
         original();
+#ifdef TSFP_ARCADE_MIGRATION
+        pc_arcade_hold_game_clock();
+#endif
         /* Material matrices live in the per-render temporary arena. Use the
          * same render epoch at Original/native rates, including live switches;
          * a console tick can span several arena resets at native rates. */
@@ -220,6 +233,9 @@ static void pc_native_timing_guest(void (*original)(void))
     }
     NT_WORD(0x7497B0u) += step.raw_ticks;
     pc_native_call(sub_00150190);
+#ifdef TSFP_ARCADE_MIGRATION
+    pc_arcade_hold_game_clock();
+#endif
     pc_native_trace(now.QuadPart, frequency.QuadPart, step);
     g_esp += 4u;
 }

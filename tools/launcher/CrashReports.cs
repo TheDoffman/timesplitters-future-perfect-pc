@@ -9,7 +9,7 @@ namespace TimeSplitters.Launcher
     public static class CrashReports
     {
         public static bool ExtendedForNextLaunch;
-        static readonly string[] Names = { "report.txt", "report.json", "crash.dmp", "game-log-tail.txt", "native-stack.txt", "breadcrumbs.txt", "guest-memory.bin", "model-tree.bin", "diagnostics.json", "model-history.txt", "allocation-history.txt" };
+        static readonly string[] Names = { "report.txt", "report.json", "crash.dmp", "game-log-tail.txt", "native-stack.txt", "breadcrumbs.txt", "guest-memory.bin", "model-tree.bin", "diagnostics.json", "model-history.txt", "allocation-history.txt", "network-history.txt" };
         // Fixed summaries only: never include paths, arbitrary errors or raw metadata.
         public static string CaptureHealth(string root)
         {

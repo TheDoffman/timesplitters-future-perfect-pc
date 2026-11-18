@@ -279,3 +279,5 @@ void pc_capture_match(unsigned humans,unsigned bots,unsigned difficulty,unsigned
 }
 
 void pc_capture_allocation(uint32_t event,uint32_t address,uint32_t bytes){if(packet)pc_crumb_allocation(&packet->allocations,GetTickCount64()-packet->started_ms,event,address,bytes);}
+
+void pc_capture_network(const int32_t values[PC_CRUMB_NETWORK_FIELDS]){if(packet)pc_crumb_network(&packet->network,GetTickCount64()-packet->started_ms,values);}

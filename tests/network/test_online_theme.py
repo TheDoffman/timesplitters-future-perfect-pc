@@ -272,7 +272,7 @@ def _check_browser_layout_and_commands(scale, branded):
         check_bounds()
         for text, action in [('Refresh', 'refresh'), ('Join selected', 'join_selected'),
                 ('Join by code', 'join_code'), ('Start New Match', 'host'),
-                ('Detect', 'detect'), ('Return to game', 'cancel')]:
+                ('Return to game', 'cancel')]:
             button = next(w for w in children(root) if isinstance(w, ttk.Button) and w.cget('text') == text)
             button.invoke()
             assert calls[-1] == action

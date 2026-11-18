@@ -25,7 +25,9 @@ import sys
 import zipfile
 
 COMPANION = ('online.py', 'online_client.py', 'online_transport.py', 'online_host.py',
-             'online_paths.py', 'online_theme.py', 'online_platform.py', 'lobby_server.py', 'network-identity.py')
+             'online_paths.py', 'online_theme.py', 'online_platform.py',
+             'online-service.json', 'network-identity.py')
+COMPANION += ('online_arcade_client.py','online_menu.py','online_private.py','online_upnp.py')
 
 
 def bundle_standard_library(base, runtime, version):
@@ -116,7 +118,7 @@ def bundle(root, stage, copy):
     probe = stage/'Support/Online/bundle-check.py'
     probe.write_text('import ssl, tkinter, cryptography\n'
                      'from online_paths import ROOT, PORTABLE\n'
-                     'from online_host import certificate\n'
+                     'from online_private import certificate\n'
                      'import tempfile\nfrom pathlib import Path\n'
                      'assert PORTABLE\n'
                      'window=tkinter.Tk(); window.withdraw(); window.update(); window.destroy()\n'

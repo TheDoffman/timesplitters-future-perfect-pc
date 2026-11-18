@@ -27,7 +27,7 @@ def test_native_menu_callbacks_compile(tmp_path, source):
     assert result.returncode == 0, result.stdout + result.stderr
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows settings persistence adapter')
-@pytest.mark.parametrize("mutation", ["fixed", "drain-other-menu", "original-system-link", "missing-lan-activation"])
+@pytest.mark.parametrize("mutation", ["fixed", "drain-other-menu", "original-system-link", "missing-lan-activation", "missing-browser-backend-init"])
 def test_fov_settings(tmp_path, mutation):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / 'fov.exe'
@@ -72,6 +72,16 @@ def test_fov_settings(tmp_path, mutation):
         fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
         source = tmp_path / 'fov_settings.c'
         source.write_text(fixture, encoding='utf-8')
+    if mutation == 'missing-browser-backend-init':
+        adapter = (ROOT / 'src/interface/pc_multiplayer_menu.inc').read_text(encoding='utf-8')
+        needle = '    guest_call(sub_001CB950,1,WORD_AT(frame+4u));'
+        assert needle in adapter
+        (tmp_path / 'pc_multiplayer_menu.inc').write_text(adapter.replace(needle, ''), encoding='utf-8')
+        menu = tmp_path / 'pc_display_menu.c'
+        menu.write_text((ROOT / 'src/interface/pc_display_menu.c').read_text(encoding='utf-8'), encoding='utf-8')
+        fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
+        source = tmp_path / 'fov_settings.c'
+        source.write_text(fixture, encoding='utf-8')
     result = subprocess.run([compiler, '/nologo', '/std:c11', '/O2', '/W3',
         '/I' + str(ROOT / 'src'), '/I' + str(RUNTIME / 'templates/runtime'),
         '/I' + str(tmp_path),
@@ -85,6 +95,9 @@ def test_fov_settings(tmp_path, mutation):
     if mutation == 'missing-lan-activation':
         assert result.returncode != 0
         assert 'getenv("TSFP_NETWORK")' in result.stderr
+    elif mutation == 'missing-browser-backend-init':
+        assert result.returncode != 0
+        assert 'native_backend_resets==1' in result.stderr
     elif mutation == 'drain-other-menu':
         assert result.returncode != 0
         assert 'picker_result==1' in result.stderr

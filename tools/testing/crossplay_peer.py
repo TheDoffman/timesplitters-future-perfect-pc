@@ -33,8 +33,13 @@ class RemotePeer:
         self.pages = {}
         self.last_poll = 0
         self.returncode = None
+        self.rpc_lock = threading.Lock()
 
     def call(self, action, **values):
+        with self.rpc_lock:
+            return self._call(action, **values)
+
+    def _call(self, action, **values):
         self.transport.stdin.write(json.dumps(dict(action=action, **values))+'\n')
         self.transport.stdin.flush()
         line = self.transport.stdout.readline()
@@ -72,6 +77,10 @@ class RemotePeer:
     def terminate(self):
         self.call('stop')
 
+    def crash(self):
+        self.call('crash')
+        self.last_poll = 0
+
     def wait(self, timeout=10):
         return self.call('poll')['returncode']
 
@@ -96,6 +105,16 @@ def receive(sock, count):
             raise OSError('Native observation socket closed')
         data.extend(part)
     return bytes(data)
+
+
+def crash_child(child):
+    """Kill only this test's dedicated game/companion process group."""
+    if child is None or child.poll() is not None:
+        raise ValueError('No running test game to crash')
+    if os.getpgid(child.pid) != child.pid:
+        raise ValueError('Test game does not own its process group')
+    os.killpg(child.pid, signal.SIGKILL)
+    child.wait(timeout=10)
 
 
 def capture_frame(captures, destination):
@@ -150,7 +169,7 @@ def serve():
     def keys(text):
         desired = {int(line.split()[0]) for line in text.splitlines()
                    if len(line.split()) == 2 and int(line.split()[1]) and int(line.split()[0])}
-        names = {37:'Left',38:'Up',39:'Right',40:'Down',27:'Escape',32:'Space'}
+        names = {37:'Left',38:'Up',39:'Right',40:'Down',27:'Escape',32:'Space',113:'F2'}
         def name(key):
             return names.get(key, chr(key))
         with (run/'test-keys.txt').open('a', encoding='utf-8') as stream:
@@ -175,7 +194,7 @@ def serve():
                     xbe = ROOT/'private/game/default.xbe'
                     if hashlib.sha256(xbe.read_bytes()).hexdigest()!=XBE_SHA256:raise ValueError('Unsupported XBE')
                     peer_index=int(request.get('peer',1))
-                    if peer_index not in (0,1):raise ValueError('Invalid peer')
+                    if peer_index not in (0,1,2):raise ValueError('Invalid peer')
                     candidate = ROOT/'private/test-saves'/('online-bots-'+tag)/str(peer_index)
                     env = prepare_run(ROOT, candidate)
                     with (candidate/'run.lock').open('x') as lock:
@@ -183,6 +202,7 @@ def serve():
                     # Only a successfully acquired lock grants cleanup ownership.
                     # Keep it even when later setup fails, and reject another start.
                     run = candidate
+                    (run/'online.json').write_text(json.dumps(dict(name=request.get('lobby_name','Validation '+tag))))
                     out = ROOT/'logs'/('online-bots-'+tag)
                     out.mkdir(parents=True, exist_ok=True)
                     commands=ROOT/'private/network-validation'/tag
@@ -208,10 +228,31 @@ def serve():
                         RECOMP_TRACE_BUDGET='0',RECOMP_HLE_D3D8_DUMP=str(captures/'frame'),
                         RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2',
                         RECOMP_LOG_FILE=str(out/(str(peer_index)+'.err')))
+                    if request.get('native_ui') is True:
+                        # Exercise actual game navigation; no desktop companion automation.
+                        env.pop('TSFP_ONLINE_TEST_COMMAND',None)
+                        env['TSFP_NATIVE_MENU_TRACE']='1'
+                        if request.get('directory'):
+                            env['TSFP_ONLINE_DIRECTORY']=request['directory']
+                            env['TSFP_ONLINE_FINGERPRINT']=request['fingerprint']
+                    # Raw shadow dumps precede the late host-overlay pass.
+                    # Capture the actual common-renderer output instead.
+                    if manifest.get('renderer')=='vulkan':
+                        for key in ('RECOMP_HLE_D3D8_DUMP','RECOMP_HLE_D3D8_DUMP_EVERY','RECOMP_HLE_D3D8_DUMP_KEEP_LAST'):
+                            env.pop(key,None)
+                        env.update(TSFP_PRESENT_CAPTURE=str(captures/'frame'),TSFP_PRESENT_CAPTURE_EVERY='6')
+                    if request['command'].get('migration'):
+                        env['TSFP_ARCADE_TRACE']='1'
+                    if request.get('arcade_join') is True:
+                        env['TSFP_ARCADE_JOIN_IN_PROGRESS']='1'
+                    if request.get('rpc_trace'):
+                        env['TSFP_ONLINE_RPC_TRACE']='1'
+                        env['TSFP_ONLINE_RPC_LOG']=str(out/('companion-rpc-'+str(peer_index)+'.jsonl'))
+                        env['PYTHONPATH']=str(ROOT/'tools/testing/online_rpc_trace')+os.pathsep+env.get('PYTHONPATH','')
                     exe = ROOT/'build/macos/futureperfect_recomp'
                     identity=json.loads((ROOT/'build/macos/generated/network-identity.json').read_text())
                     if identity['compatibility']!=request['compatibility']:raise ValueError('Windows/Mac build identities differ')
-                    child=subprocess.Popen([str(exe)],cwd=ROOT,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+                    child=subprocess.Popen([str(exe)],cwd=ROOT,env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True)
                     started=time.monotonic()
                     def drain(pipe,path):
                         with path.open('wb') as stream:
@@ -272,6 +313,7 @@ def serve():
                     capture_frame(captures,out/(label+f'-{peer_index}.png'))
                 elif action == 'poll':reply={'returncode':child.poll() if child else None}
                 elif action == 'stop':stop()
+                elif action == 'crash':crash_child(child)
                 elif action == 'shutdown':
                     print(json.dumps(reply),flush=True)
                     break

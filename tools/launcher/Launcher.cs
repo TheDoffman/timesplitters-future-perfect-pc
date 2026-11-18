@@ -29,13 +29,14 @@ namespace TimeSplitters.Launcher
                 bool repairPreview = args.Length == 2 && args[0] == "--render-repair-preview";
                 bool diagnosticsPreview = args.Length == 2 && args[0] == "--render-diagnostics-preview";
                 bool newsPreview = args.Length == 2 && args[0] == "--render-news-preview";
+                bool consolePreview = args.Length == 2 && args[0] == "--render-console-preview";
                 bool versionsPreview = args.Length == 2 && args[0] == "--render-versions-preview";
                 bool modsPreview = args.Length == 2 && args[0] == "--render-mods-preview";
                 bool graphicsPreview = args.Length == 2 && args[0] == "--render-settings-graphics";
                 bool discordPreview = args.Length == 2 && args[0] == "--render-settings-discord";
                 bool audioPreview = args.Length == 2 && args[0] == "--render-settings-audio";
                 bool settingsPreview = audioPreview || discordPreview || graphicsPreview || (args.Length == 2 && args[0] == "--render-settings-preview");
-                bool preview = modsPreview || versionsPreview || newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
+                bool preview = modsPreview || consolePreview || versionsPreview || newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
                 bool fromBootstrap = args.Length == 2 && args[0] == "--from-bootstrap";
                 if (args.Length == 0)
                 {
@@ -62,6 +63,7 @@ namespace TimeSplitters.Launcher
                             if (newsPreview) ui.ShowNews();
                             if (versionsPreview) ui.ShowGameVersions();
                             if (modsPreview) ui.ShowMods();
+                            if (consolePreview) ui.ShowConsole();
                             var window = ui.Window;
                             var visual = (Panel)window.Content;
                             visual.Background = window.Background;
@@ -223,7 +225,7 @@ namespace TimeSplitters.Launcher
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
             Button("OpenDataButton").Click+=(s,e)=> {if(!previewMode)OpenFolder("Data");};
-            Window.Closed += (s,e)=> { if(modsPage!=null)modsPage.Dispose();if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
+            Window.Closed += (s,e)=> { if(modsPage!=null)modsPage.Dispose();if(consolePage!=null)consolePage.Dispose();if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
             Window.Activated+=async(s,e)=>{if(KnownIssuesVisible())await RefreshKnownIssues(false);};
             if (previewMode)
             {
@@ -289,6 +291,13 @@ namespace TimeSplitters.Launcher
                     else SetStatus("Please let the current operation finish before closing the launcher.");
                 }
             };
+        }
+        ConsolePage consolePage;
+        public void ShowConsole()
+        {
+            if(busy && !gameMonitoring)return;
+            ShowMaintenance(false);
+            if(maintenanceArea!=null)maintenanceArea.Tabs.SelectedIndex=2;
         }
         public void ShowSettings(int tab=-1)
         {
@@ -523,7 +532,8 @@ namespace TimeSplitters.Launcher
             try {
                 if(settings!=null)settings.DismissPrompt();
                 if(maintenanceArea==null) {
-                    maintenanceArea=new MaintenanceArea(CreateMaintenancePage(false),CreateMaintenancePage(true));
+                    consolePage=new ConsolePage(root,previewMode,true);
+                    maintenanceArea=new MaintenanceArea(CreateMaintenancePage(false),CreateMaintenancePage(true),consolePage);
                     maintenanceArea.Selected+=async selected=> {try{if(selected)await EnsureDiagnostics();}catch(Exception ex){Fail(ex);}};
                     Find<ContentControl>("MaintenanceHost").Content=maintenanceArea.View;
                 }
@@ -733,7 +743,8 @@ namespace TimeSplitters.Launcher
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
-            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("ModsNav").IsEnabled = Button("RepairNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
+            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("ModsNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
+            Button("RepairNav").IsEnabled = !busy || gameMonitoring;
             if(maintenanceArea!=null)maintenanceArea.SetBusy(busy && !gameMonitoring);
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy((busy && !gameMonitoring) || checking,Core.GameRunning());
@@ -922,6 +933,7 @@ namespace TimeSplitters.Launcher
             gameMonitoring=true;
             try
             {
+                Refresh();
                 SetStatus("Starting game…");
                 // Process.Start has succeeded. Do not delay taskbar minimization
                 // while waiting for a detectable game window; cleanup still must.
@@ -954,7 +966,7 @@ namespace TimeSplitters.Launcher
             }
             finally
             {
-                gameMonitoring=false;
+                gameMonitoring=false;Refresh();
                 if (minimizedForGame) { Window.WindowState = previousState; Window.Activate(); }
             }
             await Task.Run(() => Core.FinishGameSession(root, observedBuild, gameWindowShown, process.ExitCode));
@@ -976,8 +988,8 @@ namespace TimeSplitters.Launcher
                 string tag = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture);
                 string errorPath = Path.Combine(logs, tag + ".err");
                 process.StartInfo.EnvironmentVariables["RECOMP_LOG_FILE"] = errorPath;
-                using (var output = File.Create(Path.Combine(logs, tag + ".out")))
-                using (var errors = new FileStream(errorPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                using (var output = new FileStream(Path.Combine(logs, tag + ".out"), FileMode.Create, FileAccess.Write, FileShare.Read, 1))
+                using (var errors = new FileStream(errorPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite, 1))
                 {
                     string session=null;
                     try {session=GameSessions.Begin(root,tag);}

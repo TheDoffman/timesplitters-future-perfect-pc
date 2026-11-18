@@ -1,9 +1,9 @@
 Crash: ../development/native-crash-images.md.
 Worker/link/lease: mod-scripting.md; audio: ../development/mod-audio-scripting.md.
 
-Preflight also rejects restored flags on a previously unsupported fresh epoch.
 
 [Sun/visibility repair](fidelity-comparison.md).
+[Native network/UI integration](systems-native-integration.md).
 
 Mod startup/storage and window-thread drain: [contracts](mod-scripting.md).
 
@@ -42,7 +42,7 @@ Textures: `src/textures/`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
 Private art stays local. Networking: `src/network/`, HLE/kernel patches and
-`tools/network/online.py`; [LAN](system-link.md), [Online UI](multiplayer-ui.md). Crash capture:
+`tools/network/online.py`; [LAN](system-link.md), [Migration](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio: runtime hle_dsound*/hle_xmv*. [Beta](../development/positional-audio.md).
 Buffering/lifecycle/format/device recovery are unconditional; Enhanced Audio

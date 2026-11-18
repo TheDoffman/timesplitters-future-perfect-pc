@@ -95,11 +95,11 @@
               <TextBlock Grid.Column="1" Text="Game settings" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
-          <Button x:Name="RepairNav" Style="{StaticResource Nav}" ToolTip="Verify and repair files, review diagnostics and open logs" AutomationProperties.Name="Repair / Verify">
+          <Button x:Name="RepairNav" Style="{StaticResource Nav}" ToolTip="Verify and repair files, review diagnostics and watch live game logs" AutomationProperties.Name="Tools and logs">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
               <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M14,3 C18,1 22,5 20,9 L17,6 L14,9 L17,12 C16,13 14,13 12,12 L5,20 C3,22 1,19 3,17 L11,10 C9,7 10,4 14,3 Z"/></Canvas></Viewbox>
-              <TextBlock Grid.Column="1" Text="Repair / Verify" Margin="10,0,0,0" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="Tools &amp; Logs" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
           <Button x:Name="SavesNav" Style="{StaticResource Nav}" ToolTip="Open your local saves folder" AutomationProperties.Name="Saves">

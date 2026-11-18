@@ -25,6 +25,19 @@ static unsigned online_opening_frames;
 static int online_opening_pending;
 static void online_opening_draw(uint32_t menu);
 static void online_opening_tick(void);
+static void native_multiplayer_tick(void);
+static void native_multiplayer_refresh_click(uint32_t menu);
+static void native_multiplayer_open(uint32_t source);
+static const char *native_multiplayer_notice(uint32_t menu);
+static unsigned story_browser_preview(unsigned mission);
+static int native_multiplayer_lobby_notice(uint32_t menu);
+static int native_multiplayer_browser_notice(uint32_t menu);
+static int native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float w,float h);
+#ifdef _WIN32
+static void native_multiplayer_story_open(uint32_t menu);
+static void story_rewards_profiles_capture(void);
+#endif
+static void (*native_multiplayer_lookup(uint32_t address))(void);
 static void settings_tabs_footer_style(uint32_t menu,uint32_t sx,uint32_t sy,uint32_t colour);
 static int controls_tabs_poll(uint32_t menu);
 static void controls_tabs_flush(void);
@@ -233,12 +246,28 @@ void pc_display_camera(void (*original)(void))
     static ULONGLONG discord_sampled;
     static PcDiscordGuestCache discord_cache;
     ULONGLONG now=GetTickCount64();
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    static ULONGLONG network_frame,network_frame_gap;
+    if(network_frame && now>=network_frame && now-network_frame>network_frame_gap)network_frame_gap=now-network_frame;
+    network_frame=now;
+#endif
     if(now-discord_sampled>=1000) {
         PcDiscordSnapshot sample;
         int network=0;
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
         double latency;unsigned peers;
         network=pc_network_latency(&latency,&peers);
+        static ULONGLONG network_sampled;
+        if(!network)network_frame_gap=0;
+        if(network && (!network_sampled || now-network_sampled>=10000)) {
+            int32_t values[PC_NETWORK_SYNC_FIELDS];
+            if(pc_network_sync_snapshot(values)) {
+                values[14]=latency<0.?-1:(latency>2147483647.?INT32_MAX:(int32_t)latency);
+                values[15]=network_frame_gap>INT32_MAX?INT32_MAX:(int32_t)network_frame_gap;
+                pc_capture_network(values);network_sampled=now;network_frame_gap=0;
+            }
+        }
+
 #endif
         pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
         pc_capture_gameplay(sample.scene,sample.mode,sample.menu_mode,sample.paused,sample.network,(sample.flags&0x20000000u)!=0);
@@ -388,6 +417,17 @@ void pc_display_menu_button(void (*original)(void))
     if(pc_story_lobby_button(original)) return;
 #endif
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(callsite==0x002D0DAFu && WORD_AT(g_esp+8u)==3u) {
+        static uint32_t multiplayer_caption;
+        if(!multiplayer_caption) {
+            const char label[]="Multiplayer";
+            multiplayer_caption=xbox_HeapAlloc(sizeof label,4);
+            if(multiplayer_caption)memcpy((void *)((uintptr_t)multiplayer_caption+g_xbox_mem_offset),label,sizeof label);
+        }
+        const uint32_t frame=g_esp,previous=WORD_AT(frame+4u);
+        if(multiplayer_caption)WORD_AT(frame+4u)=multiplayer_caption;
+        original();WORD_AT(frame+4u)=previous;return;
+    }
     if(callsite==0x001CC0A3u && callback==0x001CC050u) {
         static uint32_t online_caption;
         const uint32_t frame=g_esp, previous_caption=WORD_AT(frame+4);
@@ -512,6 +552,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
 #include "pc_audio_menu.inc"
 #include "pc_profile_accept.inc"
 #include "pc_weapon_slots_guest.inc"
+#include "pc_network_bot_lifecycle.inc"
 
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "pc_character_corpses.inc"
@@ -547,9 +588,8 @@ int pc_network_bots_preserve_corpse(uint32_t entity,uint32_t spawn)
     return 0;
 }
 
-/* Recreate only a missing guest body using the same constructor as the
- * original Arcade initializer. Keep the existing actor-list entry and scores;
- * never run guest AI decisions or add a duplicate entry to 0x7A3580. */
+/* Recreate only a missing guest body using the original Arcade constructor.
+ * Publish its actor-list entry only after construction, retaining scores. */
 uint32_t pc_network_bots_revive(unsigned slot)
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -566,9 +606,11 @@ uint32_t pc_network_bots_revive(unsigned slot)
     variant=(uint32_t)(int32_t)*(int8_t *)((uintptr_t)(0x007de444u+slot)+g_xbox_mem_offset);
     entity=guest_call(sub_000DAC30,10,character,character,(uint32_t)slot,
         0u,0u,0u,0u,UINT32_MAX,1u,variant);
-    if(!entity || !guest_writable(entity,0x25cu) || WORD_AT(actor)!=entity) return 0;
+    if(!entity || !guest_writable(entity,0x25cu) || WORD_AT(actor)!=entity ||
+       WORD_AT(entity+0x7cu)!=actor) return 0;
     WORD_AT(0x007a2d00u+(slot-humans)*4u)=entity;
     guest_call(sub_000D7570,1,actor);
+    pc_network_bots_register_body(actor,entity);
     return entity;
 #else
     (void)slot;return 0;
@@ -820,6 +862,10 @@ void pc_network_bots_pose_weapons(uint32_t entity)
     if(!guest_writable(entity,0x2e8u)) return;
     memcpy(&health,(void *)((uintptr_t)(entity+0x1ccu)+g_xbox_mem_offset),4);
     if(health>0.f && (WORD_AT(entity+0x28u)&1u)) {
+        const uint32_t owner=WORD_AT(entity+0x7cu);
+        /* Validate ownership before native routines dereference the hands. */
+        if(WORD_AT(entity+0x20u)!=8u || !guest_writable(owner,0xea0u) ||
+           WORD_AT(owner)!=entity || (WORD_AT(entity+0x28u)&0x80000000u))return;
         /* Only after the engine has allocated/evaluated this frame's bones. */
         guest_call(sub_001BE870,2,entity,0u);
         guest_call(sub_001BE870,2,entity,1u);
@@ -920,6 +966,7 @@ void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
 #endif
 }
 #include "pc_developer_match_menu.inc"
+#include "pc_arcade_weapons.inc"
 static uint32_t network_bots_host_mode,developer_match_build_menu;
 static void developer_match_button(uint32_t callsite) {
     /* Insert before Music while the native compact option style is active.
@@ -1621,11 +1668,16 @@ static void system_link_activate(void)
 }
 static void online_activate(void)
 {
+    if(!getenv("TSFP_ONLINE_TEST_COMMAND")) {
+        GuestRegisters saved;save_registers(&saved);
+        native_multiplayer_open(WORD_AT(g_esp+4u));restore_registers(&saved);g_esp+=4u;return;
+    }
     /* Let the title present the notice before entering the companion wait. */
     online_opening_pending=1;online_opening_frames=0;g_esp+=4;
 }
 static void online_opening_tick(void)
 {
+    native_multiplayer_tick();
     if(!online_opening_pending || online_opening_frames<2)return;
     online_opening_pending=0;
     GuestRegisters r;save_registers(&r);
@@ -1635,6 +1687,7 @@ static void online_opening_tick(void)
 #else
 static void online_opening_tick(void) {}
 #endif
+#include "pc_multiplayer_menu.inc"
 #define pc_multiplayer_exit_menu multiplayer_exit_menu_original
 #include "pc_multiplayer_exit.inc"
 #undef pc_multiplayer_exit_menu
@@ -1646,6 +1699,8 @@ void pc_multiplayer_exit_menu(void (*original)(void))
     multiplayer_exit_menu_original(original);
     WORD_AT(frame+8u)=descriptor;
 }
+#include "pc_arcade_join_guest.inc"
+#include "pc_arcade_migration_guest.inc"
 #include "pc_story_menu.inc"
 #include "pc_story_lobby.inc"
 #include "pc_story_browser.inc"
@@ -1663,6 +1718,8 @@ static void controls_players_back(void);
 
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
+    void (*native_online_handler)(void)=native_multiplayer_lookup(address);
+    if(native_online_handler)return native_online_handler;
     void (*multiplayer_handler)(void)=multiplayer_exit_lookup(address);
     if(multiplayer_handler) return multiplayer_handler;
     if(address==0x000402D0u)return keycap_alternate_glyph;

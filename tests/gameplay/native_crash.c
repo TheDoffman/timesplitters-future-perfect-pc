@@ -16,6 +16,7 @@ int main(int argc,char **argv){
     int result=tsfp_native_crash_helper(argc,argv);if(result>=0)return result;
     if((argc!=2 && argc!=3) || !tsfp_native_crash_init(guest))return 2;
     pc_capture_gameplay(4,4,0,1,2,0);pc_capture_model(0x811ee970u,15,123);pc_capture_allocation(1,0x10000,4096);pc_capture_allocation(257,0x10000,4096);
+    int32_t net[16]={1,1,2,2,6,30,20,12,2,1,3,120,15,8,180,1};pc_capture_network(net);
     struct sigaction action={0};action.sa_sigaction=tsfp_native_crash_signal;action.sa_flags=SA_SIGINFO|SA_ONSTACK;sigemptyset(&action.sa_mask);sigaction(SIGABRT,&action,NULL);
 #ifdef __linux__
     sigaction(SIGILL,&action,NULL);

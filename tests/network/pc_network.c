@@ -169,6 +169,8 @@ int main(void)
         bot.tick=9;memcpy(packet+60,&bot,sizeof bot);
         CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
         Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        {int32_t metrics[PC_NETWORK_SYNC_FIELDS];CHECK(pc_network_sync_snapshot(metrics));
+         CHECK(metrics[0]==1 && metrics[3]==2 && metrics[4]==6 && metrics[7]==1 && metrics[9]==1);}
         bot.tick=11;memcpy(packet+60,&bot,sizeof bot);packet[48]^=1;
         CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
         Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));

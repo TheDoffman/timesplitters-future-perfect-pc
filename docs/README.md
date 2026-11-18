@@ -8,6 +8,8 @@ or [repository layout](development/repository-layout.md) for source and local fi
 | Install and use the launcher | [Launcher](players/launcher.md), [Windows implementation](players/windows-launcher.md), [Mac launcher](players/mac-launcher.md) |
 | Configure the game | [Windows settings](players/windows-settings.md), [Mac setup and controls](players/macos.md), [high refresh rates](analysis/native-high-refresh.md) |
 | Play online | [Multiplayer](players/multiplayer.md), [Discord presence](players/discord-presence.md) |
+| Update the community server | [Native Online service update](development/online-community-update.md), [relay deployment](development/online-relay.md) |
+| Automatic port mapping | [Player-host UPnP](development/online-upnp.md) |
 | Use textures | [Textures](textures/textures.md), [alpha handling](textures/texture-alpha.md), [menu textures](textures/main-menu-textures.md) |
 | Build community mod support | [Workshop and creator workflow](development/mod-workshop.md), [Mac mini hosting](development/mac-mod-hosting.md), [operator checklist](development/mod-workshop-operations.md) |
 | Troubleshoot | [Known issues](players/known-issues.md), [Windows crash logger](players/windows-crash-logger.md), [high-refresh regressions](analysis/native-high-refresh-regressions.md) |

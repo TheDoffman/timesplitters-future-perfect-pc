@@ -20,6 +20,7 @@ typedef struct { uint32_t ip; unsigned char xnaddr[36], key[8]; } NetPeer;
 static NetSocket sockets[MAX_SOCKETS];
 static NetPeer peers[MAX_PEERS];
 static unsigned peer_count;
+static PcNetworkSync sync_stats;
 static int initialized;
 static NET_THREAD_LOCAL int last_error;
 static NetHostLock network_lock = NET_HOST_LOCK_INIT;
@@ -34,6 +35,9 @@ static int local_session_created,local_session_registered;
 static const unsigned char compatibility[32] = TSFP_NETWORK_COMPATIBILITY;
 static unsigned rejected;
 static void bot_reset(void);
+#ifdef TSFP_ARCADE_MIGRATION
+static void arcade_reset(void);
+#endif
 static void developer_reset(void);
 static unsigned sent_logs, received_logs;
 static int online;
@@ -192,6 +196,9 @@ static int initialize(void)
 static void shutdown_locked(void)
 {
     unsigned i;
+#ifdef TSFP_ARCADE_MIGRATION
+    arcade_reset();
+#endif
     bot_reset();developer_reset();
     memset(local_session_id,0,sizeof local_session_id);
     local_session_created=local_session_registered=0;
@@ -402,6 +409,7 @@ static void bot_reset(void)
     memset(&bot_context,0,sizeof bot_context);
     bot_target_count=0;
     memset(bot_fresh,0,sizeof bot_fresh);memset(bot_seen,0,sizeof bot_seen);
+    pc_network_sync_context(&sync_stats);
 }
 void pc_network_bots_context(unsigned role,uint32_t host_ip,uint32_t match,unsigned humans,unsigned bots)
 {
@@ -410,6 +418,7 @@ void pc_network_bots_context(unsigned role,uint32_t host_ip,uint32_t match,unsig
     if(memcmp(&next,&bot_context,sizeof next)) {
         memset(bot_fresh,0,sizeof bot_fresh);memset(bot_seen,0,sizeof bot_seen);
         bot_context=next;
+        pc_network_sync_context(&sync_stats);
         bot_target_count=0;
     }
     net_unlock(&network_lock);
@@ -439,6 +448,7 @@ static int bot_control(const struct sockaddr_in *address,const unsigned char *da
     memset(&state,0,sizeof state);memcpy(&state,data+20,(size_t)length-20u);
     if(!pc_network_bot_state_valid(&state,bot_context.humans,bot_context.bots)) return 1;
     i=state.slot;
+    pc_network_sync_arrival(&sync_stats,i,net_milliseconds(),(int32_t)(state.tick-bot_last_tick[i]),bot_fresh[i]);
     if(bot_seen[i] && (int32_t)(state.tick-bot_last_tick[i])<=0) return 1;
     bot_pending[i]=state;bot_fresh[i]=bot_seen[i]=1;bot_last_tick[i]=state.tick;
     return 1;
@@ -447,6 +457,11 @@ void pc_network_bots_send(const PcNetworkBotState *state)
 {
     unsigned i,j;unsigned char data[20+sizeof *state];
     net_lock(&network_lock);
+#ifdef TSFP_ARCADE_MIGRATION
+    if(bot_context.role==1 && pc_network_bot_state_valid(state,bot_context.humans,bot_context.bots)) {
+        bot_pending[state->slot]=*state;bot_seen[state->slot]=1;
+    }
+#endif
     if(!initialized || !local_session_registered || bot_context.role!=1 ||
        !pc_network_bot_state_valid(state,bot_context.humans,bot_context.bots)) goto done;
     const size_t bytes=state->ragdoll.count?sizeof *state:offsetof(PcNetworkBotState,ragdoll);
@@ -471,10 +486,27 @@ int pc_network_bots_receive(unsigned slot,PcNetworkBotState *state)
     int fresh=0;
     net_lock(&network_lock);
     if(slot<16 && bot_context.role==2 && bot_fresh[slot]) {
+        pc_network_sync_consume(&sync_stats,slot,net_milliseconds());
         *state=bot_pending[slot];bot_fresh[slot]=0;fresh=1;
     }
     net_unlock(&network_lock);
     return fresh;
+}
+int pc_network_sync_snapshot(int32_t values[PC_NETWORK_SYNC_FIELDS])
+{
+    net_read_lock(&network_lock);
+    const PcNetworkSync *s=&sync_stats;
+    int active=online || initialized;uint64_t now=net_milliseconds(),silence=0;
+    for(unsigned i=0;i<16;i++)if(s->seen[i] && now>=s->arrival[i] && now-s->arrival[i]>silence)silence=now-s->arrival[i];
+    const int32_t v[PC_NETWORK_SYNC_FIELDS]={1,(int32_t)s->session,online?2:(initialized?1:0),
+        (int32_t)bot_context.role,(int32_t)bot_context.bots,
+        pc_network_sync_number(s->packets),pc_network_sync_number(silence),
+        pc_network_sync_number(s->accepted),pc_network_sync_number(s->duplicates),
+        pc_network_sync_number(s->reordered),pc_network_sync_number(s->coalesced),
+        pc_network_sync_number(s->gap_max),
+        pc_network_sync_number(s->intervals?s->jitter_sum/s->intervals:0),
+        pc_network_sync_number(s->queue_max),-1,0};
+    memcpy(values,v,sizeof v);net_read_unlock(&network_lock);return active;
 }
 static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,struct sockaddr_in *from)
 {
@@ -509,6 +541,7 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
             if(developer_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER) || bot_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER)) continue;
             if(n-BRIDGE_HEADER>capacity) return (int)failure(WSAEMSGSIZE);
             memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
+            sync_stats.packets++;
             memcpy(payload,packet+BRIDGE_HEADER,n-BRIDGE_HEADER); if(from) *from=address;
             return n-BRIDGE_HEADER;
         }
@@ -522,6 +555,7 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
         latency_probe(s,&address);
         if(received_logs++<12) fprintf(stderr,"[PC-NET] Receive %u <- %08x:%u, %d bytes\n",
             s->port,ntohl(address.sin_addr.s_addr),ntohs(address.sin_port),n-HEADER);
+        sync_stats.packets++;
         memcpy(payload,packet+HEADER,n-HEADER); if(from) *from=address;
         return n-HEADER;
     }
@@ -689,3 +723,4 @@ uint32_t pc_network_call(uint32_t va,const uint32_t *a,ptrdiff_t offset)
     net_unlock(&network_lock);
     return result;
 }
+#include "pc_network_arcade.inc"

@@ -2006,3 +2006,18 @@ nonce. Resume/rollback only reopen same-boot history. Lost context admission in
 an event-free journal permits exact re-preflight/adoption; partial files stay
 preserved. Recovery argument reads do not create history; new-only/existing-only
 lease modes reject wrong selection and changed base metadata before dispatch.
+
+
+
+## Regular generated source size bound (2026-11-15)
+
+translation_batch.py caps each regular chunk at512KiB of UTF-8 body text as well
+as the requested function count, matching the existing continuation publisher.
+An individual oversized body stays intact and alone. The standard --split1000
+workflow retains all decoded bodies, names, declarations, ordering, dispatch and
+release optimization settings; only source-file grouping changes. This avoids
+MSVC C1002 from math-heavy groups. test_translation_batch.py compares exact
+concatenated body text and identical dispatch/declaration bytes, includes UTF-8
+and an oversized body, then compiles and executes the separated translations.
+Shared register-alias tests cover the accompanying preprocessor selection repair.
+Normal generation/build/gameplay acceptance are recorded separately in STATUS.

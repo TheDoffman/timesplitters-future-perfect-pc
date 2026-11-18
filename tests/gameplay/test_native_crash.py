@@ -30,6 +30,7 @@ def test_capture(client,tmp_path,mode,count):
         allocations=(path.parent/'allocation-history.txt').read_text()
         assert 'allocation-event 257' in allocations and 'allocation-bytes 4096' in allocations
         models=(path.parent/'model-history.txt').read_text();assert 'node-index 15' in models and 'traversal-depth 123' in models
+        network=(path.parent/'network-history.txt').read_text();assert 'bot-accepted 12' in network and 'rtt-ms 180' in network and len(network)<8192
         details=json.loads((path.parent/'diagnostics.json').read_text());assert details['root_cause']=='undetermined'
         data=json.loads(path.read_text());assert data['schema']==1 and len(data['executable_sha256'])==64
         assert data['native_capture_saved'];assert (path.parent/'game-log-tail.txt').read_text()=='local diagnostic tail\n'
@@ -71,3 +72,12 @@ def test_pie_main_fault_uses_elf_load_bias(tmp_path):
     reports=list((tmp_path/'reports').glob('*/report.json'));assert len(reports)==1
     stack=(reports[0].parent/'native-stack.txt').read_text()
     assert 'PC image: '+str(exe) in stack and 'tsfp_native_crash_test_site' in stack,stack
+def test_nonfatal_network_export(client,tmp_path):
+    area=tmp_path/'reports'
+    result=subprocess.run([str(client),'responsive'],env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(area)),capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stderr
+    import time
+    deadline=time.monotonic()+3
+    while not (area/'network-sync.txt').exists() and time.monotonic()<deadline:time.sleep(.05)
+    text=(area/'network-sync.txt').read_text()
+    assert 'bot-accepted 12' in text and 'rtt-ms 180' in text and len(text)<8192

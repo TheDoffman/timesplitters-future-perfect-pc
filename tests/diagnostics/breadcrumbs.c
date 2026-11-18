@@ -32,5 +32,14 @@ int main(void){
     pc_crumb_match(&match,200,values);assert(pc_crumb_load(&match.next)==4);
     values[1]=9;pc_crumb_match(&match,300,values);assert(pc_crumb_load(&match.next)==5);
     assert(pc_crumb_load(&match.slots[4].event)==31 && pc_crumb_load(&match.slots[4].value)==9);
+    PcBreadcrumbs network={0};int32_t net[PC_CRUMB_NETWORK_FIELDS]={1,1,2,2,6,30,20,12,2,1,3,120,15,8,180,17};
+    for(int i=0;i<10;i++)pc_crumb_network(&network,i*10000,net);
+    assert(pc_crumb_load(&network.next)==160);
+    out=tmpfile();assert(out);pc_crumb_report(out,&network);fflush(out);size=ftell(out);assert(size<8192);rewind(out);
+    memset(text,0,sizeof text);fread(text,1,sizeof text-1,out);fclose(out);
+    assert(strstr(text,"rtt-ms 180") && strstr(text,"camera-gap-max-ms 17"));
+    assert(!strstr(text," 50000 ") && strstr(text," 60000 "));
+    pc_crumb_store(&network.writer,1);pc_crumb_network(&network,100000,net);
+    assert(pc_crumb_load(&network.next)==160);
     return 0;
 }

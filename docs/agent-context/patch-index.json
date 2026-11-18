@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "28ed57b7324ae8084e0113e80a0bd54c51da7b87b1cfae7ae2a12c44075bd595",
+  "loaderSha256": "1dc634d77e7396b26eca6f4fdd884db9fce795581e9d52ad1a059889a113b120",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2217,6 +2217,38 @@
       ]
     },
     {
+      "name": "3000-arcade-migration-build.patch",
+      "path": "patches/network/3000-arcade-migration-build.patch",
+      "sha256": "8c6479f6b5010dfa7e67f2af754bab0ce927ccd8d38ccc73894c73a71ab676e7",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "3010-present-frame-capture.patch",
+      "path": "patches/graphics/interface/3010-present-frame-capture.patch",
+      "sha256": "08162a4e77feea7974731cbbb17d47a406f57c6e12de96e7b755562748fcf3c3",
+      "targets": [
+        "src/d3d/rhi.c"
+      ]
+    },
+    {
+      "name": "3020-arcade-join-contexts.patch",
+      "path": "patches/network/3020-arcade-join-contexts.patch",
+      "sha256": "8a8b5130c9456cc176c4c439674907a413edd83fbed592e35cf768f651375685",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "3030-native-story-browser-preview.patch",
+      "path": "patches/network/3030-native-story-browser-preview.patch",
+      "sha256": "5461ad8ef364754d86281264689d21211ad65649a776847c70056a85eb013ab4",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
@@ -3595,6 +3627,14 @@
       "sha256": "cc155c4da87cdfec385660c79fbcd350fb3c507a46a1a43cebe3634af212633d",
       "targets": [
         "src/kernel/xbox_memory_layout.c"
+      ]
+    },
+    {
+      "name": "0261-register-header-template.patch",
+      "path": "patches/compiler/0261-register-header-template.patch",
+      "sha256": "37b47fa67ebb988efb82bb2a63b07f2cdbd99193fa49f1f411beaf93f1c386a0",
+      "targets": [
+        "templates/runtime/recomp_types.h"
       ]
     },
     {

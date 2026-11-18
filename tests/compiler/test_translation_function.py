@@ -69,6 +69,26 @@ def test_flag_joins_require_known_widths_and_typed_zero_snapshots():
     assert own._merge_flag_states([scalar,left]) is None
 
 
+def test_arcade_single_context_entry_keeps_original_entry_and_tail():
+    # Synthetic branch scaffold contains no original game asset/code body.
+    import struct
+    start,loop,tail,end=0xD2FD0,0xD3143,0xD3AD5,0xD3AF1
+    data=bytearray(b'\x90'*(end-start))
+    for source,target in ((start,loop),(loop,tail)):
+        data[source-start:source-start+5]=b'\xe9'+struct.pack('<i',target-source-5)
+    data[tail-start:tail-start+2]=b'\x5d\xc3'
+    info=dict(end=end,name='context_fixture')
+    t=own.FunctionTranslator(b'',{start:info})
+    t._read_func_bytes=lambda a,b:bytes(data)
+    emitted=t.translate_function(start,info)
+    entry='if (pc_arcade_join_context_entry()) goto loc_000D3143;'
+    assert emitted.index(entry)<emitted.index('loc_000D2FD0:')
+    assert emitted.index('loc_000D3AD5:')<emitted.index('if (pc_arcade_join_context_tail()) return;')<emitted.index('POP32(esp, ebp)')
+    assert 'unavailable local label' not in emitted
+    ordinary,ordinary_info=translator('c3')
+    assert 'pc_arcade_join_context_' not in ordinary.translate_function(0x1000,ordinary_info)
+
+
 def test_register_inventory_and_carry_producer_consumers():
     t,_=translator('c3')
     assert t._find_used_registers(decode('668b04b789e5b401'))=={'eax','esi','edi','ebp','esp'}

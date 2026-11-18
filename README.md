@@ -65,12 +65,6 @@ texture download. See [cloning without optional textures](CONTRIBUTING.md#clone-
 
 ### Launcher preview
 
-**Weapon view:** In builds containing the Weapon FOV option, open **Settings →
-Video Options → View & HUD → Weapon FOV** from the main or pause menu. Choose
-80–150% and select **Apply**; no restart is needed. **Original** is 100%.
-Higher values show more of the weapon, independently of the world FOV slider.
-These percentages adjust the weapon's original lens, rather than degrees.
-
 ![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
 
 Launcher v1.4.0 interface preview with illustrative installation data.
@@ -148,20 +142,11 @@ lets the game use a connected controller without a fixed assignment. To change t
 joining during an active match is not supported. Only one keyboard/mouse player
 is supported; additional players need controllers.
 
-### Controller stick response
-
-In **Settings → Controls → Controller** (also available while paused), adjust
-**Movement deadzone** and **Aim deadzone** for the selected player. Changes save
-and apply immediately. Lower values respond sooner; raise them if a stick drifts.
-Existing settings stay unchanged until edited. The original aiming curve remains.
-The launcher offers the same per-player controls under **Game settings → Keyboard
-& mouse → Controller deadzones**; select **Save settings** before launching.
-
 ### Online / LAN
 
-Choose **Online / System Link → Online** to host or join a match,
-or **System Link** for LAN play. Everyone needs matching game builds and data.
-Online hosts need port forwarding; guests join using the host's invitation.
+Choose **Multiplayer → Online** to host or join a match on the Community server, or **Private Server** to host your own. Choose **LAN** for local network play.
+veryone needs matching game builds and data.
+Private server hosting requires a **UPnP** capable router, or port forwarding; guests join using the host's invitation.
 Follow the [multiplayer guide](docs/players/multiplayer.md) for setup, ports and bots.
 
 Online is experimental;

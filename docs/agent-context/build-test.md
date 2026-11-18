@@ -1,8 +1,4 @@
-Game link/lease: mod-scripting.md; backups/SDK/recovery: [details](build-test-details.md).
-Upgrade admission/recovery: test_upgrade_command.py/test_upgrade_context.py.
-Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
-
-Epoch/GCC/dependency reuse: build-test-details.md.
+[Workshop/native test routes](build-test-integration.md).
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.
@@ -12,11 +8,10 @@ Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
 Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
 `test_audio_output_gain.py`: mute/queue retention, Windows capture.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
-`test_controller_profile.py` executes native key/pad guards and the runtime key
-dispatcher: freecam neutralizes gameplay while retaining raw camera keys. Both
-host defines cover automatic/assigned pad blocking/resume and existing ownership,
-disconnect/focus/parser cases. It runs alongside Developer Tools flight/mouse
-coverage in runtime CI. Patch2630 follows2620.
+`test_controller_profile.py` runs native key/pad guards and dispatch: freecam
+neutralizes gameplay but retains raw camera keys. Both host defines cover
+automatic/assigned pad blocking/resume, ownership and disconnect/focus/parser.
+Runtime CI also covers Developer Tools flight/mouse. Patch2630 follows2620.
 
 `test_developer_tools.py` runs in runtime CI: sidebar tab/dock centers at
 1x/1.5x/2x, both docks, independent vertical scaling and retained painted extents
@@ -32,9 +27,9 @@ Discord release webhooks target #release-updates; #announcements holds team post
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
-Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
-`--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
-adapter but use the real host trap; hexadecimal additions need token boundaries.
+Exit: `test_online_menu.py`, `test_quit_menu.py`, `test_fov_settings.py`;
+native `--test`/`--online-self-test`. Clang Story fixtures use the Windows guest
+adapter with the real host trap; hexadecimal additions need token boundaries.
 
 Game0.6.0 bundles launcher1.6.0; publish the launcher first. Keep release gates:
 exact clean source on Windows/Mac/Linux, native/package/preservation checks,
@@ -50,7 +45,7 @@ self-tests use click/Escape capture, replacing retired F1. [Linux](linux-game.md
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[Build](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+[Chunking](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
@@ -1021,16 +1016,16 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
 
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
+[Console tests](launcher.md).
 
-[2x tests](original-upscale.md).
+[2x](original-upscale.md).
 
-[Linux release/CI/POSIX](linux-game.md).
+[Linux CI](linux-game.md#ci-package-mirror).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
-Players: controls-options.md.
 
-Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
+Patch tests: Mac omits2620/2625; Story uses production guards.
 [Mod worker and trust checks](mod-scripting.md).
 
 [PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).

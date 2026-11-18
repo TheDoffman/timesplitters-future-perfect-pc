@@ -1257,6 +1257,27 @@ public static class LauncherSharedUiChecks
             WorkshopChecks(root);
             LibraryChecks(root);
             CreatorChecks(root);
+            Test("console tails live shared files, preserves UTF8 and separates errors",()=>{
+                string folder=Path.Combine(root,"console");Directory.CreateDirectory(folder);
+                var tail=new GameLogTail(folder);tail.Poll();Need(tail.Text(false)=="","Missing log should be empty");
+                string session=GameSessions.Begin(folder,"20261118-120000-000");
+                string err=Core.PathIn(folder,LauncherPlatform.SessionLog("20261118-120000-000"));Directory.CreateDirectory(Path.GetDirectoryName(err));
+                string output=Path.ChangeExtension(err,".out");
+                using(var writer=new FileStream(output,FileMode.Create,FileAccess.Write,FileShare.ReadWrite)) {
+                    byte[] bytes=System.Text.Encoding.UTF8.GetBytes("ready café\n");writer.Write(bytes,0,10);writer.Flush();tail.Poll();
+                    writer.Write(bytes,10,bytes.Length-10);writer.Flush();tail.Poll();
+                    Need(tail.Text(false).Contains("ready café"),"Split UTF8 damaged");
+                }
+                File.WriteAllText(err,"normal diagnostics\nError: test failure\n");tail.Poll();
+                Need(tail.Text(true).Contains("test failure")&&!tail.Text(true).Contains("normal diagnostics"),"Stderr must not all be classified as errors");
+                tail.Clear();tail.Poll();Need(tail.Text(false)=="","Clear must not reread old lines");
+                File.AppendAllText(output,"next line\n");tail.Poll();Need(tail.Text(false).Contains("next line"),"Live append missing");
+                File.WriteAllText(output,"new\n");tail.Poll();Need(tail.Text(false).Contains("[OUT] new"),"Truncation not recovered");
+                File.WriteAllText(output,new string('x',200000)+"\nlatest\n");tail.Poll();
+                Need(tail.Text(false).Length<16000&&tail.Text(false).Contains("latest"),"Large log not bounded");
+                GameSessions.CancelLaunch(folder,session);GameSessions.Begin(folder,"20261118-120001-000");tail.Poll();Need(!tail.Text(false).Contains("next line"),"Old session retained");
+                using(var page=new ConsolePage(folder,true))Need(page.Output.IsReadOnly,"Console must be read only");
+            });
             Test("main menu update notice follows version and selected channel",()=>{
                 var release=new Release {Tag="v1.2.4",Channel="stable"};
                 Need(GameUpdateNotice.Encode("v1.2.3",release,"stable",123)=="TSFP_GAME_UPDATE_V1 123 v1.2.3 v1.2.4\n","Newer release missing");

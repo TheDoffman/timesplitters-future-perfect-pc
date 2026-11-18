@@ -7,6 +7,7 @@ import socket
 import struct
 import subprocess
 import time
+import sys
 
 import pytest
 
@@ -14,6 +15,54 @@ ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('crossplay_peer', ROOT/'tools/testing/crossplay_peer.py')
 peer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(peer)
+
+
+@pytest.mark.parametrize('enabled', ['0', '1'])
+def test_rpc_observer_preserves_bootstrap_bounds_output_and_omits_locals(tmp_path, enabled):
+    bootstrap=tmp_path/'bootstrap';bootstrap.mkdir()
+    (bootstrap/'sitecustomize.py').write_text('import builtins; builtins.bootstrap_preserved=True\n')
+    env=dict(os.environ,PYTHONPATH=os.pathsep.join((str(ROOT/'tools/testing/online_rpc_trace'),str(bootstrap))),
+             TSFP_ONLINE_RPC_TRACE=enabled)
+    function="def request():\n private_token='never-disclose-this-local'\n for i in range(50):\n  try: raise ValueError('probe')\n  except ValueError: pass\n"
+    command="import builtins,threading; assert builtins.bootstrap_preserved; scope={}; exec(compile("+repr(function)+",'/observer/online_client.py','exec'),scope); worker=threading.Thread(target=scope['request']); worker.start(); worker.join()"
+    result=subprocess.run([sys.executable,'-c',command],env=env,capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stderr
+    assert result.stderr.count('[ONLINE-RPC]')==(32 if enabled=='1' else 0)
+    assert 'never-disclose-this-local' not in result.stderr
+
+
+def test_completed_frame_capture_is_bounded_and_rotates(tmp_path):
+    from native_compiler import native_compiler
+    compiler,env=native_compiler(tmp_path)
+    exe=tmp_path/('capture.exe' if os.name=='nt' else 'capture')
+    source=ROOT/'tests/graphics/present_capture.c'
+    if os.name=='nt':
+        command=[compiler,'/nologo','/std:c11','/W3','/WX','/D_CRT_SECURE_NO_WARNINGS',str(source),'/Fe:'+str(exe)]
+    else:
+        command=[compiler,'-std=c11','-Wall','-Wextra','-Werror',str(source),'-o',str(exe)]
+    compiled=subprocess.run(command,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert compiled.returncode==0,compiled.stdout+compiled.stderr
+    result=subprocess.run([str(exe)],cwd=tmp_path,capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+
+
+@pytest.mark.parametrize('running,owns_group', [(False, True), (True, False), (True, True)])
+def test_crash_is_limited_to_a_running_owned_process_group(monkeypatch, running, owns_group):
+    from unittest.mock import Mock
+    child = Mock(pid=4321)
+    child.poll.return_value = None if running else 0
+    monkeypatch.setattr(peer.os, 'getpgid', lambda pid: pid if owns_group else 1, raising=False)
+    kill = Mock()
+    monkeypatch.setattr(peer.os, 'killpg', kill, raising=False)
+    monkeypatch.setattr(peer.signal, 'SIGKILL', 9, raising=False)
+    if running and owns_group:
+        peer.crash_child(child)
+        kill.assert_called_once_with(4321, 9)
+        child.wait.assert_called_once_with(timeout=10)
+    else:
+        with pytest.raises(ValueError):
+            peer.crash_child(child)
+        kill.assert_not_called()
 
 
 @pytest.mark.parametrize('failure', ['prepare', 'lock', 'after-lock', 'recycle'])
