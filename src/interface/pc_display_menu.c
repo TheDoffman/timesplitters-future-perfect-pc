@@ -8,6 +8,7 @@
 #include "pc_developer.h"
 #include "pc_debug.h"
 #include "graphics/graphics_settings.h"
+#include "graphics/pc_vsync_settings.h"
 #define KB_OPEN 0x1200fu
 #define PAUSE_SETTINGS_OPEN 0x12018u
 #define PAUSE_SETTINGS_BUILD 0x12019u
@@ -492,7 +493,8 @@ static int all_mode_count, selected_aspect;
 enum { DISPLAY_HOME, DISPLAY_CONFIRM, DISPLAY_GRAPHICS, DISPLAY_VIEW, DISPLAY_RESTART, DISPLAY_ADVANCED };
 static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static int staged_weapon_fov=PC_FOV_DEFAULT,previous_weapon_fov=PC_FOV_DEFAULT,previous_weapon_percent=PC_WEAPON_FOV_DEFAULT;
-static uint32_t weapon_fov_row,window_mode_row;
+static uint32_t weapon_fov_row,window_mode_row,vsync_row;
+static int staged_vsync,applied_vsync;
 static int staged_crosshair=100,previous_crosshair=100;
 static int staged_fullscreen,previous_fullscreen;
 static int apply_page=DISPLAY_HOME;
@@ -514,6 +516,7 @@ static char status[192];
 /* Fixed backing storage survives transitions and renderer references. */
 #define TEXT_BYTES 192
 #define MODE_TEXT_BASE 32
+#define VSYNC_TEXT_BASE (MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+4)
 #define TEXT_ADDRESS(i) (storage+64u+(uint32_t)(i)*TEXT_BYTES)
 static uint32_t text_at(int i,const char *format,...)
 {
@@ -544,7 +547,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
        WORD_AT(menu+4)!=storage || !guest_writable(item,0x8c) ||
        WORD_AT(item+0x88)!=menu || (WORD_AT(item+0x28)&5u))return;
     unsigned id=WORD_AT(item+0x14);
-    if(!(id<=2u || (id>=7u && id<=13u) || (id>=100u && id<=105u)))return;
+    if(!(id<=2u || (id>=7u && id<=14u) || (id>=100u && id<=105u)))return;
     uint32_t sounds=WORD_AT(0x007BA178u);
     if(WORD_AT(0x007BA16Cu) && guest_writable(sounds,12))
         guest_call(sub_00021780,1,WORD_AT(sounds+8));
@@ -1220,7 +1223,7 @@ static int mode_equal(PcDisplayMode a,PcDisplayMode b)
 static int display_dirty(void)
 {
     return staged_fullscreen!=previous_fullscreen || !mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov || staged_crosshair!=previous_crosshair ||
-        staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa || graphics_dirty();
+        staged_vsync!=applied_vsync || staged_rate!=applied_rate || texture_choice!=applied_texture || staged_subtitles!=applied_subtitles || staged_aa!=applied_aa || graphics_dirty();
 }
 static void update_apply(void)
 {
@@ -1237,7 +1240,7 @@ static void update_apply(void)
 #include "pc_audio_tabs.inc"
 static void labels(void)
 {
-    window_mode_row=weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
+    vsync_row=window_mode_row=weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     /* Section rebuilds keep the same tab strip; retain hits until repaint. */
     if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART) {video_tab_bounds_valid=0;video_pending_tab=-1;}
     extern void sub_00079710(void);
@@ -1268,6 +1271,11 @@ static void labels(void)
         for(int i=0;i<PC_FRAME_RATE_COUNT;i++)
             guest_call(sub_000717D0,1,text_at(24+i,"%s",pc_frame_rate_label(i)));
         guest_call(sub_00075430,2,rate_row,(uint32_t)staged_rate);
+        vsync_row=guest_call(sub_00079D60_gen,6,text_at(VSYNC_TEXT_BASE,"V-Sync"),14u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        guest_call(sub_000717D0,1,text_at(VSYNC_TEXT_BASE+1,"Off"));
+        guest_call(sub_000717D0,1,text_at(VSYNC_TEXT_BASE+2,"On"));
+        guest_call(sub_00075430,2,vsync_row,(uint32_t)staged_vsync);
     } else if(page==DISPLAY_ADVANCED) {
         graphics_labels();
     } else if(page==DISPLAY_GRAPHICS) {
@@ -1329,6 +1337,7 @@ static void read_choices(void)
     if(page==DISPLAY_CONFIRM || page==DISPLAY_RESTART)return;
     if(page==DISPLAY_GRAPHICS || page==DISPLAY_ADVANCED)graphics_read_choices();
     counter_read_choice();
+    if(vsync_row && WORD_AT(vsync_row+0xc8)<=1u)staged_vsync=(int)WORD_AT(vsync_row+0xc8);
     if(window_mode_row && WORD_AT(window_mode_row+0xc8)<=1u)staged_fullscreen=(int)WORD_AT(window_mode_row+0xc8);
     if(resolution_row) {
         unsigned choice=WORD_AT(resolution_row+0xc8);
@@ -1370,7 +1379,7 @@ static void build_menu(void)
 }
 static void refresh(int next,int selected)
 {
-    page=next;weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
+    page=next;vsync_row=weapon_fov_row=resolution_row=aspect_row=texture_row=rate_row=subtitle_row=feed_row=counter_row=post_aa_row=apply_row=0;
     guest_call(sub_00078980,1,current_menu);
     /* Guest rebuild restores old choices by row ID. Reapply every staged value,
      * including the newly filtered resolution list, without committing it. */
@@ -1380,6 +1389,7 @@ static void refresh(int next,int selected)
         if(texture_row)guest_call(sub_00075430,2,texture_row,texture_choice);
         if(post_aa_row)guest_call(sub_00075430,2,post_aa_row,staged_aa);
         if(rate_row)guest_call(sub_00075430,2,rate_row,(uint32_t)staged_rate);
+        if(vsync_row)guest_call(sub_00075430,2,vsync_row,(uint32_t)staged_vsync);
         if(subtitle_row)guest_call(sub_00075430,2,subtitle_row,staged_subtitles);
         update_apply();
     }
@@ -1415,6 +1425,7 @@ static void apply_changes(void)
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
     int restart_changed=graphics_restart_dirty(),graphics_saved=0,aa_saved=0;
     int window_changed=staged_fullscreen!=previous_fullscreen,window_saved=0;
+    int vsync_changed=staged_vsync!=applied_vsync,vsync_saved=0;
     TsfpGraphicsOptions previous_graphics=pc_graphics_get();
     /* Resolution is already previewed/confirmed. Persist before publishing
      * FPS/texture changes so a failed save leaves those running values alone. */
@@ -1440,6 +1451,8 @@ static void apply_changes(void)
         if(!pc_post_aa_set(staged_aa))goto failed;
         aa_saved=1;
     }
+    if(vsync_changed && !pc_vsync_set_enabled(staged_vsync))goto failed;
+    vsync_saved=vsync_changed;
     if(texture_choice!=applied_texture && !tsfp_texture_save_4k((int)texture_choice))goto failed;
     if(rate_changed)recomp_config_request_native_rate(pc_frame_rate_value(staged_rate));
     if(staged_subtitles!=applied_subtitles) {
@@ -1454,7 +1467,7 @@ static void apply_changes(void)
     }
     previous_fullscreen=staged_fullscreen;
     previous=staged;previous_fov=staged_fov;previous_weapon_fov=staged_weapon_fov;previous_weapon_percent=pc_display_weapon_fov_legacy_percent();previous_crosshair=staged_crosshair;applied_rate=staged_rate;applied_texture=texture_choice;
-    applied_aa=staged_aa;
+    applied_aa=staged_aa;applied_vsync=staged_vsync;
     deadline=0;*status=0;filter_modes();
     refresh(restart_changed?DISPLAY_RESTART:apply_page,restart_changed?2:0);
     return;
@@ -1476,7 +1489,8 @@ failed:
     restored=(pc_display_fullscreen()==previous_fullscreen || pc_display_set_fullscreen(previous_fullscreen)) && restored;
     int window_restored=!window_saved || pc_display_save_fullscreen(previous_fullscreen);
     int aa_restored=!aa_saved || pc_post_aa_set(applied_aa);
-    int saved_back=aa_restored && window_restored && (!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
+    int vsync_restored=!vsync_saved || pc_vsync_set_enabled(applied_vsync);
+    int saved_back=vsync_restored && aa_restored && window_restored && (!display_saved || (restored && pc_display_save())) && rate_restored && graphics_restored;
     snprintf(status,sizeof status,saved_back?"Could not save changes. Please try again.":"Could not restore saved display settings.");
     if(!restored) { deadline=GetTickCount64();return; }
     deadline=0;refresh(apply_page,0);
@@ -1589,9 +1603,9 @@ static void activate(void)
     GuestRegisters r; uint32_t source=WORD_AT(g_esp+4);
     save_registers(&r);
     if(!storage) {
-        storage=xbox_HeapAlloc(64+TEXT_BYTES*(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+4),4);
+        storage=xbox_HeapAlloc(64+TEXT_BYTES*(VSYNC_TEXT_BASE+3),4);
         if(storage) {
-            memset((void *)((uintptr_t)storage+g_xbox_mem_offset),0,64+TEXT_BYTES*(MODE_TEXT_BASE+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT+4));
+            memset((void *)((uintptr_t)storage+g_xbox_mem_offset),0,64+TEXT_BYTES*(VSYNC_TEXT_BASE+3));
             WORD_AT(storage)=BUILD_CB; WORD_AT(storage+4)=TICK_CB;
         }
     }
@@ -1601,6 +1615,7 @@ static void activate(void)
         staged_weapon_fov=previous_weapon_fov=pc_display_weapon_fov_degrees();previous_weapon_percent=pc_display_weapon_fov_legacy_percent();
         staged_crosshair=previous_crosshair=pc_display_crosshair_size();
         staged_rate=applied_rate=pc_frame_rate_choice(pc_native_rate());
+        staged_vsync=applied_vsync=pc_vsync_enabled();
         texture_choice=applied_texture=(unsigned)tsfp_texture_is_4k();*status=0;
         staged_aa=applied_aa=pc_post_aa_get();
         TsfpGraphicsOptions graphics=pc_graphics_get();

@@ -1,3 +1,5 @@
+[V-Sync](video-options.md#optional-v-sync-2026-11-17).
+
 [Sync telemetry](network-sync-telemetry.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
 [Actors](network-actor-lifetime.md).

@@ -31,6 +31,7 @@ and native validation must be reported separately for each host.
 | Ambient occlusion | Off / On; half-resolution processing |
 | Shader cache | Off / On, plus Clear Shader Cache action |
 | Supersampling | 100% (Off), 125%, 150%, 200% per axis; restart required |
+| V-Sync | Off / On in Display; live in-game Apply; shared launcher preference, next launch |
 | FPS / Ping | Off / On; FPS plus latency in ms during online play only |
 
 Both entry points must read the same saved choice after reopening. In-game
@@ -496,3 +497,8 @@ footer clicks and keyboard/controller navigation keep their original handling.
 The shared fixture queues two targets during a blocked transition in main/pause,
 then verifies the latest target, held-click rejection and expiry. The pointer
 adapter fixture verifies polling and a single flush outside nested dispatch.
+
+V-Sync defaults Off to retain existing presentation policy. On can limit actual
+FPS to display refresh and increase input latency. The selected FPS target and
+game clock are unchanged. The existing unsynchronized VRR path is suspended
+while On; Off restores that saved preference. Driver/compositor rules still apply.

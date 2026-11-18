@@ -1423,6 +1423,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-127 | Complete launcher language packs | Awaiting validation |
 | MAC-128 | Fresh weapon trigger timing (#434) | Awaiting validation |
 | MAC-129 | Optional SMAA anti-aliasing | Awaiting validation |
+| MAC-131 | Optional V-Sync | Awaiting validation |
 
 ### MAC-126 - Launcher Discord community button
 
@@ -10901,3 +10902,23 @@ pass six equivalent register modes, reject both copied-cell controls and execute
 the separated batch fixture. Windows full Release build/native rejoin passes;
 full native Mac build and actual gameplay remain pending. See STATUS for exact
 toolset provenance and acceptance limits.
+
+
+### MAC-131 - Optional V-Sync
+
+- **Status:** Awaiting validation
+- **Source:** Local uncommitted feature/vsync from main9bdab5f5;
+  src/graphics/pc_vsync_settings.h, src/interface/pc_display_menu.c,
+  src/native/renderer_gl.c, src/native/gl_display.inc, patch3040,
+  and shared GameSettings.cs/SettingsPage.cs.
+
+The shared saved/live preference and frontend/pause row apply to all hosts.
+The Avalonia launcher consumes the same checkbox/model. Vulkan already maps
+interval1 to FIFO and recreates its swap chain on interval changes; legacy GL
+updates its current context before swapping. No additional Mac policy/model or
+adapter is required. Defaults, FPS targets and saved VRR choice are preserved.
+Windows menu/settings tests, shared launcher tests and real WARP swap-chain
+checks pass; Ubuntu/WSL's POSIX persistence/failure fixture passes. These do not
+verify native Mac rendering. Remaining acceptance: native Mac and Linux builds,
+physical On/Off in frontend/pause, resize/fullscreen/context recovery, driver
+behavior, and timed gameplay/loading at each supported FPS target. See STATUS.

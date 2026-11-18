@@ -1,3 +1,30 @@
+## Optional V-Sync (2026-11-17)
+
+Video Options > Display (frontend and pause) includes Off/On row14. It stages
+across tabs and uses Apply/Back with failed-batch rollback. Default Off retains
+the original present interval; normal gameplay requests interval0. On forces1
+at the actual shared guest/interpolated present, never at a simulation clock.
+Text storage is beyond the full resolution-mode table, avoiding slot overlap.
+`src/graphics/pc_vsync_settings.h` persists only `vsync` in runtime.conf using the
+existing atomic, exFAT-compatible settings writer, then publishes an atomic live
+value. Startup reads TSFP_VSYNC/config once; successful in-game Apply supersedes
+the startup override. Unknown keys, frame-rate and VRR preferences survive.
+The shared RHI suppresses its unsynchronized VRR path while V-Sync is On without
+rewriting VRR. Vulkan's existing interval change recreates its swap chain in FIFO;
+D3D11 uses interval1 without ALLOW_TEARING. Native/legacy GL observe interval
+changes on the context-owning thread. No monitor-refresh or guest-clock change.
+Launcher Settings > Display uses the same key; its choice applies next launch.
+A driver/compositor can still govern effective presentation. V-Sync can limit
+actual FPS to monitor refresh and add latency.
+
+Tests: test_vsync.py covers saved/live failures, production present wiring and
+a real WARP DXGI swap chain at each FPS preference, including resize and tearing
+flags. The production GL swap adapter is exercised with a fake driver for
+context changes and bounded failures. test_fov_settings.py covers staging/Back/failed-batch rollback. Launcher
+shared UI checks save/reopen/Cancel. Patch3040 must follow the final config/HUD
+patches; the loader and its order regression enforce that dependency.
+Physical tearing/gameplay checks and native Mac/Linux GPU acceptance are separate from CPU/DXGI fixture results.
+
 The optional Fidelity Comparison controls were removed; normal display settings
 and saved preferences apply. [Independent sun repair](fidelity-comparison.md).
 
@@ -170,3 +197,6 @@ tutorial_layout. Windows supported build and26 layout/read-scope/icon tests pass
 Isolated1280x720 and2560x720 Story captures verify native controller glyphs,
 common column centres, row gaps and stable panel height. Physical-device input
 selection retains its existing path; native Mac/Linux visual checks pending.
+
+Linux CI runs the V-Sync contracts after test-rhi-linux.py prepares and patches
+the runtime; the earlier SDK-isolation group intentionally runs without it.

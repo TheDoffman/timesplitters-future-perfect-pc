@@ -1,3 +1,6 @@
+V-Sync: shared Display checkbox/GameSettings.VSync persists runtime.conf `vsync`;
+Save/Cancel, draft tracking and transactions are shared by WPF/Avalonia. FPS/VRR
+choices remain independent. See [Video Options](video-options.md#optional-v-sync-2026-11-17).
 Live game Console: shared ConsolePage.cs tails the validated current/last GameSessions log pair, with bounded UTF-8 reads, pause, clear-view, error filtering and auto-scroll. Both hosts expose a single Tools & Logs navigation entry, with Repair / Verify, System & Reports and Console tabs in MaintenanceArea. ConsolePage uses embedded layout (no duplicate heading/padding), survives tab switching, and remains available during gameplay. Windows Refresh enables RepairNav while gameMonitoring is active; MonitorGame refreshes navigation on entry/exit, while maintenance actions retain busy/game guards; capture pipes remain independently drained. Windows writes and native Drain flush promptly. Native capture retains its existing 4 MiB per-stream limit. Shared UI tests exercise live appends, split UTF-8, truncation, bounds and session replacement. Preview: --render-console-preview <png>. Native Linux compilation verified on Windows; native runtime visual acceptance pending.
 
 [Sync telemetry](network-sync-telemetry.md).

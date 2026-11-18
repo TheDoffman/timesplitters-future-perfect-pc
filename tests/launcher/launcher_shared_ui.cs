@@ -195,6 +195,25 @@ public static class LauncherSharedUiChecks
                     Need(Find<CheckBox>(reopened.View,"AmbientOcclusion").IsChecked==enabled && Find<CheckBox>(reopened.View,"FpsPingCounter").IsChecked==enabled,"Toggles not restored");
                 }
             });
+
+            Test("V-Sync saves independently of frame rate and variable refresh",()=>{
+                string folder=Path.Combine(root,"vsync-controls");Directory.CreateDirectory(folder);
+                var original=GameSettings.Load(folder,null);
+                Need(!original.VSync,"Fresh installations must retain unsynchronized gameplay");
+                foreach(bool value in new[]{true,false}) {
+                    var page=new SettingsPage(new ResourceDictionary(),folder,true);
+                    Find<CheckBox>(page.View,"VSync").IsChecked=value;
+                    Need(Find<Button>(page.View,"SettingsSaveButton").IsEnabled,"V-Sync edit not dirty");
+                    Click(Find<Button>(page.View,"SettingsSaveButton"));
+                    var saved=GameSettings.Load(folder,null);
+                    Need(saved.VSync==value && saved.NativeFps==original.NativeFps && saved.Vrr==original.Vrr,"V-Sync changed another timing setting");
+                    var reopened=new SettingsPage(new ResourceDictionary(),folder,true);
+                    Need(Find<CheckBox>(reopened.View,"VSync").IsChecked==value,"V-Sync checkbox not restored");
+                    Find<CheckBox>(reopened.View,"VSync").IsChecked=!value;
+                    Click(Find<Button>(reopened.View,"SettingsCancelButton"));
+                    Need(GameSettings.Load(folder,null).VSync==value,"Cancel saved V-Sync");
+                }
+            });
             SaveBackupChecks.Run(root,Test);
             Test("complete language packs save, cancel, launch and restore English",()=>{
                 string folder=Path.Combine(root,"languages");Directory.CreateDirectory(folder);
