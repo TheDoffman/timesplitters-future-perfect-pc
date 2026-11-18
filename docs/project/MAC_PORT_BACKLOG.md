@@ -1,3 +1,7 @@
+Tools & Logs consolidation (2026-11-18): shared MaintenanceArea now hosts the live Console alongside Repair / Verify and Diagnostics; NativeMaintenance receives the same embedded ConsolePage. Native runtime navigation/scroll acceptance pending.
+
+Launcher Console (2026-11-18): shared UI/model implemented; Linux Avalonia cross-build verified from Windows. Pending native Mac/Linux live-game polling, copy/selection, scroll and resize visual acceptance. Existing native 4 MiB capture limit preserved.
+
 Multiplayer guide/capture follow-up (2026-11-17, local after35751486):
 **Awaiting validation** under MAC-013 on native Mac/Linux. Shared
 src/interface/pc_multiplayer_menu.inc stops stale browser draws after a page

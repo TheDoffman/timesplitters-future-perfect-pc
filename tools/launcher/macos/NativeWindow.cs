@@ -64,7 +64,7 @@ namespace TimeSplitters.Launcher
             }catch(Exception ex){Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
             Activated+=(s,e)=>{if(newsPage!=null&&Find<Control>("NewsHost").IsVisible&&!busy)Run(newsPage.RefreshIssuesIfDue);};
             Closing+=(s,e)=>{if(!NativeStartup.HandingOff && (busy || gameRunning)){e.Cancel=true;Status("Wait for the operation or game to finish before closing the launcher.");}};
-            Closed+=(s,e)=>{issuesTimer?.Stop();newsPage?.Dispose();operation?.Cancel();installationLock?.Dispose();client.Dispose();};
+            Closed+=(s,e)=>{consolePage?.Dispose();issuesTimer?.Stop();newsPage?.Dispose();operation?.Cancel();installationLock?.Dispose();client.Dispose();};
         }
         T Find<T>(string name) where T:Control { return this.FindControl<T>(name)??throw new InvalidOperationException("Missing launcher control: "+name); }
         void Click(string name,Action action){Find<Button>(name).Click+=(s,e)=>{try{action();}catch(Exception ex){Status(ex.Message);}};}
@@ -76,6 +76,8 @@ namespace TimeSplitters.Launcher
         bool Preview=>SelectedGameChannel!="stable";
         void SetChannels(Release[] releases,string selected)
         {channelPicker.SetReleases(releases,selected);}
+        ConsolePage consolePage;
+        void ShowConsole(){Maintenance();maintenance.SelectConsole();}
         void Page(string name){
             if(name!="SettingsHost"&&settings!=null)settings.DismissPrompt();
             foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost"),("SavesNav","SavesHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
@@ -189,7 +191,7 @@ namespace TimeSplitters.Launcher
         NativeMaintenance maintenance;
         void Maintenance(bool diagnostics=false)
         {
-            if(maintenance==null){maintenance=new NativeMaintenance(root,this);Find<ContentControl>("MaintenanceHost").Content=maintenance.View;}
+            if(maintenance==null){consolePage=new ConsolePage(root,render,true);maintenance=new NativeMaintenance(root,this,consolePage);Find<ContentControl>("MaintenanceHost").Content=maintenance.View;}
             maintenance.Select(diagnostics);Page("MaintenanceHost");
         }
         internal async Task Maintain(Func<CancellationToken,Task> action)
@@ -247,6 +249,7 @@ namespace TimeSplitters.Launcher
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
             if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>SelectedGameChannel);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
+            if(mode.Contains("console"))ShowConsole();
             if(mode.Contains("game-data"))Find<Expander>("GameDataExpander").IsExpanded=true;
             if(mode.Contains("download")){
                 var snapshot=new TransferSnapshot{Phase="Downloading",Bytes=(long)(22.2*1048576),Total=(long)(84.5*1048576),BytesPerSecond=1.7*1048576};
