@@ -1,5 +1,5 @@
 Bound receiver worker and Windows lifetime preparation (2026-11-18; source
-commit follows; not deployed): new worker control is separate from the strict
+ed0f03e8; not deployed): new worker control is separate from the strict
 receiver pool and pins job/pool identity, exact receiver policy, public recipient,
 origin/root and deadline. Receiver policy hash is checked before database recovery,
 retention or network work. Durable bounded health/lease records running, healthy,
@@ -18,10 +18,23 @@ This is process lifetime control, not a privilege sandbox.
 
 Windows worker cases passed seven initial checks and a separate actual os._exit99
 recovery case; the latter selection plus CI scope passed178 in24.02s. Three
-actual Windows job lifetime cases pass. Expanded receiver/transport/ACL rerun and
-Linux confirmation are pending below. The first ACL mutation fixture used module
-autoload unavailable in Python's PowerShell environment; it now uses .NET file
-security directly and reruns, without changing the ACL verifier.
+actual Windows job lifetime cases pass. Final Windows ACL/job/receiver/transport
+selection passes30 in410.22s. Native Linux/root affected worker/receiver/producer/
+transport/export/archive/cipher/CI selection passes287 with9 Windows-only skips
+in6.76s at the same source. The first ACL mutation fixture used module autoload
+unavailable in Python's PowerShell environment; the .NET file-security fixture
+now passes without changing the ACL verifier. Context/compile/whitespace pass.
+
+A fresh dedicated Windows CLI worker actually receives the existing Mac
+read-only legacy fixed-bundle SSH fixture under its job containment: exit0,
+health ok and one verified complete copy,1070107 cipher bytes. Cipher SHA256:
+296a50aef09fcd8f7137d92343b47defe25ad77065bda242047d984d52ee4ca0.
+This is disposable fixture data, not production backup/recipient custody, a new
+producer-mode SSH proof or a scheduled-task run. Windows Task Scheduler COM
+connection/root access is confirmed read-only; no task/folder was registered.
+Source inventory identifies15 operator entry/module files and approximately
+48MiB of existing interpreter/stdlib/crypto payload before packaging/licenses;
+no frozen runtime was created by that inventory.
 
 Frozen independent operator runtime, OS task registration, production recipient
 custody, Mac deployment and unattended backup/restore/boot acceptance remain
