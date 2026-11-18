@@ -80,6 +80,9 @@ lease and encrypted two-file export; they do not open the plaintext source or
 private journal. Standalone binary sender commands have a30-minute hard process
 watchdog, including failure/teardown, so a stalled client cannot hold the lease
 forever. The receiver still requires full transfer/hash checks and zero sender exit.
+The producer test stalls a real child in its stdout pipe, shortens only the test
+watchdog, then checks exit124 and reacquires its released read lease. Legacy and
+producer-kind bindings share the strict fixed SSH argument tests.
 
 Operator entry `tools/mods/hosting/backup-producer.py init|tick|status` takes
 `--pool PRIVATE_EXPORT_CACHE --recipient-record PRIVATE_PUBLIC_JSON --origin

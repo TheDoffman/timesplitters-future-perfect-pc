@@ -238,3 +238,32 @@ def test_unchanged_snapshot_remains_stale_and_future_snapshot_refuses(host):
     advance(host)
     with pytest.raises(ModError, match='future'):
         producer.run(host.pool, host.public, ORIGIN, PIN, clock=lambda: host.clock[0] - 1)
+
+
+def test_stalled_binary_sender_watchdog_releases_its_read_lease(host):
+    tick(host)
+    record = host.root / 'watchdog-public.json'
+    record.write_bytes(encode(host.public))
+    record.chmod(0o600)
+    entry = Path(__file__).resolve().parents[2] / 'tools/mods/hosting/backup-transfer.py'
+    code = """import importlib.util,sys
+spec=importlib.util.spec_from_file_location('transfer',sys.argv[1]);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+module.transport.MAX_SECONDS=1
+sys.argv=[sys.argv[1]]+sys.argv[2:]
+raise SystemExit(module.main())
+"""
+    command = [sys.executable, '-B', '-c', code, str(entry), 'send-current', '--producer', str(host.pool),
+               '--recipient-record', str(record), '--origin', ORIGIN, '--trusted-root-sha256', PIN]
+    child = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        # Intentionally never drain stdout: more than one pipe of ciphertext
+        # blocks the sender inside write/flush, not a cooperative Python loop.
+        assert child.wait(timeout=10) == 124
+        with producer.lease(host.pool) as access:
+            assert access.exclusive()
+    finally:
+        if child.poll() is None:
+            child.kill()
+            child.wait(timeout=5)
+        child.stdout.close()
+        child.stderr.close()

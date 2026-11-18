@@ -14,6 +14,7 @@ import mod_backup_transport as transport
 import mod_backup_exports as exports
 from mod_package import ModError
 from mod_trust import encode
+import mod_backup_receiver as receiver
 from test_backup_exports import case, ORIGIN, PIN
 
 
@@ -98,3 +99,14 @@ def test_operator_cli_send_has_only_binary_stdout_and_generic_failures(case):
                             stdin=subprocess.DEVNULL, capture_output=True, timeout=30)
     assert result.returncode == 2 and result.stdout == b''
     assert b'/unexpected/private/path' not in result.stderr and b'Traceback' not in result.stderr
+
+
+def test_receiver_accepts_legacy_and_producer_source_bindings_but_rejects_unknown_kind(case):
+    remote = dict(host='fixture-mac', python='/python', entry='/entry', bundle='/source', record='/record')
+    policy = dict(schema=1, type=receiver.TYPE, pool_id='a' * 32, recipient=case.public,
+                  remote=remote, keep=1, interval=86400, maximum_bytes=exports.cipher.MAX_WIRE)
+    receiver.check_policy(policy, case.public, ORIGIN, PIN)
+    receiver.check_policy(dict(policy, remote=dict(remote, kind='producer')), case.public, ORIGIN, PIN)
+    for kind in ('unknown', True, None):
+        with pytest.raises(ModError):
+            receiver.check_policy(dict(policy, remote=dict(remote, kind=kind)), case.public, ORIGIN, PIN)
