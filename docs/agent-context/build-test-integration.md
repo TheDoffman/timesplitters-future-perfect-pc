@@ -25,6 +25,9 @@ test_reboot_observation_lease.py exercises original-history/boot preservation,
 global lease exclusion, explicit one-append metadata promotion, refused upgrade
 events, changed selection/boot and new-only/existing-only constructor races.
 Observation leases do not enable operational cross-boot recovery.
+test_upgrade_context.py is registered explicitly for native CI and verifies
+post-reboot metadata reads, exact fresh factory matching, missing/foreign context
+preservation and refusal of ordinary reconstruction, sealing or directory creation.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.

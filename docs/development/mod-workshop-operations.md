@@ -63,6 +63,16 @@ history that vanished after inventory, and new-only constructors cannot adopt a
 file that appeared after inventory. This metadata phase does not yet permit
 operational reboot takeover or expose a reboot CLI.
 
+`read_reboot_context` validates the original Root700/600 context through that
+observation lease, retaining its original binding, plan hash, private baseline,
+routing and exact fresh factory comparisons. It returns hash-bound historical
+metadata labelled `original_observations`, not executable job commands or an
+operational context. Missing, foreign or changed contexts are preserved/refused.
+This reader cannot seal/adopt context, create directories or invoke private/live
+preflight. Ordinary reconstruction and every service-effect boot guard remain
+strictly same-boot. The old metadata plus a fresh job snapshot are inputs for
+future explicit takeover, not permission to continue effects after a restart.
+
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
 requires `--host-release` with an exact installed identity. The newly verified

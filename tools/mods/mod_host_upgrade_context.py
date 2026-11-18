@@ -31,15 +31,23 @@ def preflight_digest(observed,entries,routing,plan,private):
 def _binding(journal):return {key:journal.base[key] for key in BINDING}
 
 
-def _checked(value,journal,fresh):
+def _authority(journal,*,observation=False):
     import mod_host_cutover as cutover
     import mod_host_migration as migration
+    current=migration.boot_identity()
+    require(type(observation) is bool and os.geteuid()==cutover.ROOT_UID
+            and ((observation and journal.observation_boot==current and current!=journal.base['boot_id'])
+                 or (not observation and journal.observation_boot is None and journal.base['boot_id']==current)),
+            'Recovery context requires its exact Root boot authority')
+    journal.state()
+
+
+def _checked(value,journal,fresh,*,observation=False):
+    import mod_host_cutover as cutover
     import mod_host_upgrade_process as process
     from mod_host_cutover_journal import wire
     base=journal.base
-    require(os.geteuid()==cutover.ROOT_UID and base['boot_id']==migration.boot_identity(),
-            'Recovery context requires the original Root boot authority')
-    journal.state()
+    _authority(journal,observation=observation)
     require(isinstance(value,dict) and set(value)=={'schema','producer','binding','plan','private','routing','observed','jobs','candidate_jobs'}
             and type(value['schema']) is int and value['schema']==1 and value['producer']==PRODUCER
             and value['binding']==_binding(journal) and value['routing']==base['routing']
@@ -85,12 +93,11 @@ def _checked(value,journal,fresh):
     return value
 
 
-def _directory(journal,*,create=False):
+def _directory(journal,*,create=False,observation=False):
     import mod_host_cutover as cutover
-    from mod_host_migration import boot_identity
-    require(os.geteuid()==cutover.ROOT_UID and journal.base['boot_id']==boot_identity(),
-            'Upgrade context storage requires same-boot Root authority')
-    journal.state();folder=cutover.ROOT/'upgrade-contexts'
+    _authority(journal,observation=observation)
+    require(not observation or not create,'Reboot observation cannot create recovery context')
+    folder=cutover.ROOT/'upgrade-contexts'
     if create:
         parent=cutover.protected_directory(cutover.ROOT)
         try:
@@ -150,23 +157,42 @@ def seal(journal,context,*,resume=False):
     return hashlib.sha256(data).hexdigest()
 
 
+def _read_context(journal,fresh,*,observation=False):
+    import mod_host_cutover as cutover
+    from mod_host_cutover_journal import wire
+    folder,fd,_=_directory(journal,observation=observation)
+    try:
+        data,identity=cutover.protected_bytes(folder/(journal.base['nonce']+'.json'),0o600,MAX_BYTES)
+        value=read_json(data);require(data==wire(value),'Preserving noncanonical recovery context')
+        _checked(value,journal,fresh,observation=observation);_visible(folder,fd);journal.state()
+        need,stamp=cutover.protected_bytes(folder/(journal.base['nonce']+'.json'),0o600,MAX_BYTES)
+        require(need==data and stamp==identity,'Recovery context changed while reconstructing')
+    finally:os.close(fd)
+    return value,hashlib.sha256(data).hexdigest()
+
+
+def read_reboot_context(journal,fresh):
+    """Read original metadata under the observation lease, without OS authority.
+
+    This is not an operational context: old process observations retain their
+    explicit original label. It cannot create/adopt a missing context, execute
+    stored commands, rerun private preflight or bypass ordinary boot guards.
+    """
+    value,fingerprint=_read_context(journal,fresh,observation=True)
+    return dict(schema=1,phase='reboot-context-observed',context_sha256=fingerprint,
+        original_boot=journal.base['boot_id'],boot_id=journal.observation_boot,
+        plan=value['plan'],private_baseline=value['private'],routing=value['routing'],
+        original_observations=value['observed'],operational_authority=False)
+
+
 def reconstruct(journal,fresh):
     """Combine historical metadata with freshly verified closures/factories.
 
     This neither re-runs private preflight against changed configuration nor
     turns historical process observations into evidence of current OS state.
     """
-    import mod_host_cutover as cutover
-    from mod_host_cutover_journal import wire
     from mod_host_upgrade_coordinator import checked_context
-    folder,fd,_=_directory(journal)
-    try:
-        data,identity=cutover.protected_bytes(folder/(journal.base['nonce']+'.json'),0o600,MAX_BYTES)
-        value=read_json(data);require(data==wire(value),'Preserving noncanonical recovery context')
-        _checked(value,journal,fresh);_visible(folder,fd);journal.state()
-        need,stamp=cutover.protected_bytes(folder/(journal.base['nonce']+'.json'),0o600,MAX_BYTES)
-        require(need==data and stamp==identity,'Recovery context changed while reconstructing')
-    finally:os.close(fd)
+    value,_=_read_context(journal,fresh)
     report={key:journal.base[key] for key in ('before','after','uid','plan_sha256','preflight_sha256','backup_identity','backup_base_release')}
     report['phase']='historical-upgrade-context-reconstructed'
     context=dict(fresh,plan=value['plan'],observed=value['observed'],routing=value['routing'],

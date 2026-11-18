@@ -69,6 +69,41 @@ def test_exact_context_survives_lease_reopen_without_private_inspection_or_store
         assert item['path'].read_bytes()==before
 
 
+@pytest.mark.parametrize('fault',[None,'missing-context','changed-factory','boolean-factory','foreign-binding'])
+def test_reboot_reader_preserves_original_context_without_operational_reconstruction(saved_inputs,monkeypatch,fault):
+    item=saved_inputs
+    with storage.transaction(**item['arguments']) as journal:
+        contexts.seal(journal,item['context'])
+        journal.record('baseline-private-verified',data=item['context']['private_baseline'])
+    original=item['path'].read_bytes();fresh=dict(item['fresh'])
+    monkeypatch.setattr(storage,'boot_identity',lambda:'e'*64)
+    monkeypatch.setattr(migration,'boot_identity',lambda:'e'*64)
+    if fault=='missing-context':item['path'].rename(cutover.ROOT/'preserved-context')
+    elif fault in ('changed-factory','boolean-factory'):
+        import copy
+        fresh['candidate_entries']=copy.deepcopy(fresh['candidate_entries'])
+        if fault=='changed-factory':fresh['candidate_entries'][0][1]['ProgramArguments'][0]='/foreign/python'
+        else:fresh['candidate_entries'][0][1]['KeepAlive']=1
+    elif fault=='foreign-binding':
+        value=json.loads(original);value['binding']['boot_id']='d'*64
+        item['path'].write_bytes(storage.wire(value));item['path'].chmod(0o600)
+    with storage.reboot_observation_lease('c'*64,'a'*64,'b'*64,600,'a'*64,'f'*64,clock=lambda:1000000000) as journal:
+        current=journal.current
+        if fault:
+            with pytest.raises((ModError,OSError)):contexts.read_reboot_context(journal,fresh)
+        else:
+            observed=contexts.read_reboot_context(journal,fresh)
+            assert observed['original_boot']=='f'*64 and observed['boot_id']=='e'*64
+            assert observed['operational_authority'] is False and observed['plan']==item['context']['plan']
+            assert observed['original_observations']==item['context']['observed']
+            assert not {'observed','report','operator','command'} & observed.keys()
+        with pytest.raises(ModError):contexts.reconstruct(journal,fresh)
+        with pytest.raises(ModError):contexts.seal(journal,item['context'],resume=True)
+        with pytest.raises(ModError):contexts._directory(journal,create=True,observation=True)
+        assert journal.current==current
+    if fault not in ('missing-context','foreign-binding'):assert item['path'].read_bytes()==original
+
+
 def test_separate_process_reconstructs_metadata_using_new_factory_objects(saved_inputs):
     item=saved_inputs
     with storage.transaction(**item['arguments']) as journal:contexts.seal(journal,item['context'])

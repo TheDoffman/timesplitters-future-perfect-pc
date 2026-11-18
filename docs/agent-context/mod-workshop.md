@@ -1,5 +1,5 @@
 SDK: ../development/mod-creator-tools.md; ops: ../development/mod-workshop-operations.md.
-Reboot observation/metadata lease: ops; operational takeover pending.
+Reboot lease/observer/context: ops; operational takeover pending.
 register-installed-host-mac.py derives9 protected jobs: staging bootstrap,
 source-pinned private readiness and7 restarts precede boot-file installation.
 601 repair passes private checks,9 jobs and post-seal verification (STATUS).
