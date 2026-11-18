@@ -1,5 +1,5 @@
 Native frozen Windows receiver and disposable scheduler acceptance (2026-11-18;
-frozen runtime sourceeb2afb55, corrected management source follows): new private
+frozen runtime sourceeb2afb55, corrected management sourceab8b5413): new private
 runtime preparation succeeds with827 files/48198692 bytes, including dependency
 licenses. Manifest SHA2566ad56ffafccfcefb8c2d60c8d426ee7d0636fa69bf0cea432bc8e7df230e7058.
 An actual copied interpreter runs-I-S-B from unrelated CWD with invalid
@@ -26,8 +26,9 @@ normalization corrections are separate source (next commit), so this is not a
 final same-source production release or an unattended/physical reboot proof.
 
 Final Windows manifest/schedule/native/CI scope checks pass201 in8.47s after
-the CI-account fixture adjustment. Linux at sourceeb2afb55
-passes309 with9 Windows-only skips in6.14s; correction confirmation follows below.
+the CI-account fixture adjustment. Native Linux at corrected sourceab8b5413
+passes309 with11 Windows-only skips in6.12s; the initialeb2afb55 selection passed
+309 with9 Windows-only skips in6.14s before two native Windows checks were added.
 No gameplay rebuild is needed for these operator-only changes. Mac read-only
 probe now shows118980KiB free; original sudo29803/zsh29800 with matching Nov16
 birth remain live. No Mac source writer, disk-floor reduction, personal file
