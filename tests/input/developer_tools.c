@@ -228,7 +228,21 @@ int main(void) {
     click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(pc_developer_video_take(&request)&&request.action==VIDEO_REVERT);
     video.completed=request.serial;video.preview=0;pc_developer_video_publish(&video);paint();assert(!sidebar_video_dirty());
     key(27);click(UI_GROUP,15,0);
+    pc_developer_get(&s);assert(!s.hide_viewmodel);
+    click(UI_ACTION,SETTINGS,6);assert(drawn("Show first-person viewmodel"));
+    pc_developer_get(&s);assert(s.hide_viewmodel&&!s.freecam);
+    assert(!sidebar_video_dirty()); /* Live session switch, independent of video drafts. */
+    pc_developer_close();key('N');pc_developer_get(&s);assert(s.freecam&&s.hide_viewmodel);
+    key('N');pc_developer_get(&s);assert(!s.freecam&&s.hide_viewmodel);
+    pc_developer_toggle();
+    click(UI_ACTION,SETTINGS,6);pc_developer_get(&s);assert(!s.hide_viewmodel);
+    click(UI_ACTION,SETTINGS,6);
+    assert(pc_developer_set_enabled(0));pc_developer_get(&s);assert(!s.hide_viewmodel);
+    assert(pc_developer_set_enabled(1));pc_developer_toggle();
+    click(UI_ACTION,SETTINGS,6);
     pc_developer_match_policy(1,0);
+    pc_developer_get(&s);assert(!s.hide_viewmodel);
+    selected=6;activate(0);pc_developer_get(&s);assert(!s.hide_viewmodel);
     click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
     pc_developer_match_policy(1,0);pc_developer_publish(1,0,1);
     assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible()&&page==SETTINGS);

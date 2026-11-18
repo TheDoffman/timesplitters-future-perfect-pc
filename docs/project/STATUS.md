@@ -1,3 +1,26 @@
+## Developer Tools viewmodel visibility (2026-11-18)
+
+Local uncommitted `dev-tools-settings`, base main32706dace. Windows x64,
+MSVC 19.42 / Visual Studio 2022, common D3D11 frontend. Added the session-only
+Show first-person viewmodel toggle under Settings > Video Settings > View & HUD.
+Default stays visible; freecam omission is independent. Existing owned-viewport
+and multiplayer Tools guards remain in effect. No settings/save files are added.
+
+All nine `tests/input/test_developer_tools.py` cases pass, including production
+sidebar clicks and guest draw ownership/fallback checks. Complete patch-stack
+validation and repository-context checks pass. Supported `tsfp.ps1 -Action Build`
+compiled/linked Release and completed all standard build tests, executable
+identity sealing and crash-symbol archival. The first sandboxed MSBuild attempt
+stalled before compilation and was stopped; retry outside the sandbox completed.
+PowerShell's outer redirected wrapper reported exit1 from normal native stderr;
+the log reaches the successful build-test and matching-symbol completion markers.
+
+No live-game visual validation was run. Native Mac/Linux build, weapons/bare-hands
+visibility, firing/reload and freecam transition acceptance remain unverified;
+all use the shared implementation with no new platform adapter. Personal saves
+and settings were preserved. Nothing committed or pushed; other-device sync is
+unverified. See the [platform handoff](MAC_PORT_BACKLOG.md).
+
 ## V-Sync playable Windows test build (2026-11-18)
 
 Local feature/vsync at main9bdab5f5 plus its staged changes. Fresh supported-US

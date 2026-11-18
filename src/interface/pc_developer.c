@@ -62,6 +62,7 @@ void pc_developer_match_policy(int online,int allowed) {
     if(online&&!allowed) {
         if(state.freecam)state.hide_hud=0;
         state.noclip=state.freecam=0;
+        state.hide_viewmodel=0;
         state.god=state.infinite_ammo=0;state.speed=1.;
     }
     ReleaseSRWLockExclusive(&dev_lock);
@@ -88,6 +89,7 @@ int pc_developer_set_enabled(int enabled) {
         pc_developer_close();
         AcquireSRWLockExclusive(&dev_lock);
         state.hide_hud=state.hide_watermark=state.noclip=state.freecam=state.god=state.infinite_ammo=0;
+        state.hide_viewmodel=0;
         state.speed=state.manual_speed=1.;ReleaseSRWLockExclusive(&dev_lock);
     }
     return 1;
@@ -137,6 +139,7 @@ void pc_developer_publish(int play,int campaign,int online) {
     if(online&&!network)match_tools_allowed=0;
     gameplay=play;story=campaign;network=online;
     if(!play || (online&&!match_tools_allowed) || !enabled) {if(state.freecam)state.hide_hud=0;state.noclip=state.freecam=0;}
+    if((online&&!match_tools_allowed)||!enabled)state.hide_viewmodel=0;
     if(online||!enabled){state.speed=1.;state.god=state.infinite_ammo=0;}
     else if(!play)state.speed=movie_active?state.manual_speed:1.;
     ReleaseSRWLockExclusive(&dev_lock);
@@ -264,6 +267,10 @@ static void activate(int direction) {
         case 3:pc_controls_developer_fullscreen();break;
         case 4:AcquireSRWLockExclusive(&dev_lock);state.hide_hud=!state.hide_hud;ReleaseSRWLockExclusive(&dev_lock);break;
         case 5:AcquireSRWLockExclusive(&dev_lock);state.hide_watermark=!state.hide_watermark;ReleaseSRWLockExclusive(&dev_lock);break;
+        case 6:
+            AcquireSRWLockExclusive(&dev_lock);
+            if(gameplay&&(!network||match_tools_allowed))state.hide_viewmodel=!state.hide_viewmodel;
+            ReleaseSRWLockExclusive(&dev_lock);break;
         default:navigate(HOME);break;
         }
     } else if(page==KEYBOARD) {

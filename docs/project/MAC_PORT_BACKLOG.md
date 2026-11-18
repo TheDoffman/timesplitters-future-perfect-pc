@@ -1,3 +1,13 @@
+Developer viewmodel visibility (2026-11-18, uncommitted dev-tools-settings):
+**Awaiting validation** on native Mac/Linux. The shared Developer Tools View & HUD
+switch uses `src/interface/pc_video_sidebar_ui.inc`, `pc_developer.c`/`.h`
+and the existing `pc_developer_guest.inc` draw gate on all hosts. No new OS
+adapter is required; native builds already include this hook. Default remains
+visible; manual hiding is independent of freecam and requires match Tools
+permission. Windows input/guest fixtures pass. Native acceptance: toggle with
+weapons/bare hands, enter/leave freecam, verify firing/reload continue, restore
+visibility and disable Tools. See [validation](STATUS.md).
+
 Tools & Logs consolidation (2026-11-18): shared MaintenanceArea now hosts the live Console alongside Repair / Verify and Diagnostics; NativeMaintenance receives the same embedded ConsolePage. Native runtime navigation/scroll acceptance pending.
 
 Launcher Console (2026-11-18): shared UI/model implemented; Linux Avalonia cross-build verified from Windows. Pending native Mac/Linux live-game polling, copy/selection, scroll and resize visual acceptance. Existing native 4 MiB capture limit preserved.

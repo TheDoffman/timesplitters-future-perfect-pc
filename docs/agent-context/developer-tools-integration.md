@@ -1,5 +1,21 @@
 # Developer Tools integration notes
 
+## Viewmodel visibility
+
+Settings > Video Settings > View & HUD includes a live, session-only
+"Show first-person viewmodel" switch. `PcDeveloperState.hide_viewmodel`
+defaults off and the existing `pc_developer_viewmodel_draw` hook omits only
+the owned viewport's weapons/hands; weapon updates remain native. Freecam
+still hides them independently. The switch requires gameplay and multiplayer
+Tools permission; permission removal or Tools disable clears it. Shared source
+serves Windows, Mac and Linux without a new patch or generated-code change.
+
+`tests/input/test_developer_tools.py` covers the live switch, independent
+freecam/manual visibility, Tools-disable and multiplayer-denial resets. Its
+guest fixture checks the actual shared draw gate, owned versus other viewports,
+invalid ownership and multiplayer guards. These extend the existing CI route;
+native Mac/Linux visual acceptance is separate.
+
 Current widget, video and host-policy contracts continue in [systems continuation](systems-continuation.md).
 The sections below retain the Developer Tools branch history while the owning
 guides also track newer main work. Older patch counts describe their revisions.

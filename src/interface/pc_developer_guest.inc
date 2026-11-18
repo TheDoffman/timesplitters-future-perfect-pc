@@ -98,11 +98,11 @@ void pc_developer_world_visibility(void)
     }
 }
 /* 1B9120 draws the three local viewport-room passes, including bare hands.
- * Scope the omission to this owned view; model/weapon update still runs. */
+ * Scope freecam/manual omission to this owned view; model/weapon update still runs. */
 void pc_developer_viewmodel_draw(void (*original)(void))
 {
     PcDeveloperState state;pc_developer_get(&state);
-    if(state.freecam&&developer_owned_actor(1)&&WORD_AT(0x7b0c7cu)==WORD_AT(0x7b0c48u))g_esp+=4u;
+    if((state.freecam||state.hide_viewmodel)&&developer_owned_actor(1)&&WORD_AT(0x7b0c7cu)==WORD_AT(0x7b0c48u))g_esp+=4u;
     else original();
 }
 /* First-person ownership can omit the local actor from colour submission.
