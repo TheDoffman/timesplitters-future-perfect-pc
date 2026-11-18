@@ -43,6 +43,48 @@ or other authenticated transfer, receiver retention, unattended scheduling,
 production key custody and an off-device restore drill still need integration
 and deployment. Component checks do not establish automatic backup operation.
 
+## Recipient-encrypted file staging
+
+`mod_backup_cipher.encrypt_file` and `decrypt_file` implement the bounded file
+layer for future off-device archives. They do not build/extract an archive,
+provision a host, transfer files or schedule copies. All paths must be private
+and owned by the caller (private NTFS ACLs on Windows,0700 parent/0600-compatible
+files on POSIX). Outputs are new-only. Linked/hardlinked/nonregular files,
+unexpected identities and insufficient expected-output space plus2GiB headroom
+are refused. Failure keeps private partial output for inspection; its existence
+is not completion and it must never be restored or adopted automatically.
+
+The version1 framing uses a canonical4KiB-bounded header with recipient/profile,
+plaintext length (up to8GiB), ephemeral public key,32-byte salt and8-byte nonce
+prefix. A fresh X25519 exchange feeds HKDF-SHA256 with a file-specific header
+binding. Each at-most1MiB AES-256-GCM chunk uses the prefix plus a unique32-bit
+big-endian counter; associated data binds domain/header/index/plain chunk length.
+The next counter authenticates an encrypted32-byte plaintext digest as a mandatory
+48-byte terminal frame, with a zero-length discriminator. Plaintext checksum is
+not exposed in the public header. Exact file size/terminal/trailing-byte checks
+refuse truncation or framing changes. See the primary [X25519/HKDF guidance](https://cryptography.io/en/stable/hazmat/primitives/asymmetric/x25519/)
+and [AEAD nonce/tag requirements](https://cryptography.io/en/46.0.0/hazmat/primitives/aead/)
+for the primitives; this application framing is described here.
+
+Encryption requires the already-verified plaintext size and SHA256 and rechecks
+content while reading. **Encryption does not authenticate who sent a backup:**
+any holder of the public recipient can create ciphertext. Decryption therefore
+requires a ciphertext SHA256 obtained independently through the future trusted
+transfer channel, not one supplied by an arbitrary encrypted file. That digest
+is checked before creating plaintext, and checked again over the actual bytes
+consumed during decryption to reject a valid-file swap after the first hash pass.
+Every chunk and the terminal digest must authenticate before success is returned.
+Private staged prefixes may remain after a late failure; no success receipt is
+returned. Returned plaintext hashes are local private metadata and must not be
+copied into a public transfer manifest.
+
+Windows path stat and held-file fstat report different ctime meanings; identity,
+size and mtime checks are used there, with the same mandatory content digests.
+POSIX also retains ctime checks. New-only private staging and the normal snapshot
+verification/recovery barrier remain required when archive integration is added.
+This layer has not been deployed and does not establish automated off-device
+backups or a production restore drill.
+
 ## Capture
 
 The repository and backup parent must already be owned by the current service

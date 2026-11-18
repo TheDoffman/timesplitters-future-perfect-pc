@@ -91,6 +91,15 @@ Windows cases use DPAPI/private NTFS ACLs, preserve existing/partial stores and
 refuse a different valid encrypted key or unknown member. Other hosts verify the
 portable format and refuse Windows-only import. No production recipient exists;
 archive encryption, transport, retention and scheduling are not implemented here.
+test_backup_cipher.py checks private new-only file encryption: empty/1MiB edges,
+tampered/reordered chunks and encrypted terminal digest, independent receipt
+before plaintext and actual consumed-byte hash after decryption, bad headers/
+keys/profile, private retained failure output, changing source and disk headroom.
+Windows stat/fstat ctime differ (creation versus change time); portable identity/
+mtime checks retain content-hash verification. No sender trust is inferred from
+recipient encryption. Archive building, export/transport and scheduling remain.
+Cipher fixtures canonicalize the host temporary directory before creation;
+Mac /var aliases remain refused by production private-path guards.
 Workshop: [host, backend, scanner, cleanup and worker checks](build-test-details.md).
 
 Epoch/GCC/dependency reuse: build-test-details.md.
