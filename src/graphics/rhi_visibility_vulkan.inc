@@ -48,8 +48,14 @@ static int v_occlusion_result(RhiOcclusion *q,uint64_t *samples) {
     if(vkGetSemaphoreCounterValue(V.dev,V.timeline,&completed)!=VK_SUCCESS)return -1;
     if(completed>V.completed)V.completed=completed;
     if(completed<q->serial)return 0;
-    if(q->count && vkGetQueryPoolResults(V.dev,q->pool,0,q->count,
-        q->count*sizeof(uint64_t),counts,sizeof(uint64_t),VK_QUERY_RESULT_64_BIT)!=VK_SUCCESS)return -1;
+    if(q->count) {
+        VkResult status=vkGetQueryPoolResults(V.dev,q->pool,0,q->count,
+            q->count*sizeof(uint64_t),counts,sizeof(uint64_t),VK_QUERY_RESULT_64_BIT);
+        /* Nonblocking host availability can still be pending. Retain the
+         * logical query for a later poll; never publish a partial sum. */
+        if(status==VK_NOT_READY)return 0;
+        if(status!=VK_SUCCESS)return -1;
+    }
     for(uint32_t i=0;i<q->count;i++) {
         if(UINT64_MAX-total<counts[i])return -1;
         total+=counts[i];

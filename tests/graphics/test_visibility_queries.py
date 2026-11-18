@@ -7,7 +7,7 @@ from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[2]
 
-@pytest.mark.parametrize('fixture', ['visibility_queries.c', 'visibility_queue.c', 'visibility_gl.c'])
+@pytest.mark.parametrize('fixture', ['visibility_queries.c', 'visibility_queue.c', 'visibility_gl.c', 'visibility_vulkan.c'])
 def test_visibility_adapters(tmp_path, fixture):
     compiler, env = native_compiler(tmp_path)
     source = ROOT / 'tests/graphics' / fixture

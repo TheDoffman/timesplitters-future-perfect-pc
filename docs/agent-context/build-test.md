@@ -1,4 +1,4 @@
-Query lifetime diagnostic: fidelity-comparison.md.
+Query pending/lifetime: fidelity-comparison.md.
 [Workshop/native/V-Sync test routes](build-test-integration.md).
 Reboot/IPC: build-test-integration.md; test_online_menu.py.
 Custody: test_backup_{recipient,custody}.py.

@@ -1,5 +1,5 @@
-Crash: ../development/native-crash-images.md.
-Worker/link/lease: mod-scripting.md; audio: ../development/mod-audio-scripting.md.
+Query pending: fidelity-comparison.md; crash: ../development/native-crash-images.md.
+Mods/audio: mod-scripting.md.
 
 
 [Sun/visibility repair](fidelity-comparison.md).

@@ -1,3 +1,25 @@
+Vulkan pending-query result correction (2026-11-18; source commit follows):
+a native fixture compiling the unchanged production Vulkan visibility include
+fails at the expected pending0 result after an explicit VK_NOT_READY, while its
+caller output remains unchanged. Previously every non-success code became-1.
+The corrected adapter returns0 for VK_NOT_READY, preserving scope/output until
+a later successful poll. Real device errors/overflow remain failures; zero is a
+valid completed sum, and no blocking wait or fabricated count is introduced.
+Final Windows native visibility/diagnostic/CI selection passes203 in1.63s,
+including the new real-include fixture and existing GL/cache/queue cases.
+
+The separate live Linux software-Vulkan control at source047eae3f completes
+four independent4096-cycle runs (16384 total) on llvmpipe LLVM20.1.2. Source SHA:
+b86c48cdfbe5dac160353cda417281504890de98cd392ebae1c264c750943a37;
+executable SHA c61cebefc4fa74c88a6224d26f09804e7354bb7eeddf80dc4df276790900e578.
+Only matching official Ubuntu libvulkan-dev1.3.275.0-1build1 was installed in WSL;
+its loader/driver versions and other packages were unchanged. Initial attempt
+stopped before output creation because development headers were absent.
+The unit/observation selection also passes198 on Linux in0.13s. This control
+validates the diagnostic workload, not Mac/game stability or the historical
+finishQueries cause. Native Mac diagnostic and full exact-source game acceptance
+remain pending; no user-Mac build/SDK writer, driver or service change occurred.
+
 Mac query-lifetime diagnostic preparation (2026-11-18; no driver/game change):
 read-only inspection identifies the primary SDK MoltenVK source asdb660224 from
 VERSIONS.txt. That immutable upstream source lacks query-pool ownership across

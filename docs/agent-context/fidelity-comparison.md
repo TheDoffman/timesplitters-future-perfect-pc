@@ -7,6 +7,22 @@ their normal behavior. The independent sun/glow and allocation fixes remain.
 Historical preset captures below establish the repair's original evidence,
 not a feature still present in the current build. New checks use normal settings.
 
+## Query availability contract
+
+The shared Vulkan adapter now maps `vkGetQueryPoolResults`'s `VK_NOT_READY` to
+pending0, retaining the logical scope for a later poll and preserving the caller's
+answer. It still maps real errors and aggregate overflow to-1, returns zero as a
+valid ready answer, and uses nonblocking64-bit retrieval. Timeline completion
+does not authorize treating a pending result as a failed visibility scope.
+The unchanged production adapter fails the deterministic native fixture at this
+pending-result assertion; the corrected adapter retries to the final exact sum.
+`visibility_vulkan.c` compiles the actual shared include against explicit API
+spies on each host and also checks partial writes, queue pending, device failure,
+zero/empty scopes, overflow, capacity exhaustion and serial-based retirement.
+This fixes an adapter result-mapping bug. It does not repair MoltenVK's separate
+callback ownership or establish that the historical game crash is fixed.
+[API semantics](https://docs.vulkan.org/refpages/latest/refpages/source/vkGetQueryPoolResults.html).
+
 ## Query lifetime crash investigation
 
 The retained mod/audio game crash PC is in MoltenVK's finishQueries completion
