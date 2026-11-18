@@ -13,7 +13,7 @@
 #endif
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x);exit(1);}}while(0)
 static unsigned original_calls;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 static uint32_t memory[0x800000/4],g_esp,g_eax;
 static uintptr_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
@@ -48,7 +48,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...){
 }
 #endif
 #include "network/pc_story_browser.inc"
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 static void picture(void){
     CHECK(WORD_AT(g_esp)==0x1cbfc4 && WORD_AT(g_esp+16)==expected_bitmap);
     ++original_calls;g_eax=0x1234;g_esp+=4;
@@ -76,7 +76,8 @@ static void draw(unsigned index,unsigned rule,unsigned scene,unsigned custom){
 static void match(void){++original_calls;}
 #endif
 int main(void){
-#ifdef _WIN32
+    CHECK(story_browser_preview(UINT32_MAX)==UINT32_MAX);
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     g_xbox_mem_offset=(uintptr_t)memory;WORD_AT(0x79094c)=101;
     for(unsigned i=0;i<13;i++)WORD_AT(0x4d1ac6+i*0x44)=0xffff;
     WORD_AT(0x4d1ac6+5*0x44)=44;WORD_AT(0x4d1ac2+5*0x44)=321;WORD_AT(0x4d1ad4+5*0x44)=957;
@@ -92,6 +93,13 @@ int main(void){
     WORD_AT(0x79094c)=2;draw(3,2,2,0);WORD_AT(0x79094c)=101;
     WORD_AT(0x4d1ad4)=0xffffffff;draw(3,2,2,0);
     CHECK(texture_loads==2 && names_drawn==2 && original_calls==9);
+    /* A mixed directory has no active Story session. Its scoped preview uses
+       the verified local mission, not a different connected match's mode. */
+    mode=PC_ONLINE_NONE;WORD_AT(0x4d1ad4)=958;
+    CHECK(story_browser_preview(0u)==UINT32_MAX);
+    draw(20,0,999,1);
+    CHECK(story_browser_preview(UINT32_MAX)==0u);
+    CHECK(texture_loads==3 && names_drawn==3 && original_calls==10);
 #else
     pc_story_browser_match(match);pc_story_browser_thumbnail(match);CHECK(original_calls==2);
 #endif

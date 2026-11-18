@@ -62,7 +62,7 @@ int32_t pc_character_ragdoll_clip(uint32_t e,int32_t c){(void)e;return c;}
 int main(void){
     uint8_t *ram=calloc(1,0x800000);assert(ram);g_xbox_mem_offset=(ptrdiff_t)ram;
     /* ORIGINAL_CONSTANTS */
-    MEM32(BODY+4)=MODEL;MEM32(MODEL)=BODY;MEM32(BODY+0x7c)=ACTOR;MEM32(ACTOR)=BODY;
+    MEM32(BODY+4)=MODEL;MEM32(MODEL)=BODY;MEM32(BODY+0x20)=8;MEM32(BODY+0x7c)=ACTOR;MEM32(ACTOR)=BODY;
     MEM32(MODEL+0xd4)=42;MEM32(MODEL+0x9c)=8184;MEM32(MODEL+0xa0)=108;
     MEM32(MODEL+0xd0)=18;MEMF(MODEL+0xc8)=.4f;MEMF(MODEL+0xcc)=.1f;
     MEMF(ACTOR+0xb08)=17.25f;

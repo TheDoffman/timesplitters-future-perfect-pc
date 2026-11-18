@@ -1,5 +1,13 @@
-Pause glass: index2730/2731 follows map/MSAA copy extensions; visibility3001
-is last; optional config3000 was removed. Exact-order fixture checks103 tail entries. See [capture evidence](pause-glass.md).
+Historical-upgrade fixtures exclude3010 capture and3020 join wrappers from the
+old subset because those need the later renderer/Story wrapper context; the
+Mac-only subset also predates3030 Story browser wrappers. Both
+fixtures still apply and verify the complete current stack during migration.
+The fixture apply helper includes the patch name in failures.
+
+Pause glass2730/2731 follows map/MSAA copy extensions; visibility3001 precedes
+the native multiplayer capture/join/browser extensions. Optional config3000
+was removed. The combined loader index and exact-order fixture retain both
+branches. See [capture evidence](pause-glass.md).
 
 Controller response investigations: [raw-input and original-decoder tests](controller-deadzones.md); distinguish host deadzone from the guest threshold. Patch2950 follows2940 in the maintained map.
 
@@ -510,3 +518,7 @@ Patch-order/historical upgrade fixtures include2960 after the late preset sample
 Hotfix0.6.1 integration retains upstream2955/2960 before2965/2970. The
 repository-context order fixture now includes both follow-ups; regenerate the
 Git-indexed patch map after staging their final bytes.
+
+Template parity follow-up: additive0261 follows0260 and retains the canonical
+register alias optimization from9ee19013 in old runtime consumers. Historical
+subsets omit it with0260; complete migrations install it. See [batch/header contracts](compiler-batching.md).

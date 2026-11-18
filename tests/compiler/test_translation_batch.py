@@ -233,6 +233,35 @@ def test_default_support_header_publication_and_missing_input_preservation(tmp_p
     assert (output/support.name).read_text()=='updated support'
 
 
+def test_split_body_bytes_preserves_exact_bodies_dispatch_and_execution(tmp_path,monkeypatch):
+    batch,_=fixture(tmp_path)
+    original=batch.translator.translate_function
+    def translate(address,info):
+        body=original(address,info)
+        return body+'/* '+('\u2603'*80)+' */\n' if address==0x1010 else body
+    batch.translator.translate_function=translate
+    kwargs=dict(chunk_size=1000,manual={0x1010},keep_bodies={0x1010:'guest_kept'})
+    baseline=tmp_path/'baseline';split=tmp_path/'split'
+    batch.translate_batch_split(list(batch.func_db.items()),baseline,**kwargs)
+    monkeypatch.setattr(own,'MAX_CHUNK_BODY_BYTES',160)
+    stats=batch.translate_batch_split(list(batch.func_db.items()),split,**kwargs)
+    assert stats['num_chunks']==3
+    marker='#include <math.h>\n\n'
+    payload=lambda p:p.read_text(encoding='utf-8').split(marker,1)[1]
+    assert payload(baseline/'recomp_0000.c')=='\n'.join(payload(p) for p in sorted(split.glob('recomp_0*.c')))
+    assert (baseline/'recomp_dispatch.c').read_bytes()==(split/'recomp_dispatch.c').read_bytes()
+    assert (baseline/'recomp_funcs.h').read_bytes()==(split/'recomp_funcs.h').read_bytes()
+    assert len(payload(split/'recomp_0001.c').encode('utf-8'))>160
+    harness=tmp_path/'bounded.c';harness.write_text('''#include "recomp_funcs.h"
+unsigned seen;uint32_t g_esp;
+void guest_manual(void){seen+=100;}void guest_wrapper(void){seen+=200;}
+void recomp_stub_missing(uint32_t address){(void)address;}
+int main(void){guest_a();guest_kept();guest_wrapped_gen();return seen!=51;}
+''',encoding='utf-8')
+    includes=[f'/I{split}'] if os.name=='nt' else ['-I',str(split)]
+    executable=_compile(tmp_path,harness,extra=(*includes,*sorted(split.glob('*.c'))))
+    assert subprocess.run([str(executable)],timeout=30).returncode==0
+
 def test_chunk_byte_budget_preserves_whole_functions(monkeypatch):
     monkeypatch.setattr(own,'MAX_CHUNK_BODY_BYTES',12)
     rows=[(i,str(i),body) for i,body in enumerate(['a'*7,'b'*7,'c'*20,'d'*4,'e'*4,'f'*4])]

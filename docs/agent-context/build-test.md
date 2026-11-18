@@ -1,17 +1,19 @@
-[Sticks](controller-deadzones.md). [Online](multiplayer-ui.md).
-[0.6.2 rollback](control-presets.md); [Tex](texture-preference.md).
-[Pads](video-options.md).
-[Visibility tests](fidelity-comparison.md); [batch bounds](independent.md).
+[Sync telemetry](network-sync-telemetry.md).
+[Pads](controller-deadzones.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
+[Actors](network-actor-lifetime.md).
+[Rollback](control-presets.md); [Tex](texture-preference.md).
+[JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
+[Arms](video-options.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
-Developer warnings: [launcher](launcher.md).
-[Save tests](multiplayer-exit.md#validation).
-[Icons](controls-options.md).
+Warnings: [launcher](launcher.md).
+[Save/checksum tests](multiplayer-exit.md#validation).
+
+[Online](multiplayer-ui.md); [sun](fidelity-comparison.md).
 [Effect depth](native-effect-depth.md).
 [Update tests](main-menu-update.md).
-[Weapon FOV](video-options.md#weapon-aperture).
-[HUD/MSAA tests](../development/graphics-options.md).
+[HUD/MSAA](../development/graphics-options.md).
 [SDL/input fixtures](linux-game.md).
 [Font/escape tests](audio-options.md).
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
@@ -25,11 +27,10 @@ Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
 Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
 `test_audio_output_gain.py`: mute/queue retention, Windows capture.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
-`test_controller_profile.py` executes native key/pad guards and the runtime key
-dispatcher: freecam neutralizes gameplay while retaining raw camera keys. Both
-host defines cover automatic/assigned pad blocking/resume and existing ownership,
-disconnect/focus/parser cases. It runs alongside Developer Tools flight/mouse
-coverage in runtime CI. Patch2630 follows2620.
+`test_controller_profile.py` runs native key/pad guards and dispatch: freecam
+neutralizes gameplay but retains raw camera keys. Both host defines cover
+automatic/assigned pad blocking/resume, ownership and disconnect/focus/parser.
+Runtime CI also covers Developer Tools flight/mouse. Patch2630 follows2620.
 
 `test_developer_tools.py` runs in runtime CI: sidebar tab/dock centers at
 1x/1.5x/2x, both docks, independent vertical scaling and retained painted extents
@@ -45,9 +46,9 @@ Discord release webhooks target #release-updates; #announcements holds team post
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
-Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
-`--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
-adapter but use the real host trap; hexadecimal additions need token boundaries.
+Exit: `test_online_menu.py`, `test_quit_menu.py`, `test_fov_settings.py`;
+native `--test`/`--online-self-test`. Clang Story fixtures use the Windows guest
+adapter with the real host trap; hexadecimal additions need token boundaries.
 
 Game0.6.0 bundles launcher1.6.0; publish the launcher first. Keep release gates:
 exact clean source on Windows/Mac/Linux, native/package/preservation checks,
@@ -63,7 +64,7 @@ self-tests use click/Escape capture, replacing retired F1. [Linux](linux-game.md
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[Build](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+[Chunking](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
@@ -1037,11 +1038,10 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 
 [2x tests](original-upscale.md).
 
-[Linux release/CI/POSIX](linux-game.md).
+[Linux CI](linux-game.md#ci-package-mirror).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 
-Players: controls-options.md.
 
 Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
 

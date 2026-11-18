@@ -1,3 +1,170 @@
+Multiplayer guide/capture follow-up (2026-11-17, local after35751486):
+**Awaiting validation** under MAC-013 on native Mac/Linux. Shared
+src/interface/pc_multiplayer_menu.inc stops stale browser draws after a page
+change, preserving the destination heading. No OS adapter change is needed;
+the player guide covers the common native menus. Windows regression/build and
+four actual menu captures pass; Mac/Linux build and browser-to-Create visual
+acceptance remain pending. See [evidence](STATUS.md) and
+[contracts](../agent-context/native-multiplayer-menu.md).
+
+Native multiplayer/main integration (2026-11-17, uncommitted): shared pause
+Settings and native multiplayer factory routes are composed; no host adapter
+change. Additive compiler patch0261 restores compatibility-template parity with
+the existing canonical register aliases; canonical guest behavior is unchanged.
+Windows compile/contract validation is recorded in STATUS. Native Mac/Linux
+build and gameplay acceptance remain pending.
+
+Lobby-name text sizing (2026-11-12, local aftercbd52cae): **Awaiting validation**
+on native Mac/Linux. Shared MP_CREATE field value/placeholder uses70% native
+scale; label, native field bounds and stored name are preserved. No OS adapter
+needed; Windows painter fixture/build checks cover shared source, native
+Mac/Linux visual review pending. See [evidence](STATUS.md).
+
+Online host warning/profile default (2026-11-12, local after main-sync a9340161): **Awaiting validation**
+on native Mac/Linux. Shared native completion displays private-server port-mapping
+readiness in the existing status bar, with exact missing ports and LAN/manual
+forwarding guidance. Create Lobby uses original local-profile accessors for the
+automatic name; accepted custom names persist. No new host adapter is required.
+Windows production fixtures/shared controller tests pass; native Mac/Linux build /
+visual acceptance remains pending. See [evidence](STATUS.md).
+
+Private-server Multiplayer return cleanup (2026-11-12, local after935e8d3d): **Awaiting validation**
+on native Mac/Linux. Shared mp_show(MP_NETWORK)/mp_root_build disconnect the
+companion, closing owned private directory/relay and UPnP mappings, then clear
+cached invitation state. Lobby/browser intermediate returns keep hosting alive.
+Existing macOS/Linux stop adapters need no new implementation. Windows native
+fixture and shared lifecycle checks cover the change; native Mac/Linux return /
+router acceptance pending. See [evidence](STATUS.md).
+
+UPnP router SOAP compatibility (2026-11-12, local afterff18665a): **Awaiting validation**
+on native Mac/Linux. Shared Gateway.call expands empty SOAP arguments so strict
+routers accept NewRemoteHost. Ownership-checked cleanup retries literal wildcard
+only for402 and preserves replaced/manual entries. Windows CR1000A physical
+create/query/delete verified for both hosting ports; Mac/Linux and WAN gameplay
+acceptance pending. No OS adapter change needed. See [evidence](STATUS.md).
+
+Private shared relay and owner UPnP (2026-11-12, local after3542601b): **Awaiting validation**
+on physical Mac/Linux and a supported router. Shared standard-library SSDP/IGD
+mapping opens private-directory TCP and shared-relay UDP together on Host a Server,
+renews/rechecks owned leases and cleans up on normal exit. Both mappings survive
+lobby leave; connected lobby hosts/guests use outbound relay connections. Existing
+manual mappings are retained; conflicts and unsupported routers leave manual /
+LAN hosting available. Guests and community-relayed lobbies never open mappings.
+No OS-specific adapter or dependency is needed. Windows simulated-router and
+isolated real TLS/UDP lifecycle tests pass; actual router/WAN and physical Mac /
+Linux validation remain pending. Automated host runners disable physical mapping.
+Older private directories retain direct-lobby UDP fallback. The private relay
+uses the existing authenticated wire protocol; community service is unchanged. See [evidence](STATUS.md).
+
+Original private-server ports (2026-11-11, local after03b6cc2c): **Awaiting validation**
+on physical Mac/Linux. Shared native defaults now separate TCP30820 directory
+hosting from UDP30821 default lobby hosting, preserving the user's original
+forwarding and the former desktop flow. A chosen UDP port does not move the
+TCP listener; incoming invitations retain their explicit ports. The initial
+native prototype's41830-for-both default was a regression, independent of the
+LAN address fix. Production Windows menu/IPC fixtures pass; no new OS adapter is
+needed. Physical Mac/Linux builds and outside-network play remain pending for
+this correction. Community service ports remain separate. See [evidence](STATUS.md).
+
+Private invite same-network routing (2026-11-11, local after0711849c):
+**Awaiting validation**. User reports community Online/LAN working on physical
+Mac at0711849c, but private Windows-host invites refuse from Mac; the successful
+second Windows client is on the hosting PC. Shared private invites previously
+carried only a public URL, while same-PC clients silently used pinned loopback.
+Add up to4 RFC1918 interface hints with the same certificate pin and public URL
+fallback, and use the accepted LAN socket address for local direct-match replies.
+No OS-specific behavior or firewall change is introduced. Windows regressions
+include real pinned TLS/direct UDP via an actual LAN interface with loopback and
+public routes deliberately refused. Native Mac rebuild/device retest remains
+required; a same-PC routed test does not replace it. See [evidence](STATUS.md).
+
+Native padlock presentation follow-up (2026-11-11, local after3f36084b):
+**Awaiting validation** on Mac/Linux. Shared native browser resolves the original
+locked mission/challenge padlock sprite147 and draws its real texture with the
+common guest renderer, followed by muted-red Invite Only text and native menu
+fade. No OS adapter or copied artwork is needed. Windows build/menu contracts
+and an isolated rendered browser pass; Mac/Linux host/device checks remain
+unrun. See [evidence](STATUS.md).
+
+Fifth revised online notes (2026-11-11, after3f36084b): **Awaiting validation**
+on Mac/Linux. The common native row renderer places the padlock below the mode
+text, clear of the mode icon. Directory admission retains its browser/code page;
+only native discovery opens Joining lobby, with admission cancellation in place.
+No new OS adapter is needed. Windows production-menu/input/IPC and context
+checks pass, and isolated native Windows rendering confirms the lock placement.
+Actual Mac/Linux build/device acceptance and a fresh end-to-end two-player join
+remain unrun for this change. See [evidence](STATUS.md).
+
+Fourth revised online notes (2026-11-11, after378fab64): **Awaiting validation**
+on Mac/Linux. All four shared online field pages now obey native open state,
+page ownership and fade; keyboard edits use a separate buffer from headings.
+Server/lobby code panels share compact headings, field, Paste/Join layout while
+retaining the native lobby-code keyboard. The larger centred silver padlock and
+text truncation use the common renderer. No new OS adapter is needed. Windows
+build/focused checks and isolated native visual/keyboard checks pass; actual
+Mac/Linux build/device acceptance is unrun. Community deployment is separate;
+see [update guide](../development/online-community-update.md) and [evidence](STATUS.md).
+
+Third revised online notes (2026-11-11, after8c81d558): **Awaiting validation**
+on Mac/Linux. Shared native dividers, compact/independent headings, matching
+field palette/spacing, lobby-code colon and locked-row prompt/padlock need no new
+OS adapter. Shared player-directory v2 lists locked rooms with separate public
+IDs and private admission codes; v2/v3 clients carry selected IDs and secrets
+separately. Native IPCv3 validates the new flag. Windows build, focused contracts
+and real pinned TLS/direct UDP pass; native Windows hosts a locked match and its
+listing omits the secret. Mac/Linux host/device acceptance is unrun. External
+community service source/deployment remains outside this tree and still needs
+the matching contract/capability update. See [validation](STATUS.md) and
+[native contracts](../agent-context/native-multiplayer-menu.md).
+
+Second revised online notes (2026-11-11, local after d98a021d): **Awaiting validation**
+on Mac/Linux. Shared native code now completes LAN shutdown before the chooser,
+keeps page descriptors/text/focus separate, hides internal discovery behind
+Joining lobby, and uses original fonts, stacked server fields, native copy
+keycaps/hover and a clear browser status band. LAN preserves an owned directory.
+No new host adapter is needed. Windows build/built-ins and70 focused checks pass
+(2 Mac-only skips). Native Windows verifies LAN-to-community/private joining,
+progress, Copy hover, panel/fonts, repeated browser-switch Refresh and directory
+survival across LAN. Physical Mac/Linux build/device acceptance remains unrun.
+See [validation](STATUS.md) and [contracts](../agent-context/native-multiplayer-menu.md).
+
+Revised online notes (2026-11-11, local after d98a021d): **Awaiting validation**
+on Mac/Linux. Shared menu code supplies compact headings, original full-canvas
+browser placement, latched Refresh, hosting progress, copy feedback and Paste.
+The shared controller authenticates a local directory with the invitation's pin
+before using loopback, retaining its public identity. Existing native process,
+clipboard and TLS adapters suffice; no platform fork. Windows Build/built-ins and
+70 focused checks pass (2 Mac-only skips), with real native community join/rejoin
+and same-machine private invitation/join evidence. The reported community timeout
+was not reproduced. Actual Mac/Linux build/device acceptance is unrun. Visible
+Invite Only admission is still unfinished. See [evidence](STATUS.md) and
+[contracts](../agent-context/native-multiplayer-menu.md).
+
+Built-in private directory restoration (2026-11-11, local): **Awaiting validation**
+on Mac/Linux. Shared Python player-hosting capability restores the old window's
+LocalDirectory through native Host a Server, without an installer. Existing
+native process/IPC and shared certificate/HTTPS/direct-UDP interfaces suffice;
+no OS-specific hosting policy was added. Windows Build/built-ins,45 hosting/client
+checks and191 release/package/context checks pass (10 platform skips). Native
+Windows verifies empty directory, create/leave with directory retained and owned
+listener cleanup at exit. Common companion lists and identity include the module;
+physical Mac/Linux builds/gameplay remain unrun. Private direct mode has the old
+host-departure behavior, not community migration. Invite Only listing/admission
+remains unfinished. See [current evidence](STATUS.md) and
+[contracts](../agent-context/native-multiplayer-menu.md).
+
+Online notes follow-up (2026-11-11, local after rebased a40c8e7a):
+**Awaiting validation** on Mac/Linux. Common menu source now gives all three
+browser types the same fixed native frame and separate outer/inner titles.
+LAN retains original match enumeration, creation/join callbacks and footer
+behavior. Windows Build/built-ins and101 focused checks pass (2 platform skips);
+native Windows capture verifies Community/LAN frame parity, main/chooser/create
+titles and LAN lobby open/Back. No new OS adapter is required. Physical Mac/Linux
+build/input and remote join remain unverified. Invite Only listing/admission and
+private component installation need the separate private backend/source; no
+server code was added to normal client packages. See [current evidence](STATUS.md)
+and [owning guide](../agent-context/native-multiplayer-menu.md).
+
 Sun/visibility repair (Awaiting validation on Mac, commit e7de0247):
 the user-requested removal of the optional comparison preset applies to shared
 settings and both guest/native menus; no Mac-specific preset remains. Normal
@@ -98,6 +265,64 @@ fixture now injects headless keys on every host; Windows51 and WSL/Clang6 checks
 pass. Windows live markerless Custom remap/movement/fire/reload/rebinding passed;
 this is synthetic input through the real game, not physical Mac/Deck acceptance.
 No platform fork or saved-config migration. See STATUS.
+
+Native multiplayer flow alignment (2026-11-11, uncommitted on
+`feature/native-multiplayer-ui` after77198a02): **Awaiting validation**.
+Shared PC/native menu source now uses the original continuous browser layout,
+footer Refresh, native Game Type/Privacy choices and header descriptions.
+This is common interface policy, requiring no second Mac UI implementation.
+Windows Build/built-ins and79 focused checks pass (2 Mac-only skips); isolated
+native captures verify contained scrolling, Story previews and Privacy choices.
+Mac/Linux compilation, physical input, browser scrolling/refresh, separate
+private-directory lifecycle, mixed Arcade/Story browsing and retained-party
+return require host acceptance. Existing native Story transport/eligibility
+gaps remain under MAC-013. Visible Invite Only admission additionally requires
+the private directory backend; current unlisted rooms do not satisfy it.
+Source files: `src/interface/pc_multiplayer_menu.inc`, `pc_display_menu.c`,
+`src/network/pc_story_browser.inc` and shared runtime patch3030. See [current validation](STATUS.md) and
+[menu contracts](../agent-context/native-multiplayer-menu.md).
+
+Browser Server RTT (2026-11-17, uncommitted on feature/lobby-rtt after16d86981):
+**Awaiting validation** under MAC-013. Shared native browser rows show locally
+measured directory exchange time for relay lobbies; direct-host RTT is unavailable.
+Compact N ms/-- ms text shares the Invite Only line in normal text colour.
+Source: tools/network/online_client.py, online_menu.py,
+src/interface/pc_multiplayer_menu.inc and src/network/pc_online_menu*. Shared
+Python/guest UI and IPC version4 apply to Windows/Mac/Linux; no new OS adapter is
+needed. Windows contracts and production menu compile pass; native Mac/Linux
+builds, rebuilt companion/game pairing and live browser layout/Refresh/unknown
+RTT acceptance remain pending. See STATUS and native menu contracts.
+
+Earlier native multiplayer menus (`feature/native-multiplayer-ui`, base `5c4df06a`):
+**Implemented and tested in development builds**. Community Browser, separate
+Private Server, LAN, match creation and code joining use the game's own menus.
+Original map thumbnails/mode icons, paged listings, native text entry and C/R3
+lobby-code copy are integrated. Server implementation stays outside Git.
+Windows/physical Mac `native-ui-cross-d` verifies an invite-only join, clipboard,
+original Deathmatch Options, actual gameplay/advancing timers, retained-party
+Return to Lobby, host closure and native browser recovery. Windows LAN Back and
+community reopen pass. Separate private hosting/invitation, guest leave/rejoin,
+owner lifetime and listener cleanup pass; optional components are installed on
+both machines. Multi-lobby visual/paging acceptance passes. Both full builds and
+Mac built-in checks pass with identity `ee1c8b0d`; network/release tests passed 322
+(9 skips,10 subtests), focused Windows 32 (2 skips), Mac 31. Story retains existing
+release/platform limits; physical controller/mouse and WAN acceptance remain
+separate. Source is pushed; no main merge or release. See
+[the focused guide](../agent-context/native-multiplayer-menu.md).
+
+Arcade join in progress (`feature/arcade-join-in-progress`): **Verified** for
+native Mac Deathmatch/Team Deathmatch late joins.
+Shared storage/constructor hooks, checkpoint catchup and client slot reports use
+existing Windows/Mac/Linux interfaces; no new OS adapter is required. Windows
+bot replacement and empty-slot gameplay pass. Native Mac late-join Team Deathmatch
+passes with the bot's team, initial zero score, movement and synchronized clocks.
+Mac also continues as host after two post-join crash migrations, preserving scored
+backups, countdown and fighting bots. Final native build/built-in checks and 21
+focused tests pass at `07eb6ef5`, identity `2d48f1eb`, matching Windows. The private
+mini service is deployed and healthy; installed-service LAN Deathmatch passes
+with three Windows games using the default settings.
+Linux, other modes and public-WAN gameplay remain unverified. See STATUS and
+[the focused guide](../agent-context/arcade-join-in-progress.md).
 
 #540 native explicit-controller prompts (local): patch2955 corrects shared
 TSFP_NATIVE_INPUT sampler notification for explicit P1 pads, covering Linux/Mac;
@@ -3197,6 +3422,36 @@ validation. This version bump alone is not publication evidence.
   [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
 
 ### MAC-013 — System Link and Online multiplayer
+
+- **Local sync telemetry (2026-11-17, uncommitted; Awaiting validation on native
+  Mac/Linux):** Shared transport counters and camera sampling preserve current
+  synchronization behavior. Windows and POSIX capture adapters keep a separate
+  bounded numeric history, export a latest normal-session report in the helper
+  and include crash/hang history. Shared launcher ZIP export includes it. No
+  private service change or automatic upload. Windows contract, real UDP,
+  crash-helper and launcher checks pass; native Mac/Linux build, report/export
+  and gameplay acceptance remain pending. See
+  [the measurement contract](../agent-context/network-sync-telemetry.md).
+
+- **Actor/body lifetime repair (2026-11-17, uncommitted;
+  Awaiting validation):** Shared `pc_network_bot_lifecycle.inc` unlists retired
+  Online Arcade guest bots and releases their owned weapon models before body
+  reuse. Revival registers the constructed body once; `pc_arcade_join_guest.inc`
+  no longer restores a retired actor while a failed human replacement waits to
+  retry. `pc_display_menu.c` checks body/actor ownership before native weapon
+  posing. Windows and TSFP_NATIVE_NETWORK use the same source; no Mac adapter is
+  needed. Deterministic tests cover both definitions and original US roster
+  routines. Native Mac build, real bot death/respawn, late joining, migration,
+  rendered weapons and corpse acceptance remain pending. Historical crash
+  causality is not established by these fixtures. See
+  [the lifetime contract](../agent-context/network-actor-lifetime.md) and STATUS
+  for actual host validation.
+
+  Windows Release build/built-in checks and189 focused checks pass. Isolated
+  Release scenes25/58 with two humans/six bots and200ms private relay delay pass;
+  approved Debug community late admission and a guest departure also pass.
+  These Windows results do not verify native Mac/Linux execution or prove the
+  original corrupted-record producer. The installed game was not replaced.
 
 - **Story flag version ownership repair (2026-11-01, PR #451 / 7ebf2082):** Shared
   menu code now calls the diagnostics-owned `pc_build_version()` used by the
@@ -10526,3 +10781,119 @@ See [evidence](STATUS.md#2026-11-07---issue521-portal-seams).
   Original-XBE Windows CPU fixtures cover60-240/slow/pause; native Mac/Linux
   builds and live boss/U-Genix acceptance remain unverified. See STATUS and
   native-projectiles/native-script-clocks guides for scope and test boundaries.
+
+Shared Online relay (feature/shared-online-relay, implementation efc26a35): Implemented in
+shared Python transport/directory/client code plus a thin Mac launch-agent
+installer. No duplicated game simulation or native networking adapter is needed;
+the existing loopback bridge contract is retained on Windows/Mac/Linux. Windows
+socket/HTTPS acceptance passes (62 tests; 4 skips). Physical Mac Python3.12 tests
+pass (61; 5 skips), with a live per-user launch agent and both-direction Windows/Mac
+host/guest packet probes through the installed relay. Public-address TCP 41820/
+UDP 41821 probes pass via router hairpin with server-only UPnP mapping. No new
+native adapter is needed. Full outside-network game matches and matching rebuilt/
+published clients remain separate acceptance. See STATUS and the relay setup guide.
+
+Arcade host migration (feature/online-host-migration): shared native adapter and
+v3 service/companion are implemented. Physical Mac arm64/Python3.12 compiles the
+production native capture/control/authority adapter fixture and passes it plus
+the coordinator/three-companion handoff tests (29 cases at603a6bd3). The Mac
+service was updated from603a6bd3 after those checks passed. It retains
+the existing certificate/ports and launch-agent startup, with a local rollback
+backup. Public-address pinned HTTPS/forced UDP fixture checks pass final transfer,
+replacement-host loss and bidirectional relay traffic. Native Windows two/three-
+player Deathmatch now continues scores/countdown and six fighting/respawning bots
+through normal exit, crash and repeated handoff. Full native Mac game continuation
+and Windows/Mac crossplay remain unverified; client rebuilds are required. See
+STATUS and docs/development/arcade-host-migration.md for acceptance boundaries.
+
+Migration status overlay (`370b51f5`): no Mac-specific adaptation needed. The
+existing native GL compositor consumes the same `pc_developer_lines` provider,
+`pc_match_overlay.inc` layout and shared embedded font/canvas as Windows. Seven
+native control/UI/font/canvas checks pass on physical Mac arm64. Windows actual
+three-player host-crash screenshots verify display/removal and continued play;
+full native Mac rendering remains a separate acceptance check. Rebuild required.
+
+Theme follow-up (`879526fa`) retains that shared compositor and embedded font
+path. Five UI/font/canvas checks pass on physical Mac; the updated native-style
+panel is visually verified in Windows gameplay. Native Mac appearance remains
+unverified. No Mac-specific adaptation or service update is required.
+
+Physical Arcade follow-up (`5b98bae3`, 2026-11-10): **Verified** for native arm64
+Vulkan/MoltenVK Deathmatch crossplay on matching Windows/Mac builds. Normal Mac
+host leave, Mac game/companion crash, Windows-to-Mac promotion and repeated
+Windows/Mac/Windows handoff retain scored backups, countdown/elapsed clocks and
+six fighting/respawning bots. The replacement Mac host completes the migrated
+match and starts a fresh rematch; both survivors complete it with matching final
+records. Actual composed Mac frames verify the themed overlay appears/clears and
+normal-leave confirmation. No separate Mac gameplay adapter was needed. The
+installed service via LAN also completed two rounds. These results supersede
+the native-Mac/results/appearance gaps above; full outside-network play, legacy
+GL presentation and objective carry/capture continuity remain unverified. The
+first public-address native baseline disconnected the Mac guest and remains a
+separate route investigation. See [STATUS](STATUS.md) and the migration guide.
+Team Deathmatch continuation also passes (`mac-team-migration-d`): Mac host
+process-group crash promotes Windows, retaining scored backup/clocks and six
+live bots for30 seconds. This is continuation evidence, not team-results or
+every-objective serialization acceptance.
+Capture the Bag continuation passes as well (`mac-bag-migration-a`): Windows
+normal leave promotes Mac and retains scored backup/clocks and six bots for30
+seconds. Carry/capture state was not asserted and remains a separate check.
+
+Connection follow-up (`45a2b34e`, fixtures `886e7495`): full native Mac network
+suite167 passed/13 skips after correcting two fixtures' forced-Win32 macro.
+Windows suite168 passed/12 skips; matching sealed builds use compatibility60f73aec.
+Initial round leases, current-progress recovery and pinned HTTPS connection reuse
+are shared Python code; no separate Mac adapter is needed. Installed service
+sources match, with rollback backup and existing certificate/ports retained.
+Public-address native runs still disconnect on this home network, with captured
+TLS timeouts and member retirement. Router cause/outside-network behavior remain
+unestablished; public readiness is not verified by the LAN or fixture passes.
+Latest60f73aec native LAN full match/rematch also passes with matching records
+and completed cleanup (`mac-final-lan-results-a`,256.328s), confirming the new
+connection behavior on physical Mac Vulkan rather than relying on fixture passes.
+Final60f73aec three-player normal departure/replacement-host crash regression
+also passes (`mac-final-repeat-a`,189.890s): Windows0 to Windows2 to Mac1, scored
+backup/clocks and six bots continue30 seconds per handoff, cleanup completed.
+
+
+MAC-013 dashboard player labels restored to native UI3542601b on
+`fix/dashboard-player-names` (client945c3538). Shared `pc_online_roster.h`, menu IPC,
+active Arcade frame dispatch and Python companion report names/character labels
+without an OS-specific policy. Earlier identity-branch Mac acceptance is retained
+as historical evidence; this native-UI integration requires a matching native Mac
+build and physical dashboard check. Windows and physical Mac builds/platform checks and real paired name display
+before/after migration pass on the current integration. See [player reporting](../agent-context/online-player-identities.md).
+
+
+MAC-013 floating guns after bot authority migration: shared pc_arcade_weapons.inc
+and commit hook retire only owned replica-held models on guest-to-host commit.
+No new host adapter is needed. The physical Mac reproduced the pre-fix orphaned
+models during Windows-to-Mac migration. Compiled dual-host/fallback and native
+control tests cover cleanup; matching Windows/Mac builds and actual post-fix Mac orphan checks now pass: six
+bots/scores/timer and names retained, zero visible orphaned held models. Focused
+Mac checks:103 passed,4 platform skips. See [migration cleanup](../development/arcade-host-migration.md#promoted-bot-weapon-attachments).
+
+
+MAC-013 follow-up (2026-11-15, shared implementation; **Awaiting validation** on
+native Mac): Arcade guest confirmation marks owned browser destination before
+late teardown in pc_multiplayer_exit.inc; pc_multiplayer_menu.inc restores the
+original backend initialization through1CB950 after1CC360 cleanup. This prevents
+closed-session startup stage2 from suppressing discovery on rejoin. No OS adapter
+is added. Source was developed on fix/arcade-playtest-rejoin for
+feature/native-multiplayer-ui, based on afa46df7. Rebuilt Windows three-client/six-bot gameplay passes four
+automatic Deathmatch and one Capture the Bag leave/rejoins, with no Back/manual
+Refresh after departure. Original host/round/epoch and advancing clocks remain;
+admission reopens. The existing Mac clang guest-exit fixture passes, but a matching
+native Mac build, complete menu lifecycle and physical automatic rejoin acceptance
+remain pending. Windows validation does not establish Mac gameplay. See STATUS.
+
+2026-11-15 shared compiler prerequisites (included with the rejoin fix):
+**Awaiting validation** for full native Mac gameplay/build. Shared recomp_types.h
+selects integer and vector live-cell aliases before optimization, avoiding MSVC
+conditional-expression expansion; translation_batch.py bounds regular units by
+512KiB UTF-8 body text without splitting individual bodies or changing dispatch.
+No OS adapter or gameplay/clock/state policy is added. Physical Mac clang fixtures
+pass six equivalent register modes, reject both copied-cell controls and execute
+the separated batch fixture. Windows full Release build/native rejoin passes;
+full native Mac build and actual gameplay remain pending. See STATUS for exact
+toolset provenance and acceptance limits.

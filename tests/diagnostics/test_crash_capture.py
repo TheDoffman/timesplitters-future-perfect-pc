@@ -65,9 +65,12 @@ def crash_client(tmp_path):
     if sys.platform != 'win32': pytest.skip('Windows crash adapter')
     compiler, environment = native_compiler(tmp_path)
     driver = tmp_path / 'driver.c'
-    driver.write_text('#include "pc_crash.h"\n'
+    driver.write_text('#include "pc_crash.h"\n#include <string.h>\n'
                       'int main(int argc,char **argv) { if (!pc_crash_init(0)) return 4; '
                       'pc_capture_allocation(1,0x10000,4096); pc_capture_allocation(257,0x10000,4096); pc_capture_model(0x811ee970,15,123); pc_capture_gameplay(4,4,0,0,0,0); pc_capture_gameplay(4,4,0,1,2,0); '
+                      'int32_t net[16]={1,1,2,2,6,30,20,12,2,1,3,120,15,8,180,1};pc_capture_network(net); '
+                      'if(argc>1 && !strcmp(argv[1],"normal")){Sleep(2500);return 0;} '
+                      'if(argc>1 && !strcmp(argv[1],"recover"))return pc_crash_test_command("--tsfp-hang-test=recover"); '
                       'if(argc>1) { pc_crash_watchdog_start(); Sleep(15000); return 0; } '
                       'return pc_crash_test_command("--tsfp-crash-test=concurrent"); }\n')
     for sources, name, libraries in [
@@ -100,6 +103,8 @@ def test_simultaneous_unhandled_exceptions_wait_for_dump(crash_client):
         assert 'node-index 15' in models and 'traversal-depth 123' in models
         allocations=(reports[0].parent/'allocation-history.txt').read_text()
         assert 'allocation-event 257' in allocations and 'allocation-bytes 4096' in allocations
+        network=(reports[0].parent/'network-history.txt').read_text()
+        assert 'bot-accepted 12' in network and 'rtt-ms 180' in network and len(network)<8192
         report = json.loads(reports[0].read_text())
         assert report['dump_saved'], report
         assert report['exception_code'] == '0xC0000005'
@@ -155,3 +160,24 @@ def test_unavailable_capture_never_leaves_healthy_handshake(crash_client,failure
     result=subprocess.run([str(root/'driver.exe')],env=env,cwd=root,capture_output=True,timeout=20)
     assert result.returncode==(4 if failure=='missing_helper' else 0xC0000005)
     assert not (area/'capture-health.json').exists()
+
+
+def test_normal_session_exports_bounded_network_history(crash_client):
+    root,env=crash_client;area=root/'network-normal'
+    env.update(TSFP_CRASH_DIR=str(area),TSFP_CAPTURE_SESSION='e'*32)
+    run=subprocess.run([str(root/'driver.exe'),'normal'],cwd=root,env=env,capture_output=True,timeout=10)
+    assert run.returncode==0,run.stderr
+    text=(area/'network-sync.txt').read_text()
+    assert 'bot-accepted 12' in text and 'rtt-ms 180' in text
+    assert len(text)<8192 and not list(area.glob('crash-*'))
+
+
+def test_nonfatal_hang_retains_network_history(crash_client):
+    root,env=crash_client;area=root/'network-hang'
+    env.update(TSFP_CRASH_DIR=str(area),TSFP_CAPTURE_SESSION='f'*32)
+    run=subprocess.run([str(root/'driver.exe'),'recover'],cwd=root,env=env,capture_output=True,timeout=15)
+    assert run.returncode==0,run.stderr
+    reports=list(area.glob('crash-*/report.json'));assert len(reports)==1
+    assert json.loads(reports[0].read_text())['kind']=='suspected_hang'
+    text=(reports[0].parent/'network-history.txt').read_text()
+    assert 'bot-accepted 12' in text and 'rtt-ms 180' in text and len(text)<8192

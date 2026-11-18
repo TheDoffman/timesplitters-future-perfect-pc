@@ -1,0 +1,13 @@
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -166,6 +166,10 @@
+ 
+ # Link against the xboxrecomp umbrella target (all 6 runtime libraries)
+ target_link_libraries(${PROJECT_NAME} PRIVATE xboxrecomp)
++
++if(TSFP_PC_CONTROLS_DIR OR TSFP_NATIVE_DIR)
++    target_compile_definitions(${PROJECT_NAME} PRIVATE TSFP_ARCADE_MIGRATION=1)
++endif()
+ 
+ # Windows crash capture is separate from the native Mac adapter.
+ if(WIN32 AND TSFP_PC_CONTROLS_DIR)

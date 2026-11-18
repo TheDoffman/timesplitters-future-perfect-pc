@@ -20,6 +20,7 @@ extern char **environ;
 static pid_t companion;
 static PcOnlineMode active_mode;
 static char ready_path[PATH_MAX],stop_path[PATH_MAX];
+#include "pc_online_menu_process.h"
 static int running(void) {
     if(!companion)return 0;
     int status;pid_t result=waitpid(companion,&status,WNOHANG);
@@ -31,6 +32,7 @@ static int running(void) {
     return 1;
 }
 void pc_online_disconnect(void) {
+    online_menu_clear();
     active_mode=PC_ONLINE_NONE;
     if(running()) {
         FILE *file=fopen(stop_path,"w");if(file)fclose(file);
@@ -78,12 +80,14 @@ int pc_online_connect_mode(PcOnlineMode mode) {
         snprintf(ready_path,sizeof ready_path,"%s/%s.ready",folder.fileSystemRepresentation,pid);
         snprintf(stop_path,sizeof stop_path,"%s/%s.stop",folder.fileSystemRepresentation,pid);
         unlink(ready_path);unlink(stop_path);
+        online_menu_files_clear(ready_path);
         setenv("TSFP_ONLINE_HANDSHAKES",folder.fileSystemRepresentation,1);
         setenv("TSFP_ONLINE_MANIFEST",manifest.fileSystemRepresentation,1);
         char *arguments[]={python,"-B",script,"--pid",pid,"--result",ready_path,
-                           "--compatibility",TSFP_NETWORK_COMPATIBILITY_HEX,NULL};
+                           "--compatibility",TSFP_NETWORK_COMPATIBILITY_HEX,online_menu_launching?"--native":NULL,NULL};
         int result=posix_spawn(&companion,python,NULL,NULL,arguments,environ);
         if(result){companion=0;return fail("Could not start the Online browser.");}
+        if(online_menu_launching){online_menu_started=1;return 1;}
         SDL_Window *window=SDL_GetKeyboardFocus();
         bool relative=window?SDL_GetWindowRelativeMouseMode(window):false;
         bool grabbed=window?SDL_GetWindowMouseGrab(window):false;
@@ -122,3 +126,7 @@ int pc_online_self_test(void) {
     if(valid)puts("PASS: native Online browser, handshake, return and companion cleanup");
     return valid?0:1;
 }
+#define PC_ONLINE_MENU_RUNNING() running()
+#define PC_ONLINE_MENU_REPLACE(a,b) (rename(a,b)==0)
+#include "pc_online_menu_host.inc"
+#include "online_clipboard_sdl.inc"

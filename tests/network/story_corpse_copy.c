@@ -47,6 +47,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 void pc_character_ragdoll_preserve(uint32_t e,uint32_t c){(void)e;(void)c;}
 /* PRODUCTION_CORPSE_COPY */
 /* PRODUCTION_BOT_CORPSE_BRIDGE */
+void pc_network_bots_remove_body(void (*original)(void)){original();}
 /* PRODUCTION_BOT_REMOVAL */
 static void retire_body(void)
 {

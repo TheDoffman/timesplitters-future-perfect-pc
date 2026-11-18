@@ -115,6 +115,9 @@ static void story_select(void)
             fprintf(stderr,"[PC-STORY] Original local Story route selected\n");
         } else if(selected==1u) {
 #ifdef _WIN32
+            if(!getenv("TSFP_ONLINE_TEST_COMMAND")) {
+                native_multiplayer_story_open(menu);restore_registers(&r);g_esp+=4u;return;
+            }
             if(pc_online_connect_mode(PC_ONLINE_STORY)) {
                 /* Joining already reorders active profile slots. Retain their
                    persistent identities before opening the network browser. */

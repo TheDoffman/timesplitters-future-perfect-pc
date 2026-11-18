@@ -1,9 +1,9 @@
-[Sun](fidelity-comparison.md), [sticks](controller-deadzones.md),
-[tools](developer-tools-integration.md).
+[Pad](controller-deadzones.md); [tools](developer-tools-integration.md).
+[MP](native-multiplayer-menu.md).
 
 [Video](video-options.md); [Uplink](native-uplink.md).
-[UI/Aim](hud-sizing.md); [feed](../development/arcade-kill-feed.md).
-
+[UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
+[Sun](fidelity-comparison.md); [Aim](hud-sizing.md).
 [Depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
 [MP hooks](multiplayer-exit.md)
@@ -14,7 +14,7 @@ Story host loss:2460 wraps1AF950. The menu adapter scopes
 the native guest-lobby8D notification to main return, preserving transport reset
 and rebuilding main in its own layout context. See [contracts](systems-details.md).
 
-Rejoin uses the D4BE0/A9070 camera/world wrappers. Rejoin restores a missed camera-end transition once;
+D4BE0/A9070 rejoin wrappers restore a missed camera-end transition once;
 world identity excludes native first-person viewport models before cached-key
 lookup. No wrapper or generated-code change is needed. See
 [contracts](systems-details.md).

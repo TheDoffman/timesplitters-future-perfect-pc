@@ -20,6 +20,7 @@ static inline int pc_crumb_lock(PcCrumbAtomic *p){int64_t expected=0;return atom
 #endif
 #define PC_CRUMB_COUNT 64
 #define PC_CRUMB_FIELDS 6
+#define PC_CRUMB_NETWORK_FIELDS 16
 enum {PC_CRUMB_STARTED=1,PC_CRUMB_GUEST_START,PC_CRUMB_GUEST_STOP,PC_CRUMB_MODAL,PC_CRUMB_GAME=10};
 typedef struct PcCrumbSlot {PcCrumbAtomic sequence,ms,event,value;} PcCrumbSlot;
 typedef struct PcBreadcrumbs {
@@ -45,7 +46,16 @@ static inline void pc_crumb_game(PcBreadcrumbs *b,int64_t ms,const int32_t value
     }
     b->have_game=1;pc_crumb_store(&b->writer,0);
 }
+static inline void pc_crumb_network(PcBreadcrumbs *b,int64_t ms,const int32_t values[PC_CRUMB_NETWORK_FIELDS]){
+    if(!pc_crumb_lock(&b->writer))return;
+    for(unsigned i=0;i<PC_CRUMB_NETWORK_FIELDS;i++)pc_crumb_append_locked(b,ms,50+i,values[i]);
+    pc_crumb_store(&b->writer,0);
+}
 static inline const char *pc_crumb_name(int64_t event){
+    static const char *const network[PC_CRUMB_NETWORK_FIELDS]={"sync-schema","sync-context","sync-mode","sync-role","sync-bots",
+        "title-rx-packets","bot-current-silence-max-ms","bot-accepted","bot-duplicates","bot-reordered","bot-coalesced",
+        "bot-arrival-gap-max-ms","bot-interval-variation-mean-ms","bot-consume-queue-max-ms","rtt-ms","camera-gap-max-ms"};
+    if(event>=50 && event<50+PC_CRUMB_NETWORK_FIELDS)return network[event-50];
     switch(event){case PC_CRUMB_STARTED:return "capture-started";case PC_CRUMB_GUEST_START:return "guest-start";
     case PC_CRUMB_GUEST_STOP:return "guest-stop";case PC_CRUMB_MODAL:return "modal-depth";
     case PC_CRUMB_GAME:return "scene-id";case PC_CRUMB_GAME+1:return "game-mode";
@@ -81,6 +91,7 @@ static inline void pc_crumb_allocation(PcBreadcrumbs *b,int64_t ms,uint32_t even
     pc_crumb_append_locked(b,ms,40,(int32_t)event);pc_crumb_append_locked(b,ms,41,(int32_t)address);pc_crumb_append_locked(b,ms,42,(int32_t)bytes);
     pc_crumb_store(&b->writer,0);
 }
+void pc_capture_network(const int32_t values[PC_CRUMB_NETWORK_FIELDS]);
 void pc_capture_allocation(uint32_t event,uint32_t address,uint32_t bytes);
 void pc_capture_match(unsigned humans,unsigned bots,unsigned difficulty,unsigned capacity);
 void pc_capture_model(uint32_t model,uint32_t node,unsigned depth);

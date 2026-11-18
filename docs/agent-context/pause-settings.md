@@ -86,3 +86,9 @@ Alternate columns. Existing centered captions remain intact.
 The standalone hub fixture declares Story pause hooks/counters only on
 Windows, matching the production finalization guard; Mac warning-as-error
 compilation must not retain unused Windows-only stubs.
+
+Main integration into native-multiplayer-ui retains the native multiplayer menu,
+Arcade join/migration adapters and the pause Settings return wrapper together.
+The outer factory redirects only the pause child return before existing
+multiplayer/Story routing; descriptor restoration remains at the outer boundary.
+The menu fixture retains both native multiplayer assertions and visibility checks.

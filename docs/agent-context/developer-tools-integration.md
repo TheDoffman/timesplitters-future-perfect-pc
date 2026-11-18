@@ -246,6 +246,23 @@ The former named footer notice remains implemented but disabled for future reuse
 flight state and value-only developer requests. Windows/SDL adapters own host
 input/capture/fullscreen/log-folder operations. The old Windows bar is hidden;
 its saved JSON is preserved. F2/F12 dialogs remain recovery routes.
+`pc_match_overlay.inc` wraps the sidebar line provider with a value-only atomic
+match-migration status (`pc_match_overlay.h`). It reserves ten draw slots and
+appends a centred panel/title/help group last, so it renders over the finished
+frame even with Tools disabled or HUD hidden. Both D3D and native GL reuse the
+existing shared font/canvas; there is no second host-specific overlay. The
+native migration frame clears status when inactive, disconnected or committed.
+The panel follows the stock pause confirmations: pale rounded border, black
+interior, uppercase white bold text, separator and blue light bars. Existing
+embedded fonts are retained; UI scale is bounded by the viewport and capped at2.
+`tests/input/developer_tools.c` covers disabled Tools, centring, bounded capacity
+and clearing; the production native control fixture checks prepare/resume state.
+Completed-frame diagnostic capture is separate from the guest scene dump:
+`3010-present-frame-capture.patch` calls the shared `pc_present_capture.h` before
+RHI present, after late overlays. `TSFP_PRESENT_CAPTURE` supplies a caller-owned
+output prefix; two BMPs rotate at `TSFP_PRESENT_CAPTURE_EVERY` (default6). No
+setting enables it automatically. Readback dimensions/allocation are bounded,
+and the portable fixture checks BMP colors/orientation and output rotation.
 `pc_developer_guest.inc` handles camera work at original CCAB0 and Story requests
 at the timing boundary. Noclip publishes feet/eye/history through D2DE0;
 both flight modes rebuild the final view after scripted cameras. Freecam

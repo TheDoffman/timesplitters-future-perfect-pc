@@ -1,0 +1,318 @@
+# Arcade host migration
+
+Status: native checkpoint/authority adapters and authenticated v3 relay integration
+are implemented on `feature/online-host-migration`, dependent on the unmerged relay
+branch at `a2d81939`. Native Windows Deathmatch continuation passes for two- and
+three-player departure/crash, with six bots, including a second host loss in the
+same game. The Mac mini service was updated from committed source `603a6bd3`;
+matching client binaries must be rebuilt. No published client release was made.
+
+## Shared implementation
+
+`online_arcade_service.ArcadeService` owns separate v3 Arcade rooms under the
+existing directory lock. Stable member bearer credentials authorize HTTPS updates;
+wire and relay keys rotate on every authority epoch. During preparation the relay
+forwards no game traffic. It resumes only after surviving native engines restore
+and acknowledge the selected checkpoint. Native progress counters, rather than
+companion HTTP heartbeats, renew four-second engine leases. Retired peers cannot
+rejoin the active round or regain authority. v2 Story and direct sessions retain
+their existing behavior.
+
+`online_arcade_client.ArcadeSession` supervises the dynamic host bridge and a separate
+authenticated loopback control socket. It verifies SHA-256 checkpoint identities,
+retries bounded CRC-checked fragments, and sends native acknowledgements to the
+service. Native hosts capture twice per second; each newly validated checkpoint
+is acknowledged immediately, with bounded ACK retries. Graceful departure waits for a backup to acknowledge the final frozen
+checkpoint, naming its exact sequence and retrying the frozen upload. A six-second
+normal-exit deadline falls back to the freshest viable backup so a broken client
+cannot indefinitely prevent departure; a lone owner can leave without a backup.
+Crash migration chooses the
+freshest acknowledged checkpoint and may roll back to that frame. No viable backup
+closes the room. The server keeps the latest two checkpoints in memory. End-of-round
+lobby metadata retains the last nonce until the next round advances the epoch;
+transport cleanup never rewinds the native progress counter.
+
+`pc_arcade_checkpoint.h` defines a pointer-free schema (magic/schema/size, round
+nonce, epoch, sequence, level, tick, rules, sixteen score rows/totals/timestamps,
+and up to ten bot snapshots). Capture requires active Arcade phase15/play7 and
+matching bot ticks. Restore preflights all destination spans and bot objects before
+writing scores, bot numeric state, elapsed ticks and the separate remaining
+match countdown at config+60. Compatibility compares shared rules while allowing
+local player counts, non-team human placeholders and the live countdown to
+differ between healthy peers; local fields are preserved. If a selected backup needs
+a body already removed locally, preparation first uses the existing stock bot
+revival allocator to create a local body; full restore preflight still follows. Player/controller pointers,
+profiles, rendering resources and local inputs remain local.
+
+`pc_arcade_control.h`, `pc_network_arcade.inc` and `pc_arcade_migration_guest.inc`
+implement bounded native reassembly, restore/ready, XNet session-key adoption and
+authority commit. Companion virtual IPs are mapped through the original network
+peer table; they are not native player slot IDs. Authenticated native progress
+also advertises the original native ID. Preparation maps surviving IDs to relay
+IPs, fills stock guest-to-guest destinations from the existing host sockaddr,
+and inherits the shared native session key. It preserves existing channel queues
+and refuses mismatched/occupied routes. This is required for a third player to
+follow the elected host. Promotion preserves the existing
+actor pool and local node instead of calling stock host creation, which resets
+the match. The shared network-frame hook pauses stock processing during handoff;
+`pc_native_timing_guest.inc` holds game delta while render/wall clocks continue.
+`pc_multiplayer_exit.inc` defers a normal host exit until the final checkpoint is
+acknowledged and the service has fenced that owner. Results callbacks require
+actual active-match engine phases before deferring, because directory metadata
+can briefly lag behind the engine transition.
+The migrating owner's pause button says Leave Match; its confirmation describes
+the transfer instead of warning that every player's session will end.
+During preparation (and the owner's final-frame departure wait), the game-thread
+adapter publishes value-only status to `pc_match_overlay_migration`. A centred
+"Migrating host..." card asks players to wait. It uses the existing shared
+final-frame canvas on Windows/Mac/Linux, independently of Tools/HUD preferences,
+then clears on commit, closure or leaving active gameplay. It adds no input gate
+or artificial handoff delay. `pc_match_overlay.inc` reserves ten draw slots and
+paints last, preserving the existing sidebar layout when migration is inactive.
+The themed panel echoes native pause confirmations with a black interior,
+pale rounded frame, blue light bars, separator and bold white uppercase labels.
+It reuses the embedded UI font; it does not bundle or extract the game's font.
+Viewport fitting and a maximum2x scale keep the full panel and bars on screen.
+
+`3000-arcade-migration-build.patch` enables the same adapter for Windows, Mac and
+Linux game builds. Online shared Arcade uses v3; Story remains v2. The browser also lists/joins
+explicit legacy Arcade rooms via typed directory-status fallback, preserving
+automatic self-hosting. Authentication, certificate and active-match errors never
+trigger that fallback. Isolated browser
+automation opts in with `migration: true` so legacy/direct regressions remain
+meaningful. Companion bundles, server installation and compatibility identities
+include all new modules. Matching native rebuilds are required.
+
+## Validation
+
+Cross-device runner: `--mac-host SSH --mac-root CHECKOUT --lan-address WINDOWS_IP`
+now combines with `--migration crash|leave`, either `--mac-role host|guest`, and
+three-player repeated migration. The temporary relay binds the reachable LAN
+address. Mac start commands explicitly select v3/relay, with read-only guest
+observations and isolated fixture saves. Remote RPCs are serialized so capture
+workers cannot consume another request's reply. The Mac test child owns a
+dedicated process group; crash testing kills that group (game and companion),
+never the SSH observer or unrelated applications. Retired peers cannot return
+cached memory as live observations. Process-group ownership refusals are tested
+in `test_crossplay_peer.py`; Mac overlay capture temporarily samples at10Hz.
+This enables native crossplay acceptance; implementation alone is not a pass.
+`--arcade-relay` exercises the v3 room through ordinary results/rematches without
+removing its host. `--shared-service` uses the installed pinned Mac service for
+that path, discovering only the uniquely named validation lobby. Controlled
+crash/leave runs retain the private test coordinator to inspect selected backup
+bytes. `--game-mode team-deathmatch|capture-bag` selects the reviewed stock game
+mode rows; Deathmatch remains the default. Record each mode's actual outcome.
+Team modes require normal confirmation of each player's Select Team screen.
+`--points` chooses a bounded stock point limit; the migration precondition waits
+for a naturally scored backup acknowledged by a survivor. `--migration-results
+--short-match` additionally finishes the migrated round, compares survivor results,
+starts a fresh rematch through the elected host, checks score/clock reset and new
+round identity, then compares the completed rematch results. Disconnected player
+rows may persist in the original results; required live native IDs and bots must
+be unique and present, and blank retired rows are excluded on the next round.
+`--service-address` retains the installed certificate pin while testing its LAN
+endpoint; this separates a server-self public-address route from gameplay.
+Private coordinator runs record sanitized native-counter/phase audits at0.5s.
+The Mac common-renderer controller uses `TSFP_PRESENT_CAPTURE`, backed by patch
+3010 and `pc_present_capture.h`, to capture the actual swap-chain composition
+with the late host overlay. The old shadow dump only shows guest scene pixels.
+The diagnostic is disabled by default, writes two rotating BMPs under the test's
+output prefix and bounds readback allocation to16M pixels. The controller's
+legacy GL path retains its existing capture; this RHI diagnostic targets common
+Windows/Mac/Linux renderers. The portable fixture is in `test_crossplay_peer.py`.
+
+- `tests/network/test_online_migration.py`: deterministic election, freshness,
+  failed candidates, stalled survivors, repeated migration and old-epoch fencing.
+- `tests/network/test_arcade_checkpoint.py`: compiles production checkpoint,
+  control codec, transport and game-thread adapter against isolated guest-memory
+  fixtures. Includes six bots, score/tick restore, missing/stale/invalid state,
+  authenticated control, fragmented transfer and native peer-ID promotion.
+- `tests/network/multiplayer_exit.c`: production pause/results leave hooks defer
+  host unload until fencing, then unload only the departing game.
+- `tests/input/developer_tools.c`: migration card visibility with Tools disabled,
+  centring at640/3440 widths, capacity guards and immediate removal on resume.
+  Native control/adapter fixtures check actual prepare/resume publication.
+- `tests/network/test_arcade_service.py`: three real TLS/UDP companions, using the
+  exact C fixture ABI. Reordered final-upload/leave, normal departure and replacement-host loss (either
+  companion crash or engine stall with live HTTP heartbeats) restore
+  the expected bytes and keeps real gameplay datagrams flowing between survivors.
+- `tools/testing/test-online-bot-motion.py --migration crash --tag UNIQUE`: isolated
+  two- or three-game native acceptance (`crash` or `leave`, `--players 3`), requiring checkpoint
+  publication/engine ACK before departure, native promotion, surviving score rows,
+  the selected backup tick/countdown and bot motion/combat on every survivor.
+  `--repeat-migration` also kills the replacement host. Normal build identity/seal
+  and test-save isolation are enforced.
+  Preparation captures a short asynchronous screenshot burst for every survivor;
+  `migration-finished` also captures the resumed game to check overlay removal.
+
+Fixture and socket tests do not demonstrate that original AI decisions, weapon
+inventory, pickups, objectives or every Arcade mode survive a live handoff.
+Bot snapshots restore presentation/combat fields but do not serialize opaque AI
+pointers. Actual Windows acceptance logs `migration-crash-timera`,
+`migration-leave-8a6019e` and `migration-three-routesa` demonstrate native promotion,
+score rows and both clocks retained, then 30 seconds of live movement, combat and
+bot respawning. Three-player crash promotes in about five seconds and retains
+both surviving players. Completion/rematch,
+physical Windows/Mac crossplay, other Arcade modes and outside-network play
+have separate acceptance boundaries below. See [shared relay validation](online-relay.md).
+
+`migration-three-leave-finala` passes normal three-player menu departure and
+30 seconds of continuation on both guests. `migration-three-repeat-finala`
+passes normal departure, 30 seconds of play, replacement-host process-tree crash,
+and another 30 seconds of play on the third player. Its first restore keeps
+tick1021/countdown17163 (observed1023/17161 and1038/17146); the second keeps
+tick2798/countdown15386 (observed2799/15385). Score rows remain, bots continue
+moving/fighting/respawning, and the departing host returns to the menu. Both
+updated pause/confirmation captions were checked in screenshots. Test saves are
+isolated; provenance records executable/runner hashes and completed cleanup.
+
+Windows network suite:156 passed/12 platform skips. Physical Mac arm64 Python3.12:
+29 capture/control, coordinator, service and exit-hook cases passed. Four Windows
+exit/keycap cases pass. The existing full patch/repository scope gate passed134
+checks; the patch stack did not change during the later native routing fix.
+
+The installed Mac mini service retains HTTPS41820/UDP41821, its existing pinned
+certificate and launch-agent startup. Previous server/config/launch-agent files
+were backed up locally before installation; private keys were not copied into
+the validation archive or repository. Pinned public-address HTTPS plus forced
+public UDP checks passed final-frame transfer, bidirectional relayed traffic and
+replacement-host crash to epoch4. Legacy v2 Arcade/Story remain supported.
+These public-address checks use router hairpin and fixture checkpoints; they
+do not establish a full outside-network game or native Mac game/crossplay result.
+Completion/rematch after native migration and other Arcade modes also remain
+separate acceptance; the implemented fixture scenario checks round identity and
+rematch epochs but does not replace those native-game checks.
+
+Migration overlay acceptance (`370b51f5`): seven focused native control/UI/font/
+canvas cases pass on Windows and physical Mac arm64. Isolated Windows run
+`migration-overlay-three-a` shows the status card on both surviving games during
+an actual host process-tree crash, removes it after promotion, and continues
+scores/countdown/six bots for30 seconds. Screenshot burst frames2 show the card
+on both peers; `migration-finished-1/2.png` show resumed gameplay without it.
+The run completed with isolated-save cleanup. Native Mac GL presentation remains
+unverified; it consumes the same tested line provider, canvas and embedded fonts.
+
+Theme follow-up (`879526fa`): five shared UI/font/canvas checks pass on Windows
+and physical Mac. `migration-theme-three-a` completes the real three-player
+host-crash continuation check with scores/countdown/six bots retained for30 seconds.
+`migration-overlay-3-1-2.png` verifies the themed frame, blue bars and uppercase
+labels; the finished-game screenshot verifies removal. The capture burst is
+asynchronous and can miss a short preparation interval on an individual guest.
+
+`TSFP_ARCADE_TRACE=1` enables bounded stderr capture/control diagnostics in the
+native adapter; the isolated migration runner enables it and records sanitized
+service counters/phase alongside score and timer evidence. Generated Windows
+acceptance code uses the supported `--split 32` generator option and `_CL_=/MP4`
+to stay within the local compiler memory limit. No generated guest C is edited.
+
+### Physical Windows–Mac gameplay acceptance — 2026-11-10
+
+Matching sealed Windows x64 and Mac arm64 Vulkan/MoltenVK builds at `5b98bae3`
+use compatibility `cbf89bed868bc189912e8ceab1bd643ded4c7e2fc4caa20ec6025a9b3d6ef8a9`.
+These are actual native games with controller input, six bots and read-only
+observations, rather than protocol fixtures. Ignored `logs/online-bots-*` retain
+provenance, checkpoints, captures and completed isolated-save cleanup:
+
+| Run | Observed result |
+| --- | --- |
+| `mac-full-baseline-lan-a` | Installed Mac service via its LAN address: full Deathmatch, matching final records, fresh rematch and matching completed rematch results. Earlier matching `7b41408e` build, before the capture-only patch. |
+| `mac-host-normal-a` | Mac host leaves through Pause/confirmation; Windows retains scores/countdown and six fighting/respawning bots for30 seconds. Mac returns to frontend. |
+| `mac-host-crash-a` | Entire Mac game/companion process group crashes; Windows promotes and continues for30 seconds. |
+| `mac-mixed-repeat-a` | Three players: Windows normal leave promotes Mac, then Mac crash promotes the other Windows player. All survivors continue30 seconds per handoff with score/timer/bot checks. |
+| `mac-migration-results-b` | Three players: Windows crash promotes Mac; both survivors finish with matching results. Elected Mac host starts a fresh rematch with zero scores/new round identity; both finish with matching results again. |
+| `mac-team-migration-d` | Team Deathmatch,50-point limit: Mac game/companion crash promotes Windows in4.4 seconds. Scored backup, elapsed/countdown clocks and six moving/fighting/respawning bots continue30 seconds. |
+| `mac-bag-migration-a` | Capture the Bag: Windows normal departure promotes Mac. Scored backup, elapsed/countdown clocks and six moving/fighting/respawning bots continue30 seconds. Objective carry/capture state was not asserted. |
+
+`mac-mixed-repeat-a/mac/migration-overlay-3-3-1.png` shows the actual themed card
+on the Mac's composed frame; `migration-finished-1.png` verifies removal. The
+normal-leave confirmation is also captured on the native Mac. Common Vulkan
+presentation is verified; legacy native GL remains unverified.
+
+The first public-address native baseline (`mac-full-baseline-live-a`) disconnected
+the Mac guest shortly after gameplay began. The same installed service via its
+LAN URL completed two rounds. Public fixture probes alone do not close this
+native-game discrepancy. Full outside-network matches, objective carry/capture
+state, opaque AI decisions and every other Arcade mode remain separate checks.
+The public-address retry `mac-public-results-repeat-a` reproduces that native
+disconnect. `--rpc-trace` enables bounded test-only Python exception diagnostics
+without modifying production networking or changing the native compatibility ID.
+
+Public-route investigation: `mac-public-rpc-trace-b` records HTTP403/Invalid
+Arcade member credential after native gameplay begins. New-round creation was
+seeding migration leases with pre-load native timestamps, allowing the relay's
+next poll to retire a guest before its first post-load RPC. New-round leases now
+start at round creation, granting exactly the normal lease duration. Native
+counters/timestamps are not fabricated; unchanged counters cannot renew leases,
+and inactive engines cannot host. Deterministic tests cover both a resumed guest
+and an unchanged-counter guest that still expires. Native revalidation follows.
+The first round-start-fixed full run then lost the Windows host later in play.
+File diagnostics (`mac-public-rpc-final-a`) identify actual five-second TLS
+connect/handshake timeouts followed by member retirement. Arcade heartbeat RPCs
+now use one-second socket deadlines and bounded retries; epoch recovery includes
+the latest real native progress, without offering/acknowledging stale checkpoints.
+Deterministic tests cover single-timeout recovery, persistent timeout closure and
+credential rejection. Other directory operations retain their five-second default.
+The old normal-play runner could label a window completed after one peer left;
+it now requires both peers still playing at the end. That run's completed flag
+is therefore invalid as acceptance; its captured disconnect remains failure evidence.
+Shorter deadlines alone did not resolve repeated public-route handshakes
+(`mac-public-results-deadline-a`). Arcade heartbeats now opt into HTTP/1.1
+keep-alive on one thread-local, certificate-pinned connection. Reconnects verify
+the pin again before credentials; errors/worker exit close cached sockets.
+Ordinary requests retain connection-close behavior, and server idle deadlines
+and the32-worker bound remain. A real TLS regression verifies repeated reuse,
+error invalidation and reconnection. Full network/native acceptance follows.
+
+Latest connection build: `45a2b34e`, compatibility
+`60f73aecd321fa171f0aa12db4847ecd15f49ac39ca9289369dcd9940d6f1b6c`.
+Full Windows network suite168 passed/12 skips; physical Mac167 passed/13 skips
+after the original bot-limit fixture stopped forcing the Win32 OS macro
+(`886e7495`). `mac-final-lan-results-a` completes a full native match and rematch
+against the installed service's LAN URL, with matching final records and isolated
+cleanup (256.328 seconds). Both controller movement paths and six bots are live.
+
+Public-address native acceptance remains **failed**: even with connection reuse,
+`mac-public-results-persistent-a` captures TLS read/handshake timeouts and a lost
+player. The service has no logged internal exception; a router cause has not
+been established. The protocol hardening passes regressions but does not resolve
+this native public-route discrepancy. Actual outside-network games, objective
+carry/capture continuity, legacy Mac GL and all other Arcade modes remain unverified.
+An active keep-alive client occupies one bounded server worker; capacity/load
+acceptance beyond the tested small sessions has not been measured.
+
+Final current-build handoff regression `mac-final-repeat-a` also passes
+(189.890 seconds, cleanup complete). Three native players: Windows0 leaves,
+Windows2 is elected, then its whole game/companion crashes and Mac1 is elected.
+Both survivors continue30 seconds after the first handoff; Mac continues another
+30 seconds after the second. The first selected tick/countdown1017/35167 resumes
+at1018/35166 on Mac and1020/35164 on Windows; the second2822/33362 resumes on Mac
+at2829/33355. Scored backups and six bots' movement/combat/respawning pass throughout.
+This validates current connection code on the controlled LAN coordinator, while
+the separate installed-service public-address failure remains open.
+
+
+## Promoted bot weapon attachments
+
+The native identity-integration acceptance reproduced floating guns after a
+Windows-host/Mac-guest handoff: stock host AI created new held models while nine
+old guest models stayed visible with their former owning hand but no longer had
+an actor handle. Original A9070 body destruction alone does not retire inventory
+attachments. Calling stock death/inventory cleanup would create pickups or alter
+combat state, so that is inappropriate for this cosmetic handoff.
+
+`pc_arcade_migration_guest.inc` detects a successful guest-to-host authority
+commit once per epoch. `pc_network_bots_promote` in `pc_arcade_weapons.inc` retires
+only the former replica's owned bot attachments using the original A9070 object
+removal before normal AI rewrites those hand records. It requires active Online
+Arcade, valid bot bounds, weapon type20 and reciprocal hand/actor ownership. It
+clears only the same retired handle, skips already queued deletions and preserves
+human weapons, unrelated world objects, inventory/ammo and scores. Existing host
+frames, remaining guests, failed/preparing handoffs and repeated commit polls do
+not rerun it. The implementation is shared by Windows and native Mac/Linux.
+
+The compiled promotion fixture covers both host defines and the inactive fallback,
+foreign objects, queued deletion, repeat calls, preserved human models and retained
+inventory/scores. The native control fixture checks that cleanup runs only after
+authority commit and exactly once. Current build/live revalidation is recorded in
+STATUS.md; the original pre-fix observation is evidence of the bug, not validation
+of the repair.

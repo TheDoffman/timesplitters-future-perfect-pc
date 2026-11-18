@@ -972,10 +972,4 @@ Stage0247 adds read-only tsfp_thread_stack_bounds metadata queries for
 worker slices; heap extents require active tracked owners. Bounds do not trust
 cloned TIB hints or pin lifetime; allocation/release policy is unchanged.
 
-Local fidelity validation hit MSVC C1002 on a3.8MiB SDK chunk despite100-function
-batches and two workers. translation_batch._chunks now caps emitted bodies at
-512KiB, preserving complete bodies and order; an oversized single function
-remains whole. This carries the focused bounded-batch helper already developed
-in the separate compiler-memory checkout; that checkout is untouched. CLI count
-defaults are unchanged here. Byte/count/UTF-8/order tests cover the partition;
-the local Windows game now builds; native Mac/Linux build acceptance is pending.
+[Batch limits](compiler-batching.md).

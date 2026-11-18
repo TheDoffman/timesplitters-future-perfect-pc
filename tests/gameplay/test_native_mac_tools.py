@@ -143,6 +143,7 @@ def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
     monkeypatch.setenv('TSFP_PC_INPUT_REPLAY', '/personal/replay')
     test = tmp_path / 'private/test-saves/native-mac'
     env = probe.isolated_environment(tmp_path, test)
+    assert env['TSFP_UPNP'] == '0'
     assert env['RECOMP_ICALL_FEEDBACK_PATH']==str(test/'icall_targets.dump')
     for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
                 'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):

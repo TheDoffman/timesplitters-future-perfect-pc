@@ -176,7 +176,11 @@ void pc_story_network_world_remove(void (*original)(void))
     const uint32_t key=!story_world_replay && WORD_AT(0x0076b140u)==1u && WORD_AT(0x007de30cu)==7u &&
         guest_writable(frame,8u)?story_world_key(WORD_AT(frame+4u)):0u;
 #endif
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    pc_network_bots_remove_body(original);
+#else
     original();
+#endif
 #ifdef _WIN32
     if(!key) return;
     const uint32_t node=WORD_AT(0x00774028u);

@@ -10,10 +10,14 @@ Regenerate guest C with the supported build scripts; never edit generated C.
 
 Each function prefix defines `RECOMP_REGISTER_SITE` and reincludes the type
 header. Its alias-selection section intentionally lives outside the type guard:
-the preprocessor selects vector pointers for eligible sites and direct globals
-for the rest, then undefines the site. This avoids growing conditional vector
-expressions in unselected large bodies. The fixture checks global/selected/
-global/selected transitions in preprocessed output, as well as runtime behavior.
+the preprocessor selects integer/vector pointers for eligible sites and direct
+globals for the rest, then undefines the site. Integer aliases formerly retained
+conditional pointer expressions even for excluded sites; these exhausted MSVC
+optimizer memory in generated math routines. Both register families now select
+before optimization, preserving the same live cells without conditional operands.
+The fixture checks global/selected/global/selected transitions for all seven
+integer aliases and XMM0 before optimization, as well as runtime behavior. It
+loads the authoritative src/runtime header used by ordinary generation.
 
 The title policy in `src/gameplay/pc_native_numeric.h` enables references only for
 the profiled model-node renderer18EA90, state setter21450, state flush214C0

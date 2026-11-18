@@ -42,3 +42,5 @@ before any network or guest-state access. The existing multiplayer-exit fixture
 checks a million unrelated dispatches with zero eligibility checks, then exercises
 its real host/guest/lobby exit paths. This removes the sampled caller itself from
 ordinary gameplay dispatch in addition to making other eligibility users cheap.
+
+Release diagnostics: [local synchronization telemetry](network-sync-telemetry.md).

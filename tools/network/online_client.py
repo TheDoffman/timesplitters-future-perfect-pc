@@ -24,7 +24,15 @@ import threading
 import time
 from urllib.parse import urlsplit
 
-from online_transport import Bridge
+from online_transport import Bridge, relay_endpoint
+from online_paths import directory_route
+from online_upnp import map_port
+
+
+class DirectoryError(ValueError):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
 
 
 class Client:
@@ -39,36 +47,78 @@ class Client:
         self.fingerprint = fingerprint.replace(':', '').replace(' ', '').lower()
         if self.fingerprint and (len(self.fingerprint) != 64 or any(c not in '0123456789abcdef' for c in self.fingerprint)):
             raise ValueError('Certificate fingerprint must be 64 hexadecimal digits')
+        self.connections=threading.local()
+        self.local_address=directory_route(self.url.geturl(), self.fingerprint)
 
-    def request(self, method, path, body=None, token=None):
+    def close_persistent(self):
+        connection=getattr(self.connections,'current',None)
+        self.connections.current=None
+        if connection is not None:connection.close()
+
+    @property
+    def last_rtt_ms(self):
+        """Latest successful HTTP exchange on this thread, excluding connection setup."""
+        return getattr(self.connections,'rtt_ms',None)
+
+    def connect(self, timeout):
+        context = None
         if self.url.scheme == 'https':
             context = ssl.create_default_context()
             if self.fingerprint:
                 # Verify the pinned certificate before sending any credentials.
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
-            connection = http.client.HTTPSConnection(self.url.hostname, self.url.port or 443, timeout=5, context=context)
-        else:
-            connection = http.client.HTTPConnection(self.url.hostname, self.url.port or 80, timeout=5)
+        hosts = list(dict.fromkeys([self.local_address, self.url.hostname])) if self.local_address else [self.url.hostname]
+        for index, host in enumerate(hosts):
+            duration = min(timeout, 1) if index < len(hosts)-1 else timeout
+            connection = (http.client.HTTPSConnection(host, self.url.port or 443, timeout=duration, context=context)
+                          if context else http.client.HTTPConnection(host, self.url.port or 80, timeout=duration))
+            try:
+                connection.connect()
+                if self.fingerprint and (self.url.scheme != 'https' or
+                        hashlib.sha256(connection.sock.getpeercert(binary_form=True)).hexdigest() != self.fingerprint):
+                    raise ValueError('Directory certificate does not match the supplied fingerprint')
+                connection.sock.settimeout(timeout)
+                return connection
+            except (OSError, ValueError):
+                connection.close()
+                if index == len(hosts)-1:
+                    raise
+
+    def request(self, method, path, body=None, token=None, *, timeout=5, persistent=False):
+        self.connections.rtt_ms=None
+        connection=getattr(self.connections,'current',None) if persistent else None
+        reused=connection is not None and connection.sock is not None
+        if not reused:
+            connection=self.connect(timeout)
         try:
-            connection.connect()
-            if self.fingerprint and (self.url.scheme != 'https' or
-                hashlib.sha256(connection.sock.getpeercert(binary_form=True)).hexdigest() != self.fingerprint):
-                raise ValueError('Directory certificate does not match the supplied fingerprint')
-            headers = {'Content-Type': 'application/json'}
+            if reused:connection.sock.settimeout(timeout)
+            headers = {'Content-Type': 'application/json','Connection':'keep-alive' if persistent else 'close'}
             if token:
                 headers['Authorization'] = 'Bearer '+token
+            started=time.monotonic()
             connection.request(method, path, json.dumps(body).encode() if body is not None else None, headers)
             response = connection.getresponse()
-            data = response.read(65537)
-            if len(data) > 65536:
+            limit = 131072 if path.startswith('/v3/') else 65536
+            data = response.read(limit+1)
+            if len(data) > limit:
                 raise ValueError('Directory response too large')
             result = json.loads(data)
             if not 200 <= response.status < 300:
-                raise ValueError(result.get('error', f'Directory error {response.status}'))
+                raise DirectoryError(response.status, result.get('error', f'Directory error {response.status}'))
+            self.connections.rtt_ms=max(0,min(60000,round((time.monotonic()-started)*1000)))
+            if persistent and not response.will_close:
+                self.connections.current=connection
+            else:
+                connection.close()
+                if persistent:self.connections.current=None
             return result
-        finally:
+        except BaseException:
             connection.close()
+            if persistent:self.connections.current=None
+            raise
+        finally:
+            if not persistent:connection.close()
 
 
 class Session:
@@ -79,6 +129,7 @@ class Session:
         self.closed = threading.Event()
         self.error = ''
         self.local_directory = None
+        self.port_mapping = None
         self.thread = threading.Thread(target=bridge.run, daemon=True)
         self.thread.start()
         self.worker = threading.Thread(target=self.heartbeat, daemon=True)
@@ -97,19 +148,39 @@ class Session:
             raise ValueError('Directory does not support the requested Online mode')
 
     @classmethod
-    def create(cls, client, compatibility, name, port, public, mode='arcade'):
+    def create(cls, client, compatibility, name, port, public, mode='arcade', *, transport='direct'):
         cls.validate_mode(mode)
+        if transport not in ('direct', 'relay'):
+            raise ValueError('Unknown Online transport')
         # Bind before advertising: a failed port bind must not leave a ghost lobby.
-        bridge = Bridge(compatibility, '00'*16, bind=('0.0.0.0', port))
+        bridge = Bridge(compatibility, '00'*16, bind=('0.0.0.0', port if transport == 'direct' else 0))
         lobby = None
+        mapping = None
         try:
+            if transport == 'direct':
+                mapping = map_port(port, 'UDP')
             lobby = client.request('POST', '/v2/lobbies', dict(
-                compatibility=compatibility, name=name, port=port, public=public, mode=mode))
+                compatibility=compatibility, name=name, port=port, public=public, mode=mode, transport=transport))
             cls.validate_lobby(lobby, mode)
-            bridge.room = bytes.fromhex(lobby['room'])
-            return cls(client, compatibility, lobby, True, bridge, mode)
+            if transport == 'relay':
+                if lobby.get('transport') != 'relay':
+                    raise ValueError('Directory does not support the shared relay. Update the server first.')
+                address = str(ipaddress.IPv4Address(lobby['address']))
+                bridge.close()
+                bridge = Bridge(compatibility, lobby['room'], relay=(address, lobby['port']),
+                                relay_key=lobby['relay_key'])
+            else:
+                bridge.room = bytes.fromhex(lobby['room'])
+            active = cls(client, compatibility, lobby, True, bridge, mode)
+            active.port_mapping = mapping
+            if transport == 'relay' and not bridge.ready.wait(12):
+                active.close()
+                raise ValueError('Shared relay did not answer. Check the server UDP port and firewall.')
+            return active
         except Exception:
             bridge.close()
+            if mapping:
+                mapping.close()
             if lobby:
                 try:
                     client.request('DELETE', '/v2/lobbies/'+lobby['code'], token=lobby['owner_token'])
@@ -118,18 +189,27 @@ class Session:
             raise
 
     @classmethod
-    def join(cls, client, compatibility, code, mode='arcade'):
+    def join(cls, client, compatibility, code, mode='arcade', *, lobby_id=None):
         cls.validate_mode(mode)
         if len(code) != 16 or any(c not in '0123456789abcdefABCDEF' for c in code):
             raise ValueError('Lobby code must contain 16 hexadecimal characters')
-        path = '/v2/lobbies/'+code.upper()
-        lobby = client.request('POST', path+'/join', dict(compatibility=compatibility, mode=mode))
+        if lobby_id is not None and (not isinstance(lobby_id, str) or len(lobby_id) != 16 or any(c not in '0123456789abcdefABCDEF' for c in lobby_id)):
+            raise ValueError('Invalid selected lobby')
+        path = '/v2/lobbies/'+(lobby_id or code).upper()
+        body = dict(compatibility=compatibility, mode=mode)
+        if lobby_id is not None:body['lobby_code'] = code.upper()
+        lobby = client.request('POST', path+'/join', body)
+        lobby['lobby_code'] = code.upper()
+        path = '/v2/lobbies/'+lobby['code']
         bridge = None
         try:
             cls.validate_lobby(lobby, mode)
             address = str(ipaddress.IPv4Address(lobby['address']))
+            relayed = lobby.get('transport', 'direct') == 'relay'
             bridge = Bridge(compatibility, lobby['room'], lobby['peer_id'], lobby['peer_key'],
-                            host=(address, lobby['port']))
+                            host=relay_endpoint(1) if relayed else (address, lobby['port']),
+                            relay=(address, lobby['port']) if relayed else None,
+                            relay_key=lobby.get('relay_key') if relayed else None)
             session = cls(client, compatibility, lobby, False, bridge, mode)
         except Exception:
             if bridge:
@@ -141,7 +221,8 @@ class Session:
             raise
         if not bridge.ready.wait(12):
             session.close()
-            raise ValueError('Host did not answer. Check the host UDP port forwarding and firewall.')
+            raise ValueError('Host did not answer through the shared relay. The host may have left.' if relayed else
+                             'Host did not answer. Check the host UDP port forwarding and firewall.')
         return session
 
     def endpoint(self):
@@ -153,9 +234,16 @@ class Session:
     def heartbeat(self):
         last_success = time.monotonic()
         while not self.closed.is_set():
+            if self.bridge.relay and time.monotonic()-self.bridge.relay_seen > 10:
+                self.error = 'The shared relay stopped responding. Reconnect to Online.'
+                self.closed.set()
+                self.bridge.stopped.set()
+                break
             try:
                 path, token = self.endpoint()
-                reply = self.client.request('PUT', path, dict(compatibility=self.compatibility, mode=self.mode), token)
+                body=dict(compatibility=self.compatibility, mode=self.mode)
+                if self.host and getattr(self,'match_info',None):body['match_info']=dict(self.match_info)
+                reply = self.client.request('PUT', path, body, token)
                 self.validate_lobby(reply, self.mode)
                 if self.host:
                     self.bridge.update_peers(reply['peers'])
@@ -167,7 +255,7 @@ class Session:
                     self.closed.set()
                     self.bridge.stopped.set()
                     break
-            self.closed.wait(2 if self.host else 20)
+            self.closed.wait(2 if self.host or self.bridge.relay else 20)
 
     def close(self):
         self.closed.set()
@@ -180,6 +268,9 @@ class Session:
             self.client.request('DELETE', path, token=token)
         except Exception:
             pass  # Registrations also expire when a host/directory disappears.
+        if self.port_mapping:
+            self.port_mapping.close()
+            self.port_mapping = None
         if self.local_directory:
             self.local_directory.close()
             self.local_directory = None

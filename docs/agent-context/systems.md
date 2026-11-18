@@ -1,14 +1,15 @@
-[Sticks](controller-deadzones.md), [Rollback](control-presets.md), [updates](main-menu-update.md).
-[Tex](texture-preference.md); [pads](video-options.md).
-[Sun/visibility repair](fidelity-comparison.md); optional comparison preset removed,
-normal settings and menus restored.
+[Sync telemetry](network-sync-telemetry.md).
+[Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
+[Actors](network-actor-lifetime.md).
+[Tex](texture-preference.md); [arms](video-options.md).
 
-[Uplink throw tests and policy](native-uplink.md#throw-impulse).
-[Network startup eligibility and atomic dispatch](network-performance.md),
-including missing files and explicit disconnect; fixture:
-`tests/network/network_eligibility.c`.
+[Uplink](native-uplink.md#throw-impulse); [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
+[Network startup](network-performance.md): one-time config read, atomic dispatch;
+LAN enables explicitly, Online publishes connect/disconnect. No stale re-import.
+Shared Windows/Mac/Linux; fixture: `tests/network/network_eligibility.c`.
+[Sun/visibility](fidelity-comparison.md): optional preset removed; normal settings restored.
 
-[Developer Tools integration](developer-tools-integration.md).
+[Tools](developer-tools-integration.md).
 
 [Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
 [Input](controls-options.md).
@@ -21,15 +22,15 @@ including missing files and explicit disconnect; fixture:
 
 [SDL](linux-game.md).
 
-Native input self-tests use click/Escape capture after F1 became the optional
-Developer Tools shortcut. This changes only synthetic test events in
-src/native/input_sdl.c; Linux passes, native Mac execution remains pending.
+SDL self-tests use click/Escape capture; F1 opens optional Developer Tools.
+Only synthetic events in src/native/input_sdl.c change. Linux passes;
+Mac execution pending.
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-[Story](systems-details.md). [Exit/save](multiplayer-exit.md).
+[Story](systems-details.md). [Rejoin](multiplayer-exit.md).
 
 [Mech](mounted-mouse.md).
 
@@ -50,7 +51,7 @@ Aim/animation: [diagnostic limits](native-local-trace.md).
 GPU cache fixture/config: [runtime](runtime.md).
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
-Registers: [policy/tests](gpr-refs.md).
+GPRs: [scoped aliases/tests](gpr-refs.md).
 Script/audio clocks: [contracts](native-script-clocks.md).
 
 <!-- packet:start -->
@@ -78,7 +79,7 @@ Textures: `src/textures/`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
 Private art stays local. Networking: `src/network/`, HLE/kernel patches and
-`tools/network/online.py`; [LAN](system-link.md), [Online UI](multiplayer-ui.md). Crash capture:
+`tools/network/online.py`; [LAN](system-link.md), [Migration](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
 General buffering, lifecycle, format and device recovery are unconditional;
