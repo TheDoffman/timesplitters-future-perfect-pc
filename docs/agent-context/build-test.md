@@ -1,5 +1,5 @@
 [Workshop/native/V-Sync test routes](build-test-integration.md).
-HTTPS/restore: test_public_service_readiness.py/test_upgrade_coordinator.py; IPC: test_online_menu.py.
+HTTPS/restore: test_public_service_readiness.py/test_upgrade_command.py; IPC: test_online_menu.py.
 Chunk-bound execution uses explicit max_chunk_bytes: compiler-batching.md.
 # Tests ([Glass](pause-glass.md), [Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).

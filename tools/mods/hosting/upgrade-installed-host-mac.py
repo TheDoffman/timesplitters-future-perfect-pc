@@ -1,4 +1,4 @@
-"""Inspect, apply or recover a preserving installed-host upgrade privately."""
+"""Inspect, apply, recover and verify a preserving installed-host upgrade."""
 import argparse
 import importlib.util
 import json
@@ -68,6 +68,7 @@ def verified_inputs(before,after,uid,backup_identity):
               'tools/mods/mod_host_upgrade_layout.py','tools/mods/mod_host_upgrade_shutdown.py',
               'tools/mods/mod_host_migration.py','tools/mods/hosting/force-upgrade-backup-mac.py',
               'tools/mods/hosting/accept-installed-scanner-mac.py','tools/mods/hosting/accept-private-host-services-mac.py',
+              'tools/mods/hosting/accept-public-host-services-mac.py',
               'tools/mods/mod_backup_release.py','tools/mods/mod_host_routing.py','tools/mods/hosting/upgrade-job-specs-mac.py',
               'tools/mods/hosting/migrate-private-generation-mac.py'}
     release.require(required <= new['descriptor']['source_files'].keys(),'Incomplete installed upgrade coordinator')
@@ -140,14 +141,14 @@ def preflight(before,after,uid,backup_identity):
     return prepare_context(before,after,uid,backup_identity)['report']
 
 
-def run_action(before,after,uid,backup_identity,action,nonce,*,expected_preflight=None,resume_rollback=False):
-    """Own the exact journal lease and sealed context before private effects.
+def run_action(before,after,uid,backup_identity,action,nonce,*,expected_preflight=None,resume_action=False):
+    """Own the exact journal lease and sealed context before upgrade effects.
 
-    Authentication/immutable entry-point admission precedes this call. No action
-    restores public ingress. Recovery never selects or creates a new journal.
+    Authentication/immutable entry-point admission precedes this call. Public
+    restoration is separate and explicit. Recovery cannot create a new journal.
     """
-    release.require(action in ('apply','resume','rollback') and isinstance(nonce,str) and release.SHA.fullmatch(nonce)
-        and type(resume_rollback) is bool and (not resume_rollback or action=='rollback')
+    release.require(action in ('apply','resume','rollback','restore') and isinstance(nonce,str) and release.SHA.fullmatch(nonce)
+        and type(resume_action) is bool and (not resume_action or action in ('rollback','restore'))
         and ((action=='apply' and isinstance(expected_preflight,str) and release.SHA.fullmatch(expected_preflight))
              or (action!='apply' and expected_preflight is None)), 'Choose an exact private upgrade action and transaction')
     # These calls verify both closures and the independent backup before any
@@ -177,7 +178,8 @@ def run_action(before,after,uid,backup_identity,action,nonce,*,expected_prefligh
                 'Unused recovery transaction no longer matches initial preflight')
             contexts.seal(journal,context,resume=True)
         else:context=contexts.reconstruct(journal,fresh)
-        if action=='rollback':result=coordinator.rollback_private(journal,context,resume=resume_rollback)
+        if action=='restore':result=coordinator.restore_public(journal,context,resume=resume_action)
+        elif action=='rollback':result=coordinator.rollback_private(journal,context,resume=resume_action)
         else:result=coordinator.apply_private(journal,context,resume=action=='resume')
         return dict(result,schema=1,nonce=nonce,before=before,after=after,uid=uid)
 
@@ -207,14 +209,15 @@ def main():
     action.add_argument('--apply-private',action='store_true')
     action.add_argument('--resume-private',action='store_true')
     action.add_argument('--rollback-private',action='store_true')
+    action.add_argument('--restore-public',action='store_true')
     parser.add_argument('--from-release')
     parser.add_argument('--backup-release')
     parser.add_argument('--nonce')
     parser.add_argument('--expected-preflight')
-    parser.add_argument('--resume',action='store_true',help='Resume an already-started private rollback')
+    parser.add_argument('--resume',action='store_true',help='Resume an already-started rollback or public restoration')
     args=parser.parse_args()
     try:
-        private=args.apply_private or args.resume_private or args.rollback_private
+        private=args.apply_private or args.resume_private or args.rollback_private or args.restore_public
         if not (args.inspect or args.preflight or private):
             release.require(all(value is None for value in (args.from_release,args.backup_release,args.nonce,args.expected_preflight))
                 and not args.resume,'Choose an explicit installed upgrade action')
@@ -227,12 +230,13 @@ def main():
                             or (not private and args.nonce is None),'Choose an exact private transaction nonce')
             release.require((args.apply_private and isinstance(args.expected_preflight,str) and release.SHA.fullmatch(args.expected_preflight))
                             or (not args.apply_private and args.expected_preflight is None),'A fresh apply requires its expected preflight digest')
-            release.require(not args.resume or args.rollback_private,'Use --resume only with --rollback-private')
+            release.require(not args.resume or args.rollback_private or args.restore_public,
+                            'Use --resume only with --rollback-private or --restore-public')
             after,uid=root_context(args.from_release)
             if private:
-                mode='apply' if args.apply_private else 'resume' if args.resume_private else 'rollback'
+                mode='apply' if args.apply_private else 'resume' if args.resume_private else 'restore' if args.restore_public else 'rollback'
                 value=run_action(args.from_release,after,uid,args.backup_release,mode,args.nonce,
-                    expected_preflight=args.expected_preflight,resume_rollback=args.resume)
+                    expected_preflight=args.expected_preflight,resume_action=args.resume)
             else:value=preflight(args.from_release,after,uid,args.backup_release) if args.preflight else inspection(args.from_release,after,uid)
         print(json.dumps(value,indent=2));return 0
     except (OSError,ValueError,subprocess.SubprocessError) as error:

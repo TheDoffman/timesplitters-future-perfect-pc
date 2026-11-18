@@ -71,8 +71,8 @@ the selected generation over HTTPS. Only fresh public evidence plus another
 protected-file/job/route observation can settle the journal. File/config exchange
 alone can neither expose nor settle an upgraded stopped host. If public acceptance
 fails, the recorded restoration remains unresolved for explicit recovery; this
-phase never guesses an automatic rollback. CLI integration and actual installed
-Root/UID600 restoration acceptance remain pending.
+phase never guesses an automatic rollback. The explicit CLI below dispatches this
+phase; actual installed Root/UID600 restoration acceptance remains pending.
 
 The current installer can stage a new immutable release alongside the running
 one. It does not switch active services. The initializer requires its exact
@@ -199,7 +199,15 @@ Add `--resume` only when continuing a rollback already begun. Neither action
 restores public ingress. Invalid options refuse before administrator admission;
 all effect paths require the immutable installed Root/Python admission. The
 commands are implemented but not installed/accepted on the production host.
-Reboot recovery and public restoration/acceptance remain unfinished.
+`--restore-public --from-release <sha> --backup-release <sha> --nonce <64hex>`
+uses the same existing-only journal lease and freshly verified immutable inputs.
+It reconstructs the original bound context and dispatches public restoration for
+the admitted live generation. Add `--resume` for an interrupted restoration,
+including a pending routing intent or an already-public result awaiting acceptance.
+No expected-preflight argument or new transaction is accepted. Root authentication
+and argument validation precede effects. The verified coordinator closure must
+contain the fixed public helper. Reboot recovery and actual installed acceptance
+of these commands remain unfinished.
 
 The read-only `--preflight --from-release <sha> --backup-release <sha>` phase
 additionally verifies the preserved eight-file backup closure and its independent
@@ -223,7 +231,7 @@ combined ten-entry set with the unchanged backup. The preflight digest binds
 these target specifications as well as the observed running old jobs. Internal
 objects/callables are never serialized in the public report. Retaining context
 does not authorize effects or replace later per-phase file/process/routing guards;
-the private CLI below does not provide reboot recovery or public restoration.
+the CLI does not yet provide reboot recovery; public restoration is described above.
 
 `mod_host_upgrade_context` persists only bounded upgrade metadata under Root700
 `upgrade-contexts/<nonce>.json` (Root600, maximum32 files/64KiB each). Its shared
@@ -243,7 +251,7 @@ retaining the fresh callable objects. It does not inspect current private files
 as though they were still the base generation, issue migration authority, or
 treat historical job/PID metadata as current OS proof. Subsequent phase guards
 remain mandatory. Private CLI lease construction is implemented; installed
-acceptance, reboot recovery and public restoration remain unfinished.
+acceptance and reboot recovery remain unfinished; public restoration is above.
 The internal installed-entry `verified_inputs` separates closure/binding/factory
 verification from initial route/private/live preflight. `prepare_recovery_context`
 first matches the held journal arguments, repeats that pure input verification,
@@ -502,7 +510,7 @@ must again retire proof, pass AV, load fixed jobs, complete readiness/seven rest
 and pass public-admission freshness gates. The full history now allows256 events/
 128KiB per transaction, at most32 transactions; a complete post-start reversal
 exceeds128 events. These internal phases still require installed acceptance,
-reboot recovery and public restoration integration before live deployment.
+reboot recovery and actual public restoration acceptance before live deployment.
 
 The v2 routing callback is directly compatible with the selective transition
 primitive. It persists intent before the action, permits only matching observed

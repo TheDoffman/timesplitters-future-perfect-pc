@@ -39,8 +39,13 @@ def command(saved_inputs,monkeypatch):
         assert context['operator'] is item['fresh']['operator'] and item['path'].exists()
         calls.append(('rollback',resume,context['report']['phase']))
         return dict(phase='fixture-private-rollback',public_endpoint_started=False)
+    def restore(journal,context,*,resume):
+        assert context['operator'] is item['fresh']['operator'] and item['path'].exists()
+        calls.append(('restore',resume,context['report']['phase']))
+        return dict(phase='fixture-public-restoration',public_endpoint_verified=True)
     monkeypatch.setattr(entry,'prepare_context',initial);monkeypatch.setattr(entry,'verified_inputs',verified)
     monkeypatch.setattr(coordinator,'apply_private',apply);monkeypatch.setattr(coordinator,'rollback_private',rollback)
+    monkeypatch.setattr(coordinator,'restore_public',restore)
     def run(action,**kwargs):
         return entry.run_action('a'*64,'b'*64,600,'a'*64,action,'c'*64,**kwargs)
     return item,entry,calls,run
@@ -55,8 +60,12 @@ def test_fresh_apply_seals_under_lease_and_recovery_uses_historical_context(comm
     assert calls==['verified',('apply',True,'historical-upgrade-context-reconstructed')]
     calls.clear();run('rollback')
     assert calls==['verified',('rollback',False,'historical-upgrade-context-reconstructed')]
-    calls.clear();run('rollback',resume_rollback=True)
+    calls.clear();run('rollback',resume_action=True)
     assert calls==['verified',('rollback',True,'historical-upgrade-context-reconstructed')]
+    calls.clear();run('restore')
+    assert calls==['verified',('restore',False,'historical-upgrade-context-reconstructed')]
+    calls.clear();run('restore',resume_action=True)
+    assert calls==['verified',('restore',True,'historical-upgrade-context-reconstructed')]
 
 
 def test_stale_preflight_and_missing_recovery_do_not_create_history_or_run_effects(command):
@@ -103,6 +112,8 @@ def test_unused_transaction_requires_exact_context_recovery_and_preserves_partia
     ['--preflight','--from-release','a'*64,'--backup-release','a'*64,'--resume'],
     ['--resume-private','--from-release','a'*64,'--backup-release','a'*64,'--nonce','../bad'],
     ['--rollback-private','--from-release','a'*64,'--backup-release','a'*64,'--nonce','c'*64,'--expected-preflight','e'*64],
+    ['--restore-public','--from-release','a'*64,'--backup-release','a'*64],
+    ['--restore-public','--from-release','a'*64,'--backup-release','a'*64,'--nonce','c'*64,'--expected-preflight','e'*64],
 ])
 def test_invalid_cli_options_refuse_before_root_admission(monkeypatch,arguments,capsys):
     entry=entry_module();monkeypatch.setattr(sys,'argv',['upgrade',*arguments])
@@ -113,6 +124,7 @@ def test_invalid_cli_options_refuse_before_root_admission(monkeypatch,arguments,
 @pytest.mark.parametrize('flag,extra,mode,resuming',[
     ('--apply-private',['--expected-preflight','e'*64],'apply',False),
     ('--resume-private',[],'resume',False),('--rollback-private',['--resume'],'rollback',True),
+    ('--restore-public',[],'restore',False),('--restore-public',['--resume'],'restore',True),
 ])
 def test_private_cli_authentication_precedes_action_and_valid_arguments_dispatch(monkeypatch,capsys,flag,extra,mode,resuming):
     entry=entry_module();calls=[]
@@ -126,4 +138,4 @@ def test_private_cli_authentication_precedes_action_and_valid_arguments_dispatch
     monkeypatch.setattr(entry,'run_action',run)
     assert entry.main()==0 and json.loads(capsys.readouterr().out)['public_endpoint_started'] is False
     assert calls[-1]==(('a'*64,'b'*64,600,'8'*64,mode,'c'*64),
-        dict(expected_preflight='e'*64 if mode=='apply' else None,resume_rollback=resuming))
+        dict(expected_preflight='e'*64 if mode=='apply' else None,resume_action=resuming))
