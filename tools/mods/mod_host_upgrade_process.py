@@ -191,10 +191,13 @@ def checked_public_result(result,release,uid,profile,*,floor=1):
     return result
 
 
-def public_readiness(current,uid,profile,*,floor=1):
+def public_readiness(current,uid,profile,*,floor=1,host_release=None):
+    identity=current['identity'] if host_release is None else host_release
+    require(isinstance(identity,str) and re.fullmatch('[0-9a-f]{64}',identity),'Choose an exact public host generation')
     arguments,options=_context(current,current,uid,'accept-public-host-services-mac.py')
+    arguments+=['--host-release',identity]
     result=read_json(_capture(arguments,options,timeout=110,limit=8192))
-    return checked_public_result(result,current['identity'],uid,profile,floor=floor)
+    return checked_public_result(result,identity,uid,profile,floor=floor)
 
 
 def job_specs(runtime,current,uid,*,backup_identity=None):

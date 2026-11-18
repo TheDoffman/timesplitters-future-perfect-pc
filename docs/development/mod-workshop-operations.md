@@ -38,6 +38,15 @@ separately from the file. It does not back up the repository.
 
 `accept-public-host-services-mac.py` is a fixed installed UID600 acceptance
 helper, available through the bounded `public_readiness` child transport. It
+requires `--host-release` with an exact installed identity. The newly verified
+runtime/source executes the same helper for either live generation, including
+rollback to the preserved old release that has no copy of this helper. The
+entry verifies its Root-protected path, isolated Python binding, locked process
+credentials, single source-module closure and protected target identity. It does
+not import old code or require the new generation's initialization markers while
+old services are live. The Root caller independently verifies both full closures.
+The `host_release` transport selector changes only the checked health identity.
+It never selects a different program, executable or arbitrary path. The helper
 verifies the source-pinned root, reads signed loopback catalog bytes first, then
 requires direct HTTPS with system certificate/hostname validation at the exact
 origin. Only health, catalog and catalog-signature GETs are permitted; redirects,

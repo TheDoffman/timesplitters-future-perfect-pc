@@ -102,3 +102,47 @@ def test_certificate_failure_is_closed_and_wait_is_bounded(monkeypatch):
     monkeypatch.setattr(ready,'check',lambda *_:(_ for _ in ()).throw(ssl.SSLCertVerificationError('fixture')))
     with pytest.raises(ModError,match='timed out'):
         ready.wait_ready(Path('/release'),600,'origin',b'pin',seconds=1,clock=iter([0,2]).__next__,sleep=lambda _:None)
+
+
+@pytest.mark.parametrize('old_host',[False,True])
+@pytest.mark.parametrize('fault',[None,'identity','platform','isolation','bytecode','locked-process',
+                                 'source','python','prefix','protected-source','closure','protected-target'])
+def test_installed_entry_binds_one_immutable_runtime_and_either_host_generation(tmp_path,monkeypatch,old_host,fault):
+    root=tmp_path/'host';current=root/'releases'/('b'*64)
+    target=root/'releases'/(('a' if old_host else 'b')*64)
+    program=current/'source/tools/mods/hosting/accept-public-host-services-mac.py'
+    python=current/'runtime/Frameworks/Python.framework/Versions/3.12/bin/python3.12'
+    monkeypatch.setattr(ready,'ROOT',root)
+    monkeypatch.setattr(ready,'__file__',str(program))
+    monkeypatch.setattr(ready.sys,'platform','darwin')
+    monkeypatch.setattr(ready.sys,'flags',SimpleNamespace(isolated=True))
+    monkeypatch.setattr(ready.sys,'dont_write_bytecode',True)
+    monkeypatch.setattr(ready.sys,'executable',str(python))
+    monkeypatch.setattr(ready.sys,'prefix',str(current/'runtime'))
+    monkeypatch.setattr(ready,'require_locked_process',lambda:600)
+    protected=[];closures=[]
+    def protect(path):
+        protected.append(path)
+        if fault==('protected-source' if path==program else 'protected-target'):raise ModError('unprotected')
+    def closure(path):
+        closures.append(path)
+        if fault=='closure':raise ModError('mixed modules')
+    def helper(name):
+        assert name=='upgrade-job-specs-mac.py'  # No old factories/config/markers are imported.
+        return SimpleNamespace(protected_program=protect,closure=closure)
+    monkeypatch.setattr(ready,'helper',helper)
+    identity=target.name
+    if fault=='identity':identity='../foreign'
+    elif fault=='platform':monkeypatch.setattr(ready.sys,'platform','linux')
+    elif fault=='isolation':monkeypatch.setattr(ready.sys,'flags',SimpleNamespace(isolated=False))
+    elif fault=='bytecode':monkeypatch.setattr(ready.sys,'dont_write_bytecode',False)
+    elif fault=='locked-process':monkeypatch.setattr(ready,'require_locked_process',lambda:(_ for _ in ()).throw(ModError('privileged')))
+    elif fault=='source':monkeypatch.setattr(ready,'__file__',str(current/'source/tools/mods/hosting/foreign.py'))
+    elif fault=='python':monkeypatch.setattr(ready.sys,'executable',str(target/'foreign-python'))
+    elif fault=='prefix':monkeypatch.setattr(ready.sys,'prefix',str(root/'foreign-runtime'))
+    if fault:
+        with pytest.raises(ModError):ready.installed_context(identity)
+    else:
+        assert ready.installed_context(identity)==(target,600)
+        assert protected==[program,target/'source/tools/mods/mod_host_identity.py']
+        assert closures==[current/'source/tools/mods']

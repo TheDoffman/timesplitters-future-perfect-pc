@@ -24,12 +24,14 @@ def migration_report(profile):
     return dict(manifest=manifest,sha256=hashlib.sha256(migration.wire(manifest)).hexdigest(),files=6,services_changed=False)
 
 
+@pytest.mark.parametrize('old_host',[False,True])
 @pytest.mark.parametrize('damage',[None,'uid','release','origin','root','floor','rollback','reused-version',
     'count','boolean','revocations','transport','health','public','unknown','checkpoint-extra','version-limit'])
-def test_public_acceptance_protocol_binds_fixed_child_and_both_catalog_checkpoints(verified,monkeypatch,damage):
-    _,current=verified;profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='9'*64)
+def test_public_acceptance_protocol_binds_fixed_child_and_both_catalog_checkpoints(verified,monkeypatch,damage,old_host):
+    old,current=verified;profile=dict(origin='https://workshop.example.test:8443',trusted_root_sha256='9'*64)
+    identity=(old if old_host else current)['identity']
     checkpoint=dict(catalog_version=42,metadata_sha256='1'*64,revocations_sha256='2'*64,revocation_count=3)
-    report=dict(schema=1,phase='public-services-verified',release=current['identity'],uid=600,**profile,
+    report=dict(schema=1,phase='public-services-verified',release=identity,uid=600,**profile,
         loopback=dict(checkpoint),public=dict(checkpoint),release_count=0,revocations_preserved=True,
         role_health_verified=True,transport='public-https',public_endpoint_verified=True)
     if damage=='uid':report['uid']=True
@@ -49,13 +51,14 @@ def test_public_acceptance_protocol_binds_fixed_child_and_both_catalog_checkpoin
     elif damage=='checkpoint-extra':report['public']['private']='canary'
     elif damage=='version-limit':report['public']['catalog_version']=2**53
     def capture(arguments,options,*,timeout,limit):
-        assert arguments==[str(current['python']),'-I','-B',str(current['root']/'source/tools/mods/hosting/accept-public-host-services-mac.py')]
+        assert arguments==[str(current['python']),'-I','-B',str(current['root']/'source/tools/mods/hosting/accept-public-host-services-mac.py'),
+                           '--host-release',identity]
         assert options['user']==options['group']==600 and options['extra_groups']==[] and timeout==110 and limit==8192
         return json.dumps(report).encode()
     monkeypatch.setattr(process,'_capture',capture)
     if damage:
-        with pytest.raises(ModError):process.public_readiness(current,600,profile,floor=40)
-    else:assert process.public_readiness(current,600,profile,floor=40)==report
+        with pytest.raises(ModError):process.public_readiness(current,600,profile,floor=40,host_release=identity)
+    else:assert process.public_readiness(current,600,profile,floor=40,host_release=identity)==report
 
 
 @pytest.mark.parametrize('damage',[None,'uid','release','root','origin','rollback','boolean','public','health','unknown'])
