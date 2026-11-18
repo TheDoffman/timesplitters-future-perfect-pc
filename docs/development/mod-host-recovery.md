@@ -43,6 +43,65 @@ or other authenticated transfer, receiver retention, unattended scheduling,
 production key custody and an off-device restore drill still need integration
 and deployment. Component checks do not establish automatic backup operation.
 
+## Immutable exports and authenticated operator transfer
+
+`mod_backup_exports` produces new private two-file bundles: encrypted `payload.bin`
+and canonical `receipt.json` written last. Receipts are bounded to4KiB and contain
+only export ID, creation time, canonical origin/root pin, independent recipient
+key ID, ciphertext size and ciphertext SHA256. They exclude plaintext hashes,
+file inventory, local paths and secrets. Exact inventory, caller ownership/private
+permissions, nonlinked single-link files, ciphertext hash/size and the encrypted
+header's recipient/profile/framing are checked before an export can be sent.
+A receipt proves completed encrypted transfer, not successful disaster recovery;
+only a decryption/unpack/conservative-restore drill proves that latter scope.
+
+The binary transfer is `TSFPBT1\n`,32-bit big-endian receipt length, canonical
+receipt bytes and exactly the indicated ciphertext. Reception validates receipt
+binding before creating a new private destination, checks expected space plus
+2GiB reserve, streams/hash-checks bounded chunks, rejects trailing bytes and
+requires authenticated transport completion before writing its local receipt.
+Existing, partial or foreign output is preserved. It is never automatically
+adopted, overwritten or deleted, and a failed sender leaves no completion record.
+The sender checks its actual consumed bytes again after initial inspection.
+
+`mod_backup_transport.receive_ssh` uses the system OpenSSH client and an existing
+operator-configured host alias with a previously verified known-hosts entry.
+Batch mode and strict host checking refuse prompts/unknown or changed keys;
+auto host-key updates, multiplex reuse, local commands, backgrounding, agent/X11
+and port forwarding are disabled for this invocation. Remote Python, helper,
+recipient-record and bundle paths are absolute fixed operator inputs, individually
+shell-quoted; host aliases cannot contain shell/options syntax. Origin/root/recipient
+binding remains checked independently of SSH host trust. See the primary
+[ssh command reference](https://man.openbsd.org/ssh) and
+[SSH configuration reference](https://man.openbsd.org/ssh_config).
+
+One child has a30-minute maximum wall deadline, an8KiB diagnostic-output ceiling,
+a two-chunk bounded pipe queue and a mandatory zero exit before receipt commit.
+No ciphertext blob is captured in memory and SSH diagnostics are not printed.
+Timeouts, output overflow, malformed/truncated transfer, valid bytes followed by
+sender failure, capacity errors and changed authority all preserve incomplete
+private output for operator inspection. No password is passed in arguments,
+environment or input; SSH must already have noninteractive key authentication.
+
+The operator entry is `tools/mods/hosting/backup-transfer.py`. All operations take
+`--recipient-record PRIVATE_PUBLIC_JSON --origin HTTPS_ORIGIN
+--trusted-root-sha256 RECORDED_ROOT_SHA`. `export` also needs `--snapshot SNAPSHOT
+--bundle NEW_PRIVATE_EXPORT`; `verify` and binary-stdout-only `send` take `--bundle`.
+`receive` takes `--destination NEW_PRIVATE_RECEIVER --ssh-host CONFIGURED_ALIAS
+--remote-python ABSOLUTE_PYTHON --remote-entry ABSOLUTE_BACKUP_TRANSFER_SCRIPT
+--remote-bundle ABSOLUTE_EXPORT --remote-recipient-record ABSOLUTE_PUBLIC_JSON`.
+`--seconds` may lower the receive deadline (1..1800). Source snapshots/export are
+POSIX host operations; encrypted reception/inspection work on Windows as well.
+Operators need Python; player launcher packages do not use this tool.
+
+This is operator transfer functionality, not a protected production deployment.
+Before unattended use, freeze/install the helper/runtime, provision least-privilege
+read access to the host's encrypted exports, establish production recipient custody
+and integrate receiver retention/scheduling and failure reporting. Do not give SSH
+access to signing authority, live repository data or plaintext snapshots. The
+existing frozen host/backup candidates do not include these new modules and are
+unchanged. No live job, permission, account or routing change is made by this tool.
+
 ## Streaming snapshot archives
 
 `mod_backup_archive.encrypt_snapshot` connects verified POSIX snapshots to the
