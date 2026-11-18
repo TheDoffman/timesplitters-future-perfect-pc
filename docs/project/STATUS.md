@@ -1,3 +1,50 @@
+Public restoration/recovery composition (2026-11-18; source11cec341/f296f49f,
+CLI9c3f1e30 and replayddc083ba; not deployed): the newly verified public checker
+now observes either installed host generation using an exact --host-release
+selector. Its locked entry checks immutable source ancestry, isolated runtime
+binding, source-module closure and protected selected identity. It imports no old
+source or generation initialization markers; rollback therefore does not require
+putting a new helper into the preserved old release. Both full installed closures
+remain the Root caller's mandatory independent admission.
+
+restore_public composes the held same-boot journal, complete forward/reversed
+layout, ten jobs and seven completed restarts. Fresh protected monitor/boot-file,
+job and process observations surround scanner and private readiness checks.
+The durable restoration refresh binds their actual check times and routing state,
+including explicit recovery after an expired pending restore. Only8443 is restored;
+an already-public result is observed without repeating its routing action. The
+new verifier runs from the new runtime while checking the selected live release.
+Public signed evidence and another job/file/route observation precede settlement.
+The journal refuses public restoration from file/config exchange alone, and
+refuses settlement of a protected upgrade without fresh public verification.
+
+The immutable CLI exposes --restore-public with the original base, backup and
+nonce; --resume explicitly recovers interrupted restoration. It uses existing-only
+history, fresh verified inputs and reconstructed original context, never a new
+transaction or fresh preflight against changed data. Invalid options refuse before
+Root admission. The mandatory source inventory includes the public helper.
+
+Actual native journal/files/coordinator/activation/shutdown/readiness/protocol
+checks pass269 on Mac139.15s and269 on Linux170.50s. Effects/credentials/children
+are simulated; real protected-file leases, exchanges and journal replay are used.
+Forward/reverse lost routing/public/settlement observations recover after1000s
+without repeating routes, stops, starts, restarts or backups. Final command,
+generation-binding, adversarial replay and CI-scope selection passes337 on Mac
+8.69s and337 on Linux11.34s; Windows323/14 POSIX skips1.88s. Replay mutations
+reject boolean/future/out-of-order timestamps, changed authority/release/floor,
+unrecorded exposure, altered scanner credentials, missing public evidence and
+stale settlement. Isolated no-site Root coordinator import loads no cryptography.
+The first CLI/protocol run rejected a fixture inventory missing the now-required
+public helper; the fixture was corrected without changing production admission.
+
+All production jobs/routes/data/keys and the existing backup authentication
+ceremony are unchanged. These are code/fixture checks, not installed Root/UID600
+restoration, physical boot, off-network creator-to-game acceptance or publication.
+Reboot recovery, pending-forward reversal resolution and those full release gates
+remain open. Earlier61284092 CI44271445954 has successful Windows/Mac runtime,
+patch, GPU, release and all native launcher/combined-package jobs; Linux Vulkan
+was still running at the last observation, so overall success is not yet claimed.
+
 Public HTTPS upgrade verifier (2026-11-18; source087578e2, integrationfe72e5e6;
 not deployed): the fixed installed UID600 helper verifies the source-pinned root,
 signed local catalog checkpoint, direct public HTTPS/CA/hostname validation,
