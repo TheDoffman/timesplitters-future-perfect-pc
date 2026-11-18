@@ -90,3 +90,36 @@ def test_authenticated_http_error_never_replays_mutation_on_public_route(routes,
     with pytest.raises(DirectoryError) as error:Client(URL,PIN).request('POST','/v3/lobbies',token='private')
     assert error.value.status==403
     assert [c[1] for c in calls if c[0]=='construct']==['192.168.1.27']
+
+
+def test_directory_rtt_excludes_tls_setup_and_clears_on_failure(routes,connections,monkeypatch):
+    _,behavior=connections;clock=[100.]
+    base=online_client.http.client.HTTPSConnection
+    class Timed(base):
+        def connect(self):
+            super().connect();clock[0]+=5
+        def request(self,*args):
+            super().request(*args);clock[0]+=.125
+    monkeypatch.setattr(online_client.http.client,'HTTPSConnection',Timed)
+    monkeypatch.setattr(online_client.time,'monotonic',lambda:clock[0])
+    client=Client(URL,PIN)
+    assert client.last_rtt_ms is None
+    client.request('GET','/v3/lobbies',persistent=True)
+    assert client.last_rtt_ms==125
+    behavior['192.168.1.27']=dict(status=403)
+    with pytest.raises(DirectoryError):client.request('GET','/v3/lobbies',persistent=True)
+    assert client.last_rtt_ms is None
+    client.connections.rtt_ms=125
+    for host in ('192.168.1.27','community.example'):behavior[host]=dict(offline=True)
+    with pytest.raises(TimeoutError):client.request('GET','/v3/lobbies',persistent=True)
+    assert client.last_rtt_ms is None
+
+
+def test_directory_rtt_is_thread_local(routes,connections):
+    import threading
+    client=Client(URL,PIN);client.connections.rtt_ms=147
+    result=[]
+    def other():
+        result.append(client.last_rtt_ms);client.connections.rtt_ms=38
+    thread=threading.Thread(target=other);thread.start();thread.join()
+    assert result==[None] and client.last_rtt_ms==147

@@ -273,6 +273,17 @@ Source files: `src/interface/pc_multiplayer_menu.inc`, `pc_display_menu.c`,
 `src/network/pc_story_browser.inc` and shared runtime patch3030. See [current validation](STATUS.md) and
 [menu contracts](../agent-context/native-multiplayer-menu.md).
 
+Browser Server RTT (2026-11-17, uncommitted on feature/lobby-rtt after16d86981):
+**Awaiting validation** under MAC-013. Shared native browser rows show locally
+measured directory exchange time for relay lobbies; direct-host RTT is unavailable.
+Compact N ms/-- ms text shares the Invite Only line in normal text colour.
+Source: tools/network/online_client.py, online_menu.py,
+src/interface/pc_multiplayer_menu.inc and src/network/pc_online_menu*. Shared
+Python/guest UI and IPC version4 apply to Windows/Mac/Linux; no new OS adapter is
+needed. Windows contracts and production menu compile pass; native Mac/Linux
+builds, rebuilt companion/game pairing and live browser layout/Refresh/unknown
+RTT acceptance remain pending. See STATUS and native menu contracts.
+
 Earlier native multiplayer menus (`feature/native-multiplayer-ui`, base `5c4df06a`):
 **Implemented and tested in development builds**. Community Browser, separate
 Private Server, LAN, match creation and code joining use the game's own menus.

@@ -150,6 +150,8 @@ void pc_prompts_layout_end(void) {}
 #define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
 TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
 static int row_alignment_test,update_notice_test,update_notice_draws;
+static int latency_draw_test,latency_draws;
+static uint32_t latency_expected_colour;
 void sub_0003FA10(void) {
     CHECK(row_alignment_test);g_eax=WORD_AT(0x6b93b4);WORD_AT(0x6b93b4)=WORD_AT(g_esp+4);g_esp+=4;
 }
@@ -476,7 +478,16 @@ void sub_00079D60_gen(void) {
     if(id<32)built_rows|=1u<<id;CHECK(built_row_count<32);built_ids[built_row_count++]=id;
     g_eax=0x200000+(id==UINT32_MAX?255u:id)*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;WORD_AT(g_eax+0x20)=WORD_AT(g_esp+4u);WORD_AT(g_eax+0x50)=WORD_AT(g_esp+20u);g_esp+=4;
 }
+void sub_00042490(void) {
+    CHECK(latency_draw_test);
+    const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
+    CHECK(!strcmp(caption,"147 ms") || !strcmp(caption,"-- ms"));
+    CHECK(WORD_AT(WORD_AT(g_esp+4))==134u && WORD_AT(WORD_AT(g_esp+8))==60u);
+    CHECK(WORD_AT(0x6b93b4)==0x12u);
+    CHECK(WORD_AT(g_esp+16)==latency_expected_colour);latency_draws++;g_esp+=4;
+}
 void sub_00041DC0(void) {
+    CHECK(!latency_draw_test);
     const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
     if(caption[0]>='0' && caption[0]<='9') {g_esp+=4;return;}
     CHECK(update_notice_test);
@@ -1601,6 +1612,19 @@ int main(int argc,char **argv)
         mp_native_passthrough=0;mp_ui.source=0;
         mp_ui.page=MP_NETWORK;uint32_t online_label=mp_text(1,"Online");
         mp_ui.page=MP_BROWSER;CHECK(mp_text(1,"Start New Match")!=online_label);
+        {char rtt[32];PcOnlineMenuLobby row={0};row.server_rtt_ms=147;
+         mp_rtt_label(&row,rtt,sizeof rtt);CHECK(!strcmp(rtt,"147 ms"));
+         row.server_rtt_ms=0;mp_rtt_label(&row,rtt,sizeof rtt);CHECK(!strcmp(rtt,"0 ms"));
+         row.server_rtt_ms=-1;mp_rtt_label(&row,rtt,sizeof rtt);CHECK(!strcmp(rtt,"-- ms"));}
+        {PcOnlineMenuLobby row={0};row.server_rtt_ms=147;
+         const uint32_t opacity=WORD_AT(menu+0xf4u);
+         row_alignment_test=latency_draw_test=1;latency_draws=0;
+         FLOAT_AT(menu+0xf4u)=1.f;latency_expected_colour=0x616161ffu;
+         mp_latency_draw(menu,134.f,50.f,&row);
+         FLOAT_AT(menu+0xf4u)=.5f;latency_expected_colour=0x6161617fu;
+         row.server_rtt_ms=-1;mp_latency_draw(menu,134.f,50.f,&row);
+         WORD_AT(menu+0xf4u)=opacity;
+         CHECK(latency_draws==2);row_alignment_test=latency_draw_test=0;}
         CHECK(!strcmp((const char *)(g_xbox_mem_offset+online_label),"Online"));
         CHECK(mp_descriptor(MP_NETWORK)!=mp_descriptor(MP_BROWSER));
         /* The native browser owns a single continuous list, not paged cards

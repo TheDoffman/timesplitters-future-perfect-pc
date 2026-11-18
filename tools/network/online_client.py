@@ -55,6 +55,11 @@ class Client:
         self.connections.current=None
         if connection is not None:connection.close()
 
+    @property
+    def last_rtt_ms(self):
+        """Latest successful HTTP exchange on this thread, excluding connection setup."""
+        return getattr(self.connections,'rtt_ms',None)
+
     def connect(self, timeout):
         context = None
         if self.url.scheme == 'https':
@@ -81,6 +86,7 @@ class Client:
                     raise
 
     def request(self, method, path, body=None, token=None, *, timeout=5, persistent=False):
+        self.connections.rtt_ms=None
         connection=getattr(self.connections,'current',None) if persistent else None
         reused=connection is not None and connection.sock is not None
         if not reused:
@@ -90,6 +96,7 @@ class Client:
             headers = {'Content-Type': 'application/json','Connection':'keep-alive' if persistent else 'close'}
             if token:
                 headers['Authorization'] = 'Bearer '+token
+            started=time.monotonic()
             connection.request(method, path, json.dumps(body).encode() if body is not None else None, headers)
             response = connection.getresponse()
             limit = 131072 if path.startswith('/v3/') else 65536
@@ -99,6 +106,7 @@ class Client:
             result = json.loads(data)
             if not 200 <= response.status < 300:
                 raise DirectoryError(response.status, result.get('error', f'Directory error {response.status}'))
+            self.connections.rtt_ms=max(0,min(60000,round((time.monotonic()-started)*1000)))
             if persistent and not response.will_close:
                 self.connections.current=connection
             else:

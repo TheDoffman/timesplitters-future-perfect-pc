@@ -1,5 +1,41 @@
 # Native multiplayer menus
 
+## Browser Server RTT (2026-11-17)
+
+`online_client.Client.last_rtt_ms` records the latest successful HTTP exchange on
+the calling thread, measured after verified connection setup through response
+read/validation. It excludes DNS/TCP/TLS setup, includes directory processing and
+response transfer, and clears before every attempted request. It does not measure
+end-to-end gameplay or the remote lobby host. No extra pings or requests are sent.
+
+`online_menu.Controller` annotates relay listings with locally measured Arcade
+or Story directory-response RTT on every browse/Refresh. Direct or unspecified
+transports and unavailable measurements get -1; remote listing values cannot
+override the local measurement. Community lobbies share a service, so similar
+values across their rows are expected. A separate pre-admission host RTT protocol
+would require service support; none is claimed here.
+
+Shared native rows show `N ms`, or `-- ms` when unavailable. Thumbnail rows draw
+latency on the same baseline as Invite Only, immediately after its measured text
+width and a12-unit gap. The privacy label retains red; latency matches stock
+1CBDA0 text RGB0x616161 with alpha trunc(menuOpacity*255)&255. Open rows place latency at the beginning of that
+same information line. Lobby titles retain their original fitting behavior;
+fallback rows include the compact latency label. Stock LAN discovery retains
+its original painter. The label omits Server RTT at the user's request, but the
+measurement remains the directory exchange described above.
+Latency uses the stock detail font0x12 and integer-coordinate painter42490,
+matching the mode/population lines rather than the bold font3/direct painter.
+Local menu IPC is version4, with a signed server_rtt_ms field (-1..60000): lobby
+size248 and state size7908. Old ABI states are refused; game and companion must
+be rebuilt together. Shared Windows/Mac/Linux code needs no new OS adapter.
+
+Regression routes: test_online_routes.py verifies setup exclusion, failure clearing
+and thread isolation; test_online_menu.py verifies relay/direct distinction,
+separate mode samples, unknown/invalid measurements and serialization;
+online_menu_ipc.c checks bounds; fov_settings.c checks numeric/unknown captions.
+Windows production menu compilation passes; Mac/Linux host builds and visual
+browser acceptance remain pending. This change does not repair service timeouts.
+
 Work branch `feature/native-multiplayer-ui` depends on the unmerged online-system
 branch at `5c4df06a`. The user's layout reference is the supplied online flow
 diagram. Private Server explicitly means a player-hosted directory,

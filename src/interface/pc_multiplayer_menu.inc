@@ -31,6 +31,7 @@ extern void sub_001A8CE0(void),sub_001A8EE0(void),sub_001CBA50(void),sub_001CBD4
 extern void sub_001A8D30(void),sub_001A8F30(void);
 extern void sub_00019D70(void),sub_0001ED60(void);
 extern void sub_001A4510(void),sub_001CBDA0(void),sub_00064E20(void),sub_0003D7B0(void),sub_00077110(void),sub_0003FA10(void),sub_00072560(void),sub_00075980(void);
+extern void sub_00042490(void);
 static void (*multiplayer_exit_lookup(uint32_t address))(void);
 static void multiplayer_lobby_tick(void (*original)(void));
 extern void sub_001CC360(void),sub_001CB950(void);
@@ -43,6 +44,12 @@ static uint32_t mp_text(unsigned index,const char *value)
 {
     uint32_t address=mp_buffer(index);
     snprintf((char *)((uintptr_t)address+g_xbox_mem_offset),256,"%s",value?value:"");return address;
+}
+static void mp_rtt_label(const PcOnlineMenuLobby *row,char *out,size_t size)
+{
+    if(row->server_rtt_ms>=0 && row->server_rtt_ms<=60000)
+        snprintf(out,size,"%d ms",(int)row->server_rtt_ms);
+    else snprintf(out,size,"-- ms");
 }
 static int mp_prepare(void)
 {
@@ -283,7 +290,8 @@ static void mp_build(void)
         } else {
             for(unsigned i=0;i<mp_ui.state.count;i++) {
                 const PcOnlineMenuLobby *lobby=&mp_ui.state.lobbies[i];
-                snprintf(label,sizeof label,"%.36s   %u/%u   %s%s%s",lobby->name,lobby->players,lobby->capacity,
+                char rtt[32];mp_rtt_label(lobby,rtt,sizeof rtt);
+                snprintf(label,sizeof label,"%.24s   %s   %u/%u   %s%s%s",lobby->name,rtt,lobby->players,lobby->capacity,
                     lobby->mode==PC_ONLINE_STORY?"Story":"Arcade",lobby->joinable?"":" - FULL",lobby->invite_only?" - INVITE ONLY":"");
                 if((lobby->mode==PC_ONLINE_ARCADE && lobby->game_type_id<32u &&
                    (int32_t)guest_call(sub_00064E20,1,lobby->map_scene)>=0) ||
@@ -364,7 +372,7 @@ static void mp_code_draw(void)
 }
 /* US locked mission/challenge painters2BEC4B/2BEEFD/2BF1B3 resolve
    sprite147: the original padlock record at4D4C04 in table4D2D5C. */
-static void mp_privacy_draw(uint32_t menu,float x,float y)
+static float mp_privacy_draw(uint32_t menu,float x,float y)
 {
     guest_call(sub_00022FF0,0);
     const uint32_t texture=guest_call(sub_00080F20,1,0x147u);
@@ -392,6 +400,24 @@ static void mp_privacy_draw(uint32_t menu,float x,float y)
     guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
     const uint32_t colour=guest_call(sub_00154FE0,2,0x7f50507fu,WORD_AT(menu+0xf4u));
     guest_call(sub_00041DC0,4,bits(x+32.f),bits(y+(30.f-FLOAT_AT(measure+4u))*.5f),text,colour);
+    const float next_x=x+32.f+FLOAT_AT(measure)+12.f;
+    guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,font);
+    return next_x;
+}
+static void mp_latency_draw(uint32_t menu,float x,float y,const PcOnlineMenuLobby *row)
+{
+    char label[32];mp_rtt_label(row,label,sizeof label);
+    guest_call(sub_00022FF0,0);guest_call(sub_00019D70,1,1u);
+    const uint32_t font=guest_call(sub_0003FA10,1,0x12u);
+    const uint32_t text=mp_text(30,label),measure=mp_buffer(27);
+    guest_call(sub_0003FCF0,4,measure,measure+4u,text,0u);
+    /* Stock1CBDA0 uses RGB61 and menu opacity scaled to255 for its text. */
+    const uint32_t colour=0x61616100u|((uint32_t)(int32_t)(FLOAT_AT(menu+0xf4u)*255.f)&0xffu);
+    /* Use the stock detail-line painter, including its text render state. */
+    const uint32_t position=mp_buffer(31);
+    WORD_AT(position)=(uint32_t)(int32_t)x;
+    WORD_AT(position+4u)=(uint32_t)(int32_t)(y+(30.f-FLOAT_AT(measure+4u))*.5f);
+    guest_call(sub_00042490,4,position,position+4u,text,colour);
     guest_call(sub_00022FF0,0);guest_call(sub_0003FA10,1,font);
 }
 static void mp_match_draw(void)
@@ -432,7 +458,8 @@ static void mp_match_draw(void)
     const unsigned previous=story_browser_preview(mission);
     guest_call(sub_001CBDA0,3,menu,item,rect);
     story_browser_preview(previous);
-    if(row->invite_only)mp_privacy_draw(menu,lock_x,lock_y);
+    const float latency_x=row->invite_only?mp_privacy_draw(menu,lock_x,lock_y):lock_x;
+    mp_latency_draw(menu,latency_x,lock_y,row);
     WORD_AT(item+0x14u)=id;memcpy(ad,saved_ad,sizeof saved_ad);g_esp+=4u;
 }
 extern void sub_002BE690(void),sub_002BE650(void);

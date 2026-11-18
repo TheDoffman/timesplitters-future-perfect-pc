@@ -14,11 +14,11 @@ from online_host import invitation, parse_invitation, lan_ipv4
 from online_paths import ROOT, service_defaults
 
 MAGIC=0x314d4f54
-VERSION=3
+VERSION=4
 LIMIT=20
 REQUEST=struct.Struct('<8I64s2048s256s68s')
 STATE=struct.Struct('<8I256s32s2048s256s256s68s')
-LOBBY=struct.Struct('<7I32s64s64s32s24s')
+LOBBY=struct.Struct('<7Ii32s64s64s32s24s')
 MATCH=struct.Struct('<6I64s32s')
 ROSTER_HEADER=struct.Struct('<7I')
 PERSON=struct.Struct('<Iiii32s48s')
@@ -234,8 +234,17 @@ class Controller:
                 with self.lock:self.close_session()
                 directory=self.directory(request['source'])
                 reply=list_arcade(directory,self.compatibility)
+                arcade_rtt=getattr(directory,'last_rtt_ms',None)
                 story=directory.request('GET','/v2/lobbies?compatibility='+self.compatibility+'&mode=story')
-                rows=[r for r in reply['lobbies']+story['lobbies'] if r.get('compatibility')==self.compatibility]
+                story_rtt=getattr(directory,'last_rtt_ms',None)
+                rows=[]
+                for listing,rtt in ((reply,arcade_rtt),(story,story_rtt)):
+                    for row in listing['lobbies']:
+                        if row.get('compatibility')!=self.compatibility:continue
+                        # Directory exchange time is useful for relay service access,
+                        # not a measurement of the direct host or end-to-end gameplay.
+                        measured=rtt if row.get('transport')=='relay' and type(rtt) is int and 0<=rtt<=60000 else -1
+                        rows.append(dict(row,server_rtt_ms=measured))
                 result=(LIST,f'{len(rows)} matches available',rows[:LIMIT])
             elif action in (CREATE,JOIN):
                 with self.lock:
@@ -321,7 +330,7 @@ class Controller:
                 field(pair[0],256),field(pair[1],68))
             for row in self.lobbies:
                 raw+=LOBBY.pack(int(row.get('players',0)),int(row.get('capacity',16)),int(row.get('joinable',True)),
-                    2 if row.get('mode')=='story' else 1,int(row.get('map_scene',0xffffffff)),int(row.get('game_type_id',0xffffffff)),int(bool(row.get('invite_only',False))),field(row['code'],32),field(row.get('name','Lobby'),64),
+                    2 if row.get('mode')=='story' else 1,int(row.get('map_scene',0xffffffff)),int(row.get('game_type_id',0xffffffff)),int(bool(row.get('invite_only',False))),int(row.get('server_rtt_ms',-1)),field(row['code'],32),field(row.get('name','Lobby'),64),
                     field(row.get('map_name',''),64),field(row.get('game_type',row.get('mode','arcade')),32),field(row.get('phase','lobby'),24))
             return raw+bytes((LIMIT-len(self.lobbies))*LOBBY.size)
 

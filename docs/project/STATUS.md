@@ -44901,3 +44901,98 @@ Separate batches of eight requests with two-second and five-second deadlines
 both passed; intermittent failures remain unresolved. This isolates reproduction
 from native gameplay, but does not establish whether the service or network
 path is responsible. No heartbeat/lease policy or deployed service was changed.
+
+## 2026-11-17: Browser Server RTT display
+
+Local uncommitted implementation on feature/lobby-rtt after16d86981, depending
+on the unmerged native multiplayer/telemetry work. Online rows show Server RTT
+in milliseconds from the successful local directory exchange, excluding initial
+DNS/TCP/TLS setup and including server processing/response transfer. The existing
+Arcade/Story listing requests supply their own mode's sample; no extra probes,
+automatic joins, credentials or server changes are required. Remote row-provided
+timings are replaced by local measurements. Direct/unknown transports and missing
+measurements show RTT --. Shared relay listings can have identical timings;
+this is not full client-to-host gameplay RTT. True pre-join host RTT still needs
+a relay/host probing protocol and is not supplied by this change.
+
+Native thumbnail rows place compact N ms/-- ms latency beside Invite Only on
+the same line, in normal text colour; fallback rows include the compact label.
+Open rows use the same information line; title fitting is unchanged. The shared
+local IPC is version4 with248-byte lobby rows/7908-byte state; game and companion
+must be rebuilt together. Heartbeat recovery and authority leases are unchanged.
+
+Windows11 x64/MSVC:81 affected directory timing/native menu/IPC checks passed
+in18.17s;2 native Mac compile checks skipped. Another48 shared real pinned-TLS
+private-directory, client, companion and repository checks passed in32.25s.
+The actual production menu compiled with current Release defines/includes and
+TSFP_PC_DISCORD. These tests use isolated fixtures and local listeners, not
+personal settings/saves. One pytest cache-write warning did not affect results;
+the second run disabled caching. Route/timing tests now run in the native CI
+suite. Context/index and whitespace checks pass against16d86981.
+Final connection-failure clearing and CI-selection regressions:118 passed
+in0.28s, including the newly registered route/timing test selection.
+Requested layout follow-up: latency moved off the thumbnail title onto the
+Invite Only baseline, after its measured width plus12units; latency uses normal
+text colour while Invite Only retains red. Compact N ms/-- ms labels omit the
+prefix. Native painter checks verify the baseline, colour and unknown caption:
+5 passed,2 Mac-only skips in17.88s; actual Release menu compilation passes.
+Live visual review remains pending. The user asked to ignore the refresh-hang
+report; no companion compatibility change is included in this follow-up.
+
+No game rebuild, live browser visual review, installation, commit, push or
+publication was performed. Mac/Linux build and browser acceptance remain pending
+under MAC-013; shared source coverage does not establish those hosts' behavior.
+The community timeout issue remains unresolved.
+
+## 2026-11-17: Windows rebuild with browser latency layout
+
+Rebuilt the normal build/windows/Release/futureperfect_recomp.exe with
+tsfp.ps1 -Action Build -Configuration Release on Windows11 x64, MSBuild17.12.6,
+Windows SDK10.0.22621.0. Source is16d86981 plus the uncommitted feature/lobby-rtt
+changes, including compact latency on the Invite Only line and local sync
+telemetry. Supported US XBE SHA256 matches3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc.
+Free space before building:347697233920bytes. No game process was running.
+
+Complete local patch stack verified with0 runtime file updates. The supported
+build finished successfully, including its built-in renderer/network/Discord,
+hang policy, texture, save-path, controls, settings, display, prompts and debug
+checks; disposable path-test data was recycled by the supported script. Matching
+crash symbols and the executable compatibility seal were generated. Build log:
+ignored logs/lobby-rtt-build.log.
+
+Executable SHA256:c4c0106a5388ea2ce6cdfdc08f3888daae2293c7043493f744370aeb0c816402.
+Multiplayer compatibility:44eeefbbdc8e70ca177dd2238fad8ed7fe54a7571c1f3deffacbe49c0e52ff65.
+This is a local build, not an installed/published release. No interactive game,
+live browser visual review, public-server acceptance or Mac/Linux build was run.
+Personal saves/settings and canonical fixtures were preserved. Earlier source-only
+validation notes above describe their historical point; this rebuild supersedes
+their no-game-rebuild limit for Windows only.
+
+Latency colour follow-up (2026-11-17): matched stock1CBDA0 row text exactly,
+RGB0x616161 and alpha trunc(menuOpacity*255)&255, retaining placement and the red
+Invite Only label. The earlier0x7f grey/127-alpha style did not match the stock
+lines. Native painter regressions cover full and half opacity:5 passed,2 Mac-only
+skips in17.35s. Supported Windows Release rebuild and all built-in checks passed;
+patch stack verified with0 runtime updates. Same source base16d86981 plus local
+feature/lobby-rtt edits; Windows11 x64/MSBuild17.12.6/SDK10.0.22621.0.
+New executable SHA256:f801277a6e47e076f2703f8caef052be0d089ed10848a49482d5637e35f68e7e.
+New compatibility:d2fc2fcaedb12320f6b144d2b41a9ecd367fd57cbb2ac797e0ef2e35b9ce88f4.
+Build log: logs/lobby-rtt-colour-build.log (ignored). No game process was running
+before rebuild; personal data preserved. Live visual and Mac/Linux acceptance
+remain pending. Local build only; no commit/push/publication.
+
+Latency font follow-up (2026-11-17): the supplied screenshot showed the remaining
+bold/italic mismatch. Stock1CBDA0 selects font0x12 for mode/population lines;
+latency still selected font3. Changed latency to font0x12 and the same42490
+integer-position painter used by stock lines, preserving the information-line
+placement, compact label and RGB0x616161/menu opacity. The painter also supplies
+the stock text render state rather than drawing through41DC0 directly. Fixture
+asserts font, painter, position and full/half-opacity colour:5 passed,2 Mac-only
+skips in17.33s. Windows Release build uses the same supported script/toolchain
+as above; final result recorded below. Native Mac/Linux and live visual review
+remain pending; personal files unchanged.
+Rebuild and all supported built-in checks passed, with matching symbols and
+verified executable/game-content seal. Executable SHA256:
+c46afbc8fb7aaba7410cbaad4f481498cb43a2557ee297c2d28fde8c9a44728e.
+Compatibility:3b7fac2a09dfe233f78807fe35f5bb14ea55af2ef7dfb1f936349c81b79a9a47.
+Log: logs/lobby-rtt-font-build.log (ignored). No commit/push/publication.

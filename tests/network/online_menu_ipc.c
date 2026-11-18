@@ -37,6 +37,10 @@ int main(int argc,char **argv){
     state.sequence=2;state.status=PC_OM_LIST;state.count=1;
     state.lobbies[0].capacity=8;state.lobbies[0].mode=PC_ONLINE_ARCADE;state.lobbies[0].joinable=1;state.lobbies[0].invite_only=1;
     publish(&state);REQUIRE(pc_online_menu_poll()->count==1 && pc_online_menu_poll()->lobbies[0].invite_only==1);
+    state.lobbies[0].server_rtt_ms=147;publish(&state);REQUIRE(pc_online_menu_poll()->lobbies[0].server_rtt_ms==147);
+    state.lobbies[0].server_rtt_ms=-2;publish(&state);REQUIRE(pc_online_menu_poll()->lobbies[0].server_rtt_ms==147);
+    state.lobbies[0].server_rtt_ms=60001;publish(&state);REQUIRE(pc_online_menu_poll()->lobbies[0].server_rtt_ms==147);
+    state.lobbies[0].server_rtt_ms=-1;publish(&state);REQUIRE(pc_online_menu_poll()->lobbies[0].server_rtt_ms==-1);
     state.lobbies[0].invite_only=2;publish(&state);REQUIRE(pc_online_menu_poll()->lobbies[0].invite_only==1);
     state.sequence=1;state.count=0;publish(&state);REQUIRE(pc_online_menu_poll()->sequence==2);
     online_menu_files_clear(ready_path);puts("PASS: native Online IPC rejects stale, malformed and future state");return 0;

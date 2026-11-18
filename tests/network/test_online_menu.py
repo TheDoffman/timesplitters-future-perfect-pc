@@ -27,7 +27,7 @@ def test_binary_abi_is_fixed_and_names_follow_native_font():
         menu.field('Caf\xe9',64),menu.field('',2048),menu.field('',256),menu.field('',68))
     assert len(data)==2468 and menu.decode_request(data)['name']=='Caf\xe9'
     c=menu.Controller(VERSION)
-    assert len(c.snapshot())==7828 and menu.LOBBY.size==244
+    assert len(c.snapshot())==7908 and menu.LOBBY.size==248
 
 @pytest.mark.parametrize('field,value',[(0,0),(1,99),(2,0),(3,99),(4,0),(5,2),(6,2),(7,80)])
 def test_invalid_abi_never_dispatches(field,value):
@@ -76,6 +76,25 @@ def test_cancelled_connection_is_closed_and_never_published(monkeypatch):
     assert closed.wait(1) and c.session is None and c.status==menu.IDLE
     assert menu.STATE.unpack_from(c.snapshot())[3]==menu.IDLE
     c.close()
+
+
+@pytest.mark.parametrize('measured,expected',[(147,147),(0,0),(None,-1),(-1,-1),(60001,-1),(True,-1)])
+def test_browser_rtt_uses_local_relay_measurement_and_never_direct_host(monkeypatch,measured,expected):
+    row=dict(code='1'*16,compatibility=VERSION,mode='arcade',players=1,capacity=8,server_rtt_ms=999)
+    client=SimpleNamespace(last_rtt_ms=measured)
+    monkeypatch.setattr(menu,'list_arcade',lambda *_:dict(lobbies=[dict(row,transport='relay'),dict(row,transport='direct')]))
+    def story(*_):
+        client.last_rtt_ms=38
+        return dict(lobbies=[dict(row,transport='relay',mode='story')])
+    client.request=story
+    controller=menu.Controller(VERSION)
+    monkeypatch.setattr(controller,'directory',lambda _:client)
+    controller.begin(request(menu.BROWSE));wait(controller)
+    assert controller.status==menu.LIST
+    assert [r['server_rtt_ms'] for r in controller.lobbies]==[expected,-1,38]
+    raw=controller.snapshot()
+    assert [menu.LOBBY.unpack_from(raw,menu.STATE.size+i*menu.LOBBY.size)[7] for i in range(3)]==[expected,-1,38]
+    controller.close()
 
 def test_failed_request_returns_to_native_menu_with_a_reason(monkeypatch):
     def connect(*args,**kwargs):raise ValueError('The match is full')
