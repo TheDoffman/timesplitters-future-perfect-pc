@@ -35,10 +35,12 @@ namespace TimeSplitters.Launcher
         {
             if(Double.IsInfinity(width))width=860;
             width=Math.Max(0,width);ColumnCount=width>=720&&Children.Count>1?2:1;
-            double tile=Math.Max(0,(width-(ColumnCount-1)*12)/ColumnCount);double[] bottom=new double[ColumnCount];
+            double tile=Math.Max(0,(width-(ColumnCount-1)*12)/ColumnCount);double[] bottom=new double[ColumnCount];int localColumn=0;
             foreach(UIElement child in Children) {
-                var border=child as Border;bool wide=child is TextBlock||(border!=null&&Object.Equals(border.Tag,"wide")&&border.Child is Expander&&((Expander)border.Child).IsExpanded);
+                var border=child as Border;bool bindings=border!=null&&Object.Equals(border.Tag,"bindings");bool wide=child is TextBlock||(bindings&&border.Child is Expander&&((Expander)border.Child).IsExpanded);
                 int column=ColumnCount==2&&bottom[1]<bottom[0]?1:0;
+                if(border!=null&&Object.Equals(border.Tag,"local"))localColumn=column;
+                if(bindings&&!wide)column=localColumn;
                 double y=wide?bottom.Max():bottom[column],w=wide?width:tile;
                 if(measure)child.Measure(new Size(w,Double.PositiveInfinity));
                 else child.Arrange(new Rect(wide?0:column*(tile+12),y,w,child.DesiredSize.Height));
@@ -119,7 +121,8 @@ namespace TimeSplitters.Launcher
                 Name="Settings"+String.Concat(title.Where(Char.IsLetterOrDigit))+"Section"};
             AutomationProperties.SetName(expander,title);
             var card=PageTheme.Card(expander);card.Padding=new Thickness(12);card.VerticalAlignment=VerticalAlignment.Top;card.Margin=new Thickness(0,0,0,12);
-            if(title=="Key bindings")card.Tag="wide";
+            if(title=="Key bindings")card.Tag="bindings";
+            if(title=="Local multiplayer")card.Tag="local";
             parent.Children.Add(card);return body;
         }
         static void Field(Panel parent, string label, UIElement input)

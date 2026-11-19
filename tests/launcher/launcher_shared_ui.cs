@@ -507,7 +507,7 @@ public static class LauncherSharedUiChecks
                 var localCard=(Border)Find<Expander>(page.View,"SettingsLocalmultiplayerSection").Parent;
                 var bindingCard=(Border)bindings.Parent;
 #if MACOS || LINUX
-                Need(Math.Abs(bindingCard.Bounds.X-localCard.Bounds.X)<1&&bindingCard.Bounds.Y-localCard.Bounds.Bottom<=13,"Collapsed bindings left a gap below Local multiplayer");
+                Need(Math.Abs(bindingCard.Bounds.X-localCard.Bounds.X)<1&&bindingCard.Bounds.Y-localCard.Bounds.Bottom<=13,"Collapsed bindings left a gap below Local multiplayer: "+localCard.Bounds+" → "+bindingCard.Bounds);
 #else
                 var localSlot=System.Windows.Controls.Primitives.LayoutInformation.GetLayoutSlot(localCard);
                 var bindingSlot=System.Windows.Controls.Primitives.LayoutInformation.GetLayoutSlot(bindingCard);

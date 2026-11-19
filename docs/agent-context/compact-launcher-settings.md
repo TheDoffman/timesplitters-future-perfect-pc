@@ -7,7 +7,8 @@ launcher minimum width; settings TabItems use compact local padding.
 
 Shared SettingsTiles measures and arranges cards in two independently flowing
 columns at720 logical pixels of content width, otherwise one. The binding card flows beneath Local multiplayer while collapsed, and spans
-both columns only when expanded. Cards keep their children mounted, so collapse and
+both columns only when expanded. Collapsed bindings stays in the Local multiplayer
+column even when native control heights differ or deadzone players collapse. Cards keep their children mounted, so collapse and
 resize preserve edits and keyboard focus; expansion is excluded from Draft().
 No host-specific policy or saved layout setting is added. Viewport scrolling and
 the fixed Save/Cancel footer remain available when content grows.
