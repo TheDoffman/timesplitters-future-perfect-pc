@@ -1,12 +1,12 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher source version is **1.6.2**, restoring original editable
-controls without preset translation while preserving personal bindings and the
-collapsible per-player movement/aim deadzone sliders. Publish through the
-three-host workflow after merge; verify all fifteen assets before publishing
-game0.6.2. The preceding public game/launcher versions are0.6.1/1.6.1.
+The next Stable launcher is **1.7.0**, adding live game logs under Tools & Logs,
+V-Sync and expanded video/developer settings, compact settings cards and background
+texture-update checks. These features justify a minor bump from public1.6.2.
+Publish through the three-host workflow after the version PR reaches main;
+verify all fifteen assets and versionless alias parity before publishing game0.7.0.
 
-Stable launcher **1.6.0** is the preceding published release, including shared
+Earlier Stable launcher **1.6.0** included shared
 audio/control settings, independent deadzones and texture/update-notice support.
 
 Stable launcher **1.5.2** is published for Windows, Mac and Linux, including

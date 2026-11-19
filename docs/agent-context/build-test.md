@@ -1,4 +1,4 @@
-[Sync telemetry](network-sync-telemetry.md).
+[0.7 sync](network-sync-telemetry.md).
 
 [Pads](controller-deadzones.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
 [Actors](network-actor-lifetime.md).

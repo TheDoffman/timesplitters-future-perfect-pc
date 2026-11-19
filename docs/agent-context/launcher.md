@@ -1,3 +1,9 @@
+Release preparation (2026-11-19): game0.7.0 and launcher1.7.0 are the next Stable
+versions. The user now requests publication, superseding the integration-only
+version hold below. Both are minor feature releases; source changes still require
+the normal three-host build/package gates and official launcher publication on main.
+The public0.7.0-beta.1 remains immutable historical preview material.
+
 [Background texture checks](background-texture-checks.md): one shared, nonblocking startup check and a persistent footer status replace automatic checking on Settings entry.
 
 [Compact settings cards](compact-launcher-settings.md). Shared SettingsTiles and card expanders replace tall stacked sections; save/apply behavior is unchanged.

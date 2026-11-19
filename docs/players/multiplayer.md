@@ -19,8 +19,7 @@ older downloads may look different.
 
 ![Multiplayer menu with Online, Private Server and LAN choices.](../assets/multiplayer-network.png)
 
-Online **Arcade** isthe normal choice; Story co-op requires a dedicated compatible testing build.
- is not yet supported
+Online **Arcade** is the normal choice; Story co-op requires a dedicated compatible testing build.
 ## Play on the community server
 
 ### Join a match
@@ -40,7 +39,7 @@ vary. Invite Only matches are visible, but require their lobby code to join.*
 
 The number ending in **ms** is the community service's response time. Lower is
 better, but it is not the full gameplay delay to that match's host. **-- ms**
-means no measurement is available. A full match cannot accept anoth
+means no measurement is available. A full match cannot accept another player.
 ### Host a match
 
 1. Choose **Multiplayer > Online > Start New Match**.
