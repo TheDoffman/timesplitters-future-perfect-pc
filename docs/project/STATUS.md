@@ -1,3 +1,15 @@
+## Settings PR integration (2026-11-18)
+
+Combined dev-tools-settings cbf4c62ac with remote maina55ff19c1 (PR572's
+frontend desktop-exit restoration). Source merged without conflicts; retained
+both validation histories and shortened the Systems summary to stay within
+the context-size limit. Windows x64 / MSVC14.42.34433, D3D11 and SDL3.4.16.
+The supported Release build exited0 with standard isolated checks, executable
+sealing and matching symbols. Developer Tools, FOV, V-Sync, controller-profile
+and quit-menu suites:126 passed,2 macOS compile contracts skipped. Patch/context
+and whitespace checks pass. No private saves/settings were changed. Native
+Mac/Linux visual and physical-device acceptance remains unverified.
+
 ## Developer Video option parity (2026-11-18)
 
 Local uncommitted `dev-tools-settings`, base02cc3de2241e80234548fbbc9c0beb57e7805800.
@@ -107,6 +119,9 @@ visibility, firing/reload and freecam transition acceptance remain unverified;
 all use the shared implementation with no new platform adapter. Personal saves
 and settings were preserved. Nothing committed or pushed; other-device sync is
 unverified. See the [platform handoff](MAC_PORT_BACKLOG.md).
+PR572 CI follow-up: strict Mac compilation found unused restored callbacks in the pause integration fixture. The fixture now executes confirmation open/build/invalid-select alongside the frontend/pause scoping checks; production callback behavior is unchanged.
+
+Main-menu desktop exit restoration (2026-11-18, PR572): restored Quit to Desktop only at the frontend builder, with player0 ownership and native Cancel-first confirmation. Pause Settings and pause desktop-exit removal remain intact. New callback padding verified against the supported US executable; shared fixtures and full production-menu tests pass:36 passed,28 skipped (platform/local game-data contracts). Rebuilt-game acceptance pending.
 
 ## V-Sync playable Windows test build (2026-11-18)
 

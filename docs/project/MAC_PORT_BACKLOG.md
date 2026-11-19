@@ -1367,7 +1367,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-028 | Preserve frontend camera FOV (#82) | Awaiting validation |
 | MAC-029 | Skippable idle demo video (#50) | Awaiting validation |
 | MAC-030 | Menu mouse selection (#86) | Awaiting validation |
-| MAC-031 | Quit to Desktop menu entries (retired) | Not applicable |
+| MAC-031 | Main-menu Quit to Desktop | Awaiting validation |
 | MAC-032 | Responsive menu backgrounds and scope masks | Awaiting validation |
 | MAC-033 | Full-display transition fades | Awaiting validation |
 | MAC-034 | Plain improvement form handoff | Not applicable |
@@ -5270,17 +5270,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   on Apple Silicon with Clang. This does not verify native window input, rendering
   or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
 
-### MAC-031 — Quit to Desktop menu entries (retired)
+### MAC-031 — Main-menu Quit to Desktop
 
-- **Status:** Not applicable
-- Retired by user request,2026-11-13, pause Settings follow-up.
-- Shared menu insertion, desktop confirmation callbacks and the old quit fixture
-  were removed. Ordinary host window close/shutdown remains unchanged. The legacy
-  quit-desktop patch still supplies the menu-finalization hooks used by update
-  notices and Story pause layout; it no longer adds an exit action.
-- Replacement: `src/interface/pc_pause_settings.inc` and its shared fixture;
-  see [pause Settings](../agent-context/pause-settings.md). Native visual checks
-  concern the new hub/child returns rather than the retired confirmation page.
+- **Status:** Awaiting validation
+- PR572 restoration2026-11-18: the earlier pause-only removal also removed
+  the main-menu exit. Shared `pc_main_quit.inc`, called only by the main frontend
+  finalizer, restores the row and Cancel-first confirmation; pause remains free
+  of desktop-exit rows. Callbacks123FB..123FE are separate verified padding.
+- Windows uses the ordinary WM_CLOSE path; native Mac/Linux reuse
+  `tsfp_native_request_quit`. No new adapter is needed. Shared fixtures cover
+  frontend/pause scoping and both host shutdown adapters. Actual rebuilt-game
+  navigation, cancel, confirm and clean shutdown acceptance remain pending.
+- See [contracts](../agent-context/pause-settings.md#main-menu-desktop-exit).
 
 ### MAC-049 — Spirit skull and eye rendering (#17)
 

@@ -1,5 +1,20 @@
 # Pause Settings hub
 
+## Main-menu desktop exit
+
+Restored2026-11-18 after the pause-only removal also removed the frontend row.
+`pc_pause_settings.inc` calls `main_quit_menu_append` only at the main builder's
+return PC2D0EDF, and only player0 gets the row. Neither pause caller2F582F/2F5879
+adds it. `pc_main_quit.inc` retains native Cancel-first confirmation, Back, retry
+when shutdown is refused, and single successful window-close/SDL-quit delivery.
+Callbacks123FB..123FE use verified unused INT3 bytes in the supported US XBE;
+they are distinct from the pause hub and multiplayer callbacks. The shared lookup
+routes all four on Windows and native Mac/Linux. No runtime patch changes.
+`main_quit.c` checks confirmation behavior on both adapter defines;
+`pause_settings.c` checks frontend-only insertion, exercises confirmation callbacks
+under strict native compiler warnings, and retains hub/return checks.
+Actual rebuilt-game visual acceptance is pending.
+
 `pc_display_menu_button` reuses the native pause Controls row at return PC
 2F561C as **Settings**, without inserting an extra row. The former Audio row
 at2F5666 keeps its native builder record/setters but is disabled/hidden and has

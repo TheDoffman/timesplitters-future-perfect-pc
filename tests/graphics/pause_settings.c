@@ -1,4 +1,5 @@
-/* Production hub callbacks, native child returns and removal of desktop exit. */
+/* Pause hub and main-only desktop exit integration. */
+#define TSFP_QUIT_MENU_TEST
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,9 +17,17 @@ typedef struct {uint32_t sp;} GuestRegisters;
 static void save_registers(GuestRegisters *r){r->sp=g_esp;}
 static void restore_registers(const GuestRegisters *r){g_esp=r->sp;}
 static int guest_writable(uint32_t p,size_t n){return p>=0x1000&&p<sizeof memory&&n<=sizeof memory-p;}
-static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t a){CHECK(n==80&&a==4);return 0x8000;}
+static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t a){CHECK((n==80||n==112)&&a==4);return n==80?0x8000:0x8300;}
 static uint32_t audio_options_caption(void){return 0x8100;}
 static uint32_t controls_caption(void){return 0x8200;}
+#define WM_CLOSE 16
+#ifdef TSFP_NATIVE_DISPLAY
+int tsfp_native_request_quit(void){return 1;}
+#else
+static uintptr_t xbox_D3D8Window(void){return 123;}
+static int PostMessage(uintptr_t w,unsigned m,int a,int b){(void)w;(void)m;(void)a;(void)b;return 1;}
+#endif
+void sub_000770E0(void){}
 static volatile int stub;
 void sub_00079B70(void){stub=1;}
 void sub_00075B70(void){stub=2;}
@@ -40,7 +49,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned n,...)
 {
     uint32_t a[6];va_list ap;va_start(ap,n);for(unsigned i=0;i<n;i++)a[i]=va_arg(ap,uint32_t);va_end(ap);
     if(fn==sub_00079B70){CHECK(n==2);next_parent=a[0];next_menu=a[1];}
-    else if(fn==sub_00075B70){CHECK(n==5&&a[0]==0xa000&&a[4]==PAUSE_SETTINGS_BACK);rows=0;}
+    else if(fn==sub_00075B70){CHECK(n==5&&a[0]==0xa000&&(a[4]==PAUSE_SETTINGS_BACK||a[4]==0x123feu));rows=0;}
     else if(fn==sub_00079D60_gen){CHECK(n==6&&rows<4);captions[rows]=a[0];callbacks[rows++]=a[4];}
     else if(fn==sub_000771D0){CHECK(a[0]==0x2000);layouts++;}
     return 0;
@@ -67,15 +76,21 @@ int main(void)
     }
     call(pause_settings_open);WORD_AT(0x79094c)=101;
     CHECK(pause_settings_return(0x3000,0x524700)==0x524700&&!pause_settings_active);
+    WORD_AT(0x2038)=0;
     const uint32_t callers[]={0x2d0edf,0x2f582f,0x2f5879,0x12008};
     for(unsigned i=0;i<4;i++) {
         g_esp=0x1000;WORD_AT(g_esp)=callers[i];WORD_AT(g_esp+4)=0x2000;
-        rows=layouts=0;pc_display_menu_finish(original);CHECK(!rows&&layouts==1&&g_esp==0x1004);
+        rows=layouts=0;pc_display_menu_finish(original);CHECK(rows==(i==0?1u:0u)&&layouts==1&&g_esp==0x1004);
+        if(i==0)CHECK(callbacks[0]==QUIT_OPEN_CB && !strcmp((char *)(g_xbox_mem_offset+captions[0]),"Quit to Desktop"));
     }
     CHECK(notices==1);
+    /* The integration fixture also exercises the restored confirmation callbacks. */
+    call(quit_open);CHECK(next_parent==0x3000&&next_menu==quit_storage);
+    call(quit_build);CHECK(rows==2&&callbacks[0]==QUIT_SELECT_CB&&callbacks[1]==QUIT_SELECT_CB);
+    WORD_AT(0x218c)=42;call(quit_select); /* Invalid selection must not exit. */
 #ifdef _WIN32
     CHECK(story_rows==2&&story_layouts==2);
 #endif
-    puts("PASS: pause Settings hub, child returns, fresh pause, native hooks and no desktop exit rows");
+    puts("PASS: pause Settings hub, child returns, fresh pause, native hooks and main-only desktop exit");
     return 0;
 }
