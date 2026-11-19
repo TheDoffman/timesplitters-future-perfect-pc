@@ -31,10 +31,10 @@ The initial Present-only prototype never delivered replacements in this title;
 its apparent pacing gains are invalid evidence. Actual DDS upload records and
 rendered Enhanced scenes are required alongside queue unit tests.
 
-The in-game Video Options Apply path calls the explicit tsfp_texture_set_4k
-setter. Unlike the host toggle, that setter does not emit a mode log line.
-Reopening Video Options reads the effective mode; a pending row label alone is
-not evidence that the change was applied. Texture selection is session-only.
+Video Options and the Dev Tools Settings Apply paths use tsfp_texture_save_4k.
+Texture selection persists beside the shared display/input settings; failed
+writes retain the live choice. Reopening reads the effective mode; a pending
+row label alone is not evidence that the change was applied.
 
 Integration #308/#311: upload timing follows the queued request by value. Only
 the renderer opens/writes/closes the bounded CSV; the worker stamps read times
@@ -292,10 +292,10 @@ selector context. No generated-code or patch edits are needed.
 
 Visibility switches HUD & UI and Version watermark now live in
 Settings > Video Settings > View & HUD, with no Tools HUD category. These remain
-immediate session settings (not staged video drafts), usable while the host
+immediate saved settings (not staged video drafts), usable while the host
 disables Tools. Host policy polling preserves explicit HUD/watermark choices;
-revoking an active free camera still restores its automatically hidden HUD.
+revoking an active free camera restores the saved HUD choice.
 The input fixture checks placement and live updates under denied host policy.
 
 View & HUD visibility labels are HUD & UI and Version watermark (no Show prefix);
-this wording-only refinement leaves immediate session semantics unchanged.
+the three visibility switches now persist via the shared controls JSON.

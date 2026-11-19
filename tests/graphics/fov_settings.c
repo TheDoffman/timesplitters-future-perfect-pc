@@ -31,6 +31,13 @@ int pc_controls_developer_is_fullscreen(void){return sidebar_fullscreen;}
 void pc_controls_developer_fullscreen(void){sidebar_fullscreen=!sidebar_fullscreen;}
 void pc_developer_get(PcDeveloperState *out) {*out=(PcDeveloperState){0,0,0,0,1.,0};}
 static int developer_hud_visible=1;
+static PcViewSettings view_preferences;
+static int view_save_ok=1;
+void pc_settings_view_read(PcViewSettings *out){*out=view_preferences;}
+int pc_settings_view_save(const PcViewSettings *value,char *error,size_t bytes){
+    if(!view_save_ok){snprintf(error,bytes,"Could not save view settings.");return 0;}
+    view_preferences=*value;return 1;
+}
 int pc_developer_hud_visible(void) {return developer_hud_visible;}
 void pc_developer_close(void) {assert(!"unexpected Developer Tools close");}
 void pc_developer_report(const char *message) {(void)message;assert(!"unexpected developer request");}
@@ -765,6 +772,7 @@ int main(int argc,char **argv)
             CHECK(menu_video_tabs_poll(current_menu) && video_pending_tab==2);
             WORD_AT(current_menu+0x1b0)=3;menu_video_tabs_flush();
             CHECK(page==DISPLAY_VIEW && video_pending_tab==-1);
+            CHECK(hud_row&&watermark_row); /* Frontend and paused menu share both controls. */
             CHECK(!menu_video_tabs_poll(current_menu)); /* Held click cannot repeat. */
             tab_pointer.left=0;menu_video_tabs_poll(current_menu);
             tab_pointer.x=397.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(current_menu));
@@ -898,6 +906,23 @@ int main(int argc,char **argv)
     CHECK(!display_dirty() && staged_fov==55 && staged_rate==0 && texture_choice==0);
     content("TSFP_DISPLAY_V1 1280 720\n");
     refresh(DISPLAY_VIEW,0);
+    CHECK(hud_row&&watermark_row&&WORD_AT(hud_row+0x14)==16u&&WORD_AT(watermark_row+0x14)==17u);
+    CHECK(WORD_AT(hud_row+0xc8)==1u&&WORD_AT(watermark_row+0xc8)==1u);
+    view_preferences.hide_watermark=1;read_choices(); /* A Dev Tools edit refreshes the open native menu. */
+    CHECK(!WORD_AT(watermark_row+0xc8)&&view_preferences.hide_watermark);
+    view_preferences.hide_watermark=0;read_choices();CHECK(WORD_AT(watermark_row+0xc8)==1u);
+    view_preferences.hide_viewmodel=1; /* Preserve the independent Tools preference. */
+    WORD_AT(hud_row+0xc8)=0;call(TICK_CB,16,0);
+    WORD_AT(watermark_row+0xc8)=0;call(TICK_CB,17,0);
+    CHECK(view_preferences.hide_hud&&view_preferences.hide_watermark&&view_preferences.hide_viewmodel&&!display_dirty());
+    refresh(DISPLAY_GRAPHICS,0);CHECK(!hud_row&&!watermark_row);
+    refresh(DISPLAY_VIEW,0);CHECK(!WORD_AT(hud_row+0xc8)&&!WORD_AT(watermark_row+0xc8));
+    view_save_ok=0;WORD_AT(hud_row+0xc8)=1;WORD_AT(watermark_row+0xc8)=1;call(TICK_CB,16,0);
+    CHECK(view_preferences.hide_hud&&view_preferences.hide_watermark&&*status);
+    CHECK(!WORD_AT(hud_row+0xc8)&&!WORD_AT(watermark_row+0xc8));view_save_ok=1;
+    WORD_AT(hud_row+0xc8)=1;WORD_AT(watermark_row+0xc8)=1;call(TICK_CB,17,0);
+    CHECK(!view_preferences.hide_hud&&!view_preferences.hide_watermark&&view_preferences.hide_viewmodel);
+    view_preferences.hide_viewmodel=0;*status=0;
     for(int i=0;i<100;i++)call(TICK_CB,2,0x80000);CHECK(staged_fov==100 && pc_display_fov()==55);
     for(int i=0;i<100;i++)call(TICK_CB,2,0x40000);CHECK(staged_fov==40);
     WORD_AT(0x70000c)=0x400000;
@@ -1552,25 +1577,55 @@ int main(int argc,char **argv)
     WORD_AT(0x76b108)=WORD_AT(0x76b140)=0;WORD_AT(0x78ad2c)=9;
     /* Real sidebar adapter: save on guest thread, confirm/revert previews,
        preserve existing settings on a failed batch, and use native subtitles. */
+    WNDCLASSA sidebar_class={0};sidebar_class.lpfnWndProc=fullscreen_test_proc;
+    sidebar_class.hInstance=GetModuleHandle(NULL);sidebar_class.lpszClassName="SidebarFullscreenFixture";
+    CHECK(RegisterClassA(&sidebar_class));
+    fixture_window=CreateWindowA(sidebar_class.lpszClassName,"Sidebar",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,sidebar_class.hInstance,NULL);
+    CHECK(fixture_window);
     sidebar_open=1;video_sample_at=video_modes_at=0;g_esp=0x700000;
     video_sidebar_tick();CHECK(sidebar_video_observed.available&&sidebar_video_observed.mode_count>1);
     PcVideoValues saved=sidebar_video_observed.current,edit=saved;
     edit.value[VIDEO_FOV]=73;edit.value[VIDEO_SUBTITLES]=!saved.value[VIDEO_SUBTITLES];
+    edit.value[VIDEO_WEAPON_FOV]=70;edit.value[VIDEO_CROSSHAIR]=125;edit.value[VIDEO_VSYNC]=1;
     sidebar_video_queued=(PcVideoRequest){1,VIDEO_APPLY,edit};video_sidebar_tick();
     CHECK(sidebar_video_observed.completed==1&&pc_display_fov()==73);
+    CHECK(pc_display_weapon_fov_degrees()==70&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
+    CHECK(sidebar_video_observed.current.value[VIDEO_WEAPON_FOV]==70&&sidebar_video_observed.current.value[VIDEO_CROSSHAIR]==125);
+    {char text[256]={0};FILE *file=fopen(path,"rb");CHECK(file);fread(text,1,sizeof text-1,file);fclose(file);
+     CHECK(strstr(text,"TSFP_DISPLAY_V5")&&strstr(text,"70")&&strstr(text,"125"));}
+    /* A late save failure restores exact legacy weapon aperture and V-Sync. */
+    CHECK(pc_display_set_weapon_fov(115)&&pc_display_save());
+    saved=video_read();edit=saved;edit.value[VIDEO_WEAPON_FOV]=80;edit.value[VIDEO_CROSSHAIR]=50;
+    edit.value[VIDEO_VSYNC]=0;edit.value[VIDEO_COUNTER]=!saved.value[VIDEO_COUNTER];counter_save_ok=0;
+    sidebar_video_queued=(PcVideoRequest){20,VIDEO_APPLY,edit};video_sidebar_tick();counter_save_ok=1;
+    CHECK(pc_display_weapon_fov_legacy_percent()==115&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
+    CHECK(strstr(sidebar_video_observed.message,"Could not save"));
+    edit=video_read();edit.value[VIDEO_VSYNC]=0;vsync_save_ok=0;
+    sidebar_video_queued=(PcVideoRequest){21,VIDEO_APPLY,edit};video_sidebar_tick();vsync_save_ok=1;
+    CHECK(pc_vsync_enabled()&&strstr(sidebar_video_observed.message,"Could not save"));
+    const int invalid_fields[]={VIDEO_WEAPON_FOV,VIDEO_CROSSHAIR,VIDEO_VSYNC};
+    const int invalid_values[]={101,126,2};
+    for(unsigned i=0;i<3;i++) {
+        edit=video_read();edit.value[invalid_fields[i]]=invalid_values[i];
+        sidebar_video_queued=(PcVideoRequest){22+i,VIDEO_APPLY,edit};video_sidebar_tick();
+        CHECK(strstr(sidebar_video_observed.message,"Invalid"));
+    }
     CHECK(WORD_AT(0x400130)==(unsigned)edit.value[VIDEO_SUBTITLES]&&(WORD_AT(0x78ad24)&0x10000));
     saved=sidebar_video_observed.current;edit=saved;edit.value[VIDEO_FOV]=81;
     edit.value[VIDEO_AF]=saved.value[VIDEO_AF]==16?8:16;graphics_save_ok=0;
     sidebar_video_queued=(PcVideoRequest){2,VIDEO_APPLY,edit};video_sidebar_tick();graphics_save_ok=1;
     CHECK(pc_display_fov()==73&&strstr(sidebar_video_observed.message,"Could not save"));
     saved=sidebar_video_observed.current;edit=saved;edit.width=saved.width==1280?1920:1280;edit.height=edit.width==1280?720:1080;
+    edit.value[VIDEO_WEAPON_FOV]=80;edit.value[VIDEO_CROSSHAIR]=50;edit.value[VIDEO_VSYNC]=0;
     sidebar_video_queued=(PcVideoRequest){3,VIDEO_APPLY,edit};video_sidebar_tick();
     CHECK(sidebar_video_observed.preview&&pc_display_current().width==edit.width);
+    CHECK(pc_display_weapon_fov_legacy_percent()==115&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
     clock_ms+=15001;video_sidebar_tick();CHECK(!sidebar_video_observed.preview&&pc_display_current().width==saved.width);
     sidebar_video_queued=(PcVideoRequest){4,VIDEO_APPLY,edit};video_sidebar_tick();CHECK(sidebar_video_observed.preview);
     sidebar_open=0;clock_ms+=201;video_sidebar_tick();CHECK(pc_display_current().width==saved.width);
     sidebar_open=1;sidebar_video_queued=(PcVideoRequest){5,VIDEO_APPLY,edit};video_sidebar_tick();
     sidebar_video_queued=(PcVideoRequest){6,VIDEO_KEEP,edit};video_sidebar_tick();CHECK(!sidebar_video_observed.preview&&pc_display_current().width==edit.width);
+    CHECK(pc_display_weapon_fov_degrees()==80&&pc_display_crosshair_size()==50&&!pc_vsync_enabled());
     edit=sidebar_video_observed.current;edit.value[VIDEO_FOV]=999;
     sidebar_video_queued=(PcVideoRequest){7,VIDEO_APPLY,edit};video_sidebar_tick();CHECK(pc_display_fov()==73);
     edit=sidebar_video_observed.current;edit.value[VIDEO_FOV]=65;
@@ -1584,8 +1639,31 @@ int main(int argc,char **argv)
     CHECK(graphics_options.msaa==4&&graphics_options.supersampling==1&&!graphics_options.shader_cache);
     CHECK(pc_post_aa_get()==(unsigned)edit.value[VIDEO_AA]&&tsfp_texture_is_4k());
     CHECK(pc_feed_enabled()==edit.value[VIDEO_FEED]&&pc_counter_enabled()==edit.value[VIDEO_COUNTER]);
-    CHECK(requested_rate==120&&sidebar_fullscreen&&sidebar_video_observed.restart);
+    CHECK(requested_rate==120&&pc_display_fullscreen()&&sidebar_video_observed.restart);
+    {
+        FILE *file=fopen(runtime_path,"rb");CHECK(file);char text[8192]={0};fread(text,1,sizeof text-1,file);fclose(file);
+        CHECK(strstr(text,"fullscreen = 1"));
+        file=fopen(texture_path,"rb");CHECK(file);memset(text,0,sizeof text);fread(text,1,sizeof text-1,file);fclose(file);
+        CHECK(strstr(text,"TSFP_TEXTURES_V1 1"));
+    }
     sidebar_video_queued=(PcVideoRequest){9,VIDEO_CLEAR_CACHE,edit};int old_clears=cache_clear_calls;video_sidebar_tick();CHECK(cache_clear_calls==old_clears+1);
+    /* Fullscreen/texture write failures and host refusal retain the old batch. */
+    saved=sidebar_video_observed.current;edit=saved;edit.value[VIDEO_FULLSCREEN]=0;
+    edit.value[VIDEO_TEXTURE]=0;edit.value[VIDEO_FOV]=66;
+    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_READONLY));
+    sidebar_video_queued=(PcVideoRequest){10,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_NORMAL));
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_READONLY));
+    sidebar_video_queued=(PcVideoRequest){11,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));fullscreen_request_ok=0;
+    sidebar_video_queued=(PcVideoRequest){12,VIDEO_APPLY,edit};video_sidebar_tick();fullscreen_request_ok=1;
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    sidebar_video_queued=(PcVideoRequest){13,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==66&&!pc_display_fullscreen()&&!tsfp_texture_is_4k());
+    CHECK(DestroyWindow(fixture_window));fixture_window=NULL;
+    CHECK(UnregisterClassA(sidebar_class.lpszClassName,sidebar_class.hInstance));
     {
         const uint32_t menu=0x200000u;
         lobby_profile_index=3;lobby_profile_text=0x3b0000u;mp_ui.name_custom=0;

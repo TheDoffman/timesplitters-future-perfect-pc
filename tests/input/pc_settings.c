@@ -124,6 +124,10 @@ int main(int argc,char **argv)
         CHECK(current.keys[14][0]=='J' && current.keys[9][0]==VK_F23 && !current.keys[13][1]);
         CHECK(!current.keys[19][0] && current.keys[19][1]=='K');
         CHECK(pc_settings_menu_visible());
+        PcViewSettings view;pc_settings_view_read(&view);
+        CHECK(view.hide_hud&&view.hide_watermark&&view.hide_viewmodel);
+        PcDeveloperState restored_view;pc_developer_get(&restored_view);
+        CHECK(restored_view.hide_hud&&restored_view.hide_watermark&&restored_view.hide_viewmodel);
         owner=CreateWindowExA(0,"STATIC","Restored menu",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
         CHECK(owner); pc_settings_attach(owner); CHECK(!GetMenu(owner));
         pc_settings_detach(owner); DestroyWindow(owner);
@@ -137,7 +141,7 @@ int main(int argc,char **argv)
     snprintf(screenshot,sizeof screenshot,"%s\\settings-dialog.bmp",argv[2]);
     original=load(argv[1]); CHECK(original && original[0]=='{');
     f=fopen(path,"wb"); CHECK(f);
-    fputs("{\"retained\":{\"text\":\"escaped \\\" brace } [\",\"values\":[1,2]},",f);
+    fputs("{\"developer_view\":{\"future_view_key\":42},\"retained\":{\"text\":\"escaped \\\" brace } [\",\"values\":[1,2]},",f);
     {
         char *mouse=strstr(original,"\"mouse\"");
         char *brace=mouse?strchr(mouse,'{'):NULL;
@@ -183,6 +187,23 @@ int main(int argc,char **argv)
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
     CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[14][0]=='I');
 
+    {
+        PcViewSettings view={1,1,1},restored;
+        pc_settings_view_read(&restored);CHECK(!restored.hide_hud&&!restored.hide_watermark&&!restored.hide_viewmodel);
+        CHECK(pc_settings_view_save(&view,error,sizeof error));
+        memset(&restored,0,sizeof restored);pc_settings_view_read(&restored);
+        CHECK(restored.hide_hud&&restored.hide_watermark&&restored.hide_viewmodel);
+        CHECK(pc_settings_developer_save(0,error,sizeof error));
+        CHECK(pc_developer_hud_visible()==0&&pc_developer_watermark_visible()==0);
+        CHECK(pc_settings_save(&settings,error,sizeof error)); /* Other editors retain visibility. */
+        pc_settings_view_read(&restored);CHECK(restored.hide_hud&&restored.hide_watermark&&restored.hide_viewmodel);
+        saved=load(path);CHECK(saved&&strstr(saved,"retained_mouse")&&strstr(saved,"future_view_key"));free(saved);
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));view.hide_hud=0;
+        CHECK(!pc_settings_view_save(&view,error,sizeof error));
+        CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+        pc_settings_view_read(&restored);CHECK(restored.hide_hud);
+        view=(PcViewSettings){0};CHECK(pc_settings_view_save(&view,error,sizeof error));
+    }
     owner=CreateWindowExA(0,"STATIC","PC settings integration test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner);
     CHECK(!pc_settings_menu_visible());
@@ -221,6 +242,7 @@ int main(int argc,char **argv)
     CHECK(pc_settings_read(&current,error,sizeof error) && !current.keys[19][0] && current.keys[19][1]=='K');
     saved=load(path); CHECK(saved && strstr(saved,"key:#74") && strstr(saved,"key:#134")); free(saved);
     {
+        PcViewSettings view={1,1,1};CHECK(pc_settings_view_save(&view,error,sizeof error));
         char executable[MAX_PATH],command[2*MAX_PATH+32];
         STARTUPINFOA startup={sizeof startup}; PROCESS_INFORMATION child={0}; DWORD code;
         GetModuleFileNameA(NULL,executable,sizeof executable);

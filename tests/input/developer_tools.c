@@ -27,6 +27,12 @@ static PcMenuPointer pointer;
 static PcDebugOptions debug;
 static float test_ui_scale=1.f;
 static PcSettings persisted;static int persisted_valid;
+static PcViewSettings saved_view;static int view_save_ok=1;
+void pc_settings_view_read(PcViewSettings *out) {*out=saved_view;}
+int pc_settings_view_save(const PcViewSettings *value,char *error,size_t bytes) {
+    if(!view_save_ok){snprintf(error,bytes,"Could not save view settings.");return 0;}
+    saved_view=*value;return 1;
+}
 const char *const pc_action_labels[PC_ACTION_COUNT]={
     "Fire","Action","3","4","5","6","7","8","9","10","11","12",
     "13","14","15","16","17","18","19","20","21","22","23","24",
@@ -76,6 +82,7 @@ static int drawn(const char *text) {unsigned n=paint();for(unsigned i=0;i<n;i++)
 static void click(int kind,int a,int b) {
     paint();int found=-1;
     for(unsigned i=0;i<sidebar_count;i++)if(sidebar_widgets[i].kind==kind&&sidebar_widgets[i].a==a&&sidebar_widgets[i].b==b){found=(int)i;break;}
+    if(found<0)fprintf(stderr,"Missing widget: kind=%d a=%d b=%d\n",kind,a,b);
     assert(found>=0);DeveloperWidget v=sidebar_widgets[found];
     if(v.content&&(v.y<sidebar_top||v.y+v.h>sidebar_bottom)) {
         sidebar_scroll[page]+=v.y-sidebar_top;paint();v=sidebar_widgets[found];
@@ -86,6 +93,16 @@ static void click(int kind,int a,int b) {
     pointer.left=1;frame();pointer.left=0;frame();paint();
 }
 static void type(const char *s) {for(;*s;s++)key(*s=='.'?0xbe:*s>='a'&&*s<='z'?*s-32:*s);}
+static void drag_video_slider(int id,float fraction) {
+    paint();int found=-1;
+    for(unsigned i=0;i<sidebar_count;i++)if(sidebar_widgets[i].kind==UI_SLIDER&&sidebar_widgets[i].a==id){found=(int)i;break;}
+    assert(found>=0);DeveloperWidget v=sidebar_widgets[found];
+    sidebar_scroll[page]+=v.y-sidebar_top;paint();v=sidebar_widgets[found];
+    pointer.valid=1;pointer.width=pointer_width;pointer.height=pointer_height;
+    pointer.x=(sidebar_left+(v.x+fraction*v.w)*sidebar_scale)*pointer_width/paint_width;
+    pointer.y=(v.y+v.h*.5f)*sidebar_scale*pointer_height/paint_height;
+    pointer.left=1;frame();pointer.left=0;frame();paint();
+}
 int main(void) {
     PcDeveloperState s;PcDeveloperLine lines[PC_DEVELOPER_MAX_DRAW];
     /* Match status is visible with Tools disabled, owns no input, and clears
@@ -211,6 +228,7 @@ int main(void) {
     click(UI_SETTING,0,0);assert(persisted.invert_y);
     PcVideoSnapshot video={0};video.available=video.effects=1;video.current.width=1920;video.current.height=1080;
     video.current.value[VIDEO_FOV]=55;video.current.value[VIDEO_MSAA]=video.current.value[VIDEO_AF]=1;
+    video.current.value[VIDEO_WEAPON_FOV]=55;video.current.value[VIDEO_CROSSHAIR]=100;
     video.modes[0][0]=1920;video.modes[0][1]=1080;video.modes[1][0]=2560;video.modes[1][1]=1440;video.mode_count=2;
     pc_developer_video_publish(&video);paint();
     assert(drawn("Input Settings")&&drawn("Video Settings")&&!drawn("Debug settings & diagnostics"));
@@ -218,6 +236,8 @@ int main(void) {
     click(UI_GROUP,11,0);assert(!drawn("Mouse sensitivity"));click(UI_GROUP,11,0);
     click(UI_VIDEO,VIDEO_FULLSCREEN,0);assert(sidebar_video_dirty()&&!fullscreen);
     click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(!sidebar_video_dirty());
+    click(UI_VIDEO,VIDEO_VSYNC,0);assert(sidebar_video_draft.value[VIDEO_VSYNC]&&sidebar_video_dirty());
+    click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(!sidebar_video_draft.value[VIDEO_VSYNC]);
     click(UI_SEARCH,0,0);type("resolution");
     click(UI_VIDEO,VIDEO_RESOLUTION,0);assert(sidebar_video_dropdown==VIDEO_RESOLUTION);
     assert(drawn("2560"));
@@ -228,13 +248,58 @@ int main(void) {
     click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(pc_developer_video_take(&request)&&request.action==VIDEO_REVERT);
     video.completed=request.serial;video.preview=0;pc_developer_video_publish(&video);paint();assert(!sidebar_video_dirty());
     key(27);click(UI_GROUP,15,0);
+    drag_video_slider(6,0);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==40);
+    drag_video_slider(6,.999f);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==100);
+    click(UI_NUMBER,6,0);type("67");key(13);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==67);
+    click(UI_STEP,6,1);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==68);
+    click(UI_PRESET,6,0);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==55);
+    click(UI_NUMBER,6,0);type("43");key(13);
+    assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==43&&sidebar_video_dirty());
+    key(0x27);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==44);key(0x25);
+    drag_video_slider(7,0);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==25);
+    drag_video_slider(7,.999f);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==150);
+    click(UI_PRESET,7,0);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==100);
+    click(UI_STEP,7,-1);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==95);
+    click(UI_NUMBER,7,0);type("126");key(13);assert(edit_number==7);key(27);
+    click(UI_NUMBER,7,0);type("40");key(13);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==40);
+    key(0x27);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==45);key(0x25);
+    assert(sidebar_video_dropdown<0);
+    click(UI_VIDEO,VIDEO_APPLY_BUTTON,0);assert(pc_developer_video_take(&request));
+    assert(request.desired.value[VIDEO_WEAPON_FOV]==43&&request.desired.value[VIDEO_CROSSHAIR]==40);
+    video.completed=request.serial;pc_developer_video_publish(&video);paint();assert(!sidebar_video_dirty());
+    pc_developer_get(&s);assert(!s.hide_viewmodel);
+    click(UI_ACTION,SETTINGS,6);assert(drawn("Show first-person viewmodel"));
+    pc_developer_get(&s);assert(s.hide_viewmodel&&!s.freecam);
+    assert(!sidebar_video_dirty()&&saved_view.hide_viewmodel); /* Saved live, independent of video drafts. */
+    pc_developer_get(&s);assert(s.hide_viewmodel); /* Reload from persisted preferences. */
+    view_save_ok=0;click(UI_ACTION,SETTINGS,6);pc_developer_get(&s);
+    assert(s.hide_viewmodel&&saved_view.hide_viewmodel);view_save_ok=1;
+    pc_developer_close();key('N');pc_developer_get(&s);assert(s.freecam&&s.hide_viewmodel);
+    key('N');pc_developer_get(&s);assert(!s.freecam&&s.hide_viewmodel);
+    pc_developer_toggle();
+    click(UI_ACTION,SETTINGS,6);pc_developer_get(&s);assert(!s.hide_viewmodel);
+    click(UI_ACTION,SETTINGS,6);
+    assert(pc_developer_set_enabled(0));pc_developer_get(&s);assert(!s.hide_viewmodel);
+    assert(pc_developer_set_enabled(1));pc_developer_toggle();
+    pc_developer_get(&s);assert(s.hide_viewmodel); /* Disabling Tools preserves the preference. */
+    click(UI_ACTION,SETTINGS,6);
     pc_developer_match_policy(1,0);
+    pc_developer_get(&s);assert(!s.hide_viewmodel);
+    selected=6;activate(0);pc_developer_get(&s);assert(!s.hide_viewmodel);
     click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
     pc_developer_match_policy(1,0);pc_developer_publish(1,0,1);
     assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible()&&page==SETTINGS);
     assert(!sidebar_video_dirty()); /* Session visibility applies immediately. */
     click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
     assert(pc_developer_hud_visible()&&pc_developer_watermark_visible());
+    click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
+    assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible());
+    assert(pc_developer_set_enabled(0));
+    assert(!pc_developer_hud_visible()&&!pc_developer_watermark_visible());
+    assert(pc_developer_set_enabled(1));pc_developer_toggle();
+    pc_developer_match_policy(0,0);pc_developer_close();key('N');key('N');pc_developer_toggle();
+    assert(!pc_developer_hud_visible()&&saved_view.hide_hud); /* Freecam leaves manual HUD choice intact. */
+    click(UI_ACTION,SETTINGS,4);click(UI_ACTION,SETTINGS,5);
     pc_developer_match_policy(0,0);
     click(UI_STEP,5,1);assert(sidebar_video_draft.value[VIDEO_FOV]==56);
     click(UI_NUMBER,5,0);type("85");key(13);assert(sidebar_video_draft.value[VIDEO_FOV]==85);

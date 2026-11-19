@@ -1,4 +1,5 @@
 [Sync telemetry](network-sync-telemetry.md).
+
 [Pads](controller-deadzones.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
 [Actors](network-actor-lifetime.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
@@ -913,7 +914,7 @@ profile save, batch rollback and resolution Keep/timeout/close behavior.
 The real-font fixture also evicts the full glyph cache and verifies that a
 tracked semibold title recreates identical pixels after video labels replace it.
 
-[Developer Tools integration](developer-tools-integration.md).
+[Video tests](developer-tools-integration.md#video-parity).
 
 Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
 tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_saves.cs

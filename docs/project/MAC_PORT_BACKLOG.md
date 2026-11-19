@@ -1,3 +1,43 @@
+Developer Video option parity (2026-11-18, uncommitted after02cc3de2):
+**Awaiting validation** on native Mac/Linux. Shared `pc_video_sidebar.h`/`.inc`
+and `pc_video_sidebar_ui.inc` expose V-Sync, Weapon FOV and Crosshair Size using
+the existing shared display/V-Sync persistence and host presentation adapters.
+No new adapter is required. Native acceptance: change/relaunch all three,
+compare regular menu values, verify resolution Keep/Revert and failed saves,
+review weapon/crosshair scale and actual host presentation. Weapon FOV and
+Crosshair Size now share the vertical FOV slider/number/step/reset layout;
+native acceptance also includes pointer dragging and keyboard entry. Windows evidence
+and remaining limits are in [STATUS](STATUS.md).
+
+Regular Video Options HUD/watermark controls (2026-11-18, uncommitted after0e196ee9):
+**Awaiting validation** on native Mac/Linux. Shared `pc_display_menu.c` adds
+the Off/On rows to frontend/pause View & HUD. `pc_bindings.inc` owns one cached,
+persisted preference for both native and Developer Tools menus; `pc_developer.c`
+applies HUD/watermark choices even without Tools opt-in. Existing native storage,
+HUD and watermark callbacks already provide the adapters; no new OS code is
+required. Native acceptance: frontend/pause toggles, relaunch, denied-write
+retention, Tools disabled, both menus open and freecam transitions. See
+[Windows checks and remaining gaps](STATUS.md).
+
+Developer Settings persistence (2026-11-18, uncommitted after98c6e757):
+**Awaiting validation** on native Mac/Linux. Shared `pc_bindings.inc` persists
+HUD/watermark/viewmodel choices through the existing native atomic controls
+writer. `pc_developer.c` separates saved preferences from temporary overrides;
+`pc_video_sidebar.inc` reuses the shared texture save and fullscreen save/set
+adapters. No new OS adapter is needed. Native acceptance: save every Settings
+category, relaunch, verify values, freecam/Tools permission transitions and
+failed-write retention. Windows regression/build evidence is in [STATUS](STATUS.md).
+
+Developer viewmodel visibility (2026-11-18, after98c6e757 dev-tools-settings):
+**Awaiting validation** on native Mac/Linux. The shared Developer Tools View & HUD
+switch uses `src/interface/pc_video_sidebar_ui.inc`, `pc_developer.c`/`.h`
+and the existing `pc_developer_guest.inc` draw gate on all hosts. No new OS
+adapter is required; native builds already include this hook. Default remains
+visible; manual hiding is independent of freecam and requires match Tools
+permission. Windows input/guest fixtures pass. Native acceptance: toggle with
+weapons/bare hands, enter/leave freecam, verify firing/reload continue, restore
+visibility and disable Tools. See [validation](STATUS.md).
+
 Tools & Logs consolidation (2026-11-18): shared MaintenanceArea now hosts the live Console alongside Repair / Verify and Diagnostics; NativeMaintenance receives the same embedded ConsolePage. Native runtime navigation/scroll acceptance pending.
 
 Launcher Console (2026-11-18): shared UI/model implemented; Linux Avalonia cross-build verified from Windows. Pending native Mac/Linux live-game polling, copy/selection, scroll and resize visual acceptance. Existing native 4 MiB capture limit preserved.

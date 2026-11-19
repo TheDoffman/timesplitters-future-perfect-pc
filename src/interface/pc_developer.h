@@ -13,6 +13,7 @@ typedef struct PcDeveloperState {
     int speed_keys, god, infinite_ammo;
     double manual_speed, slow_speed, fast_speed;
     int audio_speed;
+    int hide_viewmodel;
 } PcDeveloperState;
 typedef struct PcDeveloperLine {
     char text[160];

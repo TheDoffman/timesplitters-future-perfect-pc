@@ -12,7 +12,7 @@ LAN enables explicitly, Online publishes connect/disconnect. No stale re-import.
 Shared Windows/Mac/Linux; fixture: `tests/network/network_eligibility.c`.
 [Sun/visibility](fidelity-comparison.md): optional preset removed; normal settings restored.
 
-[Tools](developer-tools-integration.md).
+[Tools/Video](developer-tools-integration.md#settings).
 
 [Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
 [Input](controls-options.md).
@@ -932,10 +932,9 @@ Reset points left from the top of its arc (counterclockwise); hold-speed ends sh
 See [sidebar contracts and history](systems-continuation.md#developer-tools-sidebar-presentation)
 for input/save boundaries, styles, clipping and native adapter details.
 
-The Settings tab now has independent Input Settings / Video Settings categories.
-`pc_video_sidebar_ui.inc` owns drafts/selectors; `pc_video_sidebar.inc` consumes
-value-only mailbox requests on the guest frame, using existing display/graphics
-setters and native subtitle persistence. See the continuation for contracts.
+Settings separates Input / Video. `pc_video_sidebar_ui.inc` owns drafts;
+`pc_video_sidebar.inc` consumes value-only requests on the guest frame through
+shared display/graphics setters and native subtitle persistence. See the continuation.
 
 ## Audio playback updates
 

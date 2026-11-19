@@ -1,3 +1,124 @@
+## Settings PR integration (2026-11-18)
+
+Combined dev-tools-settings cbf4c62ac with remote maina55ff19c1 (PR572's
+frontend desktop-exit restoration). Source merged without conflicts; retained
+both validation histories and shortened the Systems summary to stay within
+the context-size limit. Windows x64 / MSVC14.42.34433, D3D11 and SDL3.4.16.
+The supported Release build exited0 with standard isolated checks, executable
+sealing and matching symbols. Developer Tools, FOV, V-Sync, controller-profile
+and quit-menu suites:126 passed,2 macOS compile contracts skipped. Patch/context
+and whitespace checks pass. No private saves/settings were changed. Native
+Mac/Linux visual and physical-device acceptance remains unverified.
+
+## Developer Video option parity (2026-11-18)
+
+Local uncommitted `dev-tools-settings`, base02cc3de2241e80234548fbbc9c0beb57e7805800.
+Windows x64, MSVC14.42.34433 / Visual Studio2022, common D3D11 frontend,
+SDL3.4.16 input. Comparing the regular menu with Dev Tools identified three
+missing controls: V-Sync in Display, Weapon FOV and Crosshair Size in View & HUD.
+The shared sidebar now stages all three with Apply/Revert, persists through
+the existing display/V-Sync setters and defers resolution batches until Keep.
+Failure rollback retains exact legacy weapon FOV percentages.
+
+Slider follow-up: Weapon FOV and Crosshair Size now share vertical FOV's
+slider, numeric entry, +/- buttons and reset layout. Weapon FOV uses1-degree
+steps/reset55; crosshair uses5% steps/reset100%, with off-grid typed values
+rejected. All9 Developer Tools tests passed after the final refinement,
+including pointer endpoints, typed entry, keyboard arrows, +/- and reset.
+The supported Windows Release build was repeated successfully (exit0) with
+the final shared widget source and standard isolated build checks. Native
+Mac/Linux slider visuals and physical-device interaction remain unverified.
+
+Validation:18 Developer Tools/FOV/V-Sync cases passed,2 macOS compile contracts
+skipped. A final baseline FOV pass also verifies new values remain unchanged
+during a resolution preview and apply only on Keep. Coverage includes actual
+sidebar controls/mailbox values, Revert, invalid range/grid/boolean requests,
+display-file contents, V-Sync refusal and late-save rollback. The supported
+Windows Release build exited0, including standard build checks, executable
+identity sealing and matching crash symbols. Full patch validation and
+repository-context/whitespace checks pass. Tests use isolated settings and
+saves; personal files were preserved.
+
+No live-game visual or physical-device validation was run. Native Mac/Linux
+build, UI and presentation acceptance remain unverified; shared policy uses
+the existing host adapters. See [handoff](MAC_PORT_BACKLOG.md). Nothing committed
+or pushed in this task; other-device synchronization remains unverified.
+
+## Regular Video Options visibility (2026-11-18)
+
+Local uncommitted `dev-tools-settings`, base0e196ee96e074639d2b02604a4dc9a12f146d810.
+Windows x64, MSVC14.42.34433 / Visual Studio2022, common D3D11 frontend and
+SDL3.4.16 input. Frontend and pause Video Options > View & HUD now include
+HUD & UI and Version watermark Off/On controls. They save immediately and share
+the existing controls-JSON preferences with Dev Tools. Saved visibility applies
+without Tools opt-in. One binding-owner cache publishes after atomic saves;
+open menus synchronize without overwriting newer edits. Viewmodel behavior
+and independent preferences are preserved.
+
+Validation:65 Developer Tools/FOV/controller-profile cases passed;2 macOS-only
+compile contracts skipped. The updated FOV suite also passed all5 Windows
+cases, followed by a final baseline pass after the selector synchronization
+refinement. Tests cover both frontend/pause rows, Off/On, cross-menu edits,
+failed-save selector recovery, viewmodel preservation and disabled Tools.
+The supported Windows Release build exited0 after compiling the final source,
+running standard checks (including real JSON/fresh-process settings tests),
+sealing the executable and archiving matching crash symbols. Full patch-stack,
+repository-context and diff-whitespace checks pass.
+
+Personal saves/settings were preserved. No live-game scene/visual testing was
+run. Native Mac/Linux build, physical input, layout and relaunch acceptance
+remain unverified; no new platform adapter is required. See the
+[platform handoff](MAC_PORT_BACKLOG.md). Nothing committed/pushed in this task;
+other-device synchronization remains unverified.
+
+## Developer Tools Settings persistence (2026-11-18)
+
+Local uncommitted `dev-tools-settings`, base98c6e7574595bf6dd4ebe487460da40c95cc1fb2.
+Windows x64; MSVC14.42.34433 / Visual Studio2022; common D3D11 frontend,
+SDL3.4.16 input. Scoped to the Settings tab. Input/bindings retain their existing
+save paths; Video drafts retain Apply/Keep. Fullscreen and texture style now
+use the shared persistent setters with batch rollback. HUD, watermark and
+viewmodel choices save immediately into the routed controls JSON and reload
+on the next launch. Disabling Tools, host denial and freecam do not overwrite
+these preferences; temporary effects are composed separately.
+
+Validation:14 Developer Tools/FOV cases passed;2 macOS compile contracts skipped
+on Windows. All51 controller-profile cases passed. The supported Windows
+Release build exited0, including standard build checks, identity sealing and
+crash-symbol archival. The settings integration test verifies visibility and
+input reload in a fresh child process, unknown JSON preservation, backup/write
+failure behavior and controls-editor preservation. FOV fixtures check actual
+fullscreen/texture files, failed writes and refused fullscreen rollback.
+Full patch validation, context refresh/check and diff whitespace checks pass.
+
+Personal settings and saves were preserved. No game scene testing was run;
+native Mac/Linux builds, restart/window behavior and physical-device acceptance
+remain unverified. Existing native storage/window adapters implement the shared
+path; see [handoff](MAC_PORT_BACKLOG.md). Nothing committed or pushed; other-device
+synchronization is unverified.
+
+## Developer Tools viewmodel visibility (2026-11-18)
+
+Local uncommitted `dev-tools-settings`, base main32706dace. Windows x64,
+MSVC 19.42 / Visual Studio 2022, common D3D11 frontend. Added the session-only
+Show first-person viewmodel toggle under Settings > Video Settings > View & HUD.
+Default stays visible; freecam omission is independent. Existing owned-viewport
+and multiplayer Tools guards remain in effect. No settings/save files are added.
+
+All nine `tests/input/test_developer_tools.py` cases pass, including production
+sidebar clicks and guest draw ownership/fallback checks. Complete patch-stack
+validation and repository-context checks pass. Supported `tsfp.ps1 -Action Build`
+compiled/linked Release and completed all standard build tests, executable
+identity sealing and crash-symbol archival. The first sandboxed MSBuild attempt
+stalled before compilation and was stopped; retry outside the sandbox completed.
+PowerShell's outer redirected wrapper reported exit1 from normal native stderr;
+the log reaches the successful build-test and matching-symbol completion markers.
+
+No live-game visual validation was run. Native Mac/Linux build, weapons/bare-hands
+visibility, firing/reload and freecam transition acceptance remain unverified;
+all use the shared implementation with no new platform adapter. Personal saves
+and settings were preserved. Nothing committed or pushed; other-device sync is
+unverified. See the [platform handoff](MAC_PORT_BACKLOG.md).
 PR572 CI follow-up: strict Mac compilation found unused restored callbacks in the pause integration fixture. The fixture now executes confirmation open/build/invalid-select alongside the frontend/pause scoping checks; production callback behavior is unchanged.
 
 Main-menu desktop exit restoration (2026-11-18, PR572): restored Quit to Desktop only at the frontend builder, with player0 ownership and native Cancel-first confirmation. Pause Settings and pause desktop-exit removal remain intact. New callback padding verified against the supported US executable; shared fixtures and full production-menu tests pass:36 passed,28 skipped (platform/local game-data contracts). Rebuilt-game acceptance pending.
