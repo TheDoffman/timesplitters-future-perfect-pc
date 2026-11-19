@@ -1,3 +1,7 @@
+PR572 CI follow-up: strict Mac compilation found unused restored callbacks in the pause integration fixture. The fixture now executes confirmation open/build/invalid-select alongside the frontend/pause scoping checks; production callback behavior is unchanged.
+
+Main-menu desktop exit restoration (2026-11-18, PR572): restored Quit to Desktop only at the frontend builder, with player0 ownership and native Cancel-first confirmation. Pause Settings and pause desktop-exit removal remain intact. New callback padding verified against the supported US executable; shared fixtures and full production-menu tests pass:36 passed,28 skipped (platform/local game-data contracts). Rebuilt-game acceptance pending.
+
 ## V-Sync playable Windows test build (2026-11-18)
 
 Local feature/vsync at main9bdab5f5 plus its staged changes. Fresh supported-US

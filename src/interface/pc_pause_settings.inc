@@ -58,11 +58,16 @@ static uint32_t pause_settings_return(uint32_t parent,uint32_t descriptor)
     return pause_settings_storage;
 }
 
+#include "pc_main_quit.inc"
+
 void pc_display_menu_finish(void (*original)(void))
 {
     const uint32_t caller=WORD_AT(g_esp),menu=WORD_AT(g_esp+4u);
     const int paused=caller==0x002F582Fu || caller==0x002F5879u;
-    if(caller==0x002D0EDFu && guest_writable(menu,8u))main_update_notice_open(menu);
+    if(caller==0x002D0EDFu) {
+        if(guest_writable(menu,8u))main_update_notice_open(menu);
+        main_quit_menu_append(menu);
+    }
 #ifdef _WIN32
     if(paused)pc_story_network_pause_rows();
 #endif

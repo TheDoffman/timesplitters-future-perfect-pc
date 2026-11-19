@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.parametrize("fixture,native", [
-    (fixture,native) for fixture in ('pause_settings','story_menu','story_lobby','story_drop_state','story_browser','multiplayer_exit')
+    (fixture,native) for fixture in ('pause_settings','main_quit','story_menu','story_lobby','story_drop_state','story_browser','multiplayer_exit')
     for native in (False,True)] + [('story_browser','network')])
 def test_quit_menu(tmp_path, native, fixture):
     compiler, env = native_compiler(tmp_path)
@@ -54,6 +54,7 @@ def test_story_original_us_entry_contract():
                 return image[offset+address-start:offset+address-start+size]
         raise AssertionError('Unmapped bounded US contract read')
     assert read(0x123c9, 4) == b'\xcc'*4
+    assert read(0x123fb, 4) == b'\xcc'*4  # Main-menu desktop-exit callbacks.
     # Native first-person models use synthetic viewport rooms and a local-model
     # flag; these must never enter persistent Story world-prop identity.
     assert read(0x1be1a9,11)==bytes.fromhex('8b4e5405ca000000894134')
