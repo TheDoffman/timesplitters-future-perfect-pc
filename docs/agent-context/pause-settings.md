@@ -11,7 +11,8 @@ Callbacks123FB..123FE use verified unused INT3 bytes in the supported US XBE;
 they are distinct from the pause hub and multiplayer callbacks. The shared lookup
 routes all four on Windows and native Mac/Linux. No runtime patch changes.
 `main_quit.c` checks confirmation behavior on both adapter defines;
-`pause_settings.c` checks frontend-only insertion and retains hub/return checks.
+`pause_settings.c` checks frontend-only insertion, exercises confirmation callbacks
+under strict native compiler warnings, and retains hub/return checks.
 Actual rebuilt-game visual acceptance is pending.
 
 `pc_display_menu_button` reuses the native pause Controls row at return PC

@@ -49,7 +49,7 @@ static uint32_t guest_call(void (*fn)(void),unsigned n,...)
 {
     uint32_t a[6];va_list ap;va_start(ap,n);for(unsigned i=0;i<n;i++)a[i]=va_arg(ap,uint32_t);va_end(ap);
     if(fn==sub_00079B70){CHECK(n==2);next_parent=a[0];next_menu=a[1];}
-    else if(fn==sub_00075B70){CHECK(n==5&&a[0]==0xa000&&a[4]==PAUSE_SETTINGS_BACK);rows=0;}
+    else if(fn==sub_00075B70){CHECK(n==5&&a[0]==0xa000&&(a[4]==PAUSE_SETTINGS_BACK||a[4]==0x123feu));rows=0;}
     else if(fn==sub_00079D60_gen){CHECK(n==6&&rows<4);captions[rows]=a[0];callbacks[rows++]=a[4];}
     else if(fn==sub_000771D0){CHECK(a[0]==0x2000);layouts++;}
     return 0;
@@ -84,6 +84,10 @@ int main(void)
         if(i==0)CHECK(callbacks[0]==QUIT_OPEN_CB && !strcmp((char *)(g_xbox_mem_offset+captions[0]),"Quit to Desktop"));
     }
     CHECK(notices==1);
+    /* The integration fixture also exercises the restored confirmation callbacks. */
+    call(quit_open);CHECK(next_parent==0x3000&&next_menu==quit_storage);
+    call(quit_build);CHECK(rows==2&&callbacks[0]==QUIT_SELECT_CB&&callbacks[1]==QUIT_SELECT_CB);
+    WORD_AT(0x218c)=42;call(quit_select); /* Invalid selection must not exit. */
 #ifdef _WIN32
     CHECK(story_rows==2&&story_layouts==2);
 #endif
