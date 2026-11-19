@@ -1,6 +1,6 @@
-Background texture checks (2026-11-18, uncommitted): shared TextureUpdateCheck model and SettingsPage handling work through thin WPF/Avalonia Ui.Post adapters. Linux cross-build passes. Native Mac/Linux startup, footer transitions, settings reuse, cancellation and offline visual acceptance remain awaiting validation; no new platform adapter is deferred.
+Background texture checks (2026-11-18, source90014bf6): shared TextureUpdateCheck model and SettingsPage handling work through thin WPF/Avalonia Ui.Post adapters. Linux cross-build passes. Native Mac/Linux startup, footer transitions, settings reuse, cancellation and offline visual acceptance remain awaiting validation; no new platform adapter is deferred.
 
-Compact settings follow-up (2026-11-18, uncommitted): SettingsPage/SettingsTiles provide common compact cards, collapse and width-based layout on WPF and Avalonia. No OS adapter is needed; Linux cross-build passed. Native Mac/Linux window resizing, keyboard traversal, dropdowns and visual review remain awaiting validation. Settings persistence stays shared.
+Compact settings follow-up (2026-11-18, source90014bf6): SettingsPage/SettingsTiles provide common compact cards, collapse and width-based layout on WPF and Avalonia. No OS adapter is needed; Linux cross-build passed. Native Mac/Linux window resizing, keyboard traversal, dropdowns and visual review remain awaiting validation. Settings persistence stays shared.
 
 Developer Video option parity (2026-11-18, uncommitted after02cc3de2):
 **Awaiting validation** on native Mac/Linux. Shared `pc_video_sidebar.h`/`.inc`
