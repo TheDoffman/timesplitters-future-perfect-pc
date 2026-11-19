@@ -1,5 +1,6 @@
 /* Shared sidebar presentation; the game-thread adapter owns actual settings. */
 #include "pc_frame_rate_choices.h"
+#include "pc_display.h"
 enum { VIDEO_ASPECT=100,VIDEO_RESOLUTION,VIDEO_APPLY_BUTTON,VIDEO_REVERT_BUTTON,
        VIDEO_KEEP_BUTTON,VIDEO_CACHE_BUTTON,VIDEO_RESTART_BUTTON };
 static PcVideoSnapshot sidebar_video_snapshot;
@@ -7,7 +8,7 @@ static PcVideoValues sidebar_video_draft;
 static unsigned sidebar_video_wait;
 static int sidebar_video_ready,sidebar_video_aspect,sidebar_video_dropdown=-1,sidebar_video_option_start;
 static float sidebar_video_anchor;
-static double sidebar_video_fov(void) {return sidebar_video_draft.value[VIDEO_FOV];}
+static double sidebar_video_number(int id) {return sidebar_video_draft.value[sidebar_video_number_field(id)];}
 static int sidebar_video_dirty(void) {
     return sidebar_video_ready&&memcmp(&sidebar_video_draft,&sidebar_video_snapshot.current,sizeof sidebar_video_draft)!=0;
 }
@@ -111,7 +112,7 @@ static void sidebar_video_activate(int field,int direction) {
     if(field==VIDEO_APPLY_BUTTON){sidebar_video_send(VIDEO_APPLY);return;}
     if(field==VIDEO_CACHE_BUTTON){sidebar_video_send(VIDEO_CLEAR_CACHE);return;}
     if(field==VIDEO_RESTART_BUTTON){sidebar_video_send(VIDEO_RESTART);return;}
-    if(field==VIDEO_FULLSCREEN||field==VIDEO_AO||field==VIDEO_CACHE||field==VIDEO_SUBTITLES||field==VIDEO_FEED||field==VIDEO_COUNTER) {
+    if(field==VIDEO_FULLSCREEN||field==VIDEO_VSYNC||field==VIDEO_AO||field==VIDEO_CACHE||field==VIDEO_SUBTITLES||field==VIDEO_FEED||field==VIDEO_COUNTER) {
         sidebar_video_draft.value[field]=!sidebar_video_draft.value[field];return;
     }
     if(direction) {
@@ -140,13 +141,41 @@ static void sidebar_video_toggle(const char *label,int field,int available) {
     sidebar_box(378,sidebar_y+10,32,18,on?UI_ACCENT:0x49535dffu,9);sidebar_box(on?394.f:381.f,sidebar_y+13,12,12,on?0x12304bffu:UI_TEXT,6);
     if(available&&!sidebar_video_wait&&!sidebar_video_snapshot.preview)sidebar_widget(UI_VIDEO,field,0,0,24,sidebar_y+2,393,34,label);sidebar_y+=38;
 }
+static void sidebar_video_slider(const char *label,int id) {
+    if(!sidebar_row_matches(label))return;
+    int field=sidebar_video_number_field(id),minimum=(int)sidebar_minimum(id),maximum=(int)sidebar_maximum(id);
+    int reset=id==7?100:PC_FOV_DEFAULT;
+    const char *unit=id==7?"%":"\xc2\xb0";
+    char range[48],default_text[48],decrease[80],increase[80],reset_name[80];
+    snprintf(range,sizeof range,"%d\xe2\x80\x93%d%s",minimum,maximum,unit);
+    snprintf(default_text,sizeof default_text,"Default: %d%s",reset,unit);
+    snprintf(decrease,sizeof decrease,"Decrease %s",label);snprintf(increase,sizeof increase,"Increase %s",label);
+    snprintf(reset_name,sizeof reset_name,"Reset %s",label);
+    sidebar_text_style(31,sidebar_y+5,260,21,UI_TEXT,label,12,400,0);
+    sidebar_text_style(280,sidebar_y+5,129,21,UI_MUTED,range,11,400,2);sidebar_y+=28;
+    char value[32];if(edit_number==id)snprintf(value,sizeof value,"%s",number);else snprintf(value,sizeof value,"%d",sidebar_video_draft.value[field]);
+    sidebar_box(29,sidebar_y,163,34,UI_EDGE,5);sidebar_box(30,sidebar_y+1,161,32,UI_FIELD,4);
+    if(!sidebar_video_wait&&!sidebar_video_snapshot.preview) {
+        sidebar_widget(UI_STEP,id,-1,0,30,sidebar_y+1,32,32,decrease);sidebar_widget(UI_NUMBER,id,0,0,63,sidebar_y+1,95,32,label);sidebar_widget(UI_STEP,id,1,0,159,sidebar_y+1,32,32,increase);
+    }
+    sidebar_box(30,sidebar_y+1,32,32,0x2c353effu,3);sidebar_text_style(30,sidebar_y+1,32,32,UI_TEXT,"-",18,400,1);
+    sidebar_text_face(64,sidebar_y+1,77,32,UI_TEXT,value,17,700,1,PC_FONT_MONO);sidebar_text_style(140,sidebar_y+1,16,32,UI_MUTED,unit,11,400,1);
+    sidebar_box(159,sidebar_y+1,32,32,0x2c353effu,3);sidebar_text_style(159,sidebar_y+1,32,32,UI_TEXT,"+",18,400,1);
+    if(!sidebar_video_wait&&!sidebar_video_snapshot.preview)sidebar_button(UI_PRESET,id,0,reset,200,sidebar_y,34,34,reset_name,0);
+    sidebar_text_style(250,sidebar_y,159,34,UI_MUTED,default_text,11,400,2);sidebar_y+=40;
+    float fraction=(sidebar_video_draft.value[field]-minimum)/(float)(maximum-minimum);
+    sidebar_box(31,sidebar_y+10,378,5,0x4c555effu,2);sidebar_box(31,sidebar_y+10,378*fraction,5,UI_ACCENT,2);sidebar_box(25+378*fraction,sidebar_y+5,14,14,UI_ACCENT,7);
+    if(!sidebar_video_wait&&!sidebar_video_snapshot.preview)sidebar_widget(UI_SLIDER,id,0,0,31,sidebar_y,378,27,label);
+    sidebar_text_style(31,sidebar_y+22,110,18,UI_MUTED,id==7?"Smaller":"Narrower",10,400,0);sidebar_text_style(309,sidebar_y+22,100,18,UI_MUTED,id==7?"Larger":"Wider",10,400,2);sidebar_y+=44;
+}
 static void sidebar_video_settings(void) {
-    if(!sidebar_category(12,"Video Settings","video display aspect resolution frame rate fullscreen graphics texture filtering ambient occlusion anti-aliasing fov field of view show hide first-person viewmodel weapon hands hud ui version watermark subtitles kill feed fps ping advanced msaa supersampling shader cache"))return;
+    if(!sidebar_category(12,"Video Settings","video display aspect resolution frame rate fullscreen v-sync vsync graphics texture filtering ambient occlusion anti-aliasing fov field of view crosshair size show hide first-person viewmodel weapon hands hud ui version watermark subtitles kill feed fps ping advanced msaa supersampling shader cache"))return;
     if(!sidebar_video_ready){sidebar_text_style(31,sidebar_y,380,24,UI_MUTED,"Video settings will be available after startup.",11,400,0);sidebar_y+=34;return;}
     int effects=sidebar_video_snapshot.effects;
-    if(sidebar_group(13,"Display","aspect resolution frame rate fullscreen",NULL)) {
+    if(sidebar_group(13,"Display","aspect resolution frame rate fullscreen v-sync vsync",NULL)) {
         sidebar_video_choice("Aspect ratio",VIDEO_ASPECT,0,1);sidebar_video_choice("Resolution",VIDEO_RESOLUTION,0,1);
         sidebar_video_choice("Frame rate",VIDEO_RATE,0,1);sidebar_video_toggle("Fullscreen",VIDEO_FULLSCREEN,1);
+        sidebar_video_toggle("V-Sync",VIDEO_VSYNC,1);
         if(sidebar_row_matches("Frame rate")){sidebar_text_style(31,sidebar_y+4,380,20,UI_MUTED,"High refresh is in beta. Gameplay issues may occur.",10,400,0);sidebar_y+=28;}sidebar_group_end();
     } else sidebar_group_closed();
     if(sidebar_group(14,"Graphics","texture style enhanced classic anisotropic filtering ambient occlusion post-process anti-aliasing fxaa smaa",NULL)) {
@@ -154,25 +183,10 @@ static void sidebar_video_settings(void) {
         sidebar_video_toggle("Ambient occlusion",VIDEO_AO,effects);sidebar_video_choice("Post-process anti-aliasing",VIDEO_AA,0,effects);
         if(!effects){sidebar_text_style(31,sidebar_y,380,20,UI_MUTED,"These effects require Vulkan.",10,400,0);sidebar_y+=24;}sidebar_group_end();
     } else sidebar_group_closed();
-    if(sidebar_group(15,"View & HUD","vertical field of view fov show hide first-person viewmodel weapon hands hud ui version watermark subtitles kill feed fps ping",NULL)) {
-        if(sidebar_row_matches("Vertical field of view")) {
-            sidebar_text_style(31,sidebar_y+5,260,21,UI_TEXT,"Vertical field of view",12,400,0);
-            sidebar_text_style(280,sidebar_y+5,129,21,UI_MUTED,"40\xe2\x80\x93" "100\xc2\xb0",11,400,2);sidebar_y+=28;
-            char value[32];if(edit_number==5)snprintf(value,sizeof value,"%s",number);else snprintf(value,sizeof value,"%d",sidebar_video_draft.value[VIDEO_FOV]);
-            sidebar_box(29,sidebar_y,163,34,UI_EDGE,5);sidebar_box(30,sidebar_y+1,161,32,UI_FIELD,4);
-            if(!sidebar_video_wait&&!sidebar_video_snapshot.preview) {
-                sidebar_widget(UI_STEP,5,-1,0,30,sidebar_y+1,32,32,"Decrease field of view");sidebar_widget(UI_NUMBER,5,0,0,63,sidebar_y+1,95,32,"Vertical field of view");sidebar_widget(UI_STEP,5,1,0,159,sidebar_y+1,32,32,"Increase field of view");
-            }
-            sidebar_box(30,sidebar_y+1,32,32,0x2c353effu,3);sidebar_text_style(30,sidebar_y+1,32,32,UI_TEXT,"-",18,400,1);
-            sidebar_text_face(64,sidebar_y+1,77,32,UI_TEXT,value,17,700,1,PC_FONT_MONO);sidebar_text_style(140,sidebar_y+1,16,32,UI_MUTED,"\xc2\xb0",11,400,1);
-            sidebar_box(159,sidebar_y+1,32,32,0x2c353effu,3);sidebar_text_style(159,sidebar_y+1,32,32,UI_TEXT,"+",18,400,1);
-            if(!sidebar_video_wait&&!sidebar_video_snapshot.preview)sidebar_button(UI_PRESET,5,0,55,200,sidebar_y,34,34,"Reset field of view",0);
-            sidebar_text_style(250,sidebar_y,159,34,UI_MUTED,"Default: 55\xc2\xb0",11,400,2);sidebar_y+=40;
-            float fraction=(sidebar_video_draft.value[VIDEO_FOV]-40)/60.f;
-            sidebar_box(31,sidebar_y+10,378,5,0x4c555effu,2);sidebar_box(31,sidebar_y+10,378*fraction,5,UI_ACCENT,2);sidebar_box(25+378*fraction,sidebar_y+5,14,14,UI_ACCENT,7);
-            if(!sidebar_video_wait&&!sidebar_video_snapshot.preview)sidebar_widget(UI_SLIDER,5,0,0,31,sidebar_y,378,27,"Field of view slider");
-            sidebar_text_style(31,sidebar_y+22,110,18,UI_MUTED,"Narrower",10,400,0);sidebar_text_style(309,sidebar_y+22,100,18,UI_MUTED,"Wider",10,400,2);sidebar_y+=44;
-        }
+    if(sidebar_group(15,"View & HUD","vertical field of view fov crosshair size show hide first-person viewmodel weapon hands hud ui version watermark subtitles kill feed fps ping",NULL)) {
+        sidebar_video_slider("Vertical field of view",5);
+        sidebar_video_slider("Weapon FOV",6);
+        sidebar_video_slider("Crosshair Size",7);
         PcViewSettings visibility;developer_view_get(&visibility);
         sidebar_toggle("Show first-person viewmodel",NULL,!visibility.hide_viewmodel,gameplay&&pc_developer_tools_allowed(),SETTINGS,6);
         sidebar_toggle("HUD & UI",NULL,!visibility.hide_hud,1,SETTINGS,4);

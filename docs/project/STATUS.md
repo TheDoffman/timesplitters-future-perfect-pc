@@ -1,3 +1,37 @@
+## Developer Video option parity (2026-11-18)
+
+Local uncommitted `dev-tools-settings`, base02cc3de2241e80234548fbbc9c0beb57e7805800.
+Windows x64, MSVC14.42.34433 / Visual Studio2022, common D3D11 frontend,
+SDL3.4.16 input. Comparing the regular menu with Dev Tools identified three
+missing controls: V-Sync in Display, Weapon FOV and Crosshair Size in View & HUD.
+The shared sidebar now stages all three with Apply/Revert, persists through
+the existing display/V-Sync setters and defers resolution batches until Keep.
+Failure rollback retains exact legacy weapon FOV percentages.
+
+Slider follow-up: Weapon FOV and Crosshair Size now share vertical FOV's
+slider, numeric entry, +/- buttons and reset layout. Weapon FOV uses1-degree
+steps/reset55; crosshair uses5% steps/reset100%, with off-grid typed values
+rejected. All9 Developer Tools tests passed after the final refinement,
+including pointer endpoints, typed entry, keyboard arrows, +/- and reset.
+The supported Windows Release build was repeated successfully (exit0) with
+the final shared widget source and standard isolated build checks. Native
+Mac/Linux slider visuals and physical-device interaction remain unverified.
+
+Validation:18 Developer Tools/FOV/V-Sync cases passed,2 macOS compile contracts
+skipped. A final baseline FOV pass also verifies new values remain unchanged
+during a resolution preview and apply only on Keep. Coverage includes actual
+sidebar controls/mailbox values, Revert, invalid range/grid/boolean requests,
+display-file contents, V-Sync refusal and late-save rollback. The supported
+Windows Release build exited0, including standard build checks, executable
+identity sealing and matching crash symbols. Full patch validation and
+repository-context/whitespace checks pass. Tests use isolated settings and
+saves; personal files were preserved.
+
+No live-game visual or physical-device validation was run. Native Mac/Linux
+build, UI and presentation acceptance remain unverified; shared policy uses
+the existing host adapters. See [handoff](MAC_PORT_BACKLOG.md). Nothing committed
+or pushed in this task; other-device synchronization remains unverified.
+
 ## Regular Video Options visibility (2026-11-18)
 
 Local uncommitted `dev-tools-settings`, base0e196ee96e074639d2b02604a4dc9a12f146d810.

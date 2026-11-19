@@ -19,6 +19,8 @@ native Mac/Linux visual acceptance is separate.
 
 ## Settings
 
+Video option parity: [V-Sync, weapon FOV and crosshair size](#video-parity).
+
 All preferences exposed in the Settings tab persist. Input controls and
 bindings use the existing controls JSON save path. Staged Video options still
 require Apply (and Keep for a resolution preview); subtitles use native profile
@@ -45,6 +47,34 @@ Existing CI routes cover a fresh-process visibility/input reload in
 independence in `tests/input/developer_tools.c`, and actual fullscreen/texture
 files plus rollback in `tests/graphics/fov_settings.c`. Mac/Linux use shared
 policy and existing storage/window adapters; native host acceptance is pending.
+
+## Video parity
+
+The shared sidebar includes the regular menu's V-Sync (Display), Weapon FOV
+and Crosshair Size (View & HUD). V-Sync is a boolean; weapon FOV uses40–100
+degrees and crosshair uses25–150% in5% increments, matching `pc_display.h`.
+All three FOV/size controls use `sidebar_video_slider`: the same slider,
+numeric entry, +/- steps and reset layout. Weapon FOV resets to55 degrees;
+crosshair resets to100%, snapping to5% steps and rejecting off-grid typed
+values. Numeric IDs5/6/7 share bounds, keyboard and pointer handling; game-speed
+slider behavior is retained. Search includes vsync/V-Sync,
+weapon/FOV and crosshair/size. These are staged drafts requiring Apply.
+
+`PcVideoValues` appends VIDEO_VSYNC, VIDEO_WEAPON_FOV and VIDEO_CROSSHAIR.
+The guest-thread adapter reads the shared setters' current values, validates
+the same ranges, persists aperture/crosshair with `pc_display_save` and V-Sync
+with `pc_vsync_set_enabled`. Resolution previews defer the entire batch until
+Keep. Failed writes restore all live/saved settings, including exact legacy
+percentage weapon apertures rather than their rounded degree equivalents.
+No new patch, guest wrapper, generated code or platform adapter is needed.
+
+Existing Developer Tools input tests exercise drafts, sliders, mailbox values
+and Revert. The FOV fixture covers snapshots, real display-file persistence,
+invalid requests, V-Sync refusal, late-write rollback and Keep deferral.
+`test_vsync.py` retains the actual shared persistence/presentation checks.
+Slider tests cover drag endpoints, keyboard arrows, typed values, +/- steps,
+reset, invalid crosshair increments and unchanged Apply/Revert behavior.
+Native Mac/Linux builds and visual acceptance remain unverified separately.
 
 Current widget, video and host-policy contracts continue in [systems continuation](systems-continuation.md).
 The sections below retain the Developer Tools branch history while the owning

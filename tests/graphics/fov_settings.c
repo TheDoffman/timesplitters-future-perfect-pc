@@ -1586,21 +1586,46 @@ int main(int argc,char **argv)
     video_sidebar_tick();CHECK(sidebar_video_observed.available&&sidebar_video_observed.mode_count>1);
     PcVideoValues saved=sidebar_video_observed.current,edit=saved;
     edit.value[VIDEO_FOV]=73;edit.value[VIDEO_SUBTITLES]=!saved.value[VIDEO_SUBTITLES];
+    edit.value[VIDEO_WEAPON_FOV]=70;edit.value[VIDEO_CROSSHAIR]=125;edit.value[VIDEO_VSYNC]=1;
     sidebar_video_queued=(PcVideoRequest){1,VIDEO_APPLY,edit};video_sidebar_tick();
     CHECK(sidebar_video_observed.completed==1&&pc_display_fov()==73);
+    CHECK(pc_display_weapon_fov_degrees()==70&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
+    CHECK(sidebar_video_observed.current.value[VIDEO_WEAPON_FOV]==70&&sidebar_video_observed.current.value[VIDEO_CROSSHAIR]==125);
+    {char text[256]={0};FILE *file=fopen(path,"rb");CHECK(file);fread(text,1,sizeof text-1,file);fclose(file);
+     CHECK(strstr(text,"TSFP_DISPLAY_V5")&&strstr(text,"70")&&strstr(text,"125"));}
+    /* A late save failure restores exact legacy weapon aperture and V-Sync. */
+    CHECK(pc_display_set_weapon_fov(115)&&pc_display_save());
+    saved=video_read();edit=saved;edit.value[VIDEO_WEAPON_FOV]=80;edit.value[VIDEO_CROSSHAIR]=50;
+    edit.value[VIDEO_VSYNC]=0;edit.value[VIDEO_COUNTER]=!saved.value[VIDEO_COUNTER];counter_save_ok=0;
+    sidebar_video_queued=(PcVideoRequest){20,VIDEO_APPLY,edit};video_sidebar_tick();counter_save_ok=1;
+    CHECK(pc_display_weapon_fov_legacy_percent()==115&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
+    CHECK(strstr(sidebar_video_observed.message,"Could not save"));
+    edit=video_read();edit.value[VIDEO_VSYNC]=0;vsync_save_ok=0;
+    sidebar_video_queued=(PcVideoRequest){21,VIDEO_APPLY,edit};video_sidebar_tick();vsync_save_ok=1;
+    CHECK(pc_vsync_enabled()&&strstr(sidebar_video_observed.message,"Could not save"));
+    const int invalid_fields[]={VIDEO_WEAPON_FOV,VIDEO_CROSSHAIR,VIDEO_VSYNC};
+    const int invalid_values[]={101,126,2};
+    for(unsigned i=0;i<3;i++) {
+        edit=video_read();edit.value[invalid_fields[i]]=invalid_values[i];
+        sidebar_video_queued=(PcVideoRequest){22+i,VIDEO_APPLY,edit};video_sidebar_tick();
+        CHECK(strstr(sidebar_video_observed.message,"Invalid"));
+    }
     CHECK(WORD_AT(0x400130)==(unsigned)edit.value[VIDEO_SUBTITLES]&&(WORD_AT(0x78ad24)&0x10000));
     saved=sidebar_video_observed.current;edit=saved;edit.value[VIDEO_FOV]=81;
     edit.value[VIDEO_AF]=saved.value[VIDEO_AF]==16?8:16;graphics_save_ok=0;
     sidebar_video_queued=(PcVideoRequest){2,VIDEO_APPLY,edit};video_sidebar_tick();graphics_save_ok=1;
     CHECK(pc_display_fov()==73&&strstr(sidebar_video_observed.message,"Could not save"));
     saved=sidebar_video_observed.current;edit=saved;edit.width=saved.width==1280?1920:1280;edit.height=edit.width==1280?720:1080;
+    edit.value[VIDEO_WEAPON_FOV]=80;edit.value[VIDEO_CROSSHAIR]=50;edit.value[VIDEO_VSYNC]=0;
     sidebar_video_queued=(PcVideoRequest){3,VIDEO_APPLY,edit};video_sidebar_tick();
     CHECK(sidebar_video_observed.preview&&pc_display_current().width==edit.width);
+    CHECK(pc_display_weapon_fov_legacy_percent()==115&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
     clock_ms+=15001;video_sidebar_tick();CHECK(!sidebar_video_observed.preview&&pc_display_current().width==saved.width);
     sidebar_video_queued=(PcVideoRequest){4,VIDEO_APPLY,edit};video_sidebar_tick();CHECK(sidebar_video_observed.preview);
     sidebar_open=0;clock_ms+=201;video_sidebar_tick();CHECK(pc_display_current().width==saved.width);
     sidebar_open=1;sidebar_video_queued=(PcVideoRequest){5,VIDEO_APPLY,edit};video_sidebar_tick();
     sidebar_video_queued=(PcVideoRequest){6,VIDEO_KEEP,edit};video_sidebar_tick();CHECK(!sidebar_video_observed.preview&&pc_display_current().width==edit.width);
+    CHECK(pc_display_weapon_fov_degrees()==80&&pc_display_crosshair_size()==50&&!pc_vsync_enabled());
     edit=sidebar_video_observed.current;edit.value[VIDEO_FOV]=999;
     sidebar_video_queued=(PcVideoRequest){7,VIDEO_APPLY,edit};video_sidebar_tick();CHECK(pc_display_fov()==73);
     edit=sidebar_video_observed.current;edit.value[VIDEO_FOV]=65;

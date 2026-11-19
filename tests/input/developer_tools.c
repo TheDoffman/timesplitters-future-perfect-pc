@@ -82,6 +82,7 @@ static int drawn(const char *text) {unsigned n=paint();for(unsigned i=0;i<n;i++)
 static void click(int kind,int a,int b) {
     paint();int found=-1;
     for(unsigned i=0;i<sidebar_count;i++)if(sidebar_widgets[i].kind==kind&&sidebar_widgets[i].a==a&&sidebar_widgets[i].b==b){found=(int)i;break;}
+    if(found<0)fprintf(stderr,"Missing widget: kind=%d a=%d b=%d\n",kind,a,b);
     assert(found>=0);DeveloperWidget v=sidebar_widgets[found];
     if(v.content&&(v.y<sidebar_top||v.y+v.h>sidebar_bottom)) {
         sidebar_scroll[page]+=v.y-sidebar_top;paint();v=sidebar_widgets[found];
@@ -92,6 +93,16 @@ static void click(int kind,int a,int b) {
     pointer.left=1;frame();pointer.left=0;frame();paint();
 }
 static void type(const char *s) {for(;*s;s++)key(*s=='.'?0xbe:*s>='a'&&*s<='z'?*s-32:*s);}
+static void drag_video_slider(int id,float fraction) {
+    paint();int found=-1;
+    for(unsigned i=0;i<sidebar_count;i++)if(sidebar_widgets[i].kind==UI_SLIDER&&sidebar_widgets[i].a==id){found=(int)i;break;}
+    assert(found>=0);DeveloperWidget v=sidebar_widgets[found];
+    sidebar_scroll[page]+=v.y-sidebar_top;paint();v=sidebar_widgets[found];
+    pointer.valid=1;pointer.width=pointer_width;pointer.height=pointer_height;
+    pointer.x=(sidebar_left+(v.x+fraction*v.w)*sidebar_scale)*pointer_width/paint_width;
+    pointer.y=(v.y+v.h*.5f)*sidebar_scale*pointer_height/paint_height;
+    pointer.left=1;frame();pointer.left=0;frame();paint();
+}
 int main(void) {
     PcDeveloperState s;PcDeveloperLine lines[PC_DEVELOPER_MAX_DRAW];
     /* Match status is visible with Tools disabled, owns no input, and clears
@@ -217,6 +228,7 @@ int main(void) {
     click(UI_SETTING,0,0);assert(persisted.invert_y);
     PcVideoSnapshot video={0};video.available=video.effects=1;video.current.width=1920;video.current.height=1080;
     video.current.value[VIDEO_FOV]=55;video.current.value[VIDEO_MSAA]=video.current.value[VIDEO_AF]=1;
+    video.current.value[VIDEO_WEAPON_FOV]=55;video.current.value[VIDEO_CROSSHAIR]=100;
     video.modes[0][0]=1920;video.modes[0][1]=1080;video.modes[1][0]=2560;video.modes[1][1]=1440;video.mode_count=2;
     pc_developer_video_publish(&video);paint();
     assert(drawn("Input Settings")&&drawn("Video Settings")&&!drawn("Debug settings & diagnostics"));
@@ -224,6 +236,8 @@ int main(void) {
     click(UI_GROUP,11,0);assert(!drawn("Mouse sensitivity"));click(UI_GROUP,11,0);
     click(UI_VIDEO,VIDEO_FULLSCREEN,0);assert(sidebar_video_dirty()&&!fullscreen);
     click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(!sidebar_video_dirty());
+    click(UI_VIDEO,VIDEO_VSYNC,0);assert(sidebar_video_draft.value[VIDEO_VSYNC]&&sidebar_video_dirty());
+    click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(!sidebar_video_draft.value[VIDEO_VSYNC]);
     click(UI_SEARCH,0,0);type("resolution");
     click(UI_VIDEO,VIDEO_RESOLUTION,0);assert(sidebar_video_dropdown==VIDEO_RESOLUTION);
     assert(drawn("2560"));
@@ -234,6 +248,25 @@ int main(void) {
     click(UI_VIDEO,VIDEO_REVERT_BUTTON,0);assert(pc_developer_video_take(&request)&&request.action==VIDEO_REVERT);
     video.completed=request.serial;video.preview=0;pc_developer_video_publish(&video);paint();assert(!sidebar_video_dirty());
     key(27);click(UI_GROUP,15,0);
+    drag_video_slider(6,0);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==40);
+    drag_video_slider(6,.999f);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==100);
+    click(UI_NUMBER,6,0);type("67");key(13);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==67);
+    click(UI_STEP,6,1);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==68);
+    click(UI_PRESET,6,0);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==55);
+    click(UI_NUMBER,6,0);type("43");key(13);
+    assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==43&&sidebar_video_dirty());
+    key(0x27);assert(sidebar_video_draft.value[VIDEO_WEAPON_FOV]==44);key(0x25);
+    drag_video_slider(7,0);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==25);
+    drag_video_slider(7,.999f);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==150);
+    click(UI_PRESET,7,0);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==100);
+    click(UI_STEP,7,-1);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==95);
+    click(UI_NUMBER,7,0);type("126");key(13);assert(edit_number==7);key(27);
+    click(UI_NUMBER,7,0);type("40");key(13);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==40);
+    key(0x27);assert(sidebar_video_draft.value[VIDEO_CROSSHAIR]==45);key(0x25);
+    assert(sidebar_video_dropdown<0);
+    click(UI_VIDEO,VIDEO_APPLY_BUTTON,0);assert(pc_developer_video_take(&request));
+    assert(request.desired.value[VIDEO_WEAPON_FOV]==43&&request.desired.value[VIDEO_CROSSHAIR]==40);
+    video.completed=request.serial;pc_developer_video_publish(&video);paint();assert(!sidebar_video_dirty());
     pc_developer_get(&s);assert(!s.hide_viewmodel);
     click(UI_ACTION,SETTINGS,6);assert(drawn("Show first-person viewmodel"));
     pc_developer_get(&s);assert(s.hide_viewmodel&&!s.freecam);

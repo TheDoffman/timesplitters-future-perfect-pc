@@ -11,7 +11,7 @@ LAN enables explicitly, Online publishes connect/disconnect. No stale re-import.
 Shared Windows/Mac/Linux; fixture: `tests/network/network_eligibility.c`.
 [Sun/visibility](fidelity-comparison.md): optional preset removed; normal settings restored.
 
-[Video/Tools](developer-tools-integration.md#settings).
+[Tools/Video](developer-tools-integration.md#settings).
 
 [Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
 [Input](controls-options.md).

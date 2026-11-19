@@ -1,3 +1,14 @@
+Developer Video option parity (2026-11-18, uncommitted after02cc3de2):
+**Awaiting validation** on native Mac/Linux. Shared `pc_video_sidebar.h`/`.inc`
+and `pc_video_sidebar_ui.inc` expose V-Sync, Weapon FOV and Crosshair Size using
+the existing shared display/V-Sync persistence and host presentation adapters.
+No new adapter is required. Native acceptance: change/relaunch all three,
+compare regular menu values, verify resolution Keep/Revert and failed saves,
+review weapon/crosshair scale and actual host presentation. Weapon FOV and
+Crosshair Size now share the vertical FOV slider/number/step/reset layout;
+native acceptance also includes pointer dragging and keyboard entry. Windows evidence
+and remaining limits are in [STATUS](STATUS.md).
+
 Regular Video Options HUD/watermark controls (2026-11-18, uncommitted after0e196ee9):
 **Awaiting validation** on native Mac/Linux. Shared `pc_display_menu.c` adds
 the Off/On rows to frontend/pause View & HUD. `pc_bindings.inc` owns one cached,

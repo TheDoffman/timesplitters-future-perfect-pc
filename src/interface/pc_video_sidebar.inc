@@ -11,6 +11,8 @@ static PcVideoValues video_read(void) {
     v.width=m.width;v.height=m.height;
     v.value[VIDEO_RATE]=pc_frame_rate_value(pc_frame_rate_choice(pc_native_rate()));
     v.value[VIDEO_FOV]=pc_display_fov();v.value[VIDEO_TEXTURE]=tsfp_texture_is_4k();
+    v.value[VIDEO_WEAPON_FOV]=pc_display_weapon_fov_degrees();v.value[VIDEO_CROSSHAIR]=pc_display_crosshair_size();
+    v.value[VIDEO_VSYNC]=pc_vsync_enabled();
     v.value[VIDEO_AF]=g.anisotropy;v.value[VIDEO_AO]=g.ambient_occlusion;v.value[VIDEO_AA]=(int)pc_post_aa_get();
     v.value[VIDEO_MSAA]=g.msaa;v.value[VIDEO_SS]=g.supersampling;v.value[VIDEO_CACHE]=g.shader_cache;
     extern void sub_00069640(void);uint32_t profile=guest_call(sub_00069640,0);
@@ -21,12 +23,14 @@ static PcVideoValues video_read(void) {
 static int video_valid(const PcVideoValues *v) {
     if(!pc_display_valid((PcDisplayMode){v->width,v->height}) ||
        v->value[VIDEO_FOV]<PC_FOV_MIN || v->value[VIDEO_FOV]>PC_FOV_MAX ||
+       v->value[VIDEO_WEAPON_FOV]<PC_FOV_MIN || v->value[VIDEO_WEAPON_FOV]>PC_FOV_MAX ||
+       v->value[VIDEO_CROSSHAIR]<PC_CROSSHAIR_SIZE_MIN || v->value[VIDEO_CROSSHAIR]>PC_CROSSHAIR_SIZE_MAX || v->value[VIDEO_CROSSHAIR]%5 ||
        (v->value[VIDEO_RATE]!=0&&v->value[VIDEO_RATE]!=120&&v->value[VIDEO_RATE]!=180&&v->value[VIDEO_RATE]!=240) ||
        v->value[VIDEO_AA]<0 || v->value[VIDEO_AA]>2)return 0;
     TsfpGraphicsOptions g=pc_graphics_get();g.msaa=v->value[VIDEO_MSAA];g.supersampling=v->value[VIDEO_SS];
     g.anisotropy=v->value[VIDEO_AF];g.ambient_occlusion=v->value[VIDEO_AO];g.shader_cache=v->value[VIDEO_CACHE];
     if(!tsfp_graphics_valid(&g))return 0;
-    const int toggles[]={VIDEO_TEXTURE,VIDEO_SUBTITLES,VIDEO_FEED,VIDEO_COUNTER,VIDEO_FULLSCREEN};
+    const int toggles[]={VIDEO_TEXTURE,VIDEO_SUBTITLES,VIDEO_FEED,VIDEO_COUNTER,VIDEO_FULLSCREEN,VIDEO_VSYNC};
     for(unsigned i=0;i<sizeof toggles/sizeof *toggles;i++)if(v->value[toggles[i]]<0||v->value[toggles[i]]>1)return 0;
     return 1;
 }
@@ -39,6 +43,9 @@ static int video_restore_preview(void) {
 static int video_save(const PcVideoValues *v,const PcVideoValues *before) {
     TsfpGraphicsOptions original=pc_graphics_get(),g=original;
     int display=v->width!=before->width||v->height!=before->height||v->value[VIDEO_FOV]!=before->value[VIDEO_FOV];
+    display=display||v->value[VIDEO_WEAPON_FOV]!=before->value[VIDEO_WEAPON_FOV]||v->value[VIDEO_CROSSHAIR]!=before->value[VIDEO_CROSSHAIR];
+    int weapon_percent=pc_display_weapon_fov_legacy_percent();
+    int vsync=v->value[VIDEO_VSYNC]!=before->value[VIDEO_VSYNC],vsync_saved=0;
     int rate=v->value[VIDEO_RATE]!=before->value[VIDEO_RATE];
     int aa=v->value[VIDEO_AA]!=before->value[VIDEO_AA];
     int feed=v->value[VIDEO_FEED]!=before->value[VIDEO_FEED],counter=v->value[VIDEO_COUNTER]!=before->value[VIDEO_COUNTER];
@@ -48,10 +55,12 @@ static int video_save(const PcVideoValues *v,const PcVideoValues *before) {
     g.msaa=v->value[VIDEO_MSAA];g.supersampling=v->value[VIDEO_SS];g.anisotropy=v->value[VIDEO_AF];
     g.ambient_occlusion=v->value[VIDEO_AO];g.shader_cache=v->value[VIDEO_CACHE];
     pc_display_set_fov(v->value[VIDEO_FOV]);
+    pc_display_set_weapon_fov_degrees(v->value[VIDEO_WEAPON_FOV]);pc_display_set_crosshair_size(v->value[VIDEO_CROSSHAIR]);
     if(display){if(!pc_display_save())goto failed;display_saved=1;}
     if(rate){if(!pc_frame_rate_save(v->value[VIDEO_RATE]))goto failed;rate_saved=1;}
     if(memcmp(&g,&original,sizeof g)){if(!pc_graphics_set(&g))goto failed;graphics_saved=1;}
     if(aa){if(!pc_post_aa_set((unsigned)v->value[VIDEO_AA]))goto failed;aa_saved=1;}
+    if(vsync){if(!pc_vsync_set_enabled(v->value[VIDEO_VSYNC]))goto failed;vsync_saved=1;}
     if(feed){if(!pc_feed_set_enabled(v->value[VIDEO_FEED]))goto failed;feed_saved=1;}
     if(counter){if(!pc_counter_set_enabled(v->value[VIDEO_COUNTER]))goto failed;counter_saved=1;}
     if(fullscreen){if(!pc_display_save_fullscreen(v->value[VIDEO_FULLSCREEN]))goto failed;fullscreen_saved=1;}
@@ -76,9 +85,13 @@ failed: {
     if(counter_saved&&!pc_counter_set_enabled(before->value[VIDEO_COUNTER]))restored=0;
     if(feed_saved&&!pc_feed_set_enabled(before->value[VIDEO_FEED]))restored=0;
     if(aa_saved&&!pc_post_aa_set((unsigned)before->value[VIDEO_AA]))restored=0;
+    if(vsync_saved&&!pc_vsync_set_enabled(before->value[VIDEO_VSYNC]))restored=0;
     if(graphics_saved&&!pc_graphics_set(&original))restored=0;
     if(rate_saved&&!pc_frame_rate_save(before->value[VIDEO_RATE]))restored=0;
     pc_display_set_fov(before->value[VIDEO_FOV]);
+    if(weapon_percent)pc_display_set_weapon_fov(weapon_percent);
+    else pc_display_set_weapon_fov_degrees(before->value[VIDEO_WEAPON_FOV]);
+    pc_display_set_crosshair_size(before->value[VIDEO_CROSSHAIR]);
     if(!pc_display_apply((PcDisplayMode){before->width,before->height}))restored=0;
     if(display_saved&&!pc_display_save())restored=0;
     video_preview_deadline=0;
