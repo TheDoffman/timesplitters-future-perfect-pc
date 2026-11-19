@@ -20,6 +20,7 @@ older downloads may look different.
 ![Multiplayer menu with Online, Private Server and LAN choices.](../assets/multiplayer-network.png)
 
 Online **Arcade** is the normal choice; Story co-op requires a dedicated compatible testing build.
+
 ## Play on the community server
 
 ### Join a match
@@ -40,6 +41,7 @@ vary. Invite Only matches are visible, but require their lobby code to join.*
 The number ending in **ms** is the community service's response time. Lower is
 better, but it is not the full gameplay delay to that match's host. **-- ms**
 means no measurement is available. A full match cannot accept another player.
+
 ### Host a match
 
 1. Choose **Multiplayer > Online > Start New Match**.
@@ -114,10 +116,13 @@ does not appear, check that the router is not isolating devices on guest Wi-Fi.
 LAN play does not connect to original Xbox consoles or Xbox Live.
 
 ## Another round and bots
-B
+
 The host can choose **Return to Lobby** while paused or after a match to keep
-t*Bot Set**, or edit the set to change its bots. Use a zero-bot set to play
-without them. Guests cannot edit the host's roster. Bot support remains
+the group together for another round. Adjust the lobby's **Options**, have
+players select **Ready**, then start again with **Go**.
+
+Use **Bot Set** in the match options to choose or edit the host's bots. Use a
+zero-bot set to play without them. Guests cannot edit the host's roster. Bot support remains
 experimental; report missing bots, different behaviour between players or crashes.
 
 ## If something goes wrong
