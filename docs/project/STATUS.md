@@ -1,3 +1,11 @@
+Compact settings native CI follow-up (2026-11-19): Avalonia card heights exposed that shortest-column placement could move collapsed bindings away from Local multiplayer. SettingsTiles now explicitly keeps the collapsed binding card in the local-player column, while expanded bindings still spans both columns. Native regression diagnostics include card bounds.
+
+Background texture checks (2026-11-18, source90014bf6): opted-in launchers start a read-only texture check after recovery, off the UI thread. The footer reports progress/result on all pages; Settings shares the cached result and no longer triggers an automatic modal check. Manual Check is nonblocking; downloads still require confirmation. Shared lifecycle/coalescing/opt-out/error tests and the full Windows launcher suite pass;6 Python startup/shared-UI checks pass; Linux cross-build passes. Sample footer capture reviewed. Native Mac/Linux startup visual acceptance pending.
+
+Compact Controls gap follow-up (2026-11-18): collapsed Key bindings now flows below Local multiplayer instead of waiting for the taller deadzone column. Expanding bindings still gives the table the full page width. Shared layout regression covers the collapsed-card spacing; Windows full launcher suite and Linux cross-build pass.
+
+Compact launcher settings (2026-11-18, source90014bf6): shared responsive cards replace large stacked sections. Smaller inline fields, collapsible secondary groups and shorter settings tab spacing retain all settings handlers and save/conflict behavior. Shared tests cover resizing and collapse without draft loss. Final Windows full launcher suite and6 Python startup/shared-UI checks passed. Installed launcher updated with a local backup. Linux cross-build passed. All six tabs captured at1000x720,1152x772 and1440x900; native runtime visual acceptance pending.
+
 ## Settings PR integration (2026-11-18)
 
 Combined dev-tools-settings cbf4c62ac with remote maina55ff19c1 (PR572's

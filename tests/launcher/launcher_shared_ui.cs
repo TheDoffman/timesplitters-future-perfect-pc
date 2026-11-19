@@ -467,6 +467,59 @@ public static class LauncherSharedUiChecks
                 fov.Value=original+2;Click(save);
                 Need(save.IsEnabled && saves==3 && File.ReadAllText(controls)==external,"Conflicting save disabled retry or overwrote external settings");
             });
+            Test("texture checks are optional, coalesced and nonblocking",()=>{
+                string folder=Path.Combine(root,"background-textures");Directory.CreateDirectory(folder);
+                var release=new TextureRelease {Version="1.2.3"};
+                var ready=new System.Threading.Tasks.TaskCompletionSource<TextureRelease>();int calls=0,scans=0;
+                using(var check=new TextureUpdateCheck(folder,token=>{System.Threading.Interlocked.Increment(ref calls);return ready.Task;},(pack,token)=>{System.Threading.Interlocked.Increment(ref scans);return System.Threading.Tasks.Task.FromResult(1024L);})) {
+                    check.StartIfOptedIn().GetAwaiter().GetResult();Need(calls==0&&!check.IsChecking,"Opted-out startup made a request");
+                    TextureDownload.SetOptedIn(folder,true);var first=check.StartIfOptedIn();
+                    Need(!first.IsCompleted&&check.IsChecking,"Background check blocked startup");
+                    Need(Object.ReferenceEquals(first,check.CheckAsync()),"Concurrent checks were duplicated");
+                    var page=new SettingsPage(new ResourceDictionary(),folder,true,check);bool busy=false;page.TextureBusyChanged+=value=>busy=value;
+                    page.RefreshTextureCheck();Need(!busy&&((DockPanel)page.View.Children[0]).IsEnabled,"Background work blocked the settings editor");
+                    Need(!Find<Button>(page.View,"CheckTexturePack").IsEnabled&&Find<TextBox>(page.View,"MouseSensitivity").IsEnabled,"Only texture actions should wait");
+                    ready.SetResult(release);Need(first.Wait(5000),"Texture check did not finish");page.RefreshTextureCheck();
+                    Need(calls==1&&scans==1&&check.DownloadBytes==1024&&check.Status.Contains("available"),"Cached texture result incorrect");
+                    Need(Find<Button>(page.View,"DownloadTexturePack").IsEnabled,"Shared result did not reach settings");
+                    check.StartIfOptedIn().GetAwaiter().GetResult();Need(calls==1,"Startup check repeated in the same session");
+                    check.Installed(release);Need(check.Status=="Textures up to date"&&check.DownloadBytes==0,"Installation left stale update status");
+                }
+                using(var failed=new TextureUpdateCheck(folder,token=>{throw new IOException("Offline");})) {
+                    failed.CheckAsync().GetAwaiter().GetResult();Need(!failed.IsChecking&&failed.HasChecked&&failed.Status.Contains("unavailable"),"Failure escaped background work");
+                }
+                var waiting=new System.Threading.Tasks.TaskCompletionSource<TextureRelease>();
+                var cancelled=new TextureUpdateCheck(folder,token=>{token.Register(()=>waiting.TrySetCanceled());return waiting.Task;});
+                var pending=cancelled.CheckAsync();cancelled.Dispose();Need(pending.Wait(5000)&&!cancelled.IsChecking,"Closing did not cancel background work");
+            });
+            Test("compact settings reflow and collapse without changing drafts",()=>{
+                string folder=Path.Combine(root,"compact-settings");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);
+                var save=Find<Button>(page.View,"SettingsSaveButton");Click(save);Need(!save.IsEnabled,"Initial save failed");
+                var input=Find<Expander>(page.View,"SettingsInputmouseSection");
+                var bindings=Find<Expander>(page.View,"SettingsKeybindingsSection");
+                Need(input.IsExpanded&&!bindings.IsExpanded,"Compact card defaults changed");
+                input.IsExpanded=false;input.IsExpanded=true;Need(!save.IsEnabled,"Presentation changed the saved draft");
+                var sensitivity=Find<TextBox>(page.View,"MouseSensitivity");sensitivity.Text="0.2";
+                var cards=Find<SettingsTiles>(page.View,"ControlsCards");
+                cards.Measure(new Size(860,Double.PositiveInfinity));cards.Arrange(new Rect(0,0,860,cards.DesiredSize.Height));
+                Need(cards.ColumnCount==2,"Wide settings did not use two columns");
+                var localCard=(Border)Find<Expander>(page.View,"SettingsLocalmultiplayerSection").Parent;
+                var bindingCard=(Border)bindings.Parent;
+#if MACOS || LINUX
+                Need(Math.Abs(bindingCard.Bounds.X-localCard.Bounds.X)<1&&bindingCard.Bounds.Y-localCard.Bounds.Bottom<=13,"Collapsed bindings left a gap below Local multiplayer: "+localCard.Bounds+" → "+bindingCard.Bounds);
+#else
+                var localSlot=System.Windows.Controls.Primitives.LayoutInformation.GetLayoutSlot(localCard);
+                var bindingSlot=System.Windows.Controls.Primitives.LayoutInformation.GetLayoutSlot(bindingCard);
+                Need(Math.Abs(bindingSlot.X-localSlot.X)<1&&bindingSlot.Y-localSlot.Bottom<=1,"Collapsed bindings left a gap below Local multiplayer");
+#endif
+
+                cards.Measure(new Size(620,Double.PositiveInfinity));cards.Arrange(new Rect(0,0,620,cards.DesiredSize.Height));
+                Need(cards.ColumnCount==1,"Narrow settings did not stack");
+                input.IsExpanded=false;input.IsExpanded=true;bindings.IsExpanded=true;
+                Need(sensitivity.Text=="0.2"&&save.IsEnabled,"Collapse or resize lost the draft");
+                Click(save);Need(!save.IsEnabled&&Math.Abs(GameSettings.Load(folder,null).Sensitivity-.2)<.0001,"Compact controls did not save");
+            });
             Test("controller deadzones preserve legacy and tune each player",()=>{
                 string folder=Path.Combine(root,"deadzone-settings");Directory.CreateDirectory(folder);
                 var model=GameSettings.Load(folder,null);

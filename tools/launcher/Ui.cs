@@ -28,6 +28,7 @@ namespace TimeSplitters.Launcher
     public static class Ui
     {
 #if MACOS || LINUX
+        public static void Post(Action action){Avalonia.Threading.Dispatcher.UIThread.Post(action);}
         public static FontFamily Monospace { get { return new FontFamily(OperatingSystem.IsLinux()?"DejaVu Sans Mono":"Menlo"); } }
         public static Brush Brush(string value) { return Avalonia.Media.Brush.Parse(value); }
         public static void Freeze(SolidColorBrush brush) { }
@@ -68,6 +69,7 @@ namespace TimeSplitters.Launcher
         public static void ForwardWheel(ReleaseNotesMarkdown notes,ScrollViewer parent)
         { notes.PointerWheelChanged+=(s,e)=> { parent.Offset=new Vector(parent.Offset.X,parent.Offset.Y-e.Delta.Y*60);e.Handled=true; }; }
 #else
+        public static void Post(Action action){var dispatcher=System.Windows.Threading.Dispatcher.FromThread(System.Threading.Thread.CurrentThread);var app=Application.Current;if(app!=null)dispatcher=app.Dispatcher;if(dispatcher!=null&&!dispatcher.HasShutdownStarted)dispatcher.BeginInvoke(action);}
         public static FontFamily Monospace { get { return new FontFamily("Consolas"); } }
         public static Brush Brush(string value) { return (Brush)new BrushConverter().ConvertFromString(value); }
         public static void Freeze(SolidColorBrush brush) { brush.Freeze(); }
