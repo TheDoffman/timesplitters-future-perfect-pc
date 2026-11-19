@@ -1036,7 +1036,7 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
 
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
-[Console](launcher.md), [exit](pause-settings.md).
+[UI](launcher.md), [exit](pause-settings.md).
 
 [2x](original-upscale.md).
 

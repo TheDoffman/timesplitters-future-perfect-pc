@@ -146,6 +146,8 @@ namespace TimeSplitters.Launcher
         void SetChannels(Release[] releases,string selected)
         {channelPicker.SetReleases(releases,selected);}
         string NewsGameVersion { get { return installed.Length>0?installed:gameInstalled?"Unversioned":""; } }
+        TextureUpdateCheck textureUpdatesState;bool closed;
+        void TextureCheckChanged(){if(closed)return;var label=Find<TextBlock>("TextureUpdateStatus");label.Text=textureUpdatesState.Status;label.ToolTip=textureUpdatesState.Details;label.Visibility=label.Text.Length>0?Visibility.Visible:Visibility.Collapsed;if(settings!=null)settings.RefreshTextureCheck();}
         public void SetStatus(string value) { Text("StatusText", value); }
         public LauncherWindow(string path, bool preview)
             : this(path,preview,new ReleaseClient()) { }
@@ -154,6 +156,7 @@ namespace TimeSplitters.Launcher
             root = path; previewMode = preview; client = releases;
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Launcher.xaml"))
                 Window = (Window)XamlReader.Load(stream);
+            textureUpdatesState=new TextureUpdateCheck(root);textureUpdatesState.Changed+=()=>Ui.Post(TextureCheckChanged);
             Window.Resources.MergedDictionaries.Add(PageTheme.Resources());
             Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
             channelPicker.SetReleases(new Release[0],GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
@@ -221,7 +224,7 @@ namespace TimeSplitters.Launcher
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
             Button("OpenDataButton").Click+=(s,e)=> {if(!previewMode)OpenFolder("Data");};
-            Window.Closed += (s,e)=> { if(consolePage!=null)consolePage.Dispose(); if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
+            Window.Closed += (s,e)=> { closed=true;textureUpdatesState.Dispose(); if(consolePage!=null)consolePage.Dispose(); if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
             Window.Activated+=async(s,e)=>{if(KnownIssuesVisible())await RefreshKnownIssues(false);};
             if (previewMode)
             {
@@ -268,6 +271,7 @@ namespace TimeSplitters.Launcher
                 busy = true; Refresh();
                 try { await Task.Run(() => Core.CleanupGameAfterStartup(root)); }
                 finally { busy = false; }
+                var backgroundTextures=textureUpdatesState.StartIfOptedIn();
                 await Check();
                 string result = Core.PathIn(root, ".launcher/last-result.txt");
                 if (File.Exists(result)) { SetStatus(File.ReadAllText(result)); File.Delete(result); }
@@ -300,7 +304,7 @@ namespace TimeSplitters.Launcher
             if(busy || (!previewMode && Core.GameRunning())) { SetStatus("Close the game before editing settings."); return; }
             try {
                 if(settings==null) {
-                    settings=new SettingsPage(Window.Resources,root,previewMode);
+                    settings=new SettingsPage(Window.Resources,root,previewMode,textureUpdatesState);
                     settings.TextureBusyChanged+=value=> {busy=value;Refresh();};
                     settings.Saved+=()=> { SetStatus("Settings saved."); Refresh(); };
                     settings.Cancelled+=()=> { ShowHome(); Find<ContentControl>("SettingsHost").Content=null; settings=null; SetStatus("Unsaved settings discarded."); };
@@ -313,7 +317,6 @@ namespace TimeSplitters.Launcher
                 Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;
                 SelectNavigation("SettingsNav");
-                settings.CheckTexturesIfOptedIn();
             } catch(Exception ex) { Fail(ex); }
         }
         void ShowHome()

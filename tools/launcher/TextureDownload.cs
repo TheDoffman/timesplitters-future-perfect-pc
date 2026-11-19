@@ -18,6 +18,58 @@ namespace TimeSplitters.Launcher
         public List<Release> Parts = new List<Release>();
         public Dictionary<string, Dictionary<string,string>> Files = new Dictionary<string, Dictionary<string,string>>();
     }
+    // Read-only, session-scoped work. Downloads and installation remain explicit actions.
+    public sealed class TextureUpdateCheck : IDisposable
+    {
+        readonly string root;
+        readonly Func<CancellationToken,Task<TextureRelease>> fetch;
+        readonly Func<TextureRelease,CancellationToken,Task<long>> scan;
+        readonly CancellationTokenSource lifetime=new CancellationTokenSource();
+        readonly object gate=new object();
+        Task pending;volatile bool disposed;bool automaticStarted;
+        public event Action Changed;
+        public bool IsChecking {get;private set;}
+        public bool HasChecked {get;private set;}
+        public TextureRelease Release {get;private set;}
+        public long DownloadBytes {get;private set;}
+        public string Status {get;private set;}
+        public string Details {get;private set;}
+        public TextureUpdateCheck(string root,Func<CancellationToken,Task<TextureRelease>> fetch=null,Func<TextureRelease,CancellationToken,Task<long>> scan=null)
+        {this.root=root;Status="";Details="";this.fetch=fetch??Fetch;this.scan=scan??((pack,token)=>Task.Run(()=>TextureDownload.DownloadBytes(root,pack,token),token));}
+        static async Task<TextureRelease> Fetch(CancellationToken token)
+        {using(var client=new ReleaseClient())return await TextureDownload.Check(client,token).ConfigureAwait(false);}
+        void Notify(){if(!disposed&&Changed!=null)Changed();}
+        public Task StartIfOptedIn()
+        {lock(gate){if(disposed||automaticStarted||!TextureDownload.OptedIn(root))return Task.FromResult(false);automaticStarted=true;return CheckAsync();}}
+        public Task CheckAsync()
+        {
+            lock(gate) {
+                if(disposed)return Task.FromResult(false);
+                if(pending!=null&&!pending.IsCompleted)return pending;
+                IsChecking=true;Release=null;DownloadBytes=0;Status="Checking textures…";Details="Checking for texture updates in the background. You can keep using the launcher.";
+                pending=Task.Run((Func<Task>)Run);Notify();return pending;
+            }
+        }
+        async Task Run()
+        {
+            using(var timeout=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
+                timeout.CancelAfter(TimeSpan.FromMinutes(2));
+                try {
+                    var pack=await fetch(timeout.Token).ConfigureAwait(false);
+                    long bytes=await scan(pack,timeout.Token).ConfigureAwait(false);timeout.Token.ThrowIfCancellationRequested();
+                    Release=pack;DownloadBytes=bytes;
+                    Status=bytes==0?"Textures up to date":"Texture download available";
+                    Details=bytes==0?"Installed textures match pack "+pack.Version+".":"Pack "+pack.Version+" is available. Open Game settings → Graphics → Enhanced textures to download it.";
+                } catch(OperationCanceledException){Status="Texture check unavailable";Details="Texture check cancelled or timed out. Retry in Game settings → Graphics → Enhanced textures.";}
+                  catch(Exception ex){Status="Texture check unavailable";Details=ex.Message;}
+                finally {IsChecking=false;HasChecked=true;Notify();}
+            }
+        }
+        public void Verified(TextureRelease pack,long bytes)
+        {Release=pack;DownloadBytes=bytes;HasChecked=true;Status=bytes==0?"Textures up to date":"Texture download available";Details=bytes==0?"Installed texture pack "+pack.Version+".":"Open Game settings → Graphics → Enhanced textures to download matching pack files.";Notify();}
+        public void Installed(TextureRelease pack){Verified(pack,0);}
+        public void Dispose(){lock(gate){if(disposed)return;disposed=true;lifetime.Cancel();if(pending==null||pending.IsCompleted)lifetime.Dispose();else pending.ContinueWith(t=>lifetime.Dispose(),TaskScheduler.Default);}}
+    }
     public static class TextureDownload
     {
         public sealed class Verification

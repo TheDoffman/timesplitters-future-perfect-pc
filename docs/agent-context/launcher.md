@@ -1,3 +1,7 @@
+[Background texture checks](background-texture-checks.md): one shared, nonblocking startup check and a persistent footer status replace automatic checking on Settings entry.
+
+[Compact settings cards](compact-launcher-settings.md). Shared SettingsTiles and card expanders replace tall stacked sections; save/apply behavior is unchanged.
+
 V-Sync: shared Display checkbox/GameSettings.VSync persists runtime.conf `vsync`;
 Save/Cancel, draft tracking and transactions are shared by WPF/Avalonia. FPS/VRR
 choices remain independent. See [Video Options](video-options.md#optional-v-sync-2026-11-17).
