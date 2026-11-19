@@ -4,6 +4,11 @@ version hold below. Both are minor feature releases; source changes still requir
 the normal three-host build/package gates and official launcher publication on main.
 The public0.7.0-beta.1 remains immutable historical preview material.
 
+The Windows game package README now describes the native Multiplayer menu,
+community relay without player port forwarding, and the distinct private-server
+invite/router requirements. Packaging and launcher install checks remain the
+validation route; this changes instructions only, not runtime networking.
+
 [Background texture checks](background-texture-checks.md): one shared, nonblocking startup check and a persistent footer status replace automatic checking on Settings entry.
 
 [Compact settings cards](compact-launcher-settings.md). Shared SettingsTiles and card expanders replace tall stacked sections; save/apply behavior is unchanged.
