@@ -152,15 +152,18 @@ Confirmed display choices are saved in Settings/pc-display.ini.
 Optional Discord Rich Presence: enable Game settings > Discord with the Discord
 desktop app running. See Support/Discord/README.txt. Fresh installs leave this disabled.
 
-Online multiplayer: choose Online / System Link > Online in the game.
-Host: Start New Match detects your public IPv4 and starts the HTTPS directory.
-Forward TCP 30820 and UDP 30821 to the host PC and allow both through Windows
-Firewall. Copy the invitation from the Online window and send it to friends.
-Guests paste it into Invitation / lobby code and click Join by code.
-Return to the game: host creates a match, guests select it and Ready, host Go.
-Guests do not need port forwarding. Hosting behind carrier-grade NAT requires
-a reachable player to host instead. The game does not configure your router.
-Real internet connections and full-match stability remain experimental.
+Online multiplayer: choose Multiplayer from the main menu, then Online for the
+community match list, Private Server for your own group, or LAN on one network.
+Community Online needs no player port forwarding. To host an Arcade match,
+choose Start New Match, Open or Invite Only, then Create Lobby. Set Options;
+friends select Ready and the host chooses Go. Invite Only needs its lobby code.
+A Private Server has a separate server invite. Only its owner needs working
+UPnP or manual TCP 30820 / UDP 30821 forwarding and firewall access. Keep the
+server running while friends play. Carrier-grade NAT may prevent private hosting;
+use community Online or a reachable friend's server instead.
+Everyone needs matching game builds and supported original game content.
+Online Arcade remains experimental; Story co-op needs a dedicated test build.
+Guide: https://github.com/TheDoffman/timesplitters-future-perfect-pc/blob/main/docs/players/multiplayer.md
 Online preferences and hosting certificates are stored under Settings.
 
 Settings: Settings/pc-controls.json. Saves: Saves. Diagnostics: Logs.

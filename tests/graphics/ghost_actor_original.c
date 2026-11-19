@@ -14,6 +14,8 @@ RECOMP_TLS int g_fp_top;
 #define WORD_AT(a) MEM32(a)
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL: line %d %s\n",__LINE__,#x);exit(1);}}while(0)
 static int ui_placement,wide,wrapped,pending,draws,blurs;
+/* The original actor reveal executes outside the shared pause-glass scope. */
+static RECOMP_TLS unsigned pause_glass_depth;
 static uint32_t ui_tag,rectangle[9];
 static float scale;
 static int projected_x;

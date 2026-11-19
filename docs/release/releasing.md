@@ -1,29 +1,27 @@
 # Game releases: Stable and named previews
 
-Current integration policy (2026-11-17): merge the native multiplayer work into
-main with `VERSION` kept at `0.6.2`. The `0.6.3-sun-fix.1` value on main was a
-mistake; the user explicitly requests no version increment yet. The earlier
-`0.7.0-beta.1` draft described below remains historical testing material.
-This source integration does not publish a release or replace existing assets.
+The next Stable release is **0.7.0**, bringing native online multiplayer menus,
+V-Sync, crosshair sizing and expanded settings to Windows, Apple Silicon Mac and
+Linux. These features justify a minor bump from Stable0.6.2. Publish independent
+launcher **1.7.0** first through the official three-host workflow, verify its
+fifteen assets, then prepare the game draft with all nine platform assets.
+The earlier integration-only instruction to keep VERSION0.6.2 is superseded by
+the user's new release request (2026-11-19). The accidental0.6.3-sun-fix.1 source
+value was not a Stable publication.
 
 [Discord release notifications](discord-announcements.md): Stable and previews post to release-updates; announcements is for team posts.
 
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
-Game and launcher versions are independent. The next Stable hotfix source is
-**0.6.2**, restoring original editable controls and fixing high-FPS turret
-activation and interaction prompts. Existing personal bindings are preserved;
-players can explicitly restore defaults. Prepare a **draft** game release;
-launcher **1.6.2** must be published first. Windows packaging and native Mac/Linux
-packages require the same clean source revision. The local publisher supplies
-Windows assets; matching native assets and host acceptance remain separate work.
-Keep issues open until the game hotfix is published.
+Game and launcher versions are independent. Windows packaging and native
+Mac/Linux packages require the same clean source revision. The local publisher
+supplies Windows assets; matching native assets and host acceptance remain
+separate work. Keep issues open until the release containing their fixes is live.
 
-Online multiplayer preview0.7.0-beta.1 is prepared from
-`feature/native-multiplayer-ui` for the existing **Preview -> Beta** selector.
-The initial package is Windows x64; native packages require matching source and
-separate validation. See [beta scope and limits](online-beta.md) and
-[publication evidence](../project/STATUS.md). Stable and launcher Latest stay intact.
+Historical Online multiplayer preview **0.7.0-beta.1** was published for all three
+platforms in **Preview -> Beta**. Preserve that immutable release; it is not the
+new Stable0.7.0. See [beta scope](online-beta.md), current
+[player instructions](../players/multiplayer.md) and [evidence](../project/STATUS.md).
 
 ## Versions and channels
 
