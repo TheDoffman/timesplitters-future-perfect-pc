@@ -9,6 +9,8 @@
 /* POLICY */
 #include "recomp_types.h"
 ptrdiff_t g_xbox_mem_offset;int g_tsfp_native_timing_active=1;
+#define PC_NATIVE_WEAPON_BOB_IMPLEMENTATION
+#include "../../src/gameplay/pc_native_weapon_bob.h"
 #include "../src/gameplay/pc_native_weapon_guest.h"
 RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
