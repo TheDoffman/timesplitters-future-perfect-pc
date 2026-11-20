@@ -17,6 +17,7 @@ body:
         **Game releases**
 
         <!-- BEGIN AUTO GAME VERSIONS -->
+        - `v0.7.0`
         - `v0.7.0-beta.1`
         - `v0.6.2`
         - `v0.6.1`
@@ -50,6 +51,7 @@ body:
         **Launcher releases**
 
         <!-- BEGIN AUTO LAUNCHER VERSIONS -->
+        - `v1.7.0`
         - `v1.6.2`
         - `v1.6.1`
         - `v1.6.0`
@@ -79,7 +81,6 @@ body:
         - `v1.2.7`
         - `v1.2.6`
         - `v1.2.5`
-        - `v1.2.4`
         <!-- END AUTO LAUNCHER VERSIONS -->
 
         </details>
