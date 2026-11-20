@@ -66,7 +66,7 @@ def test_menu_mouse(tmp_path, mutation):
         return
     if mutation == 'missing-setting-drag':
         assert result.returncode != 0
-        assert 'FLOAT_AT(value_address)==.25f' in result.stderr
+        assert 'FLOAT_AT(value_address)==.4f' in result.stderr
         return
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'PASS:' in result.stdout

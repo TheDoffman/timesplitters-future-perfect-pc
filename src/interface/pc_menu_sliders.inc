@@ -1,6 +1,42 @@
 /* US 45410066 custom menu sliders. Share capture, hit testing and drag
  * ownership, while each setting retains its original draft/commit behavior. */
 extern void sub_00045C60(void),sub_00021780(void);
+extern void sub_00045390(void),sub_00045820(void);
+/* Preserve the original 0..1 values and 0.05 adjustment; add ten faster steps. */
+#define MENU_CONTROLLER_SPEED_MAX 1.5f
+#define MENU_CONTROLLER_SPEED_STEPS 30u
+static void menu_controller_speed_set(unsigned player,float value)
+{
+    if(player>=4 || !isfinite(value))return;
+    uint32_t address=0x007BA3DCu+player*0x1E0u;
+    value=fminf(MENU_CONTROLLER_SPEED_MAX,fmaxf(0.f,value));
+    if(FLOAT_AT(address)==value)return;
+    FLOAT_AT(address)=value;
+    /* Native draft only: Accept/Cancel and profile saving stay authoritative. */
+    if(WORD_AT(0x007BA16Cu) && guest_writable(WORD_AT(0x007BA178u),12)) {
+        uint32_t preview=WORD_AT(WORD_AT(0x007BA178u)+8),sp=g_esp;
+        g_esp-=0x30;
+        guest_call(sub_00045390,1,g_esp);
+        WORD_AT(g_esp)=preview;
+        guest_call(sub_00045820,1,g_esp);
+        g_esp=sp;
+    }
+}
+/* The original tick still owns row updates, repeat/consumed input and slower
+ * adjustments. It leaves right presses at >=1 unchanged; extend just that
+ * boundary after it has processed input. Left already works above 1. */
+static void menu_controller_speed_tick(uint32_t menu,void (*original)(void))
+{
+    unsigned player=WORD_AT(0x007BA9E0u);
+    int selected=guest_writable(menu,0x190) && WORD_AT(menu+0x18c)==9 && player<4;
+    uint32_t address=selected?0x007BA3DCu+player*0x1E0u:0;
+    float before=selected?FLOAT_AT(address):0.f;
+    guest_call(original,1,menu);
+    if(selected && WORD_AT(menu+0x18c)==9 && WORD_AT(0x007BA9E0u)==player &&
+       before>=1.f && before<MENU_CONTROLLER_SPEED_MAX && FLOAT_AT(address)==before &&
+       (WORD_AT(menu+0xc4)&0xc0000u)==0x80000u)
+        menu_controller_speed_set(player,before+.05f);
+}
 typedef struct MenuSliderTrack {
     uint32_t menu,descriptor,item,id,player;
     float x,y,w,h;
@@ -71,10 +107,11 @@ void pc_display_menu_sensitivity_draw(void (*original)(void))
 }
 void pc_display_menu_slider_bar(void (*original)(void))
 {
-    uint32_t frame=g_esp,saved_y=WORD_AT(frame+12);int centered=0;
+    uint32_t frame=g_esp,saved_y=WORD_AT(frame+12),saved_value=WORD_AT(frame+4);int centered=0,controller=0;
     if(menu_slider_draw_menu && WORD_AT(g_esp)==0x002EA3E0u &&
        guest_writable(menu_slider_draw_item,0x10c) &&
        WORD_AT(menu_slider_draw_item+0x14)==9 && WORD_AT(0x007BA9E0u)<4) {
+        controller=1;FLOAT_AT(frame+4)=fminf(1.f,fmaxf(0.f,FLOAT_AT(frame+4)/MENU_CONTROLLER_SPEED_MAX));
         if(controls_font_menu(menu_slider_draw_menu) && menu_slider_draw_bounds_valid &&
            isfinite(menu_slider_draw_bounds[1]) && isfinite(menu_slider_draw_bounds[3])) {
             centered=1;WORD_AT(frame+12)=(uint32_t)(int)((menu_slider_draw_bounds[1]+menu_slider_draw_bounds[3]-
@@ -85,13 +122,13 @@ void pc_display_menu_slider_bar(void (*original)(void))
             (float)(int32_t)WORD_AT(g_esp+16),(float)(int32_t)WORD_AT(g_esp+20));
     }
     original();if(centered)WORD_AT(frame+12)=saved_y;
+    if(controller)WORD_AT(frame+4)=saved_value;
 }
 static void menu_slider_fov_pointer(float x,float left,float width);
 static void menu_slider_weapon_fov_pointer(float x,float left,float width);
 static void menu_slider_crosshair_pointer(float x,float left,float width);
 static void menu_slider_keyboard_pointer(float x,float left,float width);
 static void menu_slider_audio_mix_pointer(unsigned index,float x,float left,float width);
-extern void sub_00045390(void),sub_00045820(void);
 static void menu_slider_set(const MenuSliderTrack *track,unsigned kind,float x)
 {
     if(kind>=MENU_AUDIO_MIX && kind<MENU_AUDIO_MIX+6) {
@@ -105,20 +142,8 @@ static void menu_slider_set(const MenuSliderTrack *track,unsigned kind,float x)
     } else if(kind==MENU_FOV) {
         menu_slider_fov_pointer(x,track->x,track->w);
     } else if(kind==MENU_SENSITIVITY) {
-        uint32_t address=0x007BA3DCu+track->player*0x1E0u;
-        float value=(float)pc_menu_slider_value(x,track->x,track->w,20)*.05f;
-        if(FLOAT_AT(address)!=value) {
-            FLOAT_AT(address)=value;
-            /* Original sub_002EAB30 preview; Accept/Cancel still own saving. */
-            if(WORD_AT(0x007BA16Cu) && guest_writable(WORD_AT(0x007BA178u),12)) {
-                uint32_t preview=WORD_AT(WORD_AT(0x007BA178u)+8),sp=g_esp;
-                g_esp-=0x30;
-                guest_call(sub_00045390,1,g_esp);
-                WORD_AT(g_esp)=preview;
-                guest_call(sub_00045820,1,g_esp);
-                g_esp=sp;
-            }
-        }
+        float value=(float)pc_menu_slider_value(x,track->x,track->w,MENU_CONTROLLER_SPEED_STEPS)*.05f;
+        menu_controller_speed_set(track->player,value);
     } else {
         unsigned value=pc_menu_slider_value(x,track->x,track->w,16);
         uint32_t volume=kind==MENU_MUSIC?0x005236BCu:0x005236C0u;

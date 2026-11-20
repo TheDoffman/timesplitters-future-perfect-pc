@@ -288,6 +288,8 @@ static void audio_tests(void)
         WORD_AT(m+4)=1;run(m);CHECK(!menu_slider_drag); /* replaced menu */
         WORD_AT(m+4)=0;cursor.left=0;run(m);
     }
+    WORD_AT(m+0x18c)=3;
+    menu_controller_speed_tick(m,sub_00074760);
     CHECK(music_previews && sound_previews);
     CHECK(pc_menu_slider_value(-1,0,100,16)==0 && pc_menu_slider_value(101,0,100,16)==16);
     CHECK(pc_menu_slider_value(NAN,0,100,16)==0 && pc_menu_slider_value(1,0,0,16)==0);
@@ -295,13 +297,18 @@ static void audio_tests(void)
 /* Simulate the original sensitivity painter calling its shared bar primitive.
  * The uneven width represents translated labels; the adapter must use exactly
  * these draw arguments rather than assume the FOV/audio bar's dimensions. */
+static float speed_painted;
+static void speed_bar_original(void) {speed_painted=FLOAT_AT(g_esp+4);g_esp+=4;}
 static void sensitivity_painter(void)
 {
     uint32_t frame=g_esp;
     g_esp=0x1900;WORD_AT(g_esp)=0x002EA3E0;
     WORD_AT(g_esp+8)=287;WORD_AT(g_esp+12)=157;
     WORD_AT(g_esp+16)=137;WORD_AT(g_esp+20)=13;
-    pc_display_menu_slider_bar(audio_draw_original);CHECK(g_esp==0x1904);
+    FLOAT_AT(g_esp+4)=FLOAT_AT(0x7ba3dc+WORD_AT(0x7ba9e0)*0x1e0);
+    float saved=FLOAT_AT(g_esp+4);
+    pc_display_menu_slider_bar(speed_bar_original);CHECK(g_esp==0x1904);
+    CHECK(fabsf(speed_painted-((menu_slider_draw_menu && WORD_AT(0x7ba9e0)<4)?saved/1.5f:saved))<.00001f && FLOAT_AT(0x1904)==saved);
     g_esp=frame+4;
 }
 static void setting_tracks(uint32_t m,uint32_t sensitivity,uint32_t fov)
@@ -339,14 +346,14 @@ static void setting_slider_tests(void)
         FLOAT_AT(value_address)=1;
         cursor.x=ox+(t->x+t->w*.25f)*scale;cursor.y=oy+(t->y+2)*scale;
         run(m);CHECK(FLOAT_AT(value_address)==1); /* hover never adjusts */
-        cursor.left=1;run(m);CHECK(FLOAT_AT(value_address)==.25f);
+        cursor.left=1;run(m);CHECK(FLOAT_AT(value_address)==.4f);
         CHECK(WORD_AT(m+0x198)==sensitivity && !(WORD_AT(m+0xc4)&0x10));
         unsigned previews=sensitivity_previews;run(m);CHECK(previews==sensitivity_previews);
         cursor.x=ox+(t->x+t->w*.75f)*scale;cursor.y=oy+212*scale;cursor.wheel=1;
-        run(m);CHECK(FLOAT_AT(value_address)==.75f && !menu_mouse.wheel_pending);
+        run(m);CHECK(fabsf(FLOAT_AT(value_address)-1.15f)<.00001f && !menu_mouse.wheel_pending);
         CHECK(WORD_AT(m+0x198)==sensitivity); /* passing FOV cannot retarget */
         cursor.x=ox+(t->x-10)*scale;run(m);CHECK(FLOAT_AT(value_address)==0);
-        cursor.x=ox+(t->x+t->w+10)*scale;run(m);CHECK(FLOAT_AT(value_address)==1);
+        cursor.x=ox+(t->x+t->w+10)*scale;run(m);CHECK(FLOAT_AT(value_address)==1.5f);
         for(unsigned other=0;other<4;other++) if(other!=player)
             CHECK(FLOAT_AT(0x7ba3dc+other*0x1e0)==0); /* selected player only */
         /* Reusing the same menu/row for another player must cancel a hold,

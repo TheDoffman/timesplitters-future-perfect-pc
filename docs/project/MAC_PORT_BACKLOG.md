@@ -1,3 +1,13 @@
+Controller Turn Speed extension (2026-11-20, source on
+`feature/controller-turn-speed`, validation base af9d3453): **Awaiting validation** on native
+Mac/Linux. Shared `pc_controls_menu.inc`/`pc_menu_sliders.inc` extend 0..1 to 0..1.5
+with original 0.05 steps; selected profiles, defaults, Accept/Cancel and native
+save layout remain unchanged. Both existing host menu adapters use this source;
+no OS adaptation is deferred. Windows original-code/pointer fixtures and a live isolated D3D11 acceptance
+build (including its local compiler workaround) are recorded in [STATUS](STATUS.md). Remaining native acceptance: frontend/pause
+adjustment with a physical pad, save/relaunch, Cancel, all four players and
+actual aiming feel at old/new maxima. No native Mac/Linux gameplay claim.
+
 Walking weapon bob #557 (2026-11-19, uncommitted fix/557-weapon-bob):
 **Awaiting validation** on native Mac/Linux. The shared numeric policy and
 pc_native_visual_time_guest.inc use pc_native_weapon_bob.h to retain matching

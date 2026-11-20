@@ -303,7 +303,7 @@ static void controls_tick(void)
             controls_change_tab((controls_tab+((buttons&0x40000u)?2:1))%3);
         }
     } else if(controls_tab==2)guest_call(kb_tick,1,menu);
-    else {controls_link_rows(1);guest_call(sub_002EAB30,1,menu);controls_link_rows(0);}
+    else {controls_link_rows(1);menu_controller_speed_tick(menu,sub_002EAB30);controls_link_rows(0);}
     if(controls_tab!=2)controls_accept_state();
     restore_registers(&r);g_esp+=4;
 }
