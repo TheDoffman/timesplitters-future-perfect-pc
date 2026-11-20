@@ -18,6 +18,11 @@ Ubuntu/WSL cc also compiles/runs the final original weapon fixture successfully;
 that is compiler/controlled-runtime evidence, not Linux GPU/gameplay acceptance.
 Repository-context/backlog tests22pass and full patch-stack validation passes.
 
+Publication follow-up2026-11-20: remaining timing group95passed; its dynamic
+Uplink fixture required the real bob observer implementation for linking.
+After that fixture-only correction, the Uplink test also passes. Combined with
+the52 original-dispatch cases, all148 timing cases have passing local results.
+
 Final original fractional-dispatch regression group:52 passed,96 deselected
 in132.70seconds, covering surrounding player, input, weapon, animation,
 projectile and effect timing routines. An earlier full-file
