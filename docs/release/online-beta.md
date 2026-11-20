@@ -1,7 +1,10 @@
-# Online multiplayer beta
+# Historical Online multiplayer beta
 
-This beta brings online hosting and joining into the game's own menus. It is
-published in the launcher's **Preview** update channel under **Beta**.
+Version **0.7.0-beta.1** was published on November 13 for Windows x64, Apple
+Silicon Mac and Linux x64 in the launcher's **Preview** channel under **Beta**.
+It brought hosting and joining into the game's own menus. Keep that release
+immutable; the next Stable game **0.7.0** and launcher **1.7.0** are being prepared
+separately. See the current [multiplayer instructions](../players/multiplayer.md).
 
 ## What to try
 
@@ -23,8 +26,8 @@ updates, player-name reporting and bot weapon cleanup during host migration.
 
 ## Testing and limits
 
-Packages are available for **Windows x64 and Linux x64**. Mac packages are not
-included in this draft. Linux requires Ubuntu 24.04/glibc 2.39 or newer and a
+The published beta includes all three platform packages. Linux requires
+Ubuntu 24.04/glibc 2.39 or newer and a
 working system Vulkan driver. Use launcher 1.6.2 or newer. Linux package checks,
 isolated WSL/software-Vulkan gameplay and local three-peer relay tests pass;
 physical Linux GPU, Steam Deck and external-network acceptance remain pending. Story co-op remains restricted to dedicated Story testing
@@ -42,5 +45,5 @@ remain running for its lobbies; returning its owner to Multiplayer disconnects
 those users. Host migration coverage remains limited to tested Arcade paths.
 
 The launcher preserves installed game data, saves, settings and optional texture
-packs. This is an opt-in online beta; the Stable game and launcher Latest release
-are unchanged.
+packs. The beta remains opt-in and does not select the Stable game channel or
+replace the launcher's Latest release.

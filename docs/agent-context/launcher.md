@@ -1,3 +1,23 @@
+Stable game0.7.0 and launcher1.7.0 were published on2026-11-19 for Windows,
+Apple Silicon Mac and Linux. Game source is b1ca2c16; launcher source is merged
+main9c54bd49, with the same source tree. All9 game and15 launcher public assets,
+versionless launcher aliases and README download routes were verified. The
+Stable launcher owns Latest; the game uses latest=false. The public0.7.0-beta.1
+remains immutable historical preview material. This supersedes the integration-only
+version hold below; future releases must query GitHub for unused versions.
+
+README review (2026-11-20) aligns native Arcade multiplayer, published Mac game
+requirements (0.7.0 needs macOS27+, distinct from source-renderer selection),
+Linux launcher entry point, Graphics/Enhanced textures and Tools & Logs labels.
+The pinned docs/assets/render-launcher-preview.ps1 renders the1.7.0 interface
+with isolated Stable/sample0.7.0 data; docs/assets/README.md records provenance.
+These are documentation updates; no runtime or launcher behavior changed.
+
+The Windows game package README now describes the native Multiplayer menu,
+community relay without player port forwarding, and the distinct private-server
+invite/router requirements. Packaging and launcher install checks remain the
+validation route; this changes instructions only, not runtime networking.
+
 [Background texture checks](background-texture-checks.md): one shared, nonblocking startup check and a persistent footer status replace automatic checking on Settings entry.
 
 [Compact settings cards](compact-launcher-settings.md). Shared SettingsTiles and card expanders replace tall stacked sections; save/apply behavior is unchanged.
@@ -10,13 +30,13 @@ Live game Console: shared ConsolePage.cs tails the validated current/last GameSe
 [Sync telemetry](network-sync-telemetry.md).
 Integration version policy (2026-11-17): native multiplayer merges into main
 with VERSION0.6.2, per user request. Main's0.6.3-sun-fix.1 was accidental;
-the earlier0.7.0-beta.1 draft below is historical and does not authorize a
+the earlier0.7.0-beta.1 preview below is historical and does not authorize a
 version increment or publication for this integration.
-Online game beta0.7.0-beta.1 is uploaded as a draft prerelease from46f1a2d0
+Online game beta0.7.0-beta.1 was published November13 from46f1a2d0
 on feature/native-multiplayer-ui (release443677772). Beta metadata targets
-Preview/Beta, but drafts stay hidden from launcher discovery. Windows+Linux assets;
+Preview/Beta, with Windows, Apple Silicon Mac and Linux assets;
 minimum launcher1.6.2. Stable0.6.2/Latest launcher1.6.2 unchanged. [Scope](../release/online-beta.md).
-Native package availability and draft acceptance evidence remain in STATUS.md.
+Native package availability and acceptance evidence remain in STATUS.md.
 
 Installed display-reader capability: BUILD.json display_settings_version gates
 Crosshair Size (>=4) and Weapon FOV degrees (>=5). Missing/invalid metadata

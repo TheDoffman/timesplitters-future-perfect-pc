@@ -30,6 +30,20 @@ was stopped when the user requested publication to main instead of waiting
 for the playable build. No full game link, live weapon-bob visual acceptance
 or native Mac gameplay test is claimed. #557 stays open until a fixing release
 is published. PR/merge authorized2026-11-20; release publication is separate.
+## README relevance review (2026-11-20)
+
+Reviewed against main `9c54bd49` and published Stable game 0.7.0 / launcher
+1.7.0. Corrected cross-platform Online Arcade instructions, Linux launcher
+entry point, published Mac game requirement, current texture controls and
+Tools & Logs navigation. All 69 local links/anchors resolve; all three public
+launcher download aliases returned HTTP 200 with matching asset sizes. The
+public Mac game BUILD receipt confirms macOS 27.0 minimum.
+
+On Windows, rendered and visually reviewed the current launcher preview using
+a fresh isolated sample root and the hash-verified 1.7.0 application. Capture
+provenance is in `docs/assets/README.md`. Context and whitespace checks pass.
+Documentation only: no game rebuild, gameplay test or new Mac/Linux runtime
+validation was performed; settings, saves, textures and game data were untouched.
 
 Compact settings native CI follow-up (2026-11-19): Avalonia card heights exposed that shortest-column placement could move collapsed bindings away from Local multiplayer. SettingsTiles now explicitly keeps the collapsed binding card in the local-player column, while expanded bindings still spans both columns. Native regression diagnostics include card bounds.
 

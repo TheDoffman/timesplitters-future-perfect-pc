@@ -20,26 +20,27 @@
   join code `DEMO01`. Images are direct client-area screenshots, without edits
   or resampling. Only these selected documentation captures are retained here.
 
-- `launcher-preview.png`: launcher v1.4.0 Windows interface preview rendered on
-  2026-10-30 from published source revision
-  `2a2ffe369a28ba2541d54437af63002020487ef6` (`launcher-v1.4.0`). The maintained
+- `launcher-preview.png`: launcher v1.7.0 Windows interface preview rendered on
+  2026-11-20 from the verified release-candidate build at
+  `b1ca2c167740e1b3d845e6020c3474a017cc391a`. Its source tree matches published
+  launcher source `9c54bd4914889dac417ef2f2eedca2fed0662eed` (`launcher-v1.7.0`). The maintained
   Windows builder used checksum-pinned artwork. `render-launcher-preview.ps1`
   loads that same build in preview mode with a new isolated root, selects Stable
   through the launcher's channel picker and labels the installed game as sample
   data. It is a direct 1152 x 772 client-area render with no image
   edits or resampling. Rendered application SHA-256:
-  `9eb58f9a508e83634151c96cb42b1cf2f54ca385fc3321767b3ceb8ed446fe7d`.
+  `dcb32a5a6f1e673e08afc9c9776815b4d1c4a23f7b8b1eb44fbdc65750c04436`.
   PNG SHA-256:
-  `25c7d169ff9a12a85e1d7802a465b54c5d4a8af2a6a7373c22d5574c823ad486`.
-  The screenshot shows the v1.4.0 branding, shared navigation and version label.
-  Installation data is illustrative; Stable is the installation
+  `713a1589e39e1244eafe90a88f0c266399a412ec3587c6867c1d0b77752a18a8`.
+  The screenshot shows the v1.7.0 branding, Tools & Logs navigation and version label.
+  The game 0.7.0 installation data is illustrative; Stable is the installation
   default and previews are optional. Rendering starts no game, performs no update
   or live network check, and includes no personal settings, paths or saves.
   Reproduce with Windows PowerShell 5.1 in STA mode (the script validates the
   application's hash and requires a new preview directory):
 
   ```powershell
-  powershell.exe -NoProfile -STA -File docs/assets/render-launcher-preview.ps1 -ApplicationPath '<v1.4.0 build>/Bin/TimeSplitters.App.exe' -PreviewRoot '<new isolated directory>'
+  powershell.exe -NoProfile -STA -File docs/assets/render-launcher-preview.ps1 -ApplicationPath '<verified v1.7.0 build>/Bin/TimeSplitters.App.exe' -PreviewRoot '<new isolated directory>'
   ```
 - `readme-banner.svg`: a compact vector header using the launcher's navy panels,
   silver title, pale-blue accents and interrupted-ring motif. Its TSFP monogram
