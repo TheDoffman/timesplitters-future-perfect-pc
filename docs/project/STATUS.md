@@ -1,3 +1,18 @@
+## README relevance review (2026-11-20)
+
+Reviewed against main `9c54bd49` and published Stable game 0.7.0 / launcher
+1.7.0. Corrected cross-platform Online Arcade instructions, Linux launcher
+entry point, published Mac game requirement, current texture controls and
+Tools & Logs navigation. All 69 local links/anchors resolve; all three public
+launcher download aliases returned HTTP 200 with matching asset sizes. The
+public Mac game BUILD receipt confirms macOS 27.0 minimum.
+
+On Windows, rendered and visually reviewed the current launcher preview using
+a fresh isolated sample root and the hash-verified 1.7.0 application. Capture
+provenance is in `docs/assets/README.md`. Context and whitespace checks pass.
+Documentation only: no game rebuild, gameplay test or new Mac/Linux runtime
+validation was performed; settings, saves, textures and game data were untouched.
+
 Compact settings native CI follow-up (2026-11-19): Avalonia card heights exposed that shortest-column placement could move collapsed bindings away from Local multiplayer. SettingsTiles now explicitly keeps the collapsed binding card in the local-player column, while expanded bindings still spans both columns. Native regression diagnostics include card bounds.
 
 Background texture checks (2026-11-18, source90014bf6): opted-in launchers start a read-only texture check after recovery, off the UI thread. The footer reports progress/result on all pages; Settings shares the cached result and no longer triggers an automatic modal check. Manual Check is nonblocking; downloads still require confirmation. Shared lifecycle/coalescing/opt-out/error tests and the full Windows launcher suite pass;6 Python startup/shared-UI checks pass; Linux cross-build passes. Sample footer capture reviewed. Native Mac/Linux startup visual acceptance pending.
