@@ -1,5 +1,6 @@
 [Bob](weapon-bob.md).
 [Exit](pause-settings.md).
+[Turn Speed](controls-options.md).
 [V-Sync](video-options.md#optional-v-sync-2026-11-17).
 
 [Sync telemetry](network-sync-telemetry.md).

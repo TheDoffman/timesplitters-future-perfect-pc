@@ -209,11 +209,12 @@ zoomed, and does not pass through the controller's stick deadzone or turn-speed
 curve. WASD diagonals are normalized. The supplied configuration uses keyboard
 input on player 1; it does not require a controller.
 
-Controller sensitivity uses the original in-game slider, with 0.05 steps
-between 0 and 1. Older builds could jump straight to an endpoint (issue #24).
-The shared float-comparison fix in `837692d` restores intermediate values;
-rebuild with `tsfp.ps1 -Action Build` to refresh older generated code and the
-executable. This setting is separate from raw mouse sensitivity in F2.
+Controller sensitivity is **Settings → Controls → Controller → Turn Speed**,
+available from the main menu and pause menu. The slider now runs from 0 to 1.5
+in 0.05 steps (the original maximum was 1). Existing saved values and the default
+keep their original speed; only the added upper range makes aiming faster.
+Select **Accept** to save or **Cancel** to discard changes. Mouse dragging uses
+the same range. This setting is separate from raw mouse sensitivity.
 
 For the original game's **Settings → Controls** page (for example, Inverse
 look), **Accept** now writes the selected profile before returning to Settings.

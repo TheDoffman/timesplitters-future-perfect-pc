@@ -203,7 +203,13 @@ MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
 MOUSE_STUB(sub_00045C60)
 static unsigned video_sounds,highlight_sounds;
 void sub_00021780(void){uint32_t sound=WORD_AT(g_esp+4);CHECK(sound==0x1234u || sound==0x4321u);if(sound==0x4321u)highlight_sounds++;else video_sounds++;g_esp+=4;}
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+static unsigned speed_previews,speed_consume;
+void sub_00045390(void){g_esp+=4;}
+void sub_00045820(void){speed_previews++;g_esp+=4;}
+#else
 MOUSE_STUB(sub_00045390) MOUSE_STUB(sub_00045820)
+#endif
 MOUSE_STUB(sub_0007DB20) MOUSE_STUB(sub_0007C410) MOUSE_STUB(sub_0007C300)
 MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
 MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
@@ -329,6 +335,10 @@ void sub_00075B70(void) {
     g_esp+=4;
 }
 static unsigned native_control_ticks,native_control_backs,native_control_opens[2];
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+static int speed_original_active;
+void speed_original(void);
+#endif
 static void fixture_controller_button(void) {pc_display_menu_button(sub_00079D60_gen);}
 void sub_002EA3F0(void) {
     for(unsigned id=0;id<12;id++) {
@@ -345,7 +355,12 @@ static unsigned fixture_native_rows(void) {
     }
     return mask;
 }
-void sub_002EAB30(void) {CHECK(fixture_native_rows()==0xfff);native_control_ticks++;g_esp+=4;}
+void sub_002EAB30(void) {
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+    if(speed_original_active){speed_original();return;}
+#endif
+    CHECK(fixture_native_rows()==0xfff);native_control_ticks++;g_esp+=4;
+}
 void sub_002E9FC0(void) {if(controls_tab!=2)CHECK(fixture_native_rows()==0xfff);native_control_backs++;g_esp+=4;}
 void sub_002EA8E0(void) {CHECK(0);}
 static unsigned native_control_actions;
@@ -448,7 +463,14 @@ void sub_00079710(void) {
     built_ids[built_row_count++]=UINT32_MAX;
     uint32_t item=0x230000+separators*0x200;WORD_AT(item)=9;WORD_AT(item+0x14)=UINT32_MAX;fixture_link(item);g_esp+=4;
 }
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+void sub_00074910(void) {
+    if(speed_original_active)WORD_AT(WORD_AT(g_esp+4)+0xc4)&=~speed_consume;
+    g_esp+=4;
+}
+#else
 STUB(sub_00074910)
+#endif
 void sub_001A0A60(void) {
     CHECK(getenv("TSFP_NETWORK") && !strcmp(getenv("TSFP_NETWORK"),"1"));
     CHECK(!getenv("TSFP_ONLINE_CONFIG") || !*getenv("TSFP_ONLINE_CONFIG"));
@@ -565,6 +587,7 @@ static void visibility_guest_checks(void) {
     assert(!pc_visibility_result(123,0xfffffff0u,0) && visibility_result_calls==calls);
     assert(g_esp==0x10008 && g_eax==0x8007000e);
 }
+static void controller_speed_original_tests(void);
 int main(int argc,char **argv)
 {
     CHECK(argc==2); CHECK(!_putenv_s("TSFP_DISPLAY_CONFIG",argv[1]));
@@ -1930,6 +1953,7 @@ int main(int argc,char **argv)
     }
 
     visibility_guest_checks();
+    controller_speed_original_tests();
     VirtualFree(mem,0,MEM_RELEASE);
     reload("TSFP_DISPLAY_V4 1280 720 65 120 75 50\n");
     CHECK(pc_display_crosshair_size()==50 && pc_display_weapon_fov()==120);
@@ -1988,3 +2012,92 @@ int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int all
 int pc_network_enabled(void){return 1;}
 void pc_network_enable_lan(void){lan_enables++;}
 void sub_000668F0(void){}
+
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+void sub_002E9BC0(void){g_esp+=4;} /* Other native selectors have separate coverage. */
+void sub_00074950(void){g_esp+=4;}
+void sub_000CF2D0(void){g_esp+=4;}
+void sub_00079C00(void){g_esp+=4;}
+#define eax g_eax
+#define ecx g_ecx
+#define edx g_edx
+#define esp g_esp
+#define ebx g_ebx
+#define esi g_esi
+#define edi g_edi
+#define ebp g_ebp
+#define xmm0 g_xmm0
+#define xmm1 g_xmm1
+#define xmm2 g_xmm2
+#define xmm3 g_xmm3
+#define xmm4 g_xmm4
+#define xmm5 g_xmm5
+#define xmm6 g_xmm6
+#define xmm7 g_xmm7
+#include "controller_speed_original.inc"
+#undef eax
+#undef ecx
+#undef edx
+#undef esp
+#undef ebx
+#undef esi
+#undef edi
+#undef ebp
+#undef xmm0
+#undef xmm1
+#undef xmm2
+#undef xmm3
+#undef xmm4
+#undef xmm5
+#undef xmm6
+#undef xmm7
+static void controller_speed_original_tests(void)
+{
+    const uint32_t menu=0x300000;
+    speed_original_active=1;WORD_AT(0x7ba16c)=0;
+    /* Original US constants, not a simulated turn-speed implementation. */
+    FLOAT_AT(0x475c78)=1.f;FLOAT_AT(0x475ce8)=.05f;FLOAT_AT(0x47d674)=.9999f;
+    for(unsigned player=0;player<4;player++) {
+        WORD_AT(0x7ba9e0)=player;uint32_t addr=0x7ba3dc+player*0x1e0;
+        for(unsigned step=0;step<=30;step++) {
+            float before=step*.05f;
+            FLOAT_AT(addr)=before;WORD_AT(menu+0x18c)=9;WORD_AT(menu+0xc4)=0x80000;
+            g_esp=0x700000;menu_controller_speed_tick(menu,sub_002EAB30);
+            CHECK(g_esp==0x700000 && fabsf(FLOAT_AT(addr)-fminf(before+.05f,1.5f))<.00001f);
+            FLOAT_AT(addr)=before;WORD_AT(menu+0xc4)=0x40000;
+            menu_controller_speed_tick(menu,sub_002EAB30);
+            CHECK(fabsf(FLOAT_AT(addr)-fmaxf(before-.05f,0.f))<.00001f);
+            FLOAT_AT(addr)=before;WORD_AT(menu+0xc4)=0;
+            menu_controller_speed_tick(menu,sub_002EAB30);
+            CHECK(FLOAT_AT(addr)==before); /* Idle/opening never rewrites saves. */
+        }
+        FLOAT_AT(addr)=1.2f;WORD_AT(menu+0xc4)=0x80000;speed_consume=0x80000;
+        menu_controller_speed_tick(menu,sub_002EAB30);CHECK(FLOAT_AT(addr)==1.2f);
+        speed_consume=0;WORD_AT(menu+0x18c)=3;WORD_AT(menu+0xc4)=0x80000;
+        menu_controller_speed_tick(menu,sub_002EAB30);CHECK(FLOAT_AT(addr)==1.2f);
+    }
+    /* The existing Accept/Cancel draft includes the extended float verbatim. */
+    WORD_AT(0x7ba9e0)=0;controls_original_ready=1;
+    memcpy(controls_original,(void *)(g_xbox_mem_offset+controls_draft()),sizeof controls_original);
+    CHECK(!controls_dirty());menu_controller_speed_set(0,1.5f);CHECK(controls_dirty());
+    memcpy((void *)(g_xbox_mem_offset+controls_draft()),controls_original,sizeof controls_original);
+    CHECK(!controls_dirty());
+    /* Original native Accept copies all 31 dwords, including the extra range. */
+    WORD_AT(0x7b0c7c)=0x500000;WORD_AT(0x501500)=0x510000;
+    menu_controller_speed_set(0,1.5f);
+    guest_call(speed_accept_original,1,menu);
+    CHECK(FLOAT_AT(0x510078)==1.5f);
+    /* Reloading that native draft preserves the value without migration. */
+    memcpy((void *)(g_xbox_mem_offset+controls_draft()),(void *)(g_xbox_mem_offset+0x510000),sizeof controls_original);
+    CHECK(FLOAT_AT(controls_draft()+0x78)==1.5f);
+    WORD_AT(0x7ba16c)=1;WORD_AT(0x7ba178)=0x520000;WORD_AT(0x520008)=42;
+    unsigned previews=speed_previews;menu_controller_speed_set(0,1.45f);
+    CHECK(speed_previews==previews+1);
+    menu_controller_speed_set(0,1.45f);CHECK(speed_previews==previews+1);
+    menu_controller_speed_set(4,1.f);menu_controller_speed_set(0,NAN);
+    CHECK(FLOAT_AT(0x7ba3dc)==1.45f && speed_previews==previews+1);
+    speed_original_active=0;
+}
+#else
+static void controller_speed_original_tests(void){}
+#endif

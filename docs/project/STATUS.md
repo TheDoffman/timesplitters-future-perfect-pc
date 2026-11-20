@@ -1,3 +1,47 @@
+## Extended controller Turn Speed (2026-11-20)
+
+Source on `feature/controller-turn-speed`; live validation used base `af9d3453`.
+Shared native Controls/slider code extends 0..1 to 0..1.5 in 0.05 steps, without
+rescaling saved values or changing defaults/deadzones/mouse aiming. Mouse paint
+and dragging cover the same range; Accept/Cancel retain the native profile ABI.
+
+Validation host: Windows x64, Python 3.12.14, MSVC 14.44.35207 compiled
+C fixtures. Full pinned runtime patch stack verified in an isolated source
+worktree; no generated guest C was edited. Original-code fixture uses the
+SHA-256-verified supported US XBE. Pointer/settings suites: 11 passed, 2 native
+Mac compile checks skipped on Windows. Full-range original-code tests include
+consumed input, all four players, idle retention, native Accept profile copy,
+draft discard and bounded preview behavior. Context and whitespace checks pass.
+
+Windows acceptance build and live checks completed on Windows 11 build 26300,
+MSVC x64 19.44.35224, D3D11, Original 60 FPS at 960x540. The normal build hit
+MSVC C1002 optimizer heap failures. The successful local acceptance build uses
+per-file compiler processes, /Od on generated recomp_0096.c and /Ob1 on seven
+large generated renderer units (0750,0752,0753,0754,0755,0756,0774); controller
+code retains /O2 /Ob2. This local ignored CMake policy is not a source change or
+certification of the unchanged default-optimization release build. All standard
+Build test executables passed; matching crash symbols were produced.
+
+In a disposable Test Lab copy, main and pause menus reached/stopped at1.5,
+opening preserved the original0.5, main Cancel restored0.5, and pause Cancel
+restored1.5 after an unsaved1.25 draft. Native Accept applied the values in
+Time to Split/Normal. Identical simulated full-stick right inputs (raw mouse off)
+measured5.600003 degrees/game tick at1.0 and7.466666 at1.5: normalized to60 Hz,
+336.0002 versus447.99995 degrees/s, ratio1.333332. A valid signed save stored1.5
+at body offset7C; a fresh game process reloaded it and displayed the full bar
+with Accept disabled. No guest-memory writes or desktop input were used.
+Evidence: logs/controller-speed-validation.json, controller-cap.bmp,
+controller-persisted.bmp and the isolated controller-speed result JSON files.
+Known disposable partition images were recycled after each bounded run.
+
+Physical-controller feel/partial-stick input, native Mac/Linux gameplay and a
+full campaign remain untested. Game release publication remains pending; personal settings, saves and the
+canonical Test Lab fixture were preserved.
+
+Main integration: rebased onto `d296e9a3`; controller pointer/settings suites
+passed again (11 passed, 2 native Mac skips, 26.61 seconds). Context and
+whitespace checks passed. The live acceptance binary predates this rebase.
+
 ## Walking weapon bob #557 (2026-11-19)
 
 Local uncommitted fix/557-weapon-bob from main1f835403. Windows x64,
