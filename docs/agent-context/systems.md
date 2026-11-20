@@ -1,3 +1,4 @@
+[Bob](weapon-bob.md).
 [Exit](pause-settings.md).
 [V-Sync](video-options.md#optional-v-sync-2026-11-17).
 

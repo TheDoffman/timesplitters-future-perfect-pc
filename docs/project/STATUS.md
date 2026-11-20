@@ -1,3 +1,36 @@
+## Walking weapon bob #557 (2026-11-19)
+
+Local uncommitted fix/557-weapon-bob from main1f835403. Windows x64,
+MSVC14.44.35207; supported US XBE checked by original-routine fixture.
+Reproduced the missing walking path in the existing idle-sway test: with
+constant speed, original phase after one second was2.250000238 at60FPS and
+1.124998689 at120FPS. Original displacement/amplitude likewise halved.
+
+The shared observer retains the preceding player-update interval. Only two
+walking-bob divisions change; clocks, motion, firing and idle RNG stay original.
+Corrected original movement snapshot plus complete weapon-update fixture:
+phase at60/120/144/180/240 is2.250000238/2.249997377/2.250000000/
+2.249998331/2.249999046, with matching final X/Y offsets within0.0000001.
+Quarter-speed, variable intervals, four player histories, invalid/pause time,
+scene resets, catch-up and neighbor-site fallback also pass. Idle-sway RNG
+counts retain parity. Both targeted Windows original-routine cases pass.
+Ubuntu/WSL cc also compiles/runs the final original weapon fixture successfully;
+that is compiler/controlled-runtime evidence, not Linux GPU/gameplay acceptance.
+Repository-context/backlog tests22pass and full patch-stack validation passes.
+
+Final original fractional-dispatch regression group:52 passed,96 deselected
+in132.70seconds, covering surrounding player, input, weapon, animation,
+projectile and effect timing routines. An earlier full-file
+run encountered missing observer linkage in unrelated fixture helpers; moving
+the observer into the constant-site macro removed that unnecessary dependency.
+The broad runs were stopped and final original-dispatch validation restarted.
+A Windows Release rebuild was started on2026-11-20 using the existing D: build
+with normal O2/Ob2 and one compiler worker. It progressed without errors but
+was stopped when the user requested publication to main instead of waiting
+for the playable build. No full game link, live weapon-bob visual acceptance
+or native Mac gameplay test is claimed. #557 stays open until a fixing release
+is published. PR/merge authorized2026-11-20; release publication is separate.
+
 Compact settings native CI follow-up (2026-11-19): Avalonia card heights exposed that shortest-column placement could move collapsed bindings away from Local multiplayer. SettingsTiles now explicitly keeps the collapsed binding card in the local-player column, while expanded bindings still spans both columns. Native regression diagnostics include card bounds.
 
 Background texture checks (2026-11-18, source90014bf6): opted-in launchers start a read-only texture check after recovery, off the UI thread. The footer reports progress/result on all pages; Settings shares the cached result and no longer triggers an automatic modal check. Manual Check is nonblocking; downloads still require confirmation. Shared lifecycle/coalescing/opt-out/error tests and the full Windows launcher suite pass;6 Python startup/shared-UI checks pass; Linux cross-build passes. Sample footer capture reviewed. Native Mac/Linux startup visual acceptance pending.

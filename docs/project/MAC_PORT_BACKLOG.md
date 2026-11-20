@@ -1,3 +1,13 @@
+Walking weapon bob #557 (2026-11-19, uncommitted fix/557-weapon-bob):
+**Awaiting validation** on native Mac/Linux. The shared numeric policy and
+pc_native_visual_time_guest.inc use pc_native_weapon_bob.h to retain matching
+fractional displacement duration and normalize only the original walking-bob
+phase/amplitude divisions. No host adapter is required. Windows and POSIX
+original-routine fixtures are distinct from live gameplay. Native acceptance:
+compare Sci-Fi Handgun walking/stopping at60/120/180/240, slow motion, split
+screen and rate changes. See [contract](../agent-context/weapon-bob.md) and
+[measured validation](STATUS.md). Keep #557 open until a fixing release is live.
+
 Background texture checks (2026-11-18, source90014bf6): shared TextureUpdateCheck model and SettingsPage handling work through thin WPF/Avalonia Ui.Post adapters. Linux cross-build passes. Native Mac/Linux startup, footer transitions, settings reuse, cancellation and offline visual acceptance remain awaiting validation; no new platform adapter is deferred.
 
 Compact settings follow-up (2026-11-18, source90014bf6): SettingsPage/SettingsTiles provide common compact cards, collapse and width-based layout on WPF and Avalonia. No OS adapter is needed; Linux cross-build passed. Native Mac/Linux window resizing, keyboard traversal, dropdowns and visual review remain awaiting validation. Settings persistence stays shared.
