@@ -1,8 +1,17 @@
-Release preparation (2026-11-19): game0.7.0 and launcher1.7.0 are the next Stable
-versions. The user now requests publication, superseding the integration-only
-version hold below. Both are minor feature releases; source changes still require
-the normal three-host build/package gates and official launcher publication on main.
-The public0.7.0-beta.1 remains immutable historical preview material.
+Stable game0.7.0 and launcher1.7.0 were published on2026-11-19 for Windows,
+Apple Silicon Mac and Linux. Game source is b1ca2c16; launcher source is merged
+main9c54bd49, with the same source tree. All9 game and15 launcher public assets,
+versionless launcher aliases and README download routes were verified. The
+Stable launcher owns Latest; the game uses latest=false. The public0.7.0-beta.1
+remains immutable historical preview material. This supersedes the integration-only
+version hold below; future releases must query GitHub for unused versions.
+
+README review (2026-11-20) aligns native Arcade multiplayer, published Mac game
+requirements (0.7.0 needs macOS27+, distinct from source-renderer selection),
+Linux launcher entry point, Graphics/Enhanced textures and Tools & Logs labels.
+The pinned docs/assets/render-launcher-preview.ps1 renders the1.7.0 interface
+with isolated Stable/sample0.7.0 data; docs/assets/README.md records provenance.
+These are documentation updates; no runtime or launcher behavior changed.
 
 The Windows game package README now describes the native Multiplayer menu,
 community relay without player port forwarding, and the distinct private-server
