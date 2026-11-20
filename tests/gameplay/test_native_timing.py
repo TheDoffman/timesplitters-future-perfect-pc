@@ -582,7 +582,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_aim_easing.c', [(0x25ab82,0x25acdf),(0x25b0f3,0x25b182)]),
     ('native_animation_clock.c', [(0x5adc0,0x5afab),(0x61570,0x6160f),
                                   (0x585e0,0x5861b),(0x59cf0,0x59d14)]),
-    ('native_weapon_sway.c', [(0x1c4400,0x1c4a4b),(0x153c20,0x153c57),(0x12010,0x12017),
+    ('native_weapon_sway.c', [(0xd613d,0xd625d),(0x1c4400,0x1c4a4b),(0x153c20,0x153c57),(0x12010,0x12017),
                               (0x1c3659,0x1c3681),(0x1c37cf,0x1c37ea)]),
     ('native_strip_distortion.c', [(0xf9b10,0xf9caf),(0x153c20,0x153c57),(0x12010,0x12017)]),
     ('native_screen_distortion.c', [(0xf9700,0xf9b0b),(0xf8aa0,0xf8ac4),
@@ -774,9 +774,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         if harness_name=='native_weapon_sway.c':
             # Original visual consumers through the model C8 stores. Return
             # at their outgoing joins before unrelated translation/copy work.
-            for address,expected in ((0x1c3680,'8b4554'),(0x1c37e9,'8b4558')):
+            for address,expected in ((0x1c3680,'8b4554'),(0x1c37e9,'8b4558'),(0xd625c,'e8')):
                 end=config.va_to_file_offset(address)
-                assert image[end:end+3].hex()==expected
+                assert image[end:end+len(bytes.fromhex(expected))].hex()==expected
                 image=image[:end]+b'\xc3'+image[end+1:]
         if harness_name=='native_player_dispatch.c':
             # Execute all three original hit-displacement additions/stores.
