@@ -1,3 +1,32 @@
+## Rebuilt Auto-resolution acceptance passed (2026-11-21)
+
+The normal Windows Build -SkipTextures completed successfully, including its
+standard build checks. The shared Auto fix is in build source8b3e6fca; game
+SHA256 is `a8a26b31dfa9bc4174bdfe6fd4d157f3e01b3fefe17e269cb51b809db80a7cb1`.
+Build/source-policy hashes are in logs/renderer-acceptance-build-provenance.json.
+
+Both actual launcher paths pass display-auto-fixed-01 on this same new executable.
+D3D11 and Vulkan now log native scene-target changes1920x1080 ->640x480 ->1008x729
+->640x480, matching the real fullscreen/windowed/resize/restore geometry. Their
+strict automatic_resize_applied checks pass, with correct requested backends,
+no fallback or failed presents, controlled gameplay and exit0. Reviewed paired
+112s captures show consistent world/weapon/HUD geometry and ammo12 after firing.
+Old failed Auto reports remain failed; they are not relabelled as successful.
+Mac/Linux shared-policy runtime acceptance remains pending on native hosts.
+
+The optional pinned ETW console successfully captures our actual game PID without
+machine permission/service changes. The acceptance wrapper now supports
+--presentmon and --repetitions3: UUID-named PID-filtered sessions, input tracking
+disabled, bounded capture and owned-session cleanup. Frames are QPC-aligned to
+non-cutscene85-115s gameplay and report submitted/displayed interval distributions,
+GPU-busy and display-latency distributions. Missing displayed frames, another PID,
+ambiguous swap chains or inconsistent frame-row coverage fail the measurement.
+A trace-valid case is not itself the relative performance gate; compare all three
+runs per backend against the matrix thresholds before accepting P1.
+Nine runner tests plus model/selected launcher checks pass:26 tests /31subtests.
+Actual three-run performance results remain pending. Additional quality/level,
+stability and explicit save/load gates remain open; the overall goal is active.
+
 ## Auto-resolution allocation fix under validation (2026-11-21)
 
 The new hardware resize gate found a shared failure on the old game hash0c1d5903:

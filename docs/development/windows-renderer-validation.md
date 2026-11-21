@@ -19,7 +19,7 @@ install another driver over this host simply to expand the matrix.
 | P2 Cold/warm loading | Empty per-test caches, then same-cache repeat; record window/scene readiness, cache files and resource use; no inherited personal caches | Two cold/warm sets pass; second set includes dedicated GPU counters; precise loading/stutter comparisons pending |
 | V1 Common rendering | Reviewed paired level captures identifying the actual shadow, blend/transparency, reflection/screen-copy, filtering, depth and AA features exercised | Stable opening-mission world/HUD/weapon/glow reviewed after display transitions; other targeted features/levels pending |
 | V2 Resource contracts | Production HLSL, signed texture mapping, texture formats, depth replay, screen copy, MSAA, SSAO and visibility checks on both hardware backends | Existing production RHI fixture passed; this is separate from level appearance |
-| D1 Display | Windowed/fullscreen transitions, window resize, supported startup resolutions, repeated switching; requested backend preserved; no failed presents | Fixed scene cycle passes both; Auto failed on both old backends, shared allocation fix in rebuild/validation; startup matrix pending |
+| D1 Display | Windowed/fullscreen transitions, window resize, supported startup resolutions, repeated switching; requested backend preserved; no failed presents | Both rebuilt Auto target/window cycles pass (game a8a26b31); startup/quality resolution matrix pending |
 | Q1 Quality settings | Off/FXAA/SMAA, supported MSAA and filtering values selected and exercised on both backends; confirm effective runtime settings and reviewed captures | Existing RHI MSAA resource checks passed; launcher/game setting matrix pending |
 | S1 Stability | Bounded extended gameplay across representative Story and Arcade levels; no crash, hang, render error, unexplained resource growth or unintended fallback | First Story mission for 120 seconds each passed; extended and Arcade coverage pending |
 | G1 Gameplay | Compare game-clock cadence, movement, firearm/ammo, input, pause/resume and save/load from copied profiles | First-mission movement, firearm, 60-Hz ticks passed; explicit save/load and broader comparisons pending |
@@ -121,3 +121,24 @@ capture and analysis remain a separate acceptance step; a successful trace start
 without graphics events does not prove frame coverage. Launcher samples include
 QPC milliseconds so captured frame records can be aligned with the gameplay
 window. Use unique session names and disable input tracking.
+
+Rebuilt Auto acceptance passed on both backends with game SHA a8a26b31, normal
+Windows build checks and reviewed geometry/HUD captures. Native Mac/Linux runtime
+validation is still unverified. Old failed reports retain their failure status.
+
+The performance cohort uses the same rebuilt game and actual launcher path:
+
+```powershell
+.venv/Scripts/python.exe tools/testing/test-launcher-renderers-windows.py --label pacing-etw-01 --presentmon --repetitions 3 --fullscreen --width 1920 --height 1080
+```
+
+This records one cold and two warm application-cache runs per backend, without
+visual capture. UUID-named sessions filter only the owned game PID and disable
+input tracking. The game publishes its PID atomically. ETW records are joined by
+QPC milliseconds to the controlled non-cutscene gameplay window. The report
+includes submitted/displayed intervals, GPU busy, display latency and observed
+present modes. Another PID, ambiguous swap chains, too few display frames or
+inconsistent interval/row coverage invalidates the measurement. Capture completion
+and a trace-valid case do not establish the relative-performance gate: compare
+the full cohort and investigate matrix-threshold regressions. Actual mouse-to-
+photon latency is not measured by the submitted-frame/display-latency metric.

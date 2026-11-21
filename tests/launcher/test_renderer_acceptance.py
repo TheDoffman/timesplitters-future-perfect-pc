@@ -2,6 +2,7 @@
 import importlib.util
 import io
 import json
+import csv
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
@@ -103,6 +104,36 @@ def test_scenarios_bound_input_and_do_not_allow_arbitrary_expectation_overrides(
     path.write_text(json.dumps(dict(valid, expected_weapon=True)))
     with pytest.raises(ValueError, match="expectations"):
         runner.scenario_options(path, 120)
+
+
+def test_etw_requires_owned_display_frames_in_the_controlled_qpc_window(tmp_path):
+    path = tmp_path / "trace.csv"
+    samples = [dict(seconds=85 + i, scene=2, flags=0, clock_qpc_ms=1000 + i * 1000) for i in range(21)]
+    rows = [dict(ProcessID=42, SwapChainAddress="0x123", CPUStartQPCTimeInMs=1000 + i * 1000 / 60,
+                 MsBetweenPresents=1000 / 60, MsBetweenDisplayChange=1000 / 60,
+                 MsGPUBusy=2, MsUntilDisplayed=18, PresentMode="Independent Flip") for i in range(1200)]
+    def write():
+        with path.open("w", encoding="utf-8-sig", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
+    write()
+    result = runner.trace_measurements(path, samples, 42)
+    assert result["submitted"]["frames"] == 1200
+    assert result["displayed"]["p95_ms"] == pytest.approx(1000 / 60)
+    assert result["gpu_busy"]["median_ms"] == 2
+    rows[0]["ProcessID"] = 99
+    write()
+    with pytest.raises(ValueError, match="another process"):
+        runner.trace_measurements(path, samples, 42)
+    rows[0]["ProcessID"] = 42
+    for row in rows:
+        row["MsBetweenDisplayChange"] = "NA"
+    write()
+    with pytest.raises(ValueError, match="Insufficient ETW"):
+        runner.trace_measurements(path, samples, 42)
+    with pytest.raises(ValueError, match="gameplay samples"):
+        runner.trace_measurements(path, [], 42)
 
 
 def test_save_copy_refuses_redirected_destination_without_changing_source(tmp_path, monkeypatch):

@@ -78,7 +78,8 @@ public static class RendererGameSmoke {
   Process game=null;
   while(game==null && clock.Elapsed.TotalSeconds<10){foreach(var p in Process.GetProcessesByName("futureperfect_recomp")){try{if(String.Equals(p.MainModule.FileName,Path.GetFullPath(Path.Combine(root,"Bin/futureperfect_recomp.exe")),StringComparison.OrdinalIgnoreCase)){game=p;break;}}catch{}p.Dispose();}await Task.Delay(100);}
   Need(game!=null,"Launcher did not create game process");owned=game;
-  File.WriteAllText(Path.Combine(evidence,"game-pid.txt"),game.Id.ToString());
+  string pidPath=Path.Combine(evidence,"game-pid.txt");
+  File.WriteAllText(pidPath+".tmp",game.Id.ToString());File.Move(pidPath+".tmp",pidPath);
   Console.WriteLine("STARTED "+backend+" PID "+game.Id);
   var gpuCounters=new List<PerformanceCounter>();
   try{

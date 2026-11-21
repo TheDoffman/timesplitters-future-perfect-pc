@@ -143,3 +143,14 @@ license/receipt stay under ignored external/presentmon/2.6.0. No service, driver
 or OS permission changes were made. A PID-filtered two-second ETW prerequisite
 probe starts/stops successfully without elevation; actual graphics traces remain
 pending. Launcher samples now include QPC milliseconds for later ETW alignment.
+
+Rebuilt Windows Auto acceptance now passes both backends on gameSHAa8a26b31
+(source8b3e6fca): native targets1920x1080,640x480,1008x729,640x480 follow the
+actual mode/resize cycle, with reviewed consistent gameplay captures and exit0.
+Mac/Linux runtime acceptance remains pending; historical failed reports remain
+failed. --presentmon uses the pinned console, UUID session names and owned PID
+filtering, with --no_track_input. --repetitions3 makes one cold and two warm
+application-cache runs per backend. QPC-aligned ETW measurements require one
+swap chain, owned PID, sufficient displayed frames and coherent interval/row
+coverage. These are measurement-integrity gates; relative performance acceptance
+requires the separate comparison of all runs. Nine runner unit tests pass.

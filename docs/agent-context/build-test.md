@@ -1,4 +1,4 @@
-[Renderer/ETW tests](windows-vulkan.md).
+[Renderer frame tests](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

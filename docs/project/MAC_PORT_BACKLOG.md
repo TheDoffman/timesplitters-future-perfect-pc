@@ -5,8 +5,8 @@ retries failures. The shared SDL policy regression passes under Windows MSVC,
 including interleaved sizing and failed allocation. No OS adapter is deferred.
 Native acceptance: build, select Auto, resize/fullscreen, confirm actual native
 scene-target changes, check HUD/depth and failed-allocation recovery. Windows
-old-build failures are reproduced on both D3D11/Vulkan; rebuilt hardware checks
-are pending. See STATUS Auto-resolution allocation fix section.
+old-build failures reproduce on both backends; rebuilt hardware checks now pass
+on both with gameSHAa8a26b31. Native-host checks remain pending. See STATUS Auto-resolution allocation fix section.
 
 Windows renderer acceptance tooling (2026-11-21): host-specific WPF/GPU test
 runner only; no new shared gameplay or native launcher behavior. Native source

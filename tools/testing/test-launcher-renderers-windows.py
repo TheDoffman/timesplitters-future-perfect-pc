@@ -5,6 +5,7 @@ No personal saves, settings or shader caches are used. Capture and measurement
 runs are separate; CPU samples are process CPU time, not GPU/display timing.
 """
 import argparse
+import csv
 import hashlib
 import importlib.util
 import json
@@ -14,10 +15,12 @@ import platform
 import re
 from pathlib import Path
 import shutil
+import statistics
 import subprocess
 import sys
 import threading
 import time
+import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -157,6 +160,96 @@ def scenario_options(path, seconds):
     return dict(scenario=name, input=actions, expected_weapon=expected, skip_intro=skip)
 
 
+def pinned_presentmon():
+    pin = json.loads((ROOT / "config/build/presentmon-windows.json").read_text())
+    path = ROOT / "external/presentmon" / pin["version"] / Path(pin["url"]).name
+    if path.stat().st_size != pin["size"] or digest(path) != pin["sha256"]:
+        raise ValueError("PresentMon does not match the verified standalone console pin")
+    return path
+
+
+def interval_statistics(values):
+    if len(values) < 100:
+        raise ValueError("Insufficient ETW gameplay frames")
+    percentiles = statistics.quantiles(values, n=100, method="inclusive")
+    return dict(frames=len(values), mean_ms=statistics.mean(values), median_ms=statistics.median(values),
+                p95_ms=percentiles[94], p99_ms=percentiles[98], max_ms=max(values),
+                frames_over_25ms=sum(value > 25 for value in values),
+                frames_over_50ms=sum(value > 50 for value in values))
+
+
+def trace_measurements(path, samples, pid):
+    active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == 2
+              and not sample.get("flags", 0) & 0x20000000]
+    if len(active) < 20:
+        raise ValueError("Insufficient QPC-aligned gameplay samples")
+    start, end = active[0]["clock_qpc_ms"], active[-1]["clock_qpc_ms"]
+    with path.open(encoding="utf-8-sig", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    if not rows or any(int(row["ProcessID"]) != pid for row in rows):
+        raise ValueError("ETW trace is missing or contains another process")
+    matched = [row for row in rows if start <= float(row["CPUStartQPCTimeInMs"]) <= end]
+    chains = sorted(set(row["SwapChainAddress"] for row in matched))
+    if len(chains) != 1:
+        raise ValueError("ETW gameplay window has missing or ambiguous swap chains")
+    def values(column):
+        return [float(row[column]) for row in matched if row.get(column) not in (None, "", "NA") and float(row[column]) > 0]
+    gpu = values("MsGPUBusy")
+    submitted = interval_statistics(values("MsBetweenPresents"))
+    observed_fps = len(matched) * 1000 / (end - start)
+    if abs(observed_fps / (1000 / submitted["mean_ms"]) - 1) > .2:
+        raise ValueError("ETW row coverage disagrees with its reported present intervals")
+    return dict(scope="PID-filtered PresentMon ETW; submitted and displayed intervals, QPC-aligned gameplay window",
+                qpc_window_ms=[start, end], matched_frames=len(matched),
+                swap_chains=chains,
+                submitted=submitted, observed_frame_rate=observed_fps,
+                displayed=interval_statistics(values("MsBetweenDisplayChange")),
+                gpu_busy=interval_statistics(gpu) if len(gpu) >= 100 else None,
+                display_latency=interval_statistics(values("MsUntilDisplayed")),
+                present_modes=sorted(set(row["PresentMode"] for row in matched)))
+
+
+def wait_with_trace(process, destination, seconds):
+    profiler = None
+    output = None
+    session = None
+    deadline = time.monotonic() + seconds + 60
+    try:
+        while process.poll() is None:
+            if profiler is None and (destination / "game-pid.txt").exists():
+                pid = int((destination / "game-pid.txt").read_text())
+                session = "TSFP-launcher-" + str(pid) + "-" + uuid.uuid4().hex
+                (destination / "presentmon-session.json").write_text(json.dumps(dict(pid=pid, session=session)) + "\n")
+                output = (destination / "presentmon.log").open("wb")
+                profiler = subprocess.Popen([str(pinned_presentmon()), "--process_id", str(pid),
+                    "--session_name", session, "--output_file", str(destination / "presentmon.csv"),
+                    "--no_console_stats", "--no_track_input", "--qpc_time_ms", "--timed", str(seconds + 2),
+                    "--terminate_after_timed", "--terminate_on_proc_exit"],
+                    stdout=output, stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW)
+            if time.monotonic() >= deadline:
+                raise subprocess.TimeoutExpired("launcher-and-etw", seconds + 60)
+            time.sleep(.2)
+        if profiler is None:
+            raise ValueError("Launcher did not expose its owned game PID for tracing")
+        if process.returncode == 0:
+            if profiler.wait(timeout=15) != 0:
+                raise ValueError("PresentMon failed; inspect presentmon.log")
+        return process.returncode
+    finally:
+        if profiler is not None and profiler.poll() is None:
+            try:
+                cleanup = subprocess.run([str(pinned_presentmon()), "--session_name", session, "--terminate_existing_session"],
+                    capture_output=True, text=True, timeout=5, creationflags=subprocess.CREATE_NO_WINDOW)
+                (destination / "presentmon-cleanup.json").write_text(json.dumps(dict(
+                    session=session, exit_code=cleanup.returncode, output=cleanup.stdout + cleanup.stderr)) + "\n")
+            finally:
+                if profiler.poll() is None:
+                    profiler.kill()
+                profiler.wait(timeout=10)
+        if output is not None:
+            output.close()
+
+
 def run_case(executable, install, run, evidence, backend, phase, args):
     label = backend + "-" + phase
     destination = evidence / label
@@ -194,7 +287,7 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     reader = threading.Thread(target=drain, daemon=True)
     reader.start()
     try:
-        status = process.wait(timeout=args.seconds + 60)
+        status = wait_with_trace(process, destination, args.seconds) if getattr(args, "presentmon", False) else process.wait(timeout=args.seconds + 60)
     finally:
         if process.poll() is None:
             process.kill()
@@ -218,12 +311,18 @@ def run_case(executable, install, run, evidence, backend, phase, args):
             resized = next(snapshot for snapshot in result["display_snapshots"] if snapshot["label"] == "resized")
             expected = f"[PC-DISPLAY] Native scene target {resized['client_width']}x{resized['client_height']}"
             result["effective_settings_checks"]["automatic_resize_applied"] = expected in text
-    result["measurements"] = measurements(json.loads((destination / (backend + "-samples.json")).read_text()))
+    samples = json.loads((destination / (backend + "-samples.json")).read_text())
+    result["measurements"] = measurements(samples)
+    if getattr(args, "presentmon", False):
+        trace = destination / "presentmon.csv"
+        if trace.stat().st_size > 32 * 1024 * 1024:
+            raise ValueError("ETW CSV exceeded the 32 MiB session budget")
+        result["etw"] = trace_measurements(trace, samples, result["pid"])
     result["cache_before"] = before
     result["cache_after"] = {str(path.relative_to(cache)): path.stat().st_size for path in cache.rglob("*") if path.is_file()}
     result["cache_read_logged"] = "[SHADER-CACHE] loaded from disk:" in text
     result["cache_scope"] = "Application shader cache only; vendor/OS driver caches are not cleared"
-    if phase == "warm" and (not before or not result["cache_read_logged"]):
+    if phase != "cold" and (not before or not result["cache_read_logged"]):
         raise ValueError("Warm case did not demonstrate application cache reads")
     result["runner_seconds"] = time.monotonic() - started
     result["passed"] = (result["passed"] and all(result["renderer_checks"].values()) and
@@ -241,6 +340,8 @@ def main():
     parser.add_argument("--compile-only", action="store_true", help="CI build check; no game data or GPU required")
     parser.add_argument("--backend", choices=("both", "vulkan", "d3d11"), default="both")
     parser.add_argument("--warm", action="store_true", help="Repeat each cold case with its populated isolated cache")
+    parser.add_argument("--repetitions", type=int, choices=(1, 2, 3), help="Matched runs per backend: cold followed by warm repetitions")
+    parser.add_argument("--presentmon", action="store_true", help="Collect PID-filtered ETW display/submission timing with the pinned console")
     parser.add_argument("--capture", action="store_true", help="Visual run; do not treat its resource samples as a benchmark")
     parser.add_argument("--capture-times", type=lambda text: [int(value) for value in text.split(",")],
                         help="Up to 12 unique capture seconds; implies --capture")
@@ -259,6 +360,10 @@ def main():
     if args.compile_only:
         compile_harness()
         return 0
+    if args.warm and args.repetitions:
+        parser.error("Choose --warm or --repetitions, not both")
+    if args.presentmon:
+        pinned_presentmon()
     if args.display_cycle and args.fullscreen:
         parser.error("Display cycle starts windowed; test startup fullscreen in a separate case")
     if args.capture_times:
@@ -267,6 +372,8 @@ def main():
         args.capture = True
     if args.display_cycle and not args.capture:
         parser.error("Display changes perturb timing; use --capture to mark this as a visual run")
+    if args.presentmon and args.capture:
+        parser.error("Keep ETW measurement runs separate from visual capture")
     if not args.label or len(args.label) > 48 or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-" for c in args.label):
         parser.error("Unsafe evidence label")
     if digest(ROOT / "private/game/default.xbe") != XBE_SHA256:
@@ -282,6 +389,9 @@ def main():
                   harness_sha256=digest(ROOT / "tests/launcher_lifecycle/RendererGameSmoke.cs"),
                   runner_sha256=digest(Path(__file__)),
                   capture_enabled=args.capture, cases={})
+    if args.presentmon:
+        report["presentmon_sha256"] = digest(pinned_presentmon())
+        report["presentmon_version"] = json.loads((ROOT / "config/build/presentmon-windows.json").read_text())["version"]
     # Refuse any previous label before acquiring resources or modifying fixtures.
     evidence.mkdir(parents=True, exist_ok=False)
     host = subprocess.check_output(["powershell", "-NoProfile", "-Command",
@@ -297,7 +407,10 @@ def main():
         install = prepare_install(run)
         executable = compile_harness()
         for backend in (("d3d11", "vulkan") if args.backend == "both" else (args.backend,)):
-            for phase in (("cold", "warm") if args.warm else ("cold",)):
+            phases = ("cold", "warm") if args.warm else ("cold",)
+            if args.repetitions:
+                phases = ("cold",) + tuple("warm-" + str(index) for index in range(1, args.repetitions))
+            for phase in phases:
                 report["cases"][backend + "-" + phase] = run_case(executable, install, run, evidence, backend, phase, args)
         check_fixture(ROOT)
         report["passed"] = True
