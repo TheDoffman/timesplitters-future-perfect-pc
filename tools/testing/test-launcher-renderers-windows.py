@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import platform
 import re
@@ -97,7 +98,8 @@ def stop_owned_game(install):
 
 
 def measurements(samples):
-    active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == 2]
+    active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == 2
+              and not sample.get("flags", 0) & 0x20000000]
     if len(active) < 20:
         raise ValueError("Insufficient matched gameplay samples")
     elapsed = active[-1]["seconds"] - active[0]["seconds"]
@@ -127,6 +129,34 @@ def effective_settings(text, config):
     return checks
 
 
+def scenario_options(path, seconds):
+    if path is None:
+        return {}
+    if path.stat().st_size > 65536:
+        raise ValueError("Scenario exceeds 64 KiB")
+    document = json.loads(path.read_text(encoding="utf-8"))
+    name = document.get("scenario")
+    actions = document.get("input")
+    if not isinstance(name, str) or not 1 <= len(name) <= 128 or any(ord(c) < 32 for c in name):
+        raise ValueError("Scenario needs a bounded descriptive name")
+    if not isinstance(actions, list) or not 1 <= len(actions) <= 64:
+        raise ValueError("Scenario needs 1..64 scheduled keyboard actions")
+    previous = -1
+    for action in actions:
+        if not isinstance(action, dict):
+            raise ValueError("Invalid scheduled action")
+        at, key, hold = action.get("at"), action.get("key"), action.get("hold_ms", 180)
+        if (type(at) not in (int, float) or not math.isfinite(at) or not 1 <= at < seconds or at - previous < .5 or
+            type(key) is not int or not 1 <= key <= 255 or type(hold) is not int or not 50 <= hold <= 500):
+            raise ValueError("Scheduled actions need ordered times, valid keys and bounded holds")
+        previous = at
+    expected = document.get("expected_weapon", 14)
+    skip = document.get("skip_intro", True)
+    if type(expected) is not int or not -1 <= expected <= 255 or type(skip) is not bool:
+        raise ValueError("Invalid scenario expectations")
+    return dict(scenario=name, input=actions, expected_weapon=expected, skip_intro=skip)
+
+
 def run_case(executable, install, run, evidence, backend, phase, args):
     label = backend + "-" + phase
     destination = evidence / label
@@ -139,6 +169,7 @@ def run_case(executable, install, run, evidence, backend, phase, args):
                   width=args.width, height=args.height, msaa=args.msaa, aa=args.aa,
                   anisotropy=args.anisotropy, fullscreen=args.fullscreen)
     config["display_cycle"] = getattr(args, "display_cycle", False)
+    config.update(scenario_options(getattr(args, "scenario_file", None), args.seconds))
     if getattr(args, "capture_times", None):
         config["capture_times"] = args.capture_times
     config_path = destination / "case.json"
@@ -214,6 +245,7 @@ def main():
     parser.add_argument("--capture-times", type=lambda text: [int(value) for value in text.split(",")],
                         help="Up to 12 unique capture seconds; implies --capture")
     parser.add_argument("--display-cycle", action="store_true", help="Exercise actual Alt+Enter and resize/restore; use a visual run")
+    parser.add_argument("--scenario-file", type=Path, help="Bounded JSON keyboard schedule for another Story/Arcade scenario")
     parser.add_argument("--seconds", type=int, choices=range(120, 601), default=120)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)

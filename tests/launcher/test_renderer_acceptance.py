@@ -1,6 +1,7 @@
 """Safety and measurement gates for the opt-in hardware acceptance runner."""
 import importlib.util
 import io
+import json
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
@@ -86,6 +87,22 @@ def test_effective_settings_require_active_msaa_and_successful_smaa():
     config.update(width=1, height=1, aa=0)
     assert all(runner.effective_settings("[GRAPHICS] Scene 1008x729, MSAA 4 requested / 4 active", config).values())
     assert not runner.effective_settings(log, config)["smaa_disabled"]
+
+
+def test_scenarios_bound_input_and_do_not_allow_arbitrary_expectation_overrides(tmp_path):
+    path = tmp_path / "scenario.json"
+    valid = dict(scenario="Story second mission", expected_weapon=-1, skip_intro=True,
+                 input=[dict(at=5, key=69), dict(at=10, key=40, hold_ms=100)])
+    path.write_text(json.dumps(valid))
+    assert runner.scenario_options(path, 120)["expected_weapon"] == -1
+    for invalid_action in (dict(at=float("nan"), key=69), dict(at=121, key=69),
+                           dict(at=5, key=999), dict(at=5, key=True), dict(at=5, key=69, hold_ms=9999)):
+        path.write_text(json.dumps(dict(valid, input=[invalid_action])))
+        with pytest.raises(ValueError, match="Scheduled actions"):
+            runner.scenario_options(path, 120)
+    path.write_text(json.dumps(dict(valid, expected_weapon=True)))
+    with pytest.raises(ValueError, match="expectations"):
+        runner.scenario_options(path, 120)
 
 
 def test_save_copy_refuses_redirected_destination_without_changing_source(tmp_path, monkeypatch):

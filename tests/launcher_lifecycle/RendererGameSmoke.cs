@@ -89,10 +89,16 @@ public static class RendererGameSmoke {
    Rect initialWindow=new Rect(),initialClient=new Rect();Need(GetWindowRect(hwnd,out initialWindow) && GetClientRect(hwnd,out initialClient),"Cannot inspect initial window");
    var displaySnapshots=new List<object>{DisplaySnapshot(hwnd,"initial",clock.Elapsed.TotalSeconds)};int displayStage=0;
    double[] captureTimes=config.ContainsKey("capture_times")?((System.Collections.IEnumerable)config["capture_times"]).Cast<object>().Select(x=>Convert.ToDouble(x)).ToArray():new double[]{38,80,112};
-   int[] times={5,10,14,18,22,26,30,34};int[] keys={69,69,40,69,69,69,69,69};int next=0;bool skipped=false,moving=false,released=false;int shot=0;int capture=0;uint firstTick=0,lastTick=0;var samples=new List<object>();var positions=new List<float[]>();int equipped=0;
+   double[] times={5,10,14,18,22,26,30,34};int[] keys={69,69,40,69,69,69,69,69};int[] holds=Enumerable.Repeat(180,8).ToArray();
+   if(config.ContainsKey("input")){
+    var actions=((System.Collections.IEnumerable)config["input"]).Cast<object>().Select(x=>(Dictionary<string,object>)x).ToArray();
+    times=actions.Select(a=>Convert.ToDouble(a["at"])).ToArray();keys=actions.Select(a=>Convert.ToInt32(a["key"])).ToArray();holds=actions.Select(a=>a.ContainsKey("hold_ms")?Convert.ToInt32(a["hold_ms"]):180).ToArray();
+   }
+   int expectedWeapon=Number("expected_weapon",14);
+   int next=0;bool skipped=false,moving=false,released=false;int shot=0;int capture=0;uint firstTick=0,lastTick=0;var samples=new List<object>();var positions=new List<float[]>();int equipped=0;
    while(clock.Elapsed.TotalSeconds<duration){
     Need(!game.HasExited,"Game exited before bounded test ended");double t=clock.Elapsed.TotalSeconds;
-    if(next<times.Length && t>=times[next]){await Key(hwnd,keys[next],180);Console.WriteLine(backend+" menu key "+keys[next]+" at "+t.ToString("F1"));next++;}
+    if(next<times.Length && t>=times[next]){await Key(hwnd,keys[next],holds[next]);Console.WriteLine(backend+" menu key "+keys[next]+" at "+t.ToString("F1"));next++;}
     if(firstPresentSeconds<0 && ReadLiveLog(liveLog).Contains("[PRESENT] backend="+backend))firstPresentSeconds=t;
     if(Flag("display_cycle")){
      if(displayStage==0 && t>=60){await ToggleFullscreen(hwnd);displaySnapshots.Add(DisplaySnapshot(hwnd,"fullscreen",t));displayStage++;}
@@ -101,7 +107,7 @@ public static class RendererGameSmoke {
      else if(displayStage==3 && t>=108){Need(SetWindowPos(hwnd,IntPtr.Zero,0,0,initialWindow.R-initialWindow.L,initialWindow.B-initialWindow.T,0x16),"Restore size request failed");await Task.Delay(300);Rect client;Need(GetClientRect(hwnd,out client) && client.R==initialClient.R && client.B==initialClient.B,"Client size did not restore");displaySnapshots.Add(DisplaySnapshot(hwnd,"restored",t));displayStage++;}
     }
     uint scene=Word(game,0x79094c),flags=Word(game,0x7de458),ticks=Word(game,0x7de318),player=Word(game,0x7b0c7c);
-    if(t>45 && (flags&0x20000000)!=0 && !skipped){await Key(hwnd,27,200);skipped=true;Console.WriteLine(backend+" skipped opening scene at "+t.ToString("F1"));}
+    if((!config.ContainsKey("skip_intro") || Flag("skip_intro")) && t>45 && (flags&0x20000000)!=0 && !skipped){await Key(hwnd,27,200);skipped=true;Console.WriteLine(backend+" skipped opening scene at "+t.ToString("F1"));}
     if(t>=85 && !moving){SetForegroundWindow(hwnd);PostMessage(hwnd,0x100,new IntPtr(87),new IntPtr(1));moving=true;}
     if(t>=90 && !released){PostMessage(hwnd,0x101,new IntPtr(87),new IntPtr(unchecked((int)0xc0000001)));released=true;}
     if(t>=92+shot*4 && shot<5){PostMessage(hwnd,0x201,new IntPtr(1),IntPtr.Zero);await Task.Delay(180);PostMessage(hwnd,0x202,IntPtr.Zero,IntPtr.Zero);shot++;}
@@ -112,7 +118,7 @@ public static class RendererGameSmoke {
      nextGpu=t+5;
     }
     float[] pos=null;uint weapon=0;game.Refresh();
-    if(scene==2 && player>=0x80000000 && player<0x84000000){pos=Position(game,player);weapon=Word(game,player+0x58c);if(weapon==14 && (flags&0x20000000)==0 && gameplayReadySeconds<0)gameplayReadySeconds=t;if(t>=85 && t<=115){positions.Add(pos);if(weapon==14)equipped++;if(firstTick==0)firstTick=ticks;lastTick=ticks;}}
+    if(scene==2 && player>=0x80000000 && player<0x84000000){pos=Position(game,player);weapon=Word(game,player+0x58c);if((expectedWeapon<0 || weapon==expectedWeapon) && (flags&0x20000000)==0 && gameplayReadySeconds<0)gameplayReadySeconds=t;if(t>=85 && t<=115 && (flags&0x20000000)==0){positions.Add(pos);if(expectedWeapon<0 || weapon==expectedWeapon)equipped++;if(firstTick==0)firstTick=ticks;lastTick=ticks;}}
     samples.Add(new {seconds=Math.Round(t,2),scene=scene,flags=flags,ticks=ticks,player=player,position=pos,weapon=weapon,cpu_total_ms=game.TotalProcessorTime.TotalMilliseconds,private_bytes=game.PrivateMemorySize64,working_set_bytes=game.WorkingSet64,handles=game.HandleCount,gpu_dedicated_bytes=gpuDedicated});
     if(Flag("capture") && capture<captureTimes.Length && t>=captureTimes[capture]){SetForegroundWindow(hwnd);await Task.Delay(150);Capture(hwnd,Path.Combine(evidence,backend+"-"+capture+".png"));capture++;}
     await Task.Delay(300);
@@ -120,7 +126,7 @@ public static class RendererGameSmoke {
    File.WriteAllText(Path.Combine(evidence,backend+"-samples.json"),Json.Encode(samples));
    Need(!Flag("display_cycle") || displayStage==4,"Display cycle did not complete");
    File.WriteAllText(Path.Combine(evidence,"display.json"),Json.Encode(displaySnapshots));
-   Need(positions.Count>20 && equipped>20,"Story gameplay / opening firearm not reached");
+   Need(positions.Count>20 && equipped>20,"Expected scenario gameplay / weapon not reached");
    Need(lastTick>firstTick+100,"Game tick clock did not advance in gameplay");
    Need(positions.Any(p=>p.Zip(positions[0],(a,b)=>(a-b)*(a-b)).Sum()>1),"Player did not move");
    PostMessage(hwnd,0x10,IntPtr.Zero,IntPtr.Zero);
@@ -131,7 +137,7 @@ public static class RendererGameSmoke {
    string err=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").OrderBy(File.GetLastWriteTimeUtc).Last();string text=File.ReadAllText(err);File.Copy(err,Path.Combine(evidence,backend+".err"),true);
    Need(text.Contains("[PRESENT] backend="+backend),"Requested backend did not present");Need(!text.Contains("[CRASH]"),"Crash in game log");
    File.WriteAllText(Path.Combine(evidence,backend+"-result.json"),Json.Encode(new {passed=true,backend=backend,pid=game.Id,seconds=clock.Elapsed.TotalSeconds,window_seconds=windowSeconds,story_seconds=storySeconds,first_present_observed_seconds=firstPresentSeconds,gameplay_ready_seconds=gameplayReadySeconds,gpu_metric_available=gpuDedicated.HasValue,capture_enabled=Flag("capture"),display_cycle_completed=Flag("display_cycle") && displayStage==4,display_snapshots=displaySnapshots,settings=config,gameplay_samples=positions.Count,equipped_samples=equipped,tick_delta=lastTick-firstTick,exit_code=game.ExitCode,source_log=err}));
-   Console.WriteLine("PASS "+backend+" actual launcher, Story, movement, firearm, presents and clean exit; ticks="+(lastTick-firstTick));
+   Console.WriteLine("PASS "+backend+" actual launcher, scenario gameplay, movement, weapon expectation, presents and clean exit; ticks="+(lastTick-firstTick));
   }finally{foreach(var counter in gpuCounters)counter.Dispose();if(!game.HasExited){game.Kill();game.WaitForExit(10000);}game.Dispose();owned=null;ui.Window.Close();}
  }
 }

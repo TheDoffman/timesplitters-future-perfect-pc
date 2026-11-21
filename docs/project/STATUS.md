@@ -1,3 +1,31 @@
+## Fixed-resolution fullscreen and resize acceptance (2026-11-21)
+
+Both actual launcher paths pass display-fixed-01 on sourcef6c2958b: windowed
+640x480 client -> Alt+Enter fullscreen1920x1080 -> windowed640x480 -> resized
+1008x729 client -> restored640x480, while the selected scene target intentionally
+remains1280x720. Scene/MSAA1 log checks, no-fallback/no-failed-present checks,
+movement/firearm checks and exit0 all pass. Exact rectangles/styles and captured
+checkpoints are retained in each verified.json/display.json and PNGs under
+`logs/renderer-validation/display-fixed-01`.
+
+Reviewed paired stable gameplay captures at80/104/112s: world, HUD, weapon and
+additive glow rendering remain consistent after the transitions. The66s images
+are during the animated handoff and are not aligned static viewpoints; D3D11's
+fullscreen image also contains a transient vendor overlay. Neither observation
+is counted as a renderer mismatch or a precise paired visual comparison.
+Automatic render-target resizing and additional startup resolutions are next;
+these results do not establish those separate gates.
+
+The harness now accepts a bounded JSON input schedule for other Story/Arcade
+scenarios, with explicit expected-weapon metadata. The Scotland the Brave
+schedule is derived from reviewed profile/main/level menus and is awaiting its
+hardware run. A wildcard weapon expectation checks world/player input only;
+it must not be labelled an opening-firearm test. Cutscene samples are excluded
+from measured gameplay. Eight runner unit tests and the native IO/compiler check
+pass (23 Python tests /31 subtests with the selected launcher checks).
+The ordinary window-close smoke leaves the copied profile bytes unchanged, so
+it is not being counted as the still-pending explicit guest save/load check.
+
 ## Renderer resource repeat and display acceptance extension (2026-11-21)
 
 All four baseline-cold-warm-03 launcher cases pass on source2428e479, with the

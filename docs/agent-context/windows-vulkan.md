@@ -115,3 +115,12 @@ rejects scene/MSAA mismatch and SMAA fallback; Auto checks native resize logs
 against the actual resized client. Seven runner safety/measurement tests cover
 these gates. baseline-cold-warm-03 passed all4 on2428e479; STATUS records dedicated
 GPU allocation and memory observations. Display/quality hardware runs are next.
+
+Fixed scene display-fixed-01 passed both backends (sourcef6c2958b), including
+actual fullscreen1920x1080, windowed640x480, resize1008x729 and restoration,
+with active scene1280x720 unchanged as intended. Auto remains a separate gate.
+--scenario-file validates <=64 ordered key actions/holds and snapshots only
+known expectations. story-scotland.json selects the second reviewed Story row;
+its hardware coverage is pending. expected_weapon=-1 is a world/input test,
+not firearm acceptance. Measurements exclude flagged cutscenes. Eight runner
+unit tests pass; explicit guest saving is not proven by a normal window close.

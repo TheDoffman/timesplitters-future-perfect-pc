@@ -1,0 +1,43 @@
+{
+  "scenario": "Scotland the Brave - Story opening",
+  "expected_weapon": -1,
+  "skip_intro": true,
+  "input": [
+    {
+      "at": 5,
+      "key": 69
+    },
+    {
+      "at": 10,
+      "key": 69
+    },
+    {
+      "at": 14,
+      "key": 40
+    },
+    {
+      "at": 18,
+      "key": 69
+    },
+    {
+      "at": 22,
+      "key": 69
+    },
+    {
+      "at": 24,
+      "key": 40
+    },
+    {
+      "at": 26,
+      "key": 69
+    },
+    {
+      "at": 30,
+      "key": 69
+    },
+    {
+      "at": 34,
+      "key": 69
+    }
+  ]
+}

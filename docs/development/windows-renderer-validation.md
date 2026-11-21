@@ -17,9 +17,9 @@ install another driver over this host simply to expand the matrix.
 | L2 Recovery | Default/explicit Vulkan missing-driver, missing-DXC and no-device startup recover to D3D11; explicit D3D11 ownership remains correct | Existing eight-case production RHI contract passed; retain executable hashes |
 | P1 Frame pacing | At least three matched uncaptured runs per backend; report median/p95/p99 intervals, >25/50-ms frames, CPU and memory; loading excluded | Earlier single-pair CPU-present comparison passed; repetitions and resource comparison pending |
 | P2 Cold/warm loading | Empty per-test caches, then same-cache repeat; record window/scene readiness, cache files and resource use; no inherited personal caches | Two cold/warm sets pass; second set includes dedicated GPU counters; precise loading/stutter comparisons pending |
-| V1 Common rendering | Reviewed paired level captures identifying the actual shadow, blend/transparency, reflection/screen-copy, filtering, depth and AA features exercised | Opening-mission world and weapon reviewed; targeted feature coverage pending |
+| V1 Common rendering | Reviewed paired level captures identifying the actual shadow, blend/transparency, reflection/screen-copy, filtering, depth and AA features exercised | Stable opening-mission world/HUD/weapon/glow reviewed after display transitions; other targeted features/levels pending |
 | V2 Resource contracts | Production HLSL, signed texture mapping, texture formats, depth replay, screen copy, MSAA, SSAO and visibility checks on both hardware backends | Existing production RHI fixture passed; this is separate from level appearance |
-| D1 Display | Windowed/fullscreen transitions, window resize, supported startup resolutions, repeated switching; requested backend preserved; no failed presents | 1280x720 settings / windowed startup passed; remaining transitions and resolutions pending |
+| D1 Display | Windowed/fullscreen transitions, window resize, supported startup resolutions, repeated switching; requested backend preserved; no failed presents | Fixed1280x720 scene with fullscreen/windowed, resize/restore passed on both; Auto and startup resolution matrix pending |
 | Q1 Quality settings | Off/FXAA/SMAA, supported MSAA and filtering values selected and exercised on both backends; confirm effective runtime settings and reviewed captures | Existing RHI MSAA resource checks passed; launcher/game setting matrix pending |
 | S1 Stability | Bounded extended gameplay across representative Story and Arcade levels; no crash, hang, render error, unexplained resource growth or unintended fallback | First Story mission for 120 seconds each passed; extended and Arcade coverage pending |
 | G1 Gameplay | Compare game-clock cadence, movement, firearm/ammo, input, pause/resume and save/load from copied profiles | First-mission movement, firearm, 60-Hz ticks passed; explicit save/load and broader comparisons pending |
@@ -95,3 +95,12 @@ read from the actual window, not the saved checkbox. Auto must log a native scen
 target matching the resized client. Fixed render resolution intentionally differs
 from presentation-window size; validate the scene log, not window bounds alone.
 The hardware result for these new scenarios is pending until their reports pass.
+
+Additional-level schedules use --scenario-file with a bounded JSON input array
+(at/key/optional hold_ms), scenario name, expected_weapon and skip_intro. The
+tracked story-scotland.json schedule selects the second Story level from the
+reviewed unlocked profile. expected_weapon=-1 is explicitly a world/input smoke,
+not proof of a particular firearm. All visual runs still require human review of
+the actual selected level and feature. Cutscene samples cannot satisfy the
+controlled gameplay measurement window. Explicit save/load is a separate gate;
+ordinary window-close runs did not change the copied profile bytes.
