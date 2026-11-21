@@ -108,10 +108,15 @@ def main():
                 assert process.poll() is None and time.monotonic()<end
                 time.sleep(.2)
             command('main',wait=22)
-            row=command('controls-before',keys=[38,38,38,69,40,40,69],gap=.8,wait=3)
+            controls_keys=[38,38,38,69,40,40,69,39,40,40]
+            # Current unified Controls opens on its General tab/header. Right
+            # selects Controller; two Downs select Inverse Look. A/D adjust,
+            # while Left/Right switch tabs rather than editing the guest draft.
+            row=command('controls-before',keys=controls_keys,gap=.8,wait=3)
             assert inverse(row['pid'])
             before=profiles();assert len(before)==1
-            command('accept-selected',keys=[40,40,39,38,38,38,38],wait=3)
+            row=command('accept-selected',keys=[68,40,40,40,40,40],wait=3)
+            assert not inverse(row['pid']),'Inverse Look draft did not toggle OFF'
             command('accepted-settings',keys=[69],wait=3)
             accepted=profiles()
             changed={slot:raw for slot,raw in accepted.items() if before.get(slot)!=raw}
@@ -122,21 +127,26 @@ def main():
             evidence['saved_before_quit']=True
             evidence['active_slot']=active
             evidence['accepted_sha256']=hashlib.sha256(raw).hexdigest()
-            # The renamed canonical fixture produces a second Test Lab slot on
-            # its first game write. Select that slot explicitly on relaunch.
-            assert len(accepted)==2
-            events=[(5000,69),(10000,69),(14000,40),(16000,40),(18000,69)]
+            # Canonical fixtures update their existing slot. Older renamed
+            # fixtures create a second slot; select that copy explicitly.
+            assert len(accepted) in (1,2)
+            assert (active in before)==(len(accepted)==1)
+            evidence['saved_slot_count']=len(accepted)
+            events=[(5000,69),(10000,69),(14000,40)]
+            if len(accepted)==2:events.append((16000,40))
+            events.append((18000,69))
             (run/'input.txt').write_text('\n'.join(f'{t+d} key {k} {v}' for t,k in events
                                                  for d,v in [(0,1),(180,0)])+'\n')
             command('reloaded-main',restart=True,wait=22)
-            row=command('accepted-reloaded',keys=[38,38,38,69,40,40,69],gap=.8,wait=3)
+            row=command('accepted-reloaded',keys=controls_keys,gap=.8,wait=3)
             assert not inverse(row['pid'])
             evidence['accept_reloaded_off']=True
-            command('cancel-selected',keys=[40,40,39,38,38,38],wait=3)
+            row=command('cancel-selected',keys=[68,40,40,40,40,40,40],wait=3)
+            assert inverse(row['pid']),'Cancel test did not create an ON draft'
             command('cancelled-settings',keys=[69],wait=3)
             assert profiles()==accepted,'Cancel wrote the draft'
             command('cancel-reloaded-main',restart=True,wait=22)
-            row=command('cancel-reloaded',keys=[38,38,38,69,40,40,69],gap=.8,wait=3)
+            row=command('cancel-reloaded',keys=controls_keys,gap=.8,wait=3)
             assert not inverse(row['pid']) and profiles()==accepted
             evidence['cancel_preserved_save_and_reload']=True
             print('PASS: Accept saved before quit; immediate Settings exit/reload retained OFF; Cancel preserved OFF across another restart')

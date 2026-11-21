@@ -139,3 +139,16 @@ presented at that monitor size, so this is not native4K monitor acceptance.
 Their38second star-field transition appears on both backends and is not evidence
 of a Vulkan-specific blank scene. Exact shadow/reflection/depth encounters still
 need targeted coverage; the opening canyon alone cannot prove those categories.
+
+quality-window-dxgi-01 also passes both backends. Its fixed1024x768 scene survives
+client640x480 ->fullscreen1920x1080 ->640x480 ->1008x729 ->640x480 without failed
+presents or a changed renderer. Reviewed112second outer-window captures show
+consistent scene, weapon, crosshair/HUD and ammo12. The earlier rebuilt Auto case
+separately verifies that native scene targets follow the actual resized client.
+
+The first Scotland attempt, story-scotland-dxgi-01, remains failed: visible
+Scotland gameplay uses scene4 while the original acceptance harness sampled only
+scene2. The corrected scenario explicitly declares4, and all world/measurement
+gates now use that validated expectation. story-scotland-dxgi-02 is a fresh paired
+run; no old failure is converted into a pass. This was an observer assumption,
+not evidence of a renderer regression.

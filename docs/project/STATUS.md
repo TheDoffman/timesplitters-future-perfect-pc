@@ -10,10 +10,13 @@ startup/loading gaps. Vulkan allocates more private/GPU memory in this cohort;
 longer growth/stability testing remains open. These results supersede the older
 pending performance note below, not other acceptance gates.
 
-Four paired quality/display settings runs finish machine checks successfully.
-Vulkan fullscreen GDI captures are black/stale despite active gameplay logs;
-independent capture/readback investigation remains unresolved. Do not count them
-as visual passes. Additional targeted effects/levels, sustained gameplay and
+The original Vulkan fullscreen GDI captures were black/stale. GPU readback and
+DXGI duplication establish correct presented gameplay; the launcher helper now
+uses bounded DXGI captures with PID/executable checks. Four fresh paired
+quality/display cases pass and their gameplay images have been reviewed: FXAA/
+MSAA2/filter4, SMAA/MSAA4/filter16, Off/MSAA8/filter8, and window cycling at
+MSAA1/filter2. These cover selected scene sizes1024x768 through3840x2160 on one
+1080p monitor, not native4K scanout or every resolution combination. Additional targeted effects/levels, sustained gameplay and
 actual guest save/load remain pending. Overall goal remains active. AMD/Intel,
 other drivers and native Mac/Linux validation remain unverified. Local branch
 only; no merge or release publication.

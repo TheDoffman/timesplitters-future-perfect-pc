@@ -222,3 +222,20 @@ scene expectation. Menus/loading/cutscene flags cannot satisfy the gameplay gate
 story-scotland.json declares4 and adds a bounded left strafe to avoid a fixed
 cliff-facing spawn blocking every movement input. Old story-scotland-dxgi-01
 remains failed; fresh paired hardware acceptance is story-scotland-dxgi-02.
+
+Both corrected Scotland cases now pass, with reviewed revolver/world/decal/HUD
+captures, ammo8->4 and advancing60Hz clocks. Arcade exploration confirms the
+Vietnam/Hotel/Venice list order, reaches Venice scene46 and visible Deathmatch.
+arcade-venice.json uses that route plus the existing no-score-limit sequence and
+bounded respawn inputs; its paired acceptance is pending, not established by the
+probe-only run. expected_weapon=-1 remains a world/input rather than weapon-ID gate.
+
+The save probe needed two observer updates, not game fixes: unified Controls
+opens at General's tab header, so Right/Down/Down selects Controller/Inverse Look;
+D edits its draft, whereas Right switches tabs. Five Downs reach Accept, six
+reach Cancel. Require the expected draft bit before each action. A valid original
+save now changes exactly bodybyte6 255->254 in the existing canonical slot, with
+valid HMAC; older renamed fixtures can create a second slot. Reload chooses one
+Down for the canonical slot or two for the new copy, rejecting ambiguous slot
+counts/identity. Original failed runs are retained; cross-backend reload is still
+pending. Profile bytes, signatures and Cancel rollback remain strict assertions.
