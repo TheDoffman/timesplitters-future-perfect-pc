@@ -196,3 +196,7 @@ alternating bounded movement through294s; the opening firearm/shot checks still
 run85-115s. These bounded growth limits flag regressions and do not exclude slower
 leaks or prove sustained combat. The unit fixture rejects frozen late input/
 clocks and excess memory growth. Actual paired five-minute acceptance is pending.
+The soak also pauses with Escape at152s and resumes with the original menu's E
+at154s. Samples observe the original pause-manager pointer761C48 bit0 without
+writing guest memory. A validated pause_expected flag requires >=3 paused scene2
+samples followed by resumed late gameplay; no pause claim comes from keys alone.

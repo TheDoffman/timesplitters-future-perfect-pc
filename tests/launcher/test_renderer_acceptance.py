@@ -20,9 +20,12 @@ def test_sustained_run_rejects_frozen_gameplay_and_resource_growth():
     for start in (85,270):
         for i in range(60):
             t=start+i*.5
-            samples.append(dict(seconds=t,scene=2,flags=0,ticks=int(t*60),position=[i%10,0,0],
+            samples.append(dict(seconds=t,scene=2,flags=0,ticks=int(t*60),position=[i%10,0,0],paused=False,
                                 private_bytes=100_000_000,handles=700,gpu_dedicated_bytes=None))
     assert all(runner.sustained_checks(samples,300)['checks'].values())
+    assert not runner.sustained_checks(samples,300,True)['checks']['pause_observed']
+    pauses=[dict(samples[0],seconds=152+i*.5,paused=True) for i in range(3)]
+    assert all(runner.sustained_checks(samples+pauses,300,True)['checks'].values())
     for sample in samples[60:]:
         sample.update(ticks=16200,position=[0,0,0],private_bytes=300_000_000)
     checks=runner.sustained_checks(samples,300)['checks']

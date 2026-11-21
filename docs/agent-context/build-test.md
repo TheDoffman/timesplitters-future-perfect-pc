@@ -1,4 +1,4 @@
-[Renderer gates](windows-vulkan.md).
+[Renderer pause/soak gates](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

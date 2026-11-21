@@ -149,7 +149,7 @@ def effective_settings(text, config):
     return checks
 
 
-def sustained_checks(samples, seconds):
+def sustained_checks(samples, seconds, expect_pause=False):
     early = [s for s in samples if 85 <= s["seconds"] <= 115]
     late = [s for s in samples if seconds - 30 <= s["seconds"] <= seconds]
     active = [s for s in late if s["scene"] == 2 and not s["flags"] & 0x20000000
@@ -159,6 +159,11 @@ def sustained_checks(samples, seconds):
         max(.001, active[-1]["seconds"] - active[0]["seconds"])) <= 61
     checks["late_movement"] = bool(active) and any(sum((a-b)**2 for a,b in
         zip(s["position"],active[0]["position"])) > 1 for s in active)
+    if expect_pause:
+        paused = [s for s in samples if s.get("paused") and s["scene"] == 2]
+        checks["pause_observed"] = len(paused) >= 3
+        checks["resumed_after_pause"] = bool(paused) and any(
+            not s.get("paused",True) and s["seconds"] > paused[-1]["seconds"] + 1 for s in active)
     growth = {}
     for key, limit in (("private_bytes",128*1024*1024),("handles",32),("gpu_dedicated_bytes",128*1024*1024)):
         before=[s[key] for s in early if s.get(key) is not None]
@@ -193,9 +198,12 @@ def scenario_options(path, seconds):
         previous = at
     expected = document.get("expected_weapon", 14)
     skip = document.get("skip_intro", True)
-    if type(expected) is not int or not -1 <= expected <= 255 or type(skip) is not bool:
+    pause = document.get("pause_expected", False)
+    if type(expected) is not int or not -1 <= expected <= 255 or type(skip) is not bool or type(pause) is not bool:
         raise ValueError("Invalid scenario expectations")
-    return dict(scenario=name, input=actions, expected_weapon=expected, skip_intro=skip)
+    if pause and seconds < 300:
+        raise ValueError("Pause expectation requires an extended scenario")
+    return dict(scenario=name, input=actions, expected_weapon=expected, skip_intro=skip, pause_expected=pause)
 
 
 def pinned_presentmon():
@@ -354,7 +362,7 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     samples = json.loads((destination / (backend + "-samples.json")).read_text())
     result["measurements"] = measurements(samples)
     if args.seconds >= 300:
-        result["sustained"] = sustained_checks(samples, args.seconds)
+        result["sustained"] = sustained_checks(samples, args.seconds, config.get("pause_expected",False))
     if getattr(args, "presentmon", False):
         trace = destination / "presentmon.csv"
         if trace.stat().st_size > 32 * 1024 * 1024:
