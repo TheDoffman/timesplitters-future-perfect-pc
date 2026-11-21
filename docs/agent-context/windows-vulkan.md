@@ -213,3 +213,12 @@ Other backend/shader/present/gameplay checks remain strict. Cleanup failure must
 leave report.passed=false. compile-only also builds the DLL; a native load/export
 probe confirms it loads and lacks DxcCreateInstance. Actual game acceptance is
 pending; this is unavailable-compiler-entry-point simulation, not driver removal.
+
+Additional-level acceptance must declare expected_scene (integer1..99; default2).
+Scotland is scene4, observed in its owned game's samples; the old harness rejected
+it despite visible gameplay because it only sampled scene2. C# world/weapon reads,
+Python resource/ETW windows and sustained/pause checks now use that same validated
+scene expectation. Menus/loading/cutscene flags cannot satisfy the gameplay gate.
+story-scotland.json declares4 and adds a bounded left strafe to avoid a fixed
+cliff-facing spawn blocking every movement input. Old story-scotland-dxgi-01
+remains failed; fresh paired hardware acceptance is story-scotland-dxgi-02.

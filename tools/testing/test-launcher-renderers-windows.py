@@ -130,8 +130,8 @@ def compile_unavailable_dxc():
     return output
 
 
-def measurements(samples):
-    active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == 2
+def measurements(samples, expected_scene=2):
+    active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == expected_scene
               and not sample.get("flags", 0) & 0x20000000]
     if len(active) < 20:
         raise ValueError("Insufficient matched gameplay samples")
@@ -162,10 +162,10 @@ def effective_settings(text, config):
     return checks
 
 
-def sustained_checks(samples, seconds, expect_pause=False):
+def sustained_checks(samples, seconds, expect_pause=False, expected_scene=2):
     early = [s for s in samples if 85 <= s["seconds"] <= 115]
     late = [s for s in samples if seconds - 30 <= s["seconds"] <= seconds]
-    active = [s for s in late if s["scene"] == 2 and not s["flags"] & 0x20000000
+    active = [s for s in late if s["scene"] == expected_scene and not s["flags"] & 0x20000000
               and s.get("position") is not None]
     checks = dict(late_gameplay=len(active) >= 40 and len(active) >= .9 * len(late))
     checks["late_clock_60hz"] = bool(active) and 59 <= ((active[-1]["ticks"] - active[0]["ticks"]) /
@@ -173,7 +173,7 @@ def sustained_checks(samples, seconds, expect_pause=False):
     checks["late_movement"] = bool(active) and any(sum((a-b)**2 for a,b in
         zip(s["position"],active[0]["position"])) > 1 for s in active)
     if expect_pause:
-        paused = [s for s in samples if s.get("paused") and s["scene"] == 2]
+        paused = [s for s in samples if s.get("paused") and s["scene"] == expected_scene]
         checks["pause_observed"] = len(paused) >= 3
         checks["resumed_after_pause"] = bool(paused) and any(
             not s.get("paused",True) and s["seconds"] > paused[-1]["seconds"] + 1 for s in active)
@@ -212,11 +212,12 @@ def scenario_options(path, seconds):
     expected = document.get("expected_weapon", 14)
     skip = document.get("skip_intro", True)
     pause = document.get("pause_expected", False)
-    if type(expected) is not int or not -1 <= expected <= 255 or type(skip) is not bool or type(pause) is not bool:
+    scene = document.get("expected_scene",2)
+    if type(expected) is not int or not -1 <= expected <= 255 or type(skip) is not bool or type(pause) is not bool or type(scene) is not int or not 1 <= scene <= 99:
         raise ValueError("Invalid scenario expectations")
     if pause and seconds < 300:
         raise ValueError("Pause expectation requires an extended scenario")
-    return dict(scenario=name, input=actions, expected_weapon=expected, skip_intro=skip, pause_expected=pause)
+    return dict(scenario=name, input=actions, expected_weapon=expected, expected_scene=scene, skip_intro=skip, pause_expected=pause)
 
 
 def pinned_presentmon():
@@ -237,8 +238,8 @@ def interval_statistics(values):
                 frames_over_50ms=sum(value > 50 for value in values))
 
 
-def trace_measurements(path, samples, pid):
-    active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == 2
+def trace_measurements(path, samples, pid, expected_scene=2):
+    active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == expected_scene
               and not sample.get("flags", 0) & 0x20000000]
     if len(active) < 20:
         raise ValueError("Insufficient QPC-aligned gameplay samples")
@@ -380,14 +381,15 @@ def run_case(executable, install, run, evidence, backend, phase, args):
             expected = f"[PC-DISPLAY] Native scene target {resized['client_width']}x{resized['client_height']}"
             result["effective_settings_checks"]["automatic_resize_applied"] = expected in text
     samples = json.loads((destination / (backend + "-samples.json")).read_text())
-    result["measurements"] = measurements(samples)
+    expected_scene=config.get("expected_scene",2)
+    result["measurements"] = measurements(samples, expected_scene)
     if args.seconds >= 300:
-        result["sustained"] = sustained_checks(samples, args.seconds, config.get("pause_expected",False))
+        result["sustained"] = sustained_checks(samples, args.seconds, config.get("pause_expected",False), expected_scene)
     if getattr(args, "presentmon", False):
         trace = destination / "presentmon.csv"
         if trace.stat().st_size > 32 * 1024 * 1024:
             raise ValueError("ETW CSV exceeded the 32 MiB session budget")
-        result["etw"] = trace_measurements(trace, samples, result["pid"])
+        result["etw"] = trace_measurements(trace, samples, result["pid"], expected_scene)
     result["cache_before"] = before
     result["cache_after"] = {str(path.relative_to(cache)): path.stat().st_size for path in cache.rglob("*") if path.is_file()}
     result["cache_read_logged"] = "[SHADER-CACHE] loaded from disk:" in text

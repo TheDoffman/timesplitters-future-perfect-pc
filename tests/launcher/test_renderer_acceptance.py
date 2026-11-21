@@ -94,6 +94,10 @@ def test_loading_samples_cannot_hide_a_gameplay_regression():
     assert runner.measurements(samples)["gpu_dedicated_bytes_peak"] is None
     with pytest.raises(ValueError, match="Insufficient"):
         runner.measurements(samples[:4])
+    scotland=[dict(s,scene=4) for s in samples]
+    with pytest.raises(ValueError,match="Insufficient"):
+        runner.measurements(scotland)
+    assert runner.measurements(scotland,4)["guest_ticks_per_second"] == pytest.approx(60)
 
 
 def test_effective_settings_require_active_msaa_and_successful_smaa():
