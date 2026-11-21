@@ -19,7 +19,7 @@ install another driver over this host simply to expand the matrix.
 | P2 Cold/warm loading | Empty per-test caches, then same-cache repeat; record window/scene readiness, cache files and resource use; no inherited personal caches | Two cold/warm sets pass; second set includes dedicated GPU counters; precise loading/stutter comparisons pending |
 | V1 Common rendering | Reviewed paired level captures identifying the actual shadow, blend/transparency, reflection/screen-copy, filtering, depth and AA features exercised | Stable opening-mission world/HUD/weapon/glow reviewed after display transitions; other targeted features/levels pending |
 | V2 Resource contracts | Production HLSL, signed texture mapping, texture formats, depth replay, screen copy, MSAA, SSAO and visibility checks on both hardware backends | Existing production RHI fixture passed; this is separate from level appearance |
-| D1 Display | Windowed/fullscreen transitions, window resize, supported startup resolutions, repeated switching; requested backend preserved; no failed presents | Fixed1280x720 scene with fullscreen/windowed, resize/restore passed on both; Auto and startup resolution matrix pending |
+| D1 Display | Windowed/fullscreen transitions, window resize, supported startup resolutions, repeated switching; requested backend preserved; no failed presents | Fixed scene cycle passes both; Auto failed on both old backends, shared allocation fix in rebuild/validation; startup matrix pending |
 | Q1 Quality settings | Off/FXAA/SMAA, supported MSAA and filtering values selected and exercised on both backends; confirm effective runtime settings and reviewed captures | Existing RHI MSAA resource checks passed; launcher/game setting matrix pending |
 | S1 Stability | Bounded extended gameplay across representative Story and Arcade levels; no crash, hang, render error, unexplained resource growth or unintended fallback | First Story mission for 120 seconds each passed; extended and Arcade coverage pending |
 | G1 Gameplay | Compare game-clock cadence, movement, firearm/ammo, input, pause/resume and save/load from copied profiles | First-mission movement, firearm, 60-Hz ticks passed; explicit save/load and broader comparisons pending |
@@ -104,3 +104,9 @@ not proof of a particular firearm. All visual runs still require human review of
 the actual selected level and feature. Cutscene samples cannot satisfy the
 controlled gameplay measurement window. Explicit save/load is a separate gate;
 ordinary window-close runs did not change the copied profile bytes.
+
+Auto gate investigation: both old backends failed the native scene resize check.
+HUD sizing queries refreshed the cached Auto mode before the frame boundary,
+masking pending allocation. The shared fix and interleaved-query/failure-retry
+regression pass model tests; actual rebuilt hardware validation is required.
+Old failed reports remain failed and are not replaced with the model-test result.

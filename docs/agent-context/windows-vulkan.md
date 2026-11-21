@@ -124,3 +124,15 @@ known expectations. story-scotland.json selects the second reviewed Story row;
 its hardware coverage is pending. expected_weapon=-1 is a world/input test,
 not firearm acceptance. Measurements exclude flagged cutscenes. Eight runner
 unit tests pass; explicit guest saving is not proven by a normal window close.
+
+## Auto-resolution allocation
+
+Auto failures on both old backends exposed native HUD sizing consuming the
+pending host-size change. pc_display_scene_size now initializes its cached
+Auto mode once; later queries retain the accepted dimensions until
+pc_display_frame_done successfully calls xbox_D3D8ChangeResolution. An
+interleaved HUD query must not suppress allocation or defeat failure retry.
+tests/graphics/pc_display_auto.c reproduces the old failure and checks cached
+geometry, successful resize, rollback, retry and manual override on shared SDL
+policy. Both display-model tests pass; normal Windows rebuild and actual paired
+Auto resize acceptance are still required. Mac/Linux native runs are pending.

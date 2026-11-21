@@ -1,3 +1,26 @@
+## Auto-resolution allocation fix under validation (2026-11-21)
+
+The new hardware resize gate found a shared failure on the old game hash0c1d5903:
+D3D11 display-auto-01 and Vulkan display-auto-old-vulkan-01 both changed window
+sizes and CPU camera aspect, but never logged a matching native scene-target
+resize. Their strict acceptance reports remain failed despite clean game exits
+and otherwise successful backend/presentation checks. This is not Vulkan-only.
+
+Native HUD sizing calls pc_display_scene_size before end-of-frame allocation.
+That query refreshed the cached Auto mode, so pc_display_frame_done mistook the
+requested dimensions for an already applied resize and skipped the allocator.
+A new interleaved-HUD-probe regression fails on the old shared code (applied_w
+never becomes2560). The fix establishes the initial scene snapshot once and
+leaves subsequent effective-size changes to the successful frame-done commit.
+Failure retains the previous target and later frames retry.
+
+Both tests in test_pc_display_modes.py pass after the fix, including the shared
+SDL policy compiled under MSVC. The normal native Windows rebuild and paired
+hardware rerun are pending. Source change is shared across Windows, native Mac
+and Linux; native-host execution remains awaiting validation. Previous fixed
+1280x720 scene results remain historical evidence on the old hash, not acceptance
+of the new executable. No main merge or publication.
+
 ## Fixed-resolution fullscreen and resize acceptance (2026-11-21)
 
 Both actual launcher paths pass display-fixed-01 on sourcef6c2958b: windowed

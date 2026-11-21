@@ -1,4 +1,4 @@
-[Renderer acceptance](windows-vulkan.md).
+[Renderer/Auto tests](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

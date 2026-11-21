@@ -357,7 +357,13 @@ int pc_display_save(void)
 void pc_display_scene_size(unsigned gw,unsigned gh,unsigned *w,unsigned *h)
 {
     init();
-    if(pc_display_is_auto(current)) automatic=detected_mode();
+    /* The first target allocation establishes the Auto snapshot. HUD sizing
+       probes also call this every frame; they must not consume a pending
+       host resize before frame_done successfully replaces the scene target. */
+    if(pc_display_is_auto(current) && !automatic.width) {
+        automatic=detected_mode();
+        if(!automatic.width) { automatic.width=gw; automatic.height=gh; }
+    }
     PcDisplayMode output=pc_display_effective();
     if(w) *w=output.width?output.width:gw;
     if(h) *h=output.height?output.height:gh;
