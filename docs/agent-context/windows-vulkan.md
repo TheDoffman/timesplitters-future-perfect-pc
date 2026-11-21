@@ -154,3 +154,36 @@ application-cache runs per backend. QPC-aligned ETW measurements require one
 swap chain, owned PID, sufficient displayed frames and coherent interval/row
 coverage. These are measurement-integrity gates; relative performance acceptance
 requires the separate comparison of all runs. Nine runner unit tests pass.
+
+The completed pacing-etw-01 cohort now passes relative current-host frame gates:
+three actual-launcher runs each,59.99-60.03FPS and no steady85-115s interval>25ms.
+docs/development/windows-renderer-results.md retains all measurements and cache/
+loading limitations. Quality machine checks pass four pairs, but fullscreen
+Vulkan GDI screenshots are black/stale; their visual acceptance is unresolved.
+Do not infer appearance from successful gameplay/present logs or ETW alone.
+
+RendererGameSmoke now calls the test-only RendererWindowCapture.cpp helper for
+visual runs. DXGI desktop duplication captures only the path-verified game
+rectangle; GDI CopyFromScreen can retain a stale initial bitmap for fullscreen
+Vulkan. A focused1920x1080/MSAA2/FXAA Vulkan diagnostic has correct GPU readback
+and DXGI scene/HUD/weapon/fire; actual-launcher quality recapture remains pending.
+compile-only builds both harness/helper without GPU use. Normal capture reports
+record method plus helper/source hashes. Window must fit one unrotated output
+on the default graphics adapter; unsupported layouts fail rather than saving an
+incorrect image. Captures are bounded and excluded from performance cohorts.
+quality-fxaa-dxgi-03 now has reviewed consistent80/112s fullscreen world/fire/
+weapon/HUD/ammo on both actual-launcher runs and clean exits. Early11s duplicate
+output could still be black; the helper now drains two initial arrivals and
+requires an unmasked actual-image timestamp, validated by a focused three-frame
+probe. Remaining quality cases exercise that stricter source; do not count early
+stale frames as visual passes.
+
+Guest save/load follow-up reuses tests/storage/profile_accept_game.py with a
+unique --run-name and --renderer-sequence vulkan d3d11 vulkan (or reverse).
+stability_transitions_game.py applies the explicit test-only choice per restart,
+repeating the final choice for later children; at most four choices. The original
+Accept/Cancel menu path must change exactly the inverse-look body byte, retain
+the original signature and reload the saved draft across restarts. Each requested
+backend must actually present with no fallback/crash. This is direct-child save
+acceptance, distinct from the unchanged launcher selection gate; hardware runs
+remain pending. Provenance records sequence and native executable hash.

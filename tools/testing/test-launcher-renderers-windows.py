@@ -100,6 +100,23 @@ def stop_owned_game(install):
                    stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=30)
 
 
+def compile_capture():
+    # GDI can retain the initial redirected bitmap for Vulkan independent flip.
+    # This helper captures only the path-verified game's rectangle via DXGI.
+    from native_compiler import native_compiler
+    folder = ROOT / "build/renderer-validation"
+    folder.mkdir(parents=True, exist_ok=True)
+    compiler, env = native_compiler(folder)
+    output = folder / "renderer-window-capture.exe"
+    subprocess.run([compiler, "/nologo", "/EHsc", "/std:c++17",
+                    str(ROOT / "tests/launcher_lifecycle/RendererWindowCapture.cpp"),
+                    "/Fe:" + str(output), "/Fo:" + str(folder / "renderer-window-capture.obj"),
+                    "/link", "d3d11.lib", "dxgi.lib", "windowsapp.lib",
+                    "windowscodecs.lib", "ole32.lib", "user32.lib"],
+                   env=env, cwd=folder, check=True, timeout=60)
+    return output
+
+
 def measurements(samples):
     active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == 2
               and not sample.get("flags", 0) & 0x20000000]
@@ -263,6 +280,8 @@ def run_case(executable, install, run, evidence, backend, phase, args):
                   anisotropy=args.anisotropy, fullscreen=args.fullscreen)
     config["display_cycle"] = getattr(args, "display_cycle", False)
     config.update(scenario_options(getattr(args, "scenario_file", None), args.seconds))
+    if args.capture:
+        config["capture_helper"] = str(executable.parent / "renderer-window-capture.exe")
     if getattr(args, "capture_times", None):
         config["capture_times"] = args.capture_times
     config_path = destination / "case.json"
@@ -359,6 +378,7 @@ def main():
         parser.error("Windows hardware runner")
     if args.compile_only:
         compile_harness()
+        compile_capture()
         return 0
     if args.warm and args.repetitions:
         parser.error("Choose --warm or --repetitions, not both")
@@ -406,6 +426,11 @@ def main():
         prepared = True
         install = prepare_install(run)
         executable = compile_harness()
+        if args.capture:
+            helper = compile_capture()
+            report["capture_method"] = "dxgi-desktop-duplication-game-rectangle"
+            report["capture_helper_sha256"] = digest(helper)
+            report["capture_source_sha256"] = digest(ROOT / "tests/launcher_lifecycle/RendererWindowCapture.cpp")
         for backend in (("d3d11", "vulkan") if args.backend == "both" else (args.backend,)):
             phases = ("cold", "warm") if args.warm else ("cold",)
             if args.repetitions:

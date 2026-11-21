@@ -57,7 +57,18 @@ public static class RendererGameSmoke {
   for(int i=0;i<20 && Fullscreen(h)==before;i++)await Task.Delay(50);
   Need(Fullscreen(h)!=before,"Alt+Enter did not change actual window style");
  }
- static void Capture(IntPtr h,string path){Rect r;Need(GetWindowRect(h,out r),"No game rectangle");using(var b=new Bitmap(r.R-r.L,r.B-r.T)) {using(var g=Graphics.FromImage(b))g.CopyFromScreen(r.L,r.T,0,0,b.Size);b.Save(path,System.Drawing.Imaging.ImageFormat.Png);}}
+ static void Capture(Process game,string path){
+  Need(config.ContainsKey("capture_helper"),"No DXGI capture helper configured");
+  string helper=(string)config["capture_helper"],expected=Path.GetFullPath(Path.Combine(root,"Bin/futureperfect_recomp.exe"));
+  // Windows paths cannot contain quotes; all three paths are test-owned.
+  Need(!helper.Contains("\"") && !expected.Contains("\"") && !path.Contains("\""),"Invalid capture path");
+  var start=new ProcessStartInfo(helper,game.Id+" \""+expected+"\" \""+path+"\""){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
+  using(var capture=Process.Start(start)){
+   if(!capture.WaitForExit(12000)){capture.Kill();capture.WaitForExit();throw new Exception("DXGI capture timed out");}
+   string output=capture.StandardOutput.ReadToEnd()+capture.StandardError.ReadToEnd();Console.WriteLine(output);
+   Need(capture.ExitCode==0 && File.Exists(path),"DXGI capture failed, exit "+capture.ExitCode+": "+output);
+  }
+ }
  [STAThread] public static int Main(string[] args){if(args.Length==1 && args[0]=="--self-test-io")return CheckLiveLog();root=Path.GetFullPath(args[0]);evidence=Path.GetFullPath(args[1]);Directory.CreateDirectory(evidence);config=Json.Object(File.ReadAllText(args[2]));var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};app.Startup+=async(s,e)=>{try{await Run((string)config["backend"]);}catch(Exception ex){Console.WriteLine(ex);result=1;}finally{if(owned!=null){try{if(!owned.HasExited){owned.Kill();owned.WaitForExit(10000);}}catch{}}app.Shutdown();}};app.Run();return result;}
  static async Task Run(string backend){
   var initial=GameSettings.Load(root,null);initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.Save();
@@ -121,7 +132,7 @@ public static class RendererGameSmoke {
     float[] pos=null;uint weapon=0;game.Refresh();
     if(scene==2 && player>=0x80000000 && player<0x84000000){pos=Position(game,player);weapon=Word(game,player+0x58c);if((expectedWeapon<0 || weapon==expectedWeapon) && (flags&0x20000000)==0 && gameplayReadySeconds<0)gameplayReadySeconds=t;if(t>=85 && t<=115 && (flags&0x20000000)==0){positions.Add(pos);if(expectedWeapon<0 || weapon==expectedWeapon)equipped++;if(firstTick==0)firstTick=ticks;lastTick=ticks;}}
     samples.Add(new {seconds=Math.Round(t,2),clock_qpc_ms=Stopwatch.GetTimestamp()*1000.0/Stopwatch.Frequency,scene=scene,flags=flags,ticks=ticks,player=player,position=pos,weapon=weapon,cpu_total_ms=game.TotalProcessorTime.TotalMilliseconds,private_bytes=game.PrivateMemorySize64,working_set_bytes=game.WorkingSet64,handles=game.HandleCount,gpu_dedicated_bytes=gpuDedicated});
-    if(Flag("capture") && capture<captureTimes.Length && t>=captureTimes[capture]){SetForegroundWindow(hwnd);await Task.Delay(150);Capture(hwnd,Path.Combine(evidence,backend+"-"+capture+".png"));capture++;}
+    if(Flag("capture") && capture<captureTimes.Length && t>=captureTimes[capture]){SetForegroundWindow(hwnd);await Task.Delay(150);Capture(game,Path.Combine(evidence,backend+"-"+capture+".png"));capture++;}
     await Task.Delay(300);
    }
    File.WriteAllText(Path.Combine(evidence,backend+"-samples.json"),Json.Encode(samples));

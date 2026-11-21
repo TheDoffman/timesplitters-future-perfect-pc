@@ -20,6 +20,7 @@ else:
         return _LayoutPath(root) / area / name
 
 import ctypes as c
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -33,7 +34,12 @@ from testing_profile import signature,BODY_SIZE,contained,FIXTURE
 
 
 def main():
-    run=ROOT/'private/test-saves/controls-accept'
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-name',default='controls-accept')
+    parser.add_argument('--renderer-sequence',nargs=3,choices=('vulkan','d3d11'))
+    args=parser.parse_args()
+    assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
+    run=ROOT/'private/test-saves'/args.run_name
     assert not (run/'run.lock').exists(),'Another test owns the run directory'
     # prepare_run restores the seed but deliberately retains additional slots.
     # Recycle only this test's known game-created Test Lab copy on repeat runs.
@@ -57,7 +63,9 @@ def main():
     kernel.OpenProcess.restype=c.c_void_p
     kernel.ReadProcessMemory.argtypes=[c.c_void_p,c.c_void_p,c.c_void_p,c.c_size_t,c.c_void_p]
     kernel.CloseHandle.argtypes=[c.c_void_p]
-    evidence={}
+    evidence=dict(renderer_sequence=args.renderer_sequence,
+                  scope='Guest Accept/Cancel/save/reload through original menu; direct isolated child, not launcher',
+                  executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest())
 
     def profiles():
         found={}
@@ -90,9 +98,10 @@ def main():
             time.sleep(.2)
         raise AssertionError('Timed out at '+label)
 
-    with (ROOT/'logs/controls-accept-game.log').open('w') as log:
+    with (ROOT/'logs'/(args.run_name+'-game.log')).open('w') as log:
+        renderer_args=['--renderer-sequence',*args.renderer_sequence] if args.renderer_sequence else []
         process=subprocess.Popen([sys.executable,str(ROOT/'tests/gameplay/stability_transitions_game.py'),
-                                  '--run-name','controls-accept'],cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
+                                  '--run-name',args.run_name,*renderer_args],cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
         try:
             end=time.monotonic()+30
             while not (run/'run.lock').exists():
@@ -136,6 +145,12 @@ def main():
                 with commands.open('a') as f:f.write('{"stop":true}\n')
                 process.wait(45)
         assert process.returncode==0
+    if args.renderer_sequence:
+        for index,backend in enumerate(args.renderer_sequence):
+            text=(run/f'run{index}.err').read_text(errors='replace')
+            assert '[PRESENT] backend='+backend in text
+            assert 'could not start; using' not in text and '[CRASH]' not in text
+        evidence['requested_backends_presented']=True
     (run/'verification.json').write_text(json.dumps(evidence,indent=2)+'\n')
 
 

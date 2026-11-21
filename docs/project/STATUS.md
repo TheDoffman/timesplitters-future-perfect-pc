@@ -1,3 +1,23 @@
+## Windows renderer performance cohort passed; quality review open (2026-11-21)
+
+Three uncaptured actual-launcher runs per backend complete on RTX4070SUPER/
+driver617.42 with gameSHAa8a26b31 and PresentMon2.6.0. QPC-aligned85-115s
+gameplay is59.99-60.03FPS, with no submitted/displayed intervals over25ms.
+Vulkan/D3D11 median-of-three interval ratios pass the median+10% andp95/p99+20%
+gates. The [measured report](../development/windows-renderer-results.md) records
+all six cases, CPU, private/resident/dedicated GPU memory, latency, cache and
+startup/loading gaps. Vulkan allocates more private/GPU memory in this cohort;
+longer growth/stability testing remains open. These results supersede the older
+pending performance note below, not other acceptance gates.
+
+Four paired quality/display settings runs finish machine checks successfully.
+Vulkan fullscreen GDI captures are black/stale despite active gameplay logs;
+independent capture/readback investigation remains unresolved. Do not count them
+as visual passes. Additional targeted effects/levels, sustained gameplay and
+actual guest save/load remain pending. Overall goal remains active. AMD/Intel,
+other drivers and native Mac/Linux validation remain unverified. Local branch
+only; no merge or release publication.
+
 ## Rebuilt Auto-resolution acceptance passed (2026-11-21)
 
 The normal Windows Build -SkipTextures completed successfully, including its
