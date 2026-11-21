@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import platform
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -111,6 +112,21 @@ def measurements(samples):
                 guest_ticks_per_second=(active[-1]["ticks"] - active[0]["ticks"]) / elapsed)
 
 
+def effective_settings(text, config):
+    scene = re.search(r"\[GRAPHICS\] Scene (\d+)x(\d+), MSAA (\d+) requested / (\d+) active", text)
+    expected = (config["width"], config["height"], config["msaa"], config["msaa"])
+    automatic = config["width"] == config["height"] == 1
+    observed = tuple(map(int, scene.groups())) if scene else None
+    checks = dict(scene_resolution_and_msaa=bool(observed) and
+                  ((observed[0] >= 640 and observed[1] >= 480 and observed[2:] == expected[2:])
+                   if automatic else observed == expected))
+    if config["aa"] == 2:
+        checks["smaa_enabled"] = "[SMAA] enabled:" in text and "[SMAA] unavailable" not in text
+    else:
+        checks["smaa_disabled"] = "[SMAA] enabled:" not in text
+    return checks
+
+
 def run_case(executable, install, run, evidence, backend, phase, args):
     label = backend + "-" + phase
     destination = evidence / label
@@ -122,6 +138,9 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     config = dict(backend=backend, seconds=args.seconds, capture=args.capture,
                   width=args.width, height=args.height, msaa=args.msaa, aa=args.aa,
                   anisotropy=args.anisotropy, fullscreen=args.fullscreen)
+    config["display_cycle"] = getattr(args, "display_cycle", False)
+    if getattr(args, "capture_times", None):
+        config["capture_times"] = args.capture_times
     config_path = destination / "case.json"
     config_path.write_text(json.dumps(config, indent=2) + "\n")
     cache = contained(ROOT, run / "cache" / args.label / backend, "private/test-saves")
@@ -161,6 +180,13 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     text = (destination / (backend + ".err")).read_text(errors="replace")
     result["renderer_checks"] = native.renderer_checks(text, backend)
     result["present_checks"] = native.native_present_checks(text)
+    result["effective_settings_checks"] = effective_settings(text, config)
+    if config["display_cycle"]:
+        result["effective_settings_checks"]["display_cycle_completed"] = result.get("display_cycle_completed", False)
+        if config["width"] == config["height"] == 1:
+            resized = next(snapshot for snapshot in result["display_snapshots"] if snapshot["label"] == "resized")
+            expected = f"[PC-DISPLAY] Native scene target {resized['client_width']}x{resized['client_height']}"
+            result["effective_settings_checks"]["automatic_resize_applied"] = expected in text
     result["measurements"] = measurements(json.loads((destination / (backend + "-samples.json")).read_text()))
     result["cache_before"] = before
     result["cache_after"] = {str(path.relative_to(cache)): path.stat().st_size for path in cache.rglob("*") if path.is_file()}
@@ -169,7 +195,8 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     if phase == "warm" and (not before or not result["cache_read_logged"]):
         raise ValueError("Warm case did not demonstrate application cache reads")
     result["runner_seconds"] = time.monotonic() - started
-    result["passed"] = result["passed"] and all(result["renderer_checks"].values()) and all(result["present_checks"].values())
+    result["passed"] = (result["passed"] and all(result["renderer_checks"].values()) and
+                        all(result["present_checks"].values()) and all(result["effective_settings_checks"].values()))
     (destination / "verified.json").write_text(json.dumps(result, indent=2) + "\n")
     if not result["passed"]:
         raise ValueError("Backend/presentation acceptance failed")
@@ -184,6 +211,9 @@ def main():
     parser.add_argument("--backend", choices=("both", "vulkan", "d3d11"), default="both")
     parser.add_argument("--warm", action="store_true", help="Repeat each cold case with its populated isolated cache")
     parser.add_argument("--capture", action="store_true", help="Visual run; do not treat its resource samples as a benchmark")
+    parser.add_argument("--capture-times", type=lambda text: [int(value) for value in text.split(",")],
+                        help="Up to 12 unique capture seconds; implies --capture")
+    parser.add_argument("--display-cycle", action="store_true", help="Exercise actual Alt+Enter and resize/restore; use a visual run")
     parser.add_argument("--seconds", type=int, choices=range(120, 601), default=120)
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
@@ -197,6 +227,14 @@ def main():
     if args.compile_only:
         compile_harness()
         return 0
+    if args.display_cycle and args.fullscreen:
+        parser.error("Display cycle starts windowed; test startup fullscreen in a separate case")
+    if args.capture_times:
+        if len(args.capture_times) > 12 or args.capture_times != sorted(set(args.capture_times)) or any(t < 1 or t >= args.seconds for t in args.capture_times):
+            parser.error("Capture seconds must be sorted, unique, within the session and at most 12")
+        args.capture = True
+    if args.display_cycle and not args.capture:
+        parser.error("Display changes perturb timing; use --capture to mark this as a visual run")
     if not args.label or len(args.label) > 48 or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-" for c in args.label):
         parser.error("Unsafe evidence label")
     if digest(ROOT / "private/game/default.xbe") != XBE_SHA256:

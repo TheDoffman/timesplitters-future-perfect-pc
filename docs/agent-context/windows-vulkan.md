@@ -107,3 +107,11 @@ Live first-present observation must use ReadLiveLog with FileShare.ReadWrite
 (and Delete), because the launcher retains its stderr writer. compile_harness
 also runs --self-test-io against an active writer without requiring a GPU/game.
 baseline-cold-warm-02 failed in the old observer; its report remains failed.
+
+Display acceptance: --display-cycle (requires capture, starts windowed) checks
+actual WS_POPUP transitions with Alt+Enter, resizes the client and restores it.
+--capture-times selects <=12 ordered in-session checkpoints. effective_settings
+rejects scene/MSAA mismatch and SMAA fallback; Auto checks native resize logs
+against the actual resized client. Seven runner safety/measurement tests cover
+these gates. baseline-cold-warm-03 passed all4 on2428e479; STATUS records dedicated
+GPU allocation and memory observations. Display/quality hardware runs are next.

@@ -1,3 +1,31 @@
+## Renderer resource repeat and display acceptance extension (2026-11-21)
+
+All four baseline-cold-warm-03 launcher cases pass on source2428e479, with the
+unchanged game/launcher executable hashes recorded above. This repeat adds the
+shared live-log observer and per-process dedicated GPU counters. Application
+caches start empty and warm runs prove disk reads; driver caches remain untouched.
+
+| Backend/cache | CPU core equivalents | Peak private MiB | Peak resident MiB | Peak dedicated GPU MiB | Guest ticks/s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| d3d11-cold | 0.617 | 265.25 | 235.82 | 41.57 | 59.987 |
+| d3d11-warm | 0.660 | 261.84 | 230.79 | 42.01 | 59.966 |
+| vulkan-cold | 0.634 | 372.28 | 238.86 | 151.33 | 60.000 |
+| vulkan-warm | 0.655 | 367.01 | 231.01 | 151.33 | 60.000 |
+
+The Vulkan allocation/commit difference repeats, while resident memory remains
+close. Dedicated allocation is steady in the observed 85-115s window. This is
+not evidence of a leak, and does not replace the pending longer stability test.
+First-window and first-present observations are readiness samples with polling
+resolution, not precise shader-compilation or scanout measurements. Raw report:
+`logs/renderer-validation/baseline-cold-warm-03/report.json`.
+
+The opt-in harness now checks initial window styles, actual Alt+Enter transitions,
+resize and size restoration, configurable bounded capture checkpoints, and
+active scene resolution/MSAA/SMAA log state. Automatic resolution must log a
+native scene resize matching the observed client dimensions. The new display and
+quality gates have unit/compile checks; their hardware scenarios are next and
+must not be inferred from this resource repeat. No production renderer change.
+
 ## Renderer acceptance live-log observer fix (2026-11-21)
 
 The first-present observer added after the initial four-case baseline hit a

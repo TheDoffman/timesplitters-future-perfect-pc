@@ -76,6 +76,18 @@ def test_loading_samples_cannot_hide_a_gameplay_regression():
         runner.measurements(samples[:4])
 
 
+def test_effective_settings_require_active_msaa_and_successful_smaa():
+    config = dict(width=1920, height=1080, msaa=4, aa=2)
+    log = "[GRAPHICS] Scene 1920x1080, MSAA 4 requested / 4 active\n[SMAA] enabled: 1x High (vulkan)\n"
+    assert all(runner.effective_settings(log, config).values())
+    assert not runner.effective_settings(log.replace("4 active", "2 active"), config)["scene_resolution_and_msaa"]
+    assert not runner.effective_settings(log.replace("1920x1080", "640x480"), config)["scene_resolution_and_msaa"]
+    assert not runner.effective_settings(log + "[SMAA] unavailable", config)["smaa_enabled"]
+    config.update(width=1, height=1, aa=0)
+    assert all(runner.effective_settings("[GRAPHICS] Scene 1008x729, MSAA 4 requested / 4 active", config).values())
+    assert not runner.effective_settings(log, config)["smaa_disabled"]
+
+
 def test_save_copy_refuses_redirected_destination_without_changing_source(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     run = tmp_path / "private/test-saves/run"

@@ -1,4 +1,4 @@
-[Vulkan/IO checks](windows-vulkan.md).
+[Vulkan/display checks](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

@@ -14,6 +14,9 @@ using TimeSplitters.Launcher;
 public static class RendererGameSmoke {
  [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h,uint m,IntPtr w,IntPtr l);
  [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
+ [DllImport("user32.dll")] static extern bool GetClientRect(IntPtr h,out Rect r);
+ [DllImport("user32.dll",EntryPoint="GetWindowLongW")] static extern int GetWindowStyle(IntPtr h,int index);
+ [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h,IntPtr after,int x,int y,int width,int height,uint flags);
  [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h,out Rect r);
  [DllImport("kernel32.dll")] static extern bool ReadProcessMemory(IntPtr p,IntPtr a,byte[] b,int size,out IntPtr read);
  [StructLayout(LayoutKind.Sequential)] struct Rect {public int L,T,R,B;}
@@ -43,6 +46,17 @@ public static class RendererGameSmoke {
  static uint Word(Process p,uint a){var b=new byte[4];IntPtr n;return ReadProcessMemory(p.Handle,new IntPtr((long)a+0x10000),b,4,out n)?BitConverter.ToUInt32(b,0):0;}
  static float[] Position(Process p,uint player){var b=new byte[12];IntPtr n;if(!ReadProcessMemory(p.Handle,new IntPtr((long)player+0xb4+0x10000),b,12,out n))return new float[3];return new[]{BitConverter.ToSingle(b,0),BitConverter.ToSingle(b,4),BitConverter.ToSingle(b,8)};}
  static async Task Key(IntPtr h,int key,int ms){PostMessage(h,0x100,new IntPtr(key),new IntPtr(1));await Task.Delay(ms);PostMessage(h,0x101,new IntPtr(key),new IntPtr(unchecked((int)0xc0000001)));}
+ static bool Fullscreen(IntPtr h){return (unchecked((uint)GetWindowStyle(h,-16))&0x80000000u)!=0;}
+ static object DisplaySnapshot(IntPtr h,string label,double seconds){
+  Rect client=new Rect(),window=new Rect();Need(GetClientRect(h,out client) && GetWindowRect(h,out window),"Cannot inspect game bounds");
+  return new {label=label,seconds=seconds,client_width=client.R-client.L,client_height=client.B-client.T,
+   window_width=window.R-window.L,window_height=window.B-window.T,fullscreen=Fullscreen(h)};
+ }
+ static async Task ToggleFullscreen(IntPtr h){
+  bool before=Fullscreen(h);Need(PostMessage(h,0x104,new IntPtr(13),new IntPtr(1<<29)),"Alt+Enter could not be queued");
+  for(int i=0;i<20 && Fullscreen(h)==before;i++)await Task.Delay(50);
+  Need(Fullscreen(h)!=before,"Alt+Enter did not change actual window style");
+ }
  static void Capture(IntPtr h,string path){Rect r;Need(GetWindowRect(h,out r),"No game rectangle");using(var b=new Bitmap(r.R-r.L,r.B-r.T)) {using(var g=Graphics.FromImage(b))g.CopyFromScreen(r.L,r.T,0,0,b.Size);b.Save(path,System.Drawing.Imaging.ImageFormat.Png);}}
  [STAThread] public static int Main(string[] args){if(args.Length==1 && args[0]=="--self-test-io")return CheckLiveLog();root=Path.GetFullPath(args[0]);evidence=Path.GetFullPath(args[1]);Directory.CreateDirectory(evidence);config=Json.Object(File.ReadAllText(args[2]));var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};app.Startup+=async(s,e)=>{try{await Run((string)config["backend"]);}catch(Exception ex){Console.WriteLine(ex);result=1;}finally{if(owned!=null){try{if(!owned.HasExited){owned.Kill();owned.WaitForExit(10000);}}catch{}}app.Shutdown();}};app.Run();return result;}
  static async Task Run(string backend){
@@ -70,11 +84,22 @@ public static class RendererGameSmoke {
   try{
    while(game.MainWindowHandle==IntPtr.Zero && clock.Elapsed.TotalSeconds<15){Need(!game.HasExited,"Game exited during startup");await Task.Delay(100);game.Refresh();}
    IntPtr hwnd=game.MainWindowHandle;Need(hwnd!=IntPtr.Zero,"No rendered game window");SetForegroundWindow(hwnd);double windowSeconds=clock.Elapsed.TotalSeconds;double storySeconds=-1,gameplayReadySeconds=-1,firstPresentSeconds=-1,nextGpu=5;double? gpuDedicated=null;
+   if(Flag("fullscreen")){for(int i=0;i<20 && !Fullscreen(hwnd);i++)await Task.Delay(50);}
+   Need(Fullscreen(hwnd)==Flag("fullscreen"),"Requested initial window mode not active");
+   Rect initialWindow=new Rect(),initialClient=new Rect();Need(GetWindowRect(hwnd,out initialWindow) && GetClientRect(hwnd,out initialClient),"Cannot inspect initial window");
+   var displaySnapshots=new List<object>{DisplaySnapshot(hwnd,"initial",clock.Elapsed.TotalSeconds)};int displayStage=0;
+   double[] captureTimes=config.ContainsKey("capture_times")?((System.Collections.IEnumerable)config["capture_times"]).Cast<object>().Select(x=>Convert.ToDouble(x)).ToArray():new double[]{38,80,112};
    int[] times={5,10,14,18,22,26,30,34};int[] keys={69,69,40,69,69,69,69,69};int next=0;bool skipped=false,moving=false,released=false;int shot=0;int capture=0;uint firstTick=0,lastTick=0;var samples=new List<object>();var positions=new List<float[]>();int equipped=0;
    while(clock.Elapsed.TotalSeconds<duration){
     Need(!game.HasExited,"Game exited before bounded test ended");double t=clock.Elapsed.TotalSeconds;
     if(next<times.Length && t>=times[next]){await Key(hwnd,keys[next],180);Console.WriteLine(backend+" menu key "+keys[next]+" at "+t.ToString("F1"));next++;}
     if(firstPresentSeconds<0 && ReadLiveLog(liveLog).Contains("[PRESENT] backend="+backend))firstPresentSeconds=t;
+    if(Flag("display_cycle")){
+     if(displayStage==0 && t>=60){await ToggleFullscreen(hwnd);displaySnapshots.Add(DisplaySnapshot(hwnd,"fullscreen",t));displayStage++;}
+     else if(displayStage==1 && t>=70){await ToggleFullscreen(hwnd);Need(!Fullscreen(hwnd),"Window mode did not restore");displaySnapshots.Add(DisplaySnapshot(hwnd,"windowed",t));displayStage++;}
+     else if(displayStage==2 && t>=100){Need(SetWindowPos(hwnd,IntPtr.Zero,0,0,1024,768,0x16),"Resize request failed");await Task.Delay(300);Rect client;Need(GetClientRect(hwnd,out client) && (client.R!=initialClient.R || client.B!=initialClient.B),"Actual client size did not change");displaySnapshots.Add(DisplaySnapshot(hwnd,"resized",t));displayStage++;}
+     else if(displayStage==3 && t>=108){Need(SetWindowPos(hwnd,IntPtr.Zero,0,0,initialWindow.R-initialWindow.L,initialWindow.B-initialWindow.T,0x16),"Restore size request failed");await Task.Delay(300);Rect client;Need(GetClientRect(hwnd,out client) && client.R==initialClient.R && client.B==initialClient.B,"Client size did not restore");displaySnapshots.Add(DisplaySnapshot(hwnd,"restored",t));displayStage++;}
+    }
     uint scene=Word(game,0x79094c),flags=Word(game,0x7de458),ticks=Word(game,0x7de318),player=Word(game,0x7b0c7c);
     if(t>45 && (flags&0x20000000)!=0 && !skipped){await Key(hwnd,27,200);skipped=true;Console.WriteLine(backend+" skipped opening scene at "+t.ToString("F1"));}
     if(t>=85 && !moving){SetForegroundWindow(hwnd);PostMessage(hwnd,0x100,new IntPtr(87),new IntPtr(1));moving=true;}
@@ -89,10 +114,12 @@ public static class RendererGameSmoke {
     float[] pos=null;uint weapon=0;game.Refresh();
     if(scene==2 && player>=0x80000000 && player<0x84000000){pos=Position(game,player);weapon=Word(game,player+0x58c);if(weapon==14 && (flags&0x20000000)==0 && gameplayReadySeconds<0)gameplayReadySeconds=t;if(t>=85 && t<=115){positions.Add(pos);if(weapon==14)equipped++;if(firstTick==0)firstTick=ticks;lastTick=ticks;}}
     samples.Add(new {seconds=Math.Round(t,2),scene=scene,flags=flags,ticks=ticks,player=player,position=pos,weapon=weapon,cpu_total_ms=game.TotalProcessorTime.TotalMilliseconds,private_bytes=game.PrivateMemorySize64,working_set_bytes=game.WorkingSet64,handles=game.HandleCount,gpu_dedicated_bytes=gpuDedicated});
-    if(Flag("capture") && capture<3 && t>=new[]{38,80,112}[capture]){SetForegroundWindow(hwnd);await Task.Delay(150);Capture(hwnd,Path.Combine(evidence,backend+"-"+capture+".png"));capture++;}
+    if(Flag("capture") && capture<captureTimes.Length && t>=captureTimes[capture]){SetForegroundWindow(hwnd);await Task.Delay(150);Capture(hwnd,Path.Combine(evidence,backend+"-"+capture+".png"));capture++;}
     await Task.Delay(300);
    }
    File.WriteAllText(Path.Combine(evidence,backend+"-samples.json"),Json.Encode(samples));
+   Need(!Flag("display_cycle") || displayStage==4,"Display cycle did not complete");
+   File.WriteAllText(Path.Combine(evidence,"display.json"),Json.Encode(displaySnapshots));
    Need(positions.Count>20 && equipped>20,"Story gameplay / opening firearm not reached");
    Need(lastTick>firstTick+100,"Game tick clock did not advance in gameplay");
    Need(positions.Any(p=>p.Zip(positions[0],(a,b)=>(a-b)*(a-b)).Sum()>1),"Player did not move");
@@ -100,9 +127,10 @@ public static class RendererGameSmoke {
    var done=await Task.WhenAny(launch,Task.Delay(15000));Need(done==launch,"Launcher did not finish after closing game");await launch;
    Need(game.HasExited && game.ExitCode==0,"Game did not close cleanly");
    var model=GameSettings.Load(root,null);Need(model.Renderer==backend,"Game run changed saved selection");
+   Need(model.Msaa==Number("msaa",1) && model.PostAntiAliasing==Number("aa",0) && model.Anisotropy==Number("anisotropy",1),"Game run changed saved quality settings");
    string err=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").OrderBy(File.GetLastWriteTimeUtc).Last();string text=File.ReadAllText(err);File.Copy(err,Path.Combine(evidence,backend+".err"),true);
    Need(text.Contains("[PRESENT] backend="+backend),"Requested backend did not present");Need(!text.Contains("[CRASH]"),"Crash in game log");
-   File.WriteAllText(Path.Combine(evidence,backend+"-result.json"),Json.Encode(new {passed=true,backend=backend,pid=game.Id,seconds=clock.Elapsed.TotalSeconds,window_seconds=windowSeconds,story_seconds=storySeconds,first_present_observed_seconds=firstPresentSeconds,gameplay_ready_seconds=gameplayReadySeconds,gpu_metric_available=gpuDedicated.HasValue,capture_enabled=Flag("capture"),settings=config,gameplay_samples=positions.Count,equipped_samples=equipped,tick_delta=lastTick-firstTick,exit_code=game.ExitCode,source_log=err}));
+   File.WriteAllText(Path.Combine(evidence,backend+"-result.json"),Json.Encode(new {passed=true,backend=backend,pid=game.Id,seconds=clock.Elapsed.TotalSeconds,window_seconds=windowSeconds,story_seconds=storySeconds,first_present_observed_seconds=firstPresentSeconds,gameplay_ready_seconds=gameplayReadySeconds,gpu_metric_available=gpuDedicated.HasValue,capture_enabled=Flag("capture"),display_cycle_completed=Flag("display_cycle") && displayStage==4,display_snapshots=displaySnapshots,settings=config,gameplay_samples=positions.Count,equipped_samples=equipped,tick_delta=lastTick-firstTick,exit_code=game.ExitCode,source_log=err}));
    Console.WriteLine("PASS "+backend+" actual launcher, Story, movement, firearm, presents and clean exit; ticks="+(lastTick-firstTick));
   }finally{foreach(var counter in gpuCounters)counter.Dispose();if(!game.HasExited){game.Kill();game.WaitForExit(10000);}game.Dispose();owned=null;ui.Window.Close();}
  }

@@ -16,7 +16,7 @@ install another driver over this host simply to expand the matrix.
 | L1 Launcher selection | Save D3D11, run; save Vulkan, run; reopening preserves preference and logs identify only the requested backend | Passed, source f4b615a9, two 120-second first-mission runs |
 | L2 Recovery | Default/explicit Vulkan missing-driver, missing-DXC and no-device startup recover to D3D11; explicit D3D11 ownership remains correct | Existing eight-case production RHI contract passed; retain executable hashes |
 | P1 Frame pacing | At least three matched uncaptured runs per backend; report median/p95/p99 intervals, >25/50-ms frames, CPU and memory; loading excluded | Earlier single-pair CPU-present comparison passed; repetitions and resource comparison pending |
-| P2 Cold/warm loading | Empty per-test caches, then same-cache repeat; record window/scene readiness, cache files and resource use; no inherited personal caches | First four application-cache cases pass; precise loading/stutter measurements and repeats pending |
+| P2 Cold/warm loading | Empty per-test caches, then same-cache repeat; record window/scene readiness, cache files and resource use; no inherited personal caches | Two cold/warm sets pass; second set includes dedicated GPU counters; precise loading/stutter comparisons pending |
 | V1 Common rendering | Reviewed paired level captures identifying the actual shadow, blend/transparency, reflection/screen-copy, filtering, depth and AA features exercised | Opening-mission world and weapon reviewed; targeted feature coverage pending |
 | V2 Resource contracts | Production HLSL, signed texture mapping, texture formats, depth replay, screen copy, MSAA, SSAO and visibility checks on both hardware backends | Existing production RHI fixture passed; this is separate from level appearance |
 | D1 Display | Windowed/fullscreen transitions, window resize, supported startup resolutions, repeated switching; requested backend preserved; no failed presents | 1280x720 settings / windowed startup passed; remaining transitions and resolutions pending |
@@ -82,3 +82,16 @@ Windows WARP, another GPU, or the shared Vulkan backend on Mac/Linux.
 The current work remains on feature/windows-vulkan because it depends on its
 unmerged backend/default and launcher-setting changes. No merge or release is
 authorized by this validation goal.
+
+Display and effective-quality checks use the same launcher path:
+
+```powershell
+.venv/Scripts/python.exe tools/testing/test-launcher-renderers-windows.py --label display-fixed-01 --display-cycle --capture-times 11,15,19,23,38,66,71,80,104,112
+.venv/Scripts/python.exe tools/testing/test-launcher-renderers-windows.py --label display-auto-01 --width 1 --height 1 --display-cycle --capture
+```
+
+These perturb timing and are labelled visual runs. Window/fullscreen state is
+read from the actual window, not the saved checkbox. Auto must log a native scene
+target matching the resized client. Fixed render resolution intentionally differs
+from presentation-window size; validate the scene log, not window bounds alone.
+The hardware result for these new scenarios is pending until their reports pass.
