@@ -75,3 +75,11 @@ SDK 9.0.312 selects ILLink 8.0.25 while the native lock expects 8.0.32; compilat
 used isolated NuGetLockFilePath files under build/, leaving tracked locks intact.
 No renderer/game rebuild is required for this settings-only change; see the
 existing hardware validation above for the two production backends and recovery.
+
+Actual launcher/game follow-up (2026-11-21): source f4b615a9 passed D3D11 then
+Vulkan for 120 seconds each on RTX 4070 SUPER / driver 617.42. An isolated WPF
+harness selects and saves through SettingsPage, then invokes unmodified
+LauncherWindow.LaunchGame; no backend environment injection. Both reach Story,
+move/fire, present on the selected backend without fallback, and exit 0. Normal
+launcher runs do not enable SDK validation. Evidence and scope are recorded in
+STATUS; local report is logs/launcher-renderer-gameplay/report.json. No code fix.

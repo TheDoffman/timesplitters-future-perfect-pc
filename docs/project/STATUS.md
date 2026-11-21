@@ -1,3 +1,34 @@
+## Launcher renderer switching gameplay validation (2026-11-21)
+
+**Passed D3D11, then Vulkan through the real Windows launcher settings and
+launch path.** Launcher source is `f4b615a9`, on feature/windows-vulkan.
+An isolated WPF harness drives SettingsPage.GraphicsRenderer and the Save button,
+reopens the launcher, and invokes unmodified LauncherWindow.LaunchGame. Preview
+mode suppresses launcher networking only; the native game is real. No backend
+environment override or replacement executable was injected. The synthetic
+installation manifest advertises both compiled backends; game data/executable
+use hard links, and saves/settings use disposable Test Lab copies.
+
+Each run lasted 120 seconds, reached the first Story mission, equipped weapon 14,
+responded to movement and firing, and closed normally with exit code 0. Reviewed
+80/112-second screenshots show the world/weapon rendering correctly and magazine
+ammo falling from 16 to 12. Logs identify only the chosen backend, with no fallback,
+shader/RHI errors or failed presents. The 85-115 second observation window has
+92 D3D11 / 91 Vulkan gameplay samples and 1771 / 1772 advancing ticks respectively
+(59.993 / 60.007 guest ticks per second; this is not a GPU/scanout measurement).
+The saved choice survived both launches and ends on Vulkan. Normal startup-splash
+skipping was enabled; Vulkan SDK validation was not enabled in this launcher run.
+
+Host: Windows 11 Pro 10.0.26300 x64, RTX 4070 SUPER, driver 617.42.
+Game SHA-256: `0c1d590355889cf53223d05349e97fb5d13ef9d8f8b9ba9e872cf75134bc2b9f`.
+Launcher SHA-256: `a4854d60b0b5262512ad41f07f543293638f4b637438df9fd98b6acaade4c690`.
+Local evidence: `logs/launcher-renderer-gameplay/report.json`, per-backend logs,
+state samples and three PNGs each; harness: `logs/RendererGameSmoke.cs`.
+Canonical Test Lab fixture hashes pass; disposable virtual disks were recycled,
+and no game/harness process remains. Personal saves/settings were not used.
+No launcher/runtime fix was needed. Scope is this GPU and the opening mission,
+not full-game or cross-vendor acceptance. No merge/publication was performed.
+
 ## Windows launcher renderer setting (2026-11-21)
 
 Game settings > Graphics > Display now offers Renderer (next launch), with

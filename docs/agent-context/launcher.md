@@ -1,3 +1,8 @@
+Windows renderer switching follow-up: real launcher settings/Save/LaunchGame
+passed 120-second D3D11 and Vulkan first-mission sessions (2026-11-21), with
+movement, firing, selected-backend logs and clean exits. No code fix; see
+[measured evidence](../project/STATUS.md#launcher-renderer-switching-gameplay-validation-2026-11-21).
+
 Windows renderer selector (2026-11-21): `SettingsPage.GraphicsRenderer` exposes
 Vulkan (Default)/Direct3D 11 in Game settings > Graphics > Display on Windows.
 `GameSettings.Renderer` persists `launcher.renderer` in pc-controls.json through
