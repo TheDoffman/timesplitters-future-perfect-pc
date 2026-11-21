@@ -17,7 +17,14 @@ quality/display cases pass and their gameplay images have been reviewed: FXAA/
 MSAA2/filter4, SMAA/MSAA4/filter16, Off/MSAA8/filter8, and window cycling at
 MSAA1/filter2. These cover selected scene sizes1024x768 through3840x2160 on one
 1080p monitor, not native4K scanout or every resolution combination. Additional targeted effects/levels, sustained gameplay and
-actual guest save/load remain pending. Overall goal remains active. AMD/Intel,
+actual guest save/load were initially pending. Save/load now passes both renderer
+orders through original Accept/Cancel actions: exact expected bodybyte6 change,
+valid signatures, same accepted SHA95fdcc0f, OFF loaded by the other renderer and
+Cancel preserved after a third process restart. All six requested backends
+present with clean session exits. These are direct-child guest save tests, separate
+from launcher selection. Two Story pairs now pass (Time to Split and Scotland
+scene4); longer gameplay, paired Arcade and targeted effect views remain pending.
+Overall goal remains active. AMD/Intel,
 other drivers and native Mac/Linux validation remain unverified. Local branch
 only; no merge or release publication.
 

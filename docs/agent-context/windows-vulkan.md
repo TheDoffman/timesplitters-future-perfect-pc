@@ -237,5 +237,8 @@ reach Cancel. Require the expected draft bit before each action. A valid origina
 save now changes exactly bodybyte6 255->254 in the existing canonical slot, with
 valid HMAC; older renamed fixtures can create a second slot. Reload chooses one
 Down for the canonical slot or two for the new copy, rejecting ambiguous slot
-counts/identity. Original failed runs are retained; cross-backend reload is still
-pending. Profile bytes, signatures and Cancel rollback remain strict assertions.
+counts/identity. Original failed runs are retained. Both corrected cross-backend
+orders now pass (renderer-save-vk-dd-vk-03 and renderer-save-dd-vk-dd): canonical
+slot count1, exact bodybyte6 change, accepted SHA95fdcc0f, valid signature, actual
+requested backend presents and Cancel/reload preservation. Profile bytes,
+signatures and Cancel rollback remain strict assertions. See measured report.

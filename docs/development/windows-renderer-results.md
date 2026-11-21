@@ -152,3 +152,30 @@ scene2. The corrected scenario explicitly declares4, and all world/measurement
 gates now use that validated expectation. story-scotland-dxgi-02 is a fresh paired
 run; no old failure is converted into a pass. This was an observer assumption,
 not evidence of a renderer regression.
+
+Both story-scotland-dxgi-02 cases now pass on the same game executable. Reviewed
+80/112second images show the cliff/wooden landing, revolver, bullet decal and HUD
+with ammo8->4. The late view is close to a wall on both backends, not a broad
+outdoor-feature survey. Resource/tick sampling uses actual scene4 and observes
+60.014Hz D3D11 /60.007Hz Vulkan in the controlled window. Its wildcard weapon-ID
+expectation is a world/input gate; ammunition evidence comes from reviewed images.
+
+## Cross-renderer guest save/load passed
+
+The original guest Controls Accept/Cancel path passed Vulkan ->D3D11 ->Vulkan and
+D3D11 ->Vulkan ->D3D11 using separate disposable Test Lab copies. Each sequence
+starts from the same signed seed. Accept changes exactly profile bodybyte6 from
+255 to254 (Inverse Look ON ->OFF), with a valid updated HMAC; both directions
+produce SHA256 `95fdcc0f058e2789dadc9f4f5f41bd570a2eb3b94b1d3ff890e5baae8dd985fc`.
+The next renderer loads OFF into its original Controls draft. Creating an ON
+draft and pressing Cancel preserves that saved file and OFF after another
+process restart. All six requested child backends actually present, with no
+fallback/crash, and the bounded session runner closes each child cleanly.
+
+Local verification files are private/test-saves/renderer-save-vk-dd-vk-03/
+verification.json and private/test-saves/renderer-save-dd-vk-dd/verification.json.
+This is direct-child guest persistence acceptance, separate from launcher choice
+persistence. Failed earlier probes remain failed: one used obsolete Controls
+navigation; another correctly saved but assumed an obsolete two-slot fixture.
+The updated test verifies the changed draft before acting and selects the actual
+canonical saved slot. Original fixture signatures/bytes remain preserved.
