@@ -29,11 +29,22 @@ public static class RendererGameSmoke {
    .Select(n=>new PerformanceCounter("GPU Process Memory","Dedicated Usage",n,true)).ToList();}
   catch{return new List<PerformanceCounter>();}
  }
+ static string ReadLiveLog(string path){
+  using(var stream=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))
+  using(var reader=new StreamReader(stream))return reader.ReadToEnd();
+ }
+ static int CheckLiveLog(){
+  string path=Path.GetTempFileName();
+  try{using(var writer=new FileStream(path,FileMode.Create,FileAccess.Write,FileShare.ReadWrite)){
+   byte[] bytes=System.Text.Encoding.UTF8.GetBytes("[PRESENT] backend=vulkan");writer.Write(bytes,0,bytes.Length);writer.Flush();
+   Need(ReadLiveLog(path)=="[PRESENT] backend=vulkan","Live diagnostic reader conflicts with writer");
+  }Console.WriteLine("PASS live log reader shares an active writer");return 0;}finally{File.Delete(path);}
+ }
  static uint Word(Process p,uint a){var b=new byte[4];IntPtr n;return ReadProcessMemory(p.Handle,new IntPtr((long)a+0x10000),b,4,out n)?BitConverter.ToUInt32(b,0):0;}
  static float[] Position(Process p,uint player){var b=new byte[12];IntPtr n;if(!ReadProcessMemory(p.Handle,new IntPtr((long)player+0xb4+0x10000),b,12,out n))return new float[3];return new[]{BitConverter.ToSingle(b,0),BitConverter.ToSingle(b,4),BitConverter.ToSingle(b,8)};}
  static async Task Key(IntPtr h,int key,int ms){PostMessage(h,0x100,new IntPtr(key),new IntPtr(1));await Task.Delay(ms);PostMessage(h,0x101,new IntPtr(key),new IntPtr(unchecked((int)0xc0000001)));}
  static void Capture(IntPtr h,string path){Rect r;Need(GetWindowRect(h,out r),"No game rectangle");using(var b=new Bitmap(r.R-r.L,r.B-r.T)) {using(var g=Graphics.FromImage(b))g.CopyFromScreen(r.L,r.T,0,0,b.Size);b.Save(path,System.Drawing.Imaging.ImageFormat.Png);}}
- [STAThread] public static int Main(string[] args){root=Path.GetFullPath(args[0]);evidence=Path.GetFullPath(args[1]);Directory.CreateDirectory(evidence);config=Json.Object(File.ReadAllText(args[2]));var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};app.Startup+=async(s,e)=>{try{await Run((string)config["backend"]);}catch(Exception ex){Console.WriteLine(ex);result=1;}finally{if(owned!=null){try{if(!owned.HasExited){owned.Kill();owned.WaitForExit(10000);}}catch{}}app.Shutdown();}};app.Run();return result;}
+ [STAThread] public static int Main(string[] args){if(args.Length==1 && args[0]=="--self-test-io")return CheckLiveLog();root=Path.GetFullPath(args[0]);evidence=Path.GetFullPath(args[1]);Directory.CreateDirectory(evidence);config=Json.Object(File.ReadAllText(args[2]));var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};app.Startup+=async(s,e)=>{try{await Run((string)config["backend"]);}catch(Exception ex){Console.WriteLine(ex);result=1;}finally{if(owned!=null){try{if(!owned.HasExited){owned.Kill();owned.WaitForExit(10000);}}catch{}}app.Shutdown();}};app.Run();return result;}
  static async Task Run(string backend){
   var initial=GameSettings.Load(root,null);initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.Save();
   // Shared executable is unmodified; preview mode only suppresses network checks.
@@ -63,7 +74,7 @@ public static class RendererGameSmoke {
    while(clock.Elapsed.TotalSeconds<duration){
     Need(!game.HasExited,"Game exited before bounded test ended");double t=clock.Elapsed.TotalSeconds;
     if(next<times.Length && t>=times[next]){await Key(hwnd,keys[next],180);Console.WriteLine(backend+" menu key "+keys[next]+" at "+t.ToString("F1"));next++;}
-    if(firstPresentSeconds<0 && File.ReadAllText(liveLog).Contains("[PRESENT] backend="+backend))firstPresentSeconds=t;
+    if(firstPresentSeconds<0 && ReadLiveLog(liveLog).Contains("[PRESENT] backend="+backend))firstPresentSeconds=t;
     uint scene=Word(game,0x79094c),flags=Word(game,0x7de458),ticks=Word(game,0x7de318),player=Word(game,0x7b0c7c);
     if(t>45 && (flags&0x20000000)!=0 && !skipped){await Key(hwnd,27,200);skipped=true;Console.WriteLine(backend+" skipped opening scene at "+t.ToString("F1"));}
     if(t>=85 && !moving){SetForegroundWindow(hwnd);PostMessage(hwnd,0x100,new IntPtr(87),new IntPtr(1));moving=true;}

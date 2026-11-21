@@ -1,3 +1,15 @@
+## Renderer acceptance live-log observer fix (2026-11-21)
+
+The first-present observer added after the initial four-case baseline hit a
+Windows sharing violation: File.ReadAllText did not permit the launcher's active
+write handle. This was an acceptance-harness failure, not a renderer failure.
+The failed baseline-cold-warm-02 report remains passed=false; its owned child
+was stopped and disposable disks recycled. ReadLiveLog now explicitly shares
+read/write/delete, and --compile-only runs a native live-writer/read test before
+any hardware session. That test and all six acceptance safety/measurement tests
+pass. Fresh evidence labels are required for reruns; no stale pass is reused.
+No production launcher/runtime behavior changed.
+
 ## Renderer acceptance matrix and cold/warm launcher runs (2026-11-21)
 
 The active Vulkan/D3D11 validation goal now has an explicit

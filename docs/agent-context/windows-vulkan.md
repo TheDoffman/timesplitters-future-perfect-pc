@@ -102,3 +102,8 @@ Data/Saves paths, timeout cleanup, package separation and measurement windows.
 First four baseline-cold-warm-01 cases passed; STATUS records hashes and resource
 differences, including the Vulkan private-commit increase. Repeats, precise frame
 pacing, display/quality matrices, additional levels and save/load remain pending.
+
+Live first-present observation must use ReadLiveLog with FileShare.ReadWrite
+(and Delete), because the launcher retains its stderr writer. compile_harness
+also runs --self-test-io against an active writer without requiring a GPU/game.
+baseline-cold-warm-02 failed in the old observer; its report remains failed.

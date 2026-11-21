@@ -1,4 +1,4 @@
-[Vulkan validation](windows-vulkan.md).
+[Vulkan/IO checks](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

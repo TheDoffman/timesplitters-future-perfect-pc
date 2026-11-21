@@ -82,6 +82,7 @@ def compile_harness():
     subprocess.run([str(framework / "csc.exe"), "/nologo", "/target:exe", "/platform:x64",
                     *["/reference:" + ref for ref in refs], "/out:" + str(output),
                     str(ROOT / "tests/launcher_lifecycle/RendererGameSmoke.cs")], check=True)
+    subprocess.run([str(output), "--self-test-io"], check=True, timeout=10)
     return output
 
 
