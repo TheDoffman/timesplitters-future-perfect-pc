@@ -1,3 +1,9 @@
+Windows renderer acceptance tooling (2026-11-21): host-specific WPF/GPU test
+runner only; no new shared gameplay or native launcher behavior. Native source
+and current defaults are unchanged; no Mac adapter implementation is deferred.
+The new Windows evidence does not verify Mac/Linux renderer or native UI gates.
+See ../development/windows-renderer-validation.md for scope and outstanding work.
+
 Windows launcher renderer selector (2026-11-21): **Awaiting validation** of
 shared-model preservation on native Mac/Linux. The shared SettingsPage/model
 stores launcher.renderer, while the thin LauncherPlatform capability hides the

@@ -1,3 +1,51 @@
+## Renderer acceptance matrix and cold/warm launcher runs (2026-11-21)
+
+The active Vulkan/D3D11 validation goal now has an explicit
+[matrix and reproduction steps](../development/windows-renderer-validation.md).
+This is ongoing acceptance work; frame-pacing repetitions, display transitions,
+quality settings, additional Story/Arcade visuals, extended stability and explicit
+save/load comparisons remain open. Only RTX 4070 SUPER / driver 617.42 is available;
+AMD, Intel and other driver combinations remain unverified.
+
+The promoted opt-in Windows runner uses actual SettingsPage selection/Save and
+unmodified LauncherWindow.LaunchGame. It locks the sandbox, hard-links immutable
+game data, copies the Test Lab profile, isolates APPDATA/LOCALAPPDATA, bounds
+sessions/logs and recycles only disposable virtual disks. Test binaries live
+outside launcher package inputs. CI runs safety/measurement unit checks and
+compiles the hardware harness; CI does not claim real-game hardware execution.
+
+First uncaptured 120-second cold/warm pair per backend: all four cases pass,
+reach Story, move/fire, present only on the selected backend and exit 0.
+
+| Backend/cache | CPU core equivalents, 85-115s | Peak private MiB | Peak working-set MiB | Guest ticks/s |
+| --- | ---: | ---: | ---: | ---: |
+| d3d11-cold | 0.653 | 263.95 | 235.21 | 59.987 |
+| d3d11-warm | 0.582 | 259.62 | 228.59 | 60.034 |
+| vulkan-cold | 0.637 | 369.76 | 238.35 | 60.007 |
+| vulkan-warm | 0.624 | 367.67 | 231.81 | 59.987 |
+
+Vulkan private commitment is about 106-108 MiB higher in this pair; resident
+memory differs by roughly 3 MiB. This difference is measured, not yet classified
+as a leak/regression. Repeats and sustained samples are still required. CPU is
+process time divided by wall time, not machine CPU percentage or GPU time.
+Window creation is 0.178-0.196s and the scripted Story transition is about46.2s;
+scripted input masks smaller loading differences, so these are readiness smoke
+observations rather than a precise shader-compilation benchmark.
+
+Application caches begin empty, grow to40 D3D11 /42 Vulkan files, and warm runs
+log disk-cache hits (ending at41 /42 files). Driver/OS caches were not cleared.
+Local report: `logs/renderer-validation/baseline-cold-warm-01/report.json`.
+Game SHA remains `0c1d590355889cf53223d05349e97fb5d13ef9d8f8b9ba9e872cf75134bc2b9f`;
+launcher SHA remains `a4854d60b0b5262512ad41f07f543293638f4b637438df9fd98b6acaade4c690`.
+This set used promoted harness SHA
+`967fed4ce48b1c25a7f1e8eca87cc0a9afca6e456fd169c03fcce82eb8a000f6`
+from basefcb25b5e. The subsequently compiled harness adds per-process dedicated
+GPU-memory counters and first-present observation; those new measurements need
+a follow-up run. Windows counters are available on this host. Current checks:
+21 Python tests /31 subtests pass, and the final C# harness compiles. The canonical
+fixture is unchanged and the first set's disposable disks were recycled.
+No runtime/launcher fix, main merge or publication occurred.
+
 ## Launcher renderer switching gameplay validation (2026-11-21)
 
 **Passed D3D11, then Vulkan through the real Windows launcher settings and

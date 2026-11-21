@@ -1,3 +1,12 @@
+Extended Windows renderer acceptance uses the unchanged SettingsPage/LaunchGame
+through tests/launcher_lifecycle/RendererGameSmoke.cs, driven by
+tools/testing/test-launcher-renderers-windows.py. --compile-only is in launcher
+CI; six Python safety/measurement tests run without game data. The opt-in helper
+builds under build/renderer-validation, outside release package inputs. This is
+Windows WPF hardware testing; native launcher policy/source is unchanged.
+[Acceptance matrix](../development/windows-renderer-validation.md) lists remaining
+visual, display, performance and gameplay gates; no cross-host coverage is implied.
+
 Windows renderer switching follow-up: real launcher settings/Save/LaunchGame
 passed 120-second D3D11 and Vulkan first-mission sessions (2026-11-21), with
 movement, firing, selected-backend logs and clean exits. No code fix; see

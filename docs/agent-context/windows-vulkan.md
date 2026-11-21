@@ -83,3 +83,22 @@ LauncherWindow.LaunchGame; no backend environment injection. Both reach Story,
 move/fire, present on the selected backend without fallback, and exit 0. Normal
 launcher runs do not enable SDK validation. Evidence and scope are recorded in
 STATUS; local report is logs/launcher-renderer-gameplay/report.json. No code fix.
+
+## Extended acceptance goal
+
+The live gate matrix is docs/development/windows-renderer-validation.md; its
+remaining gates must not be inferred from the earlier opening-mission smoke.
+tools/testing/test-launcher-renderers-windows.py compiles the opt-in WPF harness
+tests/launcher_lifecycle/RendererGameSmoke.cs outside release package inputs. It
+uses actual shared SettingsPage Save and unchanged LauncherWindow.LaunchGame,
+per-label application caches, owned fixture copies and process-path-checked
+cleanup. --warm repeats a populated application cache; driver caches are outside
+this cold/warm scope. --capture runs are separate from resource measurements.
+CPU time, memory, handles and optional dedicated GPU bytes are sampled alongside
+guest ticks. First-present observation is polled and is not scanout timing.
+--compile-only needs no game data or GPU and is registered in launcher-build.yml.
+tests/launcher/test_renderer_acceptance.py guards stale passes, redirected
+Data/Saves paths, timeout cleanup, package separation and measurement windows.
+First four baseline-cold-warm-01 cases passed; STATUS records hashes and resource
+differences, including the Vulkan private-commit increase. Repeats, precise frame
+pacing, display/quality matrices, additional levels and save/load remain pending.
