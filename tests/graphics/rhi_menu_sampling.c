@@ -50,7 +50,20 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #endif
 int main(void) {
     void *window=NULL;
-#ifdef RHI_VULKAN_SDL
+#ifdef TSFP_WINDOWS_RHI_TEST
+    const char *backend=getenv("RECOMP_D3D8_BACKEND");
+    CHECK(backend && (!strcmp(backend,"vulkan") || !strcmp(backend,"d3d11")));
+    window=CreateWindowExA(0,"STATIC","Shared Windows RHI regression",WS_POPUP,
+                          0,0,64,64,
+                          NULL,NULL,GetModuleHandleA(NULL),NULL);
+    CHECK(window);
+    CHECK(rhi_select_backend(backend)==0);
+    RhiDeviceDesc device={window,64,64,2,1,0};
+    CHECK(rhi_device_create(&device)==0 && rhi_device_ready());
+    const char *expected=getenv("TSFP_TEST_EXPECT_BACKEND");
+    CHECK(!strcmp(rhi_backend_name(),expected?expected:backend));
+    printf("BACKEND: %s\n",rhi_backend_name());
+#elif defined(RHI_VULKAN_SDL)
     CHECK(SDL_Init(SDL_INIT_VIDEO));
     window=SDL_CreateWindow("Shared RHI regression",64,64,SDL_WINDOW_VULKAN|SDL_WINDOW_HIDDEN);
     CHECK(window);
@@ -151,7 +164,7 @@ int main(void) {
     test_msaa_surface_views(rtv);
     test_ssao_pass(rtv);
 
-#ifdef RHI_VULKAN_SDL
+#if defined(RHI_VULKAN_SDL) || defined(TSFP_WINDOWS_RHI_TEST)
     /* Also exercise presentation and the swapchain readback channel order. */
     RhiView *swap=rhi_swapchain_view();CHECK(swap);
     const float color[4]={.25f,.5f,.75f,1};
@@ -160,7 +173,9 @@ int main(void) {
     CHECK(rhi_swapchain_readback(pixels,64*4,&w,&h)==0 && w==64 && h==64);
     CHECK(abs(pixels[0]-64)<=1 && abs(pixels[1]-128)<=1 && abs(pixels[2]-191)<=1);
     CHECK(rhi_present(0)==0);
+#ifdef RHI_VULKAN_SDL
     vulkan_present_outcomes();
+#endif
 #endif
     rhi_set_render_target(NULL,NULL);
     rhi_buffer_destroy(parameters);rhi_sampler_destroy(sampler);
@@ -175,10 +190,13 @@ int main(void) {
     test_msaa_scaled_target();
     test_visibility_queries();
     rhi_device_destroy();
+#ifdef TSFP_WINDOWS_RHI_TEST
+    DestroyWindow((HWND)window);
+#endif
 #ifdef RHI_VULKAN_SDL
     SDL_DestroyWindow(window);SDL_Quit();
 #endif
-    #ifdef RHI_VULKAN_SDL
+    #if defined(RHI_VULKAN_SDL) || defined(TSFP_WINDOWS_RHI_TEST)
     puts("PASS: shared RHI HLSL, menu pixel contract, swapchain readback and present");
 #else
     puts("PASS: shared RHI HLSL and menu pixel contract on D3D11 WARP (no swapchain)");

@@ -85,6 +85,19 @@ def native_present_checks(text):
                 present_failures_absent=bool(reports) and all(r[5]==0 for r in reports))
 
 
+def renderer_checks(text, backend, validation=False):
+    reports=re.findall(r'\[PRESENT\] backend=(\S+) total=\d+ guest=(\d+)',text)
+    checks=dict(selected_backend=bool(reports) and all(name==backend for name,_ in reports),
+                guest_presents=any(int(count)>0 for _,count in reports),
+                no_fallback='could not start; using' not in text,
+                no_vulkan_validation_errors='[VKVAL' not in text,
+                no_renderer_errors=not re.search(
+                    r'\[RHI\] ERROR|Shader failure:|(?:shader|DXC)[^\r\n]*(?:compilation|compile|creation) failed|'
+                    r'(?:failed|failure) (?:to )?(?:compile|create)[^\r\n]*shader',text,re.I))
+    if validation:checks['vulkan_validation_active']='validation on' in text
+    return checks
+
+
 def gameplay_checks(samples):
     """Check the replay's observable actions, independently of scene flags.
 
@@ -146,6 +159,11 @@ def opening_firearm_check(samples):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--backend', choices=('d3d11','vulkan'), default='d3d11',
+                        help='Select the Windows backend without changing player settings')
+    parser.add_argument('--vk-validation', action='store_true')
+    parser.add_argument('--validation-layer-path', type=Path)
+    parser.add_argument('--frame-profile', action='store_true', help='Record CPU present intervals; exclude loading/capture before comparing')
     parser.add_argument('--fps', type=int, choices=(60, 120, 144, 180, 240), required=True)
     parser.add_argument('--native', action='store_true',
                         help='test native updates; omit for the original 60 FPS reference')
@@ -190,6 +208,16 @@ def main():
     assert hashlib.sha256((ROOT / 'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
     run = ROOT / 'private/test-saves/high-refresh'
     env = prepare_run(ROOT, run)
+    cache_home=run/'appdata'/args.backend
+    cache_home.mkdir(parents=True,exist_ok=True)
+    env.update(APPDATA=str(cache_home),LOCALAPPDATA=str(cache_home))
+    env['RECOMP_D3D8_BACKEND'] = args.backend
+    env['RECOMP_VK_VALIDATION'] = '1' if args.vk_validation else '0'
+    if args.validation_layer_path:
+        env['VK_LAYER_PATH'] = str(args.validation_layer_path.resolve(strict=True))
+        implicit=run/'implicit-layers'
+        implicit.mkdir(exist_ok=True)
+        env['VK_IMPLICIT_LAYER_PATH']=str(implicit)
     tag = ('native-' if args.native else '') + str(args.fps)
     if args.no_intro_skip: tag += '-natural-intro'
     if args.trace_handoff: tag += '-handoff'
@@ -197,6 +225,11 @@ def main():
     if args.resources: tag += '-stability'
     if args.short_fire: tag += '-short-fire'
     if args.label: tag += '-'+args.label
+    tag += '-'+args.backend
+    if args.frame_profile:
+        frame_path=run/(tag+'-frames.csv')
+        frame_path.unlink(missing_ok=True)
+        env['TSFP_FRAME_PROFILE']=str(frame_path)
     (run / 'runtime.ini').write_text(f'frame_target = 0\nframe_interp = 1\nframe_cap = 60\nfps_overlay = 1\nfullscreen = {int(not args.windowed)}\nvrr = 1\n')
     (run / 'display.ini').write_text('TSFP_DISPLAY_V1 1280 720\n')
     sequence = [(5000, 69), (10000, 69), (14000, 40), (18000, 69),
@@ -399,7 +432,7 @@ def main():
                     player=word(0x7b0c7c)
                     if 0x80000000 <= player < 0x84000000:
                         actor=word(word(player+0x14)+0x7c)
-                        game_samples.append(dict(seconds=round(elapsed,4),player=player,
+                        game_samples.append(dict(seconds=round(elapsed,4),clock_ns=time.perf_counter_ns(),player=player,
                             actor=actor,loadout=word(actor+0x94),
                             ammo=ammunition(actor),
                             position=floats(player+0xb4,3),look=floats(player+0x100,2),
@@ -460,6 +493,7 @@ def main():
         text=(run/(tag+'.err')).read_text(errors='replace')
         checks=dict(no_crash='[CRASH]' not in text,
                     story=any(scene==2 and not flags&0x20000000 for _,scene,flags,_ in states))
+        checks.update(renderer_checks(text,args.backend,args.vk_validation))
         if args.native:
             checks.update(native_hook='[NATIVE-TIMING]' in text,**native_present_checks(text))
             (run/(tag+'-timing.json')).write_text(json.dumps(native_samples,indent=2))
@@ -478,6 +512,8 @@ def main():
             passed=completed and all(checks.values()),checks=checks,
             executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
             runner_sha256=runner_sha256,native_fps=args.fps if args.native else 0,
+            backend=args.backend,vulkan_validation_requested=args.vk_validation,
+            frame_profile=args.frame_profile,
             presentation_fps=args.fps,seconds=args.seconds,
             capture_enabled=args.capture,profiling_enabled=args.profile,
             resource_sampling=args.resources,presentmon_enabled=bool(args.presentmon),
@@ -509,6 +545,7 @@ def main():
         print('PresentMon:', str(trace) if trace.exists() and trace.stat().st_size else 'No frame events captured; GPU/display timing unavailable from ETW.',flush=True)
     log = (run / (tag+'.err')).read_text(errors='replace')
     assert '[CRASH]' not in log
+    assert all(renderer_checks(log,args.backend,args.vk_validation).values()), 'Renderer/backend acceptance failed; inspect validation JSON and stderr'
     if args.native:
         assert '[NATIVE-TIMING]' in log, 'Native timing hook was not executed'
         assert all(native_present_checks(log).values()), 'Native presentation kind/error checks failed'

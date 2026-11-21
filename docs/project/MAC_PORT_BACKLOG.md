@@ -10987,3 +10987,19 @@ checks pass; Ubuntu/WSL's POSIX persistence/failure fixture passes. These do not
 verify native Mac rendering. Remaining acceptance: native Mac and Linux builds,
 physical On/Off in frontend/pause, resize/fullscreen/context recovery, driver
 behavior, and timed gameplay/loading at each supported FPS target. See STATUS.
+## Windows Vulkan build and comparison (2026-11-21)
+
+**Not applicable** for Mac adaptation. Source is on `feature/windows-vulkan`,
+based on `61926ecf`; Windows dependency/build/package helpers explicitly include
+the existing Vulkan backend beside D3D11. `windows_vulkan.py` owns the pinned
+Windows DXC delivery, `tests/windows-rhi`/`test-rhi-windows.py` own hardware
+comparison and startup fallback acceptance, and `native_refresh_game.py` owns
+the isolated Windows backend/gameplay/frame-recording options. D3D11 remains
+the Windows default pending normal Release acceptance.
+
+No common renderer policy or Mac/Linux adapter is changed. Their existing
+Vulkan/DXC setup remains in place. The shared RHI C fixture adds only a guarded
+Windows test-host branch; native adapters retain their existing paths. No Mac
+implementation is deferred. Mac/Linux GPU/gameplay checks were not rerun on
+this Windows host. Measured Windows outcomes and compiler limits are in
+[STATUS](STATUS.md#windows-vulkan-comparison-2026-11-21).

@@ -916,3 +916,11 @@ sliders share a named PageTheme.Details Expander. Only Player1 starts expanded;
 expansion is excluded from Draft() and keeps pending values. The tab is Controls.
 Shared UI checks cover defaults, presentation-only toggling, readouts and per-player
 persistence. Save/conflict handling and game-side deadzone behavior are unchanged.
+
+## Windows graphics packaging
+
+`tools/release/package-release.py` requires a Vulkan-enabled Windows CMake cache
+and verified `third_party/dxc/receipt.json`, and bundles dxcompiler/dxil plus
+their licenses and receipt. Package metadata lists both backends and the default.
+The GPU Vulkan loader/driver remains system-owned. See
+[Windows Vulkan](../players/windows-vulkan.md).

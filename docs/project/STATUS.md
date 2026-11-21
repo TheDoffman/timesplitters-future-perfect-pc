@@ -45382,3 +45382,107 @@ existing NTFS/Windows exclusive-bind behavior. TLS pins, invitations, rate limit
 authentication and test deadlines are unchanged. Windows affected suite now
 84 passed in24.45s; Python compile/context/whitespace checks pass. Updated Mac CI
 confirmation follows the push; VERSION remains0.6.2.
+## Windows Vulkan comparison (2026-11-21)
+
+Source: `feature/windows-vulkan`, based on current `origin/main` `61926ecf`.
+Work is isolated from the compiler/launcher edits in the older active checkout.
+Windows setup/build now explicitly enables the existing Vulkan backend beside
+D3D11, verifies pinned Microsoft DXC `v1.8.2505.1`, and copies its runtime DLLs.
+Windows release packaging requires a Vulkan-enabled build and bundles the DXC
+DLLs, three notices and receipt. Backend selection remains temporary through
+`RECOMP_D3D8_BACKEND`; no player settings were changed. See
+[build, selection and test commands](../players/windows-vulkan.md).
+
+**Decision: retain D3D11 as the Windows default.** Vulkan passed the bounded
+GPU/gameplay comparison below, but normal Release acceptance failed existing
+MSVC C1002 compiler-heap checks. The working comparison executable uses local
+generated-project compiler overrides. These results do not certify the normal
+unmodified optimization build for default promotion.
+
+Host: Windows 11 x64, MSVC 14.44.35207, Python 3.12.14, NVIDIA GeForce RTX 4070
+SUPER, driver 617.42/Vulkan 1.4. Supported US XBE SHA-256 was verified before
+regeneration and game tests. Runtime pin remains `d90c929`; the complete patch
+stack was applied. Copied generated files failed provenance verification and
+were regenerated through the supported build entry point; none were hand-edited.
+
+Normal `/MP` compilation failed on generated renderer units and MSBuild's
+diagnostic parser exhausted memory. Bounded fresh compiler processes alone did
+not fix individual optimizer failures. The successful ignored validation project
+uses `UseMultiToolTask=true`, `EnforceProcessCountAcrossBuilds=true`,
+`CL_MPCount=8`, `/Ob1` on context units 0750/0752/0753/0754/0755/0756/0774,
+and `/Od` on `recomp_0096.c`, `recomp_context_0750.c` and
+`recomp_context_0753.c`. Other source retains normal Release optimization.
+This is a local build policy, not a tracked generator/runtime change. The
+post-build check block from `tsfp.ps1` passed, including controls/settings/debug,
+storage, prompts, display, textures, network, Discord, hang policy, clear and
+replay checks; disposable partitions were recycled. Network identity was sealed
+and matching crash symbols produced.
+
+The identical executable was used for every game run, SHA-256:
+`dc4c312ac23b4d35620b7d1088cee3c119894cf8b822d21dc4e6aaf044ff66ce`.
+
+### GPU and gameplay correctness
+
+The new asset-free Windows hardware fixture runs the production D3D11/Vulkan
+RHI shaders, texture/resource formats, depth/stencil, feedback/copy, MSAA,
+visibility, swapchain readback and presentation contracts. Both passed. Forced
+Vulkan driver discovery failure also passed: the production startup path
+automatically recovered to D3D11 and completed the same pixel contracts.
+The runner rejects an unintended fallback during the ordinary Vulkan case.
+The production frame-replay executable also passed the triangle, effect-depth/
+feedback and portal/scissor contracts through both backends, with clean active
+Vulkan validation (`logs/windows-renderer-replay.json`).
+
+Vulkan GPU contracts and the 120-second game correctness run used active
+Khronos validation from verified checkout-local SDK 1.4.363.0, with zero
+validation warnings/errors. The SDK was copied using `copy_only=1`; its
+publisher checksum and installation recipe are in the player guide. Initial
+loader diagnostics came from stale third-party overlay registrations. Test-child
+implicit-layer discovery was isolated without changing system registrations.
+
+Each backend completed a separate 120-second Original 60 FPS / 1280x720 first-mission
+capture run with the same synthetic inputs and disposable Test Lab profile.
+Movement, ammunition consumption, changing/advancing hand animation, weapon14
+handoff and pause/resume were observed. Reviewed captures showed consistent
+terrain, sky, weapon, HUD and effects in the opening scene. This is bounded
+first-level acceptance, not a complete campaign or full visual-parity claim.
+
+The first capture-run reports were rejected by a new log parser matching the
+healthy `shader ... 0 failed` summary. The parser and its regression test were
+corrected. Original reports/logs remain intact; `windows-renderer-comparison.json`
+re-evaluates the renderer checks from those raw logs and records both parser
+hashes. The later performance runs use the corrected runner and pass their
+complete gameplay/renderer checks directly.
+
+### Matched gameplay timing
+
+Separate 120-second runs disabled capture and Vulkan validation and used warm,
+disposable per-backend shader caches. Timing samples align by the Windows QPC
+clock with player observations between approximately 85 and 115 seconds,
+excluding startup/loading and the 80–83 second pause. Each window contains 1772
+successful guest presents. These are CPU intervals between successful present
+returns, not GPU execution/completion or monitor scanout measurements.
+
+| Backend | Mean interval | p95 | p99 | Intervals over 25 ms |
+| --- | ---: | ---: | ---: | ---: |
+| D3D11 |16.6666ms |17.070ms |17.202ms |0 |
+| Vulkan |16.6665ms |17.131ms |17.282ms |0 |
+
+Both held approximately 60 FPS at the original cap. Vulkan p95 was 0.36% higher;
+this single capped scene provides no evidence of a speed advantage. Neither
+performance run had a crash, fallback, failed renderer check or failed gameplay
+check. Wider levels, uncapped throughput and AMD/Intel hardware remain untested.
+
+Evidence is local/ignored: `logs/rhi-windows.json`, the three backend logs,
+`logs/windows-renderer-comparison.json`, `logs/d3d11-gameplay.bmp`,
+`logs/vulkan-gameplay.bmp`, build/check logs and the tagged reports/CSVs under
+`private/test-saves/high-refresh`. The canonical Test Lab fixture was checked
+after each run. Personal saves/settings were preserved.
+
+Python validation: graphics/configuration/suite-selection group 17 passed;
+delivery/CI-scope/dependency group 247 passed; corrected dependency/parser and
+backlog group 4 passed. Context/link/index and whitespace checks pass. CI now
+builds the hardware comparison fixture on Windows; actual Vulkan execution is
+a local hardware check, while existing CI WARP pixel checks remain in place.
+Mac/Linux adapters and their DXC setup were unchanged; native validation was
+not rerun on this host. No release or default promotion was performed.

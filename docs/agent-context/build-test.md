@@ -1,3 +1,5 @@
+[Windows Vulkan](../players/windows-vulkan.md).
+
 [0.7 sync](network-sync-telemetry.md).
 
 [Turn Speed](controls-options.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
@@ -132,8 +134,7 @@ They check acceptance/ABI rather than complete real geometry. See the
 [contact trace schema](native-player-contact.md) before interpreting live CSVs.
 
 <!-- packet:start -->
-Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` validates patches
-and fingerprints, regenerates, builds/tests MSVC x64. Output:
+Windows: `tsfp.ps1 -Action Build` validates/regenerates and builds/tests MSVC x64. Output:
 `build/windows/Release/futureperfect_recomp.exe`. Never edit generated C.
 Mac: `tools/build/build-native-mac.py` (`--generate` if stale, `--setup` for setup).
 Output: `build/macos/futureperfect_recomp`. Auto uses Vulkan on macOS26+, GL
