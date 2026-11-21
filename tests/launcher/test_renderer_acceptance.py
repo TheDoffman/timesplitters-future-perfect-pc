@@ -15,6 +15,21 @@ runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 
 
+def test_sustained_run_rejects_frozen_gameplay_and_resource_growth():
+    samples=[]
+    for start in (85,270):
+        for i in range(60):
+            t=start+i*.5
+            samples.append(dict(seconds=t,scene=2,flags=0,ticks=int(t*60),position=[i%10,0,0],
+                                private_bytes=100_000_000,handles=700,gpu_dedicated_bytes=None))
+    assert all(runner.sustained_checks(samples,300)['checks'].values())
+    for sample in samples[60:]:
+        sample.update(ticks=16200,position=[0,0,0],private_bytes=300_000_000)
+    checks=runner.sustained_checks(samples,300)['checks']
+    assert not checks['late_clock_60hz'] and not checks['late_movement']
+    assert not checks['private_bytes_bounded_growth']
+
+
 def test_harness_build_cannot_contaminate_launcher_package_inputs(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     monkeypatch.setenv("WINDIR", str(tmp_path / "Windows"))

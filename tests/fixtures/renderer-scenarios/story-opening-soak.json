@@ -1,0 +1,189 @@
+{
+  "scenario": "Time to Split - five minute bounded movement soak",
+  "expected_weapon": 14,
+  "skip_intro": true,
+  "input": [
+    {
+      "at": 5,
+      "key": 69
+    },
+    {
+      "at": 10,
+      "key": 69
+    },
+    {
+      "at": 14,
+      "key": 40
+    },
+    {
+      "at": 18,
+      "key": 69
+    },
+    {
+      "at": 22,
+      "key": 69
+    },
+    {
+      "at": 26,
+      "key": 69
+    },
+    {
+      "at": 30,
+      "key": 69
+    },
+    {
+      "at": 34,
+      "key": 69
+    },
+    {
+      "at": 120,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 126,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 132,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 138,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 144,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 150,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 156,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 162,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 168,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 174,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 180,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 186,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 192,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 198,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 204,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 210,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 216,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 222,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 228,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 234,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 240,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 246,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 252,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 258,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 264,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 270,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 276,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 282,
+      "key": 83,
+      "hold_ms": 500
+    },
+    {
+      "at": 288,
+      "key": 87,
+      "hold_ms": 500
+    },
+    {
+      "at": 294,
+      "key": 83,
+      "hold_ms": 500
+    }
+  ]
+}

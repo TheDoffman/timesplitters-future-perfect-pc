@@ -149,6 +149,27 @@ def effective_settings(text, config):
     return checks
 
 
+def sustained_checks(samples, seconds):
+    early = [s for s in samples if 85 <= s["seconds"] <= 115]
+    late = [s for s in samples if seconds - 30 <= s["seconds"] <= seconds]
+    active = [s for s in late if s["scene"] == 2 and not s["flags"] & 0x20000000
+              and s.get("position") is not None]
+    checks = dict(late_gameplay=len(active) >= 40 and len(active) >= .9 * len(late))
+    checks["late_clock_60hz"] = bool(active) and 59 <= ((active[-1]["ticks"] - active[0]["ticks"]) /
+        max(.001, active[-1]["seconds"] - active[0]["seconds"])) <= 61
+    checks["late_movement"] = bool(active) and any(sum((a-b)**2 for a,b in
+        zip(s["position"],active[0]["position"])) > 1 for s in active)
+    growth = {}
+    for key, limit in (("private_bytes",128*1024*1024),("handles",32),("gpu_dedicated_bytes",128*1024*1024)):
+        before=[s[key] for s in early if s.get(key) is not None]
+        after=[s[key] for s in late if s.get(key) is not None]
+        growth[key] = statistics.median(after)-statistics.median(before) if before and after else None
+        if key != "gpu_dedicated_bytes" or growth[key] is not None:
+            checks[key+"_bounded_growth"] = growth[key] is not None and growth[key] <= limit
+    return dict(checks=checks, median_growth=growth, late_samples=len(active),
+                scope="Last30s active input/ticks and bounded resource growth; not proof against slower leaks")
+
+
 def scenario_options(path, seconds):
     if path is None:
         return {}
@@ -332,6 +353,8 @@ def run_case(executable, install, run, evidence, backend, phase, args):
             result["effective_settings_checks"]["automatic_resize_applied"] = expected in text
     samples = json.loads((destination / (backend + "-samples.json")).read_text())
     result["measurements"] = measurements(samples)
+    if args.seconds >= 300:
+        result["sustained"] = sustained_checks(samples, args.seconds)
     if getattr(args, "presentmon", False):
         trace = destination / "presentmon.csv"
         if trace.stat().st_size > 32 * 1024 * 1024:
@@ -345,7 +368,8 @@ def run_case(executable, install, run, evidence, backend, phase, args):
         raise ValueError("Warm case did not demonstrate application cache reads")
     result["runner_seconds"] = time.monotonic() - started
     result["passed"] = (result["passed"] and all(result["renderer_checks"].values()) and
-                        all(result["present_checks"].values()) and all(result["effective_settings_checks"].values()))
+                        all(result["present_checks"].values()) and all(result["effective_settings_checks"].values()) and
+                        all(result.get("sustained", {}).get("checks", {}).values()))
     (destination / "verified.json").write_text(json.dumps(result, indent=2) + "\n")
     if not result["passed"]:
         raise ValueError("Backend/presentation acceptance failed")

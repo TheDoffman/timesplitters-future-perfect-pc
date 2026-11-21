@@ -1,4 +1,4 @@
-[Renderer frame tests and DXGI captures](windows-vulkan.md).
+[Renderer gates](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

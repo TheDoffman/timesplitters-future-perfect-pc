@@ -187,3 +187,12 @@ the original signature and reload the saved draft across restarts. Each requeste
 backend must actually present with no fallback/crash. This is direct-child save
 acceptance, distinct from the unchanged launcher selection gate; hardware runs
 remain pending. Provenance records sequence and native executable hash.
+
+Runs >=300seconds additionally require sustained_checks: >=40 active last30s
+samples and >=90% gameplay coverage,59-61Hz guest ticks, observed late movement,
+median private/GPU growth <=128MiB and handle growth <=32 versus85-115s. Missing
+GPU counters stay explicitly unavailable. story-opening-soak.json schedules
+alternating bounded movement through294s; the opening firearm/shot checks still
+run85-115s. These bounded growth limits flag regressions and do not exclude slower
+leaks or prove sustained combat. The unit fixture rejects frozen late input/
+clocks and excess memory growth. Actual paired five-minute acceptance is pending.
