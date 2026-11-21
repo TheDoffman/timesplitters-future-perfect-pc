@@ -200,3 +200,16 @@ The soak also pauses with Escape at152s and resumes with the original menu's E
 at154s. Samples observe the original pause-manager pointer761C48 bit0 without
 writing guest memory. A validated pause_expected flag requires >=3 paused scene2
 samples followed by resumed late gameplay; no pause claim comes from keys alone.
+
+--unavailable-dxc is an opt-in actual-launcher recovery case, requiring one cold
+saved-Vulkan run. UnavailableDxc.c builds a valid test DLL without DxcCreateInstance
+under build/renderer-validation. The runner unlinks only the disposable Bin hard
+link, installs that stub and restores the build DLL link during cleanup. It never
+writes through a hard link or changes drivers/compiler installations/PATH. This
+drives the normal missing-compiler path even when the build has an absolute DXC
+fallback. Acceptance requires the missing-compiler diagnostic, explicit recovery
+message and exclusively D3D11 presents, while the saved choice remains Vulkan.
+Other backend/shader/present/gameplay checks remain strict. Cleanup failure must
+leave report.passed=false. compile-only also builds the DLL; a native load/export
+probe confirms it loads and lacks DxcCreateInstance. Actual game acceptance is
+pending; this is unavailable-compiler-entry-point simulation, not driver removal.

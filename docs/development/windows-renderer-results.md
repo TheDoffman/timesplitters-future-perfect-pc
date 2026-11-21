@@ -114,10 +114,11 @@ Actual-launcher quality recapture with the DXGI helper and reviewed pairs remain
 in progress. The paired quality-fxaa-dxgi-03 runs now complete cleanly: reviewed
 80/112second DXGI images show consistent world, fire, weapon, transparent tutorial
 panel, HUD and ammo16->12. Viewpoints/animation differ slightly, so these are
-qualitative comparisons, not pixel-identical replay evidence. The early11second
-Vulkan image was black; a three-arrival DXGI probe produces a current image, so
-the helper now drains two initial arrivals before copying and rejects masked or
-pointer-only output. Remaining quality cases use that stricter helper.
+qualitative comparisons, not pixel-identical replay evidence. Both backends have
+unusable black11second captures; these are excluded from appearance evidence.
+A three-arrival DXGI probe produces a current image. The helper now drains two
+initial arrivals before copying and rejects masked or pointer-only output.
+Remaining quality cases use that stricter helper.
 Existing stable windowed captures remain narrower evidence. Additional
 levels, targeted effects, sustained play and actual guest save/load remain open.
 AMD/Intel and native Mac/Linux are unverified.
@@ -128,3 +129,13 @@ That focused runner bypasses the launcher and terminates at its deadline; it is
 capture diagnosis, not clean-exit/launcher acceptance. The modified diagnostic
 source is logs/run-fullscreen-gpu-diagnostic.py, preserving the original runner
 and overriding only resolution and isolated graphics settings.
+
+The subsequent quality-smaa-dxgi-01 and quality-msaa8-dxgi-01 pairs also complete
+cleanly. Reviewed paired112second desktop images show consistent textured world,
+weapon, NPC, HUD and ammo12, with working scene occlusion and no visible missing
+surfaces. Effective logs confirm2560x1440/MSAA4/SMAA and3840x2160/MSAA8/Off,
+respectively. The physical capture is1920x1080: higher scene resolutions are
+presented at that monitor size, so this is not native4K monitor acceptance.
+Their38second star-field transition appears on both backends and is not evidence
+of a Vulkan-specific blank scene. Exact shadow/reflection/depth encounters still
+need targeted coverage; the opening canyon alone cannot prove those categories.

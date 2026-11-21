@@ -71,6 +71,8 @@ public static class RendererGameSmoke {
  }
  [STAThread] public static int Main(string[] args){if(args.Length==1 && args[0]=="--self-test-io")return CheckLiveLog();root=Path.GetFullPath(args[0]);evidence=Path.GetFullPath(args[1]);Directory.CreateDirectory(evidence);config=Json.Object(File.ReadAllText(args[2]));var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};app.Startup+=async(s,e)=>{try{await Run((string)config["backend"]);}catch(Exception ex){Console.WriteLine(ex);result=1;}finally{if(owned!=null){try{if(!owned.HasExited){owned.Kill();owned.WaitForExit(10000);}}catch{}}app.Shutdown();}};app.Run();return result;}
  static async Task Run(string backend){
+  string expectedBackend=config.ContainsKey("expected_backend")?(string)config["expected_backend"]:backend;
+  Need(expectedBackend==backend || (backend=="vulkan" && expectedBackend=="d3d11"),"Invalid expected backend");
   var initial=GameSettings.Load(root,null);initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.Save();
   // Shared executable is unmodified; preview mode only suppresses network checks.
   var ui=new LauncherWindow(root,true);ui.Window.Show();ui.ShowSettings(1);
@@ -111,7 +113,7 @@ public static class RendererGameSmoke {
    while(clock.Elapsed.TotalSeconds<duration){
     Need(!game.HasExited,"Game exited before bounded test ended");double t=clock.Elapsed.TotalSeconds;
     if(next<times.Length && t>=times[next]){await Key(hwnd,keys[next],holds[next]);Console.WriteLine(backend+" menu key "+keys[next]+" at "+t.ToString("F1"));next++;}
-    if(firstPresentSeconds<0 && ReadLiveLog(liveLog).Contains("[PRESENT] backend="+backend))firstPresentSeconds=t;
+    if(firstPresentSeconds<0 && ReadLiveLog(liveLog).Contains("[PRESENT] backend="+expectedBackend))firstPresentSeconds=t;
     if(Flag("display_cycle")){
      if(displayStage==0 && t>=60){await ToggleFullscreen(hwnd);displaySnapshots.Add(DisplaySnapshot(hwnd,"fullscreen",t));displayStage++;}
      else if(displayStage==1 && t>=70){await ToggleFullscreen(hwnd);Need(!Fullscreen(hwnd),"Window mode did not restore");displaySnapshots.Add(DisplaySnapshot(hwnd,"windowed",t));displayStage++;}
@@ -148,9 +150,9 @@ public static class RendererGameSmoke {
    var model=GameSettings.Load(root,null);Need(model.Renderer==backend,"Game run changed saved selection");
    Need(model.Msaa==Number("msaa",1) && model.PostAntiAliasing==Number("aa",0) && model.Anisotropy==Number("anisotropy",1),"Game run changed saved quality settings");
    string err=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").OrderBy(File.GetLastWriteTimeUtc).Last();string text=File.ReadAllText(err);File.Copy(err,Path.Combine(evidence,backend+".err"),true);
-   Need(text.Contains("[PRESENT] backend="+backend),"Requested backend did not present");Need(!text.Contains("[CRASH]"),"Crash in game log");
+   Need(text.Contains("[PRESENT] backend="+expectedBackend),"Expected backend did not present");Need(!text.Contains("[CRASH]"),"Crash in game log");
    File.WriteAllText(Path.Combine(evidence,backend+"-result.json"),Json.Encode(new {passed=true,backend=backend,pid=game.Id,seconds=clock.Elapsed.TotalSeconds,window_seconds=windowSeconds,story_seconds=storySeconds,first_present_observed_seconds=firstPresentSeconds,gameplay_ready_seconds=gameplayReadySeconds,gpu_metric_available=gpuDedicated.HasValue,capture_enabled=Flag("capture"),display_cycle_completed=Flag("display_cycle") && displayStage==4,display_snapshots=displaySnapshots,settings=config,gameplay_samples=positions.Count,equipped_samples=equipped,tick_delta=lastTick-firstTick,exit_code=game.ExitCode,source_log=err}));
-   Console.WriteLine("PASS "+backend+" actual launcher, scenario gameplay, movement, weapon expectation, presents and clean exit; ticks="+(lastTick-firstTick));
+   Console.WriteLine("PASS saved "+backend+", observed "+expectedBackend+": actual launcher, scenario gameplay, movement, weapon expectation, presents and clean exit; ticks="+(lastTick-firstTick));
   }finally{foreach(var counter in gpuCounters)counter.Dispose();if(!game.HasExited){game.Kill();game.WaitForExit(10000);}game.Dispose();owned=null;ui.Window.Close();}
  }
 }
