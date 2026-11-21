@@ -211,7 +211,7 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
         'upstream_commit': subprocess.check_output(['git', '-C', str(upstream), 'rev-parse', 'HEAD'], text=True).strip(),
         'ffmpeg_archive_sha256': '1689da96399f372cfee985b3f2b9d74685892078059bc37764388f49e3118bdb',
         'graphics_backends': ['d3d11', 'vulkan'],
-        'graphics_default': 'd3d11',
+        'graphics_default': 'vulkan',
         'dxc': json.loads((windows_dxc/'receipt.json').read_text()),
         'files': {p.relative_to(stage).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                   for p in sorted(stage.rglob('*')) if p.is_file()},

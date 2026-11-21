@@ -52,7 +52,13 @@ int main(void) {
     void *window=NULL;
 #ifdef TSFP_WINDOWS_RHI_TEST
     const char *backend=getenv("RECOMP_D3D8_BACKEND");
-    CHECK(backend && (!strcmp(backend,"vulkan") || !strcmp(backend,"d3d11")));
+    CHECK(!backend || !strcmp(backend,"vulkan") || !strcmp(backend,"d3d11"));
+    if(getenv("TSFP_TEST_ADOPT_D3D11")) {
+        ID3D11Device *warp=NULL;ID3D11DeviceContext *context=NULL;D3D_FEATURE_LEVEL feature;
+        CHECK(SUCCEEDED(D3D11CreateDevice(NULL,D3D_DRIVER_TYPE_WARP,NULL,0,NULL,0,
+            D3D11_SDK_VERSION,&warp,&feature,&context)));
+        CHECK(rhi_d3d11_adopt(warp,context)==0 && rhi_device_ready());
+    } else {
     window=CreateWindowExA(0,"STATIC","Shared Windows RHI regression",WS_POPUP,
                           0,0,64,64,
                           NULL,NULL,GetModuleHandleA(NULL),NULL);
@@ -60,8 +66,9 @@ int main(void) {
     CHECK(rhi_select_backend(backend)==0);
     RhiDeviceDesc device={window,64,64,2,1,0};
     CHECK(rhi_device_create(&device)==0 && rhi_device_ready());
+    }
     const char *expected=getenv("TSFP_TEST_EXPECT_BACKEND");
-    CHECK(!strcmp(rhi_backend_name(),expected?expected:backend));
+    CHECK(!strcmp(rhi_backend_name(),expected?expected:(backend?backend:"vulkan")));
     printf("BACKEND: %s\n",rhi_backend_name());
 #elif defined(RHI_VULKAN_SDL)
     CHECK(SDL_Init(SDL_INIT_VIDEO));
@@ -166,6 +173,7 @@ int main(void) {
 
 #if defined(RHI_VULKAN_SDL) || defined(TSFP_WINDOWS_RHI_TEST)
     /* Also exercise presentation and the swapchain readback channel order. */
+    if(window) {
     RhiView *swap=rhi_swapchain_view();CHECK(swap);
     const float color[4]={.25f,.5f,.75f,1};
     rhi_set_render_target(swap,NULL);rhi_clear_color(swap,color);
@@ -176,6 +184,7 @@ int main(void) {
 #ifdef RHI_VULKAN_SDL
     vulkan_present_outcomes();
 #endif
+    }
 #endif
     rhi_set_render_target(NULL,NULL);
     rhi_buffer_destroy(parameters);rhi_sampler_destroy(sampler);
@@ -191,12 +200,14 @@ int main(void) {
     test_visibility_queries();
     rhi_device_destroy();
 #ifdef TSFP_WINDOWS_RHI_TEST
-    DestroyWindow((HWND)window);
+    if(window)DestroyWindow((HWND)window);
 #endif
 #ifdef RHI_VULKAN_SDL
     SDL_DestroyWindow(window);SDL_Quit();
 #endif
-    #if defined(RHI_VULKAN_SDL) || defined(TSFP_WINDOWS_RHI_TEST)
+    #if defined(TSFP_WINDOWS_RHI_TEST)
+    puts("PASS: shared RHI HLSL, menu pixel contract and Windows backend ownership");
+    #elif defined(RHI_VULKAN_SDL)
     puts("PASS: shared RHI HLSL, menu pixel contract, swapchain readback and present");
 #else
     puts("PASS: shared RHI HLSL and menu pixel contract on D3D11 WARP (no swapchain)");

@@ -248,6 +248,7 @@
     "tests/graphics/test_render_state_cache.py",
     "tests/repository/test_vulkan_sdk.py",
     "tests/repository/test_windows_vulkan.py",
+    "tests/compiler/test_msvc_generated_code.py",
     "tests/graphics/test_rhi_menu_sampling.py",
     "tests/graphics/test_vulkan_interface.py",
     "tests/graphics/test_upload_rows.py",

@@ -1,0 +1,136 @@
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -132,15 +132,15 @@
+     *used_width=used;return 1;
+ }
+ 
+-#if defined(_WIN32)
++#if defined(RHI_HAVE_VULKAN)
++const RhiBackend *g_rhi = &rhi_vulkan_backend;
++#elif defined(_WIN32)
+ const RhiBackend *g_rhi = &rhi_d3d11_backend;
+-#elif defined(RHI_HAVE_VULKAN)
+-const RhiBackend *g_rhi = &rhi_vulkan_backend;
+ #else
+ const RhiBackend *g_rhi = NULL;
+ #endif
+ 
+-/* Every backend this build carries, first is the default. */
++/* Available backends: first is recovery, independent of the Vulkan preference. */
+ static const RhiBackend *const g_backends[] = {
+ #if defined(_WIN32)
+     &rhi_d3d11_backend,
+@@ -174,7 +174,7 @@
+ const char *rhi_backend_name(void) { return g_rhi ? g_rhi->name : "none"; }
+ 
+ /* A backend that was asked for and cannot start (no loader, no Vulkan 1.3
+- * device, no shader compiler) gives way to the default, said once, rather
++ * device, no shader compiler) gives way to the recovery backend, said once, rather
+  * than leaving the title with no picture at all. */
+ int rhi_device_create(const RhiDeviceDesc *d)
+ {
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -68,6 +68,7 @@
+ void d3d8_hlsl_note(const char *src, size_t len, const char *name,
+                     const RhiMacro *macros, const char *entry, const char *target);
+ /* rhi_vulkan_dxc.cpp */
++int rhi_vk_dxc_available(void);
+ int rhi_vk_dxc_compile(uint32_t stage, const RhiShaderSource *src,
+                        uint32_t **spirv, size_t *spirv_bytes, char *err, size_t err_len);
+ 
+@@ -1594,6 +1595,8 @@
+     memset(&SC, 0, sizeof SC);
+     V.sample_mask = 0xFFFFFFFFu;
+     V.topology = RHI_TOPOLOGY_TRIANGLES;
++    /* Fail before allocating GPU resources so Windows can recover to D3D11. */
++    if (!rhi_vk_dxc_available()) return -1;
+     if (create_instance(dd->debug || env_on("RECOMP_VK_VALIDATION")) != 0)
+         return -1;
+ #if defined(RHI_VULKAN_SDL)
+@@ -1660,12 +1663,25 @@
+     return 0;
+ }
+ 
++static void v_destroy_instance(void)
++{
++    if (V.instance) {
++        if (V.surface) vkDestroySurfaceKHR(V.instance, V.surface, NULL);
++        if (V.messenger) vkDestroyDebugUtilsMessengerEXT(V.instance, V.messenger, NULL);
++        vkDestroyInstance(V.instance, NULL);
++    }
++    memset(&V, 0, sizeof V);
++    memset(&SC, 0, sizeof SC);
++}
++
+ static void v_device_destroy(void)
+ {
+     uint32_t i, k;
+ 
+-    if (!V.dev)
++    if (!V.dev) {
++        v_destroy_instance();
+         return;
++    }
+     if (V.recording)
+         submit(VK_NULL_HANDLE);
+     vkDeviceWaitIdle(V.dev);
+@@ -1702,13 +1718,9 @@
+     vkDestroyPipelineCache(V.dev, V.pcache, NULL);
+     vkDestroyPipelineLayout(V.dev, V.pipe_layout, NULL);
+     vkDestroyDescriptorSetLayout(V.dev, V.set_layout, NULL);
+-    vmaDestroyAllocator(V.vma);
++    if (V.vma) vmaDestroyAllocator(V.vma);
+     vkDestroyDevice(V.dev, NULL);
+-    vkDestroySurfaceKHR(V.instance, V.surface, NULL);
+-    if (V.messenger) vkDestroyDebugUtilsMessengerEXT(V.instance, V.messenger, NULL);
+-    vkDestroyInstance(V.instance, NULL);
+-    memset(&V, 0, sizeof V);
+-    memset(&SC, 0, sizeof SC);
++    v_destroy_instance();
+ }
+ 
+ static int v_device_ready(void)
+--- a/src/d3d/rhi_vulkan_dxc.cpp
++++ b/src/d3d/rhi_vulkan_dxc.cpp
+@@ -92,6 +92,12 @@
+         return 0;
+     }
+     return 1;
++}
++
++extern "C" int rhi_vk_dxc_available(void)
++{
++    std::lock_guard<std::mutex> hold(g_lock);
++    return ensure_compiler();
+ }
+ 
+ static std::wstring widen(const char *s)
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -239,6 +239,12 @@
+     # projects, so without /MP the 36 generated files of a 36,000-function
+     # title compile one after another on a single core.
+     target_compile_options(${PROJECT_NAME} PRIVATE /bigobj /MP)
++
++    # Supported, symbol-based compiler policy; generated guest C stays untouched.
++    if(TSFP_PC_CONTROLS_DIR)
++        include("${TSFP_PC_CONTROLS_DIR}/runtime/msvc_generated_code.cmake")
++        tsfp_configure_generated_msvc(${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/gen")
++    endif()
+ 
+     # Drop MSVC's Debug runtime checks. /RTC1 traps a local read before its
+     # first write, and lifted code does that deliberately: an fpo_leaf function
+--- a/src/d3d/rhi_d3d11.c
++++ b/src/d3d/rhi_d3d11.c
+@@ -166,7 +166,9 @@
+ {
+     g_dev = (ID3D11Device *)device;
+     g_ctx = (ID3D11DeviceContext *)context;
+-    return g_dev && g_ctx ? 0 : -1;
++    if (!g_dev || !g_ctx) return -1;
++    /* An explicitly adopted device owns the RHI even in a Vulkan-first build. */
++    return rhi_select_backend("d3d11");
+ }
+ 
+ void *rhi_d3d11_native_buffer(const RhiBuffer *b) { return b ? b->b : NULL; }

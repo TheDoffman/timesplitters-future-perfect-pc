@@ -106,7 +106,7 @@ def check_bitmap(path, width, height):
         assert all(abs(a - b) <= 3 for a, b in zip(pixel, expected)), (fraction, tuple(pixel), expected)
 
 
-def main(executable, environment=None):
+def main(executable, environment=None, backend=None):
     executable = Path(executable).resolve()
     assert executable.is_file(), executable
     with tempfile.TemporaryDirectory(prefix='tsfp-ghost-targets-') as name:
@@ -114,6 +114,7 @@ def main(executable, environment=None):
         env = dict(environment) if environment is not None else {
             k: v for k, v in os.environ.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
         env['RECOMP_VK_VALIDATION'] = '1'
+        if backend is not None:env['RECOMP_D3D8_BACKEND']=backend
         for key in ('APPDATA', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
             env[key] = str(folder)
         env.update(RECOMP_DISPLAY_CONFIG=str(folder / 'runtime.ini'),
@@ -135,4 +136,9 @@ def main(executable, environment=None):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    import argparse
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('executable')
+    parser.add_argument('--backend',choices=('d3d11','vulkan'))
+    args=parser.parse_args()
+    main(args.executable,backend=args.backend)

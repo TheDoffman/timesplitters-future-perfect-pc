@@ -1,3 +1,95 @@
+## Windows Vulkan primary renderer (2026-11-21)
+
+**Vulkan is now the Windows default, with D3D11 recovery.** This supersedes the
+earlier opt-in-only decision in the Windows Vulkan comparison section below.
+Source is on `feature/windows-vulkan`, following `fe035bd6`; the separate
+checkout's pending compiler/launcher work was preserved. No main merge or
+release publication was performed.
+
+Patch `3050-windows-vulkan-primary.patch` prefers Vulkan when compiled while
+retaining D3D11 as the recovery backend. Shader-compiler initialization happens
+before GPU allocations, so missing DXC can recover instead of reaching a blank
+rendering path. Partial initialization releases its instance/surface/messenger,
+and allocator destruction is guarded. Explicitly adopting a D3D11 device also
+selects its backend, preserving WARP/native-device ownership in Vulkan-first
+builds. Windows packaging now records `graphics_default=vulkan`.
+
+The normal `tsfp.ps1 -Action Build -SkipTextures` Release workflow passes with
+maintained MSVC compatibility rules, replacing the prior handwritten VCXPROJ
+overrides. `msvc_generated_code.py` resolves the eight measured exception
+definitions from `config/build/msvc-generated-code.json` to their current
+generated files. It never edits generated C or drops guest instructions. Three
+affected units use `/Od /Ob0`, five use `/Ob1`; other source retains Release
+optimization and Debug is unchanged. Fresh per-source compiler processes use
+the `-CompileJobs` bound (default two). Tests verify symbol regrouping, input
+preservation, stronger rules in shared units, invalid/missing definitions and
+CMake's actual Debug/Release expansion. An attempted `/O2 /Ob0` probe still
+stalled on the large `sub_000DD1B0` body; the supported policy uses the measured
+exceptions rather than claiming that compiler optimization issue is solved.
+
+All standard build checks passed, including graphics clear/readback, production
+replay, storage, controls, settings, prompts, display, textures, diagnostics,
+network, Discord and hang policy. Matching crash symbols and sealed network
+identity were produced. The standard build replay baseline explicitly selects
+D3D11 so developers do not need a Vulkan validation SDK merely to build; the
+dedicated Vulkan checks below require the verified SDK.
+
+On Windows 11 x64/MSVC 14.44.35207, RTX 4070 SUPER driver 617.42 / Vulkan 1.4,
+the final normal-build executable SHA-256 is:
+`0c1d590355889cf53223d05349e97fb5d13ef9d8f8b9ba9e872cf75134bc2b9f`.
+Runtime/XBE pins are unchanged; the supported US XBE and Test Lab fixture were
+verified. Each game run uses disposable settings, saves and shader caches.
+
+All eight real RHI cases passed: default Vulkan without an override, explicit
+Vulkan, explicit D3D11, explicit Vulkan missing-driver recovery, default
+missing-driver recovery, missing-DXC recovery, no-usable-device recovery and
+explicit D3D11 WARP adoption. Ordinary Vulkan cases required active SDK 1.4.363.0
+validation and had no warnings/errors. Recovery cases deliberately disable the
+driver/compiler/device only in the child process. The no-device case uses the
+documented loader vendor filter; no system drivers or registrations are changed.
+
+A final 120-second Original 60 FPS / 1280x720 run with `--backend auto` leaves
+`RECOMP_D3D8_BACKEND` unset and observes real Vulkan guest presents. Active
+validation, captured gameplay and all movement, fire/ammunition, hand animation,
+weapon handoff and pause/resume checks passed. The reviewed capture shows the
+expected terrain, sky, weapon, HUD and effects. No crash, silent fallback,
+renderer error or validation diagnostic was observed.
+A separate 45-second default boot with movies enabled also passed, including
+decoded/rendered EA and Free Radical intro clips. Selected startup captures
+and `logs/vulkan-primary-startup.json` retain that evidence; validation remained
+active and clean. This check does not rely on skipping the movie path.
+
+Separate 120-second timing runs use this same executable, with capture and
+validation disabled. The matching first-mission window is approximately 85–115 seconds,
+after loading and pause; each backend contributes 1772 successful guest presents.
+
+| Backend | Mean interval | p95 | p99 | Intervals over 25 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Default Vulkan |16.6666 ms |17.073 ms |17.209 ms |1 |
+| Explicit D3D11 |16.6666 ms |17.042 ms |17.181 ms |0 |
+
+Both sustain approximately 60 FPS at the original cap, with comparable pacing;
+Vulkan's single over 25 ms interval is retained in the data. These are CPU
+intervals between successful present returns, not GPU completion or monitor
+scanout measurements. No uncapped speed advantage or full-campaign acceptance
+is claimed. AMD/Intel GPU hardware, physical controller feel and native Mac/Linux
+GPU/gameplay checks remain unrun on this host. Modern Mac/Linux keep their
+existing Vulkan defaults; legacy Mac OpenGL remains a compatibility path.
+
+Evidence: `logs/vulkan-primary-comparison.json`, `logs/rhi-windows.json`,
+`logs/vulkan-primary-normal-build.log`, `logs/vulkan-primary-gameplay.bmp`,
+`logs/vulkan-primary-replay.log`, and tagged reports/CSVs beneath
+`private/test-saves/high-refresh`. The final comparison report requires matching
+executable hashes and reports `passed=true`. Python/patch regressions are
+recorded in `logs/vulkan-primary-regressions.log`; context and whitespace checks
+are recorded before commit. See [architecture/build policy](../agent-context/windows-vulkan.md)
+and [player commands](../players/windows-vulkan.md).
+The broader regression run passed 85 cases and exposed one historical fixture
+that tried the new renderer patch before its excluded graphics prerequisites.
+That fixture now defers patch 3050 in the historical phase and verifies its
+installation after the full upgrade. Its focused rerun passed (1 test,
+25.56 seconds); `logs/vulkan-primary-upgrade-fix.log` preserves the result.
+
 ## Extended controller Turn Speed (2026-11-20)
 
 Source on `feature/controller-turn-speed`; live validation used base `af9d3453`.

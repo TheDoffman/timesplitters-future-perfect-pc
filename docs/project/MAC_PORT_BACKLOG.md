@@ -1,3 +1,16 @@
+Windows Vulkan primary renderer (2026-11-21, `feature/windows-vulkan` after
+`fe035bd6`): **Awaiting validation** on native Mac/Linux for shared DXC
+preflight and partial-initialization cleanup. Windows now prefers the existing
+Vulkan backend and recovers to D3D11; its normal Release build, eight RHI cases
+and default gameplay validation pass. `3050-windows-vulkan-primary.patch`
+owns preference/recovery and shared initialization cleanup. Modern native Mac
+and Linux already prefer Vulkan; legacy Mac GL is unchanged. No new Mac adapter
+implementation is deferred. Remaining native acceptance: build the full patch
+stack, run the RHI/production-replay contracts, exercise failed initialization
+cleanup and verify first-level gameplay with the packaged DXC. Windows compiler
+rules and package metadata are host-specific and need no Mac counterpart.
+See [measured status](STATUS.md#windows-vulkan-primary-renderer-2026-11-21).
+
 Controller Turn Speed extension (2026-11-20, source on
 `feature/controller-turn-speed`, validation base af9d3453): **Awaiting validation** on native
 Mac/Linux. Shared `pc_controls_menu.inc`/`pc_menu_sliders.inc` extend 0..1 to 0..1.5

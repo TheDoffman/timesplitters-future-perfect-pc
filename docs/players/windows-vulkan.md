@@ -1,19 +1,21 @@
 # Windows Vulkan renderer
 
-Windows builds include Direct3D 11 and Vulkan. Direct3D 11 remains the default
-until the normal Release build and Windows Vulkan gameplay/frame-time checks pass. A Vulkan
-device startup failure automatically retries Direct3D 11. A rendering failure
+Windows builds use **Vulkan by default**, sharing the Vulkan backend used by
+Linux and modern native Mac builds. Direct3D 11 remains available as recovery.
+A Vulkan device or shader-compiler startup failure automatically retries
+Direct3D 11. A rendering failure
 after startup still requires restarting with Direct3D 11.
 
-To try Vulkan in a developer checkout after building:
+After building, launch normally; no renderer override is needed. To force
+Direct3D 11 for troubleshooting in a developer checkout:
 
 ```powershell
-$env:RECOMP_D3D8_BACKEND = 'vulkan'
+$env:RECOMP_D3D8_BACKEND = 'd3d11'
 .\tsfp.ps1 -Action Run
 ```
 
-For Direct3D 11, set the value to `d3d11`. Remove the temporary override with
-`Remove-Item Env:RECOMP_D3D8_BACKEND`. This does not edit player settings.
+Remove the temporary override with `Remove-Item Env:RECOMP_D3D8_BACKEND` to use
+the Vulkan preference again. This does not edit player settings.
 
 The Vulkan loader and GPU driver come from Windows/the GPU vendor. Players
 do not need the Vulkan SDK. The shader compiler DLLs are included in the
@@ -27,10 +29,15 @@ loader-dispatch and allocator submodules and installs the hash-pinned Microsoft
 DXC from `config/build/dxc-windows.json`. Build verifies the installed files
 and explicitly enables `XBOXRECOMP_VULKAN`; it does not silently ship a
 Direct3D-only build. Release packaging checks that flag and includes DXC.
+The normal build also applies maintained MSVC compatibility rules by guest
+symbol and bounds compiler processes with `-CompileJobs` (default two). It does
+not require manually edited project files. Debug retains its existing options;
+see the [compiler policy and test contracts](../agent-context/windows-vulkan.md).
 
 The asset-free Windows fixture exercises both production backends on the GPU,
 including shaders, texture formats, depth, MSAA, visibility, readback and
-presentation, followed by a forced Vulkan-startup-failure recovery test:
+presentation. It also checks the default preference, explicit D3D11 ownership,
+and recovery from missing Vulkan drivers, usable devices and DXC:
 
 ```powershell
 .venv/Scripts/cmake.exe -S tests/windows-rhi -B build/windows/rhi-compare -G "Visual Studio 17 2022" -A x64
@@ -56,10 +63,11 @@ For matched isolated first-level gameplay, use the same executable and options:
 
 ```powershell
 .venv/Scripts/python.exe tests/gameplay/native_refresh_game.py --fps 60 --backend d3d11 --label renderer --stress --pause-check --seconds 120 --windowed --frame-profile
-.venv/Scripts/python.exe tests/gameplay/native_refresh_game.py --fps 60 --backend vulkan --label renderer --stress --pause-check --seconds 120 --windowed --frame-profile
+.venv/Scripts/python.exe tests/gameplay/native_refresh_game.py --fps 60 --backend auto --label renderer --stress --pause-check --seconds 120 --windowed --frame-profile
 ```
 
-Add `--vk-validation --validation-layer-path <SDK>/Bin` for Vulkan correctness
+`--backend auto` leaves the override unset and verifies actual Vulkan guest
+presents. Add `--vk-validation --validation-layer-path <SDK>/Bin` for Vulkan correctness
 runs. Use separate `--capture` runs to review images; capture and validation
 overhead must be excluded from performance comparisons. The existing signed
 Test Lab fixture is required. Runs use disposable settings/saves, verify the US

@@ -739,7 +739,7 @@ a partially migrated stack. Record file hashes/ledger/build provenance; request
 fresh source if it disagrees with a guide. Generated guest C stays local and can
 be investigated by LOCAL without transmitting it to the hosted advisor.
 
-Common Xbox frontend: `d3d8_device.c`, `d3d8_resources.c`, `d3d8_states.c`,
+[RHI](windows-vulkan.md): `d3d8_device.c`, `d3d8_resources.c`, `d3d8_states.c`,
 `d3d8_shaders.c`, `d3d8_screencopy.c`, `d3d8_display.c`; backend selection through
 `rhi.c`, `rhi_d3d11.c`, `rhi_vulkan.c`. Legacy Mac GL remains separate. Shared
 algorithms live in root `src/graphics/` and settings in `src/diagnostics/pc_debug_options.def`.

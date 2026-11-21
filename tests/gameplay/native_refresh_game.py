@@ -159,7 +159,7 @@ def opening_firearm_check(samples):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--backend', choices=('d3d11','vulkan'), default='d3d11',
+    parser.add_argument('--backend', choices=('auto','d3d11','vulkan'), default='auto',
                         help='Select the Windows backend without changing player settings')
     parser.add_argument('--vk-validation', action='store_true')
     parser.add_argument('--validation-layer-path', type=Path)
@@ -211,7 +211,8 @@ def main():
     cache_home=run/'appdata'/args.backend
     cache_home.mkdir(parents=True,exist_ok=True)
     env.update(APPDATA=str(cache_home),LOCALAPPDATA=str(cache_home))
-    env['RECOMP_D3D8_BACKEND'] = args.backend
+    expected_backend='vulkan' if args.backend=='auto' else args.backend
+    if args.backend!='auto':env['RECOMP_D3D8_BACKEND'] = args.backend
     env['RECOMP_VK_VALIDATION'] = '1' if args.vk_validation else '0'
     if args.validation_layer_path:
         env['VK_LAYER_PATH'] = str(args.validation_layer_path.resolve(strict=True))
@@ -493,7 +494,7 @@ def main():
         text=(run/(tag+'.err')).read_text(errors='replace')
         checks=dict(no_crash='[CRASH]' not in text,
                     story=any(scene==2 and not flags&0x20000000 for _,scene,flags,_ in states))
-        checks.update(renderer_checks(text,args.backend,args.vk_validation))
+        checks.update(renderer_checks(text,expected_backend,args.vk_validation))
         if args.native:
             checks.update(native_hook='[NATIVE-TIMING]' in text,**native_present_checks(text))
             (run/(tag+'-timing.json')).write_text(json.dumps(native_samples,indent=2))
@@ -512,7 +513,7 @@ def main():
             passed=completed and all(checks.values()),checks=checks,
             executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
             runner_sha256=runner_sha256,native_fps=args.fps if args.native else 0,
-            backend=args.backend,vulkan_validation_requested=args.vk_validation,
+            backend=expected_backend,backend_requested=args.backend,vulkan_validation_requested=args.vk_validation,
             frame_profile=args.frame_profile,
             presentation_fps=args.fps,seconds=args.seconds,
             capture_enabled=args.capture,profiling_enabled=args.profile,
@@ -545,7 +546,7 @@ def main():
         print('PresentMon:', str(trace) if trace.exists() and trace.stat().st_size else 'No frame events captured; GPU/display timing unavailable from ETW.',flush=True)
     log = (run / (tag+'.err')).read_text(errors='replace')
     assert '[CRASH]' not in log
-    assert all(renderer_checks(log,args.backend,args.vk_validation).values()), 'Renderer/backend acceptance failed; inspect validation JSON and stderr'
+    assert all(renderer_checks(log,expected_backend,args.vk_validation).values()), 'Renderer/backend acceptance failed; inspect validation JSON and stderr'
     if args.native:
         assert '[NATIVE-TIMING]' in log, 'Native timing hook was not executed'
         assert all(native_present_checks(log).values()), 'Native presentation kind/error checks failed'
