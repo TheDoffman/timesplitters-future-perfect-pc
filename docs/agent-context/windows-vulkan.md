@@ -136,3 +136,10 @@ tests/graphics/pc_display_auto.c reproduces the old failure and checks cached
 geometry, successful resize, rollback, retry and manual override on shared SDL
 policy. Both display-model tests pass; normal Windows rebuild and actual paired
 Auto resize acceptance are still required. Mac/Linux native runs are pending.
+
+Optional ETW console is pinned by config/build/presentmon-windows.json (2.6.0,
+MIT, standalone EXE only). Official release asset size/SHA were verified; its
+license/receipt stay under ignored external/presentmon/2.6.0. No service, driver
+or OS permission changes were made. A PID-filtered two-second ETW prerequisite
+probe starts/stops successfully without elevation; actual graphics traces remain
+pending. Launcher samples now include QPC milliseconds for later ETW alignment.

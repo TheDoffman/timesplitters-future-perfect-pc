@@ -119,7 +119,7 @@ public static class RendererGameSmoke {
     }
     float[] pos=null;uint weapon=0;game.Refresh();
     if(scene==2 && player>=0x80000000 && player<0x84000000){pos=Position(game,player);weapon=Word(game,player+0x58c);if((expectedWeapon<0 || weapon==expectedWeapon) && (flags&0x20000000)==0 && gameplayReadySeconds<0)gameplayReadySeconds=t;if(t>=85 && t<=115 && (flags&0x20000000)==0){positions.Add(pos);if(expectedWeapon<0 || weapon==expectedWeapon)equipped++;if(firstTick==0)firstTick=ticks;lastTick=ticks;}}
-    samples.Add(new {seconds=Math.Round(t,2),scene=scene,flags=flags,ticks=ticks,player=player,position=pos,weapon=weapon,cpu_total_ms=game.TotalProcessorTime.TotalMilliseconds,private_bytes=game.PrivateMemorySize64,working_set_bytes=game.WorkingSet64,handles=game.HandleCount,gpu_dedicated_bytes=gpuDedicated});
+    samples.Add(new {seconds=Math.Round(t,2),clock_qpc_ms=Stopwatch.GetTimestamp()*1000.0/Stopwatch.Frequency,scene=scene,flags=flags,ticks=ticks,player=player,position=pos,weapon=weapon,cpu_total_ms=game.TotalProcessorTime.TotalMilliseconds,private_bytes=game.PrivateMemorySize64,working_set_bytes=game.WorkingSet64,handles=game.HandleCount,gpu_dedicated_bytes=gpuDedicated});
     if(Flag("capture") && capture<captureTimes.Length && t>=captureTimes[capture]){SetForegroundWindow(hwnd);await Task.Delay(150);Capture(hwnd,Path.Combine(evidence,backend+"-"+capture+".png"));capture++;}
     await Task.Delay(300);
    }

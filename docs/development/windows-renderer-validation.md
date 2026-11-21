@@ -110,3 +110,14 @@ HUD sizing queries refreshed the cached Auto mode before the frame boundary,
 masking pending allocation. The shared fix and interleaved-query/failure-retry
 regression pass model tests; actual rebuilt hardware validation is required.
 Old failed reports remain failed and are not replaced with the model-test result.
+
+Optional display/ETW measurement tool: config/build/presentmon-windows.json pins
+the official PresentMon2.6.0 standalone console asset, its size/SHA256 and MIT
+license URL. Cache only that executable plus license/receipt under
+external/presentmon/2.6.0; verify the hash before running. No service, driver or
+machine permissions are installed/changed. A same-account PID-filtered ETW
+prerequisite probe succeeds without elevation on this host. Actual game-frame
+capture and analysis remain a separate acceptance step; a successful trace start
+without graphics events does not prove frame coverage. Launcher samples include
+QPC milliseconds so captured frame records can be aligned with the gameplay
+window. Use unique session names and disable input tracking.
