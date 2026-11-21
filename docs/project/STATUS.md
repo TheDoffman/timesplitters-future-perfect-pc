@@ -1,3 +1,21 @@
+## Windows launcher renderer setting (2026-11-21)
+
+Game settings > Graphics > Display now offers Renderer (next launch), with
+Vulkan (Default) and Direct3D 11. Save settings and restart the game to apply.
+The existing controls JSON transaction stores launcher.renderer; unrelated saves,
+Cancel and stale-draft protection retain their established behavior. Vulkan
+startup recovery to D3D11 remains unchanged. Older packages without both declared
+backends show a disabled selector and update hint. Mac/Linux hide this Windows
+choice and preserve its saved value without passing an unsupported backend.
+
+Windows `tools/build/build-launcher.ps1 -Test` passed, including shared UI checks
+for persistence, inherited-environment scrubbing, Save/Cancel, invalid settings,
+stale drafts and legacy package handling. Both selected values reached real
+child processes. The Graphics PNG preview was reviewed at 1152x772.
+Mac and Linux projects compile on Windows with zero errors; native UI execution
+is awaiting native-host validation. No game renderer/runtime code changed here.
+Local work remains on feature/windows-vulkan; no publication or main merge.
+
 ## Windows Vulkan primary renderer (2026-11-21)
 
 **Vulkan is now the Windows default, with D3D11 recovery.** This supersedes the

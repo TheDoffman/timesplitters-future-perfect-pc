@@ -47,3 +47,31 @@ prerequisites are restored, then verifies that the upgrade installs the Vulkan
 preference, compiler preflight and maintained MSVC policy.
 See [player/build commands](../players/windows-vulkan.md) and measured results
 in [STATUS](../project/STATUS.md).
+
+## Launcher renderer selection
+
+`GameSettings.Renderer` defaults to vulkan; the shared controls JSON launcher
+object stores renderer as vulkan/d3d11 using the existing atomic save/rollback
+and stale-file checks. `Validate` rejects other values before saving or launching.
+Windows `SettingsPage.GraphicsRenderer` offers Vulkan (Default)/Direct3D 11 in
+Graphics > Display; draft tracking and Save/Cancel follow other settings.
+`StartInfo` scrubs inherited runtime variables, then explicitly maps the saved
+choice to RECOMP_D3D8_BACKEND only when CanSelectRenderer is true. A package must
+advertise both graphics_backends, or be an unpackaged development build.
+Legacy packages retain their built-in choice and get an update hint.
+`LauncherPlatform.SupportsRendererSelection` is false for MACOS/LINUX; their UI
+hides the selector and unrelated saves preserve the Windows preference without
+applying it to the native process. Automatic Vulkan startup fallback is unchanged.
+
+Validation: `tools/build/build-launcher.ps1 -Test` passed all existing suites plus
+two shared renderer cases. Coverage includes reload, unrelated saves, invalid
+values, stale-file protection, inherited overrides, legacy/new package metadata,
+UI Save/Cancel and reopening. The three Python shared-layout checks also pass. The existing settings child fixture now launches
+both selected backends and checks the actual child's renderer environment.
+`--render-settings-graphics` preview was reviewed at 1152x772. NativeLauncher.csproj
+and LinuxLauncher.csproj compile with zero errors on Windows (two pre-existing
+Avalonia obsolete-event warnings each). Native runtime UI checks remain pending.
+SDK 9.0.312 selects ILLink 8.0.25 while the native lock expects 8.0.32; compilation
+used isolated NuGetLockFilePath files under build/, leaving tracked locks intact.
+No renderer/game rebuild is required for this settings-only change; see the
+existing hardware validation above for the two production backends and recovery.

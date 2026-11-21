@@ -1,3 +1,14 @@
+Windows renderer selector (2026-11-21): `SettingsPage.GraphicsRenderer` exposes
+Vulkan (Default)/Direct3D 11 in Game settings > Graphics > Display on Windows.
+`GameSettings.Renderer` persists `launcher.renderer` in pc-controls.json through
+the existing settings transaction. `StartInfo` sets RECOMP_D3D8_BACKEND from the
+saved choice after removing inherited TSFP_/RECOMP_ variables. Only packages
+advertising both graphics_backends (or unpackaged development builds) enable
+selection; older packages retain their built-in default and show an update hint.
+`LauncherPlatform.SupportsRendererSelection` hides the selector on native hosts;
+the shared model preserves a copied Windows preference without applying D3D11.
+See [renderer validation](windows-vulkan.md#launcher-renderer-selection).
+
 Stable game0.7.0 and launcher1.7.0 were published on2026-11-19 for Windows,
 Apple Silicon Mac and Linux. Game source is b1ca2c16; launcher source is merged
 main9c54bd49, with the same source tree. All9 game and15 launcher public assets,

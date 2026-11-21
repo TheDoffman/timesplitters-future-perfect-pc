@@ -6,6 +6,11 @@ A Vulkan device or shader-compiler startup failure automatically retries
 Direct3D 11. A rendering failure
 after startup still requires restarting with Direct3D 11.
 
+In the Windows launcher, open **Game settings > Graphics > Display** and choose
+**Renderer (next launch)**: **Vulkan (Default)** or **Direct3D 11**. Click
+**Save settings**, then restart the game. The launcher remembers your choice.
+If the selector is disabled, update the game to a build containing both renderers.
+
 After building, launch normally; no renderer override is needed. To force
 Direct3D 11 for troubleshooting in a developer checkout:
 

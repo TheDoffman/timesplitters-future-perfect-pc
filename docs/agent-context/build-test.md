@@ -1,4 +1,4 @@
-[Windows Vulkan](windows-vulkan.md).
+[Vulkan/launcher](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 
