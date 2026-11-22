@@ -67,6 +67,7 @@ int main(int argc,char **argv)
     unsigned char color[4]={204,204,204,255};glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,1,1,0,GL_RGBA,GL_UNSIGNED_BYTE,color);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
     glUniform1i(glGetUniformLocation(program,"tsfp_sampler_0"),0);
+    GLint bound=glGetUniformLocation(program,"tsfp_bound_0");assert(bound>=0);glUniform1i(bound,1);
     float vertices[18]={-1,-1,.5,1,0,0, -1,3,.5,1,0,2, 3,-1,.5,1,2,0};
     GLuint vao;glGenVertexArrays(1,&vao);glBindVertexArray(vao);glBindBuffer(GL_ARRAY_BUFFER,buffers[2]);
     glBufferData(GL_ARRAY_BUFFER,sizeof vertices,vertices,GL_STATIC_DRAW);
@@ -77,7 +78,10 @@ int main(int argc,char **argv)
     float pixel[4]={};glReadPixels(32,32,1,1,GL_RGBA,GL_FLOAT,pixel);
     assert(glGetError()==GL_NO_ERROR);
     for(unsigned i=0;i<3;i++)assert(std::fabs(pixel[i]-.8f*tint[i])<.01f);
-    assert(pixel[3]>.99f);assert(tsfp_gl_host_present(host,0)==0);
+    assert(pixel[3]>.99f);
+    glUniform1i(bound,0);glDrawArrays(GL_TRIANGLES,0,3);glReadPixels(32,32,1,1,GL_RGBA,GL_FLOAT,pixel);
+    for(unsigned i=0;i<3;i++)assert(std::fabs(pixel[i])<.001f);
+    glUniform1i(bound,1);glDrawArrays(GL_TRIANGLES,0,3);assert(tsfp_gl_host_present(host,0)==0);
     /* Compile both less common language paths on the actual GL driver too. */
     GLuint fetch=shader(GL_FRAGMENT_SHADER,"fetch.frag"),legacy=shader(GL_FRAGMENT_SHADER,"legacy.frag");
     glDeleteShader(fetch);glDeleteShader(legacy);glDeleteShader(vs);glDeleteShader(ps);glUseProgram(0);glDeleteProgram(program);

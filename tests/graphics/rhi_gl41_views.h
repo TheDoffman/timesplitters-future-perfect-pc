@@ -4,7 +4,9 @@ static void gl41_pixel(RhiView *target,const float expected[4])
 {
     rhi_set_render_target(target,NULL);rhi_draw(3,0);
     float pixels[64*64*4];CHECK(!rhi_image_readback(rhi_view_image(target),0,pixels,64*16));
-    for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<4;c++)CHECK(fabsf(pixels[i*4+c]-expected[c])<.001f);
+    for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<4;c++)if(!(fabsf(pixels[i*4+c]-expected[c])<.001f)) {
+        fprintf(stderr,"pixel %u channel %u actual=%g expected=%g\n",i,c,pixels[i*4+c],expected[c]);CHECK(0);
+    }
 }
 static void gl41_shader(RhiShader **current,const char *source)
 {

@@ -1,0 +1,21 @@
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -94,10 +94,16 @@
+ 
+     # The same experimental recovery backend is available beside Vulkan on
+     # every common-frontend host. Acceptance is independent and defaults OFF.
+-    if(TSFP_PC_CONTROLS_DIR AND (XBOXRECOMP_VULKAN OR TSFP_NATIVE_RHI))
+-        include("${TSFP_PC_CONTROLS_DIR}/graphics/opengl_backend.cmake")
++    # OpenGL startup recovery build
++    set(tsfp_gl_shared_source "${TSFP_PC_CONTROLS_DIR}")
++    if(NOT tsfp_gl_shared_source AND TSFP_NATIVE_DIR)
++        get_filename_component(tsfp_gl_shared_source "${TSFP_NATIVE_DIR}/.." ABSOLUTE)
++    endif()
++    if(tsfp_gl_shared_source AND (XBOXRECOMP_VULKAN OR TSFP_NATIVE_RHI))
++        include("${tsfp_gl_shared_source}/graphics/opengl_backend.cmake")
+         tsfp_add_opengl_backend(xbox_d3d8 "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+     endif()
++    # End OpenGL startup recovery build
+ 
+     if(WIN32)
+     # Offline smoke test for the pure format layer (no D3D11 device needed).

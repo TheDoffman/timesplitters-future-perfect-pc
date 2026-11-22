@@ -1,3 +1,29 @@
+## Native OpenGL source path fixed; null-resource sampling validated (2026-11-22)
+
+Patch3057 derives common native graphics sources from TSFP_NATIVE_DIR without
+turning on Windows PC features or changing legacy Mac GL. Seven CMake matrix
+checks pass. The broad upgrade run completed75 passing checks and2 failed
+historical-input constructions; after excluding dependent renderer patches only
+from those old inputs, both upgrades plus fresh/round-trip checks pass (5 tests).
+Full upgrades explicitly verify that all current renderer changes are installed.
+
+The common GL RHI now binds typed zero textures and guards each missing-input
+sample, preventing stale cube/volume data, nonzero sampler borders and undefined
+out-of-range null loads. Mixed valid/null inputs remain independent. Shader
+uniforms also stay outside conditional extension branches. Normal GL, restricted
+4.1, all5 accepted-fixture recovery cases and all8 ordinary cases pass, with
+Vulkan validation on positive Vulkan paths; acceptance restored OFF. Standalone
+translation, real WGL pixel/zero-mask and GLSL syntax checks pass.
+
+Windows full Build and mandatory checks pass. A120s first-mission resource run
+and separate desktop-capture/display run pass movement/weapon, actual AO/MSAA4,
+SMAA, preservation and clean exit0 on RTX4070SUPER617.42. Reviewed frames show
+world/NPC/fog/flare/weapon/tutorial/HUD and changing view/ammunition. Exact hashes,
+limits and reports: [OpenGL evidence](../agent-context/opengl-recovery.md).
+All production gates remain OFF. Actual native linking/GL GPU/game execution,
+main-thread servicing and4.1 capability/acceptance checks remain; native Mac
+hardware is unavailable and legacy compatibility/deprecation limits still apply.
+
 Linux follow-up at sourcec479c63a: common Vulkan/replay and MMIO builds pass;
 explicit Mesa lavapipe Vulkan/resource/presentation/replay contracts pass. This
 is software-driver foundation evidence, not gameplay or OpenGL GPU acceptance.

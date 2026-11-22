@@ -298,7 +298,8 @@
     "tests/support/test_runtime_shards.py",
     "tests/graphics/test_rhi_startup.py",
     "tests/repository/test_spirv_cross.py",
-    "tests/graphics/test_opengl_window.py"
+    "tests/graphics/test_opengl_window.py",
+    "tests/graphics/test_opengl_build.py"
   ],
   "native_windows": [
     "tests/gameplay/test_frame_interpolation.py",

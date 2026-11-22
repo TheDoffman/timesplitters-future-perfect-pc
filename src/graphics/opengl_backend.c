@@ -22,7 +22,7 @@ struct RhiDepthState {RhiDepthDesc desc;};
 struct RhiRasterState {RhiRasterDesc desc;};
 struct RhiSampler {GlRetired retired;GLuint id;unsigned refs;};
 struct RhiOcclusion {GLuint id;int active,ended;};
-typedef struct GlProgram {GLuint id,vs,ps;GLint samples[32],levels[32];struct GlProgram *next;} GlProgram;
+typedef struct GlProgram {GLuint id,vs,ps;GLint samples[32],levels[32],bound[32];struct GlProgram *next;} GlProgram;
 static TsfpGlApi G;
 static struct {
     TsfpGlHost *host;int ready,failed,storage,views,storage_ms,stencil_texture,max_samples;
@@ -36,7 +36,7 @@ static struct {
     RhiViewport viewports[16];unsigned viewport_count;RhiRect scissor;
     GlProgram *programs,*pipeline;GLuint current_program;
     GlRetired *retired_head,*retired_tail;
-    GLuint zero_texture;RhiOcclusion *query;
+    GLuint zero_textures[TSFP_GL_TEX_COUNT][TSFP_GL_TEX_TYPES],zero_samplers[2];RhiOcclusion *query;
 } S;
 extern int rhi_vk_dxc_available(void);
 static int context_current;
@@ -52,6 +52,7 @@ static void g_layout_destroy(RhiVertexLayout *layout);
 static void g_image_update(RhiImage *,uint32_t,const RhiBox *,const void *,uint32_t,uint32_t);
 static int g_resolve(RhiImage *,uint32_t,RhiImage *,uint32_t);
 static int refresh_view(RhiView *view);
+static const GLenum zero_targets[TSFP_GL_TEX_COUNT];
 /* CPU-only state changes retire objects without touching GL. The graphics
  * thread drains this queue before GPU work, preserving reference lifetimes
  * without a context transfer or a dispatch for every ordinary state bind. */
@@ -469,11 +470,11 @@ static RhiShader *g_shader_create(uint32_t stage,const RhiShaderSource *src,char
 {
     RhiShader *shader=calloc(1,sizeof *shader);if(!shader)return NULL;
     shader->refs=1;shader->stage=stage;
-    if(!tsfp_gl_shader_translate(stage,src,&shader->text,error,size)){free(shader);return NULL;}
+    if(!tsfp_gl_shader_translate(stage,src,&shader->text,error,size)){fprintf(stderr,"[RHI] ERROR: opengl shader translation failed: %.512s\n",error&&size?error:"no diagnostic buffer");free(shader);return NULL;}
     shader->id=G.CreateShader(stage==RHI_STAGE_VERTEX?GL_VERTEX_SHADER:GL_FRAGMENT_SHADER);
     G.ShaderSource(shader->id,1,(const GLchar *const *)&shader->text.source,NULL);G.CompileShader(shader->id);
     GLint compiled=0;G.GetShaderiv(shader->id,GL_COMPILE_STATUS,&compiled);
-    if(!compiled){if(error && size)G.GetShaderInfoLog(shader->id,(GLsizei)size,NULL,error);g_shader_destroy(shader);return NULL;}
+    if(!compiled){if(error && size)G.GetShaderInfoLog(shader->id,(GLsizei)size,NULL,error);fprintf(stderr,"[RHI] ERROR: opengl shader compilation failed: %.512s\n",error&&size?error:"no diagnostic buffer");g_shader_destroy(shader);return NULL;}
     return shader;
 }
 static void delete_shader(GlRetired *object)
@@ -631,13 +632,14 @@ static GLuint program(void)
     G.AttachShader(p->id,p->vs);G.AttachShader(p->id,p->ps);G.LinkProgram(p->id);GLint linked=0;G.GetProgramiv(p->id,GL_LINK_STATUS,&linked);
     if(!linked){char error[4096]={0};G.GetProgramInfoLog(p->id,sizeof error,NULL,error);fprintf(stderr,"[RHI] ERROR: opengl shader link: %s\nVS:\n%s\nPS:\n%s\n",error,S.shaders[0]->text.source,S.shaders[1]->text.source);G.DeleteProgram(p->id);free(p);S.failed=1;return 0;}
     G.UseProgram(p->id);S.current_program=p->id;
-    for(unsigned i=0;i<32;i++)p->samples[i]=p->levels[i]=-1;
+    for(unsigned i=0;i<32;i++)p->samples[i]=p->levels[i]=p->bound[i]=-1;
     for(unsigned stage=0;stage<2;stage++){
         TsfpGlShaderText *text=&S.shaders[stage]->text;
         for(unsigned i=0;i<text->block_count;i++){TsfpGlBlock *block=&text->blocks[i];GLuint index=G.GetUniformBlockIndex(p->id,block->name);if(index!=GL_INVALID_INDEX)G.UniformBlockBinding(p->id,index,block->binding);}
         for(unsigned i=0;i<text->sampler_count;i++){TsfpGlSampler *sampler=&text->samplers[i];GLint loc=G.GetUniformLocation(p->id,sampler->name);if(loc>=0)G.Uniform1i(loc,sampler->unit);
             char name[64];snprintf(name,sizeof name,"tsfp_samples_%u",sampler->unit);p->samples[sampler->unit]=G.GetUniformLocation(p->id,name);
-            snprintf(name,sizeof name,"tsfp_levels_%u",sampler->unit);p->levels[sampler->unit]=G.GetUniformLocation(p->id,name);}
+            snprintf(name,sizeof name,"tsfp_levels_%u",sampler->unit);p->levels[sampler->unit]=G.GetUniformLocation(p->id,name);
+            snprintf(name,sizeof name,"tsfp_bound_%u",sampler->unit);p->bound[sampler->unit]=G.GetUniformLocation(p->id,name);}
     }
     p->next=S.programs;S.programs=p;S.pipeline=p;return p->id;
 }
@@ -664,12 +666,63 @@ static int prepare_draw(void)
     for(unsigned stage=0;stage<2;stage++)for(unsigned i=0;i<S.shaders[stage]->text.sampler_count;i++) {
         TsfpGlSampler *mapping=&S.shaders[stage]->text.samplers[i];RhiView *view=S.textures[mapping->texture_slot];
         RhiSampler *sampler=mapping->sampler_slot<16?S.samplers[mapping->sampler_slot]:NULL;
-        G.ActiveTexture(GL_TEXTURE0+mapping->unit);glBindTexture(view?view->target:GL_TEXTURE_2D,view?view->texture:S.zero_texture);
-        G.BindSampler(mapping->unit,sampler?sampler->id:0);
+        G.ActiveTexture(GL_TEXTURE0+mapping->unit);
+        glBindTexture(view?view->target:zero_targets[mapping->dimension],view?view->texture:S.zero_textures[mapping->dimension][mapping->scalar]);
+        G.BindSampler(mapping->unit,view?(sampler?sampler->id:0):S.zero_samplers[mapping->scalar==TSFP_GL_TEX_DEPTH]);
+        if(S.pipeline->bound[mapping->unit]>=0)G.Uniform1i(S.pipeline->bound[mapping->unit],view!=NULL);
         if(S.pipeline->samples[mapping->unit]>=0)G.Uniform1i(S.pipeline->samples[mapping->unit],view?view->image->desc.samples:1);
         if(S.pipeline->levels[mapping->unit]>=0)G.Uniform1i(S.pipeline->levels[mapping->unit],view?view->desc.mip_count:0);
     }
     G.ActiveTexture(GL_TEXTURE0);return gl_ok("draw bindings");
+}
+static const GLenum zero_targets[TSFP_GL_TEX_COUNT]={GL_TEXTURE_2D,GL_TEXTURE_2D_ARRAY,
+    GL_TEXTURE_CUBE_MAP,GL_TEXTURE_3D,GL_TEXTURE_2D_MULTISAMPLE,GL_TEXTURE_2D_MULTISAMPLE_ARRAY};
+static int create_zero_textures(void)
+{
+    const uint32_t zero[4]={0};
+    for(unsigned dim=0;dim<TSFP_GL_TEX_COUNT;dim++)for(unsigned type=0;type<TSFP_GL_TEX_TYPES;type++) {
+        int ms=dim==TSFP_GL_TEX_MS || dim==TSFP_GL_TEX_MS_ARRAY;
+        if(type==TSFP_GL_TEX_DEPTH && (dim==TSFP_GL_TEX_3D || ms))continue;
+        GLenum target=zero_targets[dim];GLuint *id=&S.zero_textures[dim][type];
+        GLenum internal=type==TSFP_GL_TEX_INT?GL_RGBA32I:type==TSFP_GL_TEX_UINT?GL_RGBA32UI:
+            type==TSFP_GL_TEX_DEPTH?GL_DEPTH_COMPONENT32F:GL_RGBA8;
+        GLenum channels=type==TSFP_GL_TEX_DEPTH?GL_DEPTH_COMPONENT:
+            type==TSFP_GL_TEX_INT || type==TSFP_GL_TEX_UINT?GL_RGBA_INTEGER:GL_RGBA;
+        GLenum scalar=type==TSFP_GL_TEX_INT?GL_INT:type==TSFP_GL_TEX_UINT?GL_UNSIGNED_INT:
+            type==TSFP_GL_TEX_DEPTH?GL_FLOAT:GL_UNSIGNED_BYTE;
+        glGenTextures(1,id);glBindTexture(target,*id);
+        if(ms) {
+            if(dim==TSFP_GL_TEX_MS_ARRAY)G.TexImage3DMultisample(target,1,internal,1,1,1,GL_TRUE);
+            else G.TexImage2DMultisample(target,1,internal,1,1,GL_TRUE);
+            G.BindFramebuffer(GL_DRAW_FRAMEBUFFER,S.writebuffer);
+            if(dim==TSFP_GL_TEX_MS_ARRAY)G.FramebufferTextureLayer(GL_DRAW_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,*id,0,0);
+            else G.FramebufferTexture2D(GL_DRAW_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,target,*id,0);
+            if(G.CheckFramebufferStatus(GL_DRAW_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE)return 0;
+            if(type==TSFP_GL_TEX_INT)G.ClearBufferiv(GL_COLOR,0,(const GLint *)zero);
+            else if(type==TSFP_GL_TEX_UINT)G.ClearBufferuiv(GL_COLOR,0,zero);
+            else G.ClearBufferfv(GL_COLOR,0,(const GLfloat *)zero);
+            G.FramebufferTexture2D(GL_DRAW_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D_MULTISAMPLE,0,0);
+        } else {
+            if(dim==TSFP_GL_TEX_CUBE)for(unsigned face=0;face<6;face++)
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face,0,internal,1,1,0,channels,scalar,zero);
+            else if(dim==TSFP_GL_TEX_ARRAY || dim==TSFP_GL_TEX_3D)
+                G.TexImage3D(target,0,internal,1,1,1,0,channels,scalar,zero);
+            else glTexImage2D(target,0,internal,1,1,0,channels,scalar,zero);
+            glTexParameteri(target,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(target,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+            glTexParameteri(target,GL_TEXTURE_BASE_LEVEL,0);glTexParameteri(target,GL_TEXTURE_MAX_LEVEL,0);
+        }
+    }
+    G.BindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
+    G.GenSamplers(2,S.zero_samplers);
+    for(unsigned i=0;i<2;i++) {
+        GLuint sampler=S.zero_samplers[i];
+        G.SamplerParameteri(sampler,GL_TEXTURE_MIN_FILTER,GL_NEAREST);G.SamplerParameteri(sampler,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+        G.SamplerParameteri(sampler,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);G.SamplerParameteri(sampler,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+        G.SamplerParameteri(sampler,GL_TEXTURE_WRAP_R,GL_CLAMP_TO_EDGE);
+        G.SamplerParameteri(sampler,GL_TEXTURE_COMPARE_MODE,i?GL_COMPARE_REF_TO_TEXTURE:GL_NONE);
+        G.SamplerParameteri(sampler,GL_TEXTURE_COMPARE_FUNC,GL_NEVER);
+    }
+    return gl_ok("typed zero textures");
 }
 static GLenum topology(void)
 {switch(S.topology){case RHI_TOPOLOGY_POINTS:return GL_POINTS;case RHI_TOPOLOGY_LINES:return GL_LINES;case RHI_TOPOLOGY_LINE_STRIP:return GL_LINE_STRIP;case RHI_TOPOLOGY_TRIANGLE_STRIP:return GL_TRIANGLE_STRIP;default:return GL_TRIANGLES;}}
@@ -764,8 +817,7 @@ static int g_device_create(const RhiDeviceDesc *desc)
 #endif
     G.GenFramebuffers(1,&S.framebuffer);G.GenFramebuffers(1,&S.readbuffer);G.GenFramebuffers(1,&S.writebuffer);
     G.GenVertexArrays(1,&S.vao);G.BindVertexArray(S.vao);
-    glGenTextures(1,&S.zero_texture);glBindTexture(GL_TEXTURE_2D,S.zero_texture);unsigned char zero[4]={0};
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,1,1,0,GL_RGBA,GL_UNSIGNED_BYTE,zero);texture_parameters(GL_TEXTURE_2D,RHI_FORMAT_R8G8B8A8_UNORM,1);
+    if(!create_zero_textures()){g_device_destroy();return -1;}
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);glEnable(GL_MULTISAMPLE);glEnable(GL_PROGRAM_POINT_SIZE);glDisable(GL_DITHER);glDisable(GL_FRAMEBUFFER_SRGB);
     g_blend(NULL,NULL,~0u);g_depth(NULL,0);g_raster(NULL);S.topology=RHI_TOPOLOGY_TRIANGLES;
     if(g_resize(desc->width,desc->height)!=0 || !gl_ok("device initialization")){
@@ -786,7 +838,7 @@ static void g_device_destroy(void)
         drain_retired();
         while(S.programs){GlProgram *p=S.programs;S.programs=p->next;G.DeleteProgram(p->id);free(p);}
         G.DeleteFramebuffers(1,&S.framebuffer);G.DeleteFramebuffers(1,&S.readbuffer);G.DeleteFramebuffers(1,&S.writebuffer);
-        G.DeleteVertexArrays(1,&S.vao);glDeleteTextures(1,&S.zero_texture);
+        G.DeleteVertexArrays(1,&S.vao);glDeleteTextures(TSFP_GL_TEX_COUNT*TSFP_GL_TEX_TYPES,&S.zero_textures[0][0]);G.DeleteSamplers(2,S.zero_samplers);
     }
     tsfp_gl_host_destroy(S.host);context_current=0;memset(&S,0,sizeof S);memset(&G,0,sizeof G);
 }

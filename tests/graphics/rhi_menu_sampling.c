@@ -47,6 +47,7 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #include "rhi_compatibility.h"
 #include "rhi_vertex_streams.h"
 #include "rhi_gl41_views.h"
+#include "rhi_gl_null.h"
 #ifdef RHI_VULKAN_SDL
 #include "vulkan_present_outcomes.h"
 #endif
@@ -247,6 +248,7 @@ int main(void) {
     rhi_set_blend_state(blend,NULL,~0u);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
     if(!limited){test_guest_surface_companion(rtv);test_msaa_surface_views(rtv);test_ssao_pass(rtv);}
     else {gl41_views_test(rtv);puts("SKIP: MSAA/SSAO multisample contracts;4.1 compatibility advertises single-sample only");}
+    if(!strcmp(rhi_backend_name(),"opengl"))gl_null_resources_test(rtv,limited);
 
 #if defined(RHI_VULKAN_SDL) || defined(TSFP_WINDOWS_RHI_TEST)
     /* Also exercise presentation and the swapchain readback channel order. */

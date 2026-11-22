@@ -444,3 +444,88 @@ feature flags or changing legacy Mac builds. Revalidate/migrate patches, then
 sync Git to Linux and build/test the actual native OpenGL path. Keep every
 production acceptance gate OFF. Native main-thread servicing,4.1 capabilities,
 null non2D resources, full native game build and acceptance remain unresolved.
+
+## Native source wiring and typed null textures (afterdf6814a7)
+
+Patch3057 derives the graphics source directory from TSFP_NATIVE_DIR/.. when
+TSFP_PC_CONTROLS_DIR is absent. It stays inside the existing common-frontend
+branch, so legacy native GL builds acquire neither OpenGL RHI nor compiler
+requirements. It does not turn on unrelated Windows PC feature flags. Seven
+CMake executions of the production fragment cover Windows Vulkan/D3D, Linux,
+Mac, legacy Mac, source precedence and missing source. The native CI suite now
+registers tests/graphics/test_opengl_build.py. Actual native linking/GPU checks
+remain separate; Linux must be synchronized to this commit and its experimental
+PC_CONTROLS_DIR cache entry removed before checking the ordinary path.
+
+The prior broad upgrade suite finished75 passes and2 failures. Both failures
+constructed historical inputs with renderer patches whose shared graphics
+prerequisites had intentionally been omitted. RENDERER_STARTUP_PATCHES now
+excludes3050..3057 only from those two old inputs; full upgrades still install
+them. Five targeted tests pass: both corrected historical upgrades, fresh full
+installation and both graphics branch round trips. Explicit assertions require
+shared startup policy, terminal startup failure, safe exit tracing and native
+source derivation in the upgraded files. These tests do not waive runtime edits
+or weaken conflict/preservation checks. Full-stack revalidation also passes.
+
+OpenGL sampler metadata now records dimension and scalar/comparison type. Device
+creation owns21 tiny zero textures covering2D/array/cube/volume/MS/MS-array and
+float/signed/unsigned/depth combinations that GLSL supports. Null bindings select
+the matching texture target/type and private nearest/clamped samplers, with a
+comparison-never sampler for shadow reads. They cannot retain a previous cube/
+volume binding or sample a caller's nonzero border color. Partial device failure
+and repeated destruction delete these objects with the other backend resources.
+
+The shared shader adapter guards each sample/fetch result using a per-unit bound
+uniform, preserving other inputs and ordinary shader constants. This defines
+zero for null fetches even at arbitrary coordinates/LODs, without depending on
+out-of-range driver reads. DXC still compiles the same HLSL; a small pinned
+SPIRV-Cross emitter override wraps the individual texture operation. Discarded
+recompile passes use placeholder expressions and are left to recompile normally.
+Resource helper arguments must be inlined by DXC; forced noinline resource-object
+copies produce invalid SPIR-V in the pinned compiler and are not worked around
+by disabling validation. Tests retain nested helpers that access global textures.
+Dimension/count queries retain the existing dummy-view metadata contract.
+
+Uniform declarations now follow the complete preprocessor preamble, outside
+conditional extension branches. Placing them after the last #extension alone
+had hidden new bound uniforms inside a disabled branch of the SSAO shader. The
+actual SSAO and shader/pixel contracts now pass. Backend translation/GL compiler
+failures also emit bounded diagnostics immediately, so later successful shader
+creation cannot erase the first failure reason.
+
+New tests/graphics/rhi_gl_null.h seeds real textures, then checks bind/unbind/
+rebind pixels for2D, array, cube, volume, signed/unsigned, comparison depth and
+(normal suite) multisample/array textures. It covers nonzero border samplers,
+out-of-range null loads and independent inputs through retained nested helpers.
+The pixel helper diagnoses failures and rejects NaNs. Both normal and restricted
+4.1 contracts pass, including worker recreation/cleanup; the restricted route
+still omits dedicated multisample/AO contracts. Explicit/recovered GL acceptance
+now requires the typed-null PASS marker. All five recovery cases and eight
+ordinary cases pass with Vulkan validation on positive Vulkan paths. Recovery
+fixture acceptance is restored OFF. Standalone HLSL translation, real WGL sampled/
+tinted and masked-zero pixels, and generated GLSL syntax also pass.
+
+- rhi-windows.json: `eb4286eccd9b8e57cf6b875a1ae3d7e0a2769b1b67e6bfd0760f0ecf3921732f` (passed).
+- rhi-windows-opengl.json: `65856ee1ebc2dbe9e147f08a127270ba805877c4eaceac776ad156f7fa1dc67d` (passed).
+- rhi-windows-opengl-gl41.json: `65856ee1ebc2dbe9e147f08a127270ba805877c4eaceac776ad156f7fa1dc67d` (passed).
+- rhi-windows-opengl-recovery.json: `2aeb68d1973cae8f8bebfc62dd64dba9a2ca337a8400e8561ec6159dfaf5fb3f` (passed).
+
+Ordinary Windows Build and mandatory checks pass with production recovery OFF.
+The120s gl-typed-null-game-01 developer StartInfo probe passes first-mission
+movement/weapon, actual MSAA4/SSAO/SMAA, quality/defaultVulkan/custom DDS preservation
+and clean exit0. Game SHA256 `d7e05eaf975cafe3a0d3c5161443d499f530ae60032ec55a8dec2b19d26331e7`.
+Its85-115s window reports59.98 guest ticks/s and555 handles. It is a bounded
+CPU/resource/guest-clock check, not GPU completion/scanout timing. A separate
+capture/display run gl-null-visual-01 passes Auto fullscreen/resize/restore and
+the same gameplay/settings checks with clean exit0. Reviewed desktop frames
+opengl-1.png and opengl-2.png show upright world/NPC/fog/flare, held weapon,
+tutorial/reticle/ammunition HUD and changing viewpoint/ammunition. Both runs use
+the same executable. Windows11 x64/MSVC19.44/RTX4070SUPER617.42/SDK1.4.363.0,
+source parentdf6814a7 plus this checkpoint's patches/backend/shader/test changes.
+Reports: logs/renderer-validation/<label>/. Capture runs are not benchmarks.
+
+All production gates remain OFF. Next checks: actual native build/link and GL
+GPU execution with main-thread callbacks/window recovery,4.1 mirror-once and
+compression capabilities, full native game/package and available-host acceptance.
+Native Mac hardware remains unavailable; retain exact missing acceptance and
+legacy compatibility/deprecated OpenGL limitations. Do not claim universal support.

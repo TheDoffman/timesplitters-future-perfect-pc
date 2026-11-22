@@ -79,6 +79,8 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
             passed = (result.returncode==0 and f'BACKEND: {expected}' in output and
                       'PASS: shared RHI HLSL' in output and '[VKVAL' not in output and
                       'could not start; using' not in output)
+        if expected=='opengl' and not startup_failure:
+            passed=passed and 'PASS: OpenGL typed null textures' in output
         if gl41:passed=passed and 'PASS: OpenGL4.1 subset/array/cube/volume/stencil/compressed views' in output and 'SKIP: MSAA/SSAO' in output
         if recovered:passed=passed and no_fallback and 'startup recovery selected opengl' in output
         if mode=='opengl-partial-fail':passed=passed and 'drawable target initialization failed' in output

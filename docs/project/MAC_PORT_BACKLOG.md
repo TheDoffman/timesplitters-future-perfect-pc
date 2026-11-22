@@ -1,3 +1,12 @@
+Current OpenGL checkpoint afterdf6814a7: patch3057 fixes common native source
+path discovery without enabling Windows PC features;7 CMake cases and5 targeted
+fresh/historical/round-trip upgrade checks pass. Typed zero resources and per-read
+null masks now pass Windows GL/recovery/4.1/pixel contracts and120s gameplay plus
+separate desktop display/visual acceptance. Actual native link/GPU/game checks
+still await the updated Linux checkout and a Mac host. All recovery gates stay
+OFF; native callback servicing, mirror-once/compression and complete available-
+host acceptance remain. Details/hashes: agent-context/opengl-recovery.md.
+
 OpenGL recovery goal (2026-11-22): implementation in progress on
 feature/opengl-startup-recovery, based on local4c287926. Shared startup transaction,
 shader compiler and common RHI backend pass Windows hardware recovery contracts

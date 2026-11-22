@@ -40,6 +40,8 @@ int main(int argc,char **argv)
     assert(pixel.block_count==1 && pixel.blocks[0].binding==10);
     assert(pixel.sampler_count==1 && pixel.samplers[0].texture_slot==5 && pixel.samplers[0].sampler_slot==3);
     assert(std::strstr(pixel.source,"tsfp_varying_TEXCOORD1"));
+    assert(std::strstr(pixel.source,"tsfp_bound_0 != 0"));
+    assert(pixel.samplers[0].dimension==TSFP_GL_TEX_2D && pixel.samplers[0].scalar==TSFP_GL_TEX_FLOAT);
     auto load=translate(RHI_STAGE_PIXEL,
         "Texture2D image:register(t8);float4 main(float4 p:SV_POSITION):SV_TARGET{return image.Load(int3(p.xy,0));}");
     assert(load.sampler_count==1 && load.samplers[0].texture_slot==8 && load.samplers[0].sampler_slot==~0u);

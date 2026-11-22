@@ -13,6 +13,55 @@
 
 extern "C" int rhi_gl_dxc_compile(uint32_t,const RhiShaderSource *,uint32_t **,size_t *,char *,size_t);
 
+/* Guard each sampled value, rather than the whole shader: another bound
+ * texture must still contribute when one input is missing. A uniform guard
+ * also gives null texelFetch a defined zero at arbitrary coordinates/LODs. */
+class GlCompiler : public spirv_cross::CompilerGLSL {
+public:
+    using CompilerGLSL::CompilerGLSL;
+    std::vector<std::pair<std::string,unsigned>> null_samplers;
+protected:
+    std::string to_texture_op(const spirv_cross::Instruction &instruction,bool sparse,bool *forward,
+                              spirv_cross::SmallVector<uint32_t> &inherited) override {
+        if(sparse)throw std::runtime_error("Sparse OpenGL textures are unsupported");
+        std::string value=CompilerGLSL::to_texture_op(instruction,sparse,forward,inherited);
+        // Placeholder expressions belong to a discarded analysis/recompile pass.
+        if(is_forcing_recompilation())return value;
+        const auto *operands=stream(instruction);
+        std::string sampler=convert_separate_image_to_expression(operands[2]);
+        for(const auto &entry:null_samplers)if(entry.first==sampler)
+            return "(tsfp_bound_"+std::to_string(entry.second)+" != 0 ? ("+value+") : "+
+                type_to_glsl(get<spirv_cross::SPIRType>(operands[0]))+"(0))";
+        throw std::runtime_error("OpenGL image expression requires DXC inlining: "+sampler);
+    }
+};
+
+static size_t declaration_prefix(const std::string &source)
+{
+    size_t at=0,group=0;unsigned depth=0;bool continued=false,comment=false;
+    while(at<source.size()) {
+        size_t end=source.find('\n',at);if(end==std::string::npos)end=source.size();
+        std::string line=source.substr(at,end-at);size_t first=line.find_first_not_of(" \t\r");
+        bool directive_continuation=continued;continued=!line.empty() && line.back()=='\\';
+        if(directive_continuation){at=end+1;continue;}
+        while(first!=std::string::npos) {
+            if(comment){size_t close=line.find("*/",first);if(close==std::string::npos){first=std::string::npos;break;}comment=false;first=line.find_first_not_of(" \t\r",close+2);}
+            else if(line.compare(first,2,"/*")==0){comment=true;first+=2;}
+            else break;
+        }
+        if(first==std::string::npos || line.compare(first,2,"//")==0){at=end+1;continue;}
+        if(line[first]=='#') {
+            size_t word=line.find_first_not_of(" \t",first+1);
+            if(word!=std::string::npos && line.compare(word,2,"if")==0){if(!depth)group=at;depth++;}
+            else if(word!=std::string::npos && line.compare(word,5,"endif")==0 && depth)depth--;
+            at=end+1;continue;
+        }
+        // Never place uniforms inside a conditional extension/fallback block.
+        return depth?group:at;
+    }
+    return source.size();
+}
+
 static std::string semantic(spirv_cross::CompilerGLSL &compiler,spirv_cross::ID id)
 {
     if (!compiler.has_decoration(id,spv::DecorationHlslSemanticGOOGLE))
@@ -78,7 +127,7 @@ extern "C" int tsfp_gl_shader_translate(unsigned stage,const RhiShaderSource *so
     if (!rhi_gl_dxc_compile(stage,source,&words,&bytes,error,error_size))return 0;
     std::unique_ptr<uint32_t,decltype(&std::free)> owned(words,std::free);
     try {
-        spirv_cross::CompilerGLSL compiler(words,bytes/sizeof(uint32_t));
+        GlCompiler compiler(words,bytes/sizeof(uint32_t));
         auto options=compiler.get_common_options();
         options.version=410;options.es=false;
         options.enable_420pack_extension=false;
@@ -139,8 +188,24 @@ extern "C" int tsfp_gl_shader_translate(unsigned stage,const RhiShaderSource *so
             slot.unit=out->sampler_count+++(stage==RHI_STAGE_VERTEX?16:0);
             slot.texture_slot=texture-RHI_VK_TEXTURE_BASE;
             slot.sampler_slot=sampler==~0u?~0u:sampler-RHI_VK_SAMPLER_BASE;
+            const auto &image=compiler.get_type_from_variable(r.image_id).image;
+            auto scalar=compiler.get_type(image.type).basetype;
+            slot.scalar=scalar==spirv_cross::SPIRType::Int?TSFP_GL_TEX_INT:
+                scalar==spirv_cross::SPIRType::UInt?TSFP_GL_TEX_UINT:TSFP_GL_TEX_FLOAT;
+            if(image.dim==spv::Dim2D)slot.dimension=image.ms?
+                (image.arrayed?TSFP_GL_TEX_MS_ARRAY:TSFP_GL_TEX_MS):
+                (image.arrayed?TSFP_GL_TEX_ARRAY:TSFP_GL_TEX_2D);
+            else if(image.dim==spv::DimCube && !image.arrayed)slot.dimension=TSFP_GL_TEX_CUBE;
+            else if(image.dim==spv::Dim3D && !image.arrayed)slot.dimension=TSFP_GL_TEX_3D;
+            else throw std::runtime_error("Unsupported OpenGL texture dimension");
+            if(compiler.get_type_from_variable(r.combined_id).image.depth) {
+                if(slot.dimension==TSFP_GL_TEX_3D || image.ms)
+                    throw std::runtime_error("Unsupported OpenGL comparison texture");
+                slot.scalar=TSFP_GL_TEX_DEPTH;
+            }
             std::snprintf(slot.name,sizeof slot.name,"tsfp_sampler_%u",slot.unit);
             compiler.set_name(r.combined_id,slot.name);
+            compiler.null_samplers.emplace_back(slot.name,slot.unit);
             compiler.unset_decoration(r.combined_id,spv::DecorationBinding);
             compiler.unset_decoration(r.combined_id,spv::DecorationDescriptorSet);
         }
@@ -148,6 +213,8 @@ extern "C" int tsfp_gl_shader_translate(unsigned stage,const RhiShaderSource *so
         /*4.1 has textureSize, but sample/level-count queries are later GLSL
          * features. The RHI already knows exact bound-view counts on all hosts. */
         std::string query_uniforms;
+        for(unsigned i=0;i<out->sampler_count;i++)
+            query_uniforms+="uniform int tsfp_bound_"+std::to_string(out->samplers[i].unit)+";\n";
         const char *queries[]={"textureSamples","textureQueryLevels"};
         const char *prefixes[]={"tsfp_samples_","tsfp_levels_"};
         const char *extensions[]={"GL_ARB_texture_query_samples","GL_ARB_texture_query_levels"};
@@ -166,9 +233,7 @@ extern "C" int tsfp_gl_shader_translate(unsigned stage,const RhiShaderSource *so
             if(ext!=std::string::npos)glsl.erase(ext,glsl.find('\n',ext)-ext+1);
         }
         if(!query_uniforms.empty()) {
-            size_t last=glsl.rfind("#extension");
-            size_t at=glsl.find('\n',last==std::string::npos?0:last)+1;
-            glsl.insert(at,query_uniforms);
+            glsl.insert(declaration_prefix(glsl),query_uniforms);
         }
         out->source=static_cast<char *>(std::malloc(glsl.size()+1));
         if (!out->source)throw std::bad_alloc();
