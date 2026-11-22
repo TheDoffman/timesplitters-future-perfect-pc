@@ -242,3 +242,13 @@ orders now pass (renderer-save-vk-dd-vk-03 and renderer-save-dd-vk-dd): canonica
 slot count1, exact bodybyte6 change, accepted SHA95fdcc0f, valid signature, actual
 requested backend presents and Cancel/reload preservation. Profile bytes,
 signatures and Cancel rollback remain strict assertions. See measured report.
+
+story-soak-dxgi-01 D3D11 closed cleanly and passed pause/resume, movement and
+resource limits but failed the strict late clock gate (58.945Hz). Input holds
+blocked after the loop's old seconds timestamp; actual QPC elapsed29.4448s versus
+recorded29.96s gives59.9766Hz for the same tick interval. Keep that report failed.
+RendererGameSmoke now refreshes seconds/QPC and guest state together after all
+blocking input/display/counter work, before sampling position/pause/resources.
+Polled first-present readiness also uses its actual observation time. Do not
+relax the59-61Hz gate to mask stale observations. Fresh acceptance is paired
+story-soak-dxgi-02; remaining recovery/Arcade/water queues follow only its success.

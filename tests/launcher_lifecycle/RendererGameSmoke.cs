@@ -114,7 +114,7 @@ public static class RendererGameSmoke {
    while(clock.Elapsed.TotalSeconds<duration){
     Need(!game.HasExited,"Game exited before bounded test ended");double t=clock.Elapsed.TotalSeconds;
     if(next<times.Length && t>=times[next]){await Key(hwnd,keys[next],holds[next]);Console.WriteLine(backend+" menu key "+keys[next]+" at "+t.ToString("F1"));next++;}
-    if(firstPresentSeconds<0 && ReadLiveLog(liveLog).Contains("[PRESENT] backend="+expectedBackend))firstPresentSeconds=t;
+    if(firstPresentSeconds<0 && ReadLiveLog(liveLog).Contains("[PRESENT] backend="+expectedBackend))firstPresentSeconds=clock.Elapsed.TotalSeconds;
     if(Flag("display_cycle")){
      if(displayStage==0 && t>=60){await ToggleFullscreen(hwnd);displaySnapshots.Add(DisplaySnapshot(hwnd,"fullscreen",t));displayStage++;}
      else if(displayStage==1 && t>=70){await ToggleFullscreen(hwnd);Need(!Fullscreen(hwnd),"Window mode did not restore");displaySnapshots.Add(DisplaySnapshot(hwnd,"windowed",t));displayStage++;}
@@ -126,16 +126,21 @@ public static class RendererGameSmoke {
     if(t>=85 && !moving){SetForegroundWindow(hwnd);PostMessage(hwnd,0x100,new IntPtr(87),new IntPtr(1));moving=true;}
     if(t>=90 && !released){PostMessage(hwnd,0x101,new IntPtr(87),new IntPtr(unchecked((int)0xc0000001)));released=true;}
     if(t>=92+shot*4 && shot<5){PostMessage(hwnd,0x201,new IntPtr(1),IntPtr.Zero);await Task.Delay(180);PostMessage(hwnd,0x202,IntPtr.Zero,IntPtr.Zero);shot++;}
-    if(scene==expectedScene && storySeconds<0)storySeconds=t;
     if(t>=nextGpu){
      Need(new FileInfo(liveLog).Length<=4*1024*1024 && new FileInfo(Path.ChangeExtension(liveLog,".out")).Length<=4*1024*1024,"Game log exceeded per-stream 4 MiB budget");
      try{if(gpuCounters.Count==0)gpuCounters=GpuCounters(game.Id);if(gpuCounters.Count>0)gpuDedicated=gpuCounters.Sum(c=>(double)c.NextValue());}catch{gpuDedicated=null;}
      nextGpu=t+5;
     }
     float[] pos=null;uint weapon=0;game.Refresh();
+    // Input holds, display changes and GPU-counter reads above can block.
+    // Timestamp the observation itself, never the pre-input scheduler time.
+    t=clock.Elapsed.TotalSeconds;
+    double sampleQpcMs=Stopwatch.GetTimestamp()*1000.0/Stopwatch.Frequency;
+    scene=Word(game,0x79094c);flags=Word(game,0x7de458);ticks=Word(game,0x7de318);player=Word(game,0x7b0c7c);
+    if(scene==expectedScene && storySeconds<0)storySeconds=t;
     if(scene==expectedScene && player>=0x80000000 && player<0x84000000){pos=Position(game,player);weapon=Word(game,player+0x58c);if((expectedWeapon<0 || weapon==expectedWeapon) && (flags&0x20000000)==0 && gameplayReadySeconds<0)gameplayReadySeconds=t;if(t>=85 && t<=115 && (flags&0x20000000)==0){positions.Add(pos);if(expectedWeapon<0 || weapon==expectedWeapon)equipped++;if(firstTick==0)firstTick=ticks;lastTick=ticks;}}
     uint pausePointer=Word(game,0x761c48);bool paused=pausePointer!=0 && (Word(game,pausePointer)&1)!=0;
-    samples.Add(new {seconds=Math.Round(t,2),clock_qpc_ms=Stopwatch.GetTimestamp()*1000.0/Stopwatch.Frequency,scene=scene,flags=flags,ticks=ticks,player=player,position=pos,weapon=weapon,paused=paused,cpu_total_ms=game.TotalProcessorTime.TotalMilliseconds,private_bytes=game.PrivateMemorySize64,working_set_bytes=game.WorkingSet64,handles=game.HandleCount,gpu_dedicated_bytes=gpuDedicated});
+    samples.Add(new {seconds=Math.Round(t,2),clock_qpc_ms=sampleQpcMs,scene=scene,flags=flags,ticks=ticks,player=player,position=pos,weapon=weapon,paused=paused,cpu_total_ms=game.TotalProcessorTime.TotalMilliseconds,private_bytes=game.PrivateMemorySize64,working_set_bytes=game.WorkingSet64,handles=game.HandleCount,gpu_dedicated_bytes=gpuDedicated});
     if(Flag("capture") && capture<captureTimes.Length && t>=captureTimes[capture]){SetForegroundWindow(hwnd);await Task.Delay(150);Capture(game,Path.Combine(evidence,backend+"-"+capture+".png"));capture++;}
     await Task.Delay(300);
    }

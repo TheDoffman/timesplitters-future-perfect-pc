@@ -1,4 +1,4 @@
-[Renderer/save gates](windows-vulkan.md).
+[Renderer clock/save gates](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 
