@@ -1345,3 +1345,50 @@ missing Vulkan files/driver metadata, rejecting a changed compiler. Python SDK
 regressions verify GL bypasses Vulkan selection but still requires compiler
 integrity. The45 SDK/native-Mac launcher Python checks pass. Native C# build/run
 and Mac compile checks must follow; all production automatic gates remainOFF.
+
+
+Renderer preflight c8b8d7d2: the supported native Linux launcher build/test passes
+55 shared UI groups, including the production PortableGpuEnvironment GL test.
+Mac launcher compile succeeds on Windows with two existing Avalonia obsolete
+Checked/Unchecked warnings,0 errors. This does not execute a Mac binary or
+approve its GPU/legacy path. Evidence: native logs/renderer-preflight-native-launcher.log
+and Windows logs/renderer-preflight-mac-compile.log. The45 Python checks also pass.
+
+## Native controls verified after local ownership and readiness checks
+
+The previous current-context observer could sample uninitialized/transient
+state: scene2 is published before local ownership is established. A diagnostic
+using the persistent local context at0x7b0c48 checks local id0, body+0x150 back
+reference and actor->body ownership before accepting observations. The initial
+strict probe gl-local-controls-01 rejected that transition and is not passing
+evidence. gl-local-controls-02 records raw transition observations, filters them
+for assessment, verifies ammo16->15 at84s and pause/resume, but W70..74s precedes
+readiness/capture and produces no displacement. Neither earlier run is relabeled.
+
+gl-ready-controls-01 uses the same normal native ELF5bdf19f5... and changes only
+the isolated schedule: W85..90s, after the fire/capture input. It completes120s,
+exit0,3600 periodic guest presents and0 failed presents.126 observations pass
+local ownership validation. Positions move31.2309 game units in84..92s;
+weapon14 ammo decreases16->15 at84.141s with112 reserve; pause/resume also works.
+The active55.49..94.01s window has901 host guest presents,23.366fps,
+p9555.424ms/worst70.661ms, no interval>100ms. These are WSL bridge observations,
+not scanout or physical Linux performance approval. Script and input are archived
+beside fresh receipts/captures in logs/gl-ready-controls-01. SHA256:
+guest-ready-controls-probe.py d9ed3e7cae5f33ac83ef3564ff4417e657424bf17a153486a02585dba433dc37;
+input JSON74cdad4dd73ef41a0f61889a76c52214bfd3c4379dc9f087dfaf18760fb326bf.
+This resolves the narrow movement/firing/pause evidence gap, not the remaining
+native fullscreen, enhanced settings, automatic real-game recovery, package,
+selector launch lifecycle or physical-host performance gaps. Linux/Mac gatesOFF.
+
+
+Current Windows RHI recheck after c8b8d7d2: all eight accepted-fixture cases pass,
+including missing driver/device, both failing, partial cleanup and all three
+minimum-capability failures. The default Vulkan case requires the explicit
+verified SDK validation-layer path. Accepted fixture SHA256
+372a936d5eab97221037075887fd10440adeb5420035a7b231d90c08096585ba.
+Finally restores acceptanceOFF and rebuilds; explicit GL and restricted4.1
+contracts then pass on fixture9f4e9d0ebd0deb9674703b8d40875c0b95bf37500e2e3a90ce26c14060837113.
+Evidence: logs/rhi-final-current-{recovery,restore,explicit-gl,gl41}.log and
+rhi-windows-opengl*.json. No production gate was enabled by those tests.
+A separate300s actual-selector OpenGL soak is running; its outcome remains
+pending, and its handle must be observed rather than launching a duplicate.
