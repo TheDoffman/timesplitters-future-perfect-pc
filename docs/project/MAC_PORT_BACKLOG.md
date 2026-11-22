@@ -1,3 +1,13 @@
+Launcher console error filter (2026-11-22, local codex/launcher-console-errors):
+**Verified** on native Mac for the shared C# filter, built launcher and automated
+UI/log-tail regression scope in [STATUS](STATUS.md#launcher-console-error-filter-2026-11-22).
+Windows/WPF and Mac/Linux/Avalonia compile the same ConsolePage.cs classification;
+no platform adapter is deferred. All hosts retain real failure messages/nonzero
+counters and full raw logs while excluding healthy zero counters and INFO/WARN
+messages from Errors only. Native Windows/Linux execution remains unrun here.
+The accompanying installed-game warning investigation records existing runtime
+gaps; this launcher-only change does not repair or validate those behaviors.
+
 Auto-resolution accepted-target fix (2026-11-21): **Awaiting validation** on
 native Mac/Linux. Shared pc_display_scene_size no longer lets HUD sizing consume
 a pending drawable resize; frame_done commits only successful allocations and

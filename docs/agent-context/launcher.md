@@ -40,6 +40,16 @@ Save/Cancel, draft tracking and transactions are shared by WPF/Avalonia. FPS/VRR
 choices remain independent. See [Video Options](video-options.md#optional-v-sync-2026-11-17).
 Live game Console: shared ConsolePage.cs tails the validated current/last GameSessions log pair, with bounded UTF-8 reads, pause, clear-view, error filtering and auto-scroll. Both hosts expose a single Tools & Logs navigation entry, with Repair / Verify, System & Reports and Console tabs in MaintenanceArea. ConsolePage uses embedded layout (no duplicate heading/padding), survives tab switching, and remains available during gameplay. Windows Refresh enables RepairNav while gameMonitoring is active; MonitorGame refreshes navigation on entry/exit, while maintenance actions retain busy/game guards; capture pipes remain independently drained. Windows writes and native Drain flush promptly. Native capture retains its existing 4 MiB per-stream limit. Shared UI tests exercise live appends, split UTF-8, truncation, bounds and session replacement. Preview: --render-console-preview <png>. Native Linux compilation verified on Windows; native runtime visual acceptance pending.
 
+`GameLogTail.IsError` classifies message content independently of the OUT/ERR
+stream label. The first explicit severity in the log header wins; INFO/WARN
+remain in the full view. For unlevelled runtime diagnostics it removes only
+zero failure/error counters and explicit no-error phrases before matching
+failure terms. Positive counters (including `device_failed`) and separate
+failures on an otherwise healthy statistics line remain visible. Do not suppress
+entire renderer/audio tags or specific missing-file paths. The existing shared
+UI suite runs the classification matrix and appended/partial log regression on
+all launcher hosts; raw log storage and the full console view are unchanged.
+
 [Sync telemetry](network-sync-telemetry.md).
 Integration version policy (2026-11-17): native multiplayer merges into main
 with VERSION0.6.2, per user request. Main's0.6.3-sun-fix.1 was accidental;

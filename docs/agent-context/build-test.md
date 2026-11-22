@@ -10,7 +10,7 @@
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
-Warnings: [launcher](launcher.md).
+Console zero/error tests: [UI](launcher.md).
 [Save/checksum tests](multiplayer-exit.md#validation).
 
 [Online](multiplayer-ui.md); [sun](fidelity-comparison.md).

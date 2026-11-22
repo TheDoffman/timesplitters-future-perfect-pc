@@ -1,3 +1,76 @@
+## Launcher console error filter (2026-11-22)
+
+Local `codex/launcher-console-errors`, base main `9a1e37d1`: shared
+`GameLogTail.IsError` no longer matches healthy `failed=0`, `0 failed`,
+`0 create failed` or zero audio failure counters as errors. Explicit severity
+headers take precedence over words in their message; unlevelled real failures
+and nonzero counters remain visible from stdout or stderr. Full logs are kept.
+The new classification and partial/live-append regressions run in the existing
+`launcher_shared_ui.cs` suite selected by all three launcher CI hosts.
+
+Native macOS 27.2.1 ARM64, pinned .NET 8.0.426/Avalonia 11.3.22: launcher build,
+signature verification, 26 native regression groups and 54 shared UI groups
+pass. The 31 focused Python launcher checks and 31 subtests also pass.
+Read-only `--root <installed folder> --check` passes for the user's
+installed game. A temporary harness using the actual compiled launcher assembly
+classified the existing session's 8,264-line stderr snapshot: only five failure lines
+remain (waveOut plus two file opens and their status lines). No game was launched
+or personal settings/saves changed by these checks. Existing obsolete
+ToggleButton event warnings remain. Desktop/iCloud metadata prevented signing
+the first generated bundle; the supported builder succeeded with its output in
+a host-local cache. Windows and Linux native execution are unavailable here.
+The launcher package also passes isolated install, signature/corruption checks,
+repair, helper restart/render and personal-file preservation. This is a local
+patched 1.7.0 build, not a published launcher release. Installation into the
+active user folder is pending game shutdown; the running session is preserved.
+
+## Installed game warning investigation (2026-11-22)
+
+Inspected the user's existing session 20261122-205624-189, installed game v0.6.2
+source 5b092b51, Vulkan/MoltenVK on Apple M5 Pro. The running game differs from
+this task's main source base. The installed US XBE SHA256 matches the required
+3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc.
+Evidence: bounded session stdout/stderr, xbox_kernel.log, current source and
+read-only disassembly of the verified local XBE. No gameplay rerun or fixes to
+the runtime, game files or personal save data were made.
+
+- `overlay.pak`: the original loader at000629BC tries `pak/overlay.pak`;
+  its failed-open branch at000629EE retains handle-1 and continues at00062A21
+  to `pak/xbpad.pak`. This is a tolerated absent pack in the observed startup,
+  not evidence that the required game extract is corrupt. No placeholder added.
+- `TitleData/45410066/$u/contentmeta.xbx`: the host returns ENOENT and the
+  guest receives STATUS_OBJECT_NAME_NOT_FOUND(0xC0000034). Shared title-data
+  routing selects the installed Saves root as intended. This is a content/update
+  metadata path; its absence did not stop this session. The exact higher-level
+  caller/fallback and any optional-content effect are not established, so it is
+  retained as a failed lookup instead of silently whitelisted or fabricated.
+- `waveOutOpen(error11)`: the POSIX compatibility shim deliberately returns
+  MMSYSERR_INVALPARAM; the legacy APU attempt therefore fails. Native SDL output
+  opens later (session line 583), with zero reported device/voice/allocation
+  failures or underruns. Physical audio output was not listened to in this task.
+- `NtQueryVolumeInformationFile(class 1)`: the compiled POSIX kernel_file.c
+  handles size information(class 3) only; class 1 reaches STATUS_NOT_IMPLEMENTED.
+  Class 1 is volume metadata (label/serial/creation time), independently documented
+  in [nxdk's public kernel interface](https://github.com/XboxDev/nxdk/blob/master/lib/xboxkrnl/xboxkrnl.h).
+  Original call0037D716 requests class 1 and branches to its failure path when
+  status is negative. Seven warnings were observed; this is a real compatibility
+  gap, not a missing game file or proof of save corruption. Correct output
+  layout, bounded buffers and host-independent volume identity need separate
+  runtime work and validation before changing this handler.
+- TV encoder option 0x0F reaches kernel_hal.c's default warning/zero-result
+  branch. Required option semantics and visible impact remain unverified;
+  successful Vulkan presents alone do not validate this original hardware query.
+- No-op instructions: fnclex003C8486, wbinvd003DAFF4, out003DD270 and
+  in003DC35D are unsupported by the translator. The IN/OUT pair uses port 80C0;
+  code after IN consumes the unchanged register value to update device state.
+  Thus these warnings cannot all be labelled harmless. Original hardware/status
+  semantics need evidence and focused contracts before implementing substitutes.
+
+The inspected session continued with zero reported presentation failures.
+This does not establish visual fidelity, correct hardware-query behavior or
+complete gameplay compatibility. Launcher filtering fixes diagnostic false
+positives; it does not claim to fix the documented runtime gaps.
+
 ## Online Gladiator bot selection (#229, 2026-11-22)
 
 The shared bot-activity adapter now accepts a selected AI actor in the original

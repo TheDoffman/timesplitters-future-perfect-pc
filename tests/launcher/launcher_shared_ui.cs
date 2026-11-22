@@ -94,6 +94,33 @@ public static class LauncherSharedUiChecks
                     }
                 } finally {Environment.SetEnvironmentVariable("RECOMP_D3D8_BACKEND",old);}
             });
+            Test("console distinguishes healthy statistics, warnings and actual failures",()=>{
+                string[] healthy={
+                    "[PRESENT] backend=vulkan total=20700 guest=20700 interpolated=0 other=0 skipped=0 failed=0",
+                    "[HLE-D3D8] shadow textures: 888858 binds, 42 cached, 39 uploads; skipped 0 format, 0 out of range, 0 create failed",
+                    "[HLE-D3D8] shadow: 20806 swaps; skipped 0 program without layout, 0 unknown shader, 0 stride, 0 primitive, 0 failed; 87 off the swapping thread",
+                    "[HLE-D3D8] shadow render targets: 64901 set, 0 to a scratch target, 0 failed",
+                    "[DSOUND] output health: queue_full=0 invalid_pcm=0 allocation_failed=0 voice_failed=0 device_failed=0 opens=1",
+                    "Errors=0; failures: 0; 0 errors; no failures; no exceptions",
+                    "[WARN] Optional lookup failed; continuing", "[15:56:26.899] WARN [FILE] unhandled class 1",
+                    "[INFO] Error reporting enabled", "Warning: connection interrupted; retrying",
+                    "[UNIMPL] untranslated instruction REACHED: in al, dx (a no-op)",
+                    "[TEXTURE-MODE] 4K; missing replacements use Classic.", "normal diagnostics"
+                };
+                string[] failures={
+                    "[PRESENT] backend=vulkan total=300 failed=1", "[PRESENT] failed=10", "failed=0.5",
+                    "[HLE-D3D8] shadow textures: 0 format, 1 create failed", "[DSOUND] output health: voice_failed=0 device_failed=1",
+                    "[PRESENT] failed=0; renderer initialization failed", "0 errors; 2 failures", "no errors previously; device failed",
+                    "[APU] waveOutOpen failed (error 11)", "[POSIX-FILE] open Data/pak/overlay.pak failed: No such file or directory (errno 2)",
+                    "[FILE] -> 0xC0000034 FAILED", "VK_ERROR_DEVICE_LOST", "Unhandled exception: device disconnected",
+                    "[ERROR] Device unavailable; failed=0", "[RHI] ERROR: cannot create device", "Fatal: renderer stopped", "[CRITICAL] Device lost"
+                };
+                foreach(string prefix in new[]{"","[OUT] ","[ERR] "}) {
+                    foreach(string line in healthy)Need(!GameLogTail.IsError(prefix+line),"Healthy/warning line shown as an error: "+prefix+line);
+                    foreach(string line in failures)Need(GameLogTail.IsError(prefix+line),"Actual error hidden: "+prefix+line);
+                }
+                Need(!GameLogTail.IsError(null)&&!GameLogTail.IsError("  "),"Empty input classified as an error");
+            });
             Test("console tails live shared files, preserves UTF8 and separates errors",()=>{
                 string folder=Path.Combine(root,"console");Directory.CreateDirectory(folder);
                 var tail=new GameLogTail(folder);tail.Poll();Need(tail.Text(false)=="","Missing log should be empty");
@@ -107,6 +134,12 @@ public static class LauncherSharedUiChecks
                 }
                 File.WriteAllText(err,"normal diagnostics\nError: test failure\n");tail.Poll();
                 Need(tail.Text(true).Contains("test failure")&&!tail.Text(true).Contains("normal diagnostics"),"Stderr must not all be classified as errors");
+                File.AppendAllText(err,"[PRESENT] failed=0\n[HLE-D3D8] 0 create failed\n[WARN] Optional lookup failed\n[PRESENT] failed=");tail.Poll();
+                File.AppendAllText(err,"0");tail.Poll();Need(!tail.Text(true).Contains("[PRESENT]"),"Partial zero counter shown as an error");
+                File.AppendAllText(err,"\n[PRESENT] failed=2\n");File.AppendAllText(output,"[ERROR] Device lost\n");tail.Poll();
+                Need(tail.Text(true).Contains("[ERR] [PRESENT] failed=2")&&tail.Text(true).Contains("[OUT] [ERROR] Device lost"),"Failures from both pipes must remain visible");
+                Need(!tail.Text(true).Contains("failed=0")&&!tail.Text(true).Contains("0 create failed")&&!tail.Text(true).Contains("Optional lookup"),"Non-errors leaked into filtered output");
+                Need(tail.Text(false).Contains("failed=0")&&tail.Text(false).Contains("Optional lookup"),"Filtering must preserve the full log");
                 tail.Clear();tail.Poll();Need(tail.Text(false)=="","Clear must not reread old lines");
                 File.AppendAllText(output,"next line\n");tail.Poll();Need(tail.Text(false).Contains("next line"),"Live append missing");
                 File.WriteAllText(output,"new\n");tail.Poll();Need(tail.Text(false).Contains("[OUT] new"),"Truncation not recovered");
