@@ -1,10 +1,31 @@
 # OpenGL startup recovery: implementation in progress
 
-Goal: Vulkan remains primary, no launcher selector, and only Vulkan startup
-failure may trigger an accepted OpenGL backend. D3D11 is not automatic recovery.
+Goal (amended by the user on 2026-11-22): Vulkan remains the default, and the
+launcher must offer Vulkan and OpenGL so a user can explicitly choose OpenGL
+when needed. This supersedes the earlier requirement for no launcher selector.
+Automatic recovery remains limited to Vulkan startup failure on accepted hosts;
+explicit OpenGL selection must start OpenGL directly. D3D11 is not restored.
 Branch feature/opengl-startup-recovery is based on local4c287926 (Windows fallback
 removal), which follows main694fc53a. No goal completion or universal readiness
 is established by this checkpoint. Keep all platform recovery gates disabled.
+
+## Launcher selector acceptance added to the goal
+
+- Restore a player-facing Vulkan/OpenGL selector using shared launcher settings
+  and launch policy, with thin host adapters. Keep Vulkan selected for new or
+  missing preferences; preserve a user's saved choice across launcher restarts
+  and updates without changing unrelated settings, saves, or installed textures.
+- Pass the selected backend to the game at launch. A deliberate OpenGL choice
+  must not first attempt Vulkan; Vulkan retains the separately gated startup
+  recovery policy. Show a clear error when the chosen renderer cannot start.
+- Verify both choices through the actual launcher on available hosts, including
+  persistence, switching back, correct backend logs, menu/gameplay progress,
+  input and window handling. Add meaningful shared settings/launch tests and
+  record unavailable native-host checks explicitly.
+- Update player documentation and launcher compatibility/context records with
+  the implementation. The selector is requested work, not implemented or tested
+  by this scope amendment. All existing graphics and platform acceptance work
+  remains required; manual selection does not approve automatic recovery.
 
 ## Shared startup policy
 
