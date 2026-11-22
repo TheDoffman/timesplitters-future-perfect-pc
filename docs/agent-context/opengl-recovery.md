@@ -961,3 +961,9 @@ The b05ba5d2 continuous native SDL dispatch build and14 native focused checks
 pass. gl-guest-loop-01 still reports only1 completed guest present in30s, despite
 additional guest/audio/shadow-frame activity. Do not claim native gameplay
 acceptance; inspect the current frame/dispatch evidence before another rerun.
+
+Native launcher compile and Linux adapter checks pass at65d753d2. The first shared
+UI run stopped because a synthetic renderer=vulkan receipt omitted runtime hashes;
+the fixture now uses minimal compatibility metadata, while separate native GPU
+receipt/closure tests retain their validation. This is a fixture correction,
+not a weakened native package or shader compiler prerequisite.

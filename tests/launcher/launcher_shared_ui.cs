@@ -102,11 +102,11 @@ public static class LauncherSharedUiChecks
                     var current=GameSettings.Load(folder,null);current.Sensitivity=.2;current.Width=1280;current.Height=720;current.Save();
                     Need(GameSettings.Load(folder,null).Renderer=="opengl","Unrelated save lost renderer");
                     string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));Directory.CreateDirectory(Path.GetDirectoryName(manifest));
-                    Core.Write(manifest,Json.Encode(new{renderer="vulkan"}));
+                    Core.Write(manifest,Json.Encode(new{version="v1.0.0"}));
                     bool rejected=false;string rejection="";try{GameSettings.StartInfo(folder);}catch(Exception e){rejection=e.Message;rejected=e.Message.Contains("selected renderer");}
                     Need(rejected,"Older game did not reject unsupported OpenGL: "+rejection);
                     Need(GameSettings.Load(folder,null).Renderer=="opengl","Older game reset saved preference");
-                    Core.Write(manifest,Json.Encode(new{renderer="vulkan",supported_renderers=new[]{"vulkan","opengl"}}));
+                    Core.Write(manifest,Json.Encode(new{version="v1.0.0",supported_renderers=new[]{"vulkan","opengl"}}));
                     Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="opengl","Supported package rejected OpenGL");
                     File.WriteAllText(controls,baseline.Replace("\"renderer\":\"vulkan\"","\"renderer\":\"d3d11\""));
                     Core.Write(manifest,Json.Encode(new{renderer="gl"}));
