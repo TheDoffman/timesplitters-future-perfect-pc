@@ -1,4 +1,4 @@
-[GL probe](opengl-recovery.md).
+[GL read](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

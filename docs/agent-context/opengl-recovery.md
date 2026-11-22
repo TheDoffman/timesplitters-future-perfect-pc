@@ -1516,3 +1516,21 @@ fields on failure; it does not weaken lifecycle assertions. The runner attempts
 both saved choices before returning overall failure for failed contracts. Next
 check: a short isolated reproduction to distinguish minimized versus restored
 state, then the full two-choice probe. Linux recovery remains0.
+
+
+native-selector-real-02 preserves strict FAIL for both WSLg lifecycle cases:
+Vulkan/OpenGL each save the selected renderer, present, reach active Story
+(694/696 active observations), retain unknown settings, exit0 and restoreNormal;
+but runningWindowState staysNormal, so minimized=false. No physical game-window
+query is claimed. Logs are now bounded~265KiB with tracing disabled.
+
+Private Xvfb/Openbox short checks pass both choices, including real minimize/
+restore and renderer presents. They change no host desktop settings. The first
+setup incorrectly required a filesystem X socket despite WSLg's shared socket
+directory; the corrected probe verifies its owned server through XOpenDisplay
+and uses the abstract socket. The first full private-X11 attempt is invalid:
+the observer caught EIO at startup before guest memory was ready. The runner now
+clears old boot logs, waits for a fresh owned guest entry before opening memory,
+and re-polls transient mapping publication/teardown on the same child. It retains
+a bounded failure for persistent unreadability. Full private-X11 checks follow;
+no renderer or lifecycle acceptance assertion is relaxed. Linux gate stays0.

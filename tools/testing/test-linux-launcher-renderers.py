@@ -96,7 +96,10 @@ def run_case(args,scope,session,backend,evidence,native,rhi):
     plan=session/'plan.json'
     plan.write_text(json.dumps(dict(runtime_root=str(ROOT),environment=env,renderer=backend,seconds=120,mode='quit'))+'\n')
     actions=native['input_script'](ROOT/'tests/fixtures/linux-story-benchmark.json',120)
-    states=[];memory=None;offset=None;child_pid=None;started=None;skipped=False;resumed=False;game_ended=False
+    states=[];memory=None;offset=None;child_pid=None;started=None;skipped=False;resumed=False;game_ended=False;unreadable_since=None
+    # Do not parse a previous child's boot offset while the new drain starts.
+    for name in ('native-play.out','native-play.err'):
+        unlinked(session/'logs'/name,scope).write_text('')
     parent_env={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_','VK_','SDL_VULKAN','DYLD_'))}
     with (evidence/'launcher.log').open('w') as output:
         process=subprocess.Popen([str(args.launcher),'--root',str(session),'--test-session',str(plan)],env=parent_env,stdout=output,stderr=subprocess.STDOUT,start_new_session=True)
@@ -112,21 +115,29 @@ def run_case(args,scope,session,backend,evidence,native,rhi):
                         candidate=int(data['game_pid'])
                         status=Path(f'/proc/{candidate}/status').read_text()
                         if int(re.search(r'^PPid:\s+(\d+)',status,re.M)[1])!=process.pid:raise ValueError('Game is not this launcher child')
-                        child_pid=candidate;started=time.monotonic();memory=os.open(f'/proc/{candidate}/mem',os.O_RDONLY|os.O_CLOEXEC)
+                        child_pid=candidate;started=time.monotonic()
                 if child_pid and not game_ended:
                     elapsed=time.monotonic()-started
                     if offset is None:
                         path=session/'logs/native-play.out'
-                        match=re.search(r'Xbox memory offset: (0x[0-9a-fA-F]+)',path.read_text(errors='replace')) if path.exists() else None
-                        if match:offset=int(match[1],16)
+                        boot=path.read_text(errors='replace') if path.exists() else ''
+                        match=re.search(r'Xbox memory offset: (0x[0-9a-fA-F]+)',boot)
+                        if match and 'Entering translated Xbox entry' in boot:
+                            memory=os.open(f'/proc/{child_pid}/mem',os.O_RDONLY|os.O_CLOEXEC);offset=int(match[1],16)
+                        elif elapsed>15:raise RuntimeError('Owned game did not publish a fresh guest entry')
                     if offset is not None:
                         def word(address):return struct.unpack('<I',os.pread(memory,4,offset+address))[0]
                         try:state=native['story_snapshot'](word)
                         except (OSError,struct.error):
                             try:status=Path(f'/proc/{child_pid}/status').read_text()
                             except FileNotFoundError:status='State:\tZ'
-                            if not re.search(r'^State:\s+[ZX]',status,re.M):raise
-                            game_ended=True;continue
+                            if re.search(r'^State:\s+[ZX]',status,re.M):game_ended=True;continue
+                            # Mapping publication and final teardown can race a
+                            # sample. Re-poll this same live child; never restart.
+                            if unreadable_since is None:unreadable_since=time.monotonic()
+                            if elapsed>=15 and time.monotonic()-unreadable_since>1:raise
+                            time.sleep(.1);continue
+                        unreadable_since=None
                         state['seconds']=round(elapsed,3);states.append(state)
                         if elapsed>=50 and state['flags']&0x20000000 and not skipped:
                             skipped=True;actions.extend([(elapsed,'+Escape\n'),(elapsed+.2,'-Escape\n')]);actions.sort()
