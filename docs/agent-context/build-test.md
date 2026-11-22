@@ -1,4 +1,4 @@
-[GL runs](opengl-recovery.md).
+[GL probe](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

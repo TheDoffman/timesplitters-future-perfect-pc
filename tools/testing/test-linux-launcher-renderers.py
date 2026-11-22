@@ -80,7 +80,7 @@ def run_case(args,scope,session,backend,evidence,native,rhi):
            'XDG_CONFIG_HOME':'xdg-config','XDG_DATA_HOME':'xdg-data','XDG_CACHE_HOME':'xdg-cache',
            'TSFP_NATIVE_TEST_KEYS':'test-keys.txt','RECOMP_LOG_FILE':'launcher-session/logs/native-play.err'}
     env.update({key:str(unlinked(scope/name,scope)) for key,name in paths.items()})
-    env.update(RECOMP_GAME_DIR=str(ROOT/'private/game'),RECOMP_XMV_PLAY='0',RECOMP_VK_VALIDATION='0',
+    env.update(RECOMP_GAME_DIR=str(ROOT/'private/game'),RECOMP_XMV_PLAY='0',RECOMP_VK_VALIDATION='0',RECOMP_TRACE_BUDGET='0',
                RECOMP_SHADER_CACHE='1')
     if args.sdl_driver:env['SDL_VIDEODRIVER']=args.sdl_driver
     if args.wayland_display:env['WAYLAND_DISPLAY']=args.wayland_display
@@ -155,8 +155,8 @@ def run_case(args,scope,session,backend,evidence,native,rhi):
         shutil.copy2(source,evidence/source.name)
     (evidence/'verified.json').write_text(json.dumps(result,indent=2)+'\n')
     recycle_test_disks(ROOT,scope,save_directory=Path(env['RECOMP_SAVE_DIR']))
-    if not result['passed']:raise RuntimeError('Native selector/game checks failed')
-    print(backend,'PASS saved UI selection, game rendering/Story and launcher lifecycle; physical window observation is separate',flush=True)
+    print(backend,'PASS' if result['passed'] else 'FAIL','saved UI selection, game rendering/Story and launcher lifecycle; physical window observation is separate',flush=True)
+    return result
 
 
 def main():
@@ -184,13 +184,15 @@ def main():
         fcntl.flock(owner,fcntl.LOCK_EX|fcntl.LOCK_NB)
         try:
             session=stage(ROOT,scope,manifest)
+            results=[]
             for backend in ('vulkan','opengl'):
                 output=evidence/backend;output.mkdir()
-                run_case(args,scope,session,backend,output,native,rhi)
-            check_fixture(ROOT);provenance['passed']=True
+                results.append(run_case(args,scope,session,backend,output,native,rhi))
+            check_fixture(ROOT);provenance['passed']=all(result['passed'] for result in results)
         finally:
             recycle_test_disks(ROOT,scope,save_directory=scope/'launcher-selector-profile/saves')
             (evidence/'provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
+    if not provenance['passed']:raise SystemExit(1)
 
 
 if __name__=='__main__':main()

@@ -1502,3 +1502,17 @@ new Python runner records binary/source provenance, confirms owned grandchild
 identity before reading guest state, handles confirmed child termination during
 UI restore, bounds logs/time and recycles test disks in finally. These changes
 prepare actual Vulkan->OpenGL saved UI switching; runtime checks are next.
+
+
+native-selector-real-01 is FAILED, not accepted: the actual UI saves Vulkan,
+starts the normal791eaca3... game with Vulkan presents, observes active Story
+(1201 owned state samples total), and retains unknown settings, but the strict
+launcher minimize/restore assertion fails. OpenGL was not attempted by that
+first runner. The game log also reached its4MiB drain cap with default call
+tracing; the runner now explicitly sets RECOMP_TRACE_BUDGET=0. This is a test
+environment correction, not a graphics/performance acceptance result.
+NativeEndToEnd now retains observed window states and renderer/exit/persistence
+fields on failure; it does not weaken lifecycle assertions. The runner attempts
+both saved choices before returning overall failure for failed contracts. Next
+check: a short isolated reproduction to distinguish minimized versus restored
+state, then the full two-choice probe. Linux recovery remains0.

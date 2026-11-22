@@ -8,7 +8,9 @@ unverified and requires selected-backend presents instead; this is lifecycle/
 routing coverage, not physical visibility or update-recovery approval. Original
 assets are read separately; this fixture is not release package relocation.
 Selector Save uses the actual Avalonia routed click (qualified to avoid the
-window Button helper name); compile/runtime verification remains pending.
+window Button helper name). Failure reports retain initial/running/final window
+states and rendering/persistence observations; minimize/restore assertions remain
+strict. Both selector cases run even if one returns a failed contract.
 
 Launcher renderer selector restored in development (2026-11-22): shared
 SettingsPage Graphics > Advanced offers Vulkan (Default) and OpenGL. GameSettings

@@ -16,7 +16,7 @@ namespace TimeSplitters.Launcher
         // monitor and UI lifecycle, never Prepare or personal saves/settings.
         async Task TestSession()
         {
-            string output=null;
+            string output=null;var observations=new Dictionary<string,object>();
             try{
                 int option=Array.IndexOf(args,"--test-session");var plan=Json.Object(File.ReadAllText(args[option+1]));
                 string runtime=Path.GetFullPath(Json.String(plan,"runtime_root"));
@@ -27,6 +27,7 @@ namespace TimeSplitters.Launcher
 #endif
                 Core.Require(Path.GetFullPath(root)==Core.PathIn(scope,"launcher-session"),"Launcher tests require the isolated native runner root.");
                 output=Core.PathIn(root,"result.json");string renderer=Json.String(plan,"renderer");bool selector=renderer.Length!=0;
+                observations["renderer"]=renderer;observations["selector"]=selector;
                 string launchRoot=selector?root:runtime;
                 NativeHost.CheckData(launchRoot);
                 if(selector){
@@ -53,7 +54,9 @@ namespace TimeSplitters.Launcher
                 }
                 Core.Require(File.Exists(Core.PathIn(scope,"run.lock")),"The bounded native runner must hold the test lock.");
                 string mode=Json.String(plan,"mode");Core.Require(mode=="quit"||mode=="crash","Invalid test termination mode.");int seconds=Convert.ToInt32(plan["seconds"]);Core.Require(seconds>=3 && seconds<=120,"Invalid test duration.");
+                observations["initialWindowState"]=WindowState.ToString();
                 var monitor=MonitorGame(info,root);await Task.Delay(700);bool minimized=WindowState==WindowState.Minimized;
+                observations["runningWindowState"]=WindowState.ToString();
                 await Task.Delay(seconds*1000);File.AppendAllText(info.Environment["TSFP_NATIVE_TEST_KEYS"],mode+"\n");
                 int exit=await monitor.WaitAsync(TimeSpan.FromSeconds(20));bool restored=WindowState==WindowState.Normal;
                 string latest=CrashReports.Latest(root);if(mode=="crash"){Core.Require(latest!=null&&!CrashReports.IsUnexpectedExit(root,latest),"Missing native fatal report.");CrashReports.Export(root,latest,Core.PathIn(root,"export.zip"));}
@@ -64,13 +67,17 @@ namespace TimeSplitters.Launcher
                 // it does not approve update recovery or visual acceptance.
                 if(selector)requireWindowObservation=false;
 #endif
-                if(requireWindowObservation)Core.Require(lastWindowObserved,"Native game window was never observed.");
                 bool rendered=!selector||File.ReadAllText(Core.PathIn(root,"logs/native-play.err")).Contains("[PRESENT] backend="+renderer);
+                observations["exit"]=exit;observations["minimized"]=minimized;observations["restored"]=restored;
+                observations["finalWindowState"]=WindowState.ToString();observations["rendered"]=rendered;
+                observations["gameWindowObservationRequired"]=requireWindowObservation;observations["gameWindowObserved"]=lastWindowObserved;
+                observations["rendererPersisted"]=!selector||GameSettings.Load(root,null).Renderer==renderer;
+                if(requireWindowObservation)Core.Require(lastWindowObserved,"Native game window was never observed.");
                 Core.Require(rendered,"Selected renderer never presented a game frame.");
                 Core.Require(minimized&&restored,"Launcher window did not minimize and restore.");Core.Require(exit==(mode=="quit"?0:134),"Unexpected game exit: "+exit);
                 if(selector)Core.Require(GameSettings.Load(root,null).Renderer==renderer,"Saved renderer changed during gameplay.");
                 Core.Write(output,Json.Encode(new{passed=true,mode,exit,minimized,restored,renderer,selector,rendered,gameWindowObservationRequired=requireWindowObservation,gameWindowObserved=lastWindowObserved,driver=info.Environment.TryGetValue("VK_DRIVER_FILES",out var icd)?icd:null,report=latest}));Close();
-            }catch(Exception e){if(output!=null)Core.Write(output,Json.Encode(new{passed=false,error=e.ToString()}));Console.Error.WriteLine(e);Environment.ExitCode=1;gameRunning=false;Close();}
+            }catch(Exception e){observations["passed"]=false;observations["error"]=e.ToString();if(output!=null)Core.Write(output,Json.Encode(observations));Console.Error.WriteLine(e);Environment.ExitCode=1;gameRunning=false;Close();}
         }
     }
 }
