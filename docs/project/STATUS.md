@@ -1,3 +1,18 @@
+## Launcher selection and recovery recheck (2026-11-22)
+
+The restored launcher offers Vulkan (Default) and OpenGL, persists the choice,
+and has passed actual Windows launcher/game switching checks. D3D11 is absent
+from the selector. Current-source Windows injected startup recovery and both-fail
+checks pass with settings/assets preserved; the ordinary build and mandatory
+checks pass after removing the test-only recovery definition. Four focused
+fresh/historical patch-upgrade tests pass. Native dispatch units and all eight
+Linux RHI recovery cases pass; state-verified windowed OpenGL Story gameplay now
+runs, with bounded idle CPU. WSL fullscreen/performance and further native game/
+package acceptance remain unresolved. Automatic recovery remains disabled on all
+production hosts; native Mac hardware checks are unavailable, and macOS OpenGL
+is deprecated. Local commits only; no publication or merge. Exact provenance:
+[recovery recheck](../agent-context/opengl-recovery.md#current-source-recovery-integration-recheck-2026-11-22).
+
 ## Rebuilt OpenGL game acceptance checkpoint (2026-11-22)
 
 Normal Windows code54ee1d6 rebuild and mandatory checks pass after a single-worker

@@ -1259,3 +1259,69 @@ Explicit child-only --validation-layer-path external/vulkan-sdk/windows/1.4.363.
 passes the full Windows Vulkan RHI contract with validation on and no diagnostics.
 No download, registry change or SDK mutation is needed. Earlier no-layer logs
 reflect discovery without this explicit path; they do not prove missing files.
+
+
+## Current-source recovery integration recheck (2026-11-22)
+
+At clean source95d815c9, the native three focused dispatch/wait/capability units
+and all eight actual-driver RHI recovery cases pass again. The native fixture
+now observes real GL owner dispatch progress, and its runner restores the
+private recovery gateOFF. Evidence: logs/adaptive-dispatch-final-units.log,
+logs/adaptive-dispatch-final-rhi.log and rhi-linux-opengl-recovery-d3d12.json.
+These tests do not approve Linux automatic recovery or native Mac support.
+
+The same source passes actual Windows launcher startup recovery in
+gl-current-startup-recovery-01: a child-only missing Vulkan manifest produces one
+vkCreateInstance failure, one recovery attempt, and only OpenGL guest presents.
+The 120s run reaches Story gameplay with movement/weapon checks, actual MSAA4,
+SMAA/SSAO, Auto scene resize, fullscreen/windowed/resize/restore and clean exit0.
+Saved Vulkan selection/quality and installed custom DDS remain preserved.
+Reviewed frame0 has correct world/weapon/HUD colors and visible fire/objective.
+The85.22..114.82s observation reports59.966 guest ticks/s,583 handles throughout,
+and1.486 CPU core-equivalents; captures/display changes exclude benchmark claims.
+
+Trial EXE SHA25611efbd20c0f8bde8cec02f85fc4ea97ca74d3816c5621f30b45b2e35d484c12d
+uses a local ignored source-only TSFP_OPENGL_RECOVERY_ACCEPTED=1 definition.
+Its cached in-game version stamp predates this source; the recorded clean Git
+source, runner hashes and executable hash identify this test, not that stamp.
+The CMake project include must guard CMAKE_CURRENT_SOURCE_DIR==CMAKE_SOURCE_DIR
+because nested SDL/platform project() calls also evaluate the include; an initial
+unguarded local configuration failed before building and was corrected.
+No production policy or compiler flags were changed by this diagnostic injection.
+
+gl-current-both-fail-01 passes with the same trial: missing driver plus the
+sandbox-only unavailable-DXC fixture yields both failure reasons, exactly one
+recovery attempt, no selection/presents and bounded exit2. Settings and custom
+assets remain byte-identical. The normal cache was then cleared of the private
+project include and the supported ordinary Build/check route started; record
+its final result separately. Never deliver the accepted trial binary.
+All production recovery gates remainOFF pending final platform decisions.
+
+
+Ordinary current-source Windows Build and mandatory checks finish successfully,
+including recreation of matching crash symbols. CMAKE_PROJECT_INCLUDE is empty.
+Normal EXE SHA256713c7644dad6492117d1ba5788425501dc6e9e9666e2280a696f376bded60017.
+Fresh/repeated build and historical native-checkpoint, controls, and Mac-stack
+upgrade tests pass4/4 (34 deselected,157.99s) against the stable3058/3059 patch
+list: logs/opengl-final-patch-upgrades.log. This is focused upgrade coverage;
+it does not relabel all repository tests or native Mac acceptance as passing.
+
+
+Native gl-adaptive-controls-01 completes120s with the normal91b5683b ELF
+5bdf19f5... and3300 periodic guest presents,0 logged failed presents/runner exit0.
+The isolated script sends W70..74s, fire80/84s, pause95s and resume99s.
+Owned scene/flags samples confirm pause95.185..99.192s and resume99.693s.
+The active55.35..93.86s window has876 host guest presents,22.72fps,
+p9556.06ms/worst75.64ms and no interval over100ms. Final image has correctly
+colored world/weapon/fire/sun/HUD. This is bounded windowed WSL evidence only.
+The added diagnostic player observer reports no displacement and weapon-1;
+therefore movement/weapon-state acceptance did NOT pass. Do not treat the
+wrapper's coarse progress flag as full controls acceptance. The firing script
+was delivered, but delivery alone does not prove the firing behavior. Pause/
+resume proves that some live input survives native GL window replacement.
+Evidence includes the isolated input JSON, guest-controls-probe.py and fresh
+captures in the native checkout; retain the failed/unverified observation.
+Linux automatic recovery staysOFF pending corrected state/control verification,
+display/fullscreen, performance and packaged-host acceptance. Native Mac remains
+unavailable with its own unchanged acceptance gaps; Windows checks cannot waive
+those requirements. No personal save/settings directory was used.
