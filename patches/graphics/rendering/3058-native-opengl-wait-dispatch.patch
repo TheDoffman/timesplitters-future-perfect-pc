@@ -1,0 +1,69 @@
+diff --git a/src/platform/win32_compat.h b/src/platform/win32_compat.h
+--- a/src/platform/win32_compat.h
++++ b/src/platform/win32_compat.h
+@@ -158,6 +158,11 @@
+ BOOL   ReleaseMutex(HANDLE h);
+ 
+ /* ---- Waiting ---------------------------------------------------------- */
++/* Optional owner-thread desktop service for ordinary blocking waits. Budget0
++ * only queries ownership; positive budgets service callbacks and idle at most
++ * that many milliseconds. No callback runs while an object lock is held. */
++typedef int (*w32_HostWaitPump)(DWORD maximum_idle_ms);
++void w32_SetHostWaitPump(w32_HostWaitPump pump);
+ DWORD WaitForSingleObject(HANDLE h, DWORD ms);
+ DWORD WaitForSingleObjectEx(HANDLE h, DWORD ms, BOOL alertable);
+ DWORD WaitForMultipleObjects(DWORD count, const HANDLE *handles, BOOL waitAll, DWORD ms);
+diff --git a/src/platform/win32_compat.c b/src/platform/win32_compat.c
+--- a/src/platform/win32_compat.c
++++ b/src/platform/win32_compat.c
+@@ -552,11 +552,40 @@
+     return result;
+ }
+ 
++/* The platform carries no SDL/renderer policy. A desktop adapter opts in
++ * only its owning thread; other threads keep the normal condition waits. */
++static w32_HostWaitPump host_wait_pump;
++static __thread int inside_host_wait_pump;
++void w32_SetHostWaitPump(w32_HostWaitPump pump)
++{ __atomic_store_n(&host_wait_pump, pump, __ATOMIC_RELEASE); }
++static int service_host_wait(DWORD maximum_idle_ms)
++{
++    if (inside_host_wait_pump) return 0;
++    w32_HostWaitPump pump = __atomic_load_n(&host_wait_pump, __ATOMIC_ACQUIRE);
++    if (!pump) return 0;
++    inside_host_wait_pump = 1;
++    int serviced = pump(maximum_idle_ms);
++    inside_host_wait_pump = 0;
++    return serviced;
++}
++
+ DWORD WaitForSingleObject(HANDLE h, DWORD ms)
+ {
+     if (!h || h == PSEUDO_CURRENT_THREAD || h == PSEUDO_CURRENT_PROCESS)
+         return WAIT_OBJECT_0;
+-    return wait_single((w32_object *)h, ms);
++    if (!ms || !service_host_wait(0)) return wait_single((w32_object *)h, ms);
++    uint64_t end = ms == INFINITE ? UINT64_MAX : monotonic_ns() + (uint64_t)ms * 1000000ull;
++    for (;;) {
++        DWORD result = wait_single((w32_object *)h, 0);
++        if (result != WAIT_TIMEOUT) return result;
++        uint64_t now = monotonic_ns();
++        if (now >= end) return WAIT_TIMEOUT;
++        if (!service_host_wait(1)) {
++            DWORD remaining = end == UINT64_MAX ? INFINITE :
++                (DWORD)((end - now + 999999ull) / 1000000ull);
++            return wait_single((w32_object *)h, remaining);
++        }
++    }
+ }
+ 
+ DWORD WaitForSingleObjectEx(HANDLE h, DWORD ms, BOOL alertable)
+@@ -604,7 +633,7 @@
+                 (now.tv_sec == ts.tv_sec && now.tv_nsec >= ts.tv_nsec))
+                 return WAIT_TIMEOUT;
+         }
+-        usleep(1000);
++        if (!service_host_wait(1)) usleep(1000);
+     }
+ }
+ 

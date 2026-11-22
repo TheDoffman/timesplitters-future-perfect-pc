@@ -2250,6 +2250,15 @@
       ]
     },
     {
+      "name": "3058-native-opengl-wait-dispatch.patch",
+      "path": "patches/graphics/rendering/3058-native-opengl-wait-dispatch.patch",
+      "sha256": "0fd2ae1500e5a52b647e114a8654ea03e393bc560f9fea67548e280eb426460f",
+      "targets": [
+        "src/platform/win32_compat.c",
+        "src/platform/win32_compat.h"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

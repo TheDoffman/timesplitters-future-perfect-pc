@@ -26,6 +26,7 @@ RENDERER_STARTUP_PATCHES = (
     '3055-exit-on-host-renderer-startup-failure.patch',
     '3056-guard-exit-trace-memory-faults.patch',
     '3057-native-opengl-source-path.patch',
+    '3058-native-opengl-wait-dispatch.patch',
 )
 
 STORY_PATCHES = (

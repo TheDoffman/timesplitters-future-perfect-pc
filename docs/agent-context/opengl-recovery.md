@@ -821,3 +821,48 @@ now identify request/sync/active-state/drawable/clear/present failures per step,
 retaining all acceptance predicates. Windows unit passes; native rebuild and
 rerun required. Actual guest/menu/input/display/performance/package and native
 Mac hardware checks remain pending. All production recovery gates remain0.
+
+
+### Real guest-loop deadlock and native wait servicing
+
+Atad4c833c, the rebuilt native executable initializes OpenGL on direct Wayland
+and passes actual frontend clear/draw/depth/windowed-present self-test steps.
+Both Vulkan and GL fullscreen checks stillFAIL: request1/sync1 but active0,
+expected/drawable640x360, clear1/present0. WSL's compositor does not acknowledge
+fullscreen in this run; assertions remain intact. This is not Linux fullscreen
+acceptance. Native logs/native-wayland-placement-{vulkan,opengl}.log retain it.
+
+The actual GL guest30s run stalls after1 completed frame, CPU under2s; its old
+runner's >0-frame criterion returns0 but that is NOT gameplay acceptance. A
+Vulkan control with a copied/verified fictional Test Lab fixture and synthetic
+input progresses1500guest frames in30s and exits0. GL with the same fixture/
+input stillstalls at1. Owned-process GDB proves main thread in platform
+wait_single(INFINITE), while worker thread waits in SDL_RunOnMainThread from
+lease_clear_color. Native logs/native-gl-guest-thread-stacks.log and
+native-{gl-input,vk-first}-guest/probe.json retain source/ELF/results. Actual
+ELF0c7ca9195270bf92108128bd2e75197f2317428e2b5f24f54696e39e5e806df7.
+Native capture folder reused by the old runner can contain prior BMPs; the
+Vulkan images were moved into its owned evidence folder before GL rerun, so no
+stale image is claimed as GL. Improve per-run capture freshness before using
+that runner for visual acceptance.
+
+Patch3058 adds an optional atomic owner-thread wait-service callback to generic
+POSIX host primitives. Zero budget queries ownership; ordinary blocking single/
+multiple waits poll readiness/deadline and service a one-millisecond idle budget
+outside object locks, with a TLS recursion guard. Unregistered/foreign threads,
+zero-time polls and dedicated sub-millisecond waits retain their original paths.
+The native common RHI SDL adapter registers at window bind, unregisters at
+unbind, and uses SDL_WaitEventTimeout(NULL) to wake for main-thread callbacks
+without consuming queued input. Worker frame-pump requests are asynchronously
+coalesced onto the main thread; input/developer frame work stays in that existing
+shared reader, rather than running for every GPU call. No rendering/gameplay
+policy is copied. TSFP_RHI_RENDERER guards the opt-in and queue changes; the
+legacy Mac GL path keeps its original behavior. Windows uses its real OS waits.
+
+The new native UBSan fixture covers owner-only progress, callback SetEvent
+without held object locks, recursion prevention, deadlines, zero-time polls,
+foreign waits, auto/manual reset, multiple and thread waits, and unregister.
+Registered in common native suites plus Linux CI. Historical minimal upgrade
+inputs omit3058 with the other startup-only patches; real full upgrades retain
+it. Windows29 supporting tests pass,1Linux-only skip; native unit/build/game
+rerun remains required before considering this fix verified. Gates remain0.

@@ -1,4 +1,4 @@
-[GL RHI](opengl-recovery.md).
+[GL wait](opengl-recovery.md).
 [Wide HUD](ultrawide-player-markers.md).
 [MP](native-multiplayer-menu.md).
 

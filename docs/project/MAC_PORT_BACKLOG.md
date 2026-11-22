@@ -1,3 +1,12 @@
+Native OpenGL guest-loop checkpoint (unverified implementation): actual Linux
+GL stalls after one frame; owned GDB shows a worker awaiting main-thread GL
+while main waits on a guest event. Patch3058 adds optional POSIX wait servicing;
+common RHI SDL binds a coalesced main-thread event service. Legacy Mac GL is
+explicitly excluded by TSFP_RHI_RENDERER and retains the original wait path;
+Windows uses OS waits. Native unit/game retests are pending. Direct WSL Wayland
+still declines fullscreen for Vulkan and GL. Every recovery gate staysOFF;
+Mac host acceptance remains unavailable. Details:agent-context/opengl-recovery.md.
+
 OpenGL checkpoint atf0d57ff7: Linux full-RHI software and WSL/NVIDIA pixels,
 resources, MSAA/SSAO, worker/context cleanup and swaps pass; restricted4.1 and
 ordinary Vulkan/replay pass too. Shared fixes cover exact sample counts, cube
