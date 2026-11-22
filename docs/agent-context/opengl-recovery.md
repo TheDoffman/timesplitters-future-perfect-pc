@@ -1492,3 +1492,13 @@ unchanged. Existing Mac window-observation assertions remain required. Filesyste
 regressions reject unrelated/linked fixture paths and ensure restaging hardlinks
 does not overwrite the old/shared executable. Native compile/runtime checks of
 this new selector route are pending; Linux/Mac gates remain0.
+
+
+Native selector fixture safety units pass3. Initial native/Mac compile caught a
+Button helper/type-name collision in the test Save event;1e99603b qualifies the
+Avalonia type. Native launcher then builds and passes55 shared UI groups; Mac
+compile also succeeds (two existing obsolete Checked/Unchecked warnings). The
+new Python runner records binary/source provenance, confirms owned grandchild
+identity before reading guest state, handles confirmed child termination during
+UI restore, bounds logs/time and recycles test disks in finally. These changes
+prepare actual Vulkan->OpenGL saved UI switching; runtime checks are next.

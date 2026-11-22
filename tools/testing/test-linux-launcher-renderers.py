@@ -96,7 +96,7 @@ def run_case(args,scope,session,backend,evidence,native,rhi):
     plan=session/'plan.json'
     plan.write_text(json.dumps(dict(runtime_root=str(ROOT),environment=env,renderer=backend,seconds=120,mode='quit'))+'\n')
     actions=native['input_script'](ROOT/'tests/fixtures/linux-story-benchmark.json',120)
-    states=[];memory=None;offset=None;child_pid=None;started=None;skipped=False;resumed=False
+    states=[];memory=None;offset=None;child_pid=None;started=None;skipped=False;resumed=False;game_ended=False
     parent_env={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_','VK_','SDL_VULKAN','DYLD_'))}
     with (evidence/'launcher.log').open('w') as output:
         process=subprocess.Popen([str(args.launcher),'--root',str(session),'--test-session',str(plan)],env=parent_env,stdout=output,stderr=subprocess.STDOUT,start_new_session=True)
@@ -104,6 +104,7 @@ def run_case(args,scope,session,backend,evidence,native,rhi):
         try:
             while process.poll() is None:
                 if time.monotonic()>deadline:raise TimeoutError('Bounded native launcher session exceeded155s')
+                if (evidence/'launcher.log').stat().st_size>4*1024*1024:raise RuntimeError('Launcher exceeded its log budget')
                 record=session/'.launcher/game-session.json'
                 if child_pid is None and record.is_file():
                     data=json.loads(record.read_text())
@@ -112,7 +113,7 @@ def run_case(args,scope,session,backend,evidence,native,rhi):
                         status=Path(f'/proc/{candidate}/status').read_text()
                         if int(re.search(r'^PPid:\s+(\d+)',status,re.M)[1])!=process.pid:raise ValueError('Game is not this launcher child')
                         child_pid=candidate;started=time.monotonic();memory=os.open(f'/proc/{candidate}/mem',os.O_RDONLY|os.O_CLOEXEC)
-                if child_pid:
+                if child_pid and not game_ended:
                     elapsed=time.monotonic()-started
                     if offset is None:
                         path=session/'logs/native-play.out'
@@ -120,7 +121,13 @@ def run_case(args,scope,session,backend,evidence,native,rhi):
                         if match:offset=int(match[1],16)
                     if offset is not None:
                         def word(address):return struct.unpack('<I',os.pread(memory,4,offset+address))[0]
-                        state=native['story_snapshot'](word);state['seconds']=round(elapsed,3);states.append(state)
+                        try:state=native['story_snapshot'](word)
+                        except (OSError,struct.error):
+                            try:status=Path(f'/proc/{child_pid}/status').read_text()
+                            except FileNotFoundError:status='State:\tZ'
+                            if not re.search(r'^State:\s+[ZX]',status,re.M):raise
+                            game_ended=True;continue
+                        state['seconds']=round(elapsed,3);states.append(state)
                         if elapsed>=50 and state['flags']&0x20000000 and not skipped:
                             skipped=True;actions.extend([(elapsed,'+Escape\n'),(elapsed+.2,'-Escape\n')]);actions.sort()
                         if skipped and state['paused'] and not resumed:
@@ -168,13 +175,22 @@ def main():
     if digest(ROOT/'build/linux/game/futureperfect_recomp')!=manifest['executable_sha256']:raise ValueError('Game differs from its build receipt')
     scope=unlinked(ROOT/'private/test-saves/native-linux',ROOT/'private/test-saves');scope.mkdir(parents=True,exist_ok=True)
     evidence=ROOT/'logs'/args.label;evidence.mkdir(exist_ok=False)
+    provenance=dict(source_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+                    game_source_revision=manifest['source_revision'],game_sha256=manifest['executable_sha256'],
+                    launcher_sha256=digest(args.launcher),runner_sha256=digest(Path(__file__)),
+                    native_session_sha256=digest(ROOT/'tools/launcher/macos/NativeEndToEnd.cs'),passed=False)
+    (evidence/'provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
     with (scope/'run.lock').open('a+') as owner:
         fcntl.flock(owner,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        session=stage(ROOT,scope,manifest)
-        for backend in ('vulkan','opengl'):
-            output=evidence/backend;output.mkdir()
-            run_case(args,scope,session,backend,output,native,rhi)
-        check_fixture(ROOT)
+        try:
+            session=stage(ROOT,scope,manifest)
+            for backend in ('vulkan','opengl'):
+                output=evidence/backend;output.mkdir()
+                run_case(args,scope,session,backend,output,native,rhi)
+            check_fixture(ROOT);provenance['passed']=True
+        finally:
+            recycle_test_disks(ROOT,scope,save_directory=scope/'launcher-selector-profile/saves')
+            (evidence/'provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
 
 
 if __name__=='__main__':main()
