@@ -72,7 +72,7 @@ public static class RendererGameSmoke {
  [STAThread] public static int Main(string[] args){if(args.Length==1 && args[0]=="--self-test-io")return CheckLiveLog();root=Path.GetFullPath(args[0]);evidence=Path.GetFullPath(args[1]);Directory.CreateDirectory(evidence);config=Json.Object(File.ReadAllText(args[2]));var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};app.Startup+=async(s,e)=>{try{await Run((string)config["backend"]);}catch(Exception ex){Console.WriteLine(ex);result=1;}finally{if(owned!=null){try{if(!owned.HasExited){owned.Kill();owned.WaitForExit(10000);}}catch{}}app.Shutdown();}};app.Run();return result;}
  static async Task Run(string backend){
   string expectedBackend=config.ContainsKey("expected_backend")?(string)config["expected_backend"]:backend;
-  Need(expectedBackend==backend || (backend=="vulkan" && expectedBackend=="d3d11"),"Invalid expected backend");
+  Need(expectedBackend==backend,"Renderer fallback is not supported");
   var initial=GameSettings.Load(root,null);initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.Save();
   // Shared executable is unmodified; preview mode only suppresses network checks.
   var ui=new LauncherWindow(root,true);ui.Window.Show();ui.ShowSettings(1);

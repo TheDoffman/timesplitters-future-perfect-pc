@@ -2193,6 +2193,14 @@
       ]
     },
     {
+      "name": "3051-windows-no-renderer-fallback.patch",
+      "path": "patches/graphics/rendering/3051-windows-no-renderer-fallback.patch",
+      "sha256": "fd6346cbb6a2f1f190ed7dd971e528168b43b3ec5f34f52732f1bf8fbac7d080",
+      "targets": [
+        "src/d3d/rhi.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

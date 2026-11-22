@@ -65,6 +65,15 @@ int main(void) {
     CHECK(window);
     CHECK(rhi_select_backend(backend)==0);
     RhiDeviceDesc device={window,64,64,2,1,0};
+    if(getenv("TSFP_TEST_EXPECT_STARTUP_FAILURE")) {
+        CHECK(rhi_device_create(&device)!=0);
+        CHECK(!rhi_device_ready() && !strcmp(rhi_backend_name(),"vulkan"));
+        rhi_device_destroy(); /* Cleanup remains safe after partial initialization. */
+        CHECK(!rhi_device_ready());
+        DestroyWindow(window);
+        puts("PASS: Vulkan startup failed without renderer fallback");
+        return 0;
+    }
     CHECK(rhi_device_create(&device)==0 && rhi_device_ready());
     }
     const char *expected=getenv("TSFP_TEST_EXPECT_BACKEND");

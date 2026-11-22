@@ -1,3 +1,31 @@
+## Windows Vulkan startup without automatic fallback (2026-11-22)
+
+User-requested change on fix/windows-vulkan-no-fallback, based on main694fc53a.
+Patch3051 makes a Windows Vulkan build report initialization failure, destroy
+partial state and return an error without changing APIs. Explicit developer
+D3D11/WARP diagnostics remain; native Mac/Linux behavior is unchanged. The
+launcher remains Vulkan-only in its UI. Retired the old launcher compiler-
+recovery probe; current negative startup contracts use the production RHI runner.
+
+Windows11/RTX4070SUPER/driver617.42: all8 hardware RHI cases pass, including
+normal Vulkan with active SDK1.4.363.0 validation, explicit D3D11/adoption and
+missing Vulkan driver/device/DXC failures. Negative cases require retained
+Vulkan selection, not-ready state, safe repeated cleanup, the explicit failure
+message and no D3D11 recovery. Report logs/rhi-windows.json, fixture SHA
+2fae848362b58895a9704ddfee1cbe69b42ba20d2d2842215bd55dc9bb14d69f.
+19 selected renderer/compiler Python checks, historical controls upgrade
+regression and launcher acceptance --compile-only pass. Complete patches verify.
+The normal Windows Build and its bundled build tests pass, after building the
+pinned symbol matcher and using Windows PowerShell's .NET Framework icon step.
+Game executable SHA d4ad75ce71f930631dbae896bfab945b8428658237d650875de7994780b0ce83.
+A bounded30s Test Lab startup using isolated saves/settings presents at least
+1500 guest frames on Vulkan, with zero failed presents, no RHI errors, crash or
+D3D11 recovery. The runner terminates at its bound and recycles test disk images;
+this is startup/rendering evidence, not a new full gameplay or performance test.
+Native host execution is unrun; the policy is gated to Windows. User saves and
+settings are preserved. Local logs: windows-vulkan-no-fallback-build.log and
+private/test-saves/quick-test/game.err.
+
 ## Launcher Vulkan default without a renderer selector (2026-11-22)
 
 Local branch feature/launcher-vulkan-default, based on main1f6fa9da: removed

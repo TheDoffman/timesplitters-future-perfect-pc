@@ -1,3 +1,9 @@
+Windows renderer startup failure (2026-11-22): automatic D3D11 recovery removed
+at user request. Patch3051 gates the failure policy to Windows Vulkan builds;
+shared cleanup remains the same. Native Mac/Linux behavior and legacy GL are
+unchanged, so no native adapter implementation is deferred. Windows hardware
+RHI tests cover startup failure without switching APIs; native checks are unrun.
+
 Auto-resolution accepted-target fix (2026-11-21): **Awaiting validation** on
 native Mac/Linux. Shared pc_display_scene_size no longer lets HUD sizing consume
 a pending drawable resize; frame_done commits only successful allocations and

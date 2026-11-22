@@ -118,19 +118,6 @@ def compile_capture():
     return output
 
 
-def compile_unavailable_dxc():
-    from native_compiler import native_compiler
-    folder = ROOT / "build/renderer-validation"
-    folder.mkdir(parents=True, exist_ok=True)
-    compiler, env = native_compiler(folder)
-    output = folder / "unavailable-dxc.dll"
-    subprocess.run([compiler, "/nologo", "/LD",
-                    str(ROOT / "tests/launcher_lifecycle/UnavailableDxc.c"),
-                    "/Fe:" + str(output), "/Fo:" + str(folder / "unavailable-dxc.obj")],
-                   cwd=folder, env=env, check=True, timeout=60)
-    return output
-
-
 def measurements(samples, expected_scene=2):
     active = [sample for sample in samples if 85 <= sample["seconds"] <= 115 and sample["scene"] == expected_scene
               and not sample.get("flags", 0) & 0x20000000]
@@ -324,8 +311,6 @@ def run_case(executable, install, run, evidence, backend, phase, args):
                   anisotropy=args.anisotropy, fullscreen=args.fullscreen)
     config["display_cycle"] = getattr(args, "display_cycle", False)
     config.update(scenario_options(getattr(args, "scenario_file", None), args.seconds))
-    if getattr(args,"unavailable_dxc",False):
-        config["expected_backend"] = "d3d11"
     if args.capture:
         config["capture_helper"] = str(executable.parent / "renderer-window-capture.exe")
     if getattr(args, "capture_times", None):
@@ -368,11 +353,6 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     spec.loader.exec_module(native)
     text = (destination / (backend + ".err")).read_text(errors="replace")
     result["renderer_checks"] = native.renderer_checks(text, config.get("expected_backend",backend))
-    if getattr(args,"unavailable_dxc",False):
-        del result["renderer_checks"]["no_fallback"]
-        result["renderer_checks"]["expected_compiler_recovery"] = (
-            "DXC compiler (dxcompiler) was not found" in text and
-            "the vulkan renderer could not start; using d3d11" in text)
     result["present_checks"] = native.native_present_checks(text)
     result["effective_settings_checks"] = effective_settings(text, config)
     if config["display_cycle"]:
@@ -412,7 +392,6 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--label", help="Unique evidence/cache label; letters, numbers and hyphens")
     parser.add_argument("--compile-only", action="store_true", help="CI build check; no game data or GPU required")
-    parser.add_argument("--unavailable-dxc",action="store_true",help="Test-only compiler stub in disposable Bin; require saved Vulkan to recover to D3D11")
     parser.add_argument("--backend", choices=("vulkan",), default="vulkan")
     parser.add_argument("--warm", action="store_true", help="Repeat each cold case with its populated isolated cache")
     parser.add_argument("--repetitions", type=int, choices=(1, 2, 3), help="Matched runs per backend: cold followed by warm repetitions")
@@ -435,10 +414,7 @@ def main():
     if args.compile_only:
         compile_harness()
         compile_capture()
-        compile_unavailable_dxc()
         return 0
-    if args.unavailable_dxc and (args.backend!="vulkan" or args.warm or args.repetitions not in (None,1)):
-        parser.error("--unavailable-dxc requires one Vulkan cold case")
     if args.warm and args.repetitions:
         parser.error("Choose --warm or --repetitions, not both")
     if args.presentmon:
@@ -485,15 +461,6 @@ def main():
         prepare_run(ROOT, run)
         prepared = True
         install = prepare_install(run)
-        if args.unavailable_dxc:
-            stub=compile_unavailable_dxc()
-            target=contained(ROOT,install / "Bin/dxcompiler.dll","private/test-saves")
-            if not target.exists() or not os.path.samefile(target,ROOT / "build/windows/Release/dxcompiler.dll"):
-                raise ValueError("Compiler test requires the managed sandbox DLL link")
-            target.unlink()  # Unlink only; never write through the build's hard link.
-            link_file(stub,target)
-            report["injected_dxc_sha256"] = digest(stub)
-            report["recovery_scope"] = "Valid test DLL without compiler entry point; original source/build DLLs preserved"
         executable = compile_harness()
         if args.capture:
             helper = compile_capture()
@@ -513,10 +480,6 @@ def main():
             try:
                 if prepared:
                     recycle_disks(ROOT, run)
-                    if args.unavailable_dxc and install is not None:
-                        stop_owned_game(install)
-                        link_file(ROOT / "build/windows/Release/dxcompiler.dll",
-                                  contained(ROOT,install / "Bin/dxcompiler.dll","private/test-saves"))
             except BaseException:
                 report["passed"] = False
                 raise

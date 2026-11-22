@@ -1,5 +1,10 @@
 # Windows renderer acceptance
 
+Automatic Windows D3D11 recovery was removed on 2026-11-22. Current missing
+Vulkan driver/device/compiler contracts require initialization failure without
+backend switching. Recovery rows and measurements below are historical; use
+tools/testing/test-rhi-windows.py for the current startup-failure checks.
+
 The launcher selector was removed on 2026-11-22. The real-launcher runner now
 checks Vulkan only; paired launcher measurements below describe the previously
 validated builds. Use the direct game/RHI runners for new D3D11 comparisons.

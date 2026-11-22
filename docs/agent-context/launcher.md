@@ -1,13 +1,17 @@
+Windows automatic startup fallback is removed (2026-11-22); launcher Vulkan
+selection is unchanged. See [startup policy](windows-vulkan.md). The old compiler
+recovery probe is retired; failure-path checks use test-rhi-windows.py.
+
 Launcher Vulkan default (2026-11-22): SettingsPage no longer creates or saves a
 GraphicsRenderer control. GameSettings ignores retired launcher.renderer values
 (including invalid types), preserving the unknown JSON member on unrelated saves.
 Windows StartInfo scrubs inherited overrides then requests Vulkan unconditionally;
 native hosts retain their verified manifest/driver routing without a Windows
-backend override. Automatic runtime startup recovery remains available.
+backend override. Windows startup failures are reported without changing renderers.
 The shared UI regression checks removed controls, old-value preservation and
 child environment policy on each host. The Windows settings child checks Vulkan.
 RendererGameSmoke and test-launcher-renderers-windows.py now exercise only the
-Vulkan launcher default (including injected DXC startup recovery). Explicit D3D11
+Vulkan launcher default. Explicit D3D11
 comparisons remain available through test-rhi-windows.py and direct game runners.
 Historical paired launcher results are retained in windows-renderer-results.md.
 

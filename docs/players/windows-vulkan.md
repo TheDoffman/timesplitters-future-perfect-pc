@@ -1,14 +1,13 @@
 # Windows Vulkan renderer
 
 Windows builds use **Vulkan by default**, sharing the Vulkan backend used by
-Linux and modern native Mac builds. Direct3D 11 remains available as recovery.
-A Vulkan device or shader-compiler startup failure automatically retries
-Direct3D 11. A rendering failure
-after startup still requires restarting with Direct3D 11.
+Linux and modern native Mac builds. If Vulkan cannot initialize, Windows reports
+a startup error instead of switching to Direct3D 11. Check the GPU driver and
+packaged shader-compiler files when diagnosing startup failures.
 
 The launcher uses Vulkan automatically and has no renderer selector. Older
 saved D3D11 choices are ignored. Linux and modern native Mac packages also use
-Vulkan by default. Windows retains automatic Direct3D 11 startup recovery.
+Vulkan by default.
 
 After building, launch normally; no renderer override is needed. To force
 Direct3D 11 for troubleshooting in a developer checkout:
@@ -41,7 +40,7 @@ see the [compiler policy and test contracts](../agent-context/windows-vulkan.md)
 The asset-free Windows fixture exercises both production backends on the GPU,
 including shaders, texture formats, depth, MSAA, visibility, readback and
 presentation. It also checks the default preference, explicit D3D11 ownership,
-and recovery from missing Vulkan drivers, usable devices and DXC:
+and startup failure without fallback for missing Vulkan drivers, usable devices and DXC:
 
 ```powershell
 .venv/Scripts/cmake.exe -S tests/windows-rhi -B build/windows/rhi-compare -G "Visual Studio 17 2022" -A x64
