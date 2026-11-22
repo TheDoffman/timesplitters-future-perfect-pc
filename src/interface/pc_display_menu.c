@@ -559,6 +559,7 @@ static void menu_video_click_sound(uint32_t menu,uint32_t item)
 #include "pc_profile_accept.inc"
 #include "pc_weapon_slots_guest.inc"
 #include "pc_network_bot_lifecycle.inc"
+#include "pc_network_doors_guest.inc"
 
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
 #include "pc_character_corpses.inc"

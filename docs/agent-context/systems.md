@@ -1,5 +1,5 @@
 [Bob](weapon-bob.md), [Exit](pause-settings.md), [Turn](controls-options.md).
-[V-Sync](video-options.md); [229](gladiator-selection.md).
+[V-Sync](video-options.md); [229](gladiator-selection.md). [Doors](network-doors.md).
 
 [Wide HUD](ultrawide-player-markers.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).

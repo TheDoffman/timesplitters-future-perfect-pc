@@ -21,6 +21,8 @@ static ptrdiff_t g_xbox_mem_offset;
 int g_tsfp_native_timing_active;
 #include "../src/gameplay/pc_native_weapon_guest.h"
 static int originals,enabled;
+static unsigned door_frames;
+void pc_network_doors_frame(void) {door_frames++;}
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while(0)
 
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -482,7 +484,9 @@ int main(void)
         memory[(0x7000+0x34)/4]=5;
         memory[(0x1000+2*0xea0+0xc6c)/4]=0x01000010;
         memory[(0x1000+2*0xea0+0xc88)/4]=1;
+        door_frames=0;
         memory[(0x7000+0x28)/4]=0;g_esp=16;pc_network_bots_guest_frame(original);
+        CHECK(door_frames==1);
         CHECK(g_eax==0x11223344u && g_esp==20 && bot_sends==1 && bot_refreshes==1);
         CHECK((memory[(0x7000+0x28)/4]&0x61u)==0x61u && last_bot.slot==2 && last_bot.primary_room==5 && last_bot.camo.flags==0x01000010 && last_bot.camo.fade_phase==1);
         /* Frozen guests need every host pose, including atomic crossfade

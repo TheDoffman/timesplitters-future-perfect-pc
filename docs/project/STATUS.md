@@ -1,3 +1,45 @@
+## Online automatic-door synchronization (#330, 2026-11-22)
+
+Branch `fix/330-online-door-sync`, based on main `9a1e37d1`. Two isolated
+Windows Online instances reproduced Zeppelin host doors opening for bots while
+guest doors remained closed. The original joining packet restores only open or
+closed endpoints; it does not continuously carry door animation progress.
+A guest proximity-only prototype still produced incorrect timing and endpoints
+and was discarded. The shared fix sends host numeric animation state through an
+authenticated, bounded extension of the existing LAN/Online transport. The
+original door update, rendering, locks and gameplay simulation remain in use.
+No launcher setting/server API is added. #330 remains open pending publication.
+
+Windows Release D3D11/Vulkan build, isolated post-build checks, identity sealing
+and matching crash-symbol generation pass. All 34 focused cases plus 14
+transport/identity cases pass, including
+production Windows/native frame and transport adapters, actual original US
+joining-state receiver/setters and deliberate regression mutations. Real UDP
+LAN receive/send and Online bridge receive/key-rejection tests pass. The
+unrelated virtual-pad focus probe remains skipped when foreground activation
+is denied. Native Mac/Linux gameplay and physical WAN remain unverified.
+
+The first Mac CI run caught a test-double name collision with Darwin's `htons`
+macro. The fixture now uses a namespaced byte-order helper; production gameplay
+and transport code are unchanged by this portability correction.
+Strict Mac checkpoint tests also caught an unused static header helper; marking
+the validator inline preserves behavior and permits those header-only clients.
+The menu-only FOV fixture supplies the new door API doubles explicitly; its
+Windows link check does not depend on optimizing away the public frame adapter.
+
+Live acceptance uses Original60, Vulkan and private-host Online v2 on one Windows
+computer. Zeppelin with two humans/six bots: 18,000 door comparisons over 91.64
+seconds, nine moving doors, mean progress error 0.0000916, maximum 0.0991 and no
+error above 0.1. Baseline: 765 of 6,000 comparisons above 0.1, including fully open
+host/closed guest doors. The corrected paired driver completed movement and
+replication checks without disconnect, then cleaned up. Bunker with two humans
+and zero bots: both players opened separate doors and walked through them using
+file-driven keyboard/mouse input, without guest memory writes. Both peers agreed
+on those doors. Across 25,200 comparisons over 91.44 seconds the mean error was
+0.00000397; one asynchronous transition edge was 0.100000009 (one animation step).
+These are two-map checks, not an all-map or native-host claim. Saves/settings
+were isolated; captures, hashes and numeric observations remain in ignored logs.
+
 ## Online Gladiator bot selection (#229, 2026-11-22)
 
 The shared bot-activity adapter now accepts a selected AI actor in the original
