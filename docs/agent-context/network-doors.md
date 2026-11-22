@@ -46,6 +46,8 @@ The isolated socket double uses a namespaced byte-order helper so Darwin's
 system-header `htons` macro cannot rewrite its declaration.
 The header validator is static inline, allowing strict-warning transport clients
 to include the wire contract without using its validation helper.
+The full video/settings-menu fixture supplies explicit no-network transport
+doubles for the four door APIs, as it does not link the desktop socket backend.
 
 The supported local US executable additionally runs the original phase receiver
 and endpoint setters, demonstrating that its joining stream snaps transitions to

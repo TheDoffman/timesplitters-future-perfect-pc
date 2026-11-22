@@ -24,6 +24,8 @@ macro. The fixture now uses a namespaced byte-order helper; production gameplay
 and transport code are unchanged by this portability correction.
 Strict Mac checkpoint tests also caught an unused static header helper; marking
 the validator inline preserves behavior and permits those header-only clients.
+The menu-only FOV fixture supplies the new door API doubles explicitly; its
+Windows link check does not depend on optimizing away the public frame adapter.
 
 Live acceptance uses Original60, Vulkan and private-host Online v2 on one Windows
 computer. Zeppelin with two humans/six bots: 18,000 door comparisons over 91.64
