@@ -1,10 +1,7 @@
-"""Bounded real-game renderer acceptance through the unchanged Windows launcher.
+"""Bounded real-game renderer acceptance through the Windows launcher selector.
 
-Requires the normal native game and launcher builds, and the Test Lab fixture.
-Vulkan uses the actual launcher path. Explicit OpenGL is a developer child-only
-StartInfo probe; it does not add a renderer selector or change launcher defaults.
-No personal saves, settings or shader caches are used. Capture and measurement
-runs are separate; CPU samples are process CPU time, not GPU/display timing.
+Both Vulkan and OpenGL save the UI choice and invoke the actual LaunchGame path.
+All game data, saves and settings used by this runner are isolated test copies.
 """
 import argparse
 import csv
@@ -63,7 +60,7 @@ def prepare_install(run):
     contained(ROOT, install / "Launch.ps1", "private/test-saves").write_text("# Isolated test marker; launcher starts the native EXE.\n")
     contained(ROOT, install / "BUILD.json", "private/test-saves").write_text(json.dumps(dict(
         version="v0.8.0-dev", graphics_backends=["d3d11", "vulkan", "opengl"],
-        graphics_default="vulkan", auto_display_resolution=True, display_settings_version=5)))
+        graphics_default="vulkan", supported_renderers=['vulkan','opengl'], auto_display_resolution=True, display_settings_version=5)))
     return install
 
 

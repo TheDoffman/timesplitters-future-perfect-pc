@@ -166,7 +166,7 @@ def main():
                     working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
                     compatibility_identity=json.loads((BUILD / 'generated/network-identity.json').read_text())['compatibility'],
-                    renderer=renderer, vulkan_driver=args.vulkan_driver if renderer=='vulkan' else None, renderer_requested=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
+                    renderer=renderer, supported_renderers=['vulkan','opengl'] if renderer=='vulkan' else ['opengl'], vulkan_driver=args.vulkan_driver if renderer=='vulkan' else None, renderer_requested=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
                     symbol_uuid=subprocess.check_output(['dwarfdump','--uuid',str(BUILD/'futureperfect_recomp.dSYM')],text=True).split(' (arm64)')[0],
                     symbols_sha256=hashlib.sha256((BUILD/'futureperfect_recomp.dSYM/Contents/Resources/DWARF/futureperfect_recomp').read_bytes()).hexdigest(),
                     compiler=subprocess.check_output(['clang', '--version'], text=True).splitlines()[0],

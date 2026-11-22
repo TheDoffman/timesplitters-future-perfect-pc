@@ -25,7 +25,7 @@ public static class RendererGameSmoke {
  [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr h,out Rect r);
  [DllImport("kernel32.dll")] static extern bool ReadProcessMemory(IntPtr p,IntPtr a,byte[] b,int size,out IntPtr read);
  [StructLayout(LayoutKind.Sequential)] struct Rect {public int L,T,R,B;}
- static int result;static string root,evidence,probeInput;static Process owned;static Dictionary<string,object> config;
+ static int result;static string root,evidence;static Process owned;static Dictionary<string,object> config;
  static int Number(string key,int fallback){object v;return config.TryGetValue(key,out v)?Convert.ToInt32(v):fallback;}
  static bool Flag(string key){object v;return config.TryGetValue(key,out v) && v is bool && (bool)v;}
  static void Need(bool v,string m){if(!v)throw new Exception(m);}
@@ -50,13 +50,7 @@ public static class RendererGameSmoke {
  }
  static uint Word(Process p,uint a){var b=new byte[4];IntPtr n;return ReadProcessMemory(p.Handle,new IntPtr((long)a+0x10000),b,4,out n)?BitConverter.ToUInt32(b,0):0;}
  static float[] Position(Process p,uint player){var b=new byte[12];IntPtr n;if(!ReadProcessMemory(p.Handle,new IntPtr((long)player+0xb4+0x10000),b,12,out n))return new float[3];return new[]{BitConverter.ToSingle(b,0),BitConverter.ToSingle(b,4),BitConverter.ToSingle(b,8)};}
- static void InputState(int key,bool down){
-  string temporary=probeInput+".tmp";File.WriteAllText(temporary,key.ToString()+" "+(down?"1":"0")+"\n");
-  var deadline=Stopwatch.StartNew();
-  for(;;){try{if(File.Exists(probeInput))File.Replace(temporary,probeInput,null);else File.Move(temporary,probeInput);return;}catch(IOException){if(deadline.ElapsedMilliseconds>=500)throw;System.Threading.Thread.Sleep(2);}}
- }
  static void SetKey(IntPtr h,int key,bool down){
-  if(probeInput!=null){InputState(key,down);return;}
   Foreground(h);Need(GetForegroundWindow()==h,"Game must own foreground before synthetic window-key input");
   PostMessage(h,down?0x100u:0x101u,new IntPtr(key),new IntPtr(down?1:unchecked((int)0xc0000001)));
  }
@@ -94,50 +88,26 @@ public static class RendererGameSmoke {
   }
  }
  [STAThread] public static int Main(string[] args){if(args.Length==1 && args[0]=="--self-test-io")return CheckLiveLog();root=Path.GetFullPath(args[0]);evidence=Path.GetFullPath(args[1]);Directory.CreateDirectory(evidence);config=Json.Object(File.ReadAllText(args[2]));var app=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};app.Startup+=async(s,e)=>{try{await Run((string)config["backend"]);}catch(Exception ex){Console.WriteLine(ex);result=1;}finally{if(owned!=null){try{if(!owned.HasExited){owned.Kill();owned.WaitForExit(10000);}}catch{}}app.Shutdown();}};app.Run();return result;}
- // Explicit developer probe only. Keep it in this opt-in test executable:
- // ordinary launcher settings and LaunchGame continue selecting Vulkan.
- static async Task DrainProbe(Stream source,Stream destination){
-  byte[] buffer=new byte[8192];int remaining=4*1024*1024,count;
-  while((count=await source.ReadAsync(buffer,0,buffer.Length))>0){int keep=Math.Min(count,remaining);if(keep>0){await destination.WriteAsync(buffer,0,keep);destination.Flush();remaining-=keep;}}
- }
- static async Task LaunchProbe(string backend){
-  Need(backend=="opengl","Unknown developer renderer probe");
-  var info=GameSettings.StartInfo(root);
-  Need(info.EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","Probe changed the launcher default");
-  info.EnvironmentVariables["RECOMP_D3D8_BACKEND"]=backend;
-  probeInput=Path.Combine(root,"Settings/developer-input.txt");InputState(0,false);
-  info.EnvironmentVariables["TSFP_PC_INPUT_STATE"]=probeInput;
-  info.EnvironmentVariables["RECOMP_WINDOW_BACKGROUND"]=Flag("fullscreen")?"0":"1";
-  string logs=Path.Combine(root,"Logs");Directory.CreateDirectory(logs);
-  string tag=DateTime.Now.ToString("yyyyMMdd-HHmmss-fff",System.Globalization.CultureInfo.InvariantCulture)+"-developer";
-  string errorPath=Path.Combine(logs,tag+".err");info.EnvironmentVariables["RECOMP_LOG_FILE"]=errorPath;
-  using(var output=new FileStream(Path.Combine(logs,tag+".out"),FileMode.Create,FileAccess.Write,FileShare.ReadWrite))
-  using(var errors=new FileStream(errorPath,FileMode.Create,FileAccess.Write,FileShare.ReadWrite))
-  using(var process=new Process{StartInfo=info}){
-   process.Start();owned=process;
-   var stdout=DrainProbe(process.StandardOutput.BaseStream,output);var stderr=DrainProbe(process.StandardError.BaseStream,errors);
-   while(!process.HasExited)await Task.Delay(50);
-   await Task.WhenAll(stdout,stderr);
-  }
- }
  static async Task Run(string backend){
   string expectedBackend=config.ContainsKey("expected_backend")?(string)config["expected_backend"]:backend;
   string recovery=config.ContainsKey("startup_recovery")?(string)config["startup_recovery"]:null;
   Need(expectedBackend==backend || (backend=="vulkan" && expectedBackend=="opengl" && (recovery=="opengl" || recovery=="both-fail")),"Unrequested renderer fallback");
-  var initial=GameSettings.Load(root,null);initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.AmbientOcclusion=Number("ao",0);initial.Save();
+  var initial=GameSettings.Load(root,null);initial.Renderer="vulkan";initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.AmbientOcclusion=Number("ao",0);initial.Save();
   // Shared executable is unmodified; preview mode only suppresses network checks.
   var ui=new LauncherWindow(root,true);ui.Window.Show();ui.ShowSettings(1);
   var page=(SettingsPage)typeof(LauncherWindow).GetField("settings",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(ui);
   Need(backend=="vulkan" || backend=="opengl","Unknown renderer acceptance route");
   Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","Launcher default is not Vulkan");
+  Find<ComboBox>(page.View,"GraphicsRenderer").SelectedIndex=Array.IndexOf(GameSettings.Renderers,backend);
   Find<Button>(page.View,"SettingsSaveButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-  Console.WriteLine(backend=="vulkan"?"DEFAULT Vulkan through actual launcher settings and LaunchGame":"DEVELOPER OpenGL probe through launcher settings/StartInfo; child-only backend override");
-  if(backend=="opengl")ui.Window.Hide();
+  Need(GameSettings.Load(root,null).Renderer==backend,"Launcher selector did not save");
+  Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]==backend,"Launcher selector did not control launch");
+  Console.WriteLine("SELECTED "+backend+" through actual launcher settings and LaunchGame");
   int duration=Number("seconds",120);Need(duration>=120 && duration<=600,"Duration outside 120..600 seconds");
   var settingsBefore=Directory.GetFiles(Path.Combine(root,"Settings")).ToDictionary(p=>p,p=>File.ReadAllBytes(p));
   var clock=Stopwatch.StartNew();
   var method=typeof(LauncherWindow).GetMethod("LaunchGame",BindingFlags.Instance|BindingFlags.NonPublic);
-  var launch=backend=="vulkan"?(Task)method.Invoke(ui,new object[]{null}):LaunchProbe(backend);
+  var launch=(Task)method.Invoke(ui,new object[]{null});
   string liveLog=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").OrderBy(File.GetLastWriteTimeUtc).Last();
   if(recovery=="both-fail"){
    var done=await Task.WhenAny(launch,Task.Delay(30000));Need(done==launch,"Both-fail startup did not terminate within30s");await launch;
@@ -187,7 +157,7 @@ public static class RendererGameSmoke {
     if((!config.ContainsKey("skip_intro") || Flag("skip_intro")) && t>45 && (flags&0x20000000)!=0 && !skipped){await Key(hwnd,27,200);skipped=true;Console.WriteLine(backend+" skipped opening scene at "+t.ToString("F1"));}
     if(t>=85 && !moving){SetForegroundWindow(hwnd);SetKey(hwnd,87,true);moving=true;}
     if(t>=90 && !released){SetKey(hwnd,87,false);released=true;}
-    if(t>=92+shot*4 && shot<5){if(probeInput!=null)await Key(hwnd,1,180);else {PostMessage(hwnd,0x201,new IntPtr(1),IntPtr.Zero);await Task.Delay(180);PostMessage(hwnd,0x202,IntPtr.Zero,IntPtr.Zero);}shot++;}
+    if(t>=92+shot*4 && shot<5){{PostMessage(hwnd,0x201,new IntPtr(1),IntPtr.Zero);await Task.Delay(180);PostMessage(hwnd,0x202,IntPtr.Zero,IntPtr.Zero);}shot++;}
     if(t>=nextGpu){
      Need(new FileInfo(liveLog).Length<=4*1024*1024 && new FileInfo(Path.ChangeExtension(liveLog,".out")).Length<=4*1024*1024,"Game log exceeded per-stream 4 MiB budget");
      try{if(gpuCounters.Count==0)gpuCounters=GpuCounters(game.Id);if(gpuCounters.Count>0)gpuDedicated=gpuCounters.Sum(c=>(double)c.NextValue());}catch{gpuDedicated=null;}
@@ -220,8 +190,8 @@ public static class RendererGameSmoke {
    Need(model.Msaa==Number("msaa",1) && model.PostAntiAliasing==Number("aa",0) && model.Anisotropy==Number("anisotropy",1) && model.AmbientOcclusion==Number("ao",0),"Game run changed saved quality settings");
    string err=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").OrderBy(File.GetLastWriteTimeUtc).Last();string text=File.ReadAllText(err);File.Copy(err,Path.Combine(evidence,backend+".err"),true);
    Need(text.Contains("[PRESENT] backend="+expectedBackend),"Expected backend did not present");Need(!text.Contains("[CRASH]"),"Crash in game log");
-   File.WriteAllText(Path.Combine(evidence,backend+"-result.json"),Json.Encode(new {passed=true,backend=backend,launch_route=backend=="vulkan"?"launcher":"developer-start-info",input_route=probeInput==null?"window-messages":"isolated-input-state",pid=game.Id,seconds=clock.Elapsed.TotalSeconds,window_seconds=windowSeconds,story_seconds=storySeconds,first_present_observed_seconds=firstPresentSeconds,gameplay_ready_seconds=gameplayReadySeconds,gpu_metric_available=gpuDedicated.HasValue,capture_enabled=Flag("capture"),display_cycle_completed=Flag("display_cycle") && displayStage==4,display_snapshots=displaySnapshots,settings=config,gameplay_samples=positions.Count,equipped_samples=equipped,tick_delta=lastTick-firstTick,exit_code=game.ExitCode,source_log=err}));
-   Console.WriteLine("PASS "+backend+", observed "+expectedBackend+": "+(backend=="vulkan"?"actual launcher":"developer StartInfo probe")+", scenario gameplay, movement, weapon expectation, presents and clean exit; ticks="+(lastTick-firstTick));
+   File.WriteAllText(Path.Combine(evidence,backend+"-result.json"),Json.Encode(new {passed=true,backend=backend,launch_route="launcher",input_route="window-messages",pid=game.Id,seconds=clock.Elapsed.TotalSeconds,window_seconds=windowSeconds,story_seconds=storySeconds,first_present_observed_seconds=firstPresentSeconds,gameplay_ready_seconds=gameplayReadySeconds,gpu_metric_available=gpuDedicated.HasValue,capture_enabled=Flag("capture"),display_cycle_completed=Flag("display_cycle") && displayStage==4,display_snapshots=displaySnapshots,settings=config,gameplay_samples=positions.Count,equipped_samples=equipped,tick_delta=lastTick-firstTick,exit_code=game.ExitCode,source_log=err}));
+   Console.WriteLine("PASS "+backend+", observed "+expectedBackend+": "+"actual launcher"+", scenario gameplay, movement, weapon expectation, presents and clean exit; ticks="+(lastTick-firstTick));
   }finally{foreach(var counter in gpuCounters)counter.Dispose();if(!game.HasExited){game.Kill();game.WaitForExit(10000);}game.Dispose();owned=null;ui.Window.Close();}
  }
 }

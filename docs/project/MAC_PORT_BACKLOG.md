@@ -1,3 +1,10 @@
+Renderer selector restored in development (2026-11-22): shared launcher
+Vulkan/OpenGL setting, persistence, explicit child selection and package capability
+checks are implemented; Windows launcher regressions pass. Native driver/library
+preparation, actual native launcher gameplay and Mac visual acceptance remain
+pending. Legacy renderer=gl receipts keep OpenGL defaults. No recovery gate is
+enabled. Details: docs/agent-context/opengl-recovery.md.
+
 Continuous native SDL dispatch implementation is pending acceptance: shared
 startup query3059 routes only explicit GL or accepted Vulkan→GL recovery to an
 owned guest worker and main-thread SDL service. Entire guest TLS/kernel/crash

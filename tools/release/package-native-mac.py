@@ -310,7 +310,7 @@ Source and third-party notices: Source and Licenses.
         release_channel=release_identity(args.version),
         packaging_commit=run('git','rev-parse','HEAD'),
         packaging_changes=run('git','status','--porcelain'),
-        renderer='vulkan', vulkan_driver='moltenvk', minimum_macos=minimum,
+        renderer='vulkan', supported_renderers=native.get('supported_renderers',['vulkan']), vulkan_driver='moltenvk', minimum_macos=minimum,
         signing='ad-hoc; not notarized', runtime_libraries=libraries, native_build=native, online=online,
         launcher_version=json.loads((stage/'Support/Launcher/manifest.json').read_text())['version'],
         files={p.relative_to(stage).as_posix(): digest(p) for p in sorted(stage.rglob('*')) if p.is_file()})

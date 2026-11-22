@@ -1,4 +1,4 @@
-[GL loop](opengl-recovery.md).
+[GL menu](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

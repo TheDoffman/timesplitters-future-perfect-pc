@@ -1,19 +1,17 @@
-Windows automatic startup fallback is removed (2026-11-22); launcher Vulkan
-selection is unchanged. See [startup policy](windows-vulkan.md). The old compiler
-recovery probe is retired; failure-path checks use test-rhi-windows.py.
-
-Launcher Vulkan default (2026-11-22): SettingsPage no longer creates or saves a
-GraphicsRenderer control. GameSettings ignores retired launcher.renderer values
-(including invalid types), preserving the unknown JSON member on unrelated saves.
-Windows StartInfo scrubs inherited overrides then requests Vulkan unconditionally;
-native hosts retain their verified manifest/driver routing without a Windows
-backend override. Windows startup failures are reported without changing renderers.
-The shared UI regression checks removed controls, old-value preservation and
-child environment policy on each host. The Windows settings child checks Vulkan.
-RendererGameSmoke and test-launcher-renderers-windows.py now exercise only the
-Vulkan launcher default. Explicit D3D11
-comparisons remain available through test-rhi-windows.py and direct game runners.
-Historical paired launcher results are retained in windows-renderer-results.md.
+Launcher renderer selector restored in development (2026-11-22): shared
+SettingsPage Graphics > Advanced offers Vulkan (Default) and OpenGL. GameSettings
+loads/saves launcher.renderer and sends the selected RECOMP_D3D8_BACKEND after
+scrubbing inherited overrides on every host. Retired D3D11/malformed values use
+the default. Legacy manifest renderer=gl retains OpenGL as its default. Unknown
+settings remain preserved. Save/Cancel/dirty-state and restart persistence have
+shared UI regressions; the Windows settings child checks both actual environments.
+New build/package supported_renderers receipts advertise compiled choices; old
+receipts allow only their primary backend. Unsupported selection remains saved
+but launch fails clearly with update/selection guidance. Native driver preparation
+still needs validation for explicit OpenGL, especially Mac Vulkan prerequisites.
+No automatic recovery gate changes. See [selector and acceptance](opengl-recovery.md).
+RendererGameSmoke now selects/saves both choices through the actual UI and
+LaunchGame; game hardware acceptance remains separate from launcher unit checks.
 
 Stable game0.7.0 and launcher1.7.0 were published on2026-11-19 for Windows,
 Apple Silicon Mac and Linux. Game source is b1ca2c16; launcher source is merged

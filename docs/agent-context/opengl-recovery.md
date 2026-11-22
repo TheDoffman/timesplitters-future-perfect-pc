@@ -23,8 +23,8 @@ is established by this checkpoint. Keep all platform recovery gates disabled.
   input and window handling. Add meaningful shared settings/launch tests and
   record unavailable native-host checks explicitly.
 - Update player documentation and launcher compatibility/context records with
-  the implementation. The selector is requested work, not implemented or tested
-  by this scope amendment. All existing graphics and platform acceptance work
+  the implementation. The amendment itself did not implement the selector;
+  implementation evidence is recorded below. All existing graphics and platform acceptance work
   remains required; manual selection does not approve automatic recovery.
 
 ## Shared startup policy
@@ -927,3 +927,37 @@ wrong owner, init/create failure and explicit thread exit. Registered in common
 native and Linux CI suites. Windows45 supporting checks pass,7 native-dependent
 skips. Native compilation and real guest progress remain pending at this source
 checkpoint; all production recovery gates remain0.
+
+## Restored selector implementation checkpoint
+
+GameSettings.Renderer and SettingsPage.GraphicsRenderer restore one shared
+Vulkan/OpenGL choice. Save, Cancel, dirty state, reopen, both child environments,
+inherited override removal and malformed/retired D3D11 migration have behavioral
+coverage. Legacy manifest renderer=gl defaults to OpenGL; all ordinary builds
+default to Vulkan. A saved supported choice overrides that default.
+
+New native build receipts and all three package writers expose
+supported_renderers. Native packagers preserve the actual receipt list (old
+receipts default to Vulkan only), and legacy Mac builds declare only OpenGL.
+Missing development receipts permit both compiled development backends; an older
+installed receipt permits its original primary only. An unsupported saved choice
+is preserved and causes a clear update/select-supported-renderer startup error.
+It does not silently launch another backend. The Windows acceptance fixture also
+marks its known dual-backend game build.
+
+The real Windows hardware harness no longer overrides the OpenGL environment in
+a special developer child: both choices select/save GraphicsRenderer and call
+the actual LauncherWindow.LaunchGame. Previous developer-probe runs remain
+historical evidence. Native launch environment/library preparation still needs
+explicit OpenGL validation, especially the Mac Vulkan prerequisite checks; this
+checkpoint does not establish native selector gameplay or package acceptance.
+
+Windows build-launcher.ps1 -Test passes, including 54 settings checks and shared
+UI switching/persistence/cancel/older-package/legacy tests. Portable renderer,
+shared-layout and native package checks:66 passed,1 host skip. Compile-only real
+Windows acceptance harness passes. Actual game acceptance is pending this change.
+
+The b05ba5d2 continuous native SDL dispatch build and14 native focused checks
+pass. gl-guest-loop-01 still reports only1 completed guest present in30s, despite
+additional guest/audio/shadow-frame activity. Do not claim native gameplay
+acceptance; inspect the current frame/dispatch evidence before another rerun.
