@@ -42,6 +42,8 @@ batches, packet loss/reorder, tick wrap and context resets. A mutation replaces
 the received progress and must fail. `network_guest_dispatch.c` checks the frame
 integration. `tests/network/pc_network.c` also exercises real UDP and Online
 bridge receive routing, host session-key rejection and LAN sends.
+The isolated socket double uses a namespaced byte-order helper so Darwin's
+system-header `htons` macro cannot rewrite its declaration.
 
 The supported local US executable additionally runs the original phase receiver
 and endpoint setters, demonstrating that its joining stream snaps transitions to

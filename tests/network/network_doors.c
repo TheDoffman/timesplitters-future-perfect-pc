@@ -25,7 +25,13 @@ struct sockaddr_in {unsigned sin_family;struct {uint32_t s_addr;} sin_addr;uint1
 #define AF_INET 2
 #define INVALID_SOCKET (-1)
 #define MAX_SOCKETS 2
-static uint16_t htons(uint16_t v){return (uint16_t)((v>>8)|(v<<8));}
+/* Keep this isolated socket double separate from the host's declaration or
+ * macro (Darwin exposes htons through headers included by recomp_types.h). */
+static uint16_t door_test_htons(uint16_t v){return (uint16_t)((v>>8)|(v<<8));}
+#ifdef htons
+#undef htons
+#endif
+#define htons door_test_htons
 typedef struct {int socket;unsigned port;} NetSocket;
 static NetSocket sockets[MAX_SOCKETS]={{1,7654},{-1,0}};
 static struct {uint32_t ip;unsigned char key[8];} peers[16];

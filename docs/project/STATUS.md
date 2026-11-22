@@ -19,6 +19,10 @@ LAN receive/send and Online bridge receive/key-rejection tests pass. The
 unrelated virtual-pad focus probe remains skipped when foreground activation
 is denied. Native Mac/Linux gameplay and physical WAN remain unverified.
 
+The first Mac CI run caught a test-double name collision with Darwin's `htons`
+macro. The fixture now uses a namespaced byte-order helper; production gameplay
+and transport code are unchanged by this portability correction.
+
 Live acceptance uses Original60, Vulkan and private-host Online v2 on one Windows
 computer. Zeppelin with two humans/six bots: 18,000 door comparisons over 91.64
 seconds, nine moving doors, mean progress error 0.0000916, maximum 0.0991 and no
