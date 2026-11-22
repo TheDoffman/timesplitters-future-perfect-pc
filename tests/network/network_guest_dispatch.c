@@ -348,8 +348,8 @@ int main(void)
         uint8_t *live=(uint8_t *)memory+0x7de400;
         live[0]=2;live[2]=6;memory[0x7356d8/4]=0x1000;
         memory[0x76b108/4]=1;
-        for(unsigned slot=0;slot<17;slot++) {
-            int before=originals;g_esp=16;memory[4]=0x13e0bb;memory[5]=slot;
+        for(unsigned site=0;site<2;site++)for(unsigned slot=0;slot<17;slot++) {
+            int before=originals;g_esp=16;memory[4]=site?0x35a609:0x13e0bb;memory[5]=slot;
             pc_network_bots_guest_active(original);
             if(slot>=2 && slot<8) CHECK(originals==before && g_eax==1 && g_esp==20);
             else CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);

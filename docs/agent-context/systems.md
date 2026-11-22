@@ -1,5 +1,5 @@
 [Bob](weapon-bob.md), [Exit](pause-settings.md), [Turn](controls-options.md).
-[V-Sync](video-options.md); [Auto](windows-vulkan.md#auto-resolution-allocation).
+[V-Sync](video-options.md); [229](gladiator-selection.md).
 
 [Wide HUD](ultrawide-player-markers.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).

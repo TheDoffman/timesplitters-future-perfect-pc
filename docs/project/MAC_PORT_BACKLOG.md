@@ -5475,6 +5475,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 
 ### MAC-052 — Experimental network bot setup (issue #25)
+Issue #229 Gladiator follow-up (branch `fix/229-gladiator-selection`, uncommitted):
+`src/network/pc_network_bots_guest.inc` adds the audited host publisher return PC
+35A609 to the existing activity allowlist. This shared Windows/native-network
+adapter needs no new Mac/Linux implementation. Original-code regression tests
+cover human suicides and stable bot ownership; Windows two-instance Online
+acceptance confirmed the guest suicide case with six bots. Native Mac/Linux and
+mixed-peer gameplay remain awaiting validation; see STATUS and the bounded
+[Gladiator guide](../agent-context/gladiator-selection.md).
 
 Issue #222 follow-up (`59cc489`, branch `222-bug-online-bots-are-stuttery-for-guests`): `src/network/pc_network_bot_motion.h` supplies shared
 numeric replica interpolation, integrated through the existing Windows bot hook
