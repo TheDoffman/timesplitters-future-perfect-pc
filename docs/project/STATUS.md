@@ -1,3 +1,23 @@
+## Online Gladiator bot selection (#229, 2026-11-22)
+
+The shared bot-activity adapter now accepts a selected AI actor in the original
+host Gladiator publisher. Previously its human-only check rejected that bot and
+repeated the suicide fallback every update. Human/controller eligibility and
+selection, scoring and packet rules remain unchanged. Publication is pending;
+#229 stays open until a release containing this fix is available.
+
+Windows: 14 focused tests pass, including original US selection/publication/
+receiver routines and a mutation that removes the fix. Release D3D11/Vulkan
+build, post-build checks and identity/symbol verification pass. Two isolated
+Windows Online instances with six bots, Original60 and Vulkan confirmed a guest
+Gladiator rocket suicide: both peers incremented the self-kill counter, selected
+the same bot and continued without endless selection or disconnect. The run
+completed in 449 seconds with movement/replication checks and cleanup. A separate
+normal-loadout pair also passed. No guest memory was written to seed gameplay.
+Live host suicide is covered only by original-code tests; physical WAN,
+community relay, Mac and Linux gameplay remain unverified. The unrelated
+virtual-pad focus probe skipped when foreground activation was refused.
+
 ## Launcher Vulkan default without a renderer selector (2026-11-22)
 
 Local branch feature/launcher-vulkan-default, based on main1f6fa9da: removed
