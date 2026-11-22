@@ -413,7 +413,7 @@ def main():
     parser.add_argument("--label", help="Unique evidence/cache label; letters, numbers and hyphens")
     parser.add_argument("--compile-only", action="store_true", help="CI build check; no game data or GPU required")
     parser.add_argument("--unavailable-dxc",action="store_true",help="Test-only compiler stub in disposable Bin; require saved Vulkan to recover to D3D11")
-    parser.add_argument("--backend", choices=("both", "vulkan", "d3d11"), default="both")
+    parser.add_argument("--backend", choices=("vulkan",), default="vulkan")
     parser.add_argument("--warm", action="store_true", help="Repeat each cold case with its populated isolated cache")
     parser.add_argument("--repetitions", type=int, choices=(1, 2, 3), help="Matched runs per backend: cold followed by warm repetitions")
     parser.add_argument("--presentmon", action="store_true", help="Collect PID-filtered ETW display/submission timing with the pinned console")
@@ -500,7 +500,7 @@ def main():
             report["capture_method"] = "dxgi-desktop-duplication-game-rectangle"
             report["capture_helper_sha256"] = digest(helper)
             report["capture_source_sha256"] = digest(ROOT / "tests/launcher_lifecycle/RendererWindowCapture.cpp")
-        for backend in (("d3d11", "vulkan") if args.backend == "both" else (args.backend,)):
+        for backend in (args.backend,):
             phases = ("cold", "warm") if args.warm else ("cold",)
             if args.repetitions:
                 phases = ("cold",) + tuple("warm-" + str(index) for index in range(1, args.repetitions))

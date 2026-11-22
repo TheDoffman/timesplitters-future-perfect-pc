@@ -89,7 +89,7 @@ namespace TimeSplitters.Launcher
         readonly ComboBox impactRange;
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, vsync, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
-        readonly ComboBox renderer, device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
+        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
         readonly TextBlock performanceAdvice,developerToolsShortcut;
         readonly StackPanel consoleScalePanel;
         readonly Button[,] bindingButtons = new Button[GameSettings.Actions.Length,GameSettings.BindingSlots];
@@ -261,14 +261,6 @@ namespace TimeSplitters.Launcher
                 Text("Save the Enhanced toggle for your next launch. Downloads and update checks apply immediately.",12),
                 Text("Missing replacements use original textures. F10 switches Classic/Enhanced for the current session.",12)).Name="TextureHelpDetails";
             var display=Section(graphics,"Display","Output size for the game. Your desktop stays unchanged.");
-            renderer=Choices(GameSettings.RendererLabels,GameSettings.RendererLabels[Array.IndexOf(GameSettings.Renderers,model.Renderer)]);
-            renderer.Name="GraphicsRenderer";
-            renderer.IsEnabled=model.CanSelectRenderer;
-            if(LauncherPlatform.SupportsRendererSelection) {
-                Field(display,"Renderer (next launch)",renderer);
-                Ui.Tip(renderer,"Vulkan is the default. Choose Direct3D 11 if you have graphics problems. Save, then restart the game to apply.");
-                if(!model.CanSelectRenderer)display.Children.Add(Text("Update the game to enable renderer selection.",12));
-            }
             var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height) || (m.Automatic && model.Width==1 && model.Height==1)).ToList();
             aspect=new ComboBox { Name="AspectRatio" };
@@ -453,7 +445,7 @@ namespace TimeSplitters.Launcher
             foreach(var cards in new[]{controls,graphics,viewHud,general,discord,audioPanel})cards.Reflow();
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
             foreach(var check in new[]{enabled,invert,fullscreen,vrr,vsync,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,dialogueFocus,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
-            foreach(var choice in new[]{renderer,device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling,impactRange})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
+            foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling,impactRange})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
             Ui.ValueChanged(crosshairSize,RefreshSaveState);
         }
@@ -466,7 +458,7 @@ namespace TimeSplitters.Launcher
                 skipSplashes.IsChecked,developerTools.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
                 audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
-                dialogueFocus.IsChecked,impactRange.SelectedIndex,renderer.SelectedIndex,
+                dialogueFocus.IsChecked,impactRange.SelectedIndex,
                 controllerDeadzones.Select(x=>(int)Math.Round(x.Value)).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
                 (int)Math.Round(fov.Value),(int)Math.Round(crosshairSize.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
@@ -629,7 +621,6 @@ namespace TimeSplitters.Launcher
                 model.DialogueFocus=dialogueFocus.IsChecked==true;model.ImpactRange=impactRange.SelectedIndex;
                 model.SpatialAudio=spatialAudio.IsChecked==true;model.ExtendedGunfire=extendedGunfire.IsChecked==true;
                 model.EnvironmentalAudio=environmentalAudio.IsChecked==true;model.AmbientAudio=ambientAudio.IsChecked==true;
-                if(model.CanSelectRenderer)model.Renderer=GameSettings.Renderers[renderer.SelectedIndex];
                 model.LanguagePack=GameSettings.LanguagePacks[languagePack.SelectedIndex];
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DeveloperToolsEnabled=developerTools.IsChecked==true;

@@ -1,3 +1,26 @@
+## Launcher Vulkan default without a renderer selector (2026-11-22)
+
+Local branch feature/launcher-vulkan-default, based on main1f6fa9da: removed
+GraphicsRenderer and its preference/capability plumbing from the shared launcher.
+Windows launch always requests Vulkan after clearing inherited overrides. Old
+launcher.renderer values are ignored and preserved as unknown JSON data, so an
+old D3D11 choice or invalid value cannot select another backend or block launch.
+Native Mac/Linux keep existing manifest-based Vulkan driver routing. Automatic
+Windows startup fallback and legacy Mac GL compatibility are unchanged.
+
+Windows launcher builds. The new shared UI regression passes (selector absent,
+old values preserved, child override Vulkan);116 updater regression groups and
+54 isolated settings checks pass, including an actual child reading Vulkan.
+35 selected Python checks and acceptance --compile-only pass. Mac/Linux projects
+compile with SDK9.0.312 and isolated lockfiles (zero errors, two existing obsolete
+event warnings each). Native UI execution is unrun. Full Windows -Test stops at
+an unrelated save-restore guard because the user's interactive game is running;
+the game is left open. No new gameplay or GPU acceptance is claimed for this
+launcher-only change; no game rebuild is needed. Local results are in
+logs/launcher-vulkan-default-*.log. Previous paired-backend measurements below
+remain historical evidence, and the launcher acceptance helper now tests Vulkan
+only; direct game/RHI runners retain explicit backend comparisons.
+
 ## Windows Vulkan acceptance completed on available NVIDIA host (2026-11-21)
 
 The bounded Windows acceptance matrix passes on RTX 4070 SUPER / driver 617.42,
