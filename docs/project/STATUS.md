@@ -7,7 +7,13 @@ finalizer; desktop exit remains frontend-only. Both branches' menu regression
 controls and documentation are retained. Windows x64, Python3.14.2, MSVC14.42:
 affected FOV/menu/Story/Tools/local-runner tests84 pass, two native Mac-only
 compile checks skip. Repository context/index and whitespace checks pass.
-Full runtime patch validation passes. Native Mac/Linux builds and paired
+Full runtime patch validation passes. Supported Windows Release build and all
+built-in checks pass at7f569df2f (MSBuild17.12.6, default Windows renderer);
+matching crash symbols produced. Generated dispatch-table compilation was slow.
+The first run was interrupted; the resumed build completed, and an incremental
+confirmation returned exit0 with native stdout/stderr captured directly rather
+than through PowerShell redirection. Evidence: logs/story-main-sync-build-resume.log
+and logs/story-main-sync-build-confirm.log. Native Mac/Linux builds and paired
 gameplay were not run for this synchronization. Personal saves/settings unchanged.
 
 ## Story player animation advance - 2026-11-09 (local validation)
