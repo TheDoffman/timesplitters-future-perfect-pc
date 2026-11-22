@@ -1,3 +1,35 @@
+## OpenGL worker restores first-mission throughput; recovery still gated (2026-11-22)
+
+Local checkpoint after886eb735, feature/opengl-startup-recovery. The shared RHI
+now retires final resource references without guest-thread GL calls, and typed
+host dispatch keeps WGL on a dedicated graphics worker. Windows worker/context
+recreation, concurrent resources and repeated cleanup pass GPU contracts.
+All5 recovery cases, all8 ordinary cases and explicitGL pass; Vulkan validation
+is active on positive Vulkan paths. Fixture acceptance restored OFF.
+
+On Windows11 x64/MSVC19.44/RTX4070SUPER617.42, two120s isolated game runs pass
+first-mission firearm handoff, movement, hand animation, firing and pause/resume
+without renderer errors. Build SHA256
+c291b08cfa97d97b54811a0a1e6b588f8700d9f3695752759df0fa58a6f476a9.
+The measurement run gl-worker-01 observed60FPS late:1800 CPU present intervals
+at85-115s median16.666ms, p9517.179ms, max17.880ms. This is not scanout/GPU timing.
+Late handles stayed550; private memory359530496-367816704 bytes, ending359530496.
+The separate visual run gl-worker-visual-01 passes the same gameplay checks;
+reviewed guest capture shows upright textured world/fog/weapon/tutorial/HUD and
+impact sparks. Both sessions were runner-terminated, so neither proves clean
+exit. Source and measured limitations: agent-context/opengl-recovery.md.
+
+Native SDL GPU calls now dispatch to main; window staging preserves the original
+on failure, retains logical RHI identity, and rebinds input/settings on commit.
+The production window transaction passes injected failure/preservation tests on
+MSVC and WSL GCC; shared GL/native adapters pass GCC syntax checks.136 selected
+Python tests pass,9 skipped. Native event servicing, actual host build/package/
+GPU execution and missingGL4.1 view/stencil/mirror-once capability work remain.
+Windows display/fullscreen/resize, graphics/effects matrices, additional scenes,
+actual recovery game startup, preservation and longer stability/clean-exit checks
+remain. Automatic recovery remains OFF on every production platform; legacy Mac
+behavior is preserved and deprecated OpenGL is not a future-support guarantee.
+
 ## OpenGL ordinary build and failed first gameplay acceptance (2026-11-22)
 
 Local uncommitted checkpoint after58d450d9 on feature/opengl-startup-recovery.

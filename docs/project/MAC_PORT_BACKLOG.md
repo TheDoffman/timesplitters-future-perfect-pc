@@ -8,9 +8,14 @@ execution remains unrun. Public RHI context leases handle guest-thread handoff;
 its first Windows game run failed progression/performance acceptance, so this
 is not approved recovery. Native OpenGL4.1 lacks guaranteed texture-view/storage and
 mirror-once extensions: adapt required views/capabilities before native acceptance.
-SDL Vulkan-to-GL window replacement must preserve logical identity and input,
-debug/settings/fullscreen bindings. Native builds/GPU execution, game effects,
-resizing/fullscreen, preservation and performance/stability checks remain unrun.
+SDL Vulkan-to-GL window replacement is now implemented through the staged
+opengl_window_sdl.h transaction, retained logical host identity, input/settings
+rebinding and main-thread GPU dispatch. Injected rollback/preservation tests and
+GCC syntax pass, but actual native event servicing and UI/GPU behavior remain
+unverified. The Windows context worker now passes120s first-mission gameplay at
+60FPS; it does not establish native throughput. Native builds/GPU execution,
+GL4.1 view/stencil/mirror-once adaptation, effects, resizing/fullscreen, settings
+preservation and performance/stability acceptance remain required.
 Legacy Mac GL is unchanged; Apple's OpenGL is deprecated. Windows pixel tests do
 not establish native support. See agent-context/opengl-recovery.md and STATUS.
 

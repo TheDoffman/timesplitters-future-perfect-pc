@@ -1,4 +1,4 @@
-[GL game](opengl-recovery.md).
+[GL checks](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

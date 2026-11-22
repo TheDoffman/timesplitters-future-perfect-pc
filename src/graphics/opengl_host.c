@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+static void *(*prepare_window)(void *);
+void tsfp_gl_host_set_window_adapter(void *(*prepare)(void *))
+{prepare_window=prepare;}
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -47,9 +50,52 @@ failed:
     fprintf(stderr,"[RHI] opengl: could not create a core4.1 context (Windows error %lu)\n",GetLastError());
     tsfp_gl_host_destroy(host);return NULL;
 }
-static SRWLOCK context_lock=SRWLOCK_INIT;
-void tsfp_gl_host_lock(void){AcquireSRWLockExclusive(&context_lock);}
-void tsfp_gl_host_unlock(void){ReleaseSRWLockExclusive(&context_lock);}
+/* One serialized command at a time; pointer arguments remain valid because
+ * dispatch waits for completion. CPU-only state never needs a context switch.
+ * Worker creation/shutdown and native synchronization live at this OS boundary. */
+static SRWLOCK call_lock=SRWLOCK_INIT,queue_lock=SRWLOCK_INIT;
+static CONDITION_VARIABLE queue_changed=CONDITION_VARIABLE_INIT;
+static HANDLE graphics_thread;
+static void (*pending_call)(void *);
+static void *pending_argument;
+static int pending_done,stopping;
+static DWORD WINAPI graphics_loop(void *unused)
+{
+    (void)unused;AcquireSRWLockExclusive(&queue_lock);
+    for(;;) {
+        while(!pending_call && !stopping)SleepConditionVariableSRW(&queue_changed,&queue_lock,INFINITE,0);
+        if(stopping)break;
+        void (*operation)(void *)=pending_call;void *argument=pending_argument;
+        ReleaseSRWLockExclusive(&queue_lock);operation(argument);AcquireSRWLockExclusive(&queue_lock);
+        pending_call=NULL;pending_done=1;WakeAllConditionVariable(&queue_changed);
+    }
+    ReleaseSRWLockExclusive(&queue_lock);return 0;
+}
+int tsfp_gl_host_run(void (*operation)(void *),void *argument,int gpu)
+{
+    int ok=1;AcquireSRWLockExclusive(&call_lock);
+    if(!gpu)operation(argument);
+    else {
+        if(!graphics_thread)graphics_thread=CreateThread(NULL,0,graphics_loop,NULL,0,NULL);
+        if(!graphics_thread){fprintf(stderr,"[RHI] ERROR: opengl graphics thread creation failed\n");ok=0;}
+        else {
+            AcquireSRWLockExclusive(&queue_lock);pending_done=0;
+            pending_call=operation;pending_argument=argument;WakeAllConditionVariable(&queue_changed);
+            while(!pending_done)SleepConditionVariableSRW(&queue_changed,&queue_lock,INFINITE,0);
+            ReleaseSRWLockExclusive(&queue_lock);
+        }
+    }
+    ReleaseSRWLockExclusive(&call_lock);return ok;
+}
+void tsfp_gl_host_stop(void)
+{
+    AcquireSRWLockExclusive(&call_lock);
+    if(graphics_thread) {
+        AcquireSRWLockExclusive(&queue_lock);stopping=1;WakeAllConditionVariable(&queue_changed);ReleaseSRWLockExclusive(&queue_lock);
+        WaitForSingleObject(graphics_thread,INFINITE);CloseHandle(graphics_thread);graphics_thread=NULL;stopping=0;
+    }
+    ReleaseSRWLockExclusive(&call_lock);
+}
 int tsfp_gl_host_make_current(TsfpGlHost *host)
 {return host && wglMakeCurrent(host->dc,host->context);}
 void tsfp_gl_host_release(TsfpGlHost *host)
@@ -78,9 +124,15 @@ TsfpGlHost *tsfp_gl_host_create(void *window)
 {
     TsfpGlHost *host=calloc(1,sizeof *host);
     if(!host || !window){free(host);return NULL;}
-    host->window=window;
-    /* SDL window creation/replacement belongs to the OS window adapter. */
-    if(!(SDL_GetWindowFlags(host->window)&SDL_WINDOW_OPENGL))goto failed;
+    if(!SDL_IsMainThread()) {
+        fprintf(stderr,"[RHI] opengl: SDL context creation requires main-thread dispatch\n");
+        free(host);return NULL;
+    }
+    host->window=prepare_window?prepare_window(window):window;
+    if(!host->window || !(SDL_GetWindowFlags(host->window)&SDL_WINDOW_OPENGL)) {
+        fprintf(stderr,"[RHI] opengl: no compatible SDL OpenGL window\n");
+        free(host);return NULL;
+    }
     host->context=SDL_GL_CreateContext(host->window);
     if(!host->context || !SDL_GL_MakeCurrent(host->window,host->context))goto failed;
     int major=0,minor=0;
@@ -94,9 +146,23 @@ failed:
 }
 void *tsfp_gl_host_proc(TsfpGlHost *host,const char *name)
 {return host && host->context && name?(void *)SDL_GL_GetProcAddress(name):NULL;}
-static pthread_mutex_t context_lock=PTHREAD_MUTEX_INITIALIZER;
-void tsfp_gl_host_lock(void){pthread_mutex_lock(&context_lock);}
-void tsfp_gl_host_unlock(void){pthread_mutex_unlock(&context_lock);}
+static pthread_mutex_t call_lock=PTHREAD_MUTEX_INITIALIZER;
+typedef struct {void (*operation)(void *);void *argument;} MainCall;
+static void main_operation(void *argument)
+{
+    MainCall *call=argument;pthread_mutex_lock(&call_lock);
+    call->operation(call->argument);pthread_mutex_unlock(&call_lock);
+}
+int tsfp_gl_host_run(void (*operation)(void *),void *argument,int gpu)
+{
+    MainCall call={operation,argument};
+    if(!gpu || SDL_IsMainThread()){main_operation(&call);return 1;}
+    /* Do not hold call_lock while queueing: the main event thread must remain
+     * free to service this callback while guest threads change CPU-only state. */
+    if(SDL_RunOnMainThread(main_operation,&call,true))return 1;
+    fprintf(stderr,"[RHI] ERROR: opengl main-thread dispatch failed: %s\n",SDL_GetError());return 0;
+}
+void tsfp_gl_host_stop(void){}
 int tsfp_gl_host_make_current(TsfpGlHost *host)
 {return host && SDL_GL_MakeCurrent(host->window,host->context);}
 void tsfp_gl_host_release(TsfpGlHost *host)

@@ -6,6 +6,7 @@
 #include "d3d8_xbox.h"
 #include "d3d8_overlay.h"
 #include "rhi.h"
+#include "../graphics/opengl_host.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -14,6 +15,20 @@
 #include "renderer_host_selftest.inc"
 
 static SDL_Window *native_window;
+static void *native_logical_window;
+static int commit_gl_window(SDL_Window *old,SDL_Window *next)
+{
+    if(!tsfp_renderer_host_replace_window(old,next))return 0;
+    tsfp_native_settings_release_input(old);
+    native_window=next;tsfp_native_settings_attach(next);return 1;
+}
+#include "opengl_window_sdl.h"
+static void *prepare_gl_window(void *logical_window)
+{
+    if(logical_window!=native_window && logical_window!=native_logical_window)return NULL;
+    return tsfp_native_gl_window(native_window,commit_gl_window);
+}
+
 void *tsfp_native_renderer_window(unsigned width,unsigned height)
 {
     if(native_window)return native_window;
@@ -24,6 +39,8 @@ void *tsfp_native_renderer_window(unsigned width,unsigned height)
     native_window=SDL_CreateWindow("TimeSplitters: Future Perfect — Shared Native Renderer",
         width?width:640,height?height:480,tsfp_native_window_flags(SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY));
     if(!native_window){fprintf(stderr,"[native-rhi] window: %s\n",SDL_GetError());return NULL;}
+    native_logical_window=native_window;
+    tsfp_gl_host_set_window_adapter(prepare_gl_window);
     tsfp_renderer_host_bind(native_window,d3d8_overlay_shutdown);
     tsfp_native_settings_attach(native_window);
     SDL_RaiseWindow(native_window);

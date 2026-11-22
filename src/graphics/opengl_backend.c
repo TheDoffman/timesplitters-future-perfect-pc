@@ -9,17 +9,18 @@
 #include <string.h>
 #include <math.h>
 
+typedef struct GlRetired {struct GlRetired *next;void (*destroy)(struct GlRetired *);} GlRetired;
 typedef struct {GLenum internal,format,type;unsigned bytes,block;int depth,stencil,integer;} GlFormat;
-struct RhiBuffer {GLuint id;RhiBufferDesc desc;unsigned refs;};
-struct RhiImage {GLuint id;GLenum target;RhiImageDesc desc;unsigned refs;int immutable;};
-struct RhiView {RhiImage *image;GLuint texture;GLenum target;RhiViewDesc desc;unsigned kind,refs;int own_texture,stencil;};
-struct RhiShader {GLuint id;unsigned stage,refs;TsfpGlShaderText text;};
+struct RhiBuffer {GlRetired retired;GLuint id;RhiBufferDesc desc;unsigned refs;};
+struct RhiImage {GlRetired retired;GLuint id;GLenum target;RhiImageDesc desc;unsigned refs;int immutable;};
+struct RhiView {GlRetired retired;RhiImage *image;GLuint texture;GLenum target;RhiViewDesc desc;unsigned kind,refs;int own_texture,stencil;};
+struct RhiShader {GlRetired retired;GLuint id;unsigned stage,refs;TsfpGlShaderText text;};
 typedef struct {unsigned location,slot,offset;GlFormat format;unsigned components;} GlAttribute;
 struct RhiVertexLayout {unsigned count;GlAttribute attributes[32];unsigned refs;};
 struct RhiBlendState {RhiBlendDesc desc;};
 struct RhiDepthState {RhiDepthDesc desc;};
 struct RhiRasterState {RhiRasterDesc desc;};
-struct RhiSampler {GLuint id;unsigned refs;};
+struct RhiSampler {GlRetired retired;GLuint id;unsigned refs;};
 struct RhiOcclusion {GLuint id;int active,ended;};
 typedef struct GlProgram {GLuint id,vs,ps;GLint samples[32];struct GlProgram *next;} GlProgram;
 static TsfpGlApi G;
@@ -34,9 +35,12 @@ static struct {
     float factor[4];unsigned mask,stencil_ref,topology;
     RhiViewport viewports[16];unsigned viewport_count;RhiRect scissor;
     GlProgram *programs,*pipeline;GLuint current_program;
+    GlRetired *retired_head,*retired_tail;
     GLuint zero_texture;RhiOcclusion *query;
 } S;
 extern int rhi_vk_dxc_available(void);
+static int context_current;
+static int ensure_context(void);
 static void g_device_destroy(void);
 static void g_image_destroy(RhiImage *image);
 static void g_view_destroy(RhiView *view);
@@ -47,6 +51,23 @@ static void g_sampler_destroy(RhiSampler *sampler);
 static void g_layout_destroy(RhiVertexLayout *layout);
 static void g_image_update(RhiImage *,uint32_t,const RhiBox *,const void *,uint32_t,uint32_t);
 static int g_resolve(RhiImage *,uint32_t,RhiImage *,uint32_t);
+/* CPU-only state changes retire objects without touching GL. The graphics
+ * thread drains this queue before GPU work, preserving reference lifetimes
+ * without a context transfer or a dispatch for every ordinary state bind. */
+static void retire(GlRetired *object,void (*destroy)(GlRetired *))
+{
+    object->next=NULL;object->destroy=destroy;
+    if(S.retired_tail)S.retired_tail->next=object;else S.retired_head=object;
+    S.retired_tail=object;
+}
+static void drain_retired(void)
+{
+    while(S.retired_head) {
+        GlRetired *object=S.retired_head;S.retired_head=object->next;
+        if(!S.retired_head)S.retired_tail=NULL;
+        object->destroy(object);
+    }
+}
 static unsigned level_size(unsigned size,unsigned mip){return size>>mip?size>>mip:1;}
 static int gl_ok(const char *operation)
 {
@@ -124,7 +145,9 @@ static RhiBuffer *g_buffer_create(const RhiBufferDesc *desc,const void *data)
     G.BufferData(GL_COPY_WRITE_BUFFER,desc->size,data,desc->usage==RHI_USAGE_DYNAMIC?GL_DYNAMIC_DRAW:GL_STATIC_DRAW);
     if(!gl_ok("buffer creation")){g_buffer_destroy(b);return NULL;}return b;
 }
-static void g_buffer_destroy(RhiBuffer *b){if(b && !--b->refs){G.DeleteBuffers(1,&b->id);free(b);}}
+static void delete_buffer(GlRetired *object)
+{RhiBuffer *b=(RhiBuffer *)object;G.DeleteBuffers(1,&b->id);free(b);}
+static void g_buffer_destroy(RhiBuffer *b){if(b && !--b->refs)retire(&b->retired,delete_buffer);}
 static void *g_buffer_map(RhiBuffer *b,uint32_t mode)
 {
     if(!b)return NULL;G.BindBuffer(GL_COPY_WRITE_BUFFER,b->id);
@@ -200,7 +223,9 @@ static RhiImage *g_image_create(const RhiImageDesc *input,const RhiSubresourceDa
     return image;
 }
 static RhiImage *g_image_retain(RhiImage *image){if(image)image->refs++;return image;}
-static void g_image_destroy(RhiImage *image){if(image && !--image->refs){glDeleteTextures(1,&image->id);free(image);}}
+static void delete_image(GlRetired *object)
+{RhiImage *image=(RhiImage *)object;glDeleteTextures(1,&image->id);free(image);}
+static void g_image_destroy(RhiImage *image){if(image && !--image->refs)retire(&image->retired,delete_image);}
 static void g_image_desc(const RhiImage *image,RhiImageDesc *out){if(image && out)*out=image->desc;}
 static void g_image_update(RhiImage *image,uint32_t sub,const RhiBox *box,const void *data,uint32_t row,uint32_t slice)
 {
@@ -270,8 +295,9 @@ static RhiView *g_view_create(RhiImage *image,uint32_t kind,const RhiViewDesc *i
     }
     return view;
 }
-static void g_view_destroy(RhiView *v)
-{if(v && !--v->refs){if(v->own_texture)glDeleteTextures(1,&v->texture);g_image_destroy(v->image);free(v);}}
+static void delete_view(GlRetired *object)
+{RhiView *v=(RhiView *)object;if(v->own_texture)glDeleteTextures(1,&v->texture);g_image_destroy(v->image);free(v);}
+static void g_view_destroy(RhiView *v){if(v && !--v->refs)retire(&v->retired,delete_view);}
 static RhiImage *g_view_image(const RhiView *v){return v?v->image:NULL;}
 static void attach(GLenum framebuffer,GLenum attachment,RhiImage *image,unsigned mip,unsigned layer)
 {
@@ -384,9 +410,9 @@ static RhiShader *g_shader_create(uint32_t stage,const RhiShaderSource *src,char
     if(!compiled){if(error && size)G.GetShaderInfoLog(shader->id,(GLsizei)size,NULL,error);g_shader_destroy(shader);return NULL;}
     return shader;
 }
-static void g_shader_destroy(RhiShader *shader)
+static void delete_shader(GlRetired *object)
 {
-    if(!shader || --shader->refs)return;
+    RhiShader *shader=(RhiShader *)object;
     GlProgram **next=&S.programs;
     while(*next) {
         GlProgram *p=*next;
@@ -398,6 +424,8 @@ static void g_shader_destroy(RhiShader *shader)
     }
     if(shader->id)G.DeleteShader(shader->id);tsfp_gl_shader_text_free(&shader->text);free(shader);
 }
+static void g_shader_destroy(RhiShader *shader)
+{if(shader && !--shader->refs)retire(&shader->retired,delete_shader);}
 static void g_set_shader(uint32_t stage,RhiShader *shader)
 {
     if(stage>1 || (shader && shader->stage!=stage))return;
@@ -467,7 +495,9 @@ static RhiSampler *g_sampler_create(const RhiSamplerDesc *desc)
     }
     if(!gl_ok("sampler creation")){g_sampler_destroy(sampler);return NULL;}return sampler;
 }
-static void g_sampler_destroy(RhiSampler *sampler){if(sampler && !--sampler->refs){G.DeleteSamplers(1,&sampler->id);free(sampler);}}
+static void delete_sampler(GlRetired *object)
+{RhiSampler *sampler=(RhiSampler *)object;G.DeleteSamplers(1,&sampler->id);free(sampler);}
+static void g_sampler_destroy(RhiSampler *sampler){if(sampler && !--sampler->refs)retire(&sampler->retired,delete_sampler);}
 static void g_samplers(uint32_t slot,uint32_t count,RhiSampler *const *samplers)
 {if(slot<=16 && count<=16-slot)for(unsigned i=0;i<count;i++){RhiSampler *s=samplers?samplers[i]:NULL;if(s)s->refs++;g_sampler_destroy(S.samplers[slot+i]);S.samplers[slot+i]=s;}}
 #define STATE_CREATE(name,type,description) static type *name(const description *d){if(!d)return NULL;type *s=malloc(sizeof *s);if(s)s->desc=*d;return s;}
@@ -637,7 +667,7 @@ static int g_device_create(const RhiDeviceDesc *desc)
 {
     if(!desc || S.host)return -1;
     if(!rhi_vk_dxc_available()){fprintf(stderr,"[RHI] opengl: shared DXC shader compiler is unavailable\n");return -1;}
-    memset(&S,0,sizeof S);memset(&G,0,sizeof G);S.host=tsfp_gl_host_create(desc->window);if(!S.host)return -1;
+    memset(&S,0,sizeof S);memset(&G,0,sizeof G);S.host=tsfp_gl_host_create(desc->window);if(!S.host)return -1;context_current=1;
 #define LOAD(type,name) G.name=(type)tsfp_gl_host_proc(S.host,"gl" #name);if(!G.name){fprintf(stderr,"[RHI] opengl: missing gl" #name "\n");g_device_destroy();return -1;}
     TSFP_GL_FUNCTIONS(LOAD)
 #undef LOAD
@@ -664,6 +694,7 @@ static int g_device_create(const RhiDeviceDesc *desc)
 static void g_device_destroy(void)
 {
     if(!S.host){memset(&S,0,sizeof S);return;}
+    ensure_context();
     if(S.framebuffer) {
         g_set_render_target(NULL,NULL);g_set_shader(0,NULL);g_set_shader(1,NULL);g_set_layout(NULL);g_index_buffer(NULL,16,0);
         for(unsigned i=0;i<16;i++) {
@@ -671,94 +702,35 @@ static void g_device_destroy(void)
             g_sampler_destroy(S.samplers[i]);S.samplers[i]=NULL;
         }
         g_view_destroy(S.swap_view);g_image_destroy(S.swap_image);
+        drain_retired();
         while(S.programs){GlProgram *p=S.programs;S.programs=p->next;G.DeleteProgram(p->id);free(p);}
         G.DeleteFramebuffers(1,&S.framebuffer);G.DeleteFramebuffers(1,&S.readbuffer);G.DeleteFramebuffers(1,&S.writebuffer);
         G.DeleteVertexArrays(1,&S.vao);glDeleteTextures(1,&S.zero_texture);
     }
-    tsfp_gl_host_destroy(S.host);memset(&S,0,sizeof S);memset(&G,0,sizeof G);
+    tsfp_gl_host_destroy(S.host);context_current=0;memset(&S,0,sizeof S);memset(&G,0,sizeof G);
 }
-/* The title can create its device on one guest thread and render on another.
- * One context lease per public RHI operation serializes GL state and makes that
- * handoff explicit. Internal calls do not reacquire. No guest/gameplay fork. */
-static int enter_backend(void)
+/* GPU operations execute on the host's context thread. CPU-only operations
+ * share its serialized state but do not call GL, including final-reference
+ * retirement. This keeps one current context without per-bind driver flushes. */
+static int ensure_context(void)
 {
-    tsfp_gl_host_lock();
-    if(S.host && !tsfp_gl_host_make_current(S.host)) {
+    if(context_current)return 1;
+    if(!S.host || !tsfp_gl_host_make_current(S.host)) {
         fprintf(stderr,"[RHI] ERROR: opengl context handoff failed\n");
-        S.failed=1;tsfp_gl_host_unlock();return 0;
+        S.failed=1;return 0;
+    }
+    context_current=1;return 1;
+}
+static int enter_backend(int gpu)
+{
+    if(gpu==1 || (gpu==3 && S.host)) {
+        if(!ensure_context())return 0;
+        drain_retired();
     }
     return 1;
 }
-static void leave_backend(void)
-{tsfp_gl_host_release(S.host);tsfp_gl_host_unlock();}
-#define GL_VOID(type,name,params,call,args) \
- static void lease_##name params {if(!enter_backend())return;call args;leave_backend();}
-#define GL_VALUE(type,name,params,call,args,failure) \
- static type lease_##name params {if(!enter_backend())return failure;type value=call args;leave_backend();return value;}
-GL_VALUE(int, device_create, (const RhiDeviceDesc * a0), g_device_create, (a0), -1)
-GL_VOID(void, device_destroy, (void), g_device_destroy, ())
-GL_VALUE(int, device_ready, (void), g_ready, (), 0)
-GL_VALUE(RhiView *, swapchain_view, (void), g_swap_view, (), NULL)
-GL_VALUE(int, swapchain_resize, (uint32_t a0, uint32_t a1), g_resize, (a0, a1), -1)
-GL_VALUE(int32_t, present, (uint32_t a0), g_present, (a0), -1)
-GL_VALUE(int, swapchain_readback, (void * a0, uint32_t a1, uint32_t * a2, uint32_t * a3), g_swap_readback, (a0, a1, a2, a3), -1)
-GL_VOID(void, swapchain_set_vrr, (int a0), g_vrr, (a0))
-GL_VALUE(RhiBuffer *, buffer_create, (const RhiBufferDesc * a0, const void * a1), g_buffer_create, (a0, a1), NULL)
-GL_VOID(void, buffer_destroy, (RhiBuffer * a0), g_buffer_destroy, (a0))
-GL_VALUE(void *, buffer_map, (RhiBuffer * a0, uint32_t a1), g_buffer_map, (a0, a1), NULL)
-GL_VOID(void, buffer_unmap, (RhiBuffer * a0), g_buffer_unmap, (a0))
-GL_VOID(void, buffer_update, (RhiBuffer * a0, const void * a1), g_buffer_update, (a0, a1))
-GL_VALUE(RhiImage *, image_create, (const RhiImageDesc * a0, const RhiSubresourceData * a1), g_image_create, (a0, a1), NULL)
-GL_VALUE(RhiImage *, image_retain, (RhiImage * a0), g_image_retain, (a0), NULL)
-GL_VOID(void, image_destroy, (RhiImage * a0), g_image_destroy, (a0))
-GL_VOID(void, image_get_desc, (const RhiImage * a0, RhiImageDesc * a1), g_image_desc, (a0, a1))
-GL_VOID(void, image_update, (RhiImage * a0, uint32_t a1, const RhiBox * a2, const void * a3, uint32_t a4, uint32_t a5), g_image_update, (a0, a1, a2, a3, a4, a5))
-GL_VALUE(int, image_readback, (RhiImage * a0, uint32_t a1, void * a2, uint32_t a3), g_image_readback, (a0, a1, a2, a3), -1)
-GL_VALUE(RhiView  *, view_create, (RhiImage * a0, uint32_t a1, const RhiViewDesc * a2), g_view_create, (a0, a1, a2), NULL)
-GL_VOID(void, view_destroy, (RhiView * a0), g_view_destroy, (a0))
-GL_VALUE(RhiImage *, view_image, (const RhiView * a0), g_view_image, (a0), NULL)
-GL_VALUE(int, sample_count_supported, (RhiFormat a0, uint32_t a1), g_sample_count, (a0, a1), 0)
-GL_VALUE(RhiShader *, shader_create, (uint32_t a0, const RhiShaderSource * a1, char * a2, size_t a3), g_shader_create, (a0, a1, a2, a3), NULL)
-GL_VOID(void, shader_destroy, (RhiShader * a0), g_shader_destroy, (a0))
-GL_VALUE(RhiVertexLayout *, vertex_layout_create, (const RhiVertexElement * a0, uint32_t a1, const RhiShader * a2), g_layout_create, (a0, a1, a2), NULL)
-GL_VOID(void, vertex_layout_destroy, (RhiVertexLayout * a0), g_layout_destroy, (a0))
-GL_VALUE(RhiBlendState  *, blend_state_create, (const RhiBlendDesc * a0), g_blend_create, (a0), NULL)
-GL_VALUE(RhiDepthState  *, depth_state_create, (const RhiDepthDesc * a0), g_depth_create, (a0), NULL)
-GL_VALUE(RhiRasterState *, raster_state_create, (const RhiRasterDesc * a0), g_raster_create, (a0), NULL)
-GL_VALUE(RhiSampler     *, sampler_create, (const RhiSamplerDesc * a0), g_sampler_create, (a0), NULL)
-GL_VOID(void, blend_state_destroy, (RhiBlendState * a0), g_blend_destroy, (a0))
-GL_VOID(void, depth_state_destroy, (RhiDepthState * a0), g_depth_destroy, (a0))
-GL_VOID(void, raster_state_destroy, (RhiRasterState * a0), g_raster_destroy, (a0))
-GL_VOID(void, sampler_destroy, (RhiSampler * a0), g_sampler_destroy, (a0))
-GL_VOID(void, set_render_target, (RhiView * a0, RhiView * a1), g_set_render_target, (a0, a1))
-GL_VOID(void, output_save, (RhiOutputState * a0), g_output_save, (a0))
-GL_VOID(void, output_restore, (RhiOutputState * a0), g_output_restore, (a0))
-GL_VALUE(int, output_color_is, (const RhiOutputState * a0, const RhiView * a1), g_output_color_is, (a0, a1), 0)
-GL_VOID(void, set_viewports, (uint32_t a0, const RhiViewport * a1), g_viewports, (a0, a1))
-GL_VOID(void, set_scissor, (const RhiRect * a0), g_scissor, (a0))
-GL_VOID(void, set_topology, (uint32_t a0), g_topology, (a0))
-GL_VOID(void, set_vertex_layout, (RhiVertexLayout * a0), g_set_layout, (a0))
-GL_VOID(void, set_vertex_buffer, (uint32_t a0, RhiBuffer * a1, uint32_t a2, uint32_t a3), g_vertex_buffer, (a0, a1, a2, a3))
-GL_VOID(void, set_index_buffer, (RhiBuffer * a0, uint32_t a1, uint32_t a2), g_index_buffer, (a0, a1, a2))
-GL_VOID(void, set_shader, (uint32_t a0, RhiShader * a1), g_set_shader, (a0, a1))
-GL_VOID(void, set_uniform_buffers, (uint32_t a0, uint32_t a1, uint32_t a2, RhiBuffer *const * a3), g_uniforms, (a0, a1, a2, a3))
-GL_VOID(void, set_textures, (uint32_t a0, uint32_t a1, RhiView *const * a2), g_textures, (a0, a1, a2))
-GL_VOID(void, set_samplers, (uint32_t a0, uint32_t a1, RhiSampler *const * a2), g_samplers, (a0, a1, a2))
-GL_VOID(void, set_blend_state, (RhiBlendState * a0, const float * a1, uint32_t a2), g_blend, (a0, a1, a2))
-GL_VOID(void, set_depth_state, (RhiDepthState * a0, uint32_t a1), g_depth, (a0, a1))
-GL_VOID(void, set_raster_state, (RhiRasterState * a0), g_raster, (a0))
-GL_VOID(void, draw, (uint32_t a0, uint32_t a1), g_draw, (a0, a1))
-GL_VOID(void, draw_indexed, (uint32_t a0, uint32_t a1, int32_t a2), g_draw_indexed, (a0, a1, a2))
-GL_VOID(void, clear_color, (RhiView * a0, const float * a1), g_clear_color, (a0, a1))
-GL_VOID(void, clear_depth, (RhiView * a0, uint32_t a1, float a2, uint8_t a3), g_clear_depth, (a0, a1, a2, a3))
-GL_VALUE(int, image_resolve, (RhiImage * a0, uint32_t a1, RhiImage * a2, uint32_t a3), g_resolve, (a0, a1, a2, a3), -1)
-GL_VALUE(RhiOcclusion *, occlusion_create, (void), g_query_create, (), NULL)
-GL_VOID(void, occlusion_destroy, (RhiOcclusion * a0), g_query_destroy, (a0))
-GL_VALUE(int, occlusion_begin, (RhiOcclusion * a0), g_query_begin, (a0), 0)
-GL_VALUE(int, occlusion_end, (RhiOcclusion * a0), g_query_end, (a0), 0)
-GL_VALUE(int, occlusion_result, (RhiOcclusion * a0, uint64_t * a1), g_query_result, (a0, a1), -1)
-#undef GL_VOID
-#undef GL_VALUE
+static void leave_backend(void){}
+#include "opengl_calls.inc"
 const RhiBackend rhi_opengl_backend={
     .name="opengl",.device_create=lease_device_create,.device_destroy=lease_device_destroy,.device_ready=lease_device_ready,
     .swapchain_view=lease_swapchain_view,.swapchain_resize=lease_swapchain_resize,.present=lease_present,.swapchain_readback=lease_swapchain_readback,.swapchain_set_vrr=lease_swapchain_set_vrr,

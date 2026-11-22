@@ -13,6 +13,7 @@
 
 static struct {
     SDL_Window *window;
+    void *logical_window;
     void (*on_quit)(void);
     uint32_t width, height;
 } host;
@@ -34,7 +35,7 @@ static void refresh_size(void)
 static int drawable_size(void *context, void *window, uint32_t *width, uint32_t *height)
 {
     (void)context;
-    if (!host.window || window != host.window) return 0;
+    if (!host.window || (window != host.window && window != host.logical_window)) return 0;
     refresh_size();
     /* Worker rendering uses the last main-thread snapshot. SDL window queries
      * and event processing must stay on the Cocoa main thread. */
@@ -90,6 +91,7 @@ void tsfp_renderer_host_bind(SDL_Window *window, void (*on_quit)(void))
 {
     /* Binding/unbinding is outside the render-thread lifetime. */
     host.window = window;
+    host.logical_window = window;
     host.on_quit = on_quit;
     host.width = host.height = 0;
     if (window) {
@@ -99,4 +101,12 @@ void tsfp_renderer_host_bind(SDL_Window *window, void (*on_quit)(void))
     } else {
         rhi_set_host(NULL);
     }
+}
+
+int tsfp_renderer_host_replace_window(SDL_Window *old_window,SDL_Window *new_window)
+{
+    if(!SDL_IsMainThread() || !new_window || old_window!=host.window)return 0;
+    /* logical_window is an opaque identity only; never dereference the retired
+     * SDL pointer. Existing D3D8 descriptors can continue using that token. */
+    host.window=new_window;refresh_size();return 1;
 }

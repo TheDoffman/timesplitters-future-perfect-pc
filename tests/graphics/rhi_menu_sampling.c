@@ -60,6 +60,24 @@ static DWORD WINAPI gl_thread_handoff(void *unused)
     CHECK(pixels[0]==255 && pixels[1]==0 && pixels[2]==0);
     CHECK(rhi_present(0)==0);return 0;
 }
+static DWORD WINAPI gl_resource_thread(void *argument)
+{
+    unsigned channel=(unsigned)(uintptr_t)argument;
+    for(unsigned iteration=0;iteration<8;iteration++) {
+        RhiImageDesc desc={0};desc.type=RHI_IMAGE_2D;desc.width=desc.height=4;
+        desc.depth=desc.mip_levels=desc.samples=1;desc.format=RHI_FORMAT_R8G8B8A8_UNORM;
+        desc.bind=RHI_BIND_RENDER_TARGET|RHI_BIND_SAMPLED;
+        RhiImage *image=rhi_image_create(&desc,NULL);CHECK(image);
+        RhiView *view=rhi_view_create(image,RHI_VIEW_RENDER_TARGET,NULL);CHECK(view);
+        float color[4]={0,0,0,1};color[channel]=1;rhi_clear_color(view,color);
+        unsigned char pixels[4*4*4];CHECK(rhi_image_readback(image,0,pixels,4*4)==0);
+        CHECK(pixels[channel]==255 && pixels[(channel+1)%3]==0);
+        /* Final CPU releases are queued for the context owner; the next GPU
+         * operation or device destruction must consume the retired objects. */
+        rhi_view_destroy(view);rhi_image_destroy(image);
+    }
+    return 0;
+}
 static void gl_handoff_test(void)
 {
     if(strcmp(rhi_backend_name(),"opengl"))return;
@@ -74,7 +92,13 @@ static void gl_handoff_test(void)
         CHECK(rhi_swapchain_readback(pixels,64*4,&w,&h)==0);
         CHECK(pixels[0]==0 && pixels[1]==0 && pixels[2]==255);
     }
-    puts("PASS: OpenGL creation/render thread handoff and return");
+    HANDLE threads[2]={CreateThread(NULL,0,gl_resource_thread,(void *)(uintptr_t)0,0,NULL),
+                       CreateThread(NULL,0,gl_resource_thread,(void *)(uintptr_t)1,0,NULL)};
+    for(unsigned i=0;i<2;i++) {
+        CHECK(threads[i] && WaitForSingleObject(threads[i],10000)==WAIT_OBJECT_0);
+        DWORD code=1;CHECK(GetExitCodeThread(threads[i],&code) && !code);CloseHandle(threads[i]);
+    }
+    puts("PASS: OpenGL creation/render thread handoff, concurrent resources and deferred deletion");
 }
 #endif
 int main(void) {
@@ -249,6 +273,21 @@ int main(void) {
     test_visibility_queries();
     rhi_device_destroy();
 #ifdef TSFP_WINDOWS_RHI_TEST
+#ifdef RHI_HAVE_OPENGL
+    if(window && !strcmp(rhi_backend_name(),"opengl")) {
+        /* Reuse the same pixel-formatted window across independent context /
+         * worker lifetimes, including repeated destruction after shutdown. */
+        for(unsigned cycle=0;cycle<2;cycle++) {
+            RhiDeviceDesc again={0};again.window=window;again.width=again.height=64;again.windowed=1;
+            CHECK(!rhi_device_ready() && rhi_device_create(&again)==0);
+            const float color[4]={0,1,0,1};rhi_clear_color(rhi_swapchain_view(),color);
+            unsigned char pixels[64*64*4];uint32_t w=64,h=64;
+            CHECK(!rhi_swapchain_readback(pixels,64*4,&w,&h));CHECK(pixels[1]==255 && !pixels[0]);
+            CHECK(!rhi_present(0));rhi_device_destroy();rhi_device_destroy();
+        }
+        puts("PASS: OpenGL worker/context recreation and repeated cleanup");
+    }
+#endif
     if(window)DestroyWindow((HWND)window);
 #endif
 #ifdef RHI_VULKAN_SDL

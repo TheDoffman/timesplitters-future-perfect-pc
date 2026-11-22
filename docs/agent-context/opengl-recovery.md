@@ -37,10 +37,13 @@ textureSamples is lowered to backend sample-count uniforms for GLSL410.
 
 `opengl_host.c/.h` is the small window/context boundary: WGL4.1 on Windows,
 SDL GL on native hosts, function lookup and swap interval. It does not own the
-window or save settings. Native window recreation after failed Vulkan is still
-required; existing Vulkan SDL windows cannot simply create an OpenGL context.
-Native event-thread, input/debug/window bindings and logical window identity
-must survive that replacement. SDL native context code is unverified on-host.
+window or save settings. The native owner now stages a replacement GL window through
+opengl_window_sdl.h, commits event/input/settings bindings only after required
+window calls succeed, and preserves the original opaque RHI window token for
+size queries. A failed staging destroys only the new window. Context and SDL
+GPU calls dispatch to the main event thread; CPU-only state uses the same
+serialization without GL. Actual native event servicing, fullscreen transitions,
+logical identity and debug/input behavior remain unverified on-host.
 
 SPIRV-Cross is pinned to SDK1.4.363.0's commit in config/build/spirv-cross.json.
 `python tools/build/spirv_cross.py --setup` verifies the2MB source archive and
@@ -159,3 +162,70 @@ Recovery acceptance was restored OFF after tests. Current fixture hashes:
 - rhi-windows: `6cc59cc17f29d5d1c5453f1cedd6b554bf70200deeca847879574fec8545a57e` (passed).
 - rhi-windows-opengl: `6cc59cc17f29d5d1c5453f1cedd6b554bf70200deeca847879574fec8545a57e` (passed).
 - rhi-windows-opengl-recovery: `5bb4c4a33d9aaf8bb021b708ae992e38be99ae85d390f5ae8608869cfd09a6c3` (passed).
+
+## Context worker and native window transaction (after886eb735)
+
+The old per-call leases were correct but expensive: a temporary WGL timing probe
+recorded22748 binds/430ms by100 presents and706358/11977ms by400 presents during
+a20s menu run. Removing CPU-only binds improved throughput, but its120s gameplay
+run gl-lazy-01 still reported about12-19 FPS late. These probes changed the next
+action; their temporary timing instrumentation is not shipped.
+
+Current shared scheduling: `opengl_calls.inc` supplies typed synchronous host
+thunks. CPU-only binds/refcounts modify serialized state without GL. Final
+buffer/image/view/shader/sampler releases enqueue embedded retirement nodes;
+the context owner drains them before GPU operations and at destruction. This
+preserves bound-resource lifetimes and program invalidation without driver calls
+on guest threads. WGL retains a context on one dedicated worker; stop joins it.
+SDL retains its context on the main event thread and dispatches GPU operations
+there through SDL_RunOnMainThread. Never wait on guest rendering from the native
+main thread while it needs to service queued SDL callbacks; native event-loop
+acceptance remains required. A Windows pass does not establish that property.
+
+The Windows GPU fixture now exercises simultaneous resource create/clear/readback/
+retirement from two guest threads, context/worker recreation on the same window,
+and repeated destruction. All5 actual recovery cases, all8 recovery-OFF cases
+and explicitGL pass with this scheduler; positive Vulkan paths use validation.
+Reports: logs/rhi-windows*.json. Acceptance restored OFF. Latest fixture hashes:
+
+- rhi-windows: `2eebeec95ee8de6e7632111aba8cf08da1776ab3779298b771b0da0a17d81dd7`.
+- rhi-windows-opengl: `2eebeec95ee8de6e7632111aba8cf08da1776ab3779298b771b0da0a17d81dd7`.
+- rhi-windows-opengl-recovery: `b3a45751d382f815069c9528244174698ec637bcc9bce2052f55c5c67ed3ca42`.
+
+Two120s ordinary-game runs on Windows11/RTX4070SUPER617.42 pass first-mission
+progression, firearm handoff, movement, animation, firing and pause/resume without
+renderer errors: gl-worker-01 (resources/frame intervals) and gl-worker-visual-01
+(capture only), executable SHA256
+c291b08cfa97d97b54811a0a1e6b588f8700d9f3695752759df0fa58a6f476a9.
+In the non-capture85-115s window,1800 CPU presentation intervals had16.666ms
+median,17.179ms p95 and17.880ms max; these are not scanout/GPU timings. Late
+resource samples held550 handles,359530496-367816704 private bytes and
+267882496-269619200 working-set bytes. The last private sample was359530496;
+this bounded window is not a leak-free or long-soak claim. Captured operation
+reported about59.6FPS, with readback overhead. Both sessions were terminated at
+the runner's bound (exit1), so clean exit is still unverified.
+
+Reviewed private/captures/opengl-recovery/worker-gameplay.bmp shows first-level
+world textures, fog, held weapon, tutorial text, reticle, ammunition HUD and
+impact sparks upright. SHA256
+7ac155a6ed27a4013c2ebfe4981c2d64481be3df67d9091f558f3b1337bfad00.
+It is an offscreen guest-frame capture, not final desktop presentation proof.
+Keep display/fullscreen/resizing, graphics-quality/effect matrices, representative
+additional scenes, actual recovery game launch, settings/texture preservation and
+bounded longer stability/clean exit as separate acceptance work. No production
+platform is approved yet.
+
+Native adapter source now stages4.1 core/doublebuffer/depth/stencil windows,
+preserves logical size/title/position (when queryable), fullscreen mode, density,
+resizability and visibility/maximized/minimized state. Commit rebinds the host,
+releases old input capture and updates settings/debug before destroying the old
+window. Wayland can leave coordinates to its compositor. No saved preference is
+written by this transaction. tests/graphics/test_opengl_window.py compiles the
+real helper against injected SDL operations and covers every staging failure,
+commit failure, success, unavailable position, hidden/maximized/minimized, already
+GL and non-main calls. Registered in the native CI suite. MSVC and WSL GCC pass;
+shared GL plus native adapters pass GCC syntax checks.136 selected Python tests
+pass with9 skips. These are not native SDL/GPU/game acceptance. Native event
+servicing, native build/package execution and required4.1 resource-view/stencil/
+mirror-once adaptation remain; Linux/Mac gates stay OFF. Existing legacy Mac GL
+still uses its original frontend, and Apple's OpenGL remains deprecated.
