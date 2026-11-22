@@ -1,7 +1,7 @@
 ## Rebuilt OpenGL game acceptance checkpoint (2026-11-22)
 
 Normal Windows code54ee1d6 rebuild and mandatory checks pass after a single-worker
-retry of a compiler-heap failure. The new EXE passes120s actual launcher OpenGL
+retry of a compiler-heap failure. The new EXE passes120s per renderer through actual launcher Vulkan/OpenGL
 selection, correctly colored gameplay, quality/display/input and clean exit.
 Linux is writable again:29 units,54 launcher UI groups and8 RHI recovery cases
 pass. Native Vulkan reaches state-verified active Story; native OpenGL dispatch

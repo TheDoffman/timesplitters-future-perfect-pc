@@ -1159,8 +1159,10 @@ restore, movement/weapon gameplay, retained saved renderer/quality/custom DDS,
 clean exit0. Reviewed88s image now has brown world, gray crosshair, white HUD
 and yellow objective text. Observed game clock~59.99Hz,583 stable handles;
 this captured/display-changing run is not a clean throughput benchmark.
-The matching current-EXE Vulkan control is separate work; do not substitute the
-older61074a... game evidence for its result.
+The matching vk-color-fix-selector-01 Vulkan control also PASS120s on the same
+EXE with the same graphics/display/input/preservation checks and exit0; its
+observed game clock is~60.01Hz and648 handles stay stable. These are actual
+selector transitions in both directions, not direct backend overrides.
 
 WSL now starts normally and the native checkout is writable. No shutdown,
 service/host restart, remount or filesystem repair was issued. Clean Git
