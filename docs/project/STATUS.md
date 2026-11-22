@@ -1,3 +1,15 @@
+## Windows startup recovery accepted; native gates remain disabled (2026-11-22)
+
+The current Windows300s launcher OpenGL soak passes late gameplay/movement,
+pause/resume, quality, bounded resource growth, settings/assets and clean exit.
+The current eight-case GPU recovery matrix, validated Vulkan, explicit GL and
+restricted4.1 checks also pass. Windows now defaults to startup-only OpenGL
+recovery; the enabled ordinary build/integration recheck is pending. Linux and
+Mac gates stay0. Linux WSL movement/firing/pause now have owned-state evidence,
+but fullscreen/performance and other native integration checks remain incomplete.
+The renderer selector persists Vulkan/OpenGL choices. Nothing published/merged.
+[Gate decision and evidence](../agent-context/opengl-recovery.md#windows-production-acceptance-decision).
+
 ## Launcher selection and recovery recheck (2026-11-22)
 
 The restored launcher offers Vulkan (Default) and OpenGL, persists the choice,

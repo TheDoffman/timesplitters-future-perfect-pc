@@ -36,6 +36,10 @@ if(TSFP_TEST_OPENGL)
     tsfp_add_opengl_backend(tsfp_windows_rhi_test "${root}/external/ts3FPrecomp")
     if(TSFP_TEST_OPENGL_RECOVERY)
         target_compile_definitions(tsfp_windows_rhi_test PRIVATE TSFP_OPENGL_RECOVERY_ACCEPTED=1)
+    else()
+        # Deliberately test the disabled policy independently of the accepted
+        # production Windows default. ON covers the recovery transaction.
+        target_compile_definitions(tsfp_windows_rhi_test PRIVATE TSFP_OPENGL_RECOVERY_ACCEPTED=0)
     endif()
 endif()
 target_link_libraries(tsfp_windows_rhi_test PRIVATE d3d11 dxgi dxguid d3dcompiler user32 gdi32)

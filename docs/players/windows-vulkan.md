@@ -1,13 +1,11 @@
 # Windows Vulkan renderer
 
 Windows builds use **Vulkan by default**, sharing the Vulkan backend used by
-Linux and modern native Mac builds. If Vulkan cannot initialize, Windows reports
-a startup error instead of switching to Direct3D 11. Check the GPU driver and
-packaged shader-compiler files when diagnosing startup failures.
-
-An experimental OpenGL recovery backend is under development. Automatic
-OpenGL recovery is disabled pending game, performance and platform acceptance;
-its GPU tests alone do not establish a working fallback for players.
+Linux and modern native Mac builds. The next Windows game build attempts
+OpenGL once if Vulkan cannot initialize. If both fail, it reports a clear startup
+error. Check the GPU driver and packaged shader-compiler files when diagnosing
+startup failures. Recovery preserves your saved Vulkan preference and does not
+run after an in-game rendering failure. Direct3D 11 is not a fallback.
 
 The next launcher version restores **Settings > Graphics > Advanced > Renderer**
 with **Vulkan (Default)** and **OpenGL**. Save the choice before launching; the

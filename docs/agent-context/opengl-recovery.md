@@ -1,5 +1,11 @@
 # OpenGL startup recovery: implementation in progress
 
+Current gate decision (2026-11-22): Windows default is enabled after its
+acceptance checks below. Linux and native Mac remain disabled. Earlier OFF
+checkpoints are historical; the normal enabled Windows build still needs its
+final integration recheck. The restored Vulkan/OpenGL launcher selector remains.
+
+
 Goal (amended by the user on 2026-11-22): Vulkan remains the default, and the
 launcher must offer Vulkan and OpenGL so a user can explicitly choose OpenGL
 when needed. This supersedes the earlier requirement for no launcher selector.
@@ -1392,3 +1398,33 @@ Evidence: logs/rhi-final-current-{recovery,restore,explicit-gl,gl41}.log and
 rhi-windows-opengl*.json. No production gate was enabled by those tests.
 A separate300s actual-selector OpenGL soak is running; its outcome remains
 pending, and its handle must be observed rather than launching a duplicate.
+
+
+## Windows production acceptance decision
+
+gl-current-selector-soak-01 PASS300s on normal game713c7644... via actual launcher
+OpenGL selection: MSAA4/SMAA/AF16/actual SSAO, early and late movement, weapon,
+pause/resume, last30s gameplay/60Hz clock and clean exit. Saved settings/custom
+assets remain preserved. Median early-to-late private growth62124032 bytes,
+handles-6, dedicated GPU-593920 bytes all meet explicit bounds; this is bounded
+stability, not proof against slower leaks. Early guest clock59.9798Hz,
+1.246 CPU core-equivalents and578 handles. Sourcec8b8d7d2 plus documentation-only
+dirty files at start (later committedf64f8bd2); the normal game hash is unchanged.
+No concurrent game/GPU test ran during this soak.
+
+Together with the current-source eight-case RHI/validation matrix, restricted
+GL4.1/pixel contracts, captured menus/world/effects, Auto/fullscreen/resize,
+representative Scotland evidence, actual startup recovery and both-fail checks,
+this accepts Windows startup recovery on the available RTX4070SUPER/617.42 host.
+It is not certification of all vendors/driver versions or a scanout benchmark.
+
+src/graphics/rhi_platform_acceptance.h now owns the default table: Windows1,
+Linux/Mac0. rhi_startup.h includes it before the runtime's old default0 fallback;
+no patch stack or gameplay policy is duplicated. Explicit fixture definitions
+still override either value. Windows RHI recovery-OFF fixtures now explicitly
+set0, preserving disabled-policy coverage instead of inheriting the accepted
+production default. Six compiled platform/fixture combinations and the resource-
+owning startup transaction pass7 units. Normal enabled build and actual launcher
+recovery/both-fail verification must follow before reporting final acceptance.
+Linux WSL fullscreen/performance and remaining native checks cannot enable its
+gate; Mac hardware remains unavailable, OpenGL deprecated, legacy path unchanged.

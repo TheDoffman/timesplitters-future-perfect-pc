@@ -1,5 +1,6 @@
 #ifndef TSFP_RHI_STARTUP_H
 #define TSFP_RHI_STARTUP_H
+#include "rhi_platform_acceptance.h"
 #include "rhi_backend.h"
 #include <stdio.h>
 #include <string.h>
