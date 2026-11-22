@@ -1,3 +1,11 @@
+Common OpenGL minimum-capability checks (development,2026-11-22): core4.1,
+full S3TC BC1/2/3 and mirror-once are now required before shared RHI resources
+are allocated; failed contexts are cleaned and a retry is tested. Portable
+contracts and Windows hardware reject unsupported capabilities. Legacy Mac's
+separate GL frontend is unchanged. Native Mac capability/GPU/game acceptance
+remains unverified and automatic recovery remainsOFF. See
+agent-context/opengl-recovery.md#minimum-opengl-capability-checks.
+
 Renderer selector restored in development (2026-11-22): shared launcher
 Vulkan/OpenGL setting, persistence, explicit child selection and package capability
 checks are implemented; Windows launcher regressions pass. Native driver/library

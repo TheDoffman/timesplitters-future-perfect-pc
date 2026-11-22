@@ -43,6 +43,8 @@ def configure_gl_environment(env, driver, adapter=None, restricted=False):
 
 def require_gl_contract(output, driver, restricted=False):
     markers = ('BACKEND: opengl', 'PASS: OpenGL typed null textures',
+               'PASS: shared mirror-once sampling beyond both texture edges',
+               'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
                'PASS: OpenGL native main-thread dispatch',
                'PASS: OpenGL worker/context recreation and repeated cleanup')
     if any(marker not in output for marker in markers) or '[RHI] ERROR' in output:
@@ -58,20 +60,23 @@ def require_gl_contract(output, driver, restricted=False):
 
 def recovery_cases(env, build):
     """Child-only faults; production drivers, compiler and settings stay intact."""
-    for mode in ('vulkan-success', 'no-driver', 'no-device', 'both-fail', 'partial-fail'):
+    capability_modes={'no-core':'core','no-s3tc':'s3tc','no-mirror-once':'mirror-once'}
+    for mode in ('vulkan-success', 'no-driver', 'no-device', 'both-fail', 'partial-fail', *capability_modes):
         child = env.copy()
         child['RECOMP_D3D8_BACKEND'] = 'vulkan'
         if mode != 'vulkan-success':
             child['RECOMP_VK_VALIDATION'] = '0'
-        if mode in ('no-driver', 'both-fail', 'partial-fail'):
+        if mode in capability_modes or mode in ('no-driver', 'both-fail', 'partial-fail'):
             child['VK_DRIVER_FILES'] = str(build / 'runtime/missing-driver.json')
             child['VK_ICD_FILENAMES'] = child['VK_DRIVER_FILES']
         if mode == 'no-device':
             child['VK_LOADER_VENDOR_ID_FILTER'] = '0xffff'
         if mode in ('no-driver', 'no-device'):
             child['TSFP_TEST_EXPECT_BACKEND'] = 'opengl'
-        if mode in ('both-fail', 'partial-fail'):
+        if mode in capability_modes or mode in ('both-fail', 'partial-fail'):
             child['TSFP_TEST_EXPECT_STARTUP_FAILURE'] = '1'
+        if mode in capability_modes:
+            child['TSFP_TEST_GL_MISSING_CAPABILITY']=capability_modes[mode]
         if mode == 'partial-fail':
             child['TSFP_TEST_EMPTY_DRAWABLE'] = '1'
         if mode == 'both-fail':
@@ -98,6 +103,10 @@ def require_recovery_case(mode, output, driver):
             raise RuntimeError('Failed startup continued rendering')
         if mode == 'both-fail' and 'shared DXC shader compiler is unavailable' not in output:
             raise RuntimeError('Compiler failure was not exercised')
+        if mode in ('no-core','no-s3tc','no-mirror-once'):
+            reason={'no-core':'OpenGL4.1 core','no-s3tc':'BC1/BC2/BC3 S3TC','no-mirror-once':'mirror-once sampler'}[mode]
+            if 'required capability unavailable: '+reason not in output or 'PASS: OpenGL capability rejection cleanup and context recreation' not in output:
+                raise RuntimeError('Required capability rejection/context recreation was not exercised')
         if mode == 'partial-fail' and ('drawable target initialization failed' not in output or 'logical window retained' not in output):
             raise RuntimeError('Partial GL window/device cleanup was not exercised')
 

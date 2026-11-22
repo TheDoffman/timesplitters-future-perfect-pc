@@ -2,6 +2,7 @@
  * textures, display and gameplay stay in the existing common frontend. */
 #include "rhi_backend.h"
 #include "opengl_api.h"
+#include "opengl_capabilities.h"
 #include "opengl_host.h"
 #include "opengl_shader.h"
 #include <stdio.h>
@@ -827,6 +828,16 @@ static int g_device_create(const RhiDeviceDesc *desc)
 #define LOAD_OPTIONAL(type,name) G.name=(type)tsfp_gl_host_proc(S.host,"gl" #name);
     TSFP_GL_OPTIONAL(LOAD_OPTIONAL)
 #undef LOAD_OPTIONAL
+    GLint major=0,minor=0;glGetIntegerv(GL_MAJOR_VERSION,&major);glGetIntegerv(GL_MINOR_VERSION,&minor);
+    TsfpGlCapabilities caps=tsfp_gl_capabilities(major,minor,extension);
+#if defined(TSFP_WINDOWS_RHI_TEST) || defined(TSFP_NATIVE_GL_TEST)
+    const char *hidden=getenv("TSFP_TEST_GL_MISSING_CAPABILITY");
+    if(hidden && !strcmp(hidden,"core")){caps.major=4;caps.minor=0;}
+    if(hidden && !strcmp(hidden,"s3tc"))caps.s3tc=0;
+    if(hidden && !strcmp(hidden,"mirror-once"))caps.mirror_once=0;
+#endif
+    const char *missing=tsfp_gl_missing_capability(caps);
+    if(missing){fprintf(stderr,"[RHI] opengl: required capability unavailable: %s\n",missing);g_device_destroy();return -1;}
     if(G.DebugMessageCallback && extension("GL_KHR_debug")) {
         glEnable(GL_DEBUG_OUTPUT);glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         G.DebugMessageCallback(debug_message,NULL);

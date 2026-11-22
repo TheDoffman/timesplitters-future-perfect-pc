@@ -24,9 +24,10 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
     if gl41:report['scope']='OpenGL4.1 single-sample shader/resource/query compatibility; MSAA omitted, no native-host acceptance'
     report_path.write_text(json.dumps(report,indent=2)+'\n')
     modes=(selected_backend,) if selected_backend else ('default','d3d11','vulkan','vulkan-no-driver','default-no-driver','default-no-dxc','default-no-device','adopt-d3d11')
-    if opengl_recovery:modes=('default','opengl-recover-no-driver','opengl-recover-no-device','opengl-both-fail','opengl-partial-fail')
+    capability_modes={'opengl-no-core':'core','opengl-no-s3tc':'s3tc','opengl-no-mirror-once':'mirror-once'}
+    if opengl_recovery:modes=('default','opengl-recover-no-driver','opengl-recover-no-device','opengl-both-fail','opengl-partial-fail',*capability_modes)
     for mode in modes:
-        startup_failure=mode in ('vulkan-no-driver','default-no-driver','default-no-dxc','default-no-device','opengl-both-fail','opengl-partial-fail')
+        startup_failure=mode in capability_modes or mode in ('vulkan-no-driver','default-no-driver','default-no-dxc','default-no-device','opengl-both-fail','opengl-partial-fail')
         recovered=mode in ('opengl-recover-no-driver','opengl-recover-no-device')
         backend=mode if mode in ('d3d11','opengl') else 'vulkan'
         expected='opengl' if recovered else 'd3d11' if mode=='adopt-d3d11' else backend
@@ -46,13 +47,14 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
             implicit=folder/'implicit-layers'
             implicit.mkdir(exist_ok=True)
             env['VK_IMPLICIT_LAYER_PATH']=str(implicit)
-        if mode in ('vulkan-no-driver','default-no-driver','opengl-recover-no-driver','opengl-partial-fail'):
+        if mode in capability_modes or mode in ('vulkan-no-driver','default-no-driver','opengl-recover-no-driver','opengl-partial-fail'):
             # Override discovery only for this child, without changing installed drivers.
             missing=str(folder/'missing-driver.json')
             env.update(VK_DRIVER_FILES=missing,VK_ICD_FILENAMES=missing,TSFP_TEST_EXPECT_BACKEND=expected,
                        RECOMP_VK_VALIDATION='0')
         if mode in ('default-no-device','opengl-recover-no-device'):env['VK_LOADER_VENDOR_ID_FILTER']='0xffff'
         if mode=='opengl-partial-fail':env['TSFP_TEST_EMPTY_DRAWABLE']='1'
+        if mode in capability_modes:env['TSFP_TEST_GL_MISSING_CAPABILITY']=capability_modes[mode]
         executable=exe
         if mode in ('default-no-dxc','opengl-both-fail'):
             executable=folder/exe.name
@@ -72,7 +74,7 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
         if startup_failure:
             passed = (result.returncode==0 and no_fallback and
                       'PASS: Vulkan startup failed without renderer fallback' in output and
-                      ('Vulkan and OpenGL initialization failed' if mode in ('opengl-both-fail','opengl-partial-fail') else
+                      ('Vulkan and OpenGL initialization failed' if mode in capability_modes or mode in ('opengl-both-fail','opengl-partial-fail') else
                        'vulkan renderer startup failed; automatic renderer fallback is disabled') in output and
                       'PASS: shared RHI HLSL' not in output)
         else:
@@ -80,10 +82,13 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
                       'PASS: shared RHI HLSL' in output and '[VKVAL' not in output and
                       'could not start; using' not in output)
         if expected=='opengl' and not startup_failure:
-            passed=passed and 'PASS: OpenGL typed null textures' in output
+            passed=passed and all(marker in output for marker in ('PASS: OpenGL typed null textures','PASS: shared mirror-once sampling beyond both texture edges','PASS: shared BC1/BC2/BC3 sampled colors and alpha'))
         if gl41:passed=passed and 'PASS: OpenGL4.1 subset/array/cube/volume/stencil/compressed views' in output and 'SKIP: MSAA/SSAO' in output
         if recovered:passed=passed and no_fallback and 'startup recovery selected opengl' in output
         if mode=='opengl-partial-fail':passed=passed and 'drawable target initialization failed' in output
+        if mode in capability_modes:
+            reason={'core':'OpenGL4.1 core','s3tc':'BC1/BC2/BC3 S3TC','mirror-once':'mirror-once sampler'}[capability_modes[mode]]
+            passed=passed and 'required capability unavailable: '+reason in output and 'PASS: OpenGL capability rejection cleanup and context recreation' in output
         if mode in ('default-no-dxc','opengl-both-fail'):passed=passed and 'DXC compiler (dxcompiler) was not found' in output
         if mode in ('default-no-device','opengl-recover-no-device'):passed=passed and 'no Vulkan device' in output
         if layer_path and mode in ('default','vulkan'):

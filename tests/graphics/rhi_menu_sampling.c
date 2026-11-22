@@ -20,6 +20,21 @@
 #include "opengl_window_sdl.h"
 #endif
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x);exit(1); } } while(0)
+#if defined(RHI_HAVE_OPENGL) && (defined(TSFP_WINDOWS_RHI_TEST) || defined(TSFP_NATIVE_GL_TEST))
+static void retry_after_capability_failure(const RhiDeviceDesc *device)
+{
+    if(!getenv("TSFP_TEST_GL_MISSING_CAPABILITY"))return;
+#ifdef _WIN32
+    CHECK(!_putenv_s("TSFP_TEST_GL_MISSING_CAPABILITY",""));
+#else
+    CHECK(!unsetenv("TSFP_TEST_GL_MISSING_CAPABILITY"));
+#endif
+    CHECK(rhi_select_backend("opengl")==0);
+    CHECK(rhi_device_create(device)==0 && rhi_device_ready());
+    rhi_device_destroy();rhi_device_destroy();CHECK(!rhi_device_ready());
+    puts("PASS: OpenGL capability rejection cleanup and context recreation");
+}
+#endif
 static RhiImage *target;
 static RhiBuffer *parameters;
 static void render(float enabled,float scale,float *pixels) {
@@ -172,6 +187,9 @@ int main(void) {
         CHECK(!rhi_device_ready() && !strcmp(rhi_backend_name(),"vulkan"));
         rhi_device_destroy(); /* Cleanup remains safe after partial initialization. */
         CHECK(!rhi_device_ready());
+#ifdef RHI_HAVE_OPENGL
+        retry_after_capability_failure(&device);
+#endif
         DestroyWindow(window);
         puts("PASS: Vulkan startup failed without renderer fallback");
         return 0;
@@ -209,6 +227,7 @@ int main(void) {
         CHECK(!rhi_device_ready() && !strcmp(rhi_backend_name(),"vulkan"));
         rhi_device_destroy();rhi_device_destroy();CHECK(!rhi_device_ready());
 #ifdef RHI_HAVE_OPENGL
+        retry_after_capability_failure(&device);
         window=native_test_window;
 #endif
         SDL_DestroyWindow(window);SDL_Quit();
@@ -285,6 +304,47 @@ int main(void) {
     rhi_set_raster_state(raster);rhi_set_depth_state(depth,0);
     rhi_set_blend_state(blend,NULL,~0u);
     CHECK(menu_sampling_cases(render));
+    /* Mirror-once must reflect negatives and clamp after the first reflection.
+     * These coordinates distinguish it from clamp, wrap and mirrored repeat. */
+    const float colors[8]={1,0,0,1,0,1,0,1};
+    RhiImageDesc once_desc=td;once_desc.width=2;once_desc.height=1;
+    RhiSubresourceData once_data={colors,sizeof colors,sizeof colors};
+    RhiImage *once_image=rhi_image_create(&once_desc,&once_data);CHECK(once_image);
+    RhiView *once_view=rhi_view_create(once_image,RHI_VIEW_SAMPLED,NULL);CHECK(once_view);
+    RhiSamplerDesc once_sampler_desc=sd;once_sampler_desc.filter=RHI_FILTER_POINT;
+    once_sampler_desc.address_u=once_sampler_desc.address_v=once_sampler_desc.address_w=RHI_ADDRESS_MIRROR_ONCE;
+    RhiSampler *once_sampler=rhi_sampler_create(&once_sampler_desc);CHECK(once_sampler);
+    RhiShader *once_shader=shader(RHI_STAGE_PIXEL,
+        "Texture2D tex:register(t0);SamplerState samp:register(s0);"
+        "float4 main(float4 p:SV_POSITION):SV_TARGET {"
+        "float u=p.x<16?-.25:p.x<32?-1.25:p.x<48?1.25:2.25;"
+        "return tex.SampleLevel(samp,float2(u,.5),0);}","ps_5_0");
+    rhi_set_shader(RHI_STAGE_PIXEL,once_shader);rhi_set_textures(0,1,&once_view);rhi_set_samplers(0,1,&once_sampler);
+    float once_pixels[64*64*4];rhi_draw(3,0);CHECK(!rhi_image_readback(target,0,once_pixels,64*4*sizeof(float)));
+    for(unsigned i=0;i<4;i++) {
+        const float *pixel=once_pixels+(32*64+i*16+8)*4;
+        CHECK(pixel[0]==(i?0:1) && pixel[1]==(i?1:0) && pixel[2]==0 && pixel[3]==1);
+    }
+    const RhiFormat compressed_formats[]={RHI_FORMAT_BC1_UNORM,RHI_FORMAT_BC2_UNORM,RHI_FORMAT_BC3_UNORM};
+    const float compressed_colors[3][4]={{1,0,0,1},{0,0,1,8.f/15},{0,1,0,128.f/255}};
+    for(unsigned i=0;i<3;i++) {
+        unsigned char block[16]={0};unsigned size=i?16:8;
+        if(i==0)block[1]=0xf8;
+        if(i==1){memset(block,0x88,8);block[8]=31;}
+        if(i==2){block[0]=128;block[1]=64;block[8]=0xe0;block[9]=7;}
+        RhiImageDesc compressed_desc=once_desc;compressed_desc.width=compressed_desc.height=4;compressed_desc.format=compressed_formats[i];
+        RhiSubresourceData compressed_data={block,size,size};
+        RhiImage *compressed=rhi_image_create(&compressed_desc,&compressed_data);CHECK(compressed);
+        RhiView *compressed_view=rhi_view_create(compressed,RHI_VIEW_SAMPLED,NULL);CHECK(compressed_view);
+        rhi_set_textures(0,1,&compressed_view);rhi_draw(3,0);
+        CHECK(!rhi_image_readback(target,0,once_pixels,64*4*sizeof(float)));
+        for(unsigned channel=0;channel<4;channel++)CHECK(fabsf(once_pixels[channel]-compressed_colors[i][channel])<.001f);
+        RhiView *unbound=NULL;rhi_set_textures(0,1,&unbound);rhi_view_destroy(compressed_view);rhi_image_destroy(compressed);
+    }
+    puts("PASS: shared BC1/BC2/BC3 sampled colors and alpha");
+    rhi_set_shader(RHI_STAGE_PIXEL,ps);rhi_set_textures(0,1,&srv);rhi_set_samplers(0,1,&sampler);
+    rhi_shader_destroy(once_shader);rhi_sampler_destroy(once_sampler);rhi_view_destroy(once_view);rhi_image_destroy(once_image);
+    puts("PASS: shared mirror-once sampling beyond both texture edges");
     /* Common NV2A texture signed-mapping helpers use vector conditionals.
      * This must retain FXC semantics even when DXC defaults to HLSL 2021+. */
     RhiShader *legacy=shader(RHI_STAGE_PIXEL,

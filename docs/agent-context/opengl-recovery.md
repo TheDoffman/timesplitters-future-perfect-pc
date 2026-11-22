@@ -1026,3 +1026,90 @@ frame capture/replay or equivalent controlled comparison is now an explicit
 remaining graphics acceptance check, alongside the capability audit. Inspect
 channel mapping, constants, blending and game transient effects against the same
 frame before diagnosing or changing a backend. Automatic recovery remains OFF.
+
+## Minimum OpenGL capability checks
+
+Shared opengl_capabilities.h defines the common frontend's minimum capabilities:
+core4.1, complete EXT_texture_compression_s3tc (BC1/2/3), and mirror-once sampling
+via core4.4 or ARB_texture_mirror_clamp_to_edge, EXT_texture_mirror_clamp or
+ATI_texture_mirror_once. BC1-only advertising does not satisfy BC2/3. These are
+checked after procedure loading and before framebuffer/VAO/null-resource setup.
+Missing support logs the specific requirement and destroys the staged context;
+no renderer is reported ready. Legacy Mac's separate frontend is unchanged.
+
+Sources: [Khronos S3TC](https://registry.khronos.org/OpenGL/extensions/EXT/EXT_texture_compression_s3tc.txt),
+[mirror clamp](https://registry.khronos.org/OpenGL/extensions/ARB/ARB_texture_mirror_clamp_to_edge.txt),
+and [core4.6 appendix documenting4.4 promotion](https://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf).
+Do not replace required sampler semantics with clamp or silently drop compressed
+textures to get an older driver through initialization.
+
+The portable C unit covers old/new core versions, BC1-only versus full S3TC,
+each mirror extension alias and core4.4 promotion. It is registered in common
+native shards and the Linux explicit graphics checks. The real RHI pixel fixture
+also samples negative and greater-than-one texture coordinates that distinguish
+mirror-once from clamp, wrap and mirrored-repeat, and samples BC1/2/3 RGB plus
+BC2/3 partial alpha. Both accepted-recovery runners now include missing-core,
+missing-S3TC and missing-mirror cases. Fixture-only capability masking compiles
+out of production. After each rejected recovery, the test clears the mask and
+creates/destroys OpenGL again on the same window, checking repeated cleanup and
+context recreation instead of only a failure string.
+
+Windows hardware accepted-recovery matrix:8/8 PASS (including all3 minimum
+capability failures), accepted executable SHA256
+9de9352ea85881cc5d060734d4f0cb3cad60311a8646f7bcb7f1348571c85ae9.
+This initial matrix preceded the added compression/mirror pixel cases; the final
+matrix must be recorded separately. Ordinary full/restricted OpenGL passes after
+startup-check integration; new mirror pixels pass GL/Vulkan/D3D11; new BC1/2/3
+pixels pass GL. Other final pixel/combined matrix checks remain pending below.
+All checks use RTX4070SUPER/NVIDIA617.42 and the pinned shared compiler. The
+fixture-only accepted gate was restoredOFF and rebuilt; normal game gates stay0.
+
+Portable first batch:9 capability/build/present checks pass. A broader batch
+has26 passing/1 host skip and3 pre-existing SDK installer fixtures stopped by the
+real5GiB free-space prerequisite. No setup guard or SDK was changed. The relevant
+recovery/GL selection rerun passes; native GPU reruns remain unavailable while
+WSL fails to start. The game EXE has not yet been rebuilt for these startup-only
+checks; selector gameplay61074a... remains earlier evidence.
+
+Final capability/texture GPU matrix after all pixel cases:8/8 PASS, accepted
+fixture SHA256cedcd860828e997a45dd0ca621978968e2105877ba848fafb1129e5749c77b1c.
+logs/rhi-capability-final02-recovery.log and rhi-windows-opengl-recovery.json
+record results. The private accepted fixture was restoredOFF/rebuilt in finally.
+Ordinary restricted4.1 GL and D3D11 also pass the new mirror/S3TC pixel tests;
+normal Vulkan passes in the matrix. One intermediate new compressed test used a
+null array instead of an array containing a null view; Vulkan correctly exposed
+that fixture API misuse. It was corrected without changing production semantics.
+Portable final:21 capability/build/present/startup/shard checks PASS, plus13 Linux
+foundation checks PASS/1 host skip;3 SDK-storage-dependent fixtures explicitly
+excluded after their earlier5GiB guard failures. Native real GPU checks are not
+replaced by these portable tests.
+
+## Controlled scene color diagnosis
+
+The isolated diagnostic capture probe is in ignored build/frame-parity, derived
+from the acceptance harness but uses GameSettings.StartInfo directly to add the
+capture environment. It is explicitly not another LaunchGame acceptance run.
+No PC post-AA/AO/MSAA enhancement is enabled for this comparison. It passes120s,
+uses the same fictional Test Lab isolation, bounded256MiB capture/512MiB free-
+space watchdog, and records exact EXE61074a... provenance. The one completed
+format-v10 capture at guest swap4800 contains354 draws/7506 chunks/72 textures,
+8966920 bytes, SHA2562e14f8e1ca7147c6d529ac8e18e25bd22c9d6f860efaf81f2d4fad194b748382.
+
+Production d3d8_replay target built from normal Windows libraries/source; a
+temporary CMAKE_PROJECT_INCLUDE helper was unnecessary because the target already
+existed, and the cache include was restored empty afterwards. Diagnostic EXE is
+outside game package inputs, copied with pinned DXC to build/frame-parity/replay,
+SHA25680f3fdf947fecde7e9223bff1bb6244ddceacb2b6edd97b16187175208fab8c6.
+All three backends replay the same capture:0 failed host calls,0 malformed/
+unmapped/unknown chunks. Reviewed logs/frame-parity-01/{vulkan,opengl,d3d11}/
+frame000.bmp: Vulkan and D3D11 agree in scene colors, OpenGL is blue/pink in
+world/HUD where those two are brown/gray. GL-vs-Vulkan RGB MAE10.02049 on0..255,
+90.88% pixels differ. Timed gameplay ambiguity is now eliminated for this frame.
+
+Prefix replay1 is identical black; prefix2 already differs (MAE5.58644). The
+first color-producing draw (draw1) uses vertex declaration color dxgi87/BGRA8.
+OpenGL g_layout_create derives components=4 from GL_BGRA, while prepare_draw's
+VertexAttribPointer consumes that as ordinary RGBA. This is a concrete candidate
+for the first draw discrepancy; add an asymmetric BGRA vertex pixel regression
+before changing the binding. Do not modify gameplay colors, fog or shaders to
+compensate. Other differences still need controlled replays after the repair.

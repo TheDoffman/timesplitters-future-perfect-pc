@@ -301,6 +301,7 @@
     "tests/graphics/test_opengl_window.py",
     "tests/graphics/test_opengl_build.py",
     "tests/graphics/test_opengl_present.py",
+    "tests/graphics/test_opengl_capabilities.py",
     "tests/compiler/test_host_wait_pump.py",
     "tests/compiler/test_guest_dispatch_sdl.py"
   ],

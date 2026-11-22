@@ -195,6 +195,8 @@ def test_gl_driver_environment_is_child_only_and_clears_stale_controls():
 def test_gl_receipt_requires_pixels_dispatch_cleanup_and_observed_driver():
     runner = linux_renderer_runner()
     markers = ['BACKEND: opengl', 'PASS: OpenGL typed null textures',
+        'PASS: shared mirror-once sampling beyond both texture edges',
+        'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
                'PASS: OpenGL native main-thread dispatch',
                'PASS: OpenGL worker/context recreation and repeated cleanup',
                'D3D12 (NVIDIA)', 'PASS: OpenGL4.1 subset/']
@@ -217,7 +219,7 @@ def test_native_recovery_faults_are_isolated_from_driver_and_settings(tmp_path):
                   LD_LIBRARY_PATH='/pinned-sdk/lib', RECOMP_VK_VALIDATION='1')
     original = parent.copy()
     cases = dict(runner.recovery_cases(parent, tmp_path))
-    assert parent == original and len(cases) == 5
+    assert parent == original and len(cases) == 8
     assert cases['vulkan-success']['VK_DRIVER_FILES'] == '/installed/driver.json'
     assert cases['no-driver']['VK_DRIVER_FILES'] == str(tmp_path/'runtime/missing-driver.json')
     assert cases['no-device']['VK_LOADER_VENDOR_ID_FILTER'] == '0xffff'
@@ -227,12 +229,17 @@ def test_native_recovery_faults_are_isolated_from_driver_and_settings(tmp_path):
         assert env['RECOMP_SAVE_DIR'] == parent['RECOMP_SAVE_DIR']
         assert env['RECOMP_DISPLAY_CONFIG'] == parent['RECOMP_DISPLAY_CONFIG']
         assert env['RECOMP_D3D8_BACKEND'] == 'vulkan'
-        assert ('TSFP_TEST_EXPECT_STARTUP_FAILURE' in env) == (mode in ('both-fail', 'partial-fail'))
+        assert ('TSFP_TEST_EXPECT_STARTUP_FAILURE' in env) == (mode in ('both-fail', 'partial-fail', 'no-core', 'no-s3tc', 'no-mirror-once'))
+    for mode,capability in [('no-core','core'),('no-s3tc','s3tc'),('no-mirror-once','mirror-once')]:
+        assert cases[mode]['TSFP_TEST_GL_MISSING_CAPABILITY'] == capability
+        assert cases[mode]['VK_DRIVER_FILES'] == str(tmp_path/'runtime/missing-driver.json')
 
 
 def test_native_recovery_receipt_rejects_failed_window_cleanup_or_continued_render(monkeypatch):
     runner = linux_renderer_runner()
     positive = '\n'.join(('BACKEND: opengl', 'PASS: OpenGL typed null textures',
+        'PASS: shared mirror-once sampling beyond both texture edges',
+        'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
         'PASS: OpenGL native main-thread dispatch',
         'PASS: OpenGL worker/context recreation and repeated cleanup',
         'D3D12 (NVIDIA)', 'startup recovery selected opengl',
@@ -252,6 +259,11 @@ def test_native_recovery_receipt_rejects_failed_window_cleanup_or_continued_rend
     with pytest.raises(RuntimeError):
         runner.require_recovery_case('partial-fail', failure, 'd3d12')
     runner.require_recovery_case('partial-fail', failure + '\ndrawable target initialization failed\nlogical window retained', 'd3d12')
+    for mode,reason in [('no-core','OpenGL4.1 core'),('no-s3tc','BC1/BC2/BC3 S3TC'),('no-mirror-once','mirror-once sampler')]:
+        capability=failure+'\nrequired capability unavailable: '+reason
+        with pytest.raises(RuntimeError):
+            runner.require_recovery_case(mode, capability, 'd3d12')
+        runner.require_recovery_case(mode, capability+'\nPASS: OpenGL capability rejection cleanup and context recreation', 'd3d12')
     validated = []
     monkeypatch.setattr(runner, 'require_clean_validation', lambda output: validated.append(output))
     primary = 'BACKEND: vulkan\nPASS: shared RHI'
