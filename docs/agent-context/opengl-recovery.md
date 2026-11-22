@@ -1142,3 +1142,68 @@ produced the immutable capture before the fix, while the rebuilt replay tool
 contains the current backend. Final supported game build, actual launcher GL
 capture/gameplay, native host acceptance and Windows startup-recovery enablement
 remain separate required work. All production automatic-recovery gates stay0.
+
+## Rebuilt game and recovered native host (after54ee1d6)
+
+The supported Windows build completes with all mandatory tests at code54ee1d6.
+The first full rebuild (after earlier object cleanup) hit MSVC C1002/pass2 heap
+exhaustion in recomp_context_0752/tsfp_context_run_003A03A0, already an /Ob1 policy
+exception. Resuming with -CompileJobs1 succeeds while preserving completed
+objects; no generated C, compiler policy or optimization flags were changed.
+Matching PDB/crash-symbols.zip are recreated. Normal EXE SHA256
+ a0ed2d1729f6bc7202178a9914e79b0d635c137abbe0dd282a11d0bbe2fda159.
+
+gl-color-fix-selector-01 PASS120s through actual selector/LaunchGame on this EXE:
+Auto1x1,4xMSAA/SMAA/AF16/AO, effective scene resize, fullscreen/windowed/resize/
+restore, movement/weapon gameplay, retained saved renderer/quality/custom DDS,
+clean exit0. Reviewed88s image now has brown world, gray crosshair, white HUD
+and yellow objective text. Observed game clock~59.99Hz,583 stable handles;
+this captured/display-changing run is not a clean throughput benchmark.
+The matching current-EXE Vulkan control is separate work; do not substitute the
+older61074a... game evidence for its result.
+
+WSL now starts normally and the native checkout is writable. No shutdown,
+service/host restart, remount or filesystem repair was issued. Clean Git
+fast-forward to54ee1d6 succeeds. Native launcher --test passes54 shared UI groups
+including renderer switching;29 focused native units pass. The full native8-case
+RHI recovery matrix also passes with D3D12(NVIDIA) GL and lavapipe Vulkan,
+including BGRA/mirror/S3TC pixels, missing capabilities, window replacement and
+cleanup. Receipt rhi-linux-opengl-recovery-d3d12.json confirms the private gate
+restoredOFF. Source54ee1d6 normal native game builds and passes MMIO/decoder tests,
+ELF SHA2564d50e77e4b14f66f835159b6f4fe392a3a541f9bb6c37773bc5cf2ce96bcc5ab.
+Its supported_renderers receipt declares Vulkan/OpenGL.
+
+## Native gameplay and dispatch performance still incomplete
+
+The old gl-color-fix-guest-01 diagnostic exits0 after120s with at least300 logged
+guest presents but fresh images remain intro/starfield; it is not gameplay
+acceptance. Its simple progress flag is insufficient. The Linux Story fixture
+requires --story-benchmark AND --frame-profile for state-based intro skip and
+at least15s active gameplay. One attempted wrapper omitted frame profiling and
+failed CLI validation; vk-color-fix-story-01 copied stale summary data and is
+invalid evidence. The corrected ignored guest-story-probe.py now copies only
+fresh reports and propagates failures. vk-color-fix-story-02 PASS120s on the
+normal ELF, reaches active scene2/paused0, has2426 active-window samples over
+55.7..119.49s,~38.02 host guest presents/s with software lavapipe. Fresh final
+capture reviewed: visible first-mission world, weapon, HUD, fire and sun. This
+is WSL/software Vulkan, not physical Linux Vulkan throughput; concurrent Windows
+compilation is also outside a controlled performance comparison.
+
+Two ignored source-include trials isolate the eligible GL main dispatch loop:
+normal SDL_WaitEventTimeout(NULL,1) logs at least300 presents/120.20s (~0.305 CPU
+core-equivalents); SDL_PumpEvents+SDL_Delay(0) logs300/30.32s (~0.597 cores);
+SDL_PumpEvents alone logs1200/30.21s (~1.463 cores). Same30s normal Vulkan control
+logs1500/30.12s with software lavapipe (~5.966 cores). Counts are periodic lower
+bounds, not exact average FPS or scanout. These comparable-intro trials identify
+a dispatch-latency bottleneck; they do not certify active GL gameplay.
+
+Trial source/header/CMake hashes and executable metadata are archived in
+logs/gl-pump-trial-{01,02}/trial-build.json with matching poll.h/trial.cmake.
+No trial code is committed or left active. Both finally paths clear the private
+include, rebuild, and restore the exact normal4d50e77e... ELF; current
+CMAKE_PROJECT_INCLUDE is empty. The permanent native dispatch fix must preserve
+SDL ownership, queued input, guest TLS and cleanup, while checking throughput
+and idle CPU; do not silently ship a diagnostic busy-poll loop. Native actual
+GL Story/effects/window/performance/package acceptance, WSL fullscreen limitation
+review, Windows recovery-gate approval and unavailable Mac checks remain in the
+full goal. All production recovery gates remainOFF.

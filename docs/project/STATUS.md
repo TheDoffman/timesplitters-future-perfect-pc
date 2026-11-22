@@ -1,3 +1,15 @@
+## Rebuilt OpenGL game acceptance checkpoint (2026-11-22)
+
+Normal Windows code54ee1d6 rebuild and mandatory checks pass after a single-worker
+retry of a compiler-heap failure. The new EXE passes120s actual launcher OpenGL
+selection, correctly colored gameplay, quality/display/input and clean exit.
+Linux is writable again:29 units,54 launcher UI groups and8 RHI recovery cases
+pass. Native Vulkan reaches state-verified active Story; native OpenGL dispatch
+throughput and actual gameplay remain unfinished. Both diagnostic pump variants
+are removed and exact normal native ELF restored. All automatic recovery gates
+remainOFF; Mac hardware acceptance is unavailable. Evidence and limits:
+[recovery checkpoint](../agent-context/opengl-recovery.md#rebuilt-game-and-recovered-native-host-after54ee1d6).
+
 ## Common OpenGL color ordering repair (development,2026-11-22)
 
 Controlled replay of one354-draw game frame confirms and fixes BGRA vertex colors
