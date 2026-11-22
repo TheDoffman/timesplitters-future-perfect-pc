@@ -9,6 +9,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 extern "C" int rhi_gl_dxc_compile(uint32_t,const RhiShaderSource *,uint32_t **,size_t *,char *,size_t);
 
@@ -28,6 +29,40 @@ static std::string varying_name(const std::string &value)
         name+=c;
     }
     return name;
+}
+struct Varying {std::string local,wire,type,wide;unsigned components,count;};
+static std::string normalize_varyings(std::string glsl,const std::vector<Varying> &varyings,bool vertex)
+{
+    std::string transfers;
+    for(const auto &v:varyings) {
+        auto at=glsl.find(" "+v.local);if(at==std::string::npos)throw std::runtime_error("Missing GLSL interface declaration");
+        auto begin=glsl.rfind('\n',at);begin=begin==std::string::npos?0:begin+1;
+        auto end=glsl.find('\n',at);if(end==std::string::npos)throw std::runtime_error("Invalid GLSL interface declaration");
+        std::string line=glsl.substr(begin,end-begin),direction=vertex?"out ":"in ";
+        auto word=line.find(direction);if(word==std::string::npos)throw std::runtime_error("Invalid GLSL interface qualifier");
+        std::string array=v.count>1?"["+std::to_string(v.count)+"]":"";
+        std::string wire=line.substr(0,word)+direction+v.wide+" "+v.wire+array+";\n";
+        std::string local=v.type+" "+v.local+array+";";
+        glsl.replace(begin,end-begin,wire+local);
+        for(unsigned i=0;i<v.count;i++) {
+            std::string suffix=v.count>1?"["+std::to_string(i)+"]":"";
+            if(vertex) {
+                transfers+=v.wire+suffix+"="+v.wide+"("+v.local+suffix;
+                for(unsigned j=v.components;j<4;j++)transfers+=",0";
+                transfers+=");\n";
+            } else {
+                transfers+=v.local+suffix+"="+v.wire+suffix;
+                if(v.components<4)transfers+="."+std::string("xyzw",v.components);
+                transfers+=";\n";
+            }
+        }
+    }
+    if(!varyings.empty()) {
+        auto main=glsl.find("void main(");if(main==std::string::npos)throw std::runtime_error("Missing GLSL main");
+        glsl.replace(main,10,"void tsfp_shader_main(");
+        glsl+="\nvoid main(){\n"+(vertex?"tsfp_shader_main();\n"+transfers:transfers+"tsfp_shader_main();\n")+"}\n";
+    }
+    return glsl;
 }
 extern "C" void tsfp_gl_shader_text_free(TsfpGlShaderText *text)
 {
@@ -76,8 +111,19 @@ extern "C" int tsfp_gl_shader_translate(unsigned stage,const RhiShaderSource *so
         /* Match HLSL semantics rather than dense SPIR-V locations: a pixel
          * shader may consume only a subset of the vertex shader's outputs. */
         const auto &varyings=stage==RHI_STAGE_VERTEX?resources.stage_outputs:resources.stage_inputs;
+        std::vector<Varying> wires;
         for (const auto &r:varyings) {
-            compiler.set_name(r.id,varying_name(semantic(compiler,r.id)));
+            std::string wire=varying_name(semantic(compiler,r.id));
+            auto type=compiler.get_type(r.type_id);
+            std::string scalar=type.basetype==spirv_cross::SPIRType::Float?"float":
+                type.basetype==spirv_cross::SPIRType::Int?"int":type.basetype==spirv_cross::SPIRType::UInt?"uint":"";
+            if(scalar.empty() || type.columns!=1 || type.vecsize>4 || type.array.size()>1)
+                throw std::runtime_error("Unsupported HLSL varying type");
+            std::string prefix=scalar=="float"?"vec":scalar=="int"?"ivec":"uvec";
+            unsigned count=type.array.empty()?1:type.array[0];
+            if(!count || count>32)throw std::runtime_error("Unsupported HLSL varying array");
+            wires.push_back({wire+"_local",wire,type.vecsize==1?scalar:prefix+std::to_string(type.vecsize),prefix+"4",type.vecsize,count});
+            compiler.set_name(r.id,wire+"_local");
             compiler.unset_decoration(r.id,spv::DecorationLocation);
         }
         auto dummy=compiler.build_dummy_sampler_for_combined_images();
@@ -98,7 +144,26 @@ extern "C" int tsfp_gl_shader_translate(unsigned stage,const RhiShaderSource *so
             compiler.unset_decoration(r.combined_id,spv::DecorationBinding);
             compiler.unset_decoration(r.combined_id,spv::DecorationDescriptorSet);
         }
-        std::string glsl=compiler.compile();
+        std::string glsl=normalize_varyings(compiler.compile(),wires,stage==RHI_STAGE_VERTEX);
+        /* textureSamples is newer than GL4.1. The backend already knows each
+         * bound view's exact sample count; expose it as a uniform on all hosts. */
+        std::string sample_uniforms;
+        for(unsigned i=0;i<out->sampler_count;i++) {
+            const auto &sampler=out->samplers[i];
+            std::string call="textureSamples("+std::string(sampler.name)+")";
+            std::string name="tsfp_samples_"+std::to_string(sampler.unit);
+            bool used=false;size_t at;
+            while((at=glsl.find(call))!=std::string::npos){glsl.replace(at,call.size(),name);used=true;}
+            if(used)sample_uniforms+="uniform int "+name+";\n";
+        }
+        if(!sample_uniforms.empty()) {
+            if(glsl.find("textureSamples(")!=std::string::npos)throw std::runtime_error("Unsupported sample-query sampler expression");
+            auto ext=glsl.find("#extension GL_ARB_texture_query_samples");
+            if(ext!=std::string::npos)glsl.erase(ext,glsl.find('\n',ext)-ext+1);
+            size_t last=glsl.rfind("#extension");
+            size_t at=glsl.find('\n',last==std::string::npos?0:last)+1;
+            glsl.insert(at,sample_uniforms);
+        }
         out->source=static_cast<char *>(std::malloc(glsl.size()+1));
         if (!out->source)throw std::bad_alloc();
         std::memcpy(out->source,glsl.c_str(),glsl.size()+1);

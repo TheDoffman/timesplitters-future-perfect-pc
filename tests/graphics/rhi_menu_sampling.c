@@ -45,6 +45,7 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #include "msaa_scaled_target.h"
 #include "rhi_state_cache.h"
 #include "rhi_compatibility.h"
+#include "rhi_vertex_streams.h"
 #ifdef RHI_VULKAN_SDL
 #include "vulkan_present_outcomes.h"
 #endif
@@ -52,7 +53,11 @@ int main(void) {
     void *window=NULL;
 #ifdef TSFP_WINDOWS_RHI_TEST
     const char *backend=getenv("RECOMP_D3D8_BACKEND");
-    CHECK(!backend || !strcmp(backend,"vulkan") || !strcmp(backend,"d3d11"));
+    int supported=!backend || !strcmp(backend,"vulkan") || !strcmp(backend,"d3d11");
+#ifdef RHI_HAVE_OPENGL
+    if(backend && !strcmp(backend,"opengl"))supported=1;
+#endif
+    CHECK(supported);
     if(getenv("TSFP_TEST_ADOPT_D3D11")) {
         ID3D11Device *warp=NULL;ID3D11DeviceContext *context=NULL;D3D_FEATURE_LEVEL feature;
         CHECK(SUCCEEDED(D3D11CreateDevice(NULL,D3D_DRIVER_TYPE_WARP,NULL,0,NULL,0,
@@ -65,6 +70,7 @@ int main(void) {
     CHECK(window);
     CHECK(rhi_select_backend(backend)==0);
     RhiDeviceDesc device={window,64,64,2,1,0};
+    if(getenv("TSFP_TEST_EMPTY_DRAWABLE"))device.width=0;
     if(getenv("TSFP_TEST_EXPECT_STARTUP_FAILURE")) {
         CHECK(rhi_device_create(&device)!=0);
         CHECK(!rhi_device_ready() && !strcmp(rhi_backend_name(),"vulkan"));
@@ -164,6 +170,9 @@ int main(void) {
     rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_shader(RHI_STAGE_PIXEL,ps);
     rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
     rhi_shader_destroy(point_vs);rhi_shader_destroy(point_ps);
+    rhi_vertex_streams_test(rtv);rhi_raw_storage_test();rhi_facing_test(rtv);
+    rhi_sampler_address_test(rtv);
+    rhi_set_raster_state(raster);
     rhi_compatibility_test(rtv);
     rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_shader(RHI_STAGE_PIXEL,ps);
     rhi_set_raster_state(raster);

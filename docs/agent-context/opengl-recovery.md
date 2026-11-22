@@ -14,8 +14,9 @@ before trying OpenGL, changes g_rhi only after successful recovery, destroys
 failed OpenGL resources too, and logs both-failed versus disabled states. It
 never changes saved configuration or recovers from later presentation failures.
 It requires RHI_HAVE_OPENGL plus TSFP_OPENGL_RECOVERY_ACCEPTED; the latter
-defaults to0. No production OpenGL RHI backend is registered yet, so all current
-production builds retain Vulkan/no-automatic-recovery behavior. Tests use
+defaults to0. The shared OpenGL RHI is implemented and registered in the opt-in Windows
+hardware fixture. Ordinary game builds do not compile it yet and retain
+Vulkan/no-automatic-recovery behavior. Tests use
 resource-owning spies to cover order, disabled hosts, missing backend, both
 failures, explicit-GL failure without recursion and descriptor preservation.
 
@@ -29,8 +30,10 @@ texture/sampler register mapping, DX-layout uniform blocks and vertex inputs.
 Shader metadata tells the backend which GL blocks/texture units/attributes to
 bind. Offscreen GL bottom row is RHI logical top: clip Y flips in the vertex
 shader, data upload/readback remain unchanged, and final screen blit must flip Y.
-Depth is remapped from D3D/Vulkan0..1 to GL-1..1. Hardware asymmetric image,
-depth, culling, array/cube/volume, MSAA and screen-copy contracts are still needed.
+Depth is remapped from D3D/Vulkan0..1 to GL-1..1. The Windows hardware suite verifies asymmetric pixels, depth/stencil, culling,
+array/cube/volume images, MSAA, resolves and screen copies. Canonical wide
+interstage wires allow a pixel shader to consume fewer vector components;
+textureSamples is lowered to backend sample-count uniforms for GLSL410.
 
 `opengl_host.c/.h` is the small window/context boundary: WGL4.1 on Windows,
 SDL GL on native hosts, function lookup and swap interval. It does not own the
@@ -51,23 +54,50 @@ ordinary game builds is still required before enabling the production backend.
 
 The shared startup transaction also passes GCC -O2 under Ubuntu24.04 WSL; this
 is a policy test, not Linux GPU/game acceptance.
-Windows RTX4070SUPER/617.42: shared startup/installer checks pass; the shader
-contract builds, translates HLSL and rejects invalid HLSL. Generated GLSL passes
-glslang syntax/link checks, then the pixel probe creates a real4.1 core context,
-links generated shaders and reads expected sampled/tinted pixels. Fetch-only
-textures and legacy HLSL vector conditionals compile on the driver. These are
-small shader/context contracts, not a complete RHI backend or game acceptance.
-All8 existing Windows production RHI cases still pass with Vulkan validation.
+Windows11 x64, RTX4070SUPER/617.42, MSVC19.44 and SDK1.4.363.0:
+`opengl_backend.c` now supplies the complete RhiBackend table, compiled through
+`opengl_backend.cmake`. `opengl_api.h` loads core4.1 procedures plus optional
+storage/view extensions. Buffers, image/view ownership, shared shader programs,
+state/stream bindings, outputs, readback, resolve, queries and flipped screen
+presentation are implemented once. Resources bound into state retain references;
+failed device setup and repeated cleanup are safe. This is not game acceptance.
 
-Next: implement OpenGL RhiBackend resource/view/state/draw/readback/resolve/query
-operations using the shared HLSL compiler; thin native window recovery adapters;
-ordinary build/setup/package/license integration and platform acceptance gates;
-GPU contracts then isolated menu/gameplay/effects/fullscreen/resize/settings,
-bounded performance/stability acceptance. Run native builds/contracts where
-available, record exact gaps, and enable only passing hosts. Mac OpenGL is
-deprecated; preserve existing legacy-Mac behavior without claiming future OS
-support. Existing renderer code is src/native/renderer_gl.c; reuse shared policy
-without promoting that separate incomplete legacy frontend to universal fallback.
+`tests/graphics/rhi_vertex_streams.h` adds shared indexed/nonindexed stream,
+normalized attribute, index/base-vertex offsets, packed depth, BC array layer,
+front-face/cull and five sampler-address contracts. Vulkan intentionally rejects
+raw depth readback; its sampled-depth coverage remains separate. Readback must
+finish preceding GPU queries even when color writes are disabled.
+`test-rhi-windows.py --backend opengl` runs the full production RHI contract on
+GL; normal invocation still runs the original8 cases. `--opengl-recovery` runs
+five cases in an explicitly accepted fixture: Vulkan success, missing driver,
+no suitable Vulkan device, both renderers failing, and GL partial-init failure.
+The last two require explicit both-failed diagnostics and safe repeated cleanup.
+Build with TSFP_TEST_OPENGL=ON; only the recovery fixture enables
+TSFP_TEST_OPENGL_RECOVERY. This is not a production acceptance override.
+
+All five recovery cases passed (fixture SHA256
+ce2c16bf4582f2243f2b9528d310f634ca09547772cf584195d636996f2eafd6).
+All8 original cases and explicitGL passed with recovery OFF (fixture SHA256
+f73cdea03982e02716cc4c0dacab727b66db164324717f1b8497247959fa45de).
+Vulkan success cases used active SDK validation. Reports: logs/rhi-windows.json,
+rhi-windows-opengl.json and rhi-windows-opengl-recovery.json. Standalone shader
+translation and real WGL pixel probes also pass with the updated shader adapter.
+Sixteen selected Python policy/installer/renderer checks passed. Test-only failure
+environments use child-process overrides; no installed driver or personal setting
+is modified. Production recovery remains OFF on every platform.
+
+Remaining implementation/acceptance: ordinary setup/build/package/license wiring;
+native Vulkan-to-GL window replacement with event/input/debug bindings and stable
+logical window identity; native builds and GPU execution; representative game
+menus/gameplay/effects, display modes/resizing, settings preservation, bounded
+performance/stability and explicit per-platform acceptance. Native GL4.1 without
+ARB_texture_view/immutable storage still needs subset/stencil-view adaptation or
+an explicit capability failure before startup is accepted. Other review targets:
+null non2D resources, interstage arrays, depth-bias clamp and native mirror-once.
+Windows driver extensions do not establish macOS4.1 capability. Mac OpenGL is
+deprecated; preserve existing legacy-Mac behavior and do not claim future OS
+support. Existing legacy frontend is src/native/renderer_gl.c; recovery uses the
+common frontend rather than promoting that separate incomplete frontend.
 
 Local shader commands:
 

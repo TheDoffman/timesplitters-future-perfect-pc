@@ -1,33 +1,32 @@
-## OpenGL recovery foundation; production recovery remains disabled (2026-11-22)
+## OpenGL recovery GPU implementation; production remains disabled (2026-11-22)
 
-Goal implementation is in progress on feature/opengl-startup-recovery, based on
-local4c287926 plus main694fc53a. Patch3052 routes production startup through the
-shared transaction, with OpenGL absent/unapproved by default. The policy tests
-Vulkan success, approved GL success, both failing, partial cleanup ordering,
-repeated cleanup, disabled/unavailable fallback and descriptor preservation.
-Patch3053 shares DXC compilation and enables HLSL semantic reflection only for GL;
-the existing Vulkan compiler flags stay unchanged. Source-pinned SPIRV-Cross
-f11ba9f0 (SDK1.4.363.0) translates the same production HLSL to GLSL410.
+Local feature/opengl-startup-recovery checkpoint follows64ec1809 (foundation),
+based on4c287926 plus main694fc53a. The shared OpenGL backend now implements
+all production RHI operations and uses the common frontend/HLSL compiler.
+The test fixture compiles it through src/graphics/opengl_backend.cmake.
+Shader fixes support narrow interstage inputs and GL4.1 sample-count queries;
+GPU contracts cover image/view/state/streams/readback/resolve/query/screen paths.
 
-On Windows11/RTX4070SUPER/617.42, the shader contract passes vertex/pixel semantic
-subset linking, uniform and separate texture/sampler register mapping, fetch-only
-textures, legacy HLSL vector conditionals, and invalid-source rejection. GLSL
-syntax/link checks pass with the verified SDK glslangValidator. A real WGL4.1
-core context compiles/links those generated shaders, draws sampled/tinted pixels,
-reads the expected colour and presents successfully. New startup/installer tests
-plus selected renderer safety checks pass16 tests. All8 existing production RHI
-hardware cases pass with Vulkan validation, including disabled recovery failures.
-The startup transaction also passes GCC -O2 under Ubuntu24.04 WSL, and the
-historical-controls upgrade regression passes with the new patches included
-in current-stack acceptance. These contracts are not an implemented OpenGL RHI backend or actual game
-acceptance. Native Mac/Linux shader/context execution is unrun. Ordinary builds
-retain their previous Vulkan behavior and there is no new launcher selector.
+Windows11 x64/MSVC19.44/RTX4070SUPER617.42: all8 original RHI cases and
+explicitOpenGL pass with recovery OFF; fixture SHA256
+f73cdea03982e02716cc4c0dacab727b66db164324717f1b8497247959fa45de.
+An accepted test-only build passes five realGPU startup cases: Vulkan success,
+missing Vulkan driver, no Vulkan device, both failing, partialOpenGL setup failure;
+fixture SHA256 ce2c16bf4582f2243f2b9528d310f634ca09547772cf584195d636996f2eafd6.
+Vulkan cases use SDK1.4.363.0 validation. Reports: logs/rhi-windows*.json.
+Standalone shared-shader/WGL pixel probes and16 selected Python checks pass.
+The fixture acceptance option was restored OFF. Child-only injected failures do
+not change installed drivers, saves, settings or textures.
 
-Remaining: full OpenGL resource/view/state/draw/resolve/readback/query backend,
-native window recovery adapters, normal build/setup/package/license integration,
-per-platform acceptance gates, and representative menu/gameplay/effects/display/
-settings/performance/stability checks. No platform is approved for automatic GL
-recovery yet. The active goal remains incomplete. See agent-context/opengl-recovery.md.
+This is GPU contract evidence, not actual game acceptance. Ordinary game builds
+still omit the new backend. Setup/build/package/license integration, native SDL
+window replacement and GL4.1 capability adaptation remain implementation work.
+Native Mac/Linux GPU execution is unrun; WSL policy success is not GPU acceptance.
+Representative menus/gameplay/effects, resizing/fullscreen, preservation and
+bounded performance/stability acceptance remain. All production recovery gates
+remain OFF; no launcher selector or automatic D3D11 path was added. Legacy Mac
+GL remains unchanged; macOS OpenGL is deprecated. Goal incomplete; see
+agent-context/opengl-recovery.md for contracts and exact remaining work.
 
 ## Windows Vulkan startup without automatic fallback (2026-11-22)
 
