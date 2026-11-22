@@ -1,4 +1,4 @@
-[GL pick](opengl-recovery.md).
+[GL UI](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

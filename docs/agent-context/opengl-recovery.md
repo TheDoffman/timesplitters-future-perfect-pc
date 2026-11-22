@@ -967,3 +967,62 @@ UI run stopped because a synthetic renderer=vulkan receipt omitted runtime hashe
 the fixture now uses minimal compatibility metadata, while separate native GPU
 receipt/closure tests retain their validation. This is a fixture correction,
 not a weakened native package or shader compiler prerequisite.
+
+## Windows selector gameplay and host verification checkpoint
+
+With game SHA25661074a371c2b125c91e0f813a7cb5b5b831c7d323aa55c0bb8dcc76767abb76d,
+gl-selector-02 and vk-selector-01 each PASS120s through actual SettingsPage and
+LauncherWindow.LaunchGame. Both reach representative first-mission gameplay,
+movement and equipped weapon, Auto1x1,4xMSAA/SMAA/AF16/AO, fullscreen/windowed/
+resize/restore, scene resize, clean exit0, retained selected renderer/quality and
+synthetic installed custom DDS. OpenGL capture88s reviewed: world, weapon, HUD,
+sky/fog/fire visible. Visual-run guest clocks are ~60Hz; these capture/display
+runs are not matched uncaptured throughput measurements or scanout benchmarks.
+
+The failed gl-selector-01 is retained: gameplay/display/exit passed but an old
+post-run assertion still required Vulkan after saving OpenGL. It now checks the
+saved selected backend. The harness also starts each new case from the opposite
+saved renderer and requires UI Save to become enabled, so future Vulkan cases
+prove an actual OpenGL-to-Vulkan UI transition. The runner's top-level launch
+route metadata now says launcher for both choices, matching the actual case.
+
+Final Windows launcher build/regressions pass in
+logs/launcher-renderer-selector-final-02.log (including54 settings checks).
+An intermediate final-log run hit the intended global update guard because a
+hardware game was concurrently running; no product guard was changed. Portable
+checks remain66 passed/1 native host skip. Both native launcher projects compile
+from Windows with installed.NET9.0.312 and existing net8.0 restore caches:
+logs/launcher-selector-{linux,mac}-compile.log. This is compilation, not native
+Mac/Linux UI/runtime acceptance or a replacement for pinned native SDK checks.
+
+Native WSL verification was interrupted after the first Linux UI fixture error.
+Host C: free space reached ~1MiB, Ubuntu returned read-only filesystem and I/O
+errors, then Wsl/Service/CreateInstance/E_FAIL. The checked-clean fetch could not
+write FETCH_HEAD, so the native checkout remains65d753d2, before a47a7391's
+fixture correction. No host/service/distro restart or filesystem repair was
+issued. Reclaimed regenerable Windows game .obj files and duplicate
+build/windows/crash-symbols.zip, preserving EXE, matching PDB, sources, captures,
+logs, game assets and saves; C: then had ~2GiB free. Recreate the archive via the
+supported build before any package delivery. Native tests need a healthy writable
+WSL filesystem and Git fast-forward before retrying. All production automatic
+recovery gates remain0; Windows capability audit and native acceptance are still
+required by the full goal.
+
+Receipt detail: gl-selector-02's older top-level launch_route still says
+ developer-start-info; its nested case, compiled harness and observed launch log
+correctly identify the actual launcher route. The runner is corrected for future
+receipts; historical evidence was not rewritten. vk-selector-01 used the saved
+Vulkan default; the new opposite-choice Vulkan switch is a separate case.
+
+The stricter vk-selector-02 now PASS120s: it starts with saved OpenGL, changes
+the actual UI to Vulkan, requires dirty Save, launches Vulkan and preserves that
+choice through clean exit. Auto/display/effects/input/custom DDS checks pass;
+compiled game hash is unchanged. New top-level and nested launch_route both say
+launcher. The viewed Vulkan88s captures show world/weapon/HUD/fire/sky, but their
+scene/HUD colors differ visibly from gl-selector-02's88s capture. Vulkan01/02
+also differ in transient haze/objective animation. Do not infer pixel parity
+from these timed runs or assert which backend is correct. A matched guest-state
+frame capture/replay or equivalent controlled comparison is now an explicit
+remaining graphics acceptance check, alongside the capability audit. Inspect
+channel mapping, constants, blending and game transient effects against the same
+frame before diagnosing or changing a backend. Automatic recovery remains OFF.

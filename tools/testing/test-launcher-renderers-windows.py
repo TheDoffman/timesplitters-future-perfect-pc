@@ -525,7 +525,7 @@ def main():
                   launcher_sha256=digest(ROOT / "build/launcher/Bin/TimeSplitters.App.exe"),
                   harness_sha256=digest(ROOT / "tests/launcher_lifecycle/RendererGameSmoke.cs"),
                   runner_sha256=digest(Path(__file__)),
-                  startup_recovery=args.startup_recovery, capture_enabled=args.capture, launch_route="launcher" if args.backend=="vulkan" else "developer-start-info", cases={})
+                  startup_recovery=args.startup_recovery, capture_enabled=args.capture, launch_route="launcher", cases={})
     if args.presentmon:
         report["presentmon_sha256"] = digest(pinned_presentmon())
         report["presentmon_version"] = json.loads((ROOT / "config/build/presentmon-windows.json").read_text())["version"]

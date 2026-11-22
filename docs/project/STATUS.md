@@ -1,3 +1,19 @@
+## Launcher Vulkan/OpenGL selection in development (2026-11-22)
+
+Shared Graphics > Advanced > Renderer now restores Vulkan (Default) and OpenGL,
+persists the selection, and passes it to the child. D3D11 stays absent. New
+package capability receipts reject unavailable choices in older games; legacy
+Mac GL defaults are preserved. Windows launcher build/regressions and portable
+checks pass; actual launcher gameplay gl-selector-02 and vk-selector-01 both
+pass120s with display transitions, input, rendered gameplay and clean exit.
+The stricter vk-selector-02 proves OpenGL-to-Vulkan UI switching too. Captures
+show a renderer color difference; matched-state visual comparison remains a
+required graphics acceptance check.
+Native launcher source compiles for Linux/Mac; native runtime checks remain
+pending, with WSL currently failing after disk exhaustion. No automatic recovery
+gate is enabled. Detailed evidence/provenance/limits:
+[OpenGL recovery](../agent-context/opengl-recovery.md#windows-selector-gameplay-and-host-verification-checkpoint).
+
 ## Native guest dispatch remains unfinished (2026-11-22)
 
 Windows current renderer fixes pass fresh visual/display and matched uncaptured

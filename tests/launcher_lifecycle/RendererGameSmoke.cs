@@ -92,13 +92,14 @@ public static class RendererGameSmoke {
   string expectedBackend=config.ContainsKey("expected_backend")?(string)config["expected_backend"]:backend;
   string recovery=config.ContainsKey("startup_recovery")?(string)config["startup_recovery"]:null;
   Need(expectedBackend==backend || (backend=="vulkan" && expectedBackend=="opengl" && (recovery=="opengl" || recovery=="both-fail")),"Unrequested renderer fallback");
-  var initial=GameSettings.Load(root,null);initial.Renderer="vulkan";initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.AmbientOcclusion=Number("ao",0);initial.Save();
+  var initial=GameSettings.Load(root,null);initial.Renderer=backend=="vulkan"?"opengl":"vulkan";initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.AmbientOcclusion=Number("ao",0);initial.Save();
   // Shared executable is unmodified; preview mode only suppresses network checks.
   var ui=new LauncherWindow(root,true);ui.Window.Show();ui.ShowSettings(1);
   var page=(SettingsPage)typeof(LauncherWindow).GetField("settings",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(ui);
   Need(backend=="vulkan" || backend=="opengl","Unknown renderer acceptance route");
-  Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","Launcher default is not Vulkan");
+  Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]==initial.Renderer,"Initial saved renderer was ignored");
   Find<ComboBox>(page.View,"GraphicsRenderer").SelectedIndex=Array.IndexOf(GameSettings.Renderers,backend);
+  Need(Find<Button>(page.View,"SettingsSaveButton").IsEnabled,"Renderer switch did not enable Save");
   Find<Button>(page.View,"SettingsSaveButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
   Need(GameSettings.Load(root,null).Renderer==backend,"Launcher selector did not save");
   Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]==backend,"Launcher selector did not control launch");
@@ -185,7 +186,7 @@ public static class RendererGameSmoke {
    PostMessage(hwnd,0x10,IntPtr.Zero,IntPtr.Zero);
    var done=await Task.WhenAny(launch,Task.Delay(15000));Need(done==launch,"Launcher did not finish after closing game");await launch;
    Need(game.HasExited && game.ExitCode==0,"Game did not close cleanly");
-   Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","Game run changed launcher default");
+   Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]==backend,"Game run changed saved renderer");
    var model=GameSettings.Load(root,null);
    Need(model.Msaa==Number("msaa",1) && model.PostAntiAliasing==Number("aa",0) && model.Anisotropy==Number("anisotropy",1) && model.AmbientOcclusion==Number("ao",0),"Game run changed saved quality settings");
    string err=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").OrderBy(File.GetLastWriteTimeUtc).Last();string text=File.ReadAllText(err);File.Copy(err,Path.Combine(evidence,backend+".err"),true);

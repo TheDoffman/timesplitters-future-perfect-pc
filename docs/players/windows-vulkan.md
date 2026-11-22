@@ -9,9 +9,11 @@ An experimental OpenGL recovery backend is under development. Automatic
 OpenGL recovery is disabled pending game, performance and platform acceptance;
 its GPU tests alone do not establish a working fallback for players.
 
-The launcher uses Vulkan automatically and has no renderer selector. Older
-saved D3D11 choices are ignored. Linux and modern native Mac packages also use
-Vulkan by default.
+The next launcher version restores **Settings > Graphics > Advanced > Renderer**
+with **Vulkan (Default)** and **OpenGL**. Save the choice before launching; the
+launcher remembers it. OpenGL requires a compatible game update and driver.
+Older saved D3D11 choices use the default. Linux and modern native Mac builds
+also default to Vulkan; native OpenGL acceptance remains pending.
 
 After building, launch normally; no renderer override is needed. To force
 Direct3D 11 for troubleshooting in a developer checkout:
