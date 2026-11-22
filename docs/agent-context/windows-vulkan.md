@@ -10,6 +10,12 @@ Mac/Linux and other monitor arrangements remain unverified. Historical progress
 notes below are superseded by that report; do not rerun already resolved gates
 or reinterpret old failed reports as passes. No merge/publication occurred.
 
+PR580 CI found the synthetic launcher-package fixture lacked the new DXC pin,
+receipt/files and Vulkan-enabled CMake cache. package_launcher.py now supplies
+checksum-consistent synthetic inputs through the real production verifier and
+checks packaged DLL/license/receipt inclusion. Production pin checks stay strict;
+no runtime or launcher binary change is required for this fixture correction.
+
 Normal Windows packages build both backends and prefer Vulkan. Patch
 `graphics/rendering/3050-windows-vulkan-primary.patch` changes initial RHI
 selection while keeping D3D11 first in the recovery table. An explicit
