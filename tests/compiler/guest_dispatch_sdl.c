@@ -58,7 +58,7 @@ static int guest(void *data){
     while(!SDL_GetAtomicInt(&finished))sched_yield(); /* No host/kernel wait. */
     assert(!pthread_join(render,NULL));assert(guest_tls==7);return 37;
 }
-static int idle_guest(void *data){(void)data;struct timespec delay={0,10000000};nanosleep(&delay,NULL);return 9;}
+static int idle_guest(void *data){(void)data;struct timespec delay={0,100000000};nanosleep(&delay,NULL);return 9;}
 static int exits_thread(void *data){(void)data;pthread_exit((void *)(intptr_t)19);return 0;}
 static void *wrong_owner(void *data){assert(tsfp_native_dispatch_guest(guest,data,progress)==2);return NULL;}
 int main(void){
@@ -71,7 +71,16 @@ int main(void){
     pthread_t thread;assert(!pthread_create(&thread,NULL,wrong_owner,&value));assert(!pthread_join(thread,NULL));assert(entries==2);
     assert(tsfp_native_dispatch_guest(exits_thread,NULL,progress)==19 && joins==3);
     assert(pumps>0);
+#ifdef CLOCK_THREAD_CPUTIME_ID
+    struct timespec cpu_start,cpu_end;assert(!clock_gettime(CLOCK_THREAD_CPUTIME_ID,&cpu_start));
+#endif
     before=waits;assert(tsfp_native_dispatch_guest(idle_guest,NULL,progress)==9);assert(waits>before && joins==4);
+#ifdef CLOCK_THREAD_CPUTIME_ID
+    assert(!clock_gettime(CLOCK_THREAD_CPUTIME_ID,&cpu_end));
+    double cpu=(cpu_end.tv_sec-cpu_start.tv_sec)+(cpu_end.tv_nsec-cpu_start.tv_nsec)/1e9;
+    assert(cpu<.025); /* A permanent spin consumes ~100ms here, not <25ms. */
+    printf("PASS: adaptive idle owner CPU %.3fms during 100ms guest sleep\n",cpu*1000);
+#endif
     TsfpDispatchActivity activity={UINT_MAX,100};
     assert(!tsfp_dispatch_is_idle(&activity,UINT_MAX,99));assert(tsfp_dispatch_is_idle(&activity,UINT_MAX,100));
     assert(!tsfp_dispatch_is_idle(&activity,0,101)); /* Unsigned serial wrap is activity. */

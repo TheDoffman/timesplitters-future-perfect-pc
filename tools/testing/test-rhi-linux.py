@@ -47,6 +47,7 @@ def require_gl_contract(output, driver, restricted=False):
                'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
                'PASS: packed BGRA vertex colors preserve shader channel ordering',
                'PASS: OpenGL native main-thread dispatch',
+               'PASS: native GL owner dispatch progress observed',
                'PASS: OpenGL worker/context recreation and repeated cleanup')
     if any(marker not in output for marker in markers) or '[RHI] ERROR' in output:
         raise RuntimeError('OpenGL resource/dispatch/cleanup checks missing or renderer errors')

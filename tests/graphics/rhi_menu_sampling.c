@@ -104,6 +104,7 @@ static int gl_native_work(void *argument)
 static void gl_native_handoff_test(void)
 {
     if(strcmp(rhi_backend_name(),"opengl"))return;
+    unsigned before=tsfp_gl_host_main_dispatch_serial();
     GlNativeWorker workers[2]={0};SDL_Thread *threads[2];
     for(unsigned i=0;i<2;i++){workers[i].channel=i;threads[i]=SDL_CreateThread(gl_native_work,"GL resource test",&workers[i]);CHECK(threads[i]);}
     Uint64 bound=SDL_GetTicks()+10000;
@@ -111,6 +112,8 @@ static void gl_native_handoff_test(void)
         CHECK(SDL_GetTicks()<bound);SDL_PumpEvents();SDL_Delay(1);
     }
     for(unsigned i=0;i<2;i++){int status=1;SDL_WaitThread(threads[i],&status);CHECK(status==0);}
+    CHECK(tsfp_gl_host_main_dispatch_serial()!=before);
+    puts("PASS: native GL owner dispatch progress observed");
     const float blue[4]={0,0,1,1};rhi_clear_color(rhi_swapchain_view(),blue);
     unsigned char pixels[64*64*4];uint32_t w=64,h=64;
     CHECK(!rhi_swapchain_readback(pixels,64*4,&w,&h));CHECK(pixels[2]==255 && !pixels[0]);CHECK(!rhi_present(0));

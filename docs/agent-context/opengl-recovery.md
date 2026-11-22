@@ -1233,3 +1233,29 @@ return/join, preexisting video, init/thread failures, wrong owner and pthread_ex
 Native build, real-driver throughput, active Story and idle CPU checks are still
 required. This checkpoint records implementation, not acceptance; all production
 automatic recovery gates remainOFF.
+
+Adaptive91b5683b native game build and3 focused dispatch/wait/capability tests
+pass. gl-adaptive-story-01 passes120s with the proper Story observer:1500 samples
+over55.50..119.05s verified active scene2,~23.59 host guest presents/s,
+median40.82ms/p9554.61ms/worst64.31ms;~1.483 CPU core-equivalents. ELF SHA256
+5bdf19f5acff5f336e56d777e8decf76685db4870baa9c50ef08afd74ac2e88e.
+Fresh final capture reviewed: correctly brown world, weapon, HUD, sun and fire.
+No rendering/parse errors; clean exit. This establishes active native GL
+progress, not complete input/display/performance acceptance. Software lavapipe
+Vulkan's earlier38fps is a different driver path, not an apples-to-apples GPU
+comparison. Native GL throughput remains below60 in this WSL bridge environment.
+
+A new headless idle CPU regression sleeps the guest100ms and bounds owner CPU
+below25ms; the actual run consumes2.689ms. This rejects a permanent busy spin
+while tolerating CI scheduling variation. The real native RHI handoff fixture
+also now requires the GL owner progress serial to change across worker GPU work;
+its receipt validator rejects missing progress evidence. Driver verification
+must follow after this fixture update.
+
+Windows Vulkan validation is available: the existing SDK Bin contains the
+API1.4.363 Khronos layer, signed by LunarG with Valid Authenticode status. DLL
+SHA2562acc317ef880f73a9862f23a964694c03f531b866fab6d70f1412fcbae60caac.
+Explicit child-only --validation-layer-path external/vulkan-sdk/windows/1.4.363.0/Bin
+passes the full Windows Vulkan RHI contract with validation on and no diagnostics.
+No download, registry change or SDK mutation is needed. Earlier no-layer logs
+reflect discovery without this explicit path; they do not prove missing files.

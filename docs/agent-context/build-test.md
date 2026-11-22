@@ -1,4 +1,4 @@
-[GL pump](opengl-recovery.md).
+[GL flow](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

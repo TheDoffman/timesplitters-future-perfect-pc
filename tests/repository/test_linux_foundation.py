@@ -199,6 +199,7 @@ def test_gl_receipt_requires_pixels_dispatch_cleanup_and_observed_driver():
         'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
         'PASS: packed BGRA vertex colors preserve shader channel ordering',
                'PASS: OpenGL native main-thread dispatch',
+        'PASS: native GL owner dispatch progress observed',
                'PASS: OpenGL worker/context recreation and repeated cleanup',
                'D3D12 (NVIDIA)', 'PASS: OpenGL4.1 subset/']
     output = '\n'.join(markers)
@@ -243,6 +244,7 @@ def test_native_recovery_receipt_rejects_failed_window_cleanup_or_continued_rend
         'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
         'PASS: packed BGRA vertex colors preserve shader channel ordering',
         'PASS: OpenGL native main-thread dispatch',
+        'PASS: native GL owner dispatch progress observed',
         'PASS: OpenGL worker/context recreation and repeated cleanup',
         'D3D12 (NVIDIA)', 'startup recovery selected opengl',
         'PASS: native automatic drawable replacement', 'PASS: shared RHI'))
