@@ -6,7 +6,7 @@
 [Actors](network-actor-lifetime.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
-[Bob](weapon-bob.md).
+[HUD](ultrawide-player-markers.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).

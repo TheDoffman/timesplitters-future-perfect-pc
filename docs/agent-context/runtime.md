@@ -1,4 +1,4 @@
-[Pad](controller-deadzones.md); [tools](developer-tools-integration.md).
+[Wide HUD](ultrawide-player-markers.md).
 [MP](native-multiplayer-menu.md).
 
 [Bob](weapon-bob.md);[Uplink](native-uplink.md).
