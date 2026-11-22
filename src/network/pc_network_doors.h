@@ -9,7 +9,7 @@ typedef struct PcNetworkDoorState {
     uint32_t slot,key,kind,phase,flags,timer;
     float progress,extra,target,velocity;
 } PcNetworkDoorState;
-static int pc_network_door_valid(const PcNetworkDoorState *s)
+static inline int pc_network_door_valid(const PcNetworkDoorState *s)
 {
     return s->slot<PC_NETWORK_DOORS_MAX && s->phase<=3u &&
         !(s->flags&~0x04000000u) && isfinite(s->progress) &&
