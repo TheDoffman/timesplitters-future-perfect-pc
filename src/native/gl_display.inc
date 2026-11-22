@@ -93,6 +93,15 @@ static GLuint native_scene_readback(unsigned w,unsigned h,GLuint *color) {
 
 /* Cocoa flushBuffer must target the window drawable, not the scene FBO. */
 static bool native_swap_window(void) {
+    /* Observe UI changes and context recreation on the GL thread. */
+    static SDL_GLContext applied_context;
+    static int requested_interval=-1;
+    int interval=(int)pc_vsync_present_interval(g_present_interval);
+    if(applied_context!=g.glctx || requested_interval!=interval) {
+        applied_context=g.glctx;requested_interval=interval;
+        if(!SDL_GL_SetSwapInterval(interval))
+            fprintf(stderr,"[V-SYNC] Could not set GL swap interval: %s\n",SDL_GetError());
+    }
     GLint draw;glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&draw);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);
     bool ok=SDL_GL_SwapWindow(g.window);

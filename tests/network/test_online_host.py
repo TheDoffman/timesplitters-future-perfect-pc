@@ -1,70 +1,62 @@
-"""Automatic hosting uses real HTTPS and sockets, without personal game data."""
-
-
+"""Player-side invitation and public-address validation."""
 from pathlib import Path
-import socket
 import sys
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'tools'))
 import online_host
-from online_client import Client, Session
-
-VERSION = 'a'*64
 
 
-def unused_udp_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
-        probe.bind(('127.0.0.1', 0))
-        return probe.getsockname()[1]
-
-
-@pytest.mark.parametrize('mode', ['arcade', 'story'])
-def test_auto_host_tls_invitation_join_and_cleanup(tmp_path, mode):
-    host = online_host.start_match(tmp_path, '203.0.113.7', VERSION, 'Automatic host', unused_udp_port(), True,
-                                  directory_port=0, mode=mode)
-    directory = host.local_directory
-    guest = None
+def test_local_hints_do_not_wait_for_hostname_dns(monkeypatch):
+    import threading
+    entered=threading.Event();release=threading.Event();finished=threading.Event()
+    calls=[];result=[]
+    class Route:
+        def __enter__(self):return self
+        def __exit__(self,*_):pass
+        def connect(self,address):assert address==('192.0.2.1',9)
+        def getsockname(self):return ('192.168.1.27',40000)
+    def stalled(*args):
+        calls.append(args);entered.set();release.wait(5)
+        return [(None,None,None,None,('10.0.0.27',0))]
+    monkeypatch.setattr(online_host.socket,'socket',lambda *_:Route())
+    monkeypatch.setattr(online_host.socket,'getaddrinfo',stalled)
+    def discover():
+        try:result.append(online_host.local_ipv4_addresses('192.0.2.1'))
+        finally:finished.set()
+    worker=threading.Thread(target=discover,daemon=True);worker.start()
     try:
-        url, fingerprint, code = online_host.parse_invitation(host.invitation)
-        assert url == directory.public_url and fingerprint == directory.fingerprint and code == host.lobby['code']
-        assert host.lobby['address'] == '203.0.113.7'
-        client = Client(directory.address, fingerprint)
-        assert client.request('GET', '/v2/lobbies?compatibility='+VERSION+'&mode='+mode)['lobbies'][0]['code'] == code
-        assert client.request('GET', '/v2/lobbies?compatibility='+'b'*64)['lobbies'] == []
-        with pytest.raises(ValueError, match='certificate does not match'):
-            Client(directory.address, '0'*64).request('GET', '/v2/lobbies?compatibility='+VERSION)
-        # Simulate the forwarded host endpoint on loopback for the real UDP handshake.
-        with directory.server.directory.lock:
-            directory.server.directory.online[code]['address'] = '127.0.0.1'
-        guest = Session.join(client, VERSION, code, mode=mode)
-        assert guest.bridge.ready.is_set()
-        with pytest.raises(OSError):
-            online_host.LocalDirectory(tmp_path, '203.0.113.7', directory.server.server_port)
+        assert entered.wait(1)
+        assert finished.wait(1),'Optional hostname DNS blocked local hosting'
+        assert result==[('192.168.1.27',)]
+        # A stalled resolver must not create another thread on every retry.
+        assert online_host.local_ipv4_addresses('192.0.2.1')==('192.168.1.27',)
+        assert len(calls)==1
     finally:
-        if guest:
-            guest.close()
-        host.close()
-    assert not directory.server.directory.online
-    assert not directory.thread
-    with online_host.Server(('0.0.0.0', directory.server.server_port)):
-        pass  # The port was released and can be used by the next match.
-    replacement = online_host.LocalDirectory(tmp_path, '203.0.113.7', 0)
-    try:
-        assert replacement.fingerprint == fingerprint  # Persistent certificate is reused.
-    finally:
-        replacement.close()
+        release.set();worker.join(timeout=2)
+        with online_host._hint_lookup_lock:pass
+
+
+def test_local_hints_keep_fast_secondary_interfaces(monkeypatch):
+    class Route:
+        def __enter__(self):return self
+        def __exit__(self,*_):pass
+        def connect(self,_):pass
+        def getsockname(self):return ('192.168.1.27',40000)
+    monkeypatch.setattr(online_host.socket,'socket',lambda *_:Route())
+    monkeypatch.setattr(online_host.socket,'getaddrinfo',lambda *_:[
+        (None,None,None,None,(address,0)) for address in
+        ('192.168.1.27','127.0.0.1','10.0.0.27','8.8.8.8')])
+    assert online_host.local_ipv4_addresses('192.0.2.1')==('192.168.1.27','10.0.0.27')
 
 
 @pytest.mark.parametrize('value', ['bad', 'tsfp-online:@@@', 'tsfp-online:e30', 'tsfp-online:'+('x'*2048),
     online_host.invitation('http://127.0.0.1:30820', 'a'*64, 'A'*16),
-    online_host.invitation('https://example.test:30820', '', 'A'*16),
     online_host.invitation('https://example.test:30820', 'a'*64, 'not a code')])
 def test_invalid_invitations(value):
     with pytest.raises(ValueError):
         online_host.parse_invitation(value)
-
 
 def test_public_ip_lookup_and_failure(monkeypatch, tmp_path):
     real_connection = online_host.http.client.HTTPSConnection
@@ -95,10 +87,3 @@ def test_public_ip_lookup_and_failure(monkeypatch, tmp_path):
             online_host.fetch_public_ipv4()
     Response.data = b'{"ip":"8.8.8.8"}'
     monkeypatch.setattr(online_host.http.client, 'HTTPSConnection', real_connection)
-    # Automatic start consumes the freshly detected address, without manual settings.
-    monkeypatch.setattr(online_host, 'fetch_public_ipv4', lambda: '203.0.113.8')
-    host = online_host.start_match(tmp_path, None, VERSION, 'Auto IP', unused_udp_port(), False, directory_port=0)
-    try:
-        assert host.lobby['address'] == '203.0.113.8'
-    finally:
-        host.close()

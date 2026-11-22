@@ -13,6 +13,7 @@ typedef struct PcDeveloperState {
     int speed_keys, god, infinite_ammo;
     double manual_speed, slow_speed, fast_speed;
     int audio_speed;
+    int hide_viewmodel;
 } PcDeveloperState;
 /* Host-owned Story values; camera/movement and UI preferences stay local. */
 typedef struct PcDeveloperShared { uint32_t speed_milli,audio_speed,god,infinite_ammo; } PcDeveloperShared;

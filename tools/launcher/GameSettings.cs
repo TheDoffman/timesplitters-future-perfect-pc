@@ -64,9 +64,11 @@ namespace TimeSplitters.Launcher
             }
         }
         public string DiscordApplicationId = "1561627743353962566";
-        public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes, DeveloperToolsEnabled;
+        public bool MouseEnabled = true, InvertY, Fullscreen, VSync, Vrr = true, FpsOverlay, SkipStartupSplashes, DeveloperToolsEnabled;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
+        public int CrosshairSize = 100;
+        public int WeaponFovDegrees; // V5: zero retains exact legacy aperture.
         public int WeaponFov = 100; // Preserve the in-game weapon aperture preference.
         // Zero selects the original clock; 60 is not the experimental native-60 path.
         public int NativeFps;
@@ -84,6 +86,20 @@ namespace TimeSplitters.Launcher
             }
         }
         public bool CanAdjustFov { get { return SupportsExtendedDisplay; } }
+        int DisplaySettingsVersion
+        {
+            get {
+                try {
+                    string path=Core.PathIn(root,"BUILD.json");
+                    if(!File.Exists(path))return 5; // Unpackaged development build.
+                    object value;
+                    if(!Json.Object(Text(Read(path))).TryGetValue("display_settings_version",out value))return 3;
+                    return value is bool || value is string ? 3 : Convert.ToInt32(value,CultureInfo.InvariantCulture);
+                } catch { return 3; }
+            }
+        }
+        public bool CanAdjustCrosshair { get { return DisplaySettingsVersion>=4; } }
+        public bool CanUseWeaponFovDegrees { get { return DisplaySettingsVersion>=5; } }
         public bool CanAutoResolution
         {
             get {
@@ -215,10 +231,13 @@ namespace TimeSplitters.Launcher
             string display = Text(model.originals[Files[1]]);
             if (display.Length > 0)
             {
-                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[123])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?(?:\s+(?<weapon>\d+))?\s*$");
-                Core.Require(match.Success && (match.Groups["version"].Value != "1") == match.Groups["fov"].Success && (match.Groups["version"].Value == "3") == match.Groups["weapon"].Success, "The display settings file is invalid. No settings were changed.");
+                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[12345])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?(?:\s+(?<weapon>\d+))?(?:\s+(?<extra>\d+))?(?:\s+(?<crosshair>\d+))?\s*$");
+                Core.Require(match.Success && (match.Groups["version"].Value != "1") == match.Groups["fov"].Success && (Int32.Parse(match.Groups["version"].Value)>=3) == match.Groups["weapon"].Success && (Int32.Parse(match.Groups["version"].Value)>=4) == match.Groups["extra"].Success && (match.Groups["version"].Value == "4") == match.Groups["crosshair"].Success, "The display settings file is invalid. No settings were changed.");
                 if(match.Groups["fov"].Success) model.VerticalFov = Int32.Parse(match.Groups["fov"].Value, CultureInfo.InvariantCulture);
-                if(match.Groups["weapon"].Success) model.WeaponFov = Int32.Parse(match.Groups["weapon"].Value, CultureInfo.InvariantCulture);
+                if(match.Groups["weapon"].Success) { int weaponValue=Int32.Parse(match.Groups["weapon"].Value,CultureInfo.InvariantCulture); if(match.Groups["version"].Value=="5")model.WeaponFovDegrees=weaponValue;else model.WeaponFov=weaponValue; }
+                if(match.Groups["version"].Value=="4") { int legacyHud=Int32.Parse(match.Groups["extra"].Value,CultureInfo.InvariantCulture); Core.Require(legacyHud>=50 && legacyHud<=100 && legacyHud%5==0,"The display settings file is invalid."); }
+                if(match.Groups["crosshair"].Success) model.CrosshairSize=Int32.Parse(match.Groups["crosshair"].Value,CultureInfo.InvariantCulture);
+                if(match.Groups["version"].Value=="5") { model.CrosshairSize=Int32.Parse(match.Groups["extra"].Value,CultureInfo.InvariantCulture); Core.Require(model.WeaponFovDegrees>=FovMin && model.WeaponFovDegrees<=FovMax,"Weapon FOV must be between40 and100 degrees."); }
                 model.Width = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 model.Height = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             }
@@ -267,6 +286,7 @@ namespace TimeSplitters.Launcher
             model.Smaa = Number(settings, "smaa", 0) != 0;
             model.Fullscreen = Number(settings, "fullscreen", 0) != 0;
             model.Vrr = Number(settings, "vrr", 1) != 0;
+            model.VSync = Number(settings, "vsync", 0) != 0;
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
             string graphicsOptions = Text(model.originals[Files[6]]);
             if (graphicsOptions.Length > 0) {
@@ -334,13 +354,6 @@ namespace TimeSplitters.Launcher
             while (list.Count < BindingSlots) list.Add("none");
             return list.ToArray();
         }
-        public int KeyboardPreset {
-            get {object value;return controller.TryGetValue("keyboard_preset",out value) && Convert.ToString(value)=="1"?1:0;}
-            set {Core.Require(value==0 || value==1,"Choose Custom or Modern PC.");controller["keyboard_preset"]=value;}
-        }
-        public int ControllerPreset(int player) {var profile=PlayerProfile(player,false);object value;
-            return profile!=null && profile.TryGetValue("controller_preset",out value) && Convert.ToString(value)=="1"?1:0;}
-        public void SetControllerPreset(int player,int preset) {Core.Require(preset==0 || preset==1,"Choose Custom or Modern Controller.");PlayerProfile(player,true)["controller_preset"]=preset;}
         public int ControllerDeadzone(int player,bool aim) {
             var profile=PlayerProfile(player,false);object value;int raw;
             if(profile!=null && profile.TryGetValue(aim?"aim_deadzone":"move_deadzone",out value) &&
@@ -352,22 +365,6 @@ namespace TimeSplitters.Launcher
         public void SetControllerDeadzone(int player,bool aim,int raw) {
             Core.Require(raw>=0 && raw<=32767,"Deadzone must be between 0% and 100%.");
             PlayerProfile(player,true)[aim?"aim_deadzone":"move_deadzone"]=raw;
-        }
-        static readonly Dictionary<int,string[]> ModernKeys=ReadModernKeys();
-        static Dictionary<int,string[]> ReadModernKeys() {
-            var result=new Dictionary<int,string[]>();
-            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("control-presets.def"))
-            using(var reader=new StreamReader(stream)) foreach(Match m in Regex.Matches(reader.ReadToEnd(),@"PC_MODERN_KEY\((\d+), (\d+), (\d+)\)"))
-                result.Add(Int32.Parse(m.Groups[1].Value),new[]{"key:#"+m.Groups[2].Value,m.Groups[3].Value=="0"?"none":"key:#"+m.Groups[3].Value});
-            return result;
-        }
-        public string[] DisplayBinding(int action) {
-            if(KeyboardPreset==0 || (action>=19 && action<=22) || action>=34)return Binding(action);
-            string[] keys;if(ModernKeys.TryGetValue(action,out keys))return (string[])keys.Clone();
-            var defaults=Map(((IEnumerable)Json.Object(DefaultControls())["controllers"]).Cast<object>().First());
-            object value=Map(defaults["bindings"])[Actions[action]];
-            var list=value is string?new[]{(string)value}:((IEnumerable)value).Cast<string>().ToArray();
-            return list.Concat(Enumerable.Repeat("none",BindingSlots)).Take(BindingSlots).ToArray();
         }
         public const int WheelUpKey = 134, WheelDownKey = 135;
         public static int CaptureKey(int key) { return key==160||key==161?16:key==162||key==163?17:key==164||key==165?18:key; }
@@ -415,7 +412,6 @@ namespace TimeSplitters.Launcher
         }
         public void ResetControls()
         {
-            KeyboardPreset=0;
             var defaults = Json.Object(DefaultControls());
             var profiles = (IEnumerable)defaults["controllers"];
             foreach (object profile in profiles) { bindings = Map(Map(profile)["bindings"]); break; }
@@ -442,6 +438,10 @@ namespace TimeSplitters.Launcher
                 "Enter the public numeric Discord Application ID (17–20 digits), or turn off Rich Presence and clear the ID.");
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
+            Core.Require(loading || CanAdjustCrosshair || CrosshairSize==100,"Crosshair Size requires a newer game build. No settings were changed.");
+            Core.Require(loading || CanUseWeaponFovDegrees || WeaponFovDegrees==0,"Weapon FOV degrees require a newer game build. No settings were changed.");
+            Core.Require(CrosshairSize>=25 && CrosshairSize<=150 && CrosshairSize%5==0,"Crosshair Size must be 25�150 percent in steps of five.");
+            Core.Require(WeaponFovDegrees==0 || (WeaponFovDegrees>=FovMin && WeaponFovDegrees<=FovMax),"Weapon FOV must be between40 and100 degrees.");
             Core.Require(WeaponFov >= 80 && WeaponFov <= 150 && WeaponFov % 5 == 0, "Weapon FOV must be 80–150 percent in steps of five.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
             Core.Require(loading || Width!=1 || Height!=1 || CanAutoResolution, "Auto resolution requires a newer game build. Choose a manual resolution or update the game.");
@@ -531,8 +531,7 @@ namespace TimeSplitters.Launcher
                 Core.Require((now == null && old == null) || (now != null && old != null && now.SequenceEqual(old)), "Settings changed outside the launcher. Close and reopen Settings before saving.");
                 Core.Require(!File.Exists(path) || (File.GetAttributes(path) & FileAttributes.ReadOnly) == 0, "A settings file is read-only. No settings were saved.");
             }
-            // Preserve all custom sources, including slots not exposed by this UI.
-
+            if (Device == "keyboard") foreach (int action in Enumerable.Range(0, Actions.Length)) bindings[Actions[action]] = Binding(action);
             document["developer_tools_enabled"]=DeveloperToolsEnabled;
             object value;
             if (!document.TryGetValue("mouse", out value)) document["mouse"] = value = new Dictionary<string, object>();
@@ -543,10 +542,10 @@ namespace TimeSplitters.Launcher
             Map(value)["language_pack"] = LanguagePack;
             if (!document.TryGetValue("debug", out value)) document["debug"] = value = new Dictionary<string, object>();
             Map(value)["show_counter"] = ShowCounter;
-            var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
+            var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"vsync",VSync?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
-            var payload = new[] { Json.Encode(document) + "\n", (WeaponFov != 100 ? "TSFP_DISPLAY_V3 " + Width + " " + Height + " " + VerticalFov + " " + WeaponFov : VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
+            var payload = new[] { Json.Encode(document) + "\n", (WeaponFovDegrees!=0 ? "TSFP_DISPLAY_V5 "+Width+" "+Height+" "+VerticalFov+" "+WeaponFovDegrees+" "+CrosshairSize : CrosshairSize!=100 ? "TSFP_DISPLAY_V4 "+Width+" "+Height+" "+VerticalFov+" "+WeaponFov+" "+100+" "+CrosshairSize : WeaponFov != 100 ? "TSFP_DISPLAY_V3 " + Width + " " + Height + " " + VerticalFov + " " + WeaponFov : VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
                 "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n",
                 AudioPreference(),

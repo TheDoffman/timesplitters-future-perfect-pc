@@ -1,4 +1,7 @@
 #include "pc_network_profiles.inc"
+#ifdef TSFP_ARCADE_MIGRATION
+#include "pc_arcade_api.h"
+#endif
 /* Shared Arcade Online/System Link exit routing. Keep directory membership
  * separate from the original guest match transport. Story retains its adapter. */
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -24,6 +27,27 @@ static int multiplayer_match(void)
     return multiplayer_arcade() && WORD_AT(0x79094cu)<=100u &&
         WORD_AT(0x76b108u) && (WORD_AT(0x76b140u)==1u || WORD_AT(0x76b140u)==2u);
 }
+#ifdef TSFP_ARCADE_MIGRATION
+static int multiplayer_migrating_match(void)
+{
+    return multiplayer_match() && pc_online_mode()==PC_ONLINE_ARCADE &&
+        WORD_AT(0x76b140u)==1u && WORD_AT(0x76b1a4u)==15u && WORD_AT(0x7de30cu)==7u &&
+        pc_network_arcade_enabled();
+}
+uint32_t pc_multiplayer_migration_prompt(const char *text)
+{
+    if(!text || !(strstr(text,"LEAVING THE MATCH") || strstr(text,"Leaving the match")) ||
+       !multiplayer_migrating_match())return 0;
+    static uint32_t prompts[2];const unsigned native=!!pc_online_menu_active();
+    if(!prompts[native]) {
+        const char *message=pc_online_menu_active()?"Return everyone to this match's lobby?":
+            "Leave this match?\nHosting will transfer to an available player.";
+        prompts[native]=xbox_HeapAlloc((uint32_t)strlen(message)+1u,4u);
+        if(prompts[native])memcpy((void *)((uintptr_t)prompts[native]+g_xbox_mem_offset),message,strlen(message)+1u);
+    }
+    return prompts[native];
+}
+#endif
 static void multiplayer_leave(unsigned destination,int close_menu)
 {
     multiplayer_destination=destination;multiplayer_factory_observations=0;
@@ -46,6 +70,10 @@ static void multiplayer_leave_confirm(void)
 {
     const uint32_t menu=WORD_AT(g_esp+4u);
     if(multiplayer_match() && WORD_AT(0x76b140u)==1u && guest_writable(menu,0x190u) && WORD_AT(menu+0x18cu)==0x40u) {
+#ifdef TSFP_ARCADE_MIGRATION
+        if(!pc_online_menu_active() && WORD_AT(0x7de30cu)==7u && WORD_AT(0x76b1a4u)==15u &&
+           pc_network_arcade_request_leave()) {WORD_AT(0x789640u)=0;g_eax=0;g_esp+=4u;return;}
+#endif
         multiplayer_leave(1u,1);
         WORD_AT(0x789640u)=0;g_eax=0;g_esp+=4u;return;
     }
@@ -93,19 +121,23 @@ static int multiplayer_exit_button(void (*original)(void))
        WORD_AT(0x76b140u)==1u && guest_writable(g_esp,28u)) {
         const uint32_t callback=WORD_AT(g_esp+20u);
         if(callback==0x2ec060u || callback==0x2ec030u || callback==0x2eaf60u || callback==0x2eb030u) {
-            static uint32_t caption;
-            if(!caption) {
-                const char text[]="Return to Lobby";
-                caption=xbox_HeapAlloc(sizeof text,4u);
-                if(caption) memcpy((void *)((uintptr_t)caption+g_xbox_mem_offset),text,sizeof text);
+            static uint32_t captions[2];unsigned migration=0;
+#ifdef TSFP_ARCADE_MIGRATION
+            migration=multiplayer_migrating_match() && !pc_online_menu_active();
+#endif
+            if(!captions[migration]) {
+                const char *text=migration?"Leave Match":"Return to Lobby";
+                captions[migration]=xbox_HeapAlloc((uint32_t)strlen(text)+1u,4u);
+                if(captions[migration]) memcpy((void *)((uintptr_t)captions[migration]+g_xbox_mem_offset),text,strlen(text)+1u);
             }
+            const uint32_t caption=captions[migration];
             const uint32_t frame=g_esp,old=WORD_AT(frame+4u);
             if(caption) WORD_AT(frame+4u)=caption;
             const uint32_t menu=WORD_AT(0x7bb1e8u);
             if(pc_online_mode()==PC_ONLINE_STORY && guest_writable(menu,8u) &&
                guest_writable(WORD_AT(menu+4u),4u) && WORD_AT(WORD_AT(menu+4u))==0x2f5520u &&
                (callback==0x2ec060u || callback==0x2ec030u)) {
-                /* Append after the host restart rows, before desktop Quit.
+                /* Append after the host restart rows, before original pause layout.
                    Preserve every original row argument and callback. */
                 multiplayer_pause_menu=menu;multiplayer_pause_button=original;
                 for(unsigned i=0;i<6u;++i)multiplayer_pause_row[i]=WORD_AT(frame+4u+i*4u);
@@ -138,12 +170,25 @@ void pc_multiplayer_exit_action(void (*original)(void),unsigned action)
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
     if(!action && multiplayer_match() && WORD_AT(0x76b140u)==1u &&
        (original==sub_002EAF60_gen || original==sub_002EB030_gen)) {
+#ifdef TSFP_ARCADE_MIGRATION
+        if(!pc_online_menu_active() && WORD_AT(0x7de30cu)==7u && WORD_AT(0x76b1a4u)==15u &&
+           pc_network_arcade_request_leave()) {g_eax=0;g_esp+=4u;return;}
+#endif
         multiplayer_leave(1u,1);
         g_eax=0;g_esp+=4u;return;
     }
 #endif
     pc_story_network_result_action(original,action);
 }
+#ifdef TSFP_ARCADE_MIGRATION
+void pc_multiplayer_migration_leave(void)
+{
+    if(!multiplayer_match())return;
+    multiplayer_leave(3u,1);
+    GuestRegisters saved;save_registers(&saved);
+    guest_call(sub_00065420,0);restore_registers(&saved);
+}
+#endif
 void pc_multiplayer_return_lobby(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
@@ -160,7 +205,15 @@ void pc_multiplayer_disconnect_exit(void (*original)(void))
         guest_writable(g_esp,4u)?WORD_AT(g_esp):0u,multiplayer_exit_depth,multiplayer_destination,WORD_AT(0x76b140u),WORD_AT(0x76b1a4u));
     if(multiplayer_match() && !multiplayer_exit_depth && !multiplayer_destination &&
        (WORD_AT(0x76b1a4u)==15u || WORD_AT(0x76b1a4u)==16u) &&
-       guest_writable(g_esp,4u) && WORD_AT(g_esp)==0x35c360u) {
+       guest_writable(g_esp,4u) &&
+       (WORD_AT(g_esp)==0x35c360u ||
+        /* The native Online guest's own Yes callback disconnects before the
+         * phase-18 retirement call. Mark its destination now, while the match
+         * still identifies this owned session, so the factory releases the
+         * old member and rebuilds the authenticated directory browser. */
+        (pc_online_mode()==PC_ONLINE_ARCADE && pc_online_menu_active() &&
+         WORD_AT(0x76b140u)==2u &&
+         WORD_AT(g_esp)==0x2ebe4eu))) {
         multiplayer_destination=3u;multiplayer_lobby_pending=0;
         WORD_AT(0x78ad20u)=13u;
     }
@@ -170,6 +223,9 @@ void pc_multiplayer_disconnect_exit(void (*original)(void))
 void pc_multiplayer_exit_menu(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(multiplayer_destination==3u && native_multiplayer_return_menu(original)) {
+        multiplayer_destination=0;multiplayer_lobby_pending=0;return;
+    }
     const uint32_t frame=g_esp;
     if(multiplayer_destination && WORD_AT(0x79094cu)==101u && guest_writable(frame,16u) && multiplayer_factory_observations++<16u)
         fprintf(stderr,"[PC-MULTIPLAYER-EXIT] factory destination=%u parent=%08X root=%08X descriptor=%08X role=%u phase=%u\n",

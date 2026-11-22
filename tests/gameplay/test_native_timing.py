@@ -555,6 +555,9 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_analog_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d)]),
+    ('native_interaction_hints.c', [(0x1405b0,0x14062c),(0x140630,0x1409be)]),
+    ('native_turret_entry.c', [(0xb4df0,0xb4f8f),(0x18ff70,0x190334),
+                              (0x426e0,0x4270d),(0x427b0,0x427e8)]),
     ('native_interaction_input.c', [(0xa0d90,0xa144b),(0x18ff70,0x190334),
                                     (0x426e0,0x4270d),(0x42760,0x427ac),(0x427b0,0x427e8)]),
     ('native_locomotion.c', [(0x258f50,0x2597ff)]),
@@ -579,7 +582,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_aim_easing.c', [(0x25ab82,0x25acdf),(0x25b0f3,0x25b182)]),
     ('native_animation_clock.c', [(0x5adc0,0x5afab),(0x61570,0x6160f),
                                   (0x585e0,0x5861b),(0x59cf0,0x59d14)]),
-    ('native_weapon_sway.c', [(0x1c4400,0x1c4a4b),(0x153c20,0x153c57),(0x12010,0x12017),
+    ('native_weapon_sway.c', [(0xd613d,0xd625d),(0x1c4400,0x1c4a4b),(0x153c20,0x153c57),(0x12010,0x12017),
                               (0x1c3659,0x1c3681),(0x1c37cf,0x1c37ea)]),
     ('native_strip_distortion.c', [(0xf9b10,0xf9caf),(0x153c20,0x153c57),(0x12010,0x12017)]),
     ('native_screen_distortion.c', [(0xf9700,0xf9b0b),(0xf8aa0,0xf8ac4),
@@ -676,11 +679,19 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c'):
+        if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c','native_turret_entry.c'):
             import struct
             addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                                 for address in addresses)
+        if harness_name=='native_interaction_hints.c':
+            import struct
+            constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                                 for a in (0x475cac,0x4760cc,0x475c78,0x47dac0,0x4760d0))
+        if harness_name=='native_turret_entry.c':
+            import struct
+            constants+='\n'+'\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
+                                      for a in (0x47d5c8,0x478638,0x475c8c,0x475cb4,0x475c88))
         if harness_name=='native_interaction_input.c':
             import struct
             constants+='\n'+'\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};'
@@ -763,9 +774,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         if harness_name=='native_weapon_sway.c':
             # Original visual consumers through the model C8 stores. Return
             # at their outgoing joins before unrelated translation/copy work.
-            for address,expected in ((0x1c3680,'8b4554'),(0x1c37e9,'8b4558')):
+            for address,expected in ((0x1c3680,'8b4554'),(0x1c37e9,'8b4558'),(0xd625c,'e8')):
                 end=config.va_to_file_offset(address)
-                assert image[end:end+3].hex()==expected
+                assert image[end:end+len(bytes.fromhex(expected))].hex()==expected
                 image=image[:end]+b'\xc3'+image[end+1:]
         if harness_name=='native_player_dispatch.c':
             # Execute all three original hit-displacement additions/stores.
@@ -925,7 +936,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         vars(config).update(previous)
     harness=(repo_file(ROOT, 'tests', harness_name)).read_text()
     harness=harness.replace('/* STICK_INPUT */', f'#include "{(ROOT / "src/input/pc_input.c").as_posix()}"')
-    if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c'):
+    if harness_name in ('native_analog_input.c','native_reload_input.c','native_interaction_input.c','native_turret_entry.c'):
         wrapper=(ROOT/'src/gameplay/pc_native_timing_guest.inc').read_text(encoding='utf-8')
         start=wrapper.index('static void pc_native_input_guest(')
         end=wrapper.index('static float pc_native_save_animation_delta(',start)
@@ -1036,6 +1047,22 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 mutated=mutated.replace(needle,'RECOMP_F32_MUL_AT(0xFFFFFFFF,')
             with pytest.raises(AssertionError,match='forced_surface'):
                 compile_and_run(tmp_path,mutated)
+    if harness_name=='native_interaction_hints.c':
+        for needle,replacement in (
+            ('RECOMP_FAST_ENTRY(0x00140630u)','RECOMP_FAST_ENTRY(0xFFFFFFFFu)'),
+            ('RECOMP_F32_MUL_AT(0x140652,','RECOMP_F32_MUL_AT(0xFFFFFFFF,'),
+        ):
+            assert source.count(needle)==1
+            with pytest.raises(AssertionError,match='gameplay hint remains faded'):
+                compile_and_run(tmp_path,source.replace(needle,replacement))
+        print(output)
+
+    if harness_name=='native_turret_entry.c':
+        needle='RECOMP_LOAD_GLOBAL_U32(0xB4E5E, 0x4E7944, MEM32(0x4E7944))'
+        assert source.count(needle)==1
+        with pytest.raises(AssertionError,match='turret entry edge lost'):
+            compile_and_run(tmp_path,source.replace(needle,'MEM32(0x4E7944)'))
+        print(output)
     if harness_name=='native_interaction_input.c':
         needle='RECOMP_LOAD_GLOBAL_U32(0xA0DE8, 0x4E7944, MEM32(0x4E7944))'
         assert source.count(needle)==1

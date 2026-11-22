@@ -1,5 +1,5 @@
 from project_paths import source_file as repo_file
-"""Compile the production Quit to Desktop guest adapter on either host."""
+"""Compile shared menu/navigation adapters on either host."""
 
 
 import os
@@ -14,8 +14,9 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize("native", [False, True])
-@pytest.mark.parametrize("fixture", ['quit_menu', 'story_menu', 'story_lobby', 'story_drop_state', 'story_browser', 'multiplayer_exit'])
+@pytest.mark.parametrize("fixture,native", [
+    (fixture,native) for fixture in ('pause_settings','main_quit','story_menu','story_lobby','story_drop_state','story_browser','multiplayer_exit')
+    for native in (False,True)] + [('story_browser','network')])
 def test_quit_menu(tmp_path, native, fixture):
     compiler, env = native_compiler(tmp_path)
     source = repo_file(ROOT, 'tests', fixture+'.c')
@@ -28,6 +29,8 @@ def test_quit_menu(tmp_path, native, fixture):
                 '-I' + str(tmp_path), '-I' + str(ROOT / 'src'), str(source), '-lm', '-o', str(exe)]
     if native:
         args.insert(1, "/DTSFP_NATIVE_DISPLAY" if os.name == "nt" else "-DTSFP_NATIVE_DISPLAY")
+    if native=='network':
+        args.insert(1, "/DTSFP_NATIVE_NETWORK" if os.name == "nt" else "-DTSFP_NATIVE_NETWORK")
     result = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
@@ -57,6 +60,7 @@ def test_story_original_us_entry_contract():
     call=read(0x5feb7,5)
     assert call[0]==0xe8 and 0x5febc+struct.unpack_from('<i',call,1)[0]==0x5fdc0
     assert read(0x5fde4,4)==bytes.fromhex('f6412c04')
+    assert read(0x123fb, 4) == b'\xcc'*4  # Main-menu desktop-exit callbacks.
     # Native first-person models use synthetic viewport rooms and a local-model
     # flag; these must never enter persistent Story world-prop identity.
     assert read(0x1be1a9,11)==bytes.fromhex('8b4e5405ca000000894134')

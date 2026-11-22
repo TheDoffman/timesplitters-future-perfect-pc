@@ -11,7 +11,7 @@ static int window(const tsfp_guest_mm *m) {
 uint32_t tsfp_guest_mm_allocate(const tsfp_guest_mm *m,enum tsfp_guest_mm_kind kind,uint32_t bytes) {
     uint32_t base,alignment;
     if(!m)return 0;
-    if(kind==TSFP_MM_CONTIGUOUS)return tsfp_physical_allocate(m->vm.allocations,bytes,4096);
+    if(kind==TSFP_MM_CONTIGUOUS)return tsfp_physical_allocate_high_range(m->vm.allocations,bytes,4096,0,UINT32_MAX);
     if(kind!=TSFP_MM_SYSTEM && kind!=TSFP_MM_DEBUG && kind!=TSFP_MM_IO && kind!=TSFP_MM_STACK)return 0;
     if(!bytes && (kind==TSFP_MM_SYSTEM || kind==TSFP_MM_DEBUG))return 0;
     alignment=(kind==TSFP_MM_SYSTEM || kind==TSFP_MM_IO)?4096:16;
@@ -37,6 +37,11 @@ uint32_t tsfp_guest_mm_contiguous_ex(const tsfp_guest_mm *m,uint32_t bytes,
         return tsfp_physical_allocate_at(m->vm.allocations,m->physical_base+low,bytes);
     }
     ceiling=high<m->physical_size?high:m->physical_size-1;
+    /* Unconstrained buffers must not consume all addresses usable by later
+     * 24-bit DMA reports. Constrained/fixed requests retain their bounds. */
+    if(!low && high>=m->physical_size-1)
+        return tsfp_physical_allocate_high_range(m->vm.allocations,bytes,alignment,
+            m->physical_base,m->physical_base+ceiling);
     return tsfp_physical_allocate_range(m->vm.allocations,bytes,alignment,
         m->physical_base+low,m->physical_base+ceiling);
 }

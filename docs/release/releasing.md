@@ -1,20 +1,27 @@
 # Game releases: Stable and named previews
 
+The next Stable release is **0.7.0**, bringing native online multiplayer menus,
+V-Sync, crosshair sizing and expanded settings to Windows, Apple Silicon Mac and
+Linux. These features justify a minor bump from Stable0.6.2. Publish independent
+launcher **1.7.0** first through the official three-host workflow, verify its
+fifteen assets, then prepare the game draft with all nine platform assets.
+The earlier integration-only instruction to keep VERSION0.6.2 is superseded by
+the user's new release request (2026-11-19). The accidental0.6.3-sun-fix.1 source
+value was not a Stable publication.
+
 [Discord release notifications](discord-announcements.md): Stable and previews post to release-updates; announcements is for team posts.
 
 [Back to the README](../../README.md) | [Launcher releases](launcher-releases.md)
 
-Game and launcher versions are independent. The next Stable game source version
-is **0.6.0**, including the audio overhaul, Modern control presets, independent
-controller deadzones, high-FPS timing and rendering fixes, persistent texture
-preferences, responsive Online startup and main-menu update notices. It bundles
-launcher **1.6.0**, which must be published through its workflow first. These
-new features justify a minor version bump. Build Windows, Apple Silicon
-Mac and Linux packages from the same clean source and verify all nine assets
-before publication. Version preparation does not establish full campaign or
-platform validation. Historical
-alpha and `-preview.N` releases remain available in Game versions; do not
-relabel their assets or offer them as Beta updates.
+Game and launcher versions are independent. Windows packaging and native
+Mac/Linux packages require the same clean source revision. The local publisher
+supplies Windows assets; matching native assets and host acceptance remain
+separate work. Keep issues open until the release containing their fixes is live.
+
+Historical Online multiplayer preview **0.7.0-beta.1** was published for all three
+platforms in **Preview -> Beta**. Preserve that immutable release; it is not the
+new Stable0.7.0. See [beta scope](online-beta.md), current
+[player instructions](../players/multiplayer.md) and [evidence](../project/STATUS.md).
 
 ## Versions and channels
 

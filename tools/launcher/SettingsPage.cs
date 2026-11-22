@@ -25,6 +25,33 @@ using System.Windows.Media;
 
 namespace TimeSplitters.Launcher
 {
+    // One layout policy shared by WPF and Avalonia; fields stay mounted while cards collapse.
+    public sealed class SettingsTiles : Panel
+    {
+        public int ColumnCount {get;private set;}
+        public SettingsTiles(string name){Name=name;}
+        public void Reflow(){InvalidateMeasure();}
+        Size LayoutCards(double width,bool measure)
+        {
+            if(Double.IsInfinity(width))width=860;
+            width=Math.Max(0,width);ColumnCount=width>=720&&Children.Count>1?2:1;
+            double tile=Math.Max(0,(width-(ColumnCount-1)*12)/ColumnCount);double[] bottom=new double[ColumnCount];int localColumn=0;
+            foreach(UIElement child in Children) {
+                var border=child as Border;bool bindings=border!=null&&Object.Equals(border.Tag,"bindings");bool wide=child is TextBlock||(bindings&&border.Child is Expander&&((Expander)border.Child).IsExpanded);
+                int column=ColumnCount==2&&bottom[1]<bottom[0]?1:0;
+                if(border!=null&&Object.Equals(border.Tag,"local"))localColumn=column;
+                if(bindings&&!wide)column=localColumn;
+                double y=wide?bottom.Max():bottom[column],w=wide?width:tile;
+                if(measure)child.Measure(new Size(w,Double.PositiveInfinity));
+                else child.Arrange(new Rect(wide?0:column*(tile+12),y,w,child.DesiredSize.Height));
+                if(wide)for(int i=0;i<ColumnCount;i++)bottom[i]=y+child.DesiredSize.Height;
+                else bottom[column]=y+child.DesiredSize.Height;
+            }
+            return new Size(width,bottom.Max());
+        }
+        protected override Size MeasureOverride(Size availableSize){return LayoutCards(availableSize.Width,true);}
+        protected override Size ArrangeOverride(Size finalSize){LayoutCards(finalSize.Width,false);return finalSize;}
+    }
     public sealed class SettingsPage
     {
         public readonly Grid View;
@@ -35,6 +62,7 @@ namespace TimeSplitters.Launcher
         public event Action Saved, Cancelled;
         public event Action<bool> TextureBusyChanged;
         readonly bool texturePreview;
+        readonly TextureUpdateCheck textureUpdatesState;
         TextBlock textureStatus, textureDetails;
         Border textureBadge;
         Button textureCheck, textureInstall, textureVerify;
@@ -47,12 +75,20 @@ namespace TimeSplitters.Launcher
         readonly TextBlock status;
         readonly Button save;
         string savedDraft;
+        Slider PercentSlider(StackPanel section,string label,int minimum,int maximum,int value,string name)
+        {
+            var row=new DockPanel();var caption=Text(value+"%",14);caption.MinWidth=48;caption.TextAlignment=TextAlignment.Right;caption.VerticalAlignment=VerticalAlignment.Center;caption.Margin=new Thickness(0);
+            DockPanel.SetDock(caption,Dock.Right);row.Children.Add(caption);
+            var slider=new Slider {Name=name,Minimum=minimum,Maximum=maximum,Value=value,TickFrequency=5,IsSnapToTickEnabled=true,SmallChange=5,LargeChange=10,MinWidth=100,MaxWidth=360,Margin=new Thickness(0,6,12,6)};
+            AutomationProperties.SetName(slider,label+" in percent");Ui.ValueChanged(slider,()=>caption.Text=((int)Math.Round(slider.Value))+"%");row.Children.Add(slider);Field(section,label,row);return slider;
+        }
         readonly Slider fov;
+        readonly Slider crosshairSize;
         readonly Slider[] audioVolumes=new Slider[6];
         readonly CheckBox dialogueFocus;
         readonly ComboBox impactRange;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
+        readonly CheckBox enabled, invert, fullscreen, vrr, vsync, fps, skipSplashes, developerTools, discordEnabled, enhancedTextures, ambientOcclusion, shaderCache;
         readonly ComboBox device, resolution, aspect, scale, filtering, frameRate, languagePack, msaa, edgeSmoothing, supersampling;
         readonly TextBlock performanceAdvice,developerToolsShortcut;
         readonly StackPanel consoleScalePanel;
@@ -64,32 +100,49 @@ namespace TimeSplitters.Launcher
         static readonly Brush Accent = ColorBrush(134,205,255);
         static readonly Brush Panel = ColorBrush(21,36,53);
         static TextBlock Text(string text, int size) { var block=PageTheme.Text(text,size);block.Margin=new Thickness(0,0,0,6);return block; }
-        static Button Button(string text) { return new Button { Content=text, Margin=new Thickness(0,0,8,0) }; }
-        static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, FontSize=13, Margin=new Thickness(0,6,20,6) }; }
-        static TextBox Entry(string text) { return new TextBox { Text=text, MinWidth=90 }; }
+        static Button Button(string text) { return new Button { Content=text, MinHeight=30,FontSize=12,Padding=new Thickness(10,5,10,5),Margin=new Thickness(0,0,8,0) }; }
+        static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, FontSize=12, Margin=new Thickness(0,4,12,4) }; }
+        static TextBox Entry(string text) { return new TextBox { Text=text, MinWidth=90,MinHeight=30,Padding=new Thickness(8,4,8,4) }; }
         static ComboBox Choices(string[] choices, string selected)
         {
-            var combo = new ComboBox();
+            var combo = new ComboBox {MinHeight=30,FontSize=12,Padding=new Thickness(8,4,8,4)};
             foreach (string choice in choices) combo.Items.Add(choice);
             if (!combo.Items.Contains(selected)) combo.Items.Add(selected);
             combo.SelectedItem=selected; return combo;
         }
+        static StackPanel Section(Panel parent,string title,string description)
+        {
+            bool expanded=title!="Local multiplayer"&&title!="Key bindings"&&title!="Enhanced textures"&&title!="Enhanced Audio"&&title!="Developer Tools";
+            var body=new StackPanel {Margin=new Thickness(0,8,0,0)};
+            var header=new StackPanel();var caption=Text(title,14);caption.FontWeight=FontWeights.SemiBold;caption.Margin=new Thickness(0);header.Children.Add(caption);
+            if(description.Length>0){string shortDescription=title=="Input & mouse"?"Choose your input device and camera response.":title=="Controller deadzones"?"Adjust movement and aim for each player.":title=="Local multiplayer"?"Assign devices to players 2–4.":title=="Key bindings"?"Click a slot, then press a key or mouse button.":title=="Volume"?"Balance game audio; 100% keeps the original mix.":title=="Listening options"?"Clearer speech and softer peaks.":description;
+                var summary=Text(shortDescription,11);summary.Foreground=Muted;summary.TextWrapping=TextWrapping.NoWrap;summary.TextTrimming=TextTrimming.CharacterEllipsis;summary.Margin=new Thickness(0,3,0,0);Ui.Tip(summary,description);header.Children.Add(summary);}
+            var expander=new Expander {Header=header,Content=body,IsExpanded=expanded,Foreground=Ink,HorizontalContentAlignment=HorizontalAlignment.Stretch,
+                Name="Settings"+String.Concat(title.Where(Char.IsLetterOrDigit))+"Section"};
+            AutomationProperties.SetName(expander,title);
+            var card=PageTheme.Card(expander);card.Padding=new Thickness(12);card.VerticalAlignment=VerticalAlignment.Top;card.Margin=new Thickness(0,0,0,12);
+            if(title=="Key bindings")card.Tag="bindings";
+            if(title=="Local multiplayer")card.Tag="local";
+            parent.Children.Add(card);return body;
+        }
         static void Field(Panel parent, string label, UIElement input)
         {
-            var stack=new StackPanel { Margin=new Thickness(0,4,0,10) };var caption=Text(label,12);caption.Foreground=Muted;caption.MinHeight=20;caption.Margin=new Thickness(0,0,0,5);
-            stack.Children.Add(caption);stack.Children.Add(input);parent.Children.Add(stack);
-            AutomationProperties.SetLabeledBy(input,caption);
+            var row=new Grid {Margin=new Thickness(0,2,0,6)};row.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(0.40,GridUnitType.Star)});row.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(0.60,GridUnitType.Star)});
+            var caption=Text(label,12);caption.Foreground=Muted;caption.VerticalAlignment=VerticalAlignment.Center;caption.Margin=new Thickness(0,0,10,0);
+            var combo=input as ComboBox;if(combo!=null){combo.MinHeight=30;combo.FontSize=12;}
+            row.Children.Add(caption);Grid.SetColumn(input,1);row.Children.Add(input);parent.Children.Add(row);AutomationProperties.SetLabeledBy(input,caption);
         }
         static Grid Columns(Panel parent)
         {
-            var grid=new Grid();grid.ColumnDefinitions.Add(new ColumnDefinition());grid.ColumnDefinitions.Add(new ColumnDefinition());parent.Children.Add(grid);return grid;
+            var grid=new Grid();grid.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});grid.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});parent.Children.Add(grid);return grid;
         }
         static StackPanel Column(Grid grid,int index)
-        { var panel=new StackPanel { Margin=index==0?new Thickness(0,0,10,0):new Thickness(10,0,0,0) };Grid.SetColumn(panel,index);grid.Children.Add(panel);return panel; }
+        {var panel=new StackPanel();Grid.SetRow(panel,index);grid.Children.Add(panel);return panel;}
         static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled, Content=content, Padding=new Thickness(0,0,12,0) }; }
-        public SettingsPage(ResourceDictionary resources, string root, bool preview)
+        public SettingsPage(ResourceDictionary resources, string root, bool preview,TextureUpdateCheck textureUpdatesState=null)
         {
-            this.root=root;texturePreview=preview;
+            this.root=root;texturePreview=preview;this.textureUpdatesState=textureUpdatesState??new TextureUpdateCheck(root);
+            if(textureUpdatesState==null)this.textureUpdatesState.Changed+=()=>Ui.Post(RefreshTextureCheck);
             string inherited = Ui.InheritedSettings(preview);
             model=GameSettings.Load(root, inherited);
             View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
@@ -100,9 +153,11 @@ namespace TimeSplitters.Launcher
             overlay=new Border { Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
             Ui.Show(overlay,false);View.Children.Add(overlay);
             var heading=PageTheme.Header("GAME PREFERENCES","Game settings","Adjust controls, display and performance before your next launch.");
+            heading.Margin=new Thickness(0);
+            foreach(var item in heading.Children){var text=item as TextBlock;if(text!=null&&text.FontSize==28){text.FontSize=24;text.Margin=new Thickness(0,3,0,4);}var rule=item as Border;if(rule!=null)rule.Margin=new Thickness(0,10,0,6);}
             DockPanel.SetDock(heading,Dock.Top);layout.Children.Add(heading);
             var footer=new DockPanel { LastChildFill=true };
-            footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
+            footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,10,0,0),Child=footer };
             DockPanel.SetDock(footerBorder,Dock.Bottom);layout.Children.Add(footerBorder);
             var actions=new StackPanel { Orientation=Orientation.Horizontal, VerticalAlignment=VerticalAlignment.Center };
             DockPanel.SetDock(actions,Dock.Right);footer.Children.Add(actions);
@@ -110,13 +165,13 @@ namespace TimeSplitters.Launcher
             save=Button("Save settings"); save.Name="SettingsSaveButton";save.Margin=new Thickness(0);PageTheme.Primary(save);save.Click+=(s,e)=>Save();actions.Children.Add(save);
             status=Text("Home keeps your draft. Save when you’re ready.",12);status.Foreground=Muted;status.Margin=new Thickness(0,0,16,0);status.VerticalAlignment=VerticalAlignment.Center;footer.Children.Add(status);
             tabs=new TabControl { Background=Brushes.Transparent,BorderThickness=new Thickness(0), Margin=new Thickness(0,8,0,12) };layout.Children.Add(tabs);
-            var controls=new StackPanel();
-            controls.Children.Add(Text("In-game settings tabs: Left / Right arrows or controller LB / RB switch tabs. A / D changes option values.",12));
-            var input=PageTheme.Section(controls,"Input & mouse","Choose your input device and adjust how the camera responds.");
+            var controls=new SettingsTiles("ControlsCards");
+
+            var input=Section(controls,"Input & mouse","Choose your input device and adjust how the camera responds.");
             var inputColumns=Columns(input);var inputLeft=Column(inputColumns,0);var inputRight=Column(inputColumns,1);
             var deviceLabels=new[]{"Keyboard & mouse","Controller 1","Controller 2","Controller 3","Controller 4","Automatic"};
             device=Choices(deviceLabels,deviceLabels[Array.IndexOf(Devices,model.Device.Replace("xinput:","gamepad:"))]);Field(inputLeft,"Player 1 input device",device);
-            var local=PageTheme.Section(controls,"Local multiplayer","Assign one device to each player. Keyboard & mouse belongs to Player 1. Choose the player count in the game's multiplayer menu.");
+            var local=Section(controls,"Local multiplayer","Assign one device to each player. Keyboard & mouse belongs to Player 1. Choose the player count in the game's multiplayer menu.");
             local.Children.Add(Text("At the profile screen, additional controllers join in the order they press Start. No device setup is required to join.",12));
             for(int player=1;player<4;player++) {
                 var choices=Choices(deviceLabels.Skip(1).ToArray(),deviceLabels[Array.IndexOf(Devices,model.PlayerDevice(player))]);
@@ -126,28 +181,37 @@ namespace TimeSplitters.Launcher
             }
             sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture));sensitivity.Name="MouseSensitivity";Field(inputRight,"Mouse sensitivity · 0.001–10",sensitivity);
             var mouse=new WrapPanel();enabled=Check("Mouse look",model.MouseEnabled);invert=Check("Invert vertical look",model.InvertY);mouse.Children.Add(enabled);mouse.Children.Add(invert);input.Children.Add(mouse);
-            var presets=PageTheme.Section(controls,"Control presets","Presets keep your custom bindings. Select Custom to restore them. Save settings to apply.");
-            keyboardPreset=Choices(new[]{"Custom","Modern PC"},model.KeyboardPreset==1?"Modern PC":"Custom");keyboardPreset.Name="KeyboardPreset";
-            Field(presets,"Keyboard & mouse preset",keyboardPreset);
-            presets.Children.Add(Text("Modern PC: E Use / F / Mouse 4 Melee / B Weapon mode / V Grenade type / Q / Wheel up Previous weapon / Wheel down Next weapon",12));
+            var stickSettings=Section(controls,"Controller deadzones","Tune movement and aiming independently. Lower values respond sooner; increase them if a stick drifts. Game changes apply immediately; launcher changes apply on the next launch.");
             for(int player=0;player<4;player++) {
-                int index=player;var choice=Choices(new[]{"Custom","Modern Controller"},model.ControllerPreset(player)==1?"Modern Controller":"Custom");
-                choice.Name="ControllerPreset"+(player+1);controllerPresets[player]=choice;Field(presets,"Player "+(player+1)+" controller preset",choice);
-                choice.SelectionChanged+=(s,e)=>{model.SetControllerPreset(index,choice.SelectedIndex);RefreshSaveState();};
+                var playerSettings=new StackPanel();
+                var playerSection=PageTheme.Details(stickSettings,"Player "+(player+1),playerSettings);
+                playerSection.Name="Player"+(player+1)+"DeadzoneSection";
+                playerSection.IsExpanded=player==0;
+                for(int axis=0;axis<2;axis++) {
+                    int index=player;bool aim=axis==1;
+                    int percent=(model.ControllerDeadzone(player,aim)*100+16383)/32767;
+                    string name="Player"+(player+1)+(aim?"AimDeadzone":"MovementDeadzone");
+                    string label="Player "+(player+1)+(aim?" aim":" movement");
+                    var row=new DockPanel();
+                    var value=Text(percent.ToString(CultureInfo.InvariantCulture)+"%",13);
+                    value.Name=name+"Value";value.Width=48;value.TextAlignment=TextAlignment.Right;
+                    value.VerticalAlignment=VerticalAlignment.Center;value.Margin=new Thickness(0);
+                    DockPanel.SetDock(value,Dock.Right);row.Children.Add(value);
+                    var slider=new Slider {Name=name,Minimum=0,Maximum=100,Value=percent,
+                        TickFrequency=1,IsSnapToTickEnabled=true,SmallChange=1,LargeChange=10,
+                        MinWidth=100,Margin=new Thickness(0,4,12,4),VerticalAlignment=VerticalAlignment.Center};
+                    AutomationProperties.SetName(slider,label+" deadzone percent");
+                    controllerDeadzones[player*2+axis]=slider;row.Children.Add(slider);
+                    Field(playerSettings,aim?"Aiming":"Movement",row);
+                    Ui.ValueChanged(slider,()=>{
+                        int selected=(int)Math.Round(slider.Value);
+                        value.Text=selected.ToString(CultureInfo.InvariantCulture)+"%";
+                        model.SetControllerDeadzone(index,aim,(selected*32767+50)/100);RefreshSaveState();
+                    });
+                }
             }
-            presets.Children.Add(Text("Modern Controller: LT Aim / RT Fire / RB Grenade / RS Melee / B Crouch / X Reload / A Use / Y Next weapon / LB Weapon mode. Menu controls stay the same.",12));
-            var stickSettings=PageTheme.Section(controls,"Controller deadzones","Tune movement and aiming independently. Lower values respond sooner; increase them if a stick drifts. Game changes apply immediately; launcher changes apply on the next launch.");
-            for(int player=0;player<4;player++)for(int axis=0;axis<2;axis++) {
-                int index=player;bool aim=axis==1;
-                int percent=(model.ControllerDeadzone(player,aim)*100+16383)/32767;
-                var labels=Enumerable.Range(0,101).Select(x=>x+"%").ToArray();
-                var choice=Choices(labels,labels[percent]);
-                choice.Name="Player"+(player+1)+(aim?"AimDeadzone":"MovementDeadzone");
-                controllerDeadzones[player*2+axis]=choice;
-                Field(stickSettings,"Player "+(player+1)+(aim?" aim":" movement"),choice);
-                choice.SelectionChanged+=(s,e)=>{if(choice.SelectedIndex>=0)model.SetControllerDeadzone(index,aim,(choice.SelectedIndex*32767+50)/100);RefreshSaveState();};
-            }
-            var bindings=PageTheme.Section(controls,"Key bindings","Select a slot, then press a key or mouse button. Mouse wheel is supported.");
+            var localCard=controls.Children[1];controls.Children.RemoveAt(1);controls.Children.Add(localCard);
+            var bindings=Section(controls,"Key bindings","Select a slot, then press a key or mouse button. Mouse wheel is supported.");
             var bindingHead=new Grid { Margin=new Thickness(0,0,0,6) };bindingHead.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(200)});
             var actionHeading=PageTheme.Text("ACTION",11,"#B4C7D8");actionHeading.Margin=new Thickness(4,6,0,6);bindingHead.Children.Add(actionHeading);
             for(int slot=0;slot<GameSettings.BindingSlots;slot++){bindingHead.ColumnDefinitions.Add(new ColumnDefinition());var label=PageTheme.Text("SLOT "+(slot+1),11,"#B4C7D8");label.HorizontalAlignment=HorizontalAlignment.Center;Grid.SetColumn(label,slot+1);bindingHead.Children.Add(label);}bindings.Children.Add(bindingHead);
@@ -165,11 +229,11 @@ namespace TimeSplitters.Launcher
                 bindings.Children.Add(row);
             }
             var reset=Button("Restore default controls");reset.Margin=new Thickness(0,16,0,0);reset.HorizontalAlignment=HorizontalAlignment.Left;
-            reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; keyboardPreset.SelectedIndex=0;RefreshBindings(); });
-            bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
-            var graphics=new StackPanel();
+            reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
+            bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Controls",Content=Scroll(controls) });
+            var graphics=new SettingsTiles("GraphicsCards");
             var texturePanel=new StackPanel();
-            var textures=PageTheme.Section(texturePanel,"Enhanced textures","Optional pack. Original textures are always available.");
+            var textures=Section(texturePanel,"Enhanced textures","Optional pack. Original textures are always available.");
             var textureBadges=new WrapPanel {Margin=new Thickness(0,0,0,10)};textures.Children.Add(textureBadges);
             var betaBadge=PageTheme.Badge("Beta",StatusTone.Warning);betaBadge.Margin=new Thickness(0,0,8,0);textureBadges.Children.Add(betaBadge);
             textureBadge=PageTheme.Badge("Not checked",StatusTone.Neutral);textureBadge.Name="TextureHealthBadge";textureBadges.Children.Add(textureBadge);
@@ -180,13 +244,13 @@ namespace TimeSplitters.Launcher
             textureStatus=Text(TexturePack.Summary(root),12);textureStatus.Name="TexturePackStatus";textures.Children.Add(textureStatus);
             textureDetails=Text("",12);textureDetails.Name="TexturePackDetails";textures.Children.Add(textureDetails);UpdateTextureDetails();
             Ui.CheckedChanged(enhancedTextures,UpdateTextureDetails);
-            textureUpdates=Check("Check for texture updates when opening settings",TextureDownload.OptedIn(root));textureUpdates.Name="TextureUpdateChecks";
-            textureUpdates.Click+=(s,e)=> {if(texturePreview)return;try{TextureDownload.SetOptedIn(root,textureUpdates.IsChecked==true);}catch(Exception ex){textureStatus.Text=ex.Message;}};
+            textureUpdates=Check("Check for texture updates when the launcher opens",TextureDownload.OptedIn(root));textureUpdates.Name="TextureUpdateChecks";
+            textureUpdates.Click+=async(s,e)=> {if(texturePreview)return;try{TextureDownload.SetOptedIn(root,textureUpdates.IsChecked==true);if(textureUpdates.IsChecked==true)await this.textureUpdatesState.StartIfOptedIn();}catch(Exception ex){textureStatus.Text=ex.Message;}};
 
             var textureActions=new WrapPanel();textures.Children.Add(textureActions);
-            textureCheck=Button("Check texture downloads");textureCheck.Name="CheckTexturePack";textureActions.Children.Add(textureCheck);
-            textureInstall=Button("Download / update textures");textureInstall.Name="DownloadTexturePack";textureInstall.IsEnabled=false;textureActions.Children.Add(textureInstall);
-            textureVerify=Button("Verify textures");textureVerify.Name="VerifyTexturePack";textureActions.Children.Add(textureVerify);
+            textureCheck=Button("Check texture downloads");textureCheck.Name="CheckTexturePack";textureCheck.Margin=new Thickness(0,0,6,6);textureActions.Children.Add(textureCheck);
+            textureInstall=Button("Download / update textures");textureInstall.Name="DownloadTexturePack";textureInstall.IsEnabled=false;textureInstall.Margin=new Thickness(0,0,6,6);textureActions.Children.Add(textureInstall);
+            textureVerify=Button("Verify textures");textureVerify.Name="VerifyTexturePack";textureVerify.Margin=new Thickness(0,0,6,6);textureActions.Children.Add(textureVerify);
             textureCheck.Click+=async(s,e)=>await CheckTextureUpdates();
             textureVerify.Click+=async(s,e)=>await VerifyTextures();
             textureInstall.Click+=(s,e)=> {
@@ -196,7 +260,7 @@ namespace TimeSplitters.Launcher
             PageTheme.Details(textures,"Texture help & update options",textureUpdates,
                 Text("Save the Enhanced toggle for your next launch. Downloads and update checks apply immediately.",12),
                 Text("Missing replacements use original textures. F10 switches Classic/Enhanced for the current session.",12)).Name="TextureHelpDetails";
-            var display=PageTheme.Section(graphics,"Display","Output size for the game. Your desktop stays unchanged.");
+            var display=Section(graphics,"Display","Output size for the game. Your desktop stays unchanged.");
             var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height) || (m.Automatic && model.Width==1 && model.Height==1)).ToList();
             aspect=new ComboBox { Name="AspectRatio" };
@@ -239,17 +303,17 @@ namespace TimeSplitters.Launcher
             };
             var fieldOfView=new DockPanel { HorizontalAlignment=HorizontalAlignment.Stretch };
             var fovValue=Text(model.VerticalFov.ToString(CultureInfo.InvariantCulture)+"°",14); fovValue.Name="VerticalFovValue";
-            fovValue.MinWidth=48; fovValue.TextAlignment=TextAlignment.Right;
+            fovValue.MinWidth=48; fovValue.TextAlignment=TextAlignment.Right;fovValue.VerticalAlignment=VerticalAlignment.Center;fovValue.Margin=new Thickness(0);
             DockPanel.SetDock(fovValue,Dock.Right); fieldOfView.Children.Add(fovValue);
             fov=new Slider { Name="VerticalFovSlider", Minimum=GameSettings.FovMin, Maximum=GameSettings.FovMax,
                 Value=model.VerticalFov, TickFrequency=1, IsSnapToTickEnabled=true, SmallChange=1, LargeChange=5,
-                MinWidth=140, MaxWidth=360, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
+                MinWidth=100, MaxWidth=360, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
             AutomationProperties.SetName(fov,"Vertical field of view in degrees");
             Ui.ValueChanged(fov,()=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°");
             fov.IsEnabled=model.CanAdjustFov;
             fieldOfView.Children.Add(fov);
-            var viewHud=new StackPanel();
-            var camera=PageTheme.Section(viewHud,"Camera","");
+            var viewHud=new SettingsTiles("ViewHudCards");
+            var camera=Section(viewHud,"Camera","");
             var cameraLeft=camera;
             Field(cameraLeft,"Vertical FOV · 40–100°",fieldOfView);
             fullscreen=Check("Fullscreen",model.Fullscreen);fullscreen.Name="BorderlessFullscreen";Ui.Tip(fullscreen,"Fill the current monitor using borderless fullscreen. Turn off for a window. Save applies this choice on the next launch; the in-game Video Options can change it while playing.");Field(displayLeft,"Window mode",fullscreen);
@@ -259,13 +323,13 @@ namespace TimeSplitters.Launcher
             cameraLeft.Children.Add(resetFov);
             if(!model.CanAdjustFov) camera.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
             var fovHint=Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative.",12);fovHint.Foreground=Muted;fovHint.Margin=new Thickness(0,10,0,4);PageTheme.Details(camera,"About field of view",fovHint);
-            var timing=PageTheme.Section(graphics,"Frame rate","Applies after saving and restarting the game.");
+            var timing=Section(graphics,"Frame rate","Applies after saving and restarting the game.");
             frameRate=Choices(GameSettings.NativeFrameRateLabels,GameSettings.NativeFrameRateLabels[Array.IndexOf(GameSettings.NativeFrameRates,model.NativeFps)]);
             frameRate.Name="NativeFrameRate";Field(timing,"Frame-rate target",frameRate);
             var betaNote=Text("Beta: high refresh may affect Arcade movement or firing. Use 60 FPS if affected.",12);
             betaNote.Name="NativeFrameRateBetaNote";timing.Children.Add(betaNote);
             PageTheme.Details(timing,"High-refresh requirements",Text("120 / 180 / 240 FPS require a compatible game build and use native high refresh without interpolation. Older releases cannot enable it. Your desktop refresh rate stays unchanged.",12));
-            var quality=PageTheme.Section(graphics,"Quality & performance","");
+            var quality=Section(graphics,"Quality & performance","");
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             var advanced=new StackPanel();
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";consoleScalePanel=new StackPanel();Field(consoleScalePanel,"Console render scale",scale);
@@ -283,6 +347,7 @@ namespace TimeSplitters.Launcher
             Ui.Tip(ambientOcclusion,"Half-resolution contact shadows. Can be combined with MSAA and post-process anti-aliasing.");qualityLeft.Children.Add(ambientOcclusion);
             shaderCache=Check("Shader cache",model.ShaderCache);shaderCache.Name="ShaderCache";
             Ui.Tip(shaderCache,"Reuses compiled shaders between launches to reduce compilation stalls.");advanced.Children.Add(shaderCache);
+            vsync=Check("V-Sync",model.VSync);vsync.Name="VSync";Ui.Tip(vsync,"Synchronizes presentation with the display to reduce tearing. May increase input latency and limit FPS to the display refresh rate. Overrides the unsynchronized VRR path while on. Save applies on the next launch; in-game Apply works immediately.");Field(displayLeft,"Synchronization",vsync);
             vrr=Check("Variable refresh rate (fullscreen)",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("FPS / Ping",model.ShowCounter);fps.Name="FpsPingCounter";Ui.Tip(fps,"Shows FPS and, during online play, network ping in milliseconds. Also available in the in-game Video Options.");
             var clearCache=Button("Clear shader cache");clearCache.Name="ClearShaderCache";
             clearCache.Click+=(sender,args)=>{try { int count=model.ClearShaderCache();status.Text="Shader cache cleared ("+count+" files)."; } catch(Exception ex) {status.Text=ex.Message;}};
@@ -291,31 +356,34 @@ namespace TimeSplitters.Launcher
             advanced.Children.Add(Text("Console render scale is available only at Original console resolution. Changes apply after restarting.",12));
             PageTheme.Details(quality,"Advanced",advanced).Name="AdvancedGraphics";
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);quality.Children.Add(qualityToggles);
-            var hud=PageTheme.Section(viewHud,"HUD","");hud.Children.Add(fps);
+            var hud=Section(viewHud,"HUD","");hud.Children.Add(fps);
+            crosshairSize=PercentSlider(hud,"Crosshair Size",25,150,model.CrosshairSize,"CrosshairSizeSlider");
+            crosshairSize.IsEnabled=model.CanAdjustCrosshair;
+            if(!model.CanAdjustCrosshair)hud.Children.Add(Text("Update the game to adjust Crosshair Size.",12));
+            hud.Children.Add(Text("100% keeps the original crosshair size. Scope masks remain unchanged.",12));
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
-            performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
+            performanceAdvice.Foreground=Muted;
             frameRate.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             scale.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             supersampling.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
             UpdatePerformanceAdvice();
-            PageTheme.Details(quality,"Performance tips",Text("Supersampling works at every resolution. Start at 125% or 150%; 200% draws four times the pixels. The legacy console render scale applies only at Original resolution and multiplies with supersampling.",12),
+            PageTheme.Details(quality,"Performance tips",performanceAdvice,Text("Supersampling works at every resolution. Start at 125% or 150%; 200% draws four times the pixels. The legacy console render scale applies only at Original resolution and multiplies with supersampling.",12),
                 Text("VRR also needs monitor and driver support. A fixed-refresh display may tear.",12));
             graphics.Children.Add(texturePanel);
-            var general=new StackPanel();
-            var developer=PageTheme.Section(general,"Developer Tools","Enable the in-game overlay. Its shortcut can be changed in Key bindings.");
+            var general=new SettingsTiles("GeneralCards");
+            var developer=Section(general,"Developer Tools","Enable the in-game overlay. Its shortcut can be changed in Key bindings.");
             developerTools=Check("Enable Developer Tools",model.DeveloperToolsEnabled);developerTools.Name="DeveloperToolsEnabled";developer.Children.Add(developerTools);
             var developerWarning=Text("Warning: Usage of Developer Tools can cause instability and unintended behavior. Use with caution.",12);
             developerWarning.Name="DeveloperToolsWarning";developerWarning.Foreground=PageTheme.Brush("#E8BE78");developerWarning.Margin=new Thickness(0,6,0,4);developer.Children.Add(developerWarning);
             developerToolsShortcut=Text("",12);developerToolsShortcut.Name="DeveloperToolsShortcut";developerToolsShortcut.Foreground=Muted;developer.Children.Add(developerToolsShortcut);
-            var startup=PageTheme.Section(general,"Startup","");
+            var startup=Section(general,"Startup","");
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);skipSplashes.Name="SkipStartupSplashes";startup.Children.Add(skipSplashes);
             var startupHint=Text("Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
-            tabs.Items.Add(new TabItem { Header="Graphics & resolution", Content=Scroll(graphics) });
-            keyboardPreset.SelectionChanged+=(s,e)=>{model.KeyboardPreset=keyboardPreset.SelectedIndex;RefreshBindings();};
+            tabs.Items.Add(new TabItem { Header="Graphics", Content=Scroll(graphics) });
             RefreshBindings();
-            var discord=new StackPanel();
-            var presence=PageTheme.Section(discord,"Discord Rich Presence","Show your game activity on Discord.");
+            var discord=new SettingsTiles("DiscordCards");
+            var presence=Section(discord,"Discord Rich Presence","Show your game activity on Discord.");
             discordEnabled=Check("Enable Discord Rich Presence",model.DiscordEnabled);discordEnabled.Name="DiscordPresenceEnabled";presence.Children.Add(discordEnabled);
             discordId=Entry(model.DiscordApplicationId);discordId.Name="DiscordApplicationId";discordId.MaxLength=20;
             Field(presence,"Application ID",discordId);
@@ -327,31 +395,31 @@ namespace TimeSplitters.Launcher
             presence.Children.Add(Text("Keep Discord open with activity sharing enabled. Applies on your next launch with a compatible game build.",12));
             PageTheme.Details(presence,"Set up Discord activity",discordHelp).Name="DiscordSetupDetails";
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
-            var audioPanel=new StackPanel();
-            var volumes=PageTheme.Section(audioPanel,"Volume","100% preserves the original mix. These controls work with Enhanced Audio on or off.");
+            var audioPanel=new SettingsTiles("AudioCards");
+            var volumes=Section(audioPanel,"Volume","100% preserves the original mix. These controls work with Enhanced Audio on or off.");
             for(int i=0;i<audioVolumes.Length;i++) {
                 var row=new DockPanel {Margin=new Thickness(0,3,0,3)};
-                var caption=Text(GameSettings.AudioVolumeLabels[i],12);caption.Width=90;caption.VerticalAlignment=VerticalAlignment.Center;
+                var caption=Text(GameSettings.AudioVolumeLabels[i],12);caption.Width=90;caption.VerticalAlignment=VerticalAlignment.Center;caption.Margin=new Thickness(0);
                 DockPanel.SetDock(caption,Dock.Left);row.Children.Add(caption);
                 var value=Text(model.AudioVolumes[i].ToString(CultureInfo.InvariantCulture)+"%",13);value.VerticalAlignment=VerticalAlignment.Center;
-                value.Width=48;value.TextAlignment=TextAlignment.Right;DockPanel.SetDock(value,Dock.Right);row.Children.Add(value);
+                value.Width=48;value.TextAlignment=TextAlignment.Right;value.Margin=new Thickness(0);DockPanel.SetDock(value,Dock.Right);row.Children.Add(value);
                 var slider=new Slider {Name="Audio"+GameSettings.AudioVolumeLabels[i]+"Volume",Minimum=0,Maximum=100,
                     Value=model.AudioVolumes[i],TickFrequency=1,IsSnapToTickEnabled=true,SmallChange=1,LargeChange=10,
-                    MinWidth=140,Margin=new Thickness(0,4,12,4),VerticalAlignment=VerticalAlignment.Center};
+                    MinWidth=100,Margin=new Thickness(0,4,12,4),VerticalAlignment=VerticalAlignment.Center};
                 AutomationProperties.SetName(slider,GameSettings.AudioVolumeLabels[i]+" volume percent");
                 Ui.ValueChanged(slider,()=>{value.Text=((int)Math.Round(slider.Value)).ToString(CultureInfo.InvariantCulture)+"%";RefreshSaveState();});
                 AutomationProperties.SetLabeledBy(slider,caption);
                 audioVolumes[i]=slider;row.Children.Add(slider);volumes.Children.Add(row);
             }
-            volumes.Children.Add(Text("Requires an audio-overhaul game build. Dialogue controls separately played speech; speech mixed into music or movies follows that track's volume.",12));
-            var listening=PageTheme.Section(audioPanel,"Listening options","Optional controls for clearer speech and softer peaks. Both default to Original/OFF.");
+            PageTheme.Details(volumes,"About the volume channels",Text("Requires an audio-overhaul game build. Dialogue controls separately played speech; speech mixed into music or movies follows that track's volume.",12));
+            var listening=Section(audioPanel,"Listening options","Optional controls for clearer speech and softer peaks. Both default to Original/OFF.");
             dialogueFocus=Check("Dialogue focus",model.DialogueFocus);dialogueFocus.Name="DialogueFocus";
             listening.Children.Add(dialogueFocus);
-            listening.Children.Add(Text("Lowers music, effects and ambience during separately played dialogue. Muted or paused dialogue does not trigger it.",12));
+            Ui.Tip(dialogueFocus,"Lowers music, effects and ambience during separately played dialogue. Muted or paused dialogue does not trigger it.");
             impactRange=Choices(GameSettings.ImpactRangeLabels,GameSettings.ImpactRangeLabels[model.ImpactRange]);impactRange.Name="ImpactRange";
             Field(listening,"Impact range",impactRange);
-            listening.Children.Add(Text("Reduced and Night soften peaks in effects, ambience and premixed music/movies. Separate dialogue stays unchanged. Original preserves the authored range.",12));
-            var audio=PageTheme.Section(audioPanel,"Enhanced Audio","Optional positional audio and ambience improvements.");
+            PageTheme.Details(listening,"How listening options work",Text("Reduced and Night soften effects, ambience and premixed music/movies. Separate dialogue stays unchanged. Original preserves the authored range.",12));
+            var audio=Section(audioPanel,"Enhanced Audio","Optional positional audio and ambience improvements.");
             enhancedAudio=Check("Enhanced Audio (Beta)",model.EnhancedAudio);enhancedAudio.Name="EnhancedAudio";audio.Children.Add(enhancedAudio);
             spatialAudio=Check("Stereo positioning",model.SpatialAudio);spatialAudio.Name="SpatialAudio";audio.Children.Add(spatialAudio);
             extendedGunfire=Check("Extended gunfire range",model.ExtendedGunfire);extendedGunfire.Name="ExtendedGunfire";audio.Children.Add(extendedGunfire);
@@ -363,7 +431,7 @@ namespace TimeSplitters.Launcher
             Action audioEnabled=()=>{foreach(var child in new[]{spatialAudio,extendedGunfire,environmentalAudio,ambientAudio})child.IsEnabled=enhancedAudio.IsChecked==true;};
             Ui.CheckedChanged(enhancedAudio,audioEnabled);audioEnabled();
             audio.Children.Add(Text("Defaults OFF. Shares the in-game Audio Options preference. Save before launch; you can also switch it live from the game's audio menu.",12));
-            var language=PageTheme.Section(audioPanel,"Game language","Select one complete language pack for your next launch.");
+            var language=Section(audioPanel,"Game language","Select one complete language pack for your next launch.");
             languagePack=Choices(GameSettings.LanguagePackLabels,GameSettings.LanguagePackLabels[Array.IndexOf(GameSettings.LanguagePacks,model.LanguagePack)]);
             languagePack.Name="LanguagePack";Field(language,"Language pack",languagePack);
             var languageHint=Text("Uses the language packs included in your imported game data. The game applies the selected language to voices and text together. Save and restart to apply.",12);
@@ -372,25 +440,27 @@ namespace TimeSplitters.Launcher
             tabs.Items.Add(new TabItem {Header="Audio & language",Content=Scroll(audioPanel)});
             tabs.Items.Add(new TabItem { Header="View & HUD",Content=Scroll(viewHud) });
             tabs.Items.Add(new TabItem { Header="General",Content=Scroll(general) });
+            RefreshTextureCheck();
+            foreach(TabItem tab in tabs.Items){tab.Padding=new Thickness(10,8,10,8);tab.MinHeight=36;}
+            foreach(var cards in new[]{controls,graphics,viewHud,general,discord,audioPanel})cards.Reflow();
             foreach(var entry in new[]{sensitivity,width,height,discordId})Ui.TextChanged(entry,RefreshSaveState);
-            foreach(var check in new[]{enabled,invert,fullscreen,vrr,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,dialogueFocus,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
+            foreach(var check in new[]{enabled,invert,fullscreen,vrr,vsync,fps,skipSplashes,developerTools,discordEnabled,enhancedTextures,enhancedAudio,spatialAudio,extendedGunfire,environmentalAudio,ambientAudio,dialogueFocus,ambientOcclusion,shaderCache})Ui.CheckedChanged(check,RefreshSaveState);
             foreach(var choice in new[]{device,scale,filtering,frameRate,languagePack,msaa,edgeSmoothing,supersampling,impactRange})choice.SelectionChanged+=(s,e)=>RefreshSaveState();
             Ui.ValueChanged(fov,RefreshSaveState);
+            Ui.ValueChanged(crosshairSize,RefreshSaveState);
         }
         readonly ComboBox[] localDevices=new ComboBox[3];
-        readonly ComboBox[] controllerPresets=new ComboBox[4];
-        readonly ComboBox[] controllerDeadzones=new ComboBox[8];
-        readonly ComboBox keyboardPreset;
+        readonly Slider[] controllerDeadzones=new Slider[8];
         string Draft()
         {
             return Json.Encode(new object[]{sensitivity.Text,width.Text,height.Text,discordId.Text,
-                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
+                enabled.IsChecked,invert.IsChecked,fullscreen.IsChecked,vrr.IsChecked,vsync.IsChecked,fps.IsChecked,ambientOcclusion.IsChecked,shaderCache.IsChecked,
                 skipSplashes.IsChecked,developerTools.IsChecked,discordEnabled.IsChecked,enhancedTextures.IsChecked,enhancedAudio.IsChecked,
                 spatialAudio.IsChecked,extendedGunfire.IsChecked,environmentalAudio.IsChecked,ambientAudio.IsChecked,
                 audioVolumes.Select(slider=>(int)Math.Round(slider.Value)).ToArray(),
                 dialogueFocus.IsChecked,impactRange.SelectedIndex,
-                controllerDeadzones.Select(x=>x.SelectedIndex).ToArray(),keyboardPreset.SelectedIndex,controllerPresets.Select(x=>x.SelectedIndex).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
-                (int)Math.Round(fov.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
+                controllerDeadzones.Select(x=>(int)Math.Round(x.Value)).ToArray(),device.SelectedIndex,localDevices.Select(x=>x.SelectedIndex).ToArray(),scale.SelectedIndex,filtering.SelectedIndex,frameRate.SelectedIndex,languagePack.SelectedIndex,msaa.SelectedIndex,edgeSmoothing.SelectedIndex,supersampling.SelectedIndex,
+                (int)Math.Round(fov.Value),(int)Math.Round(crosshairSize.Value),Enumerable.Range(0,GameSettings.Actions.Length).Select(i=>model.Binding(i)).ToArray()});
         }
         void RefreshSaveState()
         {
@@ -400,7 +470,7 @@ namespace TimeSplitters.Launcher
             status.Text=save.IsEnabled?"Unsaved changes. Save to apply on your next launch.":"Settings saved. Changes apply on your next launch.";
         }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
-        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.DisplayBinding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].IsEnabled=model.KeyboardPreset==0;bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } UpdateDeveloperToolsShortcut();RefreshSaveState(); }
+        void RefreshBindings() { for(int i=0;i<GameSettings.Actions.Length;i++) { var keys=model.Binding(i); for(int j=0;j<GameSettings.BindingSlots;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } UpdateDeveloperToolsShortcut();RefreshSaveState(); }
         void UpdateDeveloperToolsShortcut()
         {
             if(developerToolsShortcut==null)return;
@@ -417,41 +487,41 @@ namespace TimeSplitters.Launcher
         }
         async Task VerifyTextures()
         {
-            if(textureBusy)return;if(texturePreview){textureStatus.Text="Preview only. No textures were checked or changed.";return;}
+            if(textureBusy||textureUpdatesState.IsChecking)return;if(texturePreview){textureStatus.Text="Preview only. No textures were checked or changed.";return;}
             await TextureOperation(async token=> {
                 using(var client=new ReleaseClient()) {
                     if(textureAvailable==null)textureAvailable=await TextureDownload.Check(client,token);
                     var result=await Task.Run(()=>TextureDownload.Verify(root,textureAvailable,token),token);
-                    textureDownloadBytes=result.DownloadBytes;textureInstall.IsEnabled=result.DownloadBytes>0;textureStatus.Text=result.Summary;
+                    textureDownloadBytes=result.DownloadBytes;textureUpdatesState.Verified(textureAvailable,result.DownloadBytes);textureInstall.IsEnabled=result.DownloadBytes>0;textureStatus.Text=result.Summary;
                     PageTheme.SetBadge(textureBadge,result.Missing+result.Changed==0?"Verified":"Needs attention",result.Missing+result.Changed==0?StatusTone.Success:StatusTone.Warning);
                 }
             },"Verifying installed textures…");
         }
-        public async void CheckTexturesIfOptedIn()
-        { if(!texturePreview && !textureBusy && TextureDownload.OptedIn(root))await CheckTextureUpdates(); }
+        public void RefreshTextureCheck()
+        {
+            if(textureBusy)return;
+            textureCheck.IsEnabled=!textureUpdatesState.IsChecking;textureVerify.IsEnabled=!textureUpdatesState.IsChecking;
+            textureInstall.IsEnabled=!textureUpdatesState.IsChecking&&textureUpdatesState.Release!=null&&textureUpdatesState.DownloadBytes>0;
+            if(!textureUpdatesState.IsChecking&&!textureUpdatesState.HasChecked)return;
+            textureAvailable=textureUpdatesState.Release;textureDownloadBytes=textureUpdatesState.DownloadBytes;
+            textureStatus.Text=textureUpdatesState.Details;
+            PageTheme.SetBadge(textureBadge,textureUpdatesState.IsChecking?"Checking…":textureAvailable==null?"Check unavailable":textureDownloadBytes==0?"Up to date":"Download available",textureUpdatesState.IsChecking?StatusTone.Info:textureAvailable==null?StatusTone.Warning:textureDownloadBytes==0?StatusTone.Success:StatusTone.Info);
+            UpdateTextureDetails();
+        }
         public async Task CheckTextureUpdates()
         {
             if(textureBusy)return;
             if(texturePreview){textureStatus.Text="Preview only. Download checks run in the installed launcher.";return;}
-            await TextureOperation(async token=> {
-                textureAvailable=null;textureInstall.IsEnabled=false;
-                using(var client=new ReleaseClient()) {
-                    var pack=await TextureDownload.Check(client,token);
-                    long bytes=await Task.Run(()=>TextureDownload.DownloadBytes(root,pack,token),token);
-                    textureAvailable=pack;textureDownloadBytes=bytes;
-                    textureStatus.Text=bytes==0?"Installed textures match pack "+pack.Version+". No download needed.":
-                        "Pack "+pack.Version+": "+(bytes/1048576.0).ToString("0.0",CultureInfo.InvariantCulture)+" MiB to download. Existing matching files are reused.";
-                    textureInstall.IsEnabled=bytes>0;PageTheme.SetBadge(textureBadge,bytes==0?"Up to date":"Download available",bytes==0?StatusTone.Success:StatusTone.Info);
-                }
-            },"Checking textures…");
+            await textureUpdatesState.CheckAsync();RefreshTextureCheck();
         }
         async Task InstallTextures()
         {
-            if(textureBusy || textureAvailable==null)return;
+            if(textureBusy || textureUpdatesState.IsChecking || textureAvailable==null)return;
             await TextureOperation(async token=> {
                 TextureDownload.SetOptedIn(root,true);textureUpdates.IsChecked=true;
                 using(var client=new ReleaseClient())await TextureDownload.Install(root,client,textureAvailable,
                     new Progress<string>(message=>textureProgress.Text=message),token);
+                textureUpdatesState.Installed(textureAvailable);
                 textureStatus.Text="Pack "+textureAvailable.Version+" installed. "+TexturePack.Summary(root);
                 textureInstall.IsEnabled=false;PageTheme.SetBadge(textureBadge,"Installed",StatusTone.Success);
             },"Downloading enhanced textures…");
@@ -539,7 +609,8 @@ namespace TimeSplitters.Launcher
                 model.Sensitivity=number; model.MouseEnabled=enabled.IsChecked==true; model.InvertY=invert.IsChecked==true;
                 model.SetPlayerDevices(new[]{Devices[device.SelectedIndex]}.Concat(localDevices.Select(x=>Devices[x.SelectedIndex+1])).ToArray());
                 model.VerticalFov=(int)Math.Round(fov.Value);
-                model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
+                model.CrosshairSize=(int)Math.Round(crosshairSize.Value);
+                model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.VSync=vsync.IsChecked==true; model.ShowCounter=fps.IsChecked==true;
                 model.Msaa=new[]{1,2,4,8}[msaa.SelectedIndex];model.PostAntiAliasing=edgeSmoothing.SelectedIndex;
                 model.Supersampling=supersampling.SelectedIndex;
                 model.AmbientOcclusion=ambientOcclusion.IsChecked==true?1:0;model.ShaderCache=shaderCache.IsChecked==true;

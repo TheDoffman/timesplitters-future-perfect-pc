@@ -227,6 +227,11 @@ def patch_records(paths):
     if execution_host:
         paths.remove(execution_host)
         paths.append(execution_host)
+    # Keep the compatibility template identical to the project register header.
+    register_header = by_name.get('0261-register-header-template.patch')
+    if register_header:
+        paths.remove(register_header)
+        paths.append(register_header)
     # SMAA extends the final config writer after native timing migrations.
     smaa = by_name.get('2470-smaa-antialiasing.patch')
     if smaa:
@@ -313,6 +318,49 @@ def patch_records(paths):
     if deadzones:
         paths.remove(deadzones)
         paths.append(deadzones)
+
+    # Prompt activity includes explicit native P1 controller assignments.
+    prompts = by_name.get('2955-native-explicit-controller-prompts.patch')
+    if prompts:
+        paths.remove(prompts)
+        paths.append(prompts)
+
+    # Keyboard actions stay semantic for legacy as well as newly seeded files.
+    keyboard = by_name.get('2960-keyboard-gameplay-independence.patch')
+    if keyboard:
+        paths.remove(keyboard)
+        paths.append(keyboard)
+    keyboard_actions = by_name.get('2965-independent-keyboard-actions.patch')
+    if keyboard_actions:
+        paths.remove(keyboard_actions)
+        paths.append(keyboard_actions)
+
+    pad_sharing = by_name.get('2970-active-player-pad-sharing.patch')
+    if pad_sharing:
+        paths.remove(pad_sharing)
+        paths.append(pad_sharing)
+
+    rollback_controls = by_name.get('2990-rollback-control-presets.patch')
+    if rollback_controls:
+        paths.remove(rollback_controls)
+        paths.append(rollback_controls)
+
+    # Offscreen CopyRects extends the final shared screen-copy/resolve path,
+    # including the late-applied temporal map and MSAA synchronization patches.
+    # Visibility queries follow the final shared renderer extensions.
+    for name in ('2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch',
+                 '3001-host-visibility-queries.patch'):
+        pause_patch = by_name.get(name)
+        if pause_patch:
+            paths.remove(pause_patch)
+            paths.append(pause_patch)
+
+    # V-sync extends the final config and shared presentation paths, including
+    # late SMAA/native HUD and control-rollback compatibility context.
+    vsync = by_name.get('3040-vsync-settings.patch')
+    if vsync:
+        paths.remove(vsync)
+        paths.append(vsync)
 
     records = []
     for patch in paths:

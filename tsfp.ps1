@@ -216,10 +216,6 @@ try {
                         $testConfig, $testRoot)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_settings_test.exe") @(
                         $testConfig, $testRoot)
-                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_settings_test.exe") @(
-                        '--verify-presets', (Join-Path $projectRoot 'config\pc-controls.default.json'), '1')
-                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_settings_test.exe") @(
-                        '--verify-presets', $testConfig, '0')
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_debug_test.exe") @(
                         $testConfig, $testRoot)
                     # Only successful tests reach cleanup; retain failures for diagnosis.

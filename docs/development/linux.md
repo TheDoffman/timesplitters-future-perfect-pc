@@ -1,3 +1,10 @@
+Visibility repair is validated on Windows: patch3001 uses the shared
+asynchronous exact-query cache and Vulkan per-draw precise sample segments.
+Native Linux GPU/sample/flare occlusion and cleanup acceptance remain pending;
+Windows live immediate/deferred sun/roof checks, WARP counts and a Windows
+Vulkan-header compile do not establish Linux
+runtime correctness. See [visibility contracts](../agent-context/fidelity-comparison.md).
+
 # Linux x64 development
 
 Linux support is being brought up using SDL3 and the same Vulkan renderer,

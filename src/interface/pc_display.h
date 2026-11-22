@@ -13,9 +13,17 @@ int pc_game_restart(void);
 int pc_display_fov(void);
 int pc_display_set_fov(int degrees);
 float pc_display_fov_scale(void);
+#define PC_CROSSHAIR_SIZE_MIN 25
+#define PC_CROSSHAIR_SIZE_MAX 150
+int pc_display_crosshair_size(void);
+int pc_display_set_crosshair_size(int percent);
 #define PC_WEAPON_FOV_DEFAULT 100
 #define PC_WEAPON_FOV_MIN 80
 #define PC_WEAPON_FOV_MAX 150
+/* Legacy percentage APIs retain exact old preferences and arm visibility. */
+int pc_display_weapon_fov_degrees(void);
+int pc_display_weapon_fov_legacy_percent(void);
+int pc_display_set_weapon_fov_degrees(int degrees);
 int pc_display_weapon_fov(void);
 int pc_display_set_weapon_fov(int percent);
 float pc_display_weapon_fov_scale(void);

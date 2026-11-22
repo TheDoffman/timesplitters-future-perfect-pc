@@ -1,0 +1,254 @@
+--- a/src/d3d/rhi.h
++++ b/src/d3d/rhi.h
+@@ -58,6 +58,7 @@
+ typedef struct RhiDepthState   RhiDepthState;
+ typedef struct RhiRasterState  RhiRasterState;
+ typedef struct RhiSampler      RhiSampler;
++typedef struct RhiOcclusion    RhiOcclusion;
+ 
+ /* ---- formats: DXGI_FORMAT numbers ------------------------------------------ */
+ 
+@@ -468,6 +469,14 @@
+ void rhi_clear_color(RhiView *v, const float rgba[4]);
+ void rhi_clear_depth(RhiView *v, uint32_t flags, float depth, uint8_t stencil);
+ 
++/* Asynchronous exact depth-tested sample queries. Result:1 ready,0 pending,
++ * -1 failure; only ready writes samples. Caller destroys before the device. */
++RhiOcclusion *rhi_occlusion_create(void);
++void rhi_occlusion_destroy(RhiOcclusion *query);
++int rhi_occlusion_begin(RhiOcclusion *query);
++int rhi_occlusion_end(RhiOcclusion *query);
++int rhi_occlusion_result(RhiOcclusion *query,uint64_t *samples);
++
+ /* ---- backends ----------------------------------------------------------------- */
+ 
+ /* For a test that makes its own D3D11 device: hand it to the backend in
+--- a/src/d3d/rhi_backend.h
++++ b/src/d3d/rhi_backend.h
+@@ -79,6 +79,11 @@
+     void (*clear_color)(RhiView *, const float *);
+     void (*clear_depth)(RhiView *, uint32_t, float, uint8_t);
+     int (*image_resolve)(RhiImage *, uint32_t, RhiImage *, uint32_t);
++    RhiOcclusion *(*occlusion_create)(void);
++    void (*occlusion_destroy)(RhiOcclusion *);
++    int (*occlusion_begin)(RhiOcclusion *);
++    int (*occlusion_end)(RhiOcclusion *);
++    int (*occlusion_result)(RhiOcclusion *,uint64_t *);
+ } RhiBackend;
+ 
+ extern const RhiBackend rhi_d3d11_backend;
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -372,3 +372,9 @@
+ void rhi_draw_indexed(uint32_t n, uint32_t first, int32_t base) { g_rhi->draw_indexed(n, first, base); }
+ void rhi_clear_color(RhiView *v, const float rgba[4])         { g_rhi->clear_color(v, rgba); }
+ void rhi_clear_depth(RhiView *v, uint32_t flags, float z, uint8_t s) { g_rhi->clear_depth(v, flags, z, s); }
++
++RhiOcclusion *rhi_occlusion_create(void) {return g_rhi->occlusion_create();}
++void rhi_occlusion_destroy(RhiOcclusion *q) {g_rhi->occlusion_destroy(q);}
++int rhi_occlusion_begin(RhiOcclusion *q) {return g_rhi->occlusion_begin(q);}
++int rhi_occlusion_end(RhiOcclusion *q) {return g_rhi->occlusion_end(q);}
++int rhi_occlusion_result(RhiOcclusion *q,uint64_t *samples) {return g_rhi->occlusion_result(q,samples);}
+--- a/src/d3d/rhi_d3d11.c
++++ b/src/d3d/rhi_d3d11.c
+@@ -1330,6 +1330,8 @@
+     return 0;
+ }
+ 
++#include "graphics/rhi_visibility_d3d11.inc"
++
+ const RhiBackend rhi_d3d11_backend = {
+     "d3d11",
+     d_device_create, d_device_destroy, d_device_ready, d_swapchain_view, d_swapchain_resize,
+@@ -1345,6 +1347,7 @@
+     d_set_topology, d_set_vertex_layout, d_set_vertex_buffer, d_set_index_buffer, d_set_shader,
+     d_set_uniform_buffers, d_set_textures, d_set_samplers, d_set_blend_state, d_set_depth_state,
+     d_set_raster_state, d_draw, d_draw_indexed, d_clear_color, d_clear_depth, d_image_resolve,
++    d_occlusion_create, d_occlusion_destroy, d_occlusion_begin, d_occlusion_end, d_occlusion_result,
+ };
+ 
+ #endif /* _WIN32 */
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -190,7 +190,7 @@
+     uint32_t descriptor_count, descriptor_cap, descriptor_current, descriptor_used;
+ } Frame;
+ 
+-enum { T_BUFFER, T_IMAGE, T_VIEW, T_SAMPLER, T_MODULE };
++enum { T_BUFFER, T_IMAGE, T_VIEW, T_SAMPLER, T_MODULE, T_QUERY };
+ typedef struct {
+     int      kind;
+     uint64_t serial;
+@@ -232,7 +232,7 @@
+     uint32_t                 qfamily;
+     VmaAllocator             vma;
+     VkFormat                 depth24;       /* D24S8, or D32S8 where there is none */
+-    int feat_depth_clamp, feat_fill, feat_bias_clamp, feat_aniso, feat_border;
++    int feat_depth_clamp, feat_fill, feat_bias_clamp, feat_aniso, feat_border, feat_occlusion_precise;
+     int                      validation;
+     int compat12, feat_push;
+ 
+@@ -438,6 +438,7 @@
+     case T_IMAGE:   vmaDestroyImage(V.vma, (VkImage)t->h, t->a); break;
+     case T_VIEW:    vkDestroyImageView(V.dev, (VkImageView)t->h, NULL); break;
+     case T_SAMPLER: vkDestroySampler(V.dev, (VkSampler)t->h, NULL); break;
++    case T_QUERY:   vkDestroyQueryPool(V.dev, (VkQueryPool)t->h, NULL); break;
+     case T_MODULE:  vkDestroyShaderModule(V.dev, (VkShaderModule)t->h, NULL); break;
+     }
+ }
+@@ -1244,6 +1245,7 @@
+     /* Sample-index shaders require this device feature even without forcing
+      * sampleShadingEnable on every multisampled pipeline. */
+     f2.features.sampleRateShading = have.features.sampleRateShading;
++    f2.features.occlusionQueryPrecise = V.feat_occlusion_precise = have.features.occlusionQueryPrecise;
+     f12.timelineSemaphore = VK_TRUE;
+     f12.scalarBlockLayout = have12.scalarBlockLayout;
+     f12.samplerMirrorClampToEdge = have12.samplerMirrorClampToEdge;
+@@ -3741,22 +3743,32 @@
+     return push_descriptors(p);
+ }
+ 
++#include "graphics/rhi_visibility_vulkan.inc"
++
+ static void v_draw(uint32_t n, uint32_t first)
+ {
+-    if (n && prepare_draw())
+-        vkCmdDraw(cmd(), n, 1, first, 0);
++    if (!n)return;
++    if (!prepare_draw()) {if(v_visibility_active)v_visibility_active->failed=1;return;}
++    int query=v_visibility_draw_begin();
++    vkCmdDraw(cmd(), n, 1, first, 0);
++    v_visibility_draw_end(query);
+ }
+ 
+ static void v_draw_indexed(uint32_t n, uint32_t first, int32_t base)
+ {
+     BufVer *v;
+-    if (!n || !V.ib || !V.ib->nver || !prepare_draw())
++    if (!n)return;
++    if (!V.ib || !V.ib->nver || !prepare_draw()) {
++        if(v_visibility_active)v_visibility_active->failed=1;
+         return;
++    }
+     v = &V.ib->ver[V.ib->cur];
+     v->used = V.submitted + 1;
+     vkCmdBindIndexBuffer(cmd(), v->b, V.ib_offset,
+                          V.ib_bits == 32 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
++    int query=v_visibility_draw_begin();
+     vkCmdDrawIndexed(cmd(), n, 1, first, base, 0);
++    v_visibility_draw_end(query);
+ }
+ 
+ static int v_image_resolve(RhiImage *source,uint32_t source_sub,RhiImage *destination,uint32_t destination_sub)
+@@ -3798,6 +3810,7 @@
+     v_set_topology, v_set_vertex_layout, v_set_vertex_buffer, v_set_index_buffer, v_set_shader,
+     v_set_uniform_buffers, v_set_textures, v_set_samplers, v_set_blend_state, v_set_depth_state,
+     v_set_raster_state, v_draw, v_draw_indexed, v_clear_color, v_clear_depth, v_image_resolve,
++    v_occlusion_create, v_occlusion_destroy, v_occlusion_begin, v_occlusion_end, v_occlusion_result,
+ };
+ 
+ #endif /* RHI_HAVE_VULKAN */
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -1303,6 +1303,10 @@
+  * Called from recompiled game code (replaces RW driver Present path).
+  */
+ void d3d8_PresentFrame(void);
++/* Original visibility SDK bridge; asynchronous precise samples, never forced. */
++int xbox_D3D8VisibilityBegin(void);
++void xbox_D3D8VisibilityEnd(uint32_t index,int accepted);
++int xbox_D3D8VisibilityResult(uint32_t index,uint32_t *pixels);
+ 
+ #ifdef __cplusplus
+ }
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -276,6 +276,8 @@
+     if (!g_device_state.present_height) return 1.0f;
+     return (double)g_device_state.height / g_device_state.present_height;
+ }
++
++#include "graphics/visibility_rhi_device.inc"
+ 
+ /* xbox_D3D8KeepPresented: the frame as it reaches the swap chain. */
+ static BOOL     g_keep_presented;
+@@ -757,6 +759,7 @@
+         rhi_view_destroy(s->rhi_default_rtv); s->rhi_default_rtv = NULL;
+         rhi_image_destroy(s->rhi_scene_image); s->rhi_scene_image = NULL;
+         rhi_image_destroy(s->rhi_scene_resolved); s->rhi_scene_resolved = NULL;
++        device_visibility_reset();
+         rhi_device_destroy();
+         g_device_initialized = FALSE;
+     }
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -30,6 +30,25 @@
+ #ifdef TSFP_NATIVE_DISPLAY
+ #include "pc_display_menu.h"
+ #endif
++
++/* Preserve the original US SDK visibility setup/report allocation around
++ * host GPU query scopes. Generated original bodies remain authoritative. */
++extern void sub_003D4250_gen(void);
++extern void sub_003D42F0_gen(void);
++void sub_003D4250(void) {
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_visibility_begin(sub_003D4250_gen);
++#else
++    sub_003D4250_gen();
++#endif
++}
++void sub_003D42F0(void) {
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_visibility_end(sub_003D42F0_gen);
++#else
++    sub_003D42F0_gen();
++#endif
++}
+ 
+ /* World color AO before the original per-view HUD/effects. */
+ extern void sub_001CE9A0_gen(void);
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -71,6 +71,9 @@
+ #include "hle.h"
+ #include "recomp_config.h"
+ #include "pc_native_rate.h"
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++#include "pc_display_menu.h"
++#endif
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
+ #include "pc_developer.h"
+@@ -5086,7 +5089,9 @@
+  * drawn: the conservative count, under which a lens flare or a corona that
+  * tests its own visibility draws nothing rather than shining through walls.
+  * RECOMP_HLE_D3D8_VISIBLE_PIXELS=<n> answers n instead. Answering from the
+- * host -- an occlusion query around the test's draws -- is not done yet.
++ * host is now implemented for the US Future Perfect Begin/End scopes, using
++ * precise depth-tested samples normalized for host scale/MSAA. Unsupported
++ * scopes and timestamp callers retain this conservative fallback.
+  *
+  * Only a title that waits for the answer gets one. Halo spins on its test;
+  * TimeSplitters 2 and Future Perfect poll theirs once a frame and draw on
+@@ -5121,6 +5126,9 @@
+     }
+     if (executor)
+         return;                               /* the executor will write it */
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    if (pc_visibility_result(index,result_va,stamp_va))HLE_RETURN(0);
++#endif
+     if (index != spin_index || g_shadow_swaps != spin_swap) {
+         spin_index = index;                   /* another test, or a new frame */
+         spin_swap = g_shadow_swaps;
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -848,6 +848,8 @@
+     }
+ }
+ 
++#include "graphics/visibility_queue.inc"
++
+ /* Payload helpers for the wrappers below: a fixed part, then up to two
+  * variable-length copies of what the call points at. */
+ static void defer_call(void (*fn)(const void *), const void *fixed, size_t fixed_size,

@@ -1,0 +1,20 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -43,7 +43,7 @@
+ #  include <time.h>
+ #endif
+ 
+-#define MAX_SOURCES 4
++#define MAX_SOURCES 6 /* Two keyboard slots plus four retained controller sources. */
+ #define PORTS XBOX_MAX_CONTROLLERS
+ 
+ /* XInput's own left-stick default. A stick is bound as two halves, so the
+@@ -1207,7 +1207,7 @@
+                 if(magnitude>pad_mag)pad_mag=magnitude;
+             }
+         }
+-        pc_preset_accumulate(preset_values,(unsigned)i,mag,(modern_keyboard || semantic_keyboard) && preset_gameplay,preset_masks);
++        pc_preset_accumulate(preset_values,semantic_keyboard && preset_gameplay?pc_preset_keyboard_action((unsigned)i):(unsigned)i,mag,(modern_keyboard || semantic_keyboard) && preset_gameplay,preset_masks);
+         pc_preset_accumulate(preset_values,modern_controller?pc_modern_pad_actions[i]:(unsigned)i,pad_mag,modern_controller,preset_masks);
+     }
+     for(i=0;i<24;i++) {

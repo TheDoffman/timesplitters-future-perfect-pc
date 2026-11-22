@@ -25,7 +25,7 @@ def test_guest_dispatch_and_fallback(tmp_path,source_name,native_fallback):
         end=production.index('\n}',start)+2
         (tmp_path/'network_shot_present_generated.inc').write_text(production[start:end])
     if msvc:
-        command=[compiler,'/nologo','/W4','/I'+str(tmp_path),'/I'+str(ROOT/'src'),'/Fe:'+str(executable),'/Fo:'+str(tmp_path/'guest.obj')]
+        command=[compiler,'/nologo','/std:c11','/W4','/I'+str(tmp_path),'/I'+str(ROOT/'src'),'/Fe:'+str(executable),'/Fo:'+str(tmp_path/'guest.obj')]
         if native_fallback:command.append('/DTSFP_TEST_NATIVE_NETWORK' if native_fallback == 'enabled' else '/DTSFP_TEST_NATIVE_FALLBACK')
         command.append(str(source))
     else:

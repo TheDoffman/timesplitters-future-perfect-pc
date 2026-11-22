@@ -10,7 +10,12 @@ namespace System.Web.Script.Serialization
     public sealed class JavaScriptSerializer
     {
         public int MaxJsonLength {get;set;} = 8*1024*1024;
-        static readonly JsonSerializerOptions Options = new JsonSerializerOptions { IncludeFields=true, Converters={new Objects()} };
+        // These payloads are JSON files/data, never embedded HTML. Match the
+        // Framework writer's literal '+' in pad axis tokens: the runtime's
+        // compact controls parser does not decode Unicode escape sequences.
+        static readonly JsonSerializerOptions Options = new JsonSerializerOptions {
+            IncludeFields=true, Encoder=System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            Converters={new Objects()} };
         public string Serialize(object value) { return JsonSerializer.Serialize(value,Options); }
         public T Deserialize<T>(string text)
         {

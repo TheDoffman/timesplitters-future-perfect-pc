@@ -1,11 +1,10 @@
-[Sticks](controller-deadzones.md).
-[Keys](control-presets.md).
-[Tools](developer-tools-integration.md).
+[Pad](controller-deadzones.md); [tools](developer-tools-integration.md).
+[MP](native-multiplayer-menu.md).
 
-[FOV node filter](video-options.md); [Uplink](native-uplink.md).
-[UI](controls-options.md); [Kill feed](../development/arcade-kill-feed.md).
-
-[Effect depth](native-effect-depth.md).
+[Bob](weapon-bob.md);[Uplink](native-uplink.md).
+[UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
+[Sun](fidelity-comparison.md); [Aim](hud-sizing.md).
+[Depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
 [MP hooks](multiplayer-exit.md)
 2465 wraps356800 for rewards;
@@ -15,7 +14,7 @@ Story host loss:2460 wraps1AF950. The menu adapter scopes
 the native guest-lobby8D notification to main return, preserving transport reset
 and rebuilding main in its own layout context. See [contracts](systems-details.md).
 
-Rejoin uses the D4BE0/A9070 camera/world wrappers. Rejoin restores a missed camera-end transition once;
+D4BE0/A9070 rejoin wrappers restore a missed camera-end transition once;
 world identity excludes native first-person viewport models before cached-key
 lookup. No wrapper or generated-code change is needed. See
 [contracts](systems-details.md).
@@ -66,7 +65,7 @@ shared Story adapter so a guest's blocked movie advance does not release its
 still-rendered stream at99BB7. Real load teardown and other modes retain the
 original close. See [contracts](systems-details.md) and [fixture](build-test-details.md).
 
-# Runtime ([MSAA](smaa.md))
+# [Runtime](pause-glass.md)
 
 Patch2180 wraps US1C2AF0 for an already-eligible fresh player trigger only;
 the patch loader orders it after native minigun/timing wrappers. It preserves

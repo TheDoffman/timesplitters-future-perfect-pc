@@ -57,7 +57,7 @@
 typedef struct Capture {
     atomic_int entered,done,armed,focused,inhibited,stopping;
     atomic_ullong frames;
-    PcBreadcrumbs breadcrumbs,models,allocations; uint64_t started_ms;
+    PcBreadcrumbs breadcrumbs,models,allocations,network; uint64_t started_ms;
     int pid,signal;uint32_t guest[8];uint64_t registers[31],pc,sp,address,base;
     unsigned frame_timeout,startup_timeout,extended;
     atomic_ullong guest_base;
@@ -102,6 +102,22 @@ static void health(Capture *c){
     if(out){pc_capture_health_json(out,session,(unsigned)c->pid,(unsigned)getpid(),atomic_load(&c->armed));
         int ok=!fflush(out)&&!ferror(out)&&!fsync(fileno(out));if(fclose(out))ok=0;
         if(ok)renameat(dir,temporary,dir,"capture-health.json");unlinkat(dir,temporary,0);
+    }close(dir);
+}
+static void executable_hash(const char *path,char hash[65]);
+static void network_export(Capture *c){
+    static int64_t published;int64_t next=pc_crumb_load(&c->network.next);
+    if(!next || next==published || next%PC_CRUMB_NETWORK_FIELDS)return;
+    char session[33];if(!pc_capture_session(session))return;
+    int dir=safe_directory(c->root);if(dir<0)return;
+    struct stat st;
+    if(!fstatat(dir,"network-sync.txt",&st,AT_SYMLINK_NOFOLLOW) && !S_ISREG(st.st_mode)){close(dir);return;}
+    char temporary[80];snprintf(temporary,sizeof temporary,"sync-%d-%llu.tmp",getpid(),(unsigned long long)ticks());
+    FILE *out=new_file(dir,temporary);
+    if(out){static char hash[65];if(!hash[0]){executable_hash(c->executable,hash);if(!hash[0])strcpy(hash,"unavailable");}
+        fprintf(out,"Network sync schema 1; " TSFP_NATIVE_PLATFORM "; process-id %d; executable-sha256 %s; local numeric counters only.\n",c->pid,hash);pc_crumb_report(out,&c->network);
+        int ok=!fflush(out)&&!ferror(out)&&!fsync(fileno(out));if(fclose(out))ok=0;
+        if(ok && !renameat(dir,temporary,dir,"network-sync.txt"))published=next;unlinkat(dir,temporary,0);
     }close(dir);
 }
 #pragma clang diagnostic push
@@ -192,6 +208,7 @@ static void report(Capture *c,int hang){
         fclose(out);
     }
     int input=open(c->log,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);if(input>=0){struct stat st;if(!fstat(input,&st)&&S_ISREG(st.st_mode)){lseek(input,st.st_size>65536?st.st_size-65536:0,SEEK_SET);out=new_file(dir,"game-log-tail.txt");if(out){char bytes[65536];ssize_t n=read(input,bytes,sizeof bytes);if(n>0)fwrite(bytes,1,(size_t)n,out);fclose(out);}}close(input);}
+    out=new_file(dir,"network-history.txt");if(out){pc_crumb_report(out,&c->network);fclose(out);}
     out=new_file(dir,"report.txt");if(out){fprintf(out,"TimeSplitters native " TSFP_NATIVE_SYSTEM " %s\n%s\nSignal: %d\nExecutable SHA-256: %s\nNative context: native-stack.txt\nNothing was uploaded. Review the context and log excerpt before sharing.\n",hang?"suspected hang":"fatal signal",hang?"Frame progress stopped; the game was left running.":"The native game received a fatal signal.",hang?0:c->signal,hash);fclose(out);}
     out=new_file(dir,"breadcrumbs.txt");if(out){pc_crumb_report(out,&c->breadcrumbs);fclose(out);}
     out=new_file(dir,"model-history.txt");if(out){pc_crumb_report(out,&c->models);fclose(out);}
@@ -212,10 +229,10 @@ int tsfp_native_crash_helper(int argc,char **argv){
         int ready=poll(&fd,1,250);
         if(atomic_load(&c->entered)==2){report(c,0);atomic_store(&c->done,1);break;}
         if(ready>0 && fd.revents){char byte;if(read(fd.fd,&byte,1)<=0)break;}
-        if(ticks()-last_health>=2000){health(c);last_health=ticks();}
+        if(ticks()-last_health>=2000){health(c);network_export(c);last_health=ticks();}
         if(pc_hang_poll(&policy,ticks(),atomic_load(&c->frames),atomic_load(&c->armed),!foreground(c)||atomic_load(&c->inhibited),c->frame_timeout,c->startup_timeout))report(c,1);
     }
-    close((int)readfd);munmap(c,sizeof *c);return 0;
+    network_export(c);close((int)readfd);munmap(c,sizeof *c);return 0;
 }
 int tsfp_native_crash_init(NativeGuestCapture guest){
     const char *root=getenv("TSFP_CRASH_DIR");if(capture||!root||!*root)return 0;
@@ -287,3 +304,5 @@ void pc_capture_match(unsigned humans,unsigned bots,unsigned difficulty,unsigned
 }
 
 void pc_capture_allocation(uint32_t event,uint32_t address,uint32_t bytes){if(capture)pc_crumb_allocation(&capture->allocations,ticks()-capture->started_ms,event,address,bytes);}
+
+void pc_capture_network(const int32_t values[PC_CRUMB_NETWORK_FIELDS]){if(capture)pc_crumb_network(&capture->network,ticks()-capture->started_ms,values);}

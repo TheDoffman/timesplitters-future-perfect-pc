@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "pc_breadcrumbs.h"
 
-#define PC_CRASH_SCHEMA 5
+#define PC_CRASH_SCHEMA 6
 #define PC_CRASH_PATH 1024
 #define PC_CRASH_DUMP_LIMIT (16u * 1024u * 1024u)
 #define PC_CRASH_WAIT_MS 12000
@@ -17,7 +17,7 @@ typedef struct PcCrashGuest {
 /* Fixed shared-memory protocol; no target pointers are dereferenced by the helper. */
 typedef struct PcCrashPacket {
     DWORD schema, process_id, thread_id, extended;
-    PcBreadcrumbs breadcrumbs,models,allocations;
+    PcBreadcrumbs breadcrumbs,models,allocations,network;
     uint64_t started_ms;
     volatile LONG entered;
     EXCEPTION_RECORD exception;

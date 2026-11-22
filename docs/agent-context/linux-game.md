@@ -1,3 +1,39 @@
+## CI package mirror
+
+The Linux Vulkan job replaces the runner's primary Ubuntu mirror list, when
+present at `/etc/apt/apt-mirrors.txt`, with `https://archive.ubuntu.com/ubuntu`
+before apt update/install. This avoids the regional EC2 mirror that took28min7s
+to download147MB in PR569 run44221725334, exhausting the30-minute job budget.
+Package names, Ubuntu suites, signature verification, security sources and all
+test steps are unchanged. The PR gate still rejects a cancelled Linux job.
+This is hosted CI setup only; game/launcher dependencies and host adapters do
+not change. Verify the subsequent Linux job and aggregate PR validation.
+
+## Online beta draft acceptance (2026-11-12)
+
+Linuxv0.7.0-beta.1 uses exact Windows source46f1a2d0 and matching network
+identity. Built on Ubuntu24.04/WSL with Clang18, pinned Vulkan/release media
+and launcher1.6.2. Local contracts271 pass/28 skip; clean read-only userspace
+settings/debug/input/windowed+fullscreen renderer/Python and49 launcher UI
+groups pass after one Xvfb BadWindow retry. The Online native self-test skips77;
+separate actual packaged Python HTTPS/invite/three-peer shared relay passes,
+with physical UPnP disabled. Packaged120s isolated Story reaches active scene2
+and6600 successful guest presents. Uploaded ZIP/checksum/BUILD verified on
+draft443677772 with Windows assets unchanged; platform metadata lists both.
+Draft remains unpublished. See STATUS for hashes and unverified hardware/WAN.
+
+## v0.6.1 draft acceptance
+
+The Linux package at07bc98c0 uses the same exact source as the Windows draft and
+published launcher1.6.1. Native build/input, relocation/installer preservation,
+read-only minimal-userspace settings/input/renderer and52 shared launcher UI
+checks pass; Online self-test is a77 skip. A120-second software-Vulkan Story
+observer reaches gameplay with isolated Test Lab data and synthetic inputs.
+Run launcher UI acceptance after gameplay exits: the launcher inspects visible
+running-game processes, which can be inaccessible from the nobody/chroot test.
+Keep this execution-order issue separate from package-byte/source changes.
+See STATUS for hashes, evidence and pending physical-host/Steam Deck acceptance.
+
 ## Fullscreen option acceptance
 
 Shared fullscreen Video Options at7a6fea3c build and run on native Linux under

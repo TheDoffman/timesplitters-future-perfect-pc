@@ -54,7 +54,8 @@ int tsfp_allocations_init(tsfp_allocations *state,
     tsfp_allocation_record *physical_records, size_t physical_capacity);
 void tsfp_allocations_stop(tsfp_allocations *state);
 
-/* Aligned lowest-fit allocations; every live ownership span is disjoint.
+/* Aligned lowest-fit allocations (except explicit high-range placement);
+ * every live ownership span is disjoint.
  * Heap uses minimum size 16/alignment 4 and zeros the complete returned size.
  * Reservations use default alignment 4096, no zeroing or size-query API,
  * and share heap ownership above reserve_begin. Zero-size reservations fail.
@@ -69,6 +70,11 @@ uint32_t tsfp_physical_allocate(tsfp_allocations *, uint32_t size, uint32_t alig
  * the usable physical window or into another owner. */
 uint32_t tsfp_physical_allocate_range(tsfp_allocations *, uint32_t size,
     uint32_t alignment, uint32_t low, uint32_t high);
+/* Highest-fit physical placement preserves scarce low DMA addresses when a
+ * caller has no physical upper-bound constraint. Bounds remain inclusive. */
+uint32_t tsfp_physical_allocate_high_range(tsfp_allocations *state,
+    uint32_t bytes, uint32_t alignment, uint32_t low, uint32_t high);
+
 
 /* Fixed address may be below the ordinary physical arena floor, but must be
  * inside the mapped usable window. Page ownership excludes other live blocks

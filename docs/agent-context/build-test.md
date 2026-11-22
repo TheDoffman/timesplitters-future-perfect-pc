@@ -1,21 +1,25 @@
-[Sticks](controller-deadzones.md). [Online UI](multiplayer-ui.md).
-[Keys](control-presets.md); [Tex](texture-preference.md).
-[Arms](video-options.md).
+[0.7 sync](network-sync-telemetry.md).
+
+[Turn Speed](controls-options.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
+[Actors](network-actor-lifetime.md).
+[Rollback](control-presets.md); [Tex](texture-preference.md).
+[JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
+[Bob](weapon-bob.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
-[Coop Tools](developer-tools-integration.md).
-Developer warnings: [launcher](launcher.md).
-[Profiles](multiplayer-exit.md#validation): saves, late lobby saves, checksum/write errors.
-[Icons](controls-options.md).
+[Tools](developer-tools-integration.md).
+[Warnings](launcher.md).
+[Saves](multiplayer-exit.md#validation).
+
+[Online](multiplayer-ui.md); [sun](fidelity-comparison.md).
 [Effect depth](native-effect-depth.md).
 [Update tests](main-menu-update.md).
-[Weapon FOV](video-options.md#weapon-aperture).
-[HUD/MSAA tests](../development/graphics-options.md).
+[HUD/MSAA](../development/graphics-options.md).
 [SDL/input fixtures](linux-game.md).
 [Font/escape tests](audio-options.md).
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
-# Build/tests ([MSAA](smaa.md))
+# Tests ([Aim](hud-sizing.md))
 Audio: [acceptance](../development/audio-overhaul-acceptance.md).
 Media CI: audit/candidates/loops/metrics; headers do not prove identity.
 Fixtures:32 combinations, unknown files, speech, ducking, dynamics, queued gains,
@@ -24,14 +28,12 @@ Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
 Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
 `test_audio_output_gain.py`: mute/queue retention, Windows capture.
 [Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
-`test_controller_profile.py` executes native key/pad guards and the runtime key
-dispatcher: freecam neutralizes gameplay while retaining raw camera keys. Both
-host defines cover automatic/assigned pad blocking/resume and existing ownership,
-disconnect/focus/parser cases. It runs alongside Developer Tools flight/mouse
-coverage in runtime CI. Patch2630 follows2620.
+`test_controller_profile.py` runs native key/pad guards and dispatch: freecam
+neutralizes gameplay but retains raw camera keys. Both host defines cover
+automatic/assigned pad blocking/resume, ownership and disconnect/focus/parser.
+Runtime CI also covers Developer Tools flight/mouse. Patch2630 follows2620.
 
-[Co-op](story-campaign-lifecycle.md)
-
+[Co-op](story-campaign-lifecycle.md).
 `test_developer_tools.py` runs in runtime CI: sidebar tab/dock centers at
 1x/1.5x/2x, both docks, independent vertical scaling and retained painted extents
 on input-only frames. Fixture-local locks/atomics support standalone non-Windows
@@ -46,9 +48,9 @@ Discord release webhooks target #release-updates; #announcements holds team post
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
-Native Online link/mode checks: `tests/graphics/test_quit_menu.py` and native
-`--test`/`--online-self-test`. Clang Story fixtures select the Windows guest
-adapter but use the real host trap; hexadecimal additions need token boundaries.
+Exit: `test_online_menu.py`, `test_quit_menu.py`, `test_fov_settings.py`;
+native `--test`/`--online-self-test`. Clang Story fixtures use the Windows guest
+adapter with the real host trap; hexadecimal additions need token boundaries.
 
 Game0.6.0 bundles launcher1.6.0; publish the launcher first. Keep release gates:
 exact clean source on Windows/Mac/Linux, native/package/preservation checks,
@@ -64,7 +66,7 @@ self-tests use click/Escape capture, replacing retired F1. [Linux](linux-game.md
 
 Fresh-trigger checks: [CI and original-code coverage](interaction-input.md#fresh-weapon-clicks-434).
 
-[Build](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
+[Details](build-test-details.md); [Saves](save-locations.md), [storage](host-storage.md); [Discord](../release/discord-announcements.md); [Story beta/legacy](../release/story-coop-beta-handoff.md).
 
 Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects test_native_timing.py; original-code tests require the private XBE. Historical stacks exclude minigun/player-trigger patches until full native timing applies.
 
@@ -610,11 +612,11 @@ The Windows-specific fixture compiles the model against deterministic
 monitor/window adapters: secondary fullscreen desktop size, windowed resize,
 minimize/query failure, allocation rollback/retry, persistence and preview
 rollback, manual override, and Auto ratio filtering. `tests/graphics/pc_display.c` retains
-manual scene/camera/HUD tests. `test_cutscene_letterbox.py` checks effective
-output and air-lift FOV (#339), including a guard-removal mutation. With a local
-US XBE it executes all four lift regions through the production camera hook.
-Launcher tests cover Auto UI/filter/save, defaults and older packages. Cocoa's
-self-test recognizes Auto; physical Retina/multi-display checks need Mac.
+manual scene/camera/HUD tests. `test_cutscene_letterbox.py` lifts all four US
+air-lift regions through the production camera hook, with a guard-removal mutation.
+[Original-actor fixtures](runtime-ci.md) retain shared pause-glass TLS state.
+Launcher checks cover Auto UI/filter/save, defaults and older packages; Cocoa
+self-test recognizes Auto. Physical Retina/multi-display checks need Mac.
 
 The historical controls-only fixture in `test_patch_updates.py` excludes
 `-auto-display.patch` until the complete-stack migration installs its display,
@@ -913,7 +915,7 @@ profile save, batch rollback and resolution Keep/timeout/close behavior.
 The real-font fixture also evicts the full glyph cache and verifies that a
 tracked semibold title recreates identical pixels after video labels replace it.
 
-[Developer Tools integration](developer-tools-integration.md).
+[Video tests](developer-tools-integration.md#video-parity).
 
 Grouped Preview UI: GameChannelPickerPage.cs uses both hosts' *Page.cs includes.
 tests/launcher/launcher_shared_ui.cs covers tracks, Save state and launcher_saves.cs
@@ -1035,15 +1037,13 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [Story flag and Clang fixtures](build-test-details.md#story-release-flag-regression).
 
 [Languages](launcher.md#complete-game-language-packs-discussion-263).
+[UI](launcher.md), [exit](pause-settings.md).
 
-[2x tests](original-upscale.md).
+[2x](original-upscale.md).
 
-[Linux release/CI/POSIX](linux-game.md).
+[Linux CI](linux-game.md#ci-package-mirror).
 
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
-
-Players: controls-options.md.
-
-Patch tests: Mac seeds omit2620/2625 until migration; Story stubs use production guards.
+Mac omits2620/2625; Story uses production guards.
 
 [PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).

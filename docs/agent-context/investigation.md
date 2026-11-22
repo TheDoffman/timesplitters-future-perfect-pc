@@ -1,6 +1,21 @@
+V-Sync patch3040 follows the final config/render dependencies. The context index
+tail and historical patch-migration fixtures track that order; old SMAA-free
+inputs exclude V-Sync until their complete-stack upgrade.
+
+Historical-upgrade fixtures exclude3010 capture and3020 join wrappers from the
+old subset because those need the later renderer/Story wrapper context; the
+Mac-only subset also predates3030 Story browser wrappers. Both
+fixtures still apply and verify the complete current stack during migration.
+The fixture apply helper includes the patch name in failures.
+
+Pause glass2730/2731 follows map/MSAA copy extensions; visibility3001 precedes
+the native multiplayer capture/join/browser extensions. Optional config3000
+was removed. The combined loader index and exact-order fixture retain both
+branches. See [capture evidence](pause-glass.md).
+
 Controller response investigations: [raw-input and original-decoder tests](controller-deadzones.md); distinguish host deadzone from the guest threshold. Patch2950 follows2940 in the maintained map.
 
-[Preset routing/order evidence](control-presets.md).
+[Preset rollback/order evidence](control-presets.md).
 PR528: normalize patch2940 to committed LF before index refresh; CRLF worktree
 bytes produced a stale hash/target on CI. Gameplay patch logic is unchanged.
 
@@ -498,3 +513,16 @@ Patch2630 extends the explicit Developer Tools tail after2620. The repository
 context exact-order fixture now retains a92-entry tail, including2630 before
 the source-worktree/shared-depth follow-ups. Index generation and discovery
 contracts are unchanged; stage this intended new patch before refreshing.
+
+Patch-index order fixtures now include2955 native explicit-controller prompts;
+historical partial stacks defer it with their omitted late-input dependencies.
+
+Patch-order/historical upgrade fixtures include2960 after the late preset sampler.
+
+Hotfix0.6.1 integration retains upstream2955/2960 before2965/2970. The
+repository-context order fixture now includes both follow-ups; regenerate the
+Git-indexed patch map after staging their final bytes.
+
+Template parity follow-up: additive0261 follows0260 and retains the canonical
+register alias optimization from9ee19013 in old runtime consumers. Historical
+subsets omit it with0260; complete migrations install it. See [batch/header contracts](compiler-batching.md).

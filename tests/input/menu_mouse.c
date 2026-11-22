@@ -38,6 +38,7 @@ static unsigned shape_w=16,shape_h=9;
 static unsigned music_previews,sound_previews,sensitivity_previews;
 static unsigned slider_fov;
 static void menu_slider_weapon_fov_pointer(float x,float left,float width) { (void)x;(void)left;(void)width; }
+static void menu_slider_crosshair_pointer(float x,float left,float width) { (void)x;(void)left;(void)width; }
 static void menu_slider_fov_pointer(float x,float left,float width)
 { slider_fov=40+pc_menu_slider_value(x,left,width,60); }
 static unsigned slider_mix_index,slider_mix_value;
@@ -110,6 +111,8 @@ static unsigned video_tab_polls,video_tab_flushes;
 static int menu_video_tabs_poll(uint32_t menu) {(void)menu;video_tab_polls++;return 0;}
 static void menu_video_tabs_flush(void) {CHECK(!in_dispatch);video_tab_flushes++;}
 static void online_opening_tick(void) {} /* Lifecycle is covered by fov_settings.c. */
+static unsigned online_refresh_clicks;
+static void native_multiplayer_refresh_click(uint32_t menu) {CHECK(menu);online_refresh_clicks++;}
 #include "pc_menu_mouse_guest.inc"
 static void original(void) { ++original_calls;WORD_AT(WORD_AT(g_esp+4)+0xc4)|=navigation;g_esp+=4; }
 static unsigned settings_sample_mask;
@@ -285,6 +288,8 @@ static void audio_tests(void)
         WORD_AT(m+4)=1;run(m);CHECK(!menu_slider_drag); /* replaced menu */
         WORD_AT(m+4)=0;cursor.left=0;run(m);
     }
+    WORD_AT(m+0x18c)=3;
+    menu_controller_speed_tick(m,sub_00074760);
     CHECK(music_previews && sound_previews);
     CHECK(pc_menu_slider_value(-1,0,100,16)==0 && pc_menu_slider_value(101,0,100,16)==16);
     CHECK(pc_menu_slider_value(NAN,0,100,16)==0 && pc_menu_slider_value(1,0,0,16)==0);
@@ -292,13 +297,18 @@ static void audio_tests(void)
 /* Simulate the original sensitivity painter calling its shared bar primitive.
  * The uneven width represents translated labels; the adapter must use exactly
  * these draw arguments rather than assume the FOV/audio bar's dimensions. */
+static float speed_painted;
+static void speed_bar_original(void) {speed_painted=FLOAT_AT(g_esp+4);g_esp+=4;}
 static void sensitivity_painter(void)
 {
     uint32_t frame=g_esp;
     g_esp=0x1900;WORD_AT(g_esp)=0x002EA3E0;
     WORD_AT(g_esp+8)=287;WORD_AT(g_esp+12)=157;
     WORD_AT(g_esp+16)=137;WORD_AT(g_esp+20)=13;
-    pc_display_menu_slider_bar(audio_draw_original);CHECK(g_esp==0x1904);
+    FLOAT_AT(g_esp+4)=FLOAT_AT(0x7ba3dc+WORD_AT(0x7ba9e0)*0x1e0);
+    float saved=FLOAT_AT(g_esp+4);
+    pc_display_menu_slider_bar(speed_bar_original);CHECK(g_esp==0x1904);
+    CHECK(fabsf(speed_painted-((menu_slider_draw_menu && WORD_AT(0x7ba9e0)<4)?saved/1.5f:saved))<.00001f && FLOAT_AT(0x1904)==saved);
     g_esp=frame+4;
 }
 static void setting_tracks(uint32_t m,uint32_t sensitivity,uint32_t fov)
@@ -336,14 +346,14 @@ static void setting_slider_tests(void)
         FLOAT_AT(value_address)=1;
         cursor.x=ox+(t->x+t->w*.25f)*scale;cursor.y=oy+(t->y+2)*scale;
         run(m);CHECK(FLOAT_AT(value_address)==1); /* hover never adjusts */
-        cursor.left=1;run(m);CHECK(FLOAT_AT(value_address)==.25f);
+        cursor.left=1;run(m);CHECK(FLOAT_AT(value_address)==.4f);
         CHECK(WORD_AT(m+0x198)==sensitivity && !(WORD_AT(m+0xc4)&0x10));
         unsigned previews=sensitivity_previews;run(m);CHECK(previews==sensitivity_previews);
         cursor.x=ox+(t->x+t->w*.75f)*scale;cursor.y=oy+212*scale;cursor.wheel=1;
-        run(m);CHECK(FLOAT_AT(value_address)==.75f && !menu_mouse.wheel_pending);
+        run(m);CHECK(fabsf(FLOAT_AT(value_address)-1.15f)<.00001f && !menu_mouse.wheel_pending);
         CHECK(WORD_AT(m+0x198)==sensitivity); /* passing FOV cannot retarget */
         cursor.x=ox+(t->x-10)*scale;run(m);CHECK(FLOAT_AT(value_address)==0);
-        cursor.x=ox+(t->x+t->w+10)*scale;run(m);CHECK(FLOAT_AT(value_address)==1);
+        cursor.x=ox+(t->x+t->w+10)*scale;run(m);CHECK(FLOAT_AT(value_address)==1.5f);
         for(unsigned other=0;other<4;other++) if(other!=player)
             CHECK(FLOAT_AT(0x7ba3dc+other*0x1e0)==0); /* selected player only */
         /* Reusing the same menu/row for another player must cancel a hold,
@@ -794,12 +804,15 @@ int main(void)
         cursor.left=0;cursor.x=640.f+(90.f+110.f*(float)i-320.f)*1.5f;
         cursor.y=435.f*1.5f;run(m);
         uint32_t selected=WORD_AT(m+0x198);
+        unsigned refresh_before=online_refresh_clicks;
         cursor.left=1;run(m);
+        CHECK(online_refresh_clicks==refresh_before+(i==2));
         CHECK(early_action==(0x10u<<i)); /* before tick callbacks, not just rows */
         const uint32_t masks[]={0x80,0x120,0x10,0x40};
         CHECK((early_source&masks[i])==masks[i]);
         CHECK(WORD_AT(m+0x198)==selected);
         run(m);CHECK(!early_action); /* held click never repeats */
+        CHECK(online_refresh_clicks==refresh_before+(i==2));
     }
     WORD_AT(0x76b0fc)=0;
     cursor.left=0;run(m);footer_enabled=0;cursor.left=1;run(m);CHECK(!early_action);

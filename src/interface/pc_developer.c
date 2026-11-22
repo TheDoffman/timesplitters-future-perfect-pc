@@ -96,6 +96,7 @@ void pc_developer_match_policy(int online,int allowed) {
     if(online&&!allowed) {
         if(state.freecam)state.hide_hud=0;
         state.noclip=state.freecam=0;
+        state.hide_viewmodel=0;
         state.god=state.infinite_ammo=0;state.speed=1.;
     }
     ReleaseSRWLockExclusive(&dev_lock);
@@ -122,6 +123,7 @@ int pc_developer_set_enabled(int enabled) {
         pc_developer_close();
         AcquireSRWLockExclusive(&dev_lock);
         state.hide_hud=state.hide_watermark=state.noclip=state.freecam=state.god=state.infinite_ammo=0;
+        state.hide_viewmodel=0;
         state.speed=state.manual_speed=1.;ReleaseSRWLockExclusive(&dev_lock);
     }
     return 1;
@@ -141,8 +143,29 @@ void pc_developer_toggle(void) {
     fprintf(stderr,"[DEVELOPER] overlay %s\n",pc_developer_open()?"open":"closed");
 }
 void pc_developer_close(void) {if(InterlockedExchange(&opened,0))pc_controls_developer_release();pc_controls_menu_mode(0);}
+static void developer_view_get(PcViewSettings *out) {
+    pc_settings_view_read(out);
+}
 void pc_developer_get(PcDeveloperState *out) {
-    AcquireSRWLockShared(&dev_lock);*out=state;ReleaseSRWLockShared(&dev_lock);
+    PcViewSettings view;developer_view_get(&view);
+    int enabled=pc_developer_enabled();
+    AcquireSRWLockShared(&dev_lock);*out=state;
+    out->hide_hud=view.hide_hud||(enabled&&state.hide_hud);
+    out->hide_watermark=view.hide_watermark;
+    out->hide_viewmodel=enabled&&(!network||match_tools_allowed)&&view.hide_viewmodel;
+    ReleaseSRWLockShared(&dev_lock);
+}
+static void developer_view_toggle(int row) {
+    PcViewSettings desired;char error[160];
+    developer_view_get(&desired);
+    AcquireSRWLockShared(&dev_lock);
+    int available=row!=6||(gameplay&&(!network||match_tools_allowed));
+    ReleaseSRWLockShared(&dev_lock);
+    if(!available)return;
+    if(row==4)desired.hide_hud=!desired.hide_hud;
+    else if(row==5)desired.hide_watermark=!desired.hide_watermark;
+    else desired.hide_viewmodel=!desired.hide_viewmodel;
+    if(!pc_settings_view_save(&desired,error,sizeof error)){pc_developer_report(error);return;}
 }
 double pc_developer_speed(void) {
     int enabled=pc_developer_enabled();double speed;
@@ -171,6 +194,7 @@ void pc_developer_publish(int play,int campaign,int online) {
     if(online&&!network)match_tools_allowed=0;
     gameplay=play;story=campaign||story_tools_role!=0u;network=online;
     if(!play || (online&&!match_tools_allowed) || !enabled) {if(state.freecam)state.hide_hud=0;state.noclip=state.freecam=0;}
+    if((online&&!match_tools_allowed)||!enabled)state.hide_viewmodel=0;
     if((online&&!story_tools_role)||(!enabled&&story_tools_role!=2u)){state.speed=1.;state.god=state.infinite_ammo=0;}
     else if(!play&&story_tools_role!=2u)state.speed=movie_active?state.manual_speed:1.;
     ReleaseSRWLockExclusive(&dev_lock);
@@ -296,15 +320,11 @@ static void activate(int direction) {
         case 1:navigate(DEBUG);break;
         case 2:tsfp_texture_toggle();break;
         case 3:pc_controls_developer_fullscreen();break;
-        case 4:AcquireSRWLockExclusive(&dev_lock);state.hide_hud=!state.hide_hud;ReleaseSRWLockExclusive(&dev_lock);break;
-        case 5:AcquireSRWLockExclusive(&dev_lock);state.hide_watermark=!state.hide_watermark;ReleaseSRWLockExclusive(&dev_lock);break;
+        case 4:case 5:case 6:developer_view_toggle(selected);break;
         default:navigate(HOME);break;
         }
     } else if(page==KEYBOARD) {
         if(selected<PC_ACTION_COUNT) {
-            if(!pc_settings_action_editable(draft.preset,selected)) {
-                snprintf(status,sizeof status,"Choose Custom in Controls to edit preset gameplay bindings.");return;
-            }
             if(direction){slot=!slot;return;}
             capture_action=selected;conflict_key=0;
             snprintf(status,sizeof status,"Press a binding; Delete unbinds, Escape cancels. Editing %s slot.",slot?"alternate":"primary");
@@ -338,3 +358,4 @@ static void activate(int direction) {
     }
 }
 #include "pc_developer_sidebar.inc"
+#include "pc_match_overlay.inc"

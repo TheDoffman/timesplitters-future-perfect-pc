@@ -1,0 +1,110 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -43,7 +43,7 @@
+ #  include <time.h>
+ #endif
+ 
+-#define MAX_SOURCES 6 /* Two keyboard slots plus four retained controller sources. */
++#define MAX_SOURCES 4
+ #define PORTS XBOX_MAX_CONTROLLERS
+ 
+ /* XInput's own left-stick default. A stick is bound as two halves, so the
+@@ -1090,40 +1090,11 @@
+ #endif
+ 
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-    int preset_values[24]={0}, modern_keyboard=0, modern_controller=0, semantic_keyboard=0, mounted=0;
+-    Controller preset_original=*c;
+-    unsigned preset_masks[24];memcpy(preset_masks,pc_preset_masks,sizeof preset_masks);
+-    AcquireSRWLockShared(&g_pc_bindings_lock);
+-    modern_keyboard=port==0 && c->device==DEV_KEYBOARD && g_pc_keyboard_preset;
+-    modern_controller=g_pc_controller_presets[port];
+-    semantic_keyboard=port==0 && c->device==DEV_KEYBOARD;
+-    ReleaseSRWLockShared(&g_pc_bindings_lock);
+-    int preset_gameplay=(modern_keyboard || modern_controller || semantic_keyboard) && pc_settings_gameplay_masks(port,preset_masks,&mounted);
+-    modern_controller=modern_controller && preset_gameplay;
+-    if(modern_keyboard && !preset_gameplay && !pc_controls_in_menu())modern_keyboard=0;
+-    if(modern_keyboard) {
+-        PcSettings modern;pc_settings_modern(&modern);
+-        if(!preset_gameplay) { /* Stable menu/editor controls, independent of gameplay. */
+-            modern.keys[0][0]=13;modern.keys[0][1]=32;modern.keys[1][0]=27;modern.keys[1][1]=8;
+-            modern.keys[10][0]=38;modern.keys[11][0]=40;modern.keys[12][0]=37;modern.keys[13][0]=39;
+-            for(int a=10;a<14;a++)modern.keys[a][1]=0;
+-        }
+-        for(int a=0;a<CONTROL_COUNT;a++) {
+-            if((a>=19 && a<=22) || a>=PC_DEVELOPER_ACTION)continue;
+-            snapshot.bind[a].count=2;
+-            for(int b=0;b<2;b++) {memset(&snapshot.bind[a].src[b],0,sizeof(Source));
+-                if(modern.keys[a][b]) {snapshot.bind[a].src[b].kind=SRC_KEY;snapshot.bind[a].src[b].arg=(short)modern.keys[a][b];}}
+-        }
+-    }
+ #endif
+ 
+     /* Initialize after platform focus/modal gating, using only the pad read
+      * for this port. Port 2 defaults contain no implicit keyboard sources. */
+-    use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-        || modern_controller
+-#endif
+-    );
++    use_pad_defaults = have_pad && (auto_pad >= 0 || c->pad_fallback);
+     if (use_pad_defaults) defaults_for(&pad_defaults, 1);
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+     if(port==0 && c->device==DEV_KEYBOARD) {
+@@ -1147,9 +1118,6 @@
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int mag = 0, s;
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-        int pad_mag=0;
+-#endif
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+         if(i>=PC_DEVELOPER_ACTION)continue; /* Host shortcut never enters the Xbox pad. */
+         if(CONTROLS[i].kind==K_WEAPON_SLOT) {
+             if(port==0 && c->device==DEV_KEYBOARD)
+@@ -1167,11 +1135,7 @@
+         if (use_pad_defaults) {
+             for (s=0;s<pad_defaults.bind[i].count;s++) {
+                 int m=control_magnitude(i,&pad_defaults.bind[i].src[s],&kc,&pad,1,c);
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-                if(m>pad_mag)pad_mag=m;
+-#else
+                 if(m>mag) mag=m;
+-#endif
+             }
+         }
+ 
+@@ -1182,34 +1146,12 @@
+         for (s = 0; s < c->bind[i].count; s++) {
+             if(c->device==DEV_PAD && c->bind[i].src[s].kind==SRC_KEY)continue;
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-            if(modern_controller && c->bind[i].src[s].kind!=SRC_KEY)continue;
+-#endif
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+             if(port==0 && action>=0 && c->bind[i].src[s].kind==SRC_KEY)continue;
+ #endif
+             int m = control_magnitude(i, &c->bind[i].src[s], &kc, &pad,
+                                   have_pad, c);
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-            if(c->bind[i].src[s].kind!=SRC_KEY) {if(m>pad_mag)pad_mag=m;}
+-            else
+-#endif
+             if (m > mag) mag = m;
+         }
+-#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_INPUT)
+-        if(modern_keyboard && !modern_controller) {
+-            for(int n=0;n<preset_original.bind[i].count;n++) {
+-                const Source *source=&preset_original.bind[i].src[n];
+-                if(source->kind==SRC_KEY)continue;
+-                int magnitude=control_magnitude(i,source,&kc,&pad,have_pad,c);
+-                if(magnitude>pad_mag)pad_mag=magnitude;
+-            }
+-        }
+-        pc_preset_accumulate(preset_values,semantic_keyboard && preset_gameplay?pc_preset_keyboard_action((unsigned)i):(unsigned)i,mag,(modern_keyboard || semantic_keyboard) && preset_gameplay,preset_masks);
+-        pc_preset_accumulate(preset_values,modern_controller?pc_modern_pad_actions[i]:(unsigned)i,pad_mag,modern_controller,preset_masks);
+-    }
+-    for(i=0;i<24;i++) {
+-        int mag=preset_values[i];
+-#endif
+         if (!mag)
+             continue;
+         say_first_press(port, CONTROLS[i].name);

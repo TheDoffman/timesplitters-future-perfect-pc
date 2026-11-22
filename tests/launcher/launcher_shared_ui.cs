@@ -68,6 +68,27 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("console tails live shared files, preserves UTF8 and separates errors",()=>{
+                string folder=Path.Combine(root,"console");Directory.CreateDirectory(folder);
+                var tail=new GameLogTail(folder);tail.Poll();Need(tail.Text(false)=="","Missing log should be empty");
+                string session=GameSessions.Begin(folder,"20261118-120000-000");
+                string err=Core.PathIn(folder,LauncherPlatform.SessionLog("20261118-120000-000"));Directory.CreateDirectory(Path.GetDirectoryName(err));
+                string output=Path.ChangeExtension(err,".out");
+                using(var writer=new FileStream(output,FileMode.Create,FileAccess.Write,FileShare.ReadWrite)) {
+                    byte[] bytes=System.Text.Encoding.UTF8.GetBytes("ready café\n");writer.Write(bytes,0,10);writer.Flush();tail.Poll();
+                    writer.Write(bytes,10,bytes.Length-10);writer.Flush();tail.Poll();
+                    Need(tail.Text(false).Contains("ready café"),"Split UTF8 damaged");
+                }
+                File.WriteAllText(err,"normal diagnostics\nError: test failure\n");tail.Poll();
+                Need(tail.Text(true).Contains("test failure")&&!tail.Text(true).Contains("normal diagnostics"),"Stderr must not all be classified as errors");
+                tail.Clear();tail.Poll();Need(tail.Text(false)=="","Clear must not reread old lines");
+                File.AppendAllText(output,"next line\n");tail.Poll();Need(tail.Text(false).Contains("next line"),"Live append missing");
+                File.WriteAllText(output,"new\n");tail.Poll();Need(tail.Text(false).Contains("[OUT] new"),"Truncation not recovered");
+                File.WriteAllText(output,new string('x',200000)+"\nlatest\n");tail.Poll();
+                Need(tail.Text(false).Length<16000&&tail.Text(false).Contains("latest"),"Large log not bounded");
+                GameSessions.CancelLaunch(folder,session);GameSessions.Begin(folder,"20261118-120001-000");tail.Poll();Need(!tail.Text(false).Contains("next line"),"Old session retained");
+                using(var page=new ConsolePage(folder,true))Need(page.Output.IsReadOnly,"Console must be read only");
+            });
             Test("main menu update notice follows version and selected channel",()=>{
                 var release=new Release {Tag="v1.2.4",Channel="stable"};
                 Need(GameUpdateNotice.Encode("v1.2.3",release,"stable",123)=="TSFP_GAME_UPDATE_V1 123 v1.2.3 v1.2.4\n","Newer release missing");
@@ -172,6 +193,25 @@ public static class LauncherSharedUiChecks
                     Need(Convert.ToString(Find<ComboBox>(reopened.View,"MultisampleAntialiasing").SelectedItem)==(enabled?"8x":"Off"),"MSAA choice not restored");
                     Need(Convert.ToString(Find<ComboBox>(reopened.View,"Supersampling").SelectedItem)==(enabled?"200%":"100% (Off)"),"Supersampling choice not restored");
                     Need(Find<CheckBox>(reopened.View,"AmbientOcclusion").IsChecked==enabled && Find<CheckBox>(reopened.View,"FpsPingCounter").IsChecked==enabled,"Toggles not restored");
+                }
+            });
+
+            Test("V-Sync saves independently of frame rate and variable refresh",()=>{
+                string folder=Path.Combine(root,"vsync-controls");Directory.CreateDirectory(folder);
+                var original=GameSettings.Load(folder,null);
+                Need(!original.VSync,"Fresh installations must retain unsynchronized gameplay");
+                foreach(bool value in new[]{true,false}) {
+                    var page=new SettingsPage(new ResourceDictionary(),folder,true);
+                    Find<CheckBox>(page.View,"VSync").IsChecked=value;
+                    Need(Find<Button>(page.View,"SettingsSaveButton").IsEnabled,"V-Sync edit not dirty");
+                    Click(Find<Button>(page.View,"SettingsSaveButton"));
+                    var saved=GameSettings.Load(folder,null);
+                    Need(saved.VSync==value && saved.NativeFps==original.NativeFps && saved.Vrr==original.Vrr,"V-Sync changed another timing setting");
+                    var reopened=new SettingsPage(new ResourceDictionary(),folder,true);
+                    Need(Find<CheckBox>(reopened.View,"VSync").IsChecked==value,"V-Sync checkbox not restored");
+                    Find<CheckBox>(reopened.View,"VSync").IsChecked=!value;
+                    Click(Find<Button>(reopened.View,"SettingsCancelButton"));
+                    Need(GameSettings.Load(folder,null).VSync==value,"Cancel saved V-Sync");
                 }
             });
             SaveBackupChecks.Run(root,Test);
@@ -414,7 +454,7 @@ public static class LauncherSharedUiChecks
                 inputSensitivity.Text="invalid";Click(save);
                 Need(save.IsEnabled && saves==1,"Failed validation disabled Save or reported success");
                 inputSensitivity.Text=valid;Need(!save.IsEnabled,"Restored saved input remained dirty");
-                page.SelectTab(0);Find<ComboBox>(page.View,"KeyboardPreset").SelectedIndex=0;var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
+                page.SelectTab(0);var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
                 Click(binding);Click(All(page.View).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Clear binding"));
                 Need(save.IsEnabled,"Binding change did not enable Save");Click(save);
                 Need(!save.IsEnabled && saves==2 && GameSettings.Load(folder,null).Binding(0)[0]=="none","Binding save did not disable Save or persist");
@@ -427,69 +467,58 @@ public static class LauncherSharedUiChecks
                 fov.Value=original+2;Click(save);
                 Need(save.IsEnabled && saves==3 && File.ReadAllText(controls)==external,"Conflicting save disabled retry or overwrote external settings");
             });
-            Test("new setups use Modern presets while updates keep every existing layout",()=>{
-                string fresh=Path.Combine(root,"modern-defaults");Directory.CreateDirectory(fresh);
-                var model=GameSettings.Load(fresh,null);
-                Need(model.KeyboardPreset==1,"A new keyboard setup did not choose Modern PC");
-                for(int i=0;i<4;i++)Need(model.ControllerPreset(i)==1,"A new controller setup did not choose Modern Controller");
-                Need(!Directory.Exists(Path.Combine(fresh,"Settings")),"Reading new defaults wrote settings");
-                foreach(int action in new[]{0,1,10,11,12,13})
-                    Need(model.Binding(action).Select(GameSettings.KeyCode).SequenceEqual(model.DisplayBinding(action).Select(GameSettings.KeyCode)),"Fresh Custom differs from Modern action "+action);
-                model.Save();string source=Core.PathIn(fresh,LauncherPlatform.Settings(fresh)[0]);
-                var changes=new List<Change>{new Change{Name="Settings/pc-controls.json",Source=source}};
-                string installed=Path.Combine(root,"fresh-install-defaults");Directory.CreateDirectory(installed);
-                Core.Apply(installed,changes,null);var seeded=GameSettings.Load(installed,null);
-                Need(seeded.KeyboardPreset==1 && Enumerable.Range(0,4).All(i=>seeded.ControllerPreset(i)==1),"Fresh install did not seed Modern defaults");
-                seeded.KeyboardPreset=0;seeded.Assign(1,0,'H',true);seeded.Save();
-                seeded=GameSettings.Load(installed,null);Need(seeded.KeyboardPreset==0 && GameSettings.KeyCode(seeded.Binding(1)[0])=='H' && GameSettings.KeyCode(seeded.Binding(1)[1])==5,"Fresh Custom edits did not persist");
-                seeded.KeyboardPreset=1;seeded.Save();seeded.KeyboardPreset=0;seeded.Save();
-                Need(GameSettings.KeyCode(GameSettings.Load(installed,null).Binding(1)[0])=='H',"Preset cycling erased Custom edits");
-                foreach(string kind in new[]{"legacy","custom","mixed"}) {
-                    string folder=Path.Combine(root,"upgrade-"+kind);Directory.CreateDirectory(folder);
-                    var doc=Json.Object(File.ReadAllText(source));
-                    doc.Remove("custom_binding_semantics");
-                    var profiles=((System.Collections.IEnumerable)doc["controllers"]).Cast<Dictionary<string,object>>().ToArray();
-                    for(int i=0;i<4;i++) {
-                        if(kind=="legacy") {profiles[i].Remove("keyboard_preset");profiles[i].Remove("controller_preset");}
-                        else {if(i==0)profiles[i]["keyboard_preset"]=kind=="mixed"?1:0;profiles[i]["controller_preset"]=kind=="mixed"?i%2:0;}
-                    }
-                    var bindings=(Dictionary<string,object>)profiles[0]["bindings"];
-                    bindings["a"]=new[]{"key:E","key:SPACE","key:RETURN","key:J"};bindings["lstick_up"]="key:I";bindings["rstick_up"]="none";
-                    profiles[1]["device"]="gamepad:3";doc["retained_upgrade_field"]="keep";
-                    string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);Directory.CreateDirectory(Path.GetDirectoryName(path));
-                    string original=Json.Encode(doc);File.WriteAllText(path,original);string originalBindings=Json.Encode(bindings);
-                    Core.Apply(folder,changes,null);Need(File.ReadAllText(path)==original,"Updating replaced existing controls: "+kind);
-                    var loaded=GameSettings.Load(folder,null);Need(File.ReadAllText(path)==original,"Loading migrated existing controls: "+kind);
-                    Need(loaded.KeyboardPreset==(kind=="mixed"?1:0),"Updating changed the keyboard layout: "+kind);
-                    for(int i=0;i<4;i++)Need(loaded.ControllerPreset(i)==(kind=="mixed"?i%2:0),"Updating changed a controller layout: "+kind);
-                    loaded.Sensitivity=.23;loaded.Save();loaded=GameSettings.Load(folder,null);
-                    var saved=Json.Object(File.ReadAllText(path));var savedProfiles=((System.Collections.IEnumerable)saved["controllers"]).Cast<Dictionary<string,object>>().ToArray();
-                    Need(Json.Encode(savedProfiles[0]["bindings"])==originalBindings && loaded.PlayerDevice(1)=="gamepad:3","Unrelated Save lost custom bindings/devices: "+kind);
-                    Need(loaded.KeyboardPreset==(kind=="mixed"?1:0) && Enumerable.Range(0,4).All(i=>loaded.ControllerPreset(i)==(kind=="mixed"?i%2:0)),"Unrelated Save changed existing presets: "+kind);
-                    Need(Json.String(saved,"retained_upgrade_field")=="keep","Upgrade lost unrelated controls fields");
+            Test("texture checks are optional, coalesced and nonblocking",()=>{
+                string folder=Path.Combine(root,"background-textures");Directory.CreateDirectory(folder);
+                var release=new TextureRelease {Version="1.2.3"};
+                var ready=new System.Threading.Tasks.TaskCompletionSource<TextureRelease>();int calls=0,scans=0;
+                using(var check=new TextureUpdateCheck(folder,token=>{System.Threading.Interlocked.Increment(ref calls);return ready.Task;},(pack,token)=>{System.Threading.Interlocked.Increment(ref scans);return System.Threading.Tasks.Task.FromResult(1024L);})) {
+                    check.StartIfOptedIn().GetAwaiter().GetResult();Need(calls==0&&!check.IsChecking,"Opted-out startup made a request");
+                    TextureDownload.SetOptedIn(folder,true);var first=check.StartIfOptedIn();
+                    Need(!first.IsCompleted&&check.IsChecking,"Background check blocked startup");
+                    Need(Object.ReferenceEquals(first,check.CheckAsync()),"Concurrent checks were duplicated");
+                    var page=new SettingsPage(new ResourceDictionary(),folder,true,check);bool busy=false;page.TextureBusyChanged+=value=>busy=value;
+                    page.RefreshTextureCheck();Need(!busy&&((DockPanel)page.View.Children[0]).IsEnabled,"Background work blocked the settings editor");
+                    Need(!Find<Button>(page.View,"CheckTexturePack").IsEnabled&&Find<TextBox>(page.View,"MouseSensitivity").IsEnabled,"Only texture actions should wait");
+                    ready.SetResult(release);Need(first.Wait(5000),"Texture check did not finish");page.RefreshTextureCheck();
+                    Need(calls==1&&scans==1&&check.DownloadBytes==1024&&check.Status.Contains("available"),"Cached texture result incorrect");
+                    Need(Find<Button>(page.View,"DownloadTexturePack").IsEnabled,"Shared result did not reach settings");
+                    check.StartIfOptedIn().GetAwaiter().GetResult();Need(calls==1,"Startup check repeated in the same session");
+                    check.Installed(release);Need(check.Status=="Textures up to date"&&check.DownloadBytes==0,"Installation left stale update status");
                 }
+                using(var failed=new TextureUpdateCheck(folder,token=>{throw new IOException("Offline");})) {
+                    failed.CheckAsync().GetAwaiter().GetResult();Need(!failed.IsChecking&&failed.HasChecked&&failed.Status.Contains("unavailable"),"Failure escaped background work");
+                }
+                var waiting=new System.Threading.Tasks.TaskCompletionSource<TextureRelease>();
+                var cancelled=new TextureUpdateCheck(folder,token=>{token.Register(()=>waiting.TrySetCanceled());return waiting.Task;});
+                var pending=cancelled.CheckAsync();cancelled.Dispose();Need(pending.Wait(5000)&&!cancelled.IsChecking,"Closing did not cancel background work");
             });
-            Test("modern presets retain custom sources and round trip all controller slots",()=>{
-                string folder=Path.Combine(root,"modern-presets");Directory.CreateDirectory(folder);
-                var model=GameSettings.Load(folder,null);model.Assign(14,0,'I',true);model.Save();
-                string path=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
-                var doc=Json.Object(File.ReadAllText(path));var profile=((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First() as Dictionary<string,object>;
-                var bindings=(Dictionary<string,object>)profile["bindings"];bindings["a"]=new[]{"key:E","key:SPACE","key:RETURN","key:J"};
-                File.WriteAllText(path,Json.Encode(doc));string custom=Json.Encode(bindings);
-                model=GameSettings.Load(folder,null);model.KeyboardPreset=1;for(int i=0;i<4;i++)model.SetControllerPreset(i,1);model.Save();
-                model=GameSettings.Load(folder,null);Need(model.KeyboardPreset==1,"Modern PC did not persist");
-                Need(model.DisplayBinding(1)[1]=="key:#5" && model.DisplayBinding(10)[0]=="key:#66","Modern overrides drifted");
-                Need(GameSettings.KeyCode(model.Binding(14)[0])=='I',"Custom keys were replaced");
-                for(int i=0;i<4;i++)Need(model.ControllerPreset(i)==1,"Controller preset did not persist");
-                model.KeyboardPreset=0;for(int i=0;i<4;i++)model.SetControllerPreset(i,0);model.Save();
-                doc=Json.Object(File.ReadAllText(path));profile=((System.Collections.IEnumerable)doc["controllers"]).Cast<object>().First() as Dictionary<string,object>;
-                Need(Json.Encode(profile["bindings"])==custom,"Custom sources changed across preset applications");
+            Test("compact settings reflow and collapse without changing drafts",()=>{
+                string folder=Path.Combine(root,"compact-settings");Directory.CreateDirectory(folder);
                 var page=new SettingsPage(new ResourceDictionary(),folder,true);
-                var keyboard=Find<ComboBox>(page.View,"KeyboardPreset");var controller=Find<ComboBox>(page.View,"ControllerPreset3");
-                var save=Find<Button>(page.View,"SettingsSaveButton");Click(save);Need(!save.IsEnabled,"Saving the initial draft stayed dirty");
-                keyboard.SelectedIndex=1;controller.SelectedIndex=1;Need(save.IsEnabled,"Preset choices did not enable Save");Click(save);
-                model=GameSettings.Load(folder,null);Need(model.KeyboardPreset==1 && model.ControllerPreset(2)==1,"UI preset save failed");
-                keyboard.SelectedIndex=0;controller.SelectedIndex=0;Click(save);Need(!save.IsEnabled,"Saving Custom stayed dirty");
+                var save=Find<Button>(page.View,"SettingsSaveButton");Click(save);Need(!save.IsEnabled,"Initial save failed");
+                var input=Find<Expander>(page.View,"SettingsInputmouseSection");
+                var bindings=Find<Expander>(page.View,"SettingsKeybindingsSection");
+                Need(input.IsExpanded&&!bindings.IsExpanded,"Compact card defaults changed");
+                input.IsExpanded=false;input.IsExpanded=true;Need(!save.IsEnabled,"Presentation changed the saved draft");
+                var sensitivity=Find<TextBox>(page.View,"MouseSensitivity");sensitivity.Text="0.2";
+                var cards=Find<SettingsTiles>(page.View,"ControlsCards");
+                cards.Measure(new Size(860,Double.PositiveInfinity));cards.Arrange(new Rect(0,0,860,cards.DesiredSize.Height));
+                Need(cards.ColumnCount==2,"Wide settings did not use two columns");
+                var localCard=(Border)Find<Expander>(page.View,"SettingsLocalmultiplayerSection").Parent;
+                var bindingCard=(Border)bindings.Parent;
+#if MACOS || LINUX
+                Need(Math.Abs(bindingCard.Bounds.X-localCard.Bounds.X)<1&&bindingCard.Bounds.Y-localCard.Bounds.Bottom<=13,"Collapsed bindings left a gap below Local multiplayer: "+localCard.Bounds+" → "+bindingCard.Bounds);
+#else
+                var localSlot=System.Windows.Controls.Primitives.LayoutInformation.GetLayoutSlot(localCard);
+                var bindingSlot=System.Windows.Controls.Primitives.LayoutInformation.GetLayoutSlot(bindingCard);
+                Need(Math.Abs(bindingSlot.X-localSlot.X)<1&&bindingSlot.Y-localSlot.Bottom<=1,"Collapsed bindings left a gap below Local multiplayer");
+#endif
+
+                cards.Measure(new Size(620,Double.PositiveInfinity));cards.Arrange(new Rect(0,0,620,cards.DesiredSize.Height));
+                Need(cards.ColumnCount==1,"Narrow settings did not stack");
+                input.IsExpanded=false;input.IsExpanded=true;bindings.IsExpanded=true;
+                Need(sensitivity.Text=="0.2"&&save.IsEnabled,"Collapse or resize lost the draft");
+                Click(save);Need(!save.IsEnabled&&Math.Abs(GameSettings.Load(folder,null).Sensitivity-.2)<.0001,"Compact controls did not save");
             });
             Test("controller deadzones preserve legacy and tune each player",()=>{
                 string folder=Path.Combine(root,"deadzone-settings");Directory.CreateDirectory(folder);
@@ -499,9 +528,20 @@ public static class LauncherSharedUiChecks
                 model=GameSettings.Load(folder,null);
                 Need(model.ControllerDeadzone(1,true)==1638 && model.ControllerDeadzone(1,false)==7849 && model.ControllerDeadzone(2,false)==0,"Independent deadzones did not persist");
                 var page=new SettingsPage(new ResourceDictionary(),folder,true);
-                var aim=Find<ComboBox>(page.View,"Player2AimDeadzone");var save=Find<Button>(page.View,"SettingsSaveButton");
-                Need(aim.SelectedIndex==5,"Aim percentage incorrect");
-                aim.SelectedIndex=8;Need(save.IsEnabled,"Deadzone edit not dirty");Click(save);
+                var aim=Find<Slider>(page.View,"Player2AimDeadzone");var save=Find<Button>(page.View,"SettingsSaveButton");
+                for(int player=1;player<=4;player++)
+                    Need(Find<Expander>(page.View,"Player"+player+"DeadzoneSection").IsExpanded==(player==1),"Wrong default expanded deadzone player");
+                bool dirty=save.IsEnabled;
+                var firstPlayer=Find<Expander>(page.View,"Player1DeadzoneSection");
+                var secondPlayer=Find<Expander>(page.View,"Player2DeadzoneSection");
+                firstPlayer.IsExpanded=false;secondPlayer.IsExpanded=true;
+                Need(save.IsEnabled==dirty,"Expanding or collapsing a player changed the settings draft");
+                Need(aim.Value==5,"Aim percentage incorrect");
+                Need(aim.Minimum==0 && aim.Maximum==100 && aim.TickFrequency==1 && aim.IsSnapToTickEnabled,"Deadzone slider bounds/steps changed");
+                Need(Find<TextBlock>(page.View,"Player2AimDeadzoneValue").Text=="5%","Initial percentage missing");
+                aim.Value=8;Need(Find<TextBlock>(page.View,"Player2AimDeadzoneValue").Text=="8%","Live percentage missing");Need(save.IsEnabled,"Deadzone edit not dirty");
+                secondPlayer.IsExpanded=false;secondPlayer.IsExpanded=true;
+                Need(aim.Value==8,"Collapsing a player lost a draft deadzone");Click(save);
                 model=GameSettings.Load(folder,null);Need(model.ControllerDeadzone(1,true)==2621 && model.ControllerDeadzone(1,false)==7849,"UI deadzone save failed");
                 model.Sensitivity=.15;model.Save();model=GameSettings.Load(folder,null);
                 Need(model.ControllerDeadzone(1,true)==2621 && model.ControllerDeadzone(2,false)==0,"Unrelated save lost deadzones");
@@ -517,7 +557,7 @@ public static class LauncherSharedUiChecks
             });
             Test("binding capture, conflict cancel, reassignment and clear",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);
-                Find<ComboBox>(page.View,"KeyboardPreset").SelectedIndex=0;
+
                 var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
                 Func<string,Button> action=label=>All(page.View).OfType<Button>().Single(b=>b.Name!="SettingsCancelButton"&&Convert.ToString(b.Content)==label);
                 string original=Convert.ToString(binding.Content);Click(binding);Need(Find<Border>(page.View,"BindingCaptureArea")!=null,"No capture prompt");

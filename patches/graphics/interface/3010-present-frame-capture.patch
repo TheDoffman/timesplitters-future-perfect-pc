@@ -1,0 +1,22 @@
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -9,6 +9,9 @@
+ #include "rhi_backend.h"
+ #include "graphics/present_metrics.h"
+ #include <time.h>
++#ifdef TSFP_PC_DISPLAY
++#include "graphics/pc_present_capture.h"
++#endif
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -208,6 +211,9 @@
+ int32_t rhi_present_kind(uint32_t interval, uint32_t kind)
+ {
+     uint64_t start=present_clock_ns();
++#ifdef TSFP_PC_DISPLAY
++    pc_present_capture(rhi_swapchain_readback);
++#endif
+     int32_t result=g_rhi ? g_rhi->present(interval) : -1;
+     tsfp_present_record(&g_present_metrics,rhi_backend_name(),kind,result,start,present_clock_ns());
+     return result;

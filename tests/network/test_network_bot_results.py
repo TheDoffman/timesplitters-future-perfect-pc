@@ -29,8 +29,9 @@ def test_original_bot_results(tmp_path, broken):
         adapter = (ROOT / 'src/network/pc_network_bots_guest.inc').read_text()
         names = ('pc_network_bots_guest_actor', 'pc_network_bots_guest_score_network')
         adapter = '\n'.join(re.search(r'static (?:uint32_t|void) '+name+r'\(.*?\n\}', adapter, re.S).group() for name in names)
-        # Exercise the PC adapter with any host C compiler.
-        adapter = '#ifndef _WIN32\n#define _WIN32 1\n#endif\n' + adapter
+        # Enable the shared adapter without impersonating the host OS: other
+        # compiled helpers must still select native signal/exception APIs.
+        adapter = '#define TSFP_NATIVE_NETWORK 1\n' + adapter
         if broken:
             adapter = adapter.replace('caller==0x00063f05u', 'caller==0xffffffffu')
         source = (ROOT / 'tests/network/network_bot_results.c').read_text()
@@ -58,7 +59,7 @@ def test_original_bot_match_limit(tmp_path, broken):
         adapter = (ROOT / 'src/network/pc_network_bots_guest.inc').read_text()
         names = ('pc_network_bots_guest_actor', 'pc_network_bots_guest_score_network')
         adapter = '\n'.join(re.search(r'static (?:uint32_t|void) '+name+r'\(.*?\n\}', adapter, re.S).group() for name in names)
-        adapter = '#ifndef _WIN32\n#define _WIN32 1\n#endif\n' + adapter
+        adapter = '#define TSFP_NATIVE_NETWORK 1\n' + adapter
         if broken:
             adapter = adapter.replace('caller==0x00067868u', 'caller==0xffffffffu')
         source = (ROOT / 'tests/network/network_bot_match_limit.c').read_text()

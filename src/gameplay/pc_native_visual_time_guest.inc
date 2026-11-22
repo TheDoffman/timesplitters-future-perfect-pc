@@ -1,3 +1,6 @@
+#define PC_NATIVE_WEAPON_BOB_IMPLEMENTATION
+#include "pc_native_weapon_bob.h"
+#undef PC_NATIVE_WEAPON_BOB_IMPLEMENTATION
 #include "pc_native_visual_time.h"
 static PcNativeVisualTime pc_native_level_visual_time;
 void pc_native_visual_rebase(uint32_t value,double fraction)

@@ -17,10 +17,16 @@ Lobby. The caption override also includes Story hosts during gameplay, using
 their existing Story return action; guest captions remain original. Story host pause
 rows from descriptor2F5520 defer that host row with its original six arguments
 until `pc_display_menu_finish` has appended the Story restart options; flush it
-once before desktop Quit. Match the captured menu instance and preserve the
+once before original pause layout. Match the captured menu instance and preserve the
 original callback, flags and row ID. Arcade and guest row construction stays
 immediate. Host pause Yes40h and results exits use the retained return. Do not
 reintroduce the abandoned guest-to-browser/directory-retention change.
+The original legacy/LAN scope (2026-11-06) keeps a guest's own Leave Match/Quit
+and browser Back behavior original. The later owned native Online flow requires
+its authenticated-browser cleanup after that original confirmation, as below.
+Only the host's EC060/EC030/EAF60/EB030 rows read Return to Lobby. Host pause
+Yes40h and results exits use the retained return. Do not apply the owned native
+Online return to legacy/LAN guest callbacks.
 
 Admission requires transport enabled, non-Story mode, an active network session,
 host/member role and a gameplay level0..100. Guest79094C is a level number,
@@ -104,3 +110,31 @@ metadata addresses/device/CRC/temp/body pointers, and original failure code/kind
 slot plus a CRC of the original save frame's scratch read buffer. That scratch
 CRC is not proof that the read completed. No profile bytes/names are logged, no
 error panel is hidden, and original signature/read/CRC/write behavior is retained.
+
+
+Native Online guest rejoin (2026-11-14): a guest's own stock Yes callback
+returns2EBE4E into65420 while the match is phase15. The later35C360 retirement
+runs at18, after the old loss guard. For an active owned native Online guest,
+mark browser destination3 at the first callback; keep original confirmation and
+transport teardown. The existing native return factory then sends LEAVE for the
+old authenticated member, clears passthrough/autojoin, and builds MP_BROWSER.
+Previously destination stayed zero, leaving a stock discovery browser and an
+inactive retained service membership; a new selection bypassed v3 admission.
+The earlier original-guest rule remains for LAN/legacy/Story and other callers;
+host retained-lobby returns and cancel stay unchanged. The compiled exit fixture
+covers this confirmed guest callback, owned browser handoff and unrelated callers.
+The rebuilt Windows client now passes four repeated automatic Deathmatch
+leave/rejoin cycles with two different guests through the isolated mini relay.
+No Back or manual Refresh is sent after departure. The original host/round/epoch,
+advancing survivor clocks and six bots remain, and admission reopens after each
+join. The earlier manual-Back beta tests are historical workaround evidence only.
+See STATUS for current build provenance and platform acceptance limits.
+
+
+The owned return factory must also preserve the replaced stock browser's backend
+initialization: after original1CC360 cleanup, call original1CB950(parent) before
+pc_online_menu_leave. A trace showed session0/object0 while startup76B12C stayed2;
+that stale ready stage prevented discovery9999 from reopening on the next bridge.
+1CB950 restores the verified original System Link backend/startup stage through
+352770. The production FOV/menu fixture covers this ordering and rejects removal
+of that call. This is separate from the earlier missing guest-return destination.

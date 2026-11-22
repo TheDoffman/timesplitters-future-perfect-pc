@@ -165,6 +165,15 @@ int main(void)
     fail_copy = 0; scene = 50;
     bind_screen(2, va);
     assert(copies == 7 && sampled == 50);
+    /* Offscreen copies may use an existing GPU image only while its guest
+     * descriptor still names the same allocation and layout. */
+    assert(hle_d3d8_rendered_texture(va)==g_textures[0].host);
+    g_textures[0].rendered=0;assert(!hle_d3d8_rendered_texture(va));
+    g_textures[0].rendered=1;
+    HLE_MEM32(va+4)++;assert(!hle_d3d8_rendered_texture(va));HLE_MEM32(va+4)--;
+    HLE_MEM32(va+12)++;assert(!hle_d3d8_rendered_texture(va));HLE_MEM32(va+12)--;
+    HLE_MEM32(va+16)++;assert(!hle_d3d8_rendered_texture(va));HLE_MEM32(va+16)--;
+    assert(hle_d3d8_rendered_texture(va)==g_textures[0].host);
     puts("PASS: framebuffer sampling passes, stable taps, frame zero and retry");
     return 0;
 }

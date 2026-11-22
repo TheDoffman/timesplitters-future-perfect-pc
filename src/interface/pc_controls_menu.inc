@@ -8,16 +8,6 @@ extern void sub_00079710(void);
 extern void sub_002EA3F0(void),sub_002EAB30(void),sub_002E9FC0(void);
 extern void sub_002CBE50(void),sub_002EC1A0(void),sub_002EA8E0(void);
 extern void sub_002CBE00(void),sub_002E9E50(void),sub_002D0970(void),sub_002E9EA0(void),sub_002EA210(void);
-/* Called only by 69D90's known-new profile branch, after native initialization. */
-static void controls_new_profile(uint32_t profile)
-{
-    if(!pc_settings_custom_semantics() || !guest_writable(profile,0x7c))return;
-    WORD_AT(profile)&=0xffff0000u; /* Native layout 0 owns the editable mask table. */
-    /* First14 words are native actions; +0x2c is an unused native field.
-     * Seed by semantic field, independent of the original factory scheme. */
-    static const int roles[14]={9,8,0,2,23,18,10,11,12,13,-1,10,11,1};
-    for(unsigned i=0;i<14;i++)if(roles[i]>=0)WORD_AT(profile+4+i*4)=pc_preset_custom_pad_mask((unsigned)roles[i]);
-}
 static uint32_t controls_menu;
 static uint32_t controls_rows[48],controls_next[48],controls_sibling[48];
 static unsigned controls_row_count,controls_native_count,controls_native_selectable;
@@ -68,8 +58,7 @@ static int controls_dirty(void)
 {
     uint32_t draft=controls_draft();
     return !draft || !controls_original_ready ||
-        memcmp(controls_original,(void *)(g_xbox_mem_offset+draft),sizeof controls_original)!=0 ||
-        kb_controller_choice!=kb_controller_preset;
+        memcmp(controls_original,(void *)(g_xbox_mem_offset+draft),sizeof controls_original)!=0;
 }
 static void controls_accept_state(void)
 {
@@ -133,8 +122,7 @@ static int controls_frame(uint32_t menu,const char *subtitle)
     } else {controls_bounds_valid=0;controls_pending=-1;}
     return 1;
 }
-/* These host settings save immediately and remain independent of native
- * profile Accept/Cancel. Each choice owns persistent guest text storage. */
+static unsigned kb_controller_port;
 static uint32_t controls_deadzone_storage,controls_deadzone_rows[2];
 static int controls_deadzone_values[2];
 static void controls_deadzone_build(void)
@@ -177,16 +165,10 @@ static int controls_native_button(void (*original)(void))
     uint32_t frame=g_esp,id=WORD_AT(frame+8),flags=WORD_AT(frame+12);
     int controller=id==0 || id==3 || id==8 || id==9;
     if(id<10 && controller!=(controls_tab==1))WORD_AT(frame+12)=flags|0x21u;
-    if(id==0 && controls_tab==1) {
-        kb_menu=controls_menu;
-        kb_preset_selector(1);
-    }
-    /* Spread the shorter section evenly over the General section's height;
-     * retain the compact footer instead of inserting empty rows above it. */
-    guest_call(sub_00071B10,4,1u,bits(1.2f),1u,1u);
-    /* Add stick choices before Turn Speed, ahead of the native footer divider. */
+    /* Native leading leaves room for the shared top inset and footer without
+     * resizing cached rows, custom sliders or profile records after layout. */
+    guest_call(sub_00071B10,4,1u,bits(.9f),1u,1u);
     if(id==9 && controls_tab==1)controls_deadzone_build();
-    if(id==10 && *kb_status)kb_row(15,kb_status,1);
     if(id==10 && controls_tab==0)
         guest_call(sub_00079D60_gen,6,controls_text(5,"Local multiplayer"),250u,0u,0u,KB_SELECT,0u);
     if(id==10 || id==11)guest_call(sub_00071C50,1,0x26200u);
@@ -205,14 +187,13 @@ static void controls_prepare_keyboard(void)
     if(!pc_settings_read(&kb_settings,error,sizeof error)) {
         kb_page=KB_ERROR;snprintf(kb_status,sizeof kb_status,"Select a keyboard profile in PC Settings first.");
     }
-    kb_saved=kb_settings;kb_keyboard_choice=kb_settings.preset;
+    kb_saved=kb_settings;
 }
 static void controls_open_tab(int tab)
 {
     GuestRegisters r;save_registers(&r);uint32_t source=WORD_AT(g_esp+4);
     controls_tab=tab;controls_pending=-1;controls_bounds_valid=0;controls_left=1;controls_original_ready=0;controls_anchor_ready=0;
     controls_prepare_keyboard();
-
     settings_tabs_input_reset();settings_tabs_hover_reset();
     guest_call((int32_t)WORD_AT(0x79094c)>100?sub_002CBE50:sub_002EC1A0,1,source);
     restore_registers(&r);g_esp+=4;
@@ -231,12 +212,8 @@ static void controls_open(void) {controls_open_tab(0);}
 static void controls_open_keyboard(void) {controls_open_tab(2);}
 static void controls_controller_build(void)
 {
-    /* Native open has now selected the profile; do not reuse the previous menu owner. */
-    if(!controls_original_ready) {
     kb_controller_port=WORD_AT(0x7ba9e0);if(kb_controller_port>=4)kb_controller_port=0;
     if((int32_t)WORD_AT(0x79094c)<=100) {unsigned port=WORD_AT(0x6b93c0+kb_controller_port*4);if(port<4)kb_controller_port=port;}
-    kb_controller_preset=pc_settings_controller_preset(kb_controller_port);kb_controller_choice=kb_controller_preset;
-    }
     if(controls_frame(controls_menu,"Controls")) {
         WORD_AT(controls_menu+0x10)=0;
         guest_call(sub_00071C50,1,0x2000u);
@@ -256,16 +233,16 @@ static void controls_controller_build(void)
 static void controls_anchor(void)
 {
     if(!controls_tabs_visible())return;
+    int panel_aligned=settings_panel_anchor(controls_menu);
     float y=FLOAT_AT(controls_menu+0x64);
     if(!isfinite(y))return;
     if(!controls_anchor_ready) {controls_anchor_y=y;controls_anchor_ready=1;}
     /* 77320 writes this field but also remeasures pending builder rows. */
-    WORD_AT(controls_menu+0x64)=bits(controls_anchor_y);
+    WORD_AT(controls_menu+0x64)=bits(panel_aligned?fminf(controls_anchor_y,FLOAT_AT(controls_menu+0x64)):controls_anchor_y);
 }
 static void controls_build(void)
 {
     GuestRegisters r;save_registers(&r);controls_menu=WORD_AT(g_esp+4);controls_row_count=0;
-    kb_keyboard_preset_row=kb_controller_preset_row=kb_keyboard_apply_row=0;
     controls_deadzone_rows[0]=controls_deadzone_rows[1]=0;
     controls_divider_style=(SettingsDividerStyle){0,0};
     if(controls_tab==2) {kb_menu=controls_menu;guest_call(kb_build,1,controls_menu);}
@@ -275,7 +252,7 @@ static void controls_build(void)
 }
 static void controls_change_tab(int tab)
 {
-    kb_preset_poll();controls_deadzone_poll();
+    controls_deadzone_poll();
     if(tab==controls_tab)return;
     if(controls_tab==2)kb_flush_mouse();
     controls_link_rows(1);
@@ -303,22 +280,15 @@ static void controls_native_action(void (*action)(void))
 }
 static void controls_accept(void)
 {
-    kb_preset_poll();
     if(!controls_dirty()){g_esp+=4;return;}
-    if(kb_controller_choice!=kb_controller_preset) {
-        if(!pc_settings_controller_preset_save(kb_controller_port,kb_controller_choice,kb_status,sizeof kb_status)) {
-            GuestRegisters r;save_registers(&r);guest_call(sub_00078980,1,controls_menu);restore_registers(&r);g_esp+=4;return;
-        }
-        kb_controller_preset=kb_controller_choice;
-    }
     controls_native_action((int32_t)WORD_AT(0x79094c)>100?sub_002CBE00:sub_002E9E50);
 }
 static void controls_cancel(void) {controls_native_action((int32_t)WORD_AT(0x79094c)>100?sub_002D0970:sub_002E9EA0);}
 static void controls_customize(void) {controls_native_action(sub_002EA210);}
 static void controls_tick(void)
 {
+    controls_deadzone_poll();
     GuestRegisters r;save_registers(&r);uint32_t menu=WORD_AT(g_esp+4);
-    kb_preset_poll();controls_deadzone_poll();
     if(controls_tabs_visible()) {
         int direction=settings_tabs_direction(menu);
         if(direction) {
@@ -333,7 +303,7 @@ static void controls_tick(void)
             controls_change_tab((controls_tab+((buttons&0x40000u)?2:1))%3);
         }
     } else if(controls_tab==2)guest_call(kb_tick,1,menu);
-    else {controls_link_rows(1);guest_call(sub_002EAB30,1,menu);controls_link_rows(0);}
+    else {controls_link_rows(1);menu_controller_speed_tick(menu,sub_002EAB30);controls_link_rows(0);}
     if(controls_tab!=2)controls_accept_state();
     restore_registers(&r);g_esp+=4;
 }

@@ -17,6 +17,26 @@ from translation_names import identifier
 import translation_layout as layout
 
 
+# Function count alone does not bound optimizer memory (especially for SIMD).
+# Match the continuation publisher's body budget; never split a function body.
+MAX_CHUNK_BODY_BYTES = 512 * 1024
+
+
+def _chunks(records, count):
+    pending = []
+    body_bytes = 0
+    for record in records:
+        size = len(record[2].encode('utf-8'))
+        if pending and (len(pending) >= count or body_bytes + size > MAX_CHUNK_BODY_BYTES):
+            yield pending
+            pending = []
+            body_bytes = 0
+        pending.append(record)
+        body_bytes += size
+    if pending:
+        yield pending
+
+
 def xbe_title(data, path):
     try:
         base=struct.unpack_from('<I',data,0x104)[0]
@@ -188,7 +208,7 @@ class BatchTranslator:
             if items:
                 header+=['',f'/* {label}. */']+[f'void {items[address]}(void);  /* 0x{address:08X} */' for address in sorted(items)]
         header+=['','#endif /* RECOMP_FUNCS_H */','']
-        chunks=[records[start:start+chunk_size] for start in range(0,len(records),chunk_size)]
+        chunks=list(_chunks(records,chunk_size))
         outputs={header_name:'\n'.join(header),**runtime_headers}
         files=[str(destination/header_name)]
         for index,chunk in enumerate(chunks):

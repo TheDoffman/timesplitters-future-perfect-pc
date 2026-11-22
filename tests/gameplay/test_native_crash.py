@@ -30,6 +30,7 @@ def test_capture(client,tmp_path,mode,count):
         allocations=(path.parent/'allocation-history.txt').read_text()
         assert 'allocation-event 257' in allocations and 'allocation-bytes 4096' in allocations
         models=(path.parent/'model-history.txt').read_text();assert 'node-index 15' in models and 'traversal-depth 123' in models
+        network=(path.parent/'network-history.txt').read_text();assert 'bot-accepted 12' in network and 'rtt-ms 180' in network and len(network)<8192
         details=json.loads((path.parent/'diagnostics.json').read_text());assert details['root_cause']=='undetermined'
         data=json.loads(path.read_text());assert data['schema']==1 and len(data['executable_sha256'])==64
         assert data['native_capture_saved'];assert (path.parent/'game-log-tail.txt').read_text()=='local diagnostic tail\n'
@@ -42,3 +43,14 @@ def test_refuses_linked_report_root(client,tmp_path):
     outside=tmp_path/'outside';outside.mkdir();link=tmp_path/'reports';link.symlink_to(outside,target_is_directory=True)
     result=subprocess.run([str(client),'crash'],env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(link)),timeout=15)
     assert result.returncode==FATAL_STATUS and not list(outside.iterdir())
+
+
+def test_nonfatal_network_export(client,tmp_path):
+    area=tmp_path/'reports'
+    result=subprocess.run([str(client),'responsive'],env=dict(os.environ,TSFP_CAPTURE_SESSION='c'*32,TSFP_CRASH_DIR=str(area)),capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stderr
+    import time
+    deadline=time.monotonic()+3
+    while not (area/'network-sync.txt').exists() and time.monotonic()<deadline:time.sleep(.05)
+    text=(area/'network-sync.txt').read_text()
+    assert 'bot-accepted 12' in text and 'rtt-ms 180' in text and len(text)<8192

@@ -34,6 +34,81 @@ neutral reset and two/three/four-player delivery. They remain in existing CI
 routes. Physical multiplayer timing/audio and authored checkpoint acceptance
 remain distinct from these CPU contracts. Native Story transport remains the
 existing MAC-013 gap; this change adds no OS-specific developer policy.
+## Viewmodel visibility
+
+Settings > Video Settings > View & HUD includes a live, persisted
+"Show first-person viewmodel" switch. `PcDeveloperState.hide_viewmodel`
+defaults off and the existing `pc_developer_viewmodel_draw` hook omits only
+the owned viewport's weapons/hands; weapon updates remain native. Freecam
+still hides them independently. The switch requires gameplay and multiplayer
+Tools permission; permission removal or Tools disable suppresses its effect,
+preserving the saved preference for when Tools is available again. Shared source
+serves Windows, Mac and Linux without a new patch or generated-code change.
+
+`tests/input/test_developer_tools.py` covers the live switch, independent
+freecam/manual visibility, Tools-disable and multiplayer-denial resets. Its
+guest fixture checks the actual shared draw gate, owned versus other viewports,
+invalid ownership and multiplayer guards. These extend the existing CI route;
+native Mac/Linux visual acceptance is separate.
+
+## Settings
+
+Video option parity: [V-Sync, weapon FOV and crosshair size](#video-parity).
+
+All preferences exposed in the Settings tab persist. Input controls and
+bindings use the existing controls JSON save path. Staged Video options still
+require Apply (and Keep for a resolution preview); subtitles use native profile
+saving. Fullscreen now uses `pc_display_save_fullscreen` and the checked host
+setter; texture style uses `tsfp_texture_save_4k`. Both participate in video
+batch failure rollback, including host fullscreen refusal.
+
+The three immediate visibility switches use `PcViewSettings` and the
+`developer_view` object in the routed controls JSON. `pc_settings_view_read` /
+`pc_settings_view_save` in `pc_bindings.inc` share the Windows backup/atomic
+replacement and native POSIX writer. Missing values default to visible;
+unknown object members and unrelated JSON survive saves. Failed saves keep
+the current preference and report an error. The sidebar shows saved choices;
+`pc_developer_get` applies saved HUD/watermark choices even with Tools disabled.
+Freecam suppression and viewmodel hiding retain opt-in/match-policy guards.
+The input owner caches preferences under its binding lock, initialized at
+startup and updated after successful saves; no per-frame file reads occur.
+Regular Video Options shares the HUD/watermark choices and updates an open
+Dev Tools sidebar immediately. See [native rows](video-options.md#hud-and-version-watermark-visibility).
+Tools-tab cheats, camera modes and game speed remain session state.
+
+Existing CI routes cover a fresh-process visibility/input reload in
+`tests/input/pc_settings.c`, simulated sidebar reload/save refusal/freecam
+independence in `tests/input/developer_tools.c`, and actual fullscreen/texture
+files plus rollback in `tests/graphics/fov_settings.c`. Mac/Linux use shared
+policy and existing storage/window adapters; native host acceptance is pending.
+
+## Video parity
+
+The shared sidebar includes the regular menu's V-Sync (Display), Weapon FOV
+and Crosshair Size (View & HUD). V-Sync is a boolean; weapon FOV uses40–100
+degrees and crosshair uses25–150% in5% increments, matching `pc_display.h`.
+All three FOV/size controls use `sidebar_video_slider`: the same slider,
+numeric entry, +/- steps and reset layout. Weapon FOV resets to55 degrees;
+crosshair resets to100%, snapping to5% steps and rejecting off-grid typed
+values. Numeric IDs5/6/7 share bounds, keyboard and pointer handling; game-speed
+slider behavior is retained. Search includes vsync/V-Sync,
+weapon/FOV and crosshair/size. These are staged drafts requiring Apply.
+
+`PcVideoValues` appends VIDEO_VSYNC, VIDEO_WEAPON_FOV and VIDEO_CROSSHAIR.
+The guest-thread adapter reads the shared setters' current values, validates
+the same ranges, persists aperture/crosshair with `pc_display_save` and V-Sync
+with `pc_vsync_set_enabled`. Resolution previews defer the entire batch until
+Keep. Failed writes restore all live/saved settings, including exact legacy
+percentage weapon apertures rather than their rounded degree equivalents.
+No new patch, guest wrapper, generated code or platform adapter is needed.
+
+Existing Developer Tools input tests exercise drafts, sliders, mailbox values
+and Revert. The FOV fixture covers snapshots, real display-file persistence,
+invalid requests, V-Sync refusal, late-write rollback and Keep deferral.
+`test_vsync.py` retains the actual shared persistence/presentation checks.
+Slider tests cover drag endpoints, keyboard arrows, typed values, +/- steps,
+reset, invalid crosshair increments and unchanged Apply/Revert behavior.
+Native Mac/Linux builds and visual acceptance remain unverified separately.
 
 Current widget, video and host-policy contracts continue in [systems continuation](systems-continuation.md).
 The sections below retain the Developer Tools branch history while the owning
@@ -281,6 +356,23 @@ The former named footer notice remains implemented but disabled for future reuse
 flight state and value-only developer requests. Windows/SDL adapters own host
 input/capture/fullscreen/log-folder operations. The old Windows bar is hidden;
 its saved JSON is preserved. F2/F12 dialogs remain recovery routes.
+`pc_match_overlay.inc` wraps the sidebar line provider with a value-only atomic
+match-migration status (`pc_match_overlay.h`). It reserves ten draw slots and
+appends a centred panel/title/help group last, so it renders over the finished
+frame even with Tools disabled or HUD hidden. Both D3D and native GL reuse the
+existing shared font/canvas; there is no second host-specific overlay. The
+native migration frame clears status when inactive, disconnected or committed.
+The panel follows the stock pause confirmations: pale rounded border, black
+interior, uppercase white bold text, separator and blue light bars. Existing
+embedded fonts are retained; UI scale is bounded by the viewport and capped at2.
+`tests/input/developer_tools.c` covers disabled Tools, centring, bounded capacity
+and clearing; the production native control fixture checks prepare/resume state.
+Completed-frame diagnostic capture is separate from the guest scene dump:
+`3010-present-frame-capture.patch` calls the shared `pc_present_capture.h` before
+RHI present, after late overlays. `TSFP_PRESENT_CAPTURE` supplies a caller-owned
+output prefix; two BMPs rotate at `TSFP_PRESENT_CAPTURE_EVERY` (default6). No
+setting enables it automatically. Readback dimensions/allocation are bounded,
+and the portable fixture checks BMP colors/orientation and output rotation.
 `pc_developer_guest.inc` handles camera work at original CCAB0 and Story requests
 at the timing boundary. Noclip publishes feet/eye/history through D2DE0;
 both flight modes rebuild the final view after scripted cameras. Freecam

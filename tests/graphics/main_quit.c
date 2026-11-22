@@ -49,8 +49,8 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     }
     return 0;
 }
-#include "pc_quit_menu.inc"
-static void original(void) {++finalized;g_esp+=4;}
+#include "pc_main_quit.inc"
+
 static void setup(uint32_t caller)
 {g_esp=0x1000;WORD_AT(g_esp)=caller;WORD_AT(g_esp+4)=0x2000;row_count=finalized=0;}
 static void callback(void (*fn)(void)) {g_esp=0x1000;fn();CHECK(g_esp==0x1004);}
@@ -58,15 +58,12 @@ int main(void)
 {
     g_xbox_mem_offset=(uintptr_t)memory;
     WORD_AT(0x202c)=0x3000;WORD_AT(0x2004)=0x4000;
-    const uint32_t sites[]={0x2d0edf,0x2f582f,0x2f5879};
-    for(unsigned i=0;i<3;i++) {
-        setup(sites[i]);pc_display_menu_finish(original);
-        CHECK(row_count==1 && finalized==1 && row_ids[0]==8 && row_callbacks[0]==QUIT_OPEN_CB && g_esp==0x1004);
-    }
-    setup(0x12008);pc_display_menu_finish(original);CHECK(!row_count && finalized==1);
-    setup(sites[0]);WORD_AT(0x2038)=1;pc_display_menu_finish(original);CHECK(!row_count);
+    setup(0x2d0edf);main_quit_menu_append(0x2000);
+    CHECK(row_count==1 && row_ids[0]==8 && row_callbacks[0]==QUIT_OPEN_CB);
+    setup(0x2d0edf);WORD_AT(0x2038)=1;main_quit_menu_append(0x2000);CHECK(!row_count);
+    main_quit_menu_append(0);CHECK(!row_count);
     WORD_AT(0x2038)=0;
-    setup(sites[0]);callback(quit_open);
+    setup(0x2d0edf);callback(quit_open);
     CHECK(next_parent==0x3000 && next_menu==quit_storage && !close_calls);
     row_count=0;default_row=999;callback(quit_build);
     CHECK(row_count==2 && row_ids[0]==0 && row_ids[1]==1 && default_row==0 && !close_calls);

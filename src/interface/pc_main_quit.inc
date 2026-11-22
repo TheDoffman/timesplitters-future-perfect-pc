@@ -4,10 +4,10 @@
 #ifdef TSFP_NATIVE_DISPLAY
 extern int tsfp_native_request_quit(void);
 #endif
-#define QUIT_OPEN_CB 0x12018u
-#define QUIT_BUILD_CB 0x12019u
-#define QUIT_SELECT_CB 0x1201au
-#define QUIT_BACK_CB 0x1201bu
+#define QUIT_OPEN_CB 0x123fbu
+#define QUIT_BUILD_CB 0x123fcu
+#define QUIT_SELECT_CB 0x123fdu
+#define QUIT_BACK_CB 0x123feu
 /* These four bytes are unused INT3 padding in the supported US XBE. */
 static uint32_t quit_storage, quit_parent, quit_previous;
 static int quit_requested;
@@ -79,31 +79,12 @@ static void quit_select(void)
 }
 #endif
 
-void pc_display_menu_finish(void (*original)(void))
+static void main_quit_menu_append(uint32_t menu)
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY) || defined(TSFP_QUIT_MENU_TEST)
-    const uint32_t caller=WORD_AT(g_esp), menu=WORD_AT(g_esp+4);
-    const int frontend=caller==0x002D0EDFu;
-    const int paused=caller==0x002F582Fu || caller==0x002F5879u;
-#ifndef TSFP_QUIT_MENU_TEST
-    if(frontend && guest_writable(menu,8))main_update_notice_open(menu);
-#endif
-#if defined(_WIN32) && !defined(TSFP_QUIT_MENU_TEST)
-    if(paused) {
-        pc_story_network_pause_rows();
-        multiplayer_exit_pause_rows(menu);
-    }
-#endif
-    if((frontend || paused) && guest_writable(menu,0x3c) &&
-       WORD_AT(menu+0x38)==0 && quit_prepare()) {
-        /* Main menu's original callback bounds-checks IDs 0..7; this new
-           row owns its callback. Do not change the original global choice. */
-        guest_call(sub_00079D60_gen,6,QUIT_TEXT,8u,frontend?0x30000u:0u,
-                   0u,QUIT_OPEN_CB,0u);
-    }
-#endif
-    original();
-#if defined(_WIN32) && !defined(TSFP_QUIT_MENU_TEST)
-    if(paused) pc_story_network_pause_layout(menu);
+    if(guest_writable(menu,0x3cu) && WORD_AT(menu+0x38u)==0 && quit_prepare())
+        guest_call(sub_00079D60_gen,6,QUIT_TEXT,8u,0x30000u,0u,QUIT_OPEN_CB,0u);
+#else
+    (void)menu;
 #endif
 }

@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
 import story_coop_local as launcher
 
 
-@pytest.mark.parametrize('tool', ['lobby_server.py', 'online_theme.py'])
+@pytest.mark.parametrize('tool', ['online_client.py', 'online_theme.py'])
 def test_build_verifier_resolves_portable_tool_names_and_rejects_edits(tmp_path, monkeypatch, tool):
     exe = tmp_path / 'build/windows/Release/futureperfect_recomp.exe'
     exe.parent.mkdir(parents=True)

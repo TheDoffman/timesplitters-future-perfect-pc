@@ -88,11 +88,11 @@
               <TextBlock Grid.Column="1" Text="Game settings" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
-          <Button x:Name="RepairNav" Style="{StaticResource Nav}" ToolTip="Verify and repair files, review diagnostics and open logs" AutomationProperties.Name="Repair / Verify">
+          <Button x:Name="RepairNav" Style="{StaticResource Nav}" ToolTip="Verify and repair files, review diagnostics and watch live game logs" AutomationProperties.Name="Tools and logs">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
               <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M14,3 C18,1 22,5 20,9 L17,6 L14,9 L17,12 C16,13 14,13 12,12 L5,20 C3,22 1,19 3,17 L11,10 C9,7 10,4 14,3 Z"/></Canvas></Viewbox>
-              <TextBlock Grid.Column="1" Text="Repair / Verify" Margin="10,0,0,0" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="Tools &amp; Logs" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
           <Button x:Name="SavesNav" Style="{StaticResource Nav}" ToolTip="Open your local saves folder" AutomationProperties.Name="Saves">
@@ -288,7 +288,7 @@
     <ContentControl x:Name="SavesHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
     <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#2C435A" BorderThickness="0,1,0,0" Background="#0D1926" Padding="20,0">
-      <DockPanel><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="10" Foreground="#A9BDD0" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     US XBOX GAME DATA REQUIRED" FontSize="10" Foreground="#A9BDD0" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
+      <DockPanel><TextBlock x:Name="TextureUpdateStatus" DockPanel.Dock="Right" FontSize="11" Foreground="#86CDFF" VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed"/><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="10" Foreground="#A9BDD0" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     US XBOX GAME DATA REQUIRED" FontSize="10" Foreground="#A9BDD0" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
     </Border>
   </Grid>
 </Window>

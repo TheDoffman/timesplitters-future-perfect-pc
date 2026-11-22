@@ -58,6 +58,7 @@ static int audio_native_button(void (*original)(void))
         guest_call(sub_00071C50,1,0x26200u);
         guest_call(sub_00079D60_gen,6,audio_text(0),AUDIO_TABS_ID,0x400u,0u,AUDIO_TABS_SELECT,AUDIO_TABS_DRAW);
         guest_call(sub_00079710,1,0u);
+        guest_call(sub_00071B10,4,1u,bits(1.f),1u,1u);
         if(audio_page==1)audio_mix_add();
         else if(audio_page==2)audio_feature_add();
         else if(audio_page==3)audio_listening_add();
@@ -135,8 +136,9 @@ static void audio_options_build(void)
         audio_building=1;guest_call(sub_002C3E20,1,audio_menu);audio_building=0;
         settings_divider_end(audio_divider_style);
         audio_collect_rows();guest_call(sub_000771D0,1,audio_menu);
+        int panel_aligned=settings_panel_anchor(audio_menu);
         if(!audio_anchor_ready){audio_anchor_y=FLOAT_AT(audio_menu+0x64);audio_anchor_ready=1;}
-        WORD_AT(audio_menu+0x64)=bits(audio_anchor_y);
+        WORD_AT(audio_menu+0x64)=bits(panel_aligned?fminf(audio_anchor_y,FLOAT_AT(audio_menu+0x64)):audio_anchor_y);
     } else guest_call(sub_002C3E20,1,audio_menu);
     restore_registers(&saved);g_esp+=4;
 }

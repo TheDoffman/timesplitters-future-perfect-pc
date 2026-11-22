@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "1c03dc56c4d57848dd399c613d85eb5123adfe020d25f24ceafe106f2d971376",
+  "loaderSha256": "de19b96d8dada3564ffb0908bf62be9f5e822cdf0a2d81f93eefe7c99962a758",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -2141,6 +2141,38 @@
       ]
     },
     {
+      "name": "3000-arcade-migration-build.patch",
+      "path": "patches/network/3000-arcade-migration-build.patch",
+      "sha256": "8c6479f6b5010dfa7e67f2af754bab0ce927ccd8d38ccc73894c73a71ab676e7",
+      "targets": [
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "3010-present-frame-capture.patch",
+      "path": "patches/graphics/interface/3010-present-frame-capture.patch",
+      "sha256": "08162a4e77feea7974731cbbb17d47a406f57c6e12de96e7b755562748fcf3c3",
+      "targets": [
+        "src/d3d/rhi.c"
+      ]
+    },
+    {
+      "name": "3020-arcade-join-contexts.patch",
+      "path": "patches/network/3020-arcade-join-contexts.patch",
+      "sha256": "8a8b5130c9456cc176c4c439674907a413edd83fbed592e35cf768f651375685",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "3030-native-story-browser-preview.patch",
+      "path": "patches/network/3030-native-story-browser-preview.patch",
+      "sha256": "5461ad8ef364754d86281264689d21211ad65649a776847c70056a85eb013ab4",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",
@@ -3522,6 +3554,14 @@
       ]
     },
     {
+      "name": "0261-register-header-template.patch",
+      "path": "patches/compiler/0261-register-header-template.patch",
+      "sha256": "37b47fa67ebb988efb82bb2a63b07f2cdbd99193fa49f1f411beaf93f1c386a0",
+      "targets": [
+        "templates/runtime/recomp_types.h"
+      ]
+    },
+    {
       "name": "2470-smaa-antialiasing.patch",
       "path": "patches/graphics/rendering/2470-smaa-antialiasing.patch",
       "sha256": "43f8b18597dee8e0c58903322af0e1994b69eb78dff560e8485432636229a1ab",
@@ -3810,6 +3850,96 @@
       "sha256": "4bf6ffd987c15d08586d439cbcd7332e7c68f43ff5682615cb1628962ea8e194",
       "targets": [
         "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2955-native-explicit-controller-prompts.patch",
+      "path": "patches/input/2955-native-explicit-controller-prompts.patch",
+      "sha256": "a4b9ef1355cde2f56e868b78c3984758b1e982e6143a83f22c755a932c8efc2f",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2960-keyboard-gameplay-independence.patch",
+      "path": "patches/input/2960-keyboard-gameplay-independence.patch",
+      "sha256": "794eec93a7763050a2ebc29b3dc29a4a672d642fb3459bbe1b67d0b206f31f37",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2965-independent-keyboard-actions.patch",
+      "path": "patches/input/2965-independent-keyboard-actions.patch",
+      "sha256": "c2d9e48023b2ca2841624cdcb992006ac77b8bdad56fbd148fad0ccacc524c6d",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2970-active-player-pad-sharing.patch",
+      "path": "patches/input/2970-active-player-pad-sharing.patch",
+      "sha256": "93132d52469066956aaa654e7239c447124c11026cc2f086e18e1942a063bd78",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2990-rollback-control-presets.patch",
+      "path": "patches/input/2990-rollback-control-presets.patch",
+      "sha256": "875b6dae4a6f7c077f2c87e9ee70bd840ff9f172fa2a0aadbabc89f2a88f7c08",
+      "targets": [
+        "src/input/input_bindings.c"
+      ]
+    },
+    {
+      "name": "2730-pause-glass-texture-copy.patch",
+      "path": "patches/graphics/interface/2730-pause-glass-texture-copy.patch",
+      "sha256": "a5ae20b0360d089eb70d96e9e82005c0d5fa95231a55bfc066647a56ca1cd86c",
+      "targets": [
+        "src/d3d/d3d8_gl.c",
+        "src/d3d/d3d8_screencopy.c",
+        "src/d3d/d3d8_xbox.h",
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_record.h",
+        "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "2731-pause-glass-placement.patch",
+      "path": "patches/graphics/interface/2731-pause-glass-placement.patch",
+      "sha256": "399b3d9b76c017d2f0f5465f62562b076c5a127fecb030e1fe7d6acab232a953",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "3001-host-visibility-queries.patch",
+      "path": "patches/graphics/rendering/3001-host-visibility-queries.patch",
+      "sha256": "2c9cdabd041089fca7dafd68840c9487f7212544a5a34261cb9c14fce69a6427",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_xbox.h",
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h",
+        "src/d3d/rhi_backend.h",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c",
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_record.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "3040-vsync-settings.patch",
+      "path": "patches/graphics/rendering/3040-vsync-settings.patch",
+      "sha256": "ef8d529e635e7599d35d5c32701e3d3dbf1245451fdef665ec88fa8cd40d3d2c",
+      "targets": [
+        "src/config/recomp_config.c",
+        "src/config/recomp_config.h",
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_gl.c"
       ]
     }
   ]

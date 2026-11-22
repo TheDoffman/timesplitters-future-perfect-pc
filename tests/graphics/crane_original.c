@@ -19,6 +19,7 @@ static uint32_t rectangles[8][9];
 static int placements[8];
 static int guest_writable(uint32_t a,size_t n){return a==0x3000 && n<=0x24;}
 static int pc_display_wide_now(void){return wide;}
+int pc_display_crosshair_size(void){return 100;}
 static float pc_display_hud_scale(void){return scale;}
 /* Keep the HUD visible; Developer Tools policy has its own fixture. */
 int pc_developer_hud_visible(void){return 1;}

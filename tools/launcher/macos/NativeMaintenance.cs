@@ -11,9 +11,9 @@ namespace TimeSplitters.Launcher
         readonly MaintenanceArea area;
         public Control View { get { return area.View; } }
         readonly NativeWindow owner;readonly string root;VerificationResult game,launcher;bool running;
-        public NativeMaintenance(string root,NativeWindow owner)
+        public NativeMaintenance(string root,NativeWindow owner,ConsolePage console)
         {
-            this.root=root;this.owner=owner;area=new MaintenanceArea(repair,diagnostics);
+            this.root=root;this.owner=owner;area=new MaintenanceArea(repair,diagnostics,console);
             area.Selected+=value=>{if(value)Run(Refresh);};
             repair.VerifyGame.Click+=(s,e)=>Run(()=>Verify(false));repair.VerifyLauncher.Click+=(s,e)=>Run(()=>Verify(true));
             repair.RepairGame.Click+=(s,e)=>Run(()=>Repair(false));repair.RepairLauncher.Click+=(s,e)=>Run(()=>Repair(true));
@@ -28,6 +28,7 @@ namespace TimeSplitters.Launcher
             diagnostics.OpenCrash.Click+=(s,e)=>Run(()=>{string latest=CrashReports.Latest(root);Core.Require(latest!=null,"No completed game report found.");NativeHost.Open(CrashReports.Folder(root,latest));return Task.CompletedTask;});
             diagnostics.ExportCrash.Click+=(s,e)=>Run(Export);Update(false);
         }
+        public void SelectConsole(){area.Tabs.SelectedIndex=2;}
         public void Select(bool value){area.Tabs.SelectedIndex=value?1:0;if(value)Run(Refresh);}
         void Update(bool busy){area.SetBusy(busy);repair.SetVerification(game,launcher);repair.SetBusy(busy,owner.GameRunning||LauncherPlatform.Checkout(root));diagnostics.SetBusy(busy,owner.GameRunning);}
         void Status(string value){repair.Status(value);diagnostics.Status(value);}

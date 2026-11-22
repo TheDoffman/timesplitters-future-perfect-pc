@@ -101,6 +101,7 @@ def atomic(path, text):
 
 
 def main():
+    runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--tag', required=True)
     parser.add_argument('--mac-host', help='SSH alias for a native Mac guest')
@@ -112,6 +113,15 @@ def main():
                         help='0 uses Original60; other values select native beta timing')
     parser.add_argument('--guest-fps', type=int, choices=(0,120,180,240), default=0)
     parser.add_argument('--no-captures', action='store_true')
+    parser.add_argument('--migration', choices=('crash','leave'), help='Verify native Arcade continuation after host loss or normal menu departure')
+    parser.add_argument('--players', type=int, choices=(2,3), default=2)
+    parser.add_argument('--arcade-relay', action='store_true', help='Use the migrating v3 relay without removing the host')
+    parser.add_argument('--shared-service', action='store_true', help='Run normal play/results against the installed default service')
+    parser.add_argument('--service-address', help='Override only the installed service address, retaining its certificate pin')
+    parser.add_argument('--rpc-trace', action='store_true', help='Observe bounded companion RPC exceptions in isolated tests')
+    parser.add_argument('--game-mode', choices=('deathmatch','team-deathmatch','capture-bag'), default='deathmatch')
+    parser.add_argument('--repeat-migration', action='store_true', help='Lose the replacement host too; requires three migration players')
+    parser.add_argument('--migration-results', action='store_true', help='Finish the migrated match, rematch, and compare final records again')
     parser.add_argument('--require-results', action='store_true',
                         help='Wait up to --seconds for both peers to finish and publish score rows')
     parser.add_argument('--post-results-seconds', type=int, default=0,
@@ -126,7 +136,24 @@ def main():
                         help='Capture the normal setup screens, then stop before gameplay')
     parser.add_argument('--short-match', action='store_true',
                         help='Select five-point Deathmatch through the stock setup menu')
+    parser.add_argument('--points', type=int, choices=(10,15,20,50,100), help='Select a bounded point limit through the stock setup menu')
     args = parser.parse_args()
+    use_migration = bool(args.migration or args.arcade_relay)
+    if args.short_match and args.points:parser.error('Choose --short-match or --points')
+    point_limit=5 if args.short_match else args.points
+    if args.shared_service and (not args.arcade_relay or args.migration):
+        parser.error('--shared-service requires --arcade-relay without controlled host removal')
+    if args.service_address and not args.shared_service:
+        parser.error('--service-address requires --shared-service')
+    lobby_name=('Validation '+args.tag)[:48]
+    if args.migration and (args.require_results or args.inspect_setup):
+        parser.error('--migration cannot be combined with results/setup-only modes')
+    if args.repeat_migration and (not args.migration or args.players!=3):
+        parser.error('--repeat-migration requires --migration and --players 3')
+    if args.migration_results and (not args.migration or args.repeat_migration):
+        parser.error('--migration-results requires a single controlled migration')
+    if args.players!=2 and not args.migration:
+        parser.error('--players 3 currently requires --migration')
     if args.mac_host and not (args.mac_root and args.lan_address):
         parser.error('--mac-host needs --mac-root and --lan-address')
     if args.mac_host and args.guest_fps:
@@ -172,8 +199,16 @@ def main():
     mac_peer=0 if args.mac_role=='host' else 1
     address = args.lan_address if args.mac_host else '127.0.0.1'
     server = Server((address, 0), Directory(public_address=None if args.mac_host else address))
+    relay = None
+    relay_thread = None
+    if use_migration:
+        from lobby_server import RelayServer
+        relay = RelayServer(server.directory,bind=(address,0))
+        server.directory.relay_address = relay.socket.getsockname()
+        relay_thread = threading.Thread(target=relay.run, daemon=True)
+        relay_thread.start()
     fingerprint=''
-    if args.mac_host:
+    if args.mac_host or use_migration:
         import ssl
         from online_host import certificate
         cert,private_key,fingerprint=certificate(automation/'directory')
@@ -183,7 +218,13 @@ def main():
         server.socket=tls.wrap_socket(server.socket,server_side=True,do_handshake_on_connect=False)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    url = ('https://' if args.mac_host else 'http://')+address+':'+str(server.server_port)
+    url = ('https://' if args.mac_host or use_migration else 'http://')+address+':'+str(server.server_port)
+    shared_client=None
+    if args.shared_service:
+        from online_client import Client
+        service=json.loads((ROOT/'tools/network/online-service.json').read_text())
+        url,fingerprint=args.service_address or service['directory'],service['fingerprint']
+        shared_client=Client(url,fingerprint)
     with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as available:
         available.bind((address,0))
         host_port=available.getsockname()[1]
@@ -196,8 +237,13 @@ def main():
     checkpoints = []
     menu_inputs = []
     completed=False
+    retired = set()
+    migration_selected = {}
+    migration_captures = set()
+    migration_audit = []
     started = time.monotonic()
     def read(peer, address, size):
+        if peer in retired:raise OSError('Test peer was retired')
         if peer==mac_peer and remote is not None:
             return remote.read(address,size)
         data = C.create_string_buffer(size)
@@ -234,7 +280,37 @@ def main():
             rows.append(row);node=word(peer,node+4)
         return dict(address=menu,selected=word(peer,menu+0x18c),rows=rows)
     def observe():
-        if remote is not None:
+        capture_peers=[]
+        if use_migration:
+            with server.directory.lock:
+                for room in server.directory.arcade.rooms.values():
+                    migration=room['migration']
+                    if not migration_audit or time.monotonic()-started-migration_audit[-1]['seconds']>=.5:
+                        migration_audit.append(dict(seconds=time.monotonic()-started,
+                            state=migration.status() if migration else None,
+                            native={peer:dict(counter=m['native_counter'],active=m['active'],native_peer=m['native_peer'],
+                                age=server.directory.clock()-m['native_at']) for peer,m in room['members'].items()}))
+                    if migration and migration.selected:
+                        migration_selected['snapshot']=migration.selected
+                        if not args.no_captures:
+                            for member in migration.members:
+                                identity=(migration.epoch,member-1)
+                                if identity not in migration_captures:
+                                    migration_captures.add(identity);capture_peers.append(identity)
+        # Capture a short burst around the actual preparation barrier. The
+        # first service response can precede the native draw by a frame; never
+        # block the observation/lease loop on PrintWindow.
+        for epoch,peer in capture_peers:
+            def migration_burst(epoch=epoch,peer=peer):
+                for attempt in range(6):
+                    if children[peer].poll() is not None:break
+                    if peer==mac_peer and remote is not None:
+                        remote.call('capture',label=f'migration-overlay-{epoch}-{attempt}')
+                    else:
+                        capture(children[peer].pid,out/f'migration-overlay-{epoch}-{peer}-{attempt}.png')
+                    time.sleep(.1)
+            threading.Thread(target=migration_burst,daemon=True).start()
+        if remote is not None and mac_peer not in retired:
             try:remote.refresh()
             except OSError:remote.pages.clear()
         for peer in range(len(handles)):
@@ -263,7 +339,7 @@ def main():
     def wait(seconds):
         until = time.monotonic()+seconds
         while time.monotonic() < until:
-            if any(p.poll() is not None for p in children):
+            if any(p.poll() is not None for i,p in enumerate(children) if i not in retired):
                 raise RuntimeError('A game exited early')
             observe()
             time.sleep(.008)
@@ -283,11 +359,12 @@ def main():
         while time.monotonic()<deadline:
             actors=[]
             try:
-                for peer in range(2):
+                for peer in range(args.players):
+                    if peer in retired:continue
                     entity=word(peer,word(peer,0x7356d8)+slot*0xea0)
                     actors.append((word(peer,entity+0x258),
                                    struct.unpack('<f',read(peer,entity+0x1cc,4))[0]))
-                if actors[0][0]==actors[1][0] and all(a[1]>0 for a in actors):
+                if actors and len({a[0] for a in actors})==1 and all(a[1]>0 for a in actors):
                     return
             except OSError:
                 pass
@@ -314,6 +391,15 @@ def main():
                     score_limit=word(peer,0x7de464),
                     active_config=config.hex(),pending_config=read(peer,0x78ad58,0xa0).hex(),
                     actor_counts=[word(peer,0x790950),word(peer,0x7a2958)],actors=actors))
+                if args.migration:
+                    local_node=word(peer,0x774028)
+                    states[-1]['native_peers']=dict(local_id=word(peer,local_node) if local_node else None,
+                        host_id=word(peer,0x774040),rows=[dict(index=i,
+                            group_id=word(peer,0x774180+i*0x30c),
+                            connection=word(peer,0x774180+i*0x30c+0x20),
+                            connected=word(peer,0x666040+i*4),
+                            ip=socket.inet_ntoa(read(peer,0x66648c+i*16,4)),
+                            cached_ip=socket.inet_ntoa(read(peer,0x665930+i*36,4))) for i in range(16)])
                 if label in ('options-settings-initial','short-match-settings','options-settings','options-tab','rematch-timeout'):
                     try:
                         states[-1]['menu']=menu_state(peer)
@@ -322,28 +408,43 @@ def main():
             except OSError:
                 states.append(dict(peer=peer, unmapped=True))
         print(round(time.monotonic()-started, 1), label,
-              [{k:v for k,v in state.items() if k not in ('active_config','pending_config','actors','menu')}
+              [{k:v for k,v in state.items() if k not in ('active_config','pending_config','actors','menu','native_peers')}
                for state in states], flush=True)
         checkpoints.append(dict(label=label, seconds=time.monotonic()-started,
             states=states, observations=[next((s for s in reversed(samples) if s['peer']==peer),None)
                                          for peer in range(len(handles))]))
         # PrintWindow can block while the game is synchronously awaiting its
         # Online browser. Capture only running frontend/gameplay boundaries.
-        if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results',
+        if not args.no_captures and label in ('frontend','no-online-lobby','match','results','post-results','migration-finished','second-migration-finished',
                                               'scores-tab','options-tab','rematch','rematch-results','finished',
-                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout','rematch-selection'):
+                                              'options-root','options-mode','options-settings','options-settings-initial','short-match-settings','rematch-timeout','rematch-selection',
+                                              'migration-results','migration-options','migration-rematch','migration-rematch-results'):
             for peer, child in enumerate(children):
+                if peer in retired:continue
                 if peer==mac_peer and remote is not None:
                     remote.call('capture',label=label)
                     continue
                 worker=threading.Thread(target=capture,args=(child.pid,out/f'{label}-{peer}.png'),daemon=True)
                 worker.start();worker.join(timeout=2)
-    def await_results(label):
+
+    def capture_peer(peer,label):
+        if peer==mac_peer and remote is not None:remote.call('capture',label=label)
+        else:capture(children[peer].pid,out/(label+'.png'))
+
+    def crash_peer(peer):
+        retired.add(peer)
+        assert children[peer].poll() is None
+        if peer==mac_peer and remote is not None:remote.crash()
+        else:
+            subprocess.run(['taskkill','/PID',str(children[peer].pid),'/T','/F'],
+                           check=True,capture_output=True,timeout=10)
+        children[peer].wait(timeout=10)
+    def await_results(label,peers=(0,1),wait_seconds=None):
         # Called only after active gameplay; rematches additionally require the
         # existing reset checks for clock, result-ready state, roster and scores.
-        deadline=time.monotonic()+args.seconds
+        deadline=time.monotonic()+(wait_seconds or args.seconds)
         while time.monotonic()<deadline:
-            if all(word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1 for peer in (0,1)):
+            if all(word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1 for peer in peers):
                 break
             wait(.1)
         else:
@@ -352,9 +453,11 @@ def main():
         wait(2)  # Let the existing reliable final packet settle.
         report(label)
         results=[]
-        for peer in (0,1):
+        config=read(peers[0],0x7de400,3)
+        actor_count=config[0]+config[2]
+        for peer in peers:
             rows=[]
-            for index in range(8):
+            for index in range(actor_count):
                 row=read(peer,0x6f0b08+index*0x68,0x68)
                 rows.append(dict(index=index,slot=row[0],
                     name=row[0x24:0x44].split(b'\0',1)[0].decode('ascii',errors='replace'),
@@ -365,30 +468,41 @@ def main():
                     character=struct.unpack_from('<h',row,0x64)[0],raw=row.hex()))
             results.append(dict(peer=peer,match_state=word(peer,0x7de30c),
                                 ready=word(peer,0x6f1188),rows=rows))
+        if args.migration_results:
+            required=set(range(config[0],actor_count))
+            required.update(word(peer,word(peer,0x774028)) for peer in peers)
+            for result in results:
+                result['rows']=[row for row in result['rows'] if row['name']]
+                slots=[row['slot'] for row in result['rows']]
+                assert len(set(slots))==len(slots) and required<=set(slots), 'Missing or duplicate surviving result slots'
         (out/(label+'.json')).write_text(json.dumps(results,indent=2))
         for result in results:
-            assert sorted(r['slot'] for r in result['rows'])==list(range(8)), 'Missing results slots'
+            if not args.migration_results:
+                assert sorted(r['slot'] for r in result['rows'])==list(range(actor_count)), 'Missing results slots'
             assert all(r['name'] for r in result['rows']), 'Missing results names'
         def records(result):
             return sorted([{k:v for k,v in row.items() if k not in ('index','raw')}
                            for row in result['rows']],key=lambda row:row['slot'])
-        assert records(results[0])==records(results[1]), 'Host/client final results differ'
+        assert all(records(result)==records(results[0]) for result in results), 'Host/client final results differ'
         if args.short_match:
             assert max(r['score'] for r in results[0]['rows'])>=5, 'Five-point limit not reached'
 
     try:
-        for peer in range(2):
+        for peer in range(args.players):
             if peer==mac_peer and args.mac_host:
                 from crossplay_peer import RemotePeer
                 remote=RemotePeer(args.mac_host,args.mac_root,out/'mac-controller.err')
                 remote_provenance=remote.call('start',tag=args.tag,peer=peer,compatibility=identity['compatibility'],
+                    lobby_name=lobby_name,rpc_trace=args.rpc_trace,
                     command=dict(action='host' if peer==0 else 'join',directory=url,fingerprint=fingerprint,port=host_port,automatic_host=False,
-                                 detect_public_address=False))
+                                 detect_public_address=False,migration=use_migration,
+                                 transport='relay' if use_migration else 'direct'))
                 remote.pid=remote_provenance['pid']
                 children.append(remote);handles.append(None);inputs.append(None)
                 continue
             run = ROOT/'private/test-saves'/('online-bots-'+args.tag)/str(peer)
             env = prepare_run(ROOT, run)
+            (run/'online.json').write_text(json.dumps(dict(name=lobby_name)))
             runs.append(run)
             if (run/'pc-frame-rate.ini').exists():
                 raise ValueError('Saved FPS preference could override this test; use a fresh tag')
@@ -404,12 +518,19 @@ def main():
                 for at,key in initial for d,value in ((0,1),(180,0)))+'\n')
             command = automation/f'{peer}.json'
             command.write_text(json.dumps(dict(action='host' if peer == 0 else 'join',
-                directory=url, fingerprint=fingerprint, port=host_port, automatic_host=False, detect_public_address=False)))
+                directory=url, fingerprint=fingerprint, port=host_port, automatic_host=False,
+                detect_public_address=False, migration=use_migration, transport='relay' if use_migration else 'direct')))
             env.update(TSFP_PC_INPUT_STATE=str(input_path), TSFP_NETWORK_BOTS='1',
                 TSFP_PC_INPUT_REPLAY=str(replay),
-                TSFP_NATIVE_FPS=str((args.host_fps,args.guest_fps)[peer]),
+                TSFP_NATIVE_FPS=str(args.host_fps if peer==0 else args.guest_fps),
                 TSFP_ONLINE_TEST_COMMAND=str(command), TSFP_ONLINE_SETTINGS=str(run/'online.json'),
                 RECOMP_WINDOW_BACKGROUND='1', TSFP_DISCORD_ENABLED='0')
+            if use_migration:
+                env['TSFP_ARCADE_TRACE']='1'
+            if args.rpc_trace:
+                env['TSFP_ONLINE_RPC_TRACE']='1'
+                env['TSFP_ONLINE_RPC_LOG']=str(out/('companion-rpc-'+str(peer)+'.jsonl'))
+                env['PYTHONPATH']=str(ROOT/'tools/testing/online_rpc_trace')+os.pathsep+env.get('PYTHONPATH','')
             (run/'run.lock').write_text(str(os.getpid()))
             children.append(subprocess.Popen([str(exe)], cwd=ROOT, env=env,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW))
@@ -425,7 +546,7 @@ def main():
             handles.append(K.OpenProcess(0x10, False, children[-1].pid))
         wait(25)
         report('frontend')
-        for peer in range(2):
+        for peer in range(args.players):
             key(peer, 40, 40, 40, 69)
         wait(3)
         key(0, 69)  # Online is above System Link.
@@ -434,18 +555,23 @@ def main():
         deadline=time.monotonic()+45
         codes=[]
         while time.monotonic()<deadline:
-            with server.directory.lock:
-                codes = list(server.directory.online)
+            if shared_client:
+                codes=[room['code'] for room in shared_client.request('GET','/v3/lobbies?compatibility='+identity['compatibility'])['lobbies']
+                       if room['name']==lobby_name]
+            else:
+                with server.directory.lock:
+                    codes = list(server.directory.arcade.rooms if use_migration else server.directory.online)
             if codes:break
             wait(.1)
         if not codes:
             report('no-online-lobby')
             raise RuntimeError('Online browser did not create a lobby')
-        command = automation/'1.json'
-        command.write_text(json.dumps(dict(action='join', directory=url, fingerprint=fingerprint, code=codes[0])))
-        if remote is not None and mac_peer==1:remote.call('command',command=json.loads(command.read_text()))
-        key(1, 69)
-        wait(8)
+        for peer in range(1,args.players):
+            command = automation/f'{peer}.json'
+            command.write_text(json.dumps(dict(action='join', directory=url, fingerprint=fingerprint, code=codes[0], migration=use_migration)))
+            if remote is not None and mac_peer==peer:remote.call('command',command=json.loads(command.read_text()))
+            key(peer,69)
+            wait(8)
         report('online-browsers')
         key(0, 69)
         wait(5)
@@ -456,14 +582,15 @@ def main():
         key(0, 69)
         wait(2)
         if args.inspect_setup:report('options-mode')
+        for _ in range(('deathmatch','team-deathmatch','capture-bag').index(args.game_mode)):key(0,40)
         key(0, 69)
         wait(2)
-        if args.short_match:
+        if point_limit is not None:
             report('options-settings-initial')
             initial=menu_state(0)
             score=next(r for r in initial['rows'] if r['id']==7)
-            targets=[i for i,label in enumerate(score['labels']) if re.fullmatch(r'\s*5\s+points?\s*',label,re.I)]
-            assert len(targets)==1, 'Could not identify the five-point menu choice'
+            targets=[i for i,label in enumerate(score['labels']) if re.fullmatch(rf'\s*{point_limit}\s+points?\s*',label,re.I)]
+            assert len(targets)==1, 'Could not identify the requested point-limit choice'
             def menu_key(value):
                 before=menu_state(0)
                 key(0,value)
@@ -480,7 +607,7 @@ def main():
                 choice=next(r['choice'] for r in current['rows'] if r['id']==7)
                 if choice==targets[0]:break
                 menu_key(37 if choice>targets[0] else 39)
-            else:raise RuntimeError('Five-point menu choice did not become selected')
+            else:raise RuntimeError('Requested point limit did not become selected')
             for _ in range(32):
                 if menu_state(0)['selected']==19:break
                 menu_key(40)
@@ -494,20 +621,182 @@ def main():
             return
         key(0, 69)
         wait(5)
-        key(1, 82)
+        for peer in range(1,args.players):key(peer,82)
         wait(3)
-        key(1, 40, 69)
+        for peer in range(1,args.players):key(peer,40,69)
         wait(5)
-        key(1, 69)
+        for peer in range(1,args.players):key(peer,69)
         wait(4)
         report('paired-lobby')
         key(0, 69)
         wait(18)
+        if args.game_mode != 'deathmatch':
+            # Team modes stop at the native SELECT TEAM screen (phase 6).
+            # Confirm each controller through its normal input before sampling.
+            for peer in range(args.players):
+                capture_peer(peer, 'select-team')
+                key(peer,69)
+            capture_peer(0, 'teams-ready')
+            for peer in range(args.players):key(peer,69)
+            wait(5)
         report('match')
-        if args.short_match:
-            assert all(word(peer,0x7de464)==5 for peer in (0,1)), 'Menu replay did not select five points'
+        if point_limit is not None:
+            assert all(word(peer,0x7de464)==point_limit for peer in range(args.players)), 'Menu replay did not select the requested point limit'
+        if args.migration:
+            def scored(snapshot):
+                payload=snapshot.payload
+                actors=payload[48]+payload[50]
+                return any(value>0 for actor in range(1,actors)
+                           for value in struct.unpack_from('<16h',payload,48+160+actor*84))
+            deadline=time.monotonic()+30
+            while time.monotonic()<deadline:
+                with server.directory.lock:
+                    room=server.directory.arcade.rooms.get(codes[0])
+                    migration=room['migration'] if room else None
+                    ready=bool(migration and migration.phase=='active' and any(
+                        scored(snapshot) and any(p!=migration.host_peer and snapshot.digest in member.acknowledged
+                            for p,member in migration.members.items()) for snapshot in migration.checkpoints))
+                if ready:break
+                wait(.1)
+            with server.directory.lock:
+                service_state=[dict(code=room['code'],epoch=room['epoch'],host=room['host_peer'],
+                    migration=room['migration'].status() if room['migration'] else None,
+                    native={peer:dict(counter=member['native_counter'],active=member['active'])
+                            for peer,member in room['members'].items()})
+                    for room in server.directory.arcade.rooms.values()]
+            (out/'migration-service.json').write_text(json.dumps(service_state,indent=2))
+            assert ready, 'Native engines did not publish/acknowledge a checkpoint'
+            report('before-host-loss')
+            old_tick=word(1,0x7de318)
+            if args.migration == 'crash':
+                # Terminate its bridge too: a surviving companion would observe
+                # parent exit and send an orderly DELETE instead of lease expiry.
+                crash_peer(0)
+            else:
+                wait_alive(0)
+                key(0,27)
+                capture_peer(0,'host-pause')
+                # Reviewed native Options menu: Continue, Video, Controls,
+                # Audio, Return to Lobby, Quit to Desktop.
+                key(0,40,40,40,40)
+                capture_peer(0,'host-leave-selected')
+                key(0,69)
+                capture_peer(0,'host-leave-confirm')
+                # Native confirmation defaults to No; Yes is the row above.
+                key(0,38,69)
+            deadline=time.monotonic()+15
+            successor=None
+            survivors=list(range(1,args.players))
+            while time.monotonic()<deadline:
+                with server.directory.lock:
+                    room=server.directory.arcade.rooms.get(codes[0])
+                    elected=room['host_peer'] if room else None
+                if elected and elected-1 in survivors:
+                    successor=elected-1
+                    if word(successor,0x76b140)==1 and all(word(peer,0x76b1a4)==15 and
+                            word(peer,0x7de30c)==7 for peer in survivors):break
+                wait(.1)
+            report('after-host-loss')
+            assert successor is not None and word(successor,0x76b140)==1 and all(
+                word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 for peer in survivors), 'Native promotion failed'
+            def verify_continuation(survivors, successor, old_tick, label):
+                with server.directory.lock:
+                    migration=server.directory.arcade.rooms[codes[0]]['migration']
+                    restored=migration_selected.get('snapshot') or next(
+                        (entry for entry in migration.checkpoints if entry.epoch<migration.epoch), None)
+                assert restored, 'Did not retain the selected migration checkpoint'
+                expected_tick=struct.unpack_from('<I',restored.payload,40)[0]
+                expected_remaining=struct.unpack_from('<i',restored.payload,48+0x60)[0]
+                config=read(successor,0x7de400,3)
+                expected_scores=[struct.unpack_from('<16h',restored.payload,48+160+i*84)
+                                 for i in range(config[0]+config[2])]
+                assert any(value>0 for row in expected_scores[1:] for value in row), 'Score continuity needs a scored backup'
+                evidence=[]
+                for peer in survivors:
+                    actual_tick=word(peer,0x7de318)
+                    assert expected_tick<=actual_tick<=expected_tick+120, 'Match clock did not resume from the selected backup'
+                    actual_remaining=struct.unpack('<i',read(peer,0x7de460,4))[0]
+                    assert (expected_remaining-120<=actual_remaining<=expected_remaining if expected_remaining>0
+                            else actual_remaining==expected_remaining), 'Remaining match timer did not resume from the backup'
+                    pool=word(peer,0x7356d8)
+                    actual_scores=[struct.unpack('<16h',read(peer,pool+i*0xea0+0xa10,32))
+                                   for i in range(config[0]+config[2])]
+                    assert all(actual>=expected for before,after in zip(expected_scores[1:],actual_scores[1:])
+                               for expected,actual in zip(before,after)), 'A kill score was lost during migration'
+                    evidence.append(dict(peer=peer,actual_tick=actual_tick,actual_remaining=actual_remaining,actual_scores=actual_scores))
+                (out/(label+'-state.json')).write_text(json.dumps(dict(
+                    sequence=restored.sequence,digest=restored.digest,old_tick=old_tick,
+                    expected_tick=expected_tick,expected_remaining=expected_remaining,
+                    expected_scores=expected_scores,successor=successor,peers=evidence),indent=2))
+                marker=time.monotonic()-started
+                wait(args.seconds)
+                report(label+'-finished')
+                for peer in survivors:
+                    assert word(peer,0x76b1a4)==15 and (word(peer,0x7de30c)==7 or
+                        args.migration_results and word(peer,0x7de30c)==8 and word(peer,0x6f1188)==1), 'A surviving guest lost the migrated game'
+                    rows=[s for s in samples if s['peer']==peer and s['seconds']>marker and s['match_state']==7]
+                    assert rows and rows[-1]['tick']>rows[0]['tick']+120, 'Match clock did not resume'
+                    assert any(len({tuple(s['actors'][i]['position']) for s in rows if s['actors'][i]})>3
+                               for i in range(rows[0]['humans'],rows[0]['humans']+rows[0]['bots'])), 'Bots did not resume moving'
+                    assert any(len({(s['actors'][i]['spawn'],s['actors'][i]['health']) for s in rows if s['actors'][i]})>1
+                               for i in range(rows[0]['humans'],rows[0]['humans']+rows[0]['bots'])), 'Bots did not resume combat/respawning'
+            verify_continuation(survivors, successor, old_tick, 'migration')
+            if args.repeat_migration:
+                old_tick=word(successor,0x7de318)
+                migration_selected.clear()
+                crash_peer(successor)
+                survivors.remove(successor)
+                deadline=time.monotonic()+15
+                while time.monotonic()<deadline:
+                    with server.directory.lock:
+                        room=server.directory.arcade.rooms.get(codes[0])
+                        elected=room['host_peer'] if room else None
+                    if elected and elected-1 in survivors:
+                        successor=elected-1
+                        if word(successor,0x76b140)==1:break
+                    wait(.1)
+                report('after-second-host-loss')
+                assert elected and elected-1 in survivors and word(successor,0x76b140)==1, 'Second native promotion failed'
+                verify_continuation(survivors, successor, old_tick, 'second-migration')
+            if args.migration_results:
+                await_results('migration-results',survivors,180)
+                with server.directory.lock:
+                    room=server.directory.arcade.rooms[codes[0]]
+                    previous_match=room.get('match_id');previous_epoch=room['epoch']
+                previous_ticks={peer:word(peer,0x7de318) for peer in survivors}
+                for _ in range(2):
+                    for peer in survivors:key(peer,69)
+                    wait(2)
+                report('migration-options')
+                for peer in survivors:
+                    if peer!=successor:key(peer,69)
+                key(successor,40,69)
+                deadline=time.monotonic()+40
+                while time.monotonic()<deadline:
+                    if all(word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 and
+                           word(peer,0x6f1188)==0 and word(peer,0x7de318)<previous_ticks[peer] for peer in survivors):break
+                    wait(.1)
+                else:raise RuntimeError('Migrated host could not start a fresh rematch')
+                report('migration-rematch')
+                for peer in survivors:
+                    config=read(peer,0x7de400,3);pool=word(peer,0x7356d8)
+                    node=word(peer,0x774028)
+                    assert config[1:]==bytes((1,6)) and word(peer,node)<config[0], 'Rematch roster lost a live controller or bots'
+                    assert all(word(peer,pool+slot*0xea0+0xa6c)==0 for slot in range(config[0]+config[2])), 'Rematch retained previous scores'
+                deadline=time.monotonic()+5
+                while time.monotonic()<deadline:
+                    with server.directory.lock:
+                        room=server.directory.arcade.rooms[codes[0]]
+                        fresh=room['epoch']>previous_epoch and room.get('match_id')!=previous_match
+                    if fresh:break
+                    wait(.1)
+                assert fresh and room['host_peer']==successor+1, 'Rematch did not retain the elected owner with a new round identity'
+                await_results('migration-rematch-results',survivors,180)
+            completed=True
+            return
         # Movement of each human remains independently observable.
         for peer in range(2):
+            if args.require_results and all(word(p,0x7de30c)==8 for p in (0,1)):break
             wait_alive(peer)
             report(f'move-{peer}-start')
             set_input(peer, '87 1\n')
@@ -556,17 +845,20 @@ def main():
         else:
             wait(args.seconds)
         report('finished')
+        if not args.require_results:
+            assert all(word(peer,0x76b1a4)==15 and word(peer,0x7de30c)==7 for peer in (0,1)), 'A peer disconnected before the observation window finished'
         assert all(any(s['peer']==peer and s['humans']==2 and s['bots']>0 for s in samples)
                    for peer in (0,1)), 'No paired bot gameplay'
         completed=True
     finally:
         (out/'observations.json').write_text(json.dumps(samples))
+        (out/'migration-audit.json').write_text(json.dumps(migration_audit,indent=2))
         (out/'checkpoints.json').write_text(json.dumps(checkpoints, indent=2))
         (out/'menu-inputs.json').write_text(json.dumps(menu_inputs, indent=2))
         exit_codes=[child.poll() for child in children]
         provenance=dict(
             executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
-            runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            runner_sha256=runner_sha256,players=args.players,
             native_fps=[args.host_fps,args.guest_fps], captures=not args.no_captures,
             require_results=args.require_results,
             post_results_seconds=args.post_results_seconds,
@@ -575,6 +867,11 @@ def main():
             require_rematch_results=args.require_rematch_results,
             inspect_setup=args.inspect_setup,
             short_match=args.short_match,
+            point_limit=point_limit,
+            migration=args.migration, migration_room=use_migration, game_mode=args.game_mode, repeat_migration=args.repeat_migration,
+            migration_results=args.migration_results,
+            shared_service=args.shared_service,
+            service_address=url if args.shared_service else None,
             compatibility=identity['compatibility'], remote=remote_provenance,
             observation='asynchronous ReadProcessMemory / native read-only probe' if remote else 'asynchronous ReadProcessMemory',
             pids=[child.pid for child in children], guest_memory_offsets=offsets,
@@ -598,6 +895,8 @@ def main():
             (run/'run.lock').unlink(missing_ok=True)
             recycle_disks(ROOT, run)
         server.shutdown(); server.server_close(); thread.join()
+        if relay:
+            relay.close();relay_thread.join(timeout=3)
         provenance['cleanup_completed']=True
         provenance['seconds']=time.monotonic()-started
         (out/'provenance.json').write_text(json.dumps(provenance,indent=2))

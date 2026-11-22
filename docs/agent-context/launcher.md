@@ -1,3 +1,71 @@
+Stable game0.7.0 and launcher1.7.0 were published on2026-11-19 for Windows,
+Apple Silicon Mac and Linux. Game source is b1ca2c16; launcher source is merged
+main9c54bd49, with the same source tree. All9 game and15 launcher public assets,
+versionless launcher aliases and README download routes were verified. The
+Stable launcher owns Latest; the game uses latest=false. The public0.7.0-beta.1
+remains immutable historical preview material. This supersedes the integration-only
+version hold below; future releases must query GitHub for unused versions.
+
+README review (2026-11-20) aligns native Arcade multiplayer, published Mac game
+requirements (0.7.0 needs macOS27+, distinct from source-renderer selection),
+Linux launcher entry point, Graphics/Enhanced textures and Tools & Logs labels.
+The pinned docs/assets/render-launcher-preview.ps1 renders the1.7.0 interface
+with isolated Stable/sample0.7.0 data; docs/assets/README.md records provenance.
+These are documentation updates; no runtime or launcher behavior changed.
+
+The Windows game package README now describes the native Multiplayer menu,
+community relay without player port forwarding, and the distinct private-server
+invite/router requirements. Packaging and launcher install checks remain the
+validation route; this changes instructions only, not runtime networking.
+
+[Background texture checks](background-texture-checks.md): one shared, nonblocking startup check and a persistent footer status replace automatic checking on Settings entry.
+
+[Compact settings cards](compact-launcher-settings.md). Shared SettingsTiles and card expanders replace tall stacked sections; save/apply behavior is unchanged.
+
+V-Sync: shared Display checkbox/GameSettings.VSync persists runtime.conf `vsync`;
+Save/Cancel, draft tracking and transactions are shared by WPF/Avalonia. FPS/VRR
+choices remain independent. See [Video Options](video-options.md#optional-v-sync-2026-11-17).
+Live game Console: shared ConsolePage.cs tails the validated current/last GameSessions log pair, with bounded UTF-8 reads, pause, clear-view, error filtering and auto-scroll. Both hosts expose a single Tools & Logs navigation entry, with Repair / Verify, System & Reports and Console tabs in MaintenanceArea. ConsolePage uses embedded layout (no duplicate heading/padding), survives tab switching, and remains available during gameplay. Windows Refresh enables RepairNav while gameMonitoring is active; MonitorGame refreshes navigation on entry/exit, while maintenance actions retain busy/game guards; capture pipes remain independently drained. Windows writes and native Drain flush promptly. Native capture retains its existing 4 MiB per-stream limit. Shared UI tests exercise live appends, split UTF-8, truncation, bounds and session replacement. Preview: --render-console-preview <png>. Native Linux compilation verified on Windows; native runtime visual acceptance pending.
+
+[Sync telemetry](network-sync-telemetry.md).
+Integration version policy (2026-11-17): native multiplayer merges into main
+with VERSION0.6.2, per user request. Main's0.6.3-sun-fix.1 was accidental;
+the earlier0.7.0-beta.1 preview below is historical and does not authorize a
+version increment or publication for this integration.
+Online game beta0.7.0-beta.1 was published November13 from46f1a2d0
+on feature/native-multiplayer-ui (release443677772). Beta metadata targets
+Preview/Beta, with Windows, Apple Silicon Mac and Linux assets;
+minimum launcher1.6.2. Stable0.6.2/Latest launcher1.6.2 unchanged. [Scope](../release/online-beta.md).
+Native package availability and acceptance evidence remain in STATUS.md.
+
+Installed display-reader capability: BUILD.json display_settings_version gates
+Crosshair Size (>=4) and Weapon FOV degrees (>=5). Missing/invalid metadata
+retains V1-V3 compatibility; unpackaged development builds support5. Older
+games get a disabled crosshair slider and validation rejects unsupported writes
+before any transaction. Windows packages emit5; native Mac/Linux build receipts
+emit5 and their packagers preserve the actual binary receipt value.
+
+Weapon FOV reference angles: GameSettings preserves V5 width/height/worldFov/
+weaponDegrees/crosshair,40-100 degrees. V3/V4 remain exact legacy percentages.
+New regression covers V5 persistence, bounds and malformed records; see
+[weapon aperture](video-options.md). No new launcher Weapon FOV control added.
+
+[Crosshair sizing](hud-sizing.md): one shared percentage slider and V4
+display preferences;100% preserves legacy files. HUD Scale removed, including
+its model field; valid older preview values load and normalize to100.
+Save/Cancel and dirty tracking cover Crosshair Size. Native visuals pending.
+
+Launcher1.6.2 packages restored editable controls and per-player deadzone sliders;
+game0.6.2 adds the high-FPS turret/prompt fixes. Three-host release verification
+remains required; see docs/release/launcher-releases.md.
+
+Keyboard edits now preserve controller sources on the edited action, including
+conflict reassignment, unbinding and keyboard reset; reset retains device/pad
+presets. Shared Binding returns only key/none slots, and serialization retains
+up to four pad tokens beside the two keyboard slots (runtime2965 supports six).
+Legacy Y/Black/White keyboard labels now name fixed extra gameplay actions.
+See [keyboard/controller independence and checks](control-presets.md).
+
 Launcher1.6.0 prepares the shared audio, Modern controls/deadzones, texture
 preference and game update-notice additions for Windows/Mac/Linux. The official
 three-host release workflow remains required after the version change reaches
@@ -8,7 +76,7 @@ Version preparation itself does not publish or establish hardware acceptance.
 
 [Controller deadzones](controller-deadzones.md).
 
-[Custom seeds](control-presets.md).
+[Preset rollback](control-presets.md).
 
 Enhanced textures now round-trip the game's `pc-textures.ini` sidecar.
 GameSettings loads its value ahead of legacy launcher.enhanced_textures JSON;
@@ -835,3 +903,16 @@ workflow checks and all fifteen verified assets. This version-only change
 retains update, installation, preservation and optional-texture contracts.
 Game 0.5.2 is prepared independently as a Windows/Linux draft, with native Mac
 game packaging deferred to the maintainer's Mac at the matching tag revision.
+
+Mac/Linux JsonAdapter writes JSON data with literal '+' axis tokens, matching
+the Framework writer. The compact runtime parser does not decode Unicode escapes;
+the shared inherited-pad-source regression checks the saved token spelling too.
+JSON is used as data/files, not embedded HTML.
+
+Controller deadzones in SettingsPage use eight shared percentage sliders (0..100,
+1% steps) with live readouts and accessible names. Only edits update the raw model;
+opening the page preserves unrounded legacy values. Each player's movement/aim
+sliders share a named PageTheme.Details Expander. Only Player1 starts expanded;
+expansion is excluded from Draft() and keeps pending values. The tab is Controls.
+Shared UI checks cover defaults, presentation-only toggling, readouts and per-player
+persistence. Save/conflict handling and game-side deadzone behavior are unchanged.

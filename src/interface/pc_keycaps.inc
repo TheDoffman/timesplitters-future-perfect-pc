@@ -1,4 +1,3 @@
-#include "input/pc_control_presets.h"
 /* Use the native glyph callback so keycaps follow actual wrapped positions,
  * font size, fades and HUD placement rather than estimating text advances. */
 #if !defined(TSFP_KEYCAP_TEST) && defined(__has_include)
@@ -35,6 +34,7 @@ static void keycap_line(int x,int y,int right,int bottom,uint32_t colour);
 void pc_display_keycap_text(void (*original)(void))
 {
     PcKeycapDraw saved=keycap_draw;memset(&keycap_draw,0,sizeof keycap_draw);
+    const uint32_t frame=g_esp;
     uint32_t text=WORD_AT(g_esp+16);
     keycap_draw.keyboard=pc_prompts_keyboard_active();
     if(text) {
@@ -50,10 +50,20 @@ void pc_display_keycap_text(void (*original)(void))
             if(end) {keycap_draw.enabled=strchr(keycap_draw.text,'[')!=NULL || strchr(keycap_draw.text,'\v')!=NULL;break;}
         }
     }
+#ifdef TSFP_ARCADE_MIGRATION
+    extern uint32_t pc_multiplayer_migration_prompt(const char *text);
+    const uint32_t replacement=pc_multiplayer_migration_prompt(keycap_draw.text);
+    if(replacement)WORD_AT(frame+16)=replacement;
+#endif
 #if TSFP_INPUT_ICONS
     if(keycap_draw.enabled && keycap_draw.keyboard)pc_controls_binding_keys(keycap_draw.keys);
 #endif
     original();
+#ifdef TSFP_ARCADE_MIGRATION
+    if(replacement)WORD_AT(frame+16)=text;
+#else
+    (void)frame;
+#endif
     if(keycap_draw.count) {
         GuestRegisters registers;save_registers(&registers);
         keycap_flush();restore_registers(&registers);
@@ -136,15 +146,6 @@ void pc_display_keycap_glyph(void (*original)(void))
         int digit=c<12 && guest_writable(table,4) && WORD_AT(table) &&
                   WORD_AT(state+0x3c)==WORD_AT(table);
         unsigned token=c+(digit?'1':'A');
-#ifndef TSFP_KEYCAP_TEST
-        if(!pc_controls_in_menu()) {
-            unsigned port=controls_context_port(WORD_AT(0x7b0c7c));
-            if(port<4 && pc_settings_controller_preset(port)) {
-                unsigned masks[24];int mounted;memcpy(masks,pc_preset_masks,sizeof masks);
-                if(controls_gameplay_masks(port,masks,&mounted))token=pc_preset_controller_token(token,masks);
-            }
-        }
-#endif
         int icon=token<256?input_controller_lookup[token]:-1;
         if(icon>=0 && keycap_draw.count<64 && keycap_queue_icon(state,icon,1)) {g_esp+=4;return;}
         original();return;

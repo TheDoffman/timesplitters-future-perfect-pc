@@ -1,4 +1,10 @@
-[Custom seeds](control-presets.md).
+Controller layout diagram: US524A00 draw callback2E97C0 is wrapped by
+`controls_diagram_draw`. A thread-local nested prompt scope forces physical
+controller labels for its measurements/text/glyph draws, restoring the remembered
+input device afterward. Normal menu/KBM prompts still follow last input. Scope
+changes display only; native action configuration remains authoritative.
+
+[Preset rollback](control-presets.md).
 
 # Unified Controls options
 
@@ -309,3 +315,40 @@ They identify this branchâ€™s behavior as not yet published.
 
 The local-player sampler fixture uses external linkage for its reload stub to
 match pc_input.h on Clang as well as MSVC.
+
+#540 native prompt activity: patch2955 extends the native sampler's existing
+keyboard-player automatic pad detection to explicit Player1 DEV_PAD assignments.
+Only P1 updates the shared prompt state; focus/modal gates are respected. Button,
+stick and trigger activity still use pc_prompts.c's existing thresholds and last-
+input tracking; controller selection does not require disabling keyboard/mouse.
+The headless production sampler fixture fails on the old native path and passes
+on Windows and SDL after the patch. Native SDL self-test also exercises an explicit
+P1 virtual-pad assignment, physical controller tokens, then restores its isolated
+controls configuration. This is synthetic input, not physical Steam Deck acceptance.
+
+## Extended controller Turn Speed
+
+`pc_menu_sliders.inc:menu_controller_speed_tick/set` extends the native row 9
+range from 0..1 to 0..1.5, keeping 0.05 steps and existing profile values. The
+Controls tick calls the native 2EAB30 first; only a right input it leaves unchanged
+at >=1 is extended afterwards. Check the post-native C4 mask so consumed/repeat
+input is respected. Left and all original-range input stay native. No preset,
+deadzone, inversion, acceleration or mouse sensitivity is changed. The finite,
+bounded setter updates only selected-player 7BA3DC + player*1E0 and the existing
+preview sound; native Accept/Cancel and the 31-dword save draft remain authoritative.
+The bar wrapper normalizes just its scoped 814B0 fill argument by 1.5 and restores
+it after drawing; capacity meters and other sliders are unaffected. Mouse dragging
+uses 30 intervals. Existing values are never rescaled in profile memory.
+
+`test_fov_settings.py[original-controller-speed]` recompiles the supported US
+2EAB30 handler and 2E9E50 Accept callback, exercising the full range in both
+directions, idle/consumed input, player slots, draft discard, native profile copy
+and preview behavior. The portable menu_mouse fixture covers normalized paint,
+argument restoration and bounded dragging for every player/aspect/menu layout.
+Physical pad feel and native Mac/Linux gameplay require hardware acceptance.
+
+Windows live acceptance (2026-11-20): native main/pause edits, bounds, Cancel and
+signed-save/process-restart retention passed. Identical full-stick input measured
+336 versus448 degrees/s at1.0/1.5 (60-Hz normalized). The native curve adds0.5
+before scaling; extending the slider50% therefore increased observed turning33%.
+See STATUS for the acceptance build's local MSVC workaround and hardware gaps.

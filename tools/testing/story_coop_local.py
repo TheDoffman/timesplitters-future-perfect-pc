@@ -27,7 +27,14 @@ import sys
 import threading
 import time
 
-from lobby_server import Server
+def Server(*args, **kwargs):
+    """Local integration runs require the separately maintained server fixture."""
+    try:
+        from lobby_server import Server as fixture
+    except ImportError as error:
+        raise ValueError('Local Story testing needs the private server fixture on PYTHONPATH. '
+                         'Use the shared service for normal play.') from error
+    return fixture(*args, **kwargs)
 from testing_profile import contained, prepare_run, recycle_disks
 
 ROOT = Path(__file__).resolve().parents[2]

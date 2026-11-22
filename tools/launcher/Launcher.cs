@@ -29,12 +29,13 @@ namespace TimeSplitters.Launcher
                 bool repairPreview = args.Length == 2 && args[0] == "--render-repair-preview";
                 bool diagnosticsPreview = args.Length == 2 && args[0] == "--render-diagnostics-preview";
                 bool newsPreview = args.Length == 2 && args[0] == "--render-news-preview";
+                bool consolePreview = args.Length == 2 && args[0] == "--render-console-preview";
                 bool versionsPreview = args.Length == 2 && args[0] == "--render-versions-preview";
                 bool graphicsPreview = args.Length == 2 && args[0] == "--render-settings-graphics";
                 bool discordPreview = args.Length == 2 && args[0] == "--render-settings-discord";
                 bool audioPreview = args.Length == 2 && args[0] == "--render-settings-audio";
                 bool settingsPreview = audioPreview || discordPreview || graphicsPreview || (args.Length == 2 && args[0] == "--render-settings-preview");
-                bool preview = versionsPreview || newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
+                bool preview = consolePreview || versionsPreview || newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
                 bool fromBootstrap = args.Length == 2 && args[0] == "--from-bootstrap";
                 if (args.Length == 0)
                 {
@@ -60,6 +61,7 @@ namespace TimeSplitters.Launcher
                             if (repairPreview || diagnosticsPreview) ui.ShowMaintenance(diagnosticsPreview);
                             if (newsPreview) ui.ShowNews();
                             if (versionsPreview) ui.ShowGameVersions();
+                            if (consolePreview) ui.ShowConsole();
                             var window = ui.Window;
                             var visual = (Panel)window.Content;
                             visual.Background = window.Background;
@@ -144,6 +146,8 @@ namespace TimeSplitters.Launcher
         void SetChannels(Release[] releases,string selected)
         {channelPicker.SetReleases(releases,selected);}
         string NewsGameVersion { get { return installed.Length>0?installed:gameInstalled?"Unversioned":""; } }
+        TextureUpdateCheck textureUpdatesState;bool closed;
+        void TextureCheckChanged(){if(closed)return;var label=Find<TextBlock>("TextureUpdateStatus");label.Text=textureUpdatesState.Status;label.ToolTip=textureUpdatesState.Details;label.Visibility=label.Text.Length>0?Visibility.Visible:Visibility.Collapsed;if(settings!=null)settings.RefreshTextureCheck();}
         public void SetStatus(string value) { Text("StatusText", value); }
         public LauncherWindow(string path, bool preview)
             : this(path,preview,new ReleaseClient()) { }
@@ -152,6 +156,7 @@ namespace TimeSplitters.Launcher
             root = path; previewMode = preview; client = releases;
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Launcher.xaml"))
                 Window = (Window)XamlReader.Load(stream);
+            textureUpdatesState=new TextureUpdateCheck(root);textureUpdatesState.Changed+=()=>Ui.Post(TextureCheckChanged);
             Window.Resources.MergedDictionaries.Add(PageTheme.Resources());
             Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
             channelPicker.SetReleases(new Release[0],GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
@@ -219,7 +224,7 @@ namespace TimeSplitters.Launcher
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
             Button("OpenDataButton").Click+=(s,e)=> {if(!previewMode)OpenFolder("Data");};
-            Window.Closed += (s,e)=> { if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
+            Window.Closed += (s,e)=> { closed=true;textureUpdatesState.Dispose(); if(consolePage!=null)consolePage.Dispose(); if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
             Window.Activated+=async(s,e)=>{if(KnownIssuesVisible())await RefreshKnownIssues(false);};
             if (previewMode)
             {
@@ -266,6 +271,7 @@ namespace TimeSplitters.Launcher
                 busy = true; Refresh();
                 try { await Task.Run(() => Core.CleanupGameAfterStartup(root)); }
                 finally { busy = false; }
+                var backgroundTextures=textureUpdatesState.StartIfOptedIn();
                 await Check();
                 string result = Core.PathIn(root, ".launcher/last-result.txt");
                 if (File.Exists(result)) { SetStatus(File.ReadAllText(result)); File.Delete(result); }
@@ -286,12 +292,19 @@ namespace TimeSplitters.Launcher
                 }
             };
         }
+        ConsolePage consolePage;
+        public void ShowConsole()
+        {
+            if(busy && !gameMonitoring)return;
+            ShowMaintenance(false);
+            if(maintenanceArea!=null)maintenanceArea.Tabs.SelectedIndex=2;
+        }
         public void ShowSettings(int tab=-1)
         {
             if(busy || (!previewMode && Core.GameRunning())) { SetStatus("Close the game before editing settings."); return; }
             try {
                 if(settings==null) {
-                    settings=new SettingsPage(Window.Resources,root,previewMode);
+                    settings=new SettingsPage(Window.Resources,root,previewMode,textureUpdatesState);
                     settings.TextureBusyChanged+=value=> {busy=value;Refresh();};
                     settings.Saved+=()=> { SetStatus("Settings saved."); Refresh(); };
                     settings.Cancelled+=()=> { ShowHome(); Find<ContentControl>("SettingsHost").Content=null; settings=null; SetStatus("Unsaved settings discarded."); };
@@ -304,7 +317,6 @@ namespace TimeSplitters.Launcher
                 Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;
                 SelectNavigation("SettingsNav");
-                settings.CheckTexturesIfOptedIn();
             } catch(Exception ex) { Fail(ex); }
         }
         void ShowHome()
@@ -508,7 +520,8 @@ namespace TimeSplitters.Launcher
             try {
                 if(settings!=null)settings.DismissPrompt();
                 if(maintenanceArea==null) {
-                    maintenanceArea=new MaintenanceArea(CreateMaintenancePage(false),CreateMaintenancePage(true));
+                    consolePage=new ConsolePage(root,previewMode,true);
+                    maintenanceArea=new MaintenanceArea(CreateMaintenancePage(false),CreateMaintenancePage(true),consolePage);
                     maintenanceArea.Selected+=async selected=> {try{if(selected)await EnsureDiagnostics();}catch(Exception ex){Fail(ex);}};
                     Find<ContentControl>("MaintenanceHost").Content=maintenanceArea.View;
                 }
@@ -718,7 +731,8 @@ namespace TimeSplitters.Launcher
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
-            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
+            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
+            Button("RepairNav").IsEnabled = !busy || gameMonitoring;
             if(maintenanceArea!=null)maintenanceArea.SetBusy(busy && !gameMonitoring);
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy((busy && !gameMonitoring) || checking,Core.GameRunning());
@@ -907,6 +921,7 @@ namespace TimeSplitters.Launcher
             gameMonitoring=true;
             try
             {
+                Refresh();
                 SetStatus("Starting game…");
                 // Process.Start has succeeded. Do not delay taskbar minimization
                 // while waiting for a detectable game window; cleanup still must.
@@ -939,7 +954,7 @@ namespace TimeSplitters.Launcher
             }
             finally
             {
-                gameMonitoring=false;
+                gameMonitoring=false;Refresh();
                 if (minimizedForGame) { Window.WindowState = previousState; Window.Activate(); }
             }
             await Task.Run(() => Core.FinishGameSession(root, observedBuild, gameWindowShown, process.ExitCode));
@@ -961,8 +976,8 @@ namespace TimeSplitters.Launcher
                 string tag = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture);
                 string errorPath = Path.Combine(logs, tag + ".err");
                 process.StartInfo.EnvironmentVariables["RECOMP_LOG_FILE"] = errorPath;
-                using (var output = File.Create(Path.Combine(logs, tag + ".out")))
-                using (var errors = new FileStream(errorPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                using (var output = new FileStream(Path.Combine(logs, tag + ".out"), FileMode.Create, FileAccess.Write, FileShare.Read, 1))
+                using (var errors = new FileStream(errorPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite, 1))
                 {
                     string session=null;
                     try {session=GameSessions.Begin(root,tag);}

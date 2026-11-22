@@ -131,6 +131,19 @@ int main(void) {
     pc_developer_draw_body();assert(body_draws==3);WORD_AT(0x76b0fc)=WORD_AT(0x76b108)=0;
     options.freecam=0;pc_developer_draw_body();assert(body_draws==3);
     pc_developer_world_visibility();assert(WORD_AT(0x60a0)==1);pc_developer_viewmodel_draw(original);assert(original_count==previous_calls+1);
+    /* Manual visibility shares freecam's owned-viewport draw gate, without
+       changing freecam, world-body rendering or weapon updates. */
+    options.hide_viewmodel=1;g_esp=0xc000;previous_calls=original_count;
+    pc_developer_viewmodel_draw(original);assert(g_esp==0xc004&&original_count==previous_calls);
+    pc_developer_draw_body();assert(body_draws==3);
+    WORD_AT(0x7b0c7c)=0x5000;g_esp=0xc000;
+    pc_developer_viewmodel_draw(original);assert(original_count==++previous_calls);
+    WORD_AT(0x7b0c7c)=0x4000;WORD_AT(0xa000)=0;g_esp=0xc000;
+    pc_developer_viewmodel_draw(original);assert(original_count==++previous_calls);
+    WORD_AT(0xa000)=0x6000;WORD_AT(0x76b0fc)=WORD_AT(0x76b108)=1;g_esp=0xc000;
+    pc_developer_viewmodel_draw(original);assert(original_count==++previous_calls);
+    WORD_AT(0x76b0fc)=WORD_AT(0x76b108)=0;options.hide_viewmodel=0;g_esp=0xc000;
+    pc_developer_viewmodel_draw(original);assert(original_count==previous_calls+1);
     g_esp=0xc000;WORD_AT(g_esp+4)=0x12000;WORD_AT(0x7de458)=0x20000000;
     WORD_AT(0x4e8cec)=60;WORD_AT(0x7497a8)=1000;
     pc_developer_cutscene_guest(cutscene_original);

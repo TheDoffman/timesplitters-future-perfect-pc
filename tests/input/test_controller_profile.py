@@ -14,6 +14,31 @@ ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "external/ts3FPrecomp/src"
 
 
+def test_pre_preset_factory_defaults():
+    config=json.loads((ROOT / "config/pc-controls.default.json").read_text())
+    assert "custom_binding_semantics" not in config
+    assert all("keyboard_preset" not in c and "controller_preset" not in c for c in config["controllers"])
+    keys=config["controllers"][0]["bindings"]
+    assert keys["a"]==["key:E","key:SPACE"]
+    assert keys["b"]==["key:F","key:MBUTTON"]
+    assert keys["dpad_up"]==["key:UP","key:PAGEUP"]
+    assert keys["dpad_down"]==["key:DOWN","key:PAGEDOWN"]
+    assert keys["dpad_left"]==["key:LEFT","key:F24"]
+    assert keys["dpad_right"]==["key:RIGHT","key:F23"]
+
+
+def test_retired_metadata_does_not_override_custom_pad(controller_exe,tmp_path):
+    config=json.loads((ROOT / "config/pc-controls.default.json").read_text())
+    profile=config["controllers"][0];profile.update(device="gamepad:0",keyboard_preset=1,controller_preset=1)
+    config["custom_binding_semantics"]=1
+    profile["bindings"]["a"]=["pad:b","none"]
+    profile["bindings"]["rtrigger"]=["none","none"]
+    path=tmp_path/"retired-mode.json";path.write_text(json.dumps(config));before=path.read_bytes()
+    result=subprocess.run([str(controller_exe),str(path),"0","custom"],capture_output=True,text=True,timeout=15)
+    assert result.returncode==0,result.stdout+result.stderr
+    assert path.read_bytes()==before
+
+
 def test_native_developer_player_keys(tmp_path):
     production = (RUNTIME / 'input/input_bindings.c').read_text()
     native = (ROOT / 'src/native/input_sdl.c').read_text()
@@ -45,6 +70,9 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
         sampler, changed = re.subn(r'!\(reserved_pads\s*&\s*\(1u\s*<<\s*slot\)\)', '1', sampler)
         assert changed == 2, 'Exercise both real host fallback loops'
     fixture = (ROOT / "tests/input/local_player_routing.c").read_text()
+    prompts=(ROOT / 'src/input/pc_prompts.c').read_text()
+    prompts=prompts[prompts.index('static SRWLOCK prompt_lock'):prompts.index('static void key_label(')]
+    fixture=fixture.replace('/* PRODUCTION_PROMPTS */',prompts)
     axis_helper = re.search(r'static int control_magnitude\(.*?\n\}', production, re.S).group()
     fixture = fixture.replace('/* PRODUCTION_SAMPLER */', '#define '+adapter+'\n'+axis_helper+'\n'+reload_helper+'\n'+sampler)
     source = tmp_path / "routing.c"; source.write_text(fixture)
@@ -58,8 +86,9 @@ def test_local_player_host_routing(tmp_path, adapter, mutation):
     assert result.returncode == 0, result.stdout + result.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=15)
     assert (result.returncode == 0) == (mutation == 'fixed'), result.stdout + result.stderr
-    if mutation != 'fixed':
+    if mutation == 'steal-player-two':
         assert '!memcmp(&one,&neutral,sizeof one)' in result.stderr, result.stderr
+
 
 
 @pytest.fixture(scope="module")

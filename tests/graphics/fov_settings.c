@@ -1,5 +1,12 @@
 /* Production display model and guest callbacks with isolated settings and RAM.
  * Original menu drawing/input functions are stubs; no game data is needed. */
+#include <stdint.h>
+static unsigned visibility_begin_calls,visibility_end_calls,visibility_result_calls;
+static uint32_t visibility_index,visibility_pixels;
+static int visibility_accepted,visibility_ready;
+void host_VisibilityBegin(void){visibility_begin_calls++;}
+void host_VisibilityEnd(uint32_t index,int accepted){visibility_end_calls++;visibility_index=index;visibility_accepted=accepted;}
+int xbox_D3D8VisibilityResult(uint32_t index,uint32_t *pixels){visibility_result_calls++;visibility_index=index;if(visibility_ready==1)*pixels=visibility_pixels;return visibility_ready;}
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +31,13 @@ int pc_controls_developer_is_fullscreen(void){return sidebar_fullscreen;}
 void pc_controls_developer_fullscreen(void){sidebar_fullscreen=!sidebar_fullscreen;}
 void pc_developer_get(PcDeveloperState *out) {*out=(PcDeveloperState){0,0,0,0,1.,0};}
 static int developer_hud_visible=1;
+static PcViewSettings view_preferences;
+static int view_save_ok=1;
+void pc_settings_view_read(PcViewSettings *out){*out=view_preferences;}
+int pc_settings_view_save(const PcViewSettings *value,char *error,size_t bytes){
+    if(!view_save_ok){snprintf(error,bytes,"Could not save view settings.");return 0;}
+    view_preferences=*value;return 1;
+}
 int pc_developer_hud_visible(void) {return developer_hud_visible;}
 void pc_developer_close(void) {assert(!"unexpected Developer Tools close");}
 void pc_developer_report(const char *message) {(void)message;assert(!"unexpected developer request");}
@@ -71,6 +85,9 @@ int pc_graphics_set(const TsfpGraphicsOptions *o){if(!graphics_save_ok)return 0;
 static int counter_enabled,counter_save_ok=1;
 int pc_counter_enabled(void) { return counter_enabled; }
 int pc_counter_set_enabled(int value) { if(!counter_save_ok)return 0;counter_enabled=!!value;return 1; }
+static int vsync_preference,vsync_save_ok=1;
+int pc_vsync_enabled(void){return vsync_preference;}
+int pc_vsync_set_enabled(int enabled){if(!vsync_save_ok)return 0;vsync_preference=enabled;return 1;}
 static int smaa_preference,smaa_save_ok=1;
 int pc_smaa_enabled(void){return smaa_preference;}
 int pc_smaa_set_enabled(int enabled){if(!smaa_save_ok)return 0;smaa_preference=enabled;return 1;}
@@ -105,9 +122,26 @@ static unsigned online_connect_calls;
 int pc_online_connect(void) { ++online_connect_calls;return 0; }
 int pc_online_connect_mode(PcOnlineMode mode) { (void)mode;return 0; }
 static PcOnlineMode online_mode;
-PcOnlineMode pc_online_mode(void) { return online_mode; }
+static unsigned online_request_test,online_request_calls;
+static PcOnlineMenuRequest online_request;
+int pc_online_menu_start(void){return online_request_test;}
+int pc_online_menu_send(PcOnlineMenuRequest *request){CHECK(online_request_test);request->sequence=++online_request_calls;online_request=*request;return 1;}
+static PcOnlineMenuState online_poll_state;static int online_poll_fixture;
+const PcOnlineMenuState *pc_online_menu_poll(void){CHECK(online_poll_fixture);return &online_poll_state;}
+int pc_online_menu_accept(void){CHECK(0);return 0;}
+static int roster_fixture,native_retire_fixture;static unsigned roster_publications,native_retire_calls,native_backend_resets,native_leave_calls,native_return_factories;
+int pc_online_menu_active(void){return roster_fixture || native_retire_fixture;}
+void pc_online_menu_leave(void){CHECK(native_retire_fixture);CHECK(native_retire_calls==1 && native_backend_resets==1);native_leave_calls++;}
+int pc_online_menu_copy(const char *text){(void)text;CHECK(0);return 0;}
+int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0);return 0;}
+int pc_online_menu_publish(PcOnlineMatchInfo *info){(void)info;CHECK(0);return 0;}
+int pc_online_menu_publish_roster(struct PcOnlineRoster *info){CHECK(roster_fixture && info->count==1 && !strcmp(info->people[0].name,"Fixture player") && !strcmp(info->people[0].character_name,"Cortez") && info->people[0].portrait==528);roster_publications++;return 1;}
+PcOnlineMode pc_online_mode(void) { return native_retire_fixture?PC_ONLINE_ARCADE:online_mode; }
+static void native_retire_factory(void){CHECK(native_retire_fixture);CHECK(WORD_AT(g_esp+8u)==mp_descriptor(MP_BROWSER));native_return_factories++;g_esp+=4;}
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
+static unsigned lan_closing_requests;
 void pc_online_disconnect(void) { online_disconnects++; }
+int pc_network_set_online(const char *configuration) {CHECK(!configuration);return 1;}
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) {static uint32_t next=0x100000;next=(next+alignment-1)&~(alignment-1);uint32_t result=next;next+=size;CHECK(next<0x1f0000);return result;}
 #define STUB(name) void name(void) { g_esp+=4; }
 /* The menu translation unit also contains tutorial hooks. Their drawing and
@@ -129,11 +163,14 @@ void pc_prompts_layout_end(void) {}
 #define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
 TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
 static int row_alignment_test,update_notice_test,update_notice_draws;
+static int latency_draw_test,latency_draws;
+static uint32_t latency_expected_colour;
 void sub_0003FA10(void) {
     CHECK(row_alignment_test);g_eax=WORD_AT(0x6b93b4);WORD_AT(0x6b93b4)=WORD_AT(g_esp+4);g_esp+=4;
 }
 void sub_0003FCF0(void) {
-    CHECK(row_alignment_test || update_notice_test);FLOAT_AT(WORD_AT(g_esp+4))=80.f;
+    const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
+    CHECK(row_alignment_test || update_notice_test || (caption[0]>='0' && caption[0]<='9'));FLOAT_AT(WORD_AT(g_esp+4))=80.f;
     FLOAT_AT(WORD_AT(g_esp+8))=WORD_AT(0x6b93b4)==2?14.f:10.f;g_esp+=4;
 }
 void sub_000718E0(void) {CHECK(row_alignment_test);g_eax=0x600400;g_esp+=4;}
@@ -142,13 +179,13 @@ void sub_0003F8D0(void) {CHECK(update_notice_test);g_esp+=4;}
 /* Kill-feed drawing is linked through the same menu unit, but must not
  * execute in this settings-only fixture. */
 TUTORIAL_STUB(sub_00041E30) TUTORIAL_STUB(sub_00021450)
-TUTORIAL_STUB(sub_0001ED50) TUTORIAL_STUB(sub_0001F090)
+TUTORIAL_STUB(sub_0001ED50) TUTORIAL_STUB(sub_0001ED60) TUTORIAL_STUB(sub_0001F090)
 #undef TUTORIAL_STUB
 /* Mouse-menu behavior is exercised by menu_mouse.c. Keep its dependencies
  * linked here, but fail if this settings-only fixture enters those paths. */
 void pc_controls_text_mode(uint32_t owner) {(void)owner;CHECK(0);}
 unsigned pc_controls_text_event(uint32_t owner) {(void)owner;CHECK(0);return 0;}
-void pc_settings_gameplay_reader(PcGameplayMasks reader) {(void)reader;}
+void pc_settings_active_ports_reader(PcActiveInputPorts reader) {(void)reader;}
 static int controls_test_menu_active=1;
 int pc_controls_in_menu(void) {return controls_test_menu_active;}
 void pc_controls_menu_mode(int active) { (void)active; CHECK(0); }
@@ -169,10 +206,29 @@ MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
 MOUSE_STUB(sub_00045C60)
 static unsigned video_sounds,highlight_sounds;
 void sub_00021780(void){uint32_t sound=WORD_AT(g_esp+4);CHECK(sound==0x1234u || sound==0x4321u);if(sound==0x4321u)highlight_sounds++;else video_sounds++;g_esp+=4;}
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+static unsigned speed_previews,speed_consume;
+void sub_00045390(void){g_esp+=4;}
+void sub_00045820(void){speed_previews++;g_esp+=4;}
+#else
 MOUSE_STUB(sub_00045390) MOUSE_STUB(sub_00045820)
+#endif
 MOUSE_STUB(sub_0007DB20) MOUSE_STUB(sub_0007C410) MOUSE_STUB(sub_0007C300)
 MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
 MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
+MOUSE_STUB(sub_001A2720) MOUSE_STUB(sub_001CBA50) MOUSE_STUB(sub_001CBD40)
+MOUSE_STUB(sub_00352980)
+static unsigned online_keyboard_test,online_keyboard_buffer;
+void sub_0007D090(void){CHECK(online_keyboard_test);online_keyboard_buffer=WORD_AT(g_esp+8u);CHECK(WORD_AT(g_esp+12u)==255u);g_esp+=4;}
+static unsigned fixture_lan_matches;
+void sub_00352990(void){g_eax=fixture_lan_matches;g_esp+=4;}
+static unsigned native_menu_transitions;
+void sub_00075980(void){CHECK(WORD_AT(g_esp+8)==2u);native_menu_transitions++;g_esp+=4;}
+MOUSE_STUB(sub_001A4510) MOUSE_STUB(sub_000318A0) MOUSE_STUB(sub_003800D1)
+MOUSE_STUB(sub_001CBDA0) MOUSE_STUB(sub_00064E20)
+void sub_00077110(void){WORD_AT(WORD_AT(g_esp+4u)+0x18cu)=WORD_AT(g_esp+8u);g_esp+=4;}
+void sub_002BE690(void){CHECK(roster_fixture && WORD_AT(g_esp+4)==12 && WORD_AT(g_esp+8)==UINT32_MAX);g_eax=528;g_esp+=4;}
+void sub_002BE650(void){CHECK(roster_fixture && WORD_AT(g_esp+4)==12 && WORD_AT(g_esp+8)==UINT32_MAX);g_eax=345;g_esp+=4;}
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
@@ -210,9 +266,12 @@ void sub_000966E0(void)
 /* Unlock Content has its own profile/menu fixture. This settings-only test
  * must link those dependencies without accidentally entering their paths. */
 #define UNLOCK_STUB(name) void name(void) { CHECK(0); }
-UNLOCK_STUB(sub_00356870) UNLOCK_STUB(sub_000696F0)
-UNLOCK_STUB(sub_001CD040) UNLOCK_STUB(sub_00075E70)
+UNLOCK_STUB(sub_000696F0)
+UNLOCK_STUB(sub_001CD040)
 #undef UNLOCK_STUB
+static uint32_t lobby_profile_index,lobby_profile_text;
+void sub_00356870(void){CHECK(WORD_AT(g_esp+4u)==0);g_eax=lobby_profile_index;g_esp+=4;}
+void sub_00069720(void){CHECK(WORD_AT(g_esp+4u)==lobby_profile_index);g_eax=lobby_profile_text;g_esp+=4;}
 /* Other shared translation-unit hooks must not run in this display fixture. */
 int pc_weapon_slot_take(void) { CHECK(0);return 0; }
 STUB(sub_001BAA70) STUB(sub_001BA410) STUB(sub_00142820)
@@ -254,16 +313,9 @@ static unsigned controls_test_saves,controls_test_previews;
 static PcSettings controls_test_settings;
 void pc_settings_defaults(PcSettings *s) {CHECK(controls_test_enabled);*s=controls_test_settings;s->sensitivity=.1;s->enabled=1;s->invert_y=0;}
 int pc_settings_read(PcSettings *s,char *e,size_t n) { (void)e;(void)n;CHECK(controls_test_enabled);*s=controls_test_settings;return 1; }
-void pc_settings_modern(PcSettings *s) {pc_settings_defaults(s);s->preset=1;}
-int pc_settings_custom_read(PcSettings *s,char *e,size_t n) {return pc_settings_read(s,e,n);}
-static int test_custom_semantics;
-int pc_settings_custom_semantics(void) {return test_custom_semantics;}
-static int test_controller_presets[4];
 static int test_deadzones[4][2]={{7849,7849},{7849,7849},{7849,7849},{7849,7849}};
 int pc_settings_deadzone(unsigned p,int a) {CHECK(p<4);return test_deadzones[p][!!a];}
 int pc_settings_deadzone_save(unsigned p,int a,int v,char *e,size_t n) {(void)e;(void)n;CHECK(p<4);test_deadzones[p][!!a]=v;return 1;}
-int pc_settings_controller_preset(unsigned port) {CHECK(port<4);return test_controller_presets[port];}
-int pc_settings_controller_preset_save(unsigned port,int value,char *e,size_t n) {(void)e;(void)n;CHECK(port<4);test_controller_presets[port]=value;return 1;}
 static int test_player_devices[4]={-2,-1,-1,-1},test_player_saves;
 void pc_settings_players_read(int d[4]) {memcpy(d,test_player_devices,sizeof test_player_devices);}
 int pc_settings_players_save(const int d[4],char *e,size_t n) {(void)e;(void)n;memcpy(test_player_devices,d,sizeof test_player_devices);test_player_saves++;return 1;}
@@ -283,7 +335,11 @@ int pc_settings_assign(PcSettings *s,int a,int slot,int k,int move) { (void)s;(v
 void pc_controls_set_mouse(double s,int enabled,int invert) { (void)s;(void)enabled;(void)invert;CHECK(controls_test_enabled);controls_test_previews++; }
 /* Native builder/centring contract: width is a percentage, not pixels.
  * An out-of-range width renders a panel with its rows outside the canvas. */
+static char fixture_heading[64];
+static float fixture_width;
 void sub_00075B70(void) {
+    snprintf(fixture_heading,sizeof fixture_heading,"%s",(const char *)(g_xbox_mem_offset+WORD_AT(g_esp+8u)));
+    fixture_width=FLOAT_AT(g_esp+12u);
     built_rows=built_row_count=separators=0;last_built_item=0;WORD_AT(0x300178)=0;
     uint32_t word=WORD_AT(g_esp+12);float width;memcpy(&width,&word,4);
     float left=(100.f-width)*.5f;
@@ -291,6 +347,10 @@ void sub_00075B70(void) {
     g_esp+=4;
 }
 static unsigned native_control_ticks,native_control_backs,native_control_opens[2];
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+static int speed_original_active;
+void speed_original(void);
+#endif
 static void fixture_controller_button(void) {pc_display_menu_button(sub_00079D60_gen);}
 void sub_002EA3F0(void) {
     for(unsigned id=0;id<12;id++) {
@@ -307,7 +367,12 @@ static unsigned fixture_native_rows(void) {
     }
     return mask;
 }
-void sub_002EAB30(void) {CHECK(fixture_native_rows()==0xfff);native_control_ticks++;g_esp+=4;}
+void sub_002EAB30(void) {
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+    if(speed_original_active){speed_original();return;}
+#endif
+    CHECK(fixture_native_rows()==0xfff);native_control_ticks++;g_esp+=4;
+}
 void sub_002E9FC0(void) {if(controls_tab!=2)CHECK(fixture_native_rows()==0xfff);native_control_backs++;g_esp+=4;}
 void sub_002EA8E0(void) {CHECK(0);}
 static unsigned native_control_actions;
@@ -321,6 +386,17 @@ void sub_002CBE50(void) {native_control_opens[0]++;g_esp+=4;}
 void sub_002EC1A0(void) {native_control_opens[1]++;g_esp+=4;}
 STUB(sub_00071B10) STUB(sub_00071C50) STUB(sub_00071BE0)
 STUB(sub_000771D0)
+static unsigned online_refresh_footers;
+static unsigned online_footer_mask;
+void sub_00074A00(void){const unsigned slot=WORD_AT(g_esp+4u);const char *labels[]={"Select","Back","Refresh"};CHECK(slot<3u);CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+8u)),labels[slot]));online_footer_mask|=1u<<slot;if(slot==2u)online_refresh_footers++;g_esp+=4;}
+void sub_00071730(void){WORD_AT(WORD_AT(g_esp+4u)+0x24u)=WORD_AT(g_esp+8u);g_esp+=4;}
+static unsigned online_layout_steps;
+void sub_000780E0(void){CHECK(!online_layout_steps);CHECK(FLOAT_AT(g_esp+4u)==65.f);online_layout_steps=1u;g_esp+=4;}
+void sub_000781A0(void){CHECK(online_layout_steps==1u);online_layout_steps=6u;g_esp+=4;}
+void sub_00075400(void){CHECK(online_layout_steps==6u);online_layout_steps=2u;g_esp+=4;}
+void sub_00077140(void){CHECK(online_layout_steps==2u);online_layout_steps=3u;g_esp+=4;}
+void sub_00077190(void){CHECK(online_layout_steps==3u);online_layout_steps=4u;g_esp+=4;}
+void sub_00075E70(void){if(online_layout_steps==4u)online_layout_steps=5u;g_esp+=4;}
 void sub_000770E0(void) {
     unsigned index=WORD_AT(g_esp+8);CHECK(index<built_row_count);
     uint32_t menu=WORD_AT(g_esp+4),id=built_ids[index];
@@ -346,7 +422,8 @@ void sub_00078980(void) {
 }
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
-STUB(sub_0003D7B0) STUB(sub_001CD120) STUB(sub_00069720) STUB(sub_00071CF0)
+void sub_0003D7B0(void){if(roster_fixture){CHECK(WORD_AT(g_esp+4)==345);g_eax=0x310100;}g_esp+=4;}
+STUB(sub_001CD120) STUB(sub_00071CF0)
 static unsigned audio_native_ticks,audio_native_actions,audio_native_opens;
 static unsigned fixture_audio_rows(void) {
     unsigned mask=0;
@@ -377,7 +454,7 @@ void sub_002C3E20(void) {
     }
     WORD_AT(0x300064)=bits(100.f-audio_page*10.f);g_esp+=4;
 }
- STUB(sub_002D9390) STUB(sub_00072510) STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_00019650) STUB(sub_00019D70)
+ STUB(sub_002D9390) STUB(sub_00072560) STUB(sub_00072510) STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_00019650) STUB(sub_00019D70)
 static unsigned highlight_rects,highlight_fallback;
 static int highlight_bottom;
 void sub_0001EFB0(void) {
@@ -398,7 +475,14 @@ void sub_00079710(void) {
     built_ids[built_row_count++]=UINT32_MAX;
     uint32_t item=0x230000+separators*0x200;WORD_AT(item)=9;WORD_AT(item+0x14)=UINT32_MAX;fixture_link(item);g_esp+=4;
 }
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+void sub_00074910(void) {
+    if(speed_original_active)WORD_AT(WORD_AT(g_esp+4)+0xc4)&=~speed_consume;
+    g_esp+=4;
+}
+#else
 STUB(sub_00074910)
+#endif
 void sub_001A0A60(void) {
     CHECK(getenv("TSFP_NETWORK") && !strcmp(getenv("TSFP_NETWORK"),"1"));
     CHECK(!getenv("TSFP_ONLINE_CONFIG") || !*getenv("TSFP_ONLINE_CONFIG"));
@@ -431,14 +515,25 @@ void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
 void sub_00079D60_gen(void) {
-    unsigned id=WORD_AT(g_esp+8);CHECK(id<256);
+    unsigned id=WORD_AT(g_esp+8);CHECK(id<256 || id==UINT32_MAX);
     if(page==DISPLAY_HOME && id>=20 && id<=21)CHECK(!strncmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4)),"\vs75",4));
     if(audio_building && (id==1 || id==3))CHECK(WORD_AT(g_esp+24)==AUDIO_VOLUME_DRAW);
     if(audio_building && id==AUDIO_TABS_ID)CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4))," "));
     if(id<32)built_rows|=1u<<id;CHECK(built_row_count<32);built_ids[built_row_count++]=id;
-    g_eax=0x200000+id*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;g_esp+=4;
+    g_eax=0x200000+(id==UINT32_MAX?255u:id)*0x200;WORD_AT(g_eax)=4;WORD_AT(g_eax+0xb0)=1;WORD_AT(g_eax+0x14)=id;fixture_link(g_eax);WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;WORD_AT(g_eax+0x88)=current_menu;WORD_AT(g_eax+0x20)=WORD_AT(g_esp+4u);WORD_AT(g_eax+0x50)=WORD_AT(g_esp+20u);g_esp+=4;
+}
+void sub_00042490(void) {
+    CHECK(latency_draw_test);
+    const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
+    CHECK(!strcmp(caption,"147 ms") || !strcmp(caption,"-- ms"));
+    CHECK(WORD_AT(WORD_AT(g_esp+4))==134u && WORD_AT(WORD_AT(g_esp+8))==60u);
+    CHECK(WORD_AT(0x6b93b4)==0x12u);
+    CHECK(WORD_AT(g_esp+16)==latency_expected_colour);latency_draws++;g_esp+=4;
 }
 void sub_00041DC0(void) {
+    CHECK(!latency_draw_test);
+    const char *caption=(char *)(g_xbox_mem_offset+WORD_AT(g_esp+12));
+    if(caption[0]>='0' && caption[0]<='9') {g_esp+=4;return;}
     CHECK(update_notice_test);
     CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+12)),"UPDATE AVAILABLE - OPEN THE LAUNCHER"));
     CHECK(FLOAT_AT(g_esp+4)==280.f && FLOAT_AT(g_esp+8)==398.f);
@@ -466,7 +561,7 @@ static void button_probe(void)
 static void reload(const char *text)
 {
     FILE *f=fopen(path,"wb");CHECK(f);CHECK(fputs(text,f)>=0);CHECK(!fclose(f));
-    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;weapon_fov=PC_WEAPON_FOV_DEFAULT;
+    initialized=0;current=(PcDisplayMode){0,0};vertical_fov=PC_FOV_DEFAULT;weapon_fov=PC_WEAPON_FOV_DEFAULT;weapon_angle=0;crosshair_size=100;
     pc_display_current();
 }
 static void content(const char *expected)
@@ -481,7 +576,30 @@ static void nested_match_options(void) {
     CHECK(WORD_AT(0x78ad2c)==9);
     g_esp+=4;
 }
-static void fixture_profile_initialized(void) {g_esp+=4;}
+static void visibility_original_begin(void){g_esp+=4;g_eax=0x1234;}
+static void visibility_original_end(void){g_esp+=8;g_eax=0;}
+static void visibility_original_failure(void){g_esp+=8;g_eax=0x8007000e;}
+static void visibility_guest_checks(void) {
+    g_esp=0x10000;pc_visibility_begin(visibility_original_begin);
+    assert(g_esp==0x10004 && g_eax==0x1234 && visibility_begin_calls==1);
+    g_esp=0x10000;WORD_AT(g_esp+4)=123;
+    pc_visibility_end(visibility_original_end);
+    assert(g_esp==0x10008 && !g_eax && visibility_end_calls==1 && visibility_index==123 && visibility_accepted);
+    g_esp=0x10000;WORD_AT(g_esp+4)=124;
+    pc_visibility_end(visibility_original_failure);
+    assert(g_esp==0x10008 && g_eax==0x8007000e && !visibility_accepted && visibility_index==124);
+    WORD_AT(0x20000)=77;visibility_ready=0;
+    assert(!pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==77);
+    visibility_ready=1;visibility_pixels=321;
+    assert(pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==321);
+    visibility_pixels=0;
+    assert(pc_visibility_result(123,0x20000,0) && WORD_AT(0x20000)==0);
+    unsigned calls=visibility_result_calls;
+    assert(!pc_visibility_result(123,0x20000,0x20008) && visibility_result_calls==calls);
+    assert(!pc_visibility_result(123,0xfffffff0u,0) && visibility_result_calls==calls);
+    assert(g_esp==0x10008 && g_eax==0x8007000e);
+}
+static void controller_speed_original_tests(void);
 int main(int argc,char **argv)
 {
     CHECK(argc==2); CHECK(!_putenv_s("TSFP_DISPLAY_CONFIG",argv[1]));
@@ -548,71 +666,6 @@ int main(int argc,char **argv)
         update_notice_test=0;settings_footer_menu=0;update_notice_menu=0;
         CHECK(!_putenv_s("TSFP_GAME_UPDATE_NOTICE",""));CHECK(!_putenv_s("TSFP_GAME_INSTALLED_VERSION",""));remove(path);
     }
-    { /* New native profiles seed editable Modern; existing profiles stay byte-identical. */
-        uint32_t profile=0x44000,identity=0x48000;unsigned char retained[0x7c];
-        WORD_AT(profile)=identity;WORD_AT(identity+0x24)=0;WORD_AT(profile+4)=1;
-        const unsigned stock[14]={0x800,0x2000,0x80,0x40,0x400,0x10,4,8,1,2,0,4,8,0x1000};
-        for(unsigned i=0;i<22;i++)WORD_AT(profile+8+i*4)=i<14?stock[i]:0xdead0000u+i;
-        memcpy(retained,(void *)(g_xbox_mem_offset+profile+4),sizeof retained);
-        test_custom_semantics=1;g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
-        CHECK(!memcmp(retained,(void *)(g_xbox_mem_offset+profile+4),sizeof retained));
-        WORD_AT(identity+0x24)=UINT32_MAX;test_custom_semantics=0;g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
-        CHECK(!memcmp(retained,(void *)(g_xbox_mem_offset+profile+4),sizeof retained));
-        test_custom_semantics=1;g_eax=profile;pc_unlock_profile_init(fixture_profile_initialized);
-        CHECK(!(WORD_AT(profile+4)&0xffffu));
-        const unsigned modern_masks[14]={0x800,0x8000,0x80,0x10,0x400,0x1020,0x4004,8,1,0x42,0,0x4004,8,0x2000};
-        for(unsigned i=0;i<14;i++)CHECK(WORD_AT(profile+8+i*4)==modern_masks[i]);
-        CHECK(WORD_AT(profile+8+10*4)==0); /* Unused native field stays unused. */
-        CHECK(WORD_AT(profile+8+4*4)==0x400u); /* aim: LT */
-        CHECK(WORD_AT(profile+8+3*4)==0x10u); /* reload: X */
-        CHECK(WORD_AT(profile+8+13*4)==0x2000u); /* melee: RS */
-        CHECK(WORD_AT(profile+8+1*4)==0x8000u); /* grenade: RB */
-        CHECK(WORD_AT(profile+8+5*4)==(0x20u|0x1000u)); /* crouch: B/LS */
-        for(unsigned i=14;i<22;i++)CHECK(WORD_AT(profile+8+i*4)==0xdead0000u+i);
-        test_custom_semantics=0;
-    }
-    { /* Only the local port owning this native player receives its action masks. */
-        unsigned masks[24]={0};int mounted=0;uint32_t player=0x500000;
-        WORD_AT(0x790950)=1;WORD_AT(0x7b0c48)=player;WORD_AT(player)=2;WORD_AT(player+4)=2;WORD_AT(0x6b93c8)=3;
-        WORD_AT(player+0x18)=0x10;WORD_AT(player+0x1c)=0x400;WORD_AT(player+0x20)=0x80;
-        WORD_AT(player+0x24)=0x4000;WORD_AT(player+0x28)=0x8000;WORD_AT(player+0x2c)=0x40;WORD_AT(player+0x4c)=0x20;
-        CHECK(!controls_gameplay_masks(3,masks,&mounted));controls_test_menu_active=0;
-        CHECK(!controls_gameplay_masks(0,masks,&mounted));
-        CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && masks[23]==0x8000 && masks[18]==0x40);
-        CHECK(masks[2]==0x4000 && masks[1]==0x20 && masks[8]==0x400 && !mounted && masks[0]==0x80);
-        WORD_AT(player+0x114)=0x80;CHECK(controls_gameplay_masks(3,masks,&mounted) && mounted && masks[0]==0x4000);
-        WORD_AT(0x79094c)=101;CHECK(!controls_gameplay_masks(3,masks,&mounted));WORD_AT(0x79094c)=0;
-        WORD_AT(0x6b98a4)=2;CHECK(!controls_gameplay_masks(3,masks,&mounted));WORD_AT(0x6b98a4)=0;
-        CHECK(WORD_AT(player+0x20)==0x80); /* Reading a preset never rewrites the native profile. */
-        WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x6b93c8)=0;memset((char *)mem+player,0,0x1584);
-        controls_test_menu_active=1;
-    }
-
-    { /* Guest global slot1 is local input0; the remote host has no local owner. */
-        uint32_t host=0x500000,guest=host+0x1584;unsigned masks[24]={0};int mounted;
-        WORD_AT(0x790950)=2;WORD_AT(0x7b0c48)=host;controls_test_menu_active=0;
-        WORD_AT(host)=0;WORD_AT(host+4)=UINT32_MAX;WORD_AT(host+0x18)=0x20;WORD_AT(host+0x114)=0x80;
-        WORD_AT(guest)=1;WORD_AT(guest+4)=0;WORD_AT(guest+0x18)=0x10;
-        WORD_AT(guest+0x24)=0x4000;WORD_AT(guest+0x28)=0x8000;
-        WORD_AT(0x6b93c0)=0;WORD_AT(0x6b93c4)=1;
-        WORD_AT(0x7b0c7c)=guest;
-        CHECK(controls_context_port(WORD_AT(0x7b0c7c))==0 && controls_context_port(host)==4);
-        CHECK(controls_context_port(0)==4);
-
-        CHECK(controls_gameplay_masks(0,masks,&mounted) && masks[9]==0x10 && masks[2]==0x4000 && masks[23]==0x8000 && !mounted);
-        CHECK(!controls_gameplay_masks(1,masks,&mounted));
-        /* Reassigned input ports and split-screen owners also use +4, not +0. */
-        WORD_AT(0x6b93c0)=3;WORD_AT(0x6b93c4)=2;WORD_AT(host+4)=1;
-        CHECK(controls_context_port(WORD_AT(0x7b0c7c))==3 && controls_context_port(host)==2);
-        CHECK(controls_gameplay_masks(3,masks,&mounted) && masks[9]==0x10 && !mounted);
-        CHECK(controls_gameplay_masks(2,masks,&mounted) && masks[9]==0x20 && mounted);
-        WORD_AT(host+4)=UINT32_MAX;WORD_AT(guest+4)=4;
-        CHECK(!controls_gameplay_masks(2,masks,&mounted) && !controls_gameplay_masks(3,masks,&mounted));
-        memset((char *)mem+host,0,2*0x1584);
-        WORD_AT(0x790950)=WORD_AT(0x7b0c48)=WORD_AT(0x7b0c7c)=WORD_AT(0x6b93c0)=WORD_AT(0x6b93c4)=0;
-        controls_test_menu_active=1;
-    }
-
     { /* No startup network overrides: the real row callback must enable LAN. */
         CHECK(!_putenv_s("TSFP_NETWORK",""));
         CHECK(!_putenv_s("TSFP_ONLINE_CONFIG","keep-online"));
@@ -660,7 +713,7 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==8 && separators==2 && separator_positions[0]==1 && separator_positions[1]==6 && window_mode_row && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
+    CHECK(page==DISPLAY_HOME && built_row_count==9 && separators==2 && separator_positions[0]==1 && separator_positions[1]==7 && window_mode_row && aspect_row && rate_row && !subtitle_row && !texture_row && !counter_row);
     page=DISPLAY_GRAPHICS;built_rows=built_row_count=separators=0;labels();
     CHECK(!graphics_rows[0] && !graphics_rows[4] && texture_row && post_aa_row && !counter_row && !aspect_row);
     CHECK(built_ids[2]==102 && built_ids[3]==103 && built_ids[4]==7 && built_ids[5]==11 && built_ids[6]==UINT32_MAX && built_ids[7]==108 && built_ids[8]==3);
@@ -780,6 +833,7 @@ int main(int argc,char **argv)
             CHECK(menu_video_tabs_poll(current_menu) && video_pending_tab==2);
             WORD_AT(current_menu+0x1b0)=3;menu_video_tabs_flush();
             CHECK(page==DISPLAY_VIEW && video_pending_tab==-1);
+            CHECK(hud_row&&watermark_row); /* Frontend and paused menu share both controls. */
             CHECK(!menu_video_tabs_poll(current_menu)); /* Held click cannot repeat. */
             tab_pointer.left=0;menu_video_tabs_poll(current_menu);
             tab_pointer.x=397.5f;tab_pointer.left=1;CHECK(menu_video_tabs_poll(current_menu));
@@ -873,6 +927,22 @@ int main(int argc,char **argv)
 
     refresh(DISPLAY_HOME,0);
     call(SELECT_CB,3,0);CHECK(requested_rate==-1 && pc_frame_rate_read()==-1);
+    /* V-sync is staged, survives section changes, and never changes the FPS
+       clock. Back discards it; failed saves leave Apply active. */
+    CHECK(vsync_row && !pc_vsync_enabled() && WORD_AT(vsync_row+0xc8)==0);
+    WORD_AT(vsync_row+0xc8)=1;call(TICK_CB,14,0);
+    CHECK(display_dirty() && !pc_vsync_enabled());
+    refresh(DISPLAY_VIEW,0);refresh(DISPLAY_HOME,0);
+    CHECK(WORD_AT(vsync_row+0xc8)==1 && !pc_vsync_enabled());
+    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    CHECK(!staged_vsync && !pc_vsync_enabled() && !display_dirty());
+    WORD_AT(vsync_row+0xc8)=1;call(TICK_CB,14,0);vsync_save_ok=0;
+    call(SELECT_CB,3,0);CHECK(!pc_vsync_enabled() && display_dirty() && *status);
+    vsync_save_ok=1;call(SELECT_CB,3,0);
+    CHECK(pc_vsync_enabled() && !display_dirty() && requested_rate==-1);
+    WORD_AT(vsync_row+0xc8)=0;call(TICK_CB,14,0);call(SELECT_CB,3,0);
+    CHECK(!pc_vsync_enabled() && !display_dirty());
+
     for(unsigned a=1;a<PC_DISPLAY_ASPECT_COUNT;a++) {
         WORD_AT(aspect_row+0xc8)=a;call(TICK_CB,0,0);
         CHECK(selected_aspect==(int)a && mode_count>0);
@@ -897,6 +967,23 @@ int main(int argc,char **argv)
     CHECK(!display_dirty() && staged_fov==55 && staged_rate==0 && texture_choice==0);
     content("TSFP_DISPLAY_V1 1280 720\n");
     refresh(DISPLAY_VIEW,0);
+    CHECK(hud_row&&watermark_row&&WORD_AT(hud_row+0x14)==16u&&WORD_AT(watermark_row+0x14)==17u);
+    CHECK(WORD_AT(hud_row+0xc8)==1u&&WORD_AT(watermark_row+0xc8)==1u);
+    view_preferences.hide_watermark=1;read_choices(); /* A Dev Tools edit refreshes the open native menu. */
+    CHECK(!WORD_AT(watermark_row+0xc8)&&view_preferences.hide_watermark);
+    view_preferences.hide_watermark=0;read_choices();CHECK(WORD_AT(watermark_row+0xc8)==1u);
+    view_preferences.hide_viewmodel=1; /* Preserve the independent Tools preference. */
+    WORD_AT(hud_row+0xc8)=0;call(TICK_CB,16,0);
+    WORD_AT(watermark_row+0xc8)=0;call(TICK_CB,17,0);
+    CHECK(view_preferences.hide_hud&&view_preferences.hide_watermark&&view_preferences.hide_viewmodel&&!display_dirty());
+    refresh(DISPLAY_GRAPHICS,0);CHECK(!hud_row&&!watermark_row);
+    refresh(DISPLAY_VIEW,0);CHECK(!WORD_AT(hud_row+0xc8)&&!WORD_AT(watermark_row+0xc8));
+    view_save_ok=0;WORD_AT(hud_row+0xc8)=1;WORD_AT(watermark_row+0xc8)=1;call(TICK_CB,16,0);
+    CHECK(view_preferences.hide_hud&&view_preferences.hide_watermark&&*status);
+    CHECK(!WORD_AT(hud_row+0xc8)&&!WORD_AT(watermark_row+0xc8));view_save_ok=1;
+    WORD_AT(hud_row+0xc8)=1;WORD_AT(watermark_row+0xc8)=1;call(TICK_CB,17,0);
+    CHECK(!view_preferences.hide_hud&&!view_preferences.hide_watermark&&view_preferences.hide_viewmodel);
+    view_preferences.hide_viewmodel=0;*status=0;
     for(int i=0;i<100;i++)call(TICK_CB,2,0x80000);CHECK(staged_fov==100 && pc_display_fov()==55);
     for(int i=0;i<100;i++)call(TICK_CB,2,0x40000);CHECK(staged_fov==40);
     WORD_AT(0x70000c)=0x400000;
@@ -925,8 +1012,8 @@ int main(int argc,char **argv)
     content("TSFP_DISPLAY_V2 1280 720 70\n");
     /* Weapon aperture is staged across tabs, applies live, and persists separately from world FOV. */
     refresh(DISPLAY_VIEW,0);
-    for(int i=0;i<50;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==150);
-    for(int i=0;i<50;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==80);
+    for(int i=0;i<100;i++)call(TICK_CB,12,0x80000);CHECK(staged_weapon_fov==100);
+    for(int i=0;i<100;i++)call(TICK_CB,12,0x40000);CHECK(staged_weapon_fov==40);
     slider_capture_enabled=1;
     memset(menu_slider_tracks,0,sizeof menu_slider_tracks);
     WORD_AT(0x700008)=weapon_fov_row;
@@ -935,21 +1022,21 @@ int main(int argc,char **argv)
     WORD_AT(0x300198)=weapon_fov_row;
     pointer.left=1;
     CHECK(menu_slider_pointer(0x300000,pointer,2,348,8,1920,1080));
-    CHECK(staged_weapon_fov==115 && staged_fov==70 && pc_display_weapon_fov()==100);
+    CHECK(staged_weapon_fov==70 && staged_fov==70 && pc_display_weapon_fov()==100);
     pointer.left=0;CHECK(!menu_slider_pointer(0x300000,pointer,0,348,8,1920,1080));
     slider_capture_enabled=0;
-    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==150);
+    menu_slider_weapon_fov_pointer(398,298,100);CHECK(staged_weapon_fov==100);
     for(int i=0;i<4;i++)call(TICK_CB,12,0x40000);
-    CHECK(staged_weapon_fov==130 && pc_display_weapon_fov()==100 && display_dirty());
+    CHECK(staged_weapon_fov==96 && pc_display_weapon_fov()==100 && display_dirty());
     refresh(DISPLAY_HOME,0);refresh(DISPLAY_VIEW,0);
-    CHECK(staged_weapon_fov==130);
-    call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==130 && pc_display_fov()==70 && !display_dirty());
-    content("TSFP_DISPLAY_V3 1280 720 70 130\n");
-    for(int i=0;i<6;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
+    CHECK(staged_weapon_fov==96);
+    call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov_degrees()==96 && pc_display_fov()==70 && !display_dirty());
+    content("TSFP_DISPLAY_V5 1280 720 70 96 100\n");
+    for(int i=0;i<41;i++)call(TICK_CB,12,0x40000);call(SELECT_CB,3,0);CHECK(pc_display_weapon_fov()==100);
     /* A failed SMAA save also rolls back every Apply-only graphics field. */
     TsfpGraphicsOptions before_failed_batch=pc_graphics_get();
     staged_anisotropy=4;staged_ao=!before_failed_batch.ambient_occlusion;staged_cache=!before_failed_batch.shader_cache;
-    staged_msaa=4;staged_weapon_fov=150;
+    staged_msaa=4;staged_weapon_fov=100;
     refresh(DISPLAY_HOME,0);staged_fov=75;WORD_AT(rate_row+0xc8)=2;read_choices();
     refresh(DISPLAY_GRAPHICS,0);WORD_AT(post_aa_row+0xc8)=2;smaa_save_ok=0;
     call(SELECT_CB,3,0);
@@ -959,7 +1046,7 @@ int main(int argc,char **argv)
     CHECK(graphics_options.anisotropy==before_failed_batch.anisotropy &&
           graphics_options.ambient_occlusion==before_failed_batch.ambient_occlusion &&
           graphics_options.shader_cache==before_failed_batch.shader_cache);
-    smaa_save_ok=1;staged_weapon_fov=100;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
+    smaa_save_ok=1;staged_weapon_fov=55;staged_fov=70;staged_rate=applied_rate;staged_aa=applied_aa;staged_msaa=graphics_options.msaa;
     staged_anisotropy=graphics_options.anisotropy;staged_ao=graphics_options.ambient_occlusion;staged_cache=graphics_options.shader_cache;
     refresh(DISPLAY_GRAPHICS,0);call(TICK_CB,11,0);CHECK(!display_dirty());
     WORD_AT(post_aa_row+0xc8)=2;read_choices();refresh(DISPLAY_VIEW,0);
@@ -990,10 +1077,11 @@ int main(int argc,char **argv)
     if(!texture_name)texture_name=strrchr(texture_path,'/');
     CHECK(texture_name);strcpy(texture_name+1,"pc-textures.ini");
     CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_READONLY));
-    staged_aa=1;call(SELECT_CB,3,0);
+    staged_aa=1;WORD_AT(vsync_row+0xc8)=1;call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==70 && requested_rate==120 && tsfp_texture_is_4k() && WORD_AT(0x400130)==1);
     CHECK(display_dirty() && *status && staged_aa==1 && applied_aa==0 && pc_post_aa_get()==0);
-    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));staged_aa=0;call(SELECT_CB,3,0);
+    CHECK(!pc_vsync_enabled() && applied_vsync==0 && staged_vsync==1);
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));WORD_AT(vsync_row+0xc8)=0;staged_vsync=0;staged_aa=0;call(SELECT_CB,3,0);
     CHECK(pc_display_fov()==75 && requested_rate==180 && !tsfp_texture_is_4k() && !WORD_AT(0x400130));
     CHECK(!display_dirty() && (WORD_AT(apply_row+0x28)&1));
     /* Resolution preview defers the complete batch until Keep. */
@@ -1053,16 +1141,17 @@ int main(int argc,char **argv)
     g_esp=0x700000;WORD_AT(g_esp+20)=0x2cbe10;WORD_AT(g_esp+4)=0x510000;
     pc_display_menu_button(button_probe);
     CHECK(observed_builder_flags==0x26200 && WORD_AT(0x500028)==0x32200 && g_esp==0x700004);
-    /* Both native insertion sites put Video immediately before Controls,
-     * preserving the Controls call frame and its result. */
+    /* Main Settings retains Video/Controls; pause consolidates them into a
+     * single Settings callback while preserving the original row ABI. */
     for(unsigned i=0;i<2;i++) {
         uint32_t callback=i?0x2ec1a0u:0x2cbe50u;
         g_esp=0x700000;WORD_AT(g_esp)=i?0x2f561cu:0x2cc116u;
         WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+20)=callback;
         observed_callback_count=0;
         pc_display_menu_button(button_probe);
-        CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
-        CHECK(observed_callbacks[1]==callback && WORD_AT(0x700014)==callback);
+        if(i)CHECK(observed_callback_count==1 && observed_callbacks[0]==PAUSE_SETTINGS_OPEN);
+        else CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK && observed_callbacks[1]==callback);
+        CHECK(WORD_AT(0x700014)==callback);
         CHECK(WORD_AT(0x700004)==0x510000 && g_esp==0x700004 && g_eax==0x510000);
     }
     /* Pause Options supplies its own centered (or split-screen) style.
@@ -1075,7 +1164,7 @@ int main(int argc,char **argv)
         WORD_AT(g_esp+12)=1u;
         pc_display_menu_button(button_probe);
         CHECK(observed_builder_flags==style && WORD_AT(0x500028)==style);
-        CHECK(observed_row_flags==1u && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
+        CHECK(observed_row_flags==0x21u && !WORD_AT(0x5100b0) && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
     }
     g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;WORD_AT(g_esp+16)=bits(54.f);
     pc_display_menu_button(button_probe);
@@ -1236,12 +1325,14 @@ int main(int argc,char **argv)
     }
     /* Online selection must return before launching, allowing a notice frame.
      * The next input tick after two draws launches once; cancel restores idle. */
+    _putenv_s("TSFP_ONLINE_TEST_COMMAND","legacy-fixture");
     g_esp=0x700000;online_activate();
     CHECK(online_opening_pending && online_connect_calls==0 && g_esp==0x700004);
     online_opening_tick();CHECK(online_connect_calls==0);
     online_opening_frames=2;online_opening_tick();
     CHECK(online_connect_calls==1 && !online_opening_pending && g_esp==0x700004);
     online_opening_tick();CHECK(online_connect_calls==1);
+    _putenv_s("TSFP_ONLINE_TEST_COMMAND","");
     menu_mouse_dispatch=0;tab_pointer_enabled=slider_capture_enabled=0;
     WORD_AT(0x300004)=before_audio_descriptor;audio_menu=0;audio_row_count=0;
     /* The actual native waiting panel adopts an unconfigured pad's input port,
@@ -1327,25 +1418,12 @@ int main(int argc,char **argv)
     WORD_AT(controls_deadzone_rows[1]+0xc8)=5;controls_deadzone_poll();
     CHECK(test_deadzones[kb_controller_port][1]==1638);
     CHECK(test_deadzones[kb_controller_port][0]==7849);
-    CHECK(kb_controller_preset_row && WORD_AT(kb_controller_preset_row+0xc8)==0);
-    WORD_AT(kb_controller_preset_row+0xc8)=1;kb_preset_poll();
-    CHECK(kb_controller_choice==1 && pc_settings_controller_preset(kb_controller_port)==0);
-    WORD_AT(kb_controller_preset_row+0xc8)=0;kb_preset_poll();CHECK(kb_controller_choice==0);
     /* Header navigation and keyboard IDs do not save or inherit native values. */
     call(0x2eab30,CONTROLS_TABS_ID,0x80000);
     CHECK(controls_tab==2 && kb_page==KB_HOME && controls_test_saves==0);
     CHECK(built_ids[0]==CONTROLS_TABS_ID && kb_widget_id(0)==200);
     CHECK(kb_local_id(200)==0 && kb_local_id(205)==5);
-    CHECK(built_ids[built_row_count-1]==213); /* Apply below the existing footer divider; no Back row. */
-    /* Inline presets use native choices, stay staged, and do not resize Apply. */
-    CHECK(kb_keyboard_preset_row && kb_keyboard_apply_row);
-    CHECK(!strcmp((char *)(g_xbox_mem_offset+KB_TEXT(13)),"\vs100CONTROL PRESET\vs100"));
-    CHECK(WORD_AT(kb_keyboard_preset_row+0xc8)==0 && (WORD_AT(kb_keyboard_apply_row+0x28)&1u));
-    WORD_AT(kb_keyboard_preset_row+0xc8)=1;call(0x2eab30,212,0);
-    CHECK(kb_keyboard_choice==1 && !kb_settings.preset && !controls_test_saves);
-    CHECK(!(WORD_AT(kb_keyboard_apply_row+0x28)&1u));
-    WORD_AT(kb_keyboard_preset_row+0xc8)=0;call(0x2eab30,212,0);
-    CHECK(kb_keyboard_choice==0 && (WORD_AT(kb_keyboard_apply_row+0x28)&1u));
+    CHECK(built_ids[built_row_count-1]==205); /* Restore defaults; no preset selector. */
     kb_group=0;kb_refresh(KB_LIST,0);
     CHECK(separators==1 && built_ids[built_row_count-1]==208);
     CHECK(separator_positions[0]==built_row_count-2); /* Next below divider. */
@@ -1409,12 +1487,12 @@ int main(int argc,char **argv)
     /* Keep the root header fixed as content height changes; modal pages
      * retain their own native centring. */
     controls_tab=0;controls_anchor_ready=0;
-    WORD_AT(controls_menu+0x68)=bits(200.f);WORD_AT(controls_menu+0x64)=bits(12.f);
-    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
-    WORD_AT(controls_menu+0x68)=bits(120.f);WORD_AT(controls_menu+0x64)=bits(0.f);
-    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
-    WORD_AT(controls_menu+0x68)=bits(240.f);controls_anchor();
-    CHECK(FLOAT_AT(controls_menu+0x64)==12.f);
+    WORD_AT(controls_menu+0x68)=bits(53.f);WORD_AT(controls_menu+0x64)=bits(12.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
+    WORD_AT(controls_menu+0x68)=bits(47.f);WORD_AT(controls_menu+0x64)=bits(0.f);
+    controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
+    WORD_AT(controls_menu+0x68)=bits(58.f);controls_anchor();
+    CHECK(FLOAT_AT(controls_menu+0x64)==24.f);
     controls_tab=2;kb_page=KB_CAPTURE;WORD_AT(controls_menu+0x64)=bits(55.f);
     controls_anchor();CHECK(FLOAT_AT(controls_menu+0x64)==55.f);
     { /* Section shortcuts work from a setting row, once per press, without
@@ -1560,25 +1638,55 @@ int main(int argc,char **argv)
     WORD_AT(0x76b108)=WORD_AT(0x76b140)=0;WORD_AT(0x78ad2c)=9;
     /* Real sidebar adapter: save on guest thread, confirm/revert previews,
        preserve existing settings on a failed batch, and use native subtitles. */
+    WNDCLASSA sidebar_class={0};sidebar_class.lpfnWndProc=fullscreen_test_proc;
+    sidebar_class.hInstance=GetModuleHandle(NULL);sidebar_class.lpszClassName="SidebarFullscreenFixture";
+    CHECK(RegisterClassA(&sidebar_class));
+    fixture_window=CreateWindowA(sidebar_class.lpszClassName,"Sidebar",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,sidebar_class.hInstance,NULL);
+    CHECK(fixture_window);
     sidebar_open=1;video_sample_at=video_modes_at=0;g_esp=0x700000;
     video_sidebar_tick();CHECK(sidebar_video_observed.available&&sidebar_video_observed.mode_count>1);
     PcVideoValues saved=sidebar_video_observed.current,edit=saved;
     edit.value[VIDEO_FOV]=73;edit.value[VIDEO_SUBTITLES]=!saved.value[VIDEO_SUBTITLES];
+    edit.value[VIDEO_WEAPON_FOV]=70;edit.value[VIDEO_CROSSHAIR]=125;edit.value[VIDEO_VSYNC]=1;
     sidebar_video_queued=(PcVideoRequest){1,VIDEO_APPLY,edit};video_sidebar_tick();
     CHECK(sidebar_video_observed.completed==1&&pc_display_fov()==73);
+    CHECK(pc_display_weapon_fov_degrees()==70&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
+    CHECK(sidebar_video_observed.current.value[VIDEO_WEAPON_FOV]==70&&sidebar_video_observed.current.value[VIDEO_CROSSHAIR]==125);
+    {char text[256]={0};FILE *file=fopen(path,"rb");CHECK(file);fread(text,1,sizeof text-1,file);fclose(file);
+     CHECK(strstr(text,"TSFP_DISPLAY_V5")&&strstr(text,"70")&&strstr(text,"125"));}
+    /* A late save failure restores exact legacy weapon aperture and V-Sync. */
+    CHECK(pc_display_set_weapon_fov(115)&&pc_display_save());
+    saved=video_read();edit=saved;edit.value[VIDEO_WEAPON_FOV]=80;edit.value[VIDEO_CROSSHAIR]=50;
+    edit.value[VIDEO_VSYNC]=0;edit.value[VIDEO_COUNTER]=!saved.value[VIDEO_COUNTER];counter_save_ok=0;
+    sidebar_video_queued=(PcVideoRequest){20,VIDEO_APPLY,edit};video_sidebar_tick();counter_save_ok=1;
+    CHECK(pc_display_weapon_fov_legacy_percent()==115&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
+    CHECK(strstr(sidebar_video_observed.message,"Could not save"));
+    edit=video_read();edit.value[VIDEO_VSYNC]=0;vsync_save_ok=0;
+    sidebar_video_queued=(PcVideoRequest){21,VIDEO_APPLY,edit};video_sidebar_tick();vsync_save_ok=1;
+    CHECK(pc_vsync_enabled()&&strstr(sidebar_video_observed.message,"Could not save"));
+    const int invalid_fields[]={VIDEO_WEAPON_FOV,VIDEO_CROSSHAIR,VIDEO_VSYNC};
+    const int invalid_values[]={101,126,2};
+    for(unsigned i=0;i<3;i++) {
+        edit=video_read();edit.value[invalid_fields[i]]=invalid_values[i];
+        sidebar_video_queued=(PcVideoRequest){22+i,VIDEO_APPLY,edit};video_sidebar_tick();
+        CHECK(strstr(sidebar_video_observed.message,"Invalid"));
+    }
     CHECK(WORD_AT(0x400130)==(unsigned)edit.value[VIDEO_SUBTITLES]&&(WORD_AT(0x78ad24)&0x10000));
     saved=sidebar_video_observed.current;edit=saved;edit.value[VIDEO_FOV]=81;
     edit.value[VIDEO_AF]=saved.value[VIDEO_AF]==16?8:16;graphics_save_ok=0;
     sidebar_video_queued=(PcVideoRequest){2,VIDEO_APPLY,edit};video_sidebar_tick();graphics_save_ok=1;
     CHECK(pc_display_fov()==73&&strstr(sidebar_video_observed.message,"Could not save"));
     saved=sidebar_video_observed.current;edit=saved;edit.width=saved.width==1280?1920:1280;edit.height=edit.width==1280?720:1080;
+    edit.value[VIDEO_WEAPON_FOV]=80;edit.value[VIDEO_CROSSHAIR]=50;edit.value[VIDEO_VSYNC]=0;
     sidebar_video_queued=(PcVideoRequest){3,VIDEO_APPLY,edit};video_sidebar_tick();
     CHECK(sidebar_video_observed.preview&&pc_display_current().width==edit.width);
+    CHECK(pc_display_weapon_fov_legacy_percent()==115&&pc_display_crosshair_size()==125&&pc_vsync_enabled());
     clock_ms+=15001;video_sidebar_tick();CHECK(!sidebar_video_observed.preview&&pc_display_current().width==saved.width);
     sidebar_video_queued=(PcVideoRequest){4,VIDEO_APPLY,edit};video_sidebar_tick();CHECK(sidebar_video_observed.preview);
     sidebar_open=0;clock_ms+=201;video_sidebar_tick();CHECK(pc_display_current().width==saved.width);
     sidebar_open=1;sidebar_video_queued=(PcVideoRequest){5,VIDEO_APPLY,edit};video_sidebar_tick();
     sidebar_video_queued=(PcVideoRequest){6,VIDEO_KEEP,edit};video_sidebar_tick();CHECK(!sidebar_video_observed.preview&&pc_display_current().width==edit.width);
+    CHECK(pc_display_weapon_fov_degrees()==80&&pc_display_crosshair_size()==50&&!pc_vsync_enabled());
     edit=sidebar_video_observed.current;edit.value[VIDEO_FOV]=999;
     sidebar_video_queued=(PcVideoRequest){7,VIDEO_APPLY,edit};video_sidebar_tick();CHECK(pc_display_fov()==73);
     edit=sidebar_video_observed.current;edit.value[VIDEO_FOV]=65;
@@ -1592,16 +1700,333 @@ int main(int argc,char **argv)
     CHECK(graphics_options.msaa==4&&graphics_options.supersampling==1&&!graphics_options.shader_cache);
     CHECK(pc_post_aa_get()==(unsigned)edit.value[VIDEO_AA]&&tsfp_texture_is_4k());
     CHECK(pc_feed_enabled()==edit.value[VIDEO_FEED]&&pc_counter_enabled()==edit.value[VIDEO_COUNTER]);
-    CHECK(requested_rate==120&&sidebar_fullscreen&&sidebar_video_observed.restart);
+    CHECK(requested_rate==120&&pc_display_fullscreen()&&sidebar_video_observed.restart);
+    {
+        FILE *file=fopen(runtime_path,"rb");CHECK(file);char text[8192]={0};fread(text,1,sizeof text-1,file);fclose(file);
+        CHECK(strstr(text,"fullscreen = 1"));
+        file=fopen(texture_path,"rb");CHECK(file);memset(text,0,sizeof text);fread(text,1,sizeof text-1,file);fclose(file);
+        CHECK(strstr(text,"TSFP_TEXTURES_V1 1"));
+    }
     sidebar_video_queued=(PcVideoRequest){9,VIDEO_CLEAR_CACHE,edit};int old_clears=cache_clear_calls;video_sidebar_tick();CHECK(cache_clear_calls==old_clears+1);
+    /* Fullscreen/texture write failures and host refusal retain the old batch. */
+    saved=sidebar_video_observed.current;edit=saved;edit.value[VIDEO_FULLSCREEN]=0;
+    edit.value[VIDEO_TEXTURE]=0;edit.value[VIDEO_FOV]=66;
+    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_READONLY));
+    sidebar_video_queued=(PcVideoRequest){10,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_NORMAL));
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_READONLY));
+    sidebar_video_queued=(PcVideoRequest){11,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    CHECK(SetFileAttributesA(texture_path,FILE_ATTRIBUTE_NORMAL));fullscreen_request_ok=0;
+    sidebar_video_queued=(PcVideoRequest){12,VIDEO_APPLY,edit};video_sidebar_tick();fullscreen_request_ok=1;
+    CHECK(pc_display_fov()==65&&pc_display_fullscreen()&&tsfp_texture_is_4k());
+    sidebar_video_queued=(PcVideoRequest){13,VIDEO_APPLY,edit};video_sidebar_tick();
+    CHECK(pc_display_fov()==66&&!pc_display_fullscreen()&&!tsfp_texture_is_4k());
+    CHECK(DestroyWindow(fixture_window));fixture_window=NULL;
+    CHECK(UnregisterClassA(sidebar_class.lpszClassName,sidebar_class.hInstance));
+    {
+        const uint32_t menu=0x200000u;
+        lobby_profile_index=3;lobby_profile_text=0x3b0000u;mp_ui.name_custom=0;
+        strcpy((char *)(g_xbox_mem_offset+lobby_profile_text),"Dudeman");
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"Dudeman's Lobby"));
+        strcpy((char *)(g_xbox_mem_offset+lobby_profile_text),"Other Profile");
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"Other Profile's Lobby"));
+        strcpy(mp_ui.name,"Custom Lobby");mp_ui.name_custom=1;
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"Custom Lobby"));
+        mp_ui.name_custom=0;lobby_profile_index=16;
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"My Lobby"));
+        lobby_profile_index=0;memset((void *)(g_xbox_mem_offset+lobby_profile_text),'x',32);
+        mp_default_lobby_name();CHECK(!strcmp(mp_ui.name,"My Lobby"));
+        memset((void *)(g_xbox_mem_offset+lobby_profile_text),0,32);lobby_profile_text=0;
+        /* A ready server can still lack automatic forwards. The actual native
+           tick must retain its warning and expose it through the status bar. */
+        mp_ui.storage=0x280000u;mp_ui.parent=mp_ui.menu=0;mp_ui.page=MP_HOST_SERVER;
+        mp_ui.pending=1;mp_ui.action=PC_OM_PRIVATE_HOST;mp_ui.request_sequence=77;
+        mp_ui.poll_at=0;mp_ui.autojoin=mp_ui.pasting=0;mp_ui.return_notice[0]=0;
+        mp_native_passthrough=0;roster_fixture=online_poll_fixture=1;
+        online_poll_state=(PcOnlineMenuState){0};online_poll_state.sequence=77;
+        online_poll_state.status=PC_OM_PRIVATE_READY;online_poll_state.private_owner=1;
+        strcpy(online_poll_state.message,"Automatic port mapping unavailable for UDP 30821.");
+        native_multiplayer_tick();
+        CHECK(!mp_ui.pending && mp_ui.state.private_owner);
+        CHECK(!strcmp(native_multiplayer_notice(0),online_poll_state.message));
+        online_poll_fixture=roster_fixture=0;mp_ui.poll_at=0;mp_ui.notice[0]=0;
+        WORD_AT(menu+0x1b0u)=3u;mp_transition(menu,0);CHECK(native_menu_transitions==0);
+        mp_transition(menu,1);CHECK(native_menu_transitions==1);
+        WORD_AT(menu+0x1b0u)=1u;mp_transition(menu,1);CHECK(native_menu_transitions==1);
+        WORD_AT(menu+0x1b0u)=2u;mp_transition(menu,1);CHECK(native_menu_transitions==1);
+        WORD_AT(0x7ba16cu)=1u;WORD_AT(0x7ba178u)=0x380000u;
+        WORD_AT(0x380000u)=0x4321u;WORD_AT(0x380008u)=0x1234u;
+        mp_ui.page=MP_CREATE;mp_ui.menu=0;mp_ui.pending=mp_ui.pasting=0;
+        WORD_AT(menu+0x18cu)=3u;const unsigned clicks=video_sounds;
+        guest_call(mp_select,1,menu);CHECK(video_sounds==clicks+1);
+        mp_ui.pending=1;guest_call(mp_select,1,menu);CHECK(video_sounds==clicks+1);
+        mp_ui.pending=0;WORD_AT(0x7ba16cu)=0;guest_call(mp_select,1,menu);CHECK(video_sounds==clicks+1);
+        WORD_AT(0x7ba16cu)=1;mp_ui.storage=0x280000u;mp_ui.parent=0;
+        const unsigned backs=highlight_sounds;guest_call(mp_back,1,menu);CHECK(highlight_sounds==backs+1);
+        mp_ui.source=2;mp_native_passthrough=1;mp_ui.autojoin=1;
+        guest_call(mp_back,1,menu);
+        CHECK(lan_closing_requests==1u && mp_native_passthrough && !mp_ui.autojoin);
+        mp_native_passthrough=0;mp_ui.source=0;
+        mp_ui.page=MP_NETWORK;uint32_t online_label=mp_text(1,"Online");
+        mp_ui.page=MP_BROWSER;CHECK(mp_text(1,"Start New Match")!=online_label);
+        {char rtt[32];PcOnlineMenuLobby row={0};row.server_rtt_ms=147;
+         mp_rtt_label(&row,rtt,sizeof rtt);CHECK(!strcmp(rtt,"147 ms"));
+         row.server_rtt_ms=0;mp_rtt_label(&row,rtt,sizeof rtt);CHECK(!strcmp(rtt,"0 ms"));
+         row.server_rtt_ms=-1;mp_rtt_label(&row,rtt,sizeof rtt);CHECK(!strcmp(rtt,"-- ms"));}
+        {PcOnlineMenuLobby row={0};row.server_rtt_ms=147;
+         const uint32_t opacity=WORD_AT(menu+0xf4u);
+         row_alignment_test=latency_draw_test=1;latency_draws=0;
+         FLOAT_AT(menu+0xf4u)=1.f;latency_expected_colour=0x616161ffu;
+         mp_latency_draw(menu,134.f,50.f,&row);
+         FLOAT_AT(menu+0xf4u)=.5f;latency_expected_colour=0x6161617fu;
+         row.server_rtt_ms=-1;mp_latency_draw(menu,134.f,50.f,&row);
+         WORD_AT(menu+0xf4u)=opacity;
+         CHECK(latency_draws==2);row_alignment_test=latency_draw_test=0;}
+        CHECK(!strcmp((const char *)(g_xbox_mem_offset+online_label),"Online"));
+        { /* A browser row can tick after Create has become the active page. */
+          mp_ui.page=MP_CREATE;const uint32_t heading=mp_text(30,"Lobby Options");
+          guest_call(mp_match_draw,3,menu,0x200200u,0x600000u);
+          CHECK(!strcmp((const char *)(g_xbox_mem_offset+heading),"Lobby Options"));
+          mp_ui.page=MP_BROWSER;}
+        CHECK(mp_descriptor(MP_NETWORK)!=mp_descriptor(MP_BROWSER));
+        /* The native browser owns a single continuous list, not paged cards
+           with connection/debug actions mixed into the match choices. */
+        mp_ui.parent=0;mp_ui.menu=0x300000u;mp_ui.page=MP_BROWSER;mp_ui.state.count=20u;
+        current_menu=0x300000u;
+        for(unsigned i=0;i<20u;i++) {
+            mp_ui.state.lobbies[i].mode=PC_ONLINE_STORY;
+            mp_ui.state.lobbies[i].players=1;mp_ui.state.lobbies[i].capacity=4;
+            mp_ui.state.lobbies[i].joinable=1;
+            strcpy(mp_ui.state.lobbies[i].name,"Story Lobby");
+        }
+        guest_call(mp_build,1,current_menu);
+        CHECK(built_row_count==23u && built_ids[0]==250u && built_ids[2]==1u && online_refresh_footers==1u && online_footer_mask==7u);
+        CHECK(online_layout_steps==5u);
+        CHECK(!strcmp(fixture_heading,"Matches Available") && fixture_width==80.f);
+        CHECK(FLOAT_AT(current_menu+0x68u)==70.f);
+        for(unsigned i=0;i<20u;i++)CHECK(built_ids[i+3u]==100u+i);
+        /* Empty and populated lists keep the same native frame. LAN retains
+           original advertisement selection and match-creation callbacks. */
+        mp_ui.state.count=0;online_layout_steps=0;guest_call(mp_build,1,current_menu);
+        CHECK(built_row_count==3u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==70.f);
+        mp_ui.source=1;mp_ui.state.count=20u;
+        for(unsigned i=0;i<20u;i++)mp_ui.state.lobbies[i].map_scene=UINT32_MAX;
+        online_layout_steps=0;guest_call(mp_build,1,current_menu);
+        CHECK(built_row_count==23u && fixture_width==80.f && FLOAT_AT(current_menu+0x68u)==70.f);
+        CHECK(strstr((char *)(g_xbox_mem_offset+WORD_AT(0x20ee00u+0x20u)),"Story Lobby"));
+        mp_native_passthrough=1;mp_ui.source=2;fixture_lan_matches=2;
+        WORD_AT(current_menu+0x1b0u)=3u;online_layout_steps=0;guest_call(mp_lan_browser_build,1,current_menu);
+        CHECK(built_row_count==5u && built_ids[2]==UINT32_MAX && built_ids[3]==0u && built_ids[4]==1u);
+        CHECK(WORD_AT(0x230200u+0x14u)==249u);
+        CHECK(WORD_AT(0x21fe00u+0x50u)==0x1cba50u && WORD_AT(0x200000u+0x50u)==0x1cbd40u);
+        fixture_lan_matches=UINT32_MAX;online_layout_steps=0;guest_call(mp_lan_browser_build,1,current_menu);
+        CHECK(built_row_count==3u); /* Native enumeration errors never become advertisements. */
+        mp_native_passthrough=0;mp_ui.source=0;
+        /* Selection-sensitive descriptions belong to the header strip. */
+        mp_native_passthrough=0;mp_ui.page=MP_NETWORK;guest_call(mp_build,1,current_menu);
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200200u+0x24u)),"Browse matches online via the community server"));
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200400u+0x24u)),"Connect to a private server"));
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200600u+0x24u)),"Browse matches on your local network"));
+        mp_ui.page=MP_PRIVATE;guest_call(mp_build,1,current_menu);
+        CHECK(!strcmp((char *)(g_xbox_mem_offset+WORD_AT(0x200400u+0x24u)),"Join a server using an invite code"));
+        /* The real type-1 widget's selected values drive host requests;
+           changing privacy never destroys the staged lobby name. */
+        mp_ui.page=MP_CREATE;guest_call(mp_build,1,current_menu);
+        CHECK(built_row_count==6u && mp_ui.choices[0] && mp_ui.choices[1]);
+        strcpy(mp_ui.name,"Staged lobby");
+        WORD_AT(mp_ui.choices[0]+0xc8u)=0u;WORD_AT(mp_ui.choices[1]+0xc8u)=1u;
+        guest_call(mp_choice_change,1,current_menu);
+        CHECK(mp_ui.mode==PC_ONLINE_ARCADE && !mp_ui.public_lobby && !strcmp(mp_ui.name,"Staged lobby"));
+        WORD_AT(mp_ui.choices[1]+0xc8u)=0u;guest_call(mp_choice_change,1,current_menu);
+        CHECK(mp_ui.public_lobby);
+        /* Server and lobby invitations share separate compact, nonselectable
+           headings, a single field and Paste/Join actions. Size escapes retain
+           their lowercase syntax rather than being uppercased by the widget. */
+        const unsigned code_pages[]={MP_HOST_SERVER,MP_JOIN_SERVER,MP_JOIN_CODE};
+        for(unsigned i=0;i<3u;i++) {
+            mp_ui.page=code_pages[i];guest_call(mp_build,1,current_menu);
+            const uint32_t heading=0x21f400u;
+            CHECK(!(WORD_AT(heading+0x28u)&0x2000u));
+            CHECK(!strncmp((const char *)(g_xbox_mem_offset+WORD_AT(heading+0x20u)),"\vs85",4));
+            CHECK(built_ids[0]==250u && built_ids[2]==1u && built_ids[3]==2u && built_ids[4]==3u);
+        }
+        /* The edit buffer cannot replace the nonselectable panel heading. */
+        online_keyboard_test=1;mp_ui.menu=current_menu;mp_ui.page=MP_JOIN_CODE;
+        const uint32_t code_heading=WORD_AT(0x21f400u+0x20u);
+        char saved_heading[64];snprintf(saved_heading,sizeof saved_heading,"%s",(const char *)(g_xbox_mem_offset+code_heading));
+        WORD_AT(current_menu+0x18cu)=1u;guest_call(mp_select,1,current_menu);
+        CHECK(mp_ui.editing==2u && online_keyboard_buffer!=code_heading);
+        CHECK(!strcmp(saved_heading,(const char *)(g_xbox_mem_offset+code_heading)));
+        guest_call(mp_text_cancel,0);CHECK(!mp_ui.editing);online_keyboard_test=0;
+        /* Field painters must do no rendering while opening/closing or on an
+           outgoing page. Rendering stubs deliberately reject any such call. */
+        const unsigned field_pages[]={MP_CREATE,MP_HOST_SERVER,MP_JOIN_SERVER,MP_JOIN_CODE};
+        for(unsigned i=0;i<4u;i++) {
+            mp_ui.page=field_pages[i];mp_ui.menu=current_menu;
+            WORD_AT(current_menu+4u)=mp_descriptor(mp_ui.page);
+            for(unsigned phase=1u;phase<=6u;phase++)if(phase!=3u) {
+                WORD_AT(current_menu+0x1b0u)=phase;
+                guest_call(mp_code_draw,3,current_menu,0x200200u,0x600000u);
+            }
+            WORD_AT(current_menu+0x1b0u)=3u;mp_native_passthrough=1;
+            guest_call(mp_code_draw,3,current_menu,0x200200u,0x600000u);
+            mp_native_passthrough=0;
+            WORD_AT(current_menu+4u)=mp_descriptor(MP_BROWSER);
+            guest_call(mp_code_draw,3,current_menu,0x200200u,0x600000u);
+            WORD_AT(current_menu+4u)=mp_descriptor(mp_ui.page);mp_ui.menu=0;
+            guest_call(mp_code_draw,3,current_menu,0x200200u,0x600000u);
+        }
+        /* Locked rows open code entry and retain the selected public ID,
+           without dispatching a connection or prefilling the public ID. */
+        mp_ui.page=MP_BROWSER;mp_ui.state.count=1;mp_ui.state.lobbies[0].invite_only=1;
+        mp_ui.state.lobbies[0].joinable=1;mp_ui.state.lobbies[0].mode=PC_ONLINE_ARCADE;
+        strcpy(mp_ui.state.lobbies[0].code,"ABCDEF0123456789");
+        WORD_AT(current_menu+0x18cu)=100u;mp_ui.pending=0;mp_ui.parent=0;
+        guest_call(mp_select,1,current_menu);
+        CHECK(!strcmp(mp_ui.lobby_id,"ABCDEF0123456789") && !mp_ui.code[0] && !mp_ui.pending);
+        /* A page request may leave the closing child attached. Starting a
+           network request must never rebuild that child as the next page. */
+        const uint32_t parent=0x310000u,outgoing=0x320000u;
+        WORD_AT(parent+0x170u)=outgoing;WORD_AT(outgoing+4u)=mp_descriptor(MP_NETWORK);
+        mp_ui.parent=parent;mp_ui.menu=outgoing;mp_ui.page=MP_NETWORK;
+        uint32_t caption=mp_text(1,"Online");mp_show(MP_BROWSER);
+        CHECK(mp_ui.page==MP_BROWSER && mp_ui.menu==0);
+        CHECK(!strcmp((const char *)(g_xbox_mem_offset+caption),"Online"));
+        mp_rebuild();CHECK(mp_ui.menu==0);
+        /* Directory admission stays on the selected browser/code page. Only
+           the subsequent native discovery builder opens Joining lobby. */
+        online_request_test=1;online_request_calls=0;
+        /* Exercise preparation and actual IPC: directory TCP and match UDP
+           must keep the original forwarded ports, rather than sharing41830. */
+        const uint32_t previous_storage=mp_ui.storage;mp_ui.storage=0;
+        CHECK(mp_prepare() && mp_ui.port==30821u);mp_ui.storage=previous_storage;
+        mp_ui.menu=0;mp_ui.pending=0;mp_request(PC_OM_PRIVATE_HOST);
+        CHECK(online_request.action==PC_OM_PRIVATE_HOST && online_request.port==30820u);
+        mp_ui.pending=0;mp_request(PC_OM_CREATE);
+        CHECK(online_request.action==PC_OM_CREATE && online_request.port==30821u);
+        /* A chosen UDP match port must never move the directory TCP listener. */
+        mp_ui.port=31999u;mp_ui.pending=0;mp_request(PC_OM_CREATE);
+        CHECK(online_request.port==31999u);
+        mp_ui.pending=0;mp_request(PC_OM_PRIVATE_HOST);CHECK(online_request.port==30820u);
+        mp_ui.pending=0;mp_ui.port=30821u;
+        for(unsigned protected=0;protected<2u;protected++) {
+            mp_ui.page=protected?MP_JOIN_CODE:MP_BROWSER;mp_ui.pending=0;mp_ui.menu=0;
+            WORD_AT(outgoing+4u)=mp_descriptor(mp_ui.page);
+            WORD_AT(current_menu+0x18cu)=protected?3u:100u;
+            mp_ui.state.lobbies[0].invite_only=0;
+            snprintf(mp_ui.lobby_id,sizeof mp_ui.lobby_id,"%s",protected?"PUBLICID":"");
+            snprintf(mp_ui.code,sizeof mp_ui.code,"%s",protected?"SECRET":"");
+            const unsigned page=mp_ui.page,calls=online_request_calls;
+            guest_call(mp_select,1,current_menu);
+            CHECK(mp_ui.page==page && mp_ui.pending && mp_ui.action==PC_OM_JOIN);
+            CHECK(online_request_calls==calls+1u && online_request.action==PC_OM_JOIN);
+            CHECK(!strcmp(online_request.code,protected?"SECRET":"ABCDEF0123456789"));
+            CHECK(!strcmp(online_request.address,protected?"PUBLICID":""));
+            guest_call(mp_select,1,current_menu);CHECK(online_request_calls==calls+1u);
+            guest_call(mp_back,1,current_menu);
+            CHECK(mp_ui.page==page && !mp_ui.pending && !strcmp(mp_ui.notice,"Cancelled"));
+            CHECK(online_request_calls==calls+2u && online_request.action==PC_OM_CANCEL);
+        }
+        online_request_test=0;
+        /* Back inside the private flow retains the server; returning to the
+           Multiplayer selector tears down the companion and its owned mappings. */
+        mp_ui.parent=0;mp_ui.pending=0;mp_ui.menu=0;
+        unsigned disconnects=online_disconnects;
+        mp_ui.page=MP_HOST_SERVER;guest_call(mp_back,1,current_menu);
+        CHECK(online_disconnects==disconnects);
+        mp_ui.page=MP_CREATE;guest_call(mp_back,1,current_menu);
+        CHECK(online_disconnects==disconnects);
+        for(unsigned page=0;page<2u;page++) {
+            mp_ui.page=page?MP_PRIVATE:MP_BROWSER;
+            mp_ui.state.private_owner=1;strcpy(mp_ui.state.invitation,"old server invite");
+            mp_ui.autojoin=mp_ui.host=1;mp_ui.request_sequence=99;
+            guest_call(mp_back,1,current_menu);
+            CHECK(online_disconnects==++disconnects);
+            CHECK(!mp_ui.state.private_owner && !mp_ui.state.invitation[0]);
+            CHECK(!mp_ui.pending && !mp_ui.autojoin && !mp_ui.host && !mp_ui.request_sequence);
+        }
+        mp_ui.parent=0;mp_native_passthrough=1;mp_ui.source=0;mp_ui.host=0;mp_ui.autojoin=1;
+        CHECK(native_multiplayer_lookup(0x1a43e0u)==mp_joining_browser_build);
+        CHECK(native_multiplayer_lookup(0x1a4780u)==mp_joining_browser_build);
+        guest_call(mp_joining_browser_build,1,current_menu);
+        CHECK(mp_ui.page==MP_JOINING && built_row_count==1u && built_ids[0]==0u);
+        CHECK(WORD_AT(0x200000u+0x50u)==0x1cbd40u);
+        mp_ui.autojoin=0;CHECK(!native_multiplayer_lookup(0x1a43e0u));
+    }
+    { /* Gameplay metadata continues when the menu loop is not running. */
+        WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=15;
+        WORD_AT(0x7de30c)=7;WORD_AT(0x79094c)=48;WORD_AT(0x7356d8)=0x300000;
+        WORD_AT(0x7de400)=0x101;*((uint8_t*)mem+0x7de456)=255;
+        WORD_AT(0x777244)=1;WORD_AT(0x77728c)=1;
+        WORD_AT(0x300048)=12;*((uint8_t*)mem+0x300c0d)=255;WORD_AT(0x300070)=0x310000;
+        strcpy((char*)mem+0x310000,"Fixture player");strcpy((char*)mem+0x310100,"Cortez");
+        roster_fixture=1;mp_ui.storage=0x280000;mp_ui.mode=PC_ONLINE_ARCADE;
+        mp_ui.source=0;mp_native_passthrough=1;mp_ui.metadata_at=0;
+        const uint32_t before_sp=g_esp,before_a=g_eax;
+        native_multiplayer_match_metadata();CHECK(roster_publications==1);
+        CHECK(g_esp==before_sp && g_eax==before_a);
+        native_multiplayer_match_metadata();CHECK(roster_publications==1);
+        clock_ms+=1001;native_multiplayer_match_metadata();CHECK(roster_publications==2);
+        clock_ms+=1001;mp_ui.source=2;native_multiplayer_match_metadata();CHECK(roster_publications==2);
+        roster_fixture=0;
+    }
+    { /* The owned browser must restore the stock backend startup contract. */
+        native_retire_fixture=online_poll_fixture=online_request_test=1;
+        native_retire_calls=native_backend_resets=native_leave_calls=native_return_factories=0;
+        online_poll_state.status=PC_OM_CONNECTED;
+        mp_ui.storage=0x280000;mp_ui.source=0;mp_ui.mode=PC_ONLINE_ARCADE;
+        mp_ui.menu=mp_ui.pending=0;mp_native_passthrough=1;
+        WORD_AT(0x79094cu)=101;WORD_AT(0x76b108u)=0;WORD_AT(0x76b12cu)=2;
+        WORD_AT(0x7613e4u)=0x200000;g_esp=0x1f00;
+        WORD_AT(g_esp)=0x123456;WORD_AT(g_esp+4u)=0x200000;WORD_AT(g_esp+8u)=0x4e99d4;
+        const uint32_t frame=g_esp;
+        CHECK(native_multiplayer_return_menu(native_retire_factory));
+        CHECK(native_retire_calls==1 && native_backend_resets==1 && native_leave_calls==1);
+        CHECK(native_return_factories==1 && WORD_AT(0x76b12cu)==1 && WORD_AT(0x541cd4u)==0x541d50);
+        CHECK(g_esp==frame+4u && WORD_AT(frame+8u)==0x4e99d4);
+        CHECK(!mp_native_passthrough && mp_ui.page==MP_BROWSER && online_request.action==PC_OM_LEAVE);
+        native_retire_fixture=online_poll_fixture=online_request_test=0;
+    }
+
+    visibility_guest_checks();
+    controller_speed_original_tests();
     VirtualFree(mem,0,MEM_RELEASE);
+    reload("TSFP_DISPLAY_V4 1280 720 65 120 75 50\n");
+    CHECK(pc_display_crosshair_size()==50 && pc_display_weapon_fov()==120);
+    CHECK(!pc_display_set_crosshair_size(26) && !pc_display_set_crosshair_size(151));
+    CHECK(pc_display_set_crosshair_size(45) && pc_display_save());
+    content("TSFP_DISPLAY_V4 1280 720 65 120 100 45\n");
+    CHECK(pc_display_set_crosshair_size(100) && pc_display_save());
+    content("TSFP_DISPLAY_V3 1280 720 65 120\n");
+    reload("TSFP_DISPLAY_V3 1280 720 65 130\n");
+    CHECK(pc_display_weapon_fov_legacy_percent()==130 && pc_display_weapon_fov_degrees()==68);
+    CHECK(pc_display_set_weapon_fov_degrees(68) && pc_display_save());
+    content("TSFP_DISPLAY_V3 1280 720 65 130\n"); /* No-op keeps exact legacy aperture. */
+    CHECK(!pc_display_set_weapon_fov_degrees(39) && !pc_display_set_weapon_fov_degrees(101));
+    CHECK(pc_display_set_weapon_fov_degrees(70) && pc_display_save());
+    content("TSFP_DISPLAY_V5 1280 720 65 70 100\n");
+    reload("TSFP_DISPLAY_V5 1280 720 65 70 50\n");
+    CHECK(pc_display_weapon_fov_degrees()==70 && pc_display_weapon_fov_legacy_percent()==0 && pc_display_crosshair_size()==50);
+    CHECK(fabsf(pc_display_weapon_fov_scale()-tanf(70*.00872664626f)/tanf(55*.00872664626f))<.00001f);
+    CHECK(pc_display_set_weapon_fov_degrees(55) && pc_display_set_crosshair_size(100) && pc_display_save());
+    content("TSFP_DISPLAY_V2 1280 720 65\n");
+    reload("TSFP_DISPLAY_V5 1280 720 65 101 50\n");CHECK(pc_display_weapon_fov_degrees()==55 && pc_display_crosshair_size()==100);
+    reload("TSFP_DISPLAY_V5 1280 720 65 70 50 trailing\n");CHECK(pc_display_weapon_fov_degrees()==55);
     puts("PASS: unified display, disabled Apply, staged batch, FOV bounds/mouse, Back discard, failed-save rollback, resolution confirmation/timeout, texture synchronization and guest ABI");
     return 0;
 }
 
-STUB(sub_001A4350) STUB(sub_001A8CE0) STUB(sub_001A8EE0)
+void sub_001A4350(void){lan_closing_requests++;g_esp+=4;}
+STUB(sub_001A8CE0) STUB(sub_001A8EE0)
 
-STUB(sub_001CC360)
+void sub_001CC360(void){if(native_retire_fixture){CHECK(!WORD_AT(0x76b108u));native_retire_calls++;}g_esp+=4;}
+void sub_001CB950(void){
+ CHECK(native_retire_fixture && native_retire_calls==1 && !native_leave_calls);
+ CHECK(WORD_AT(g_esp+4u)==WORD_AT(0x7613e4u));native_backend_resets++;
+ WORD_AT(0x541cd4u)=0x541d50u;WORD_AT(0x76b12cu)=1u;g_esp+=4;
+}
 
 void sub_000D2CE0(void){}
 void sub_0015BCC0_gen(void){}
@@ -1630,3 +2055,92 @@ int pc_network_tools_policy(const PcDeveloperPeer *roster,unsigned count,int all
 int pc_network_enabled(void){return 1;}
 void pc_network_enable_lan(void){lan_enables++;}
 void sub_000668F0(void){}
+
+#ifdef TSFP_TEST_CONTROLLER_SPEED
+void sub_002E9BC0(void){g_esp+=4;} /* Other native selectors have separate coverage. */
+void sub_00074950(void){g_esp+=4;}
+void sub_000CF2D0(void){g_esp+=4;}
+void sub_00079C00(void){g_esp+=4;}
+#define eax g_eax
+#define ecx g_ecx
+#define edx g_edx
+#define esp g_esp
+#define ebx g_ebx
+#define esi g_esi
+#define edi g_edi
+#define ebp g_ebp
+#define xmm0 g_xmm0
+#define xmm1 g_xmm1
+#define xmm2 g_xmm2
+#define xmm3 g_xmm3
+#define xmm4 g_xmm4
+#define xmm5 g_xmm5
+#define xmm6 g_xmm6
+#define xmm7 g_xmm7
+#include "controller_speed_original.inc"
+#undef eax
+#undef ecx
+#undef edx
+#undef esp
+#undef ebx
+#undef esi
+#undef edi
+#undef ebp
+#undef xmm0
+#undef xmm1
+#undef xmm2
+#undef xmm3
+#undef xmm4
+#undef xmm5
+#undef xmm6
+#undef xmm7
+static void controller_speed_original_tests(void)
+{
+    const uint32_t menu=0x300000;
+    speed_original_active=1;WORD_AT(0x7ba16c)=0;
+    /* Original US constants, not a simulated turn-speed implementation. */
+    FLOAT_AT(0x475c78)=1.f;FLOAT_AT(0x475ce8)=.05f;FLOAT_AT(0x47d674)=.9999f;
+    for(unsigned player=0;player<4;player++) {
+        WORD_AT(0x7ba9e0)=player;uint32_t addr=0x7ba3dc+player*0x1e0;
+        for(unsigned step=0;step<=30;step++) {
+            float before=step*.05f;
+            FLOAT_AT(addr)=before;WORD_AT(menu+0x18c)=9;WORD_AT(menu+0xc4)=0x80000;
+            g_esp=0x700000;menu_controller_speed_tick(menu,sub_002EAB30);
+            CHECK(g_esp==0x700000 && fabsf(FLOAT_AT(addr)-fminf(before+.05f,1.5f))<.00001f);
+            FLOAT_AT(addr)=before;WORD_AT(menu+0xc4)=0x40000;
+            menu_controller_speed_tick(menu,sub_002EAB30);
+            CHECK(fabsf(FLOAT_AT(addr)-fmaxf(before-.05f,0.f))<.00001f);
+            FLOAT_AT(addr)=before;WORD_AT(menu+0xc4)=0;
+            menu_controller_speed_tick(menu,sub_002EAB30);
+            CHECK(FLOAT_AT(addr)==before); /* Idle/opening never rewrites saves. */
+        }
+        FLOAT_AT(addr)=1.2f;WORD_AT(menu+0xc4)=0x80000;speed_consume=0x80000;
+        menu_controller_speed_tick(menu,sub_002EAB30);CHECK(FLOAT_AT(addr)==1.2f);
+        speed_consume=0;WORD_AT(menu+0x18c)=3;WORD_AT(menu+0xc4)=0x80000;
+        menu_controller_speed_tick(menu,sub_002EAB30);CHECK(FLOAT_AT(addr)==1.2f);
+    }
+    /* The existing Accept/Cancel draft includes the extended float verbatim. */
+    WORD_AT(0x7ba9e0)=0;controls_original_ready=1;
+    memcpy(controls_original,(void *)(g_xbox_mem_offset+controls_draft()),sizeof controls_original);
+    CHECK(!controls_dirty());menu_controller_speed_set(0,1.5f);CHECK(controls_dirty());
+    memcpy((void *)(g_xbox_mem_offset+controls_draft()),controls_original,sizeof controls_original);
+    CHECK(!controls_dirty());
+    /* Original native Accept copies all 31 dwords, including the extra range. */
+    WORD_AT(0x7b0c7c)=0x500000;WORD_AT(0x501500)=0x510000;
+    menu_controller_speed_set(0,1.5f);
+    guest_call(speed_accept_original,1,menu);
+    CHECK(FLOAT_AT(0x510078)==1.5f);
+    /* Reloading that native draft preserves the value without migration. */
+    memcpy((void *)(g_xbox_mem_offset+controls_draft()),(void *)(g_xbox_mem_offset+0x510000),sizeof controls_original);
+    CHECK(FLOAT_AT(controls_draft()+0x78)==1.5f);
+    WORD_AT(0x7ba16c)=1;WORD_AT(0x7ba178)=0x520000;WORD_AT(0x520008)=42;
+    unsigned previews=speed_previews;menu_controller_speed_set(0,1.45f);
+    CHECK(speed_previews==previews+1);
+    menu_controller_speed_set(0,1.45f);CHECK(speed_previews==previews+1);
+    menu_controller_speed_set(4,1.f);menu_controller_speed_set(0,NAN);
+    CHECK(FLOAT_AT(0x7ba3dc)==1.45f && speed_previews==previews+1);
+    speed_original_active=0;
+}
+#else
+static void controller_speed_original_tests(void){}
+#endif

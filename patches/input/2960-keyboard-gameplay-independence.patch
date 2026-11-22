@@ -1,0 +1,13 @@
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -1098,9 +1098,9 @@
+     unsigned preset_masks[24];memcpy(preset_masks,pc_preset_masks,sizeof preset_masks);
+     AcquireSRWLockShared(&g_pc_bindings_lock);
+     modern_keyboard=port==0 && c->device==DEV_KEYBOARD && g_pc_keyboard_preset;
+     modern_controller=g_pc_controller_presets[port];
+-    semantic_keyboard=port==0 && c->device==DEV_KEYBOARD && g_pc_custom_semantics;
++    semantic_keyboard=port==0 && c->device==DEV_KEYBOARD;
+     ReleaseSRWLockShared(&g_pc_bindings_lock);
+     int preset_gameplay=(modern_keyboard || modern_controller || semantic_keyboard) && pc_settings_gameplay_masks(port,preset_masks,&mounted);
+     modern_controller=modern_controller && preset_gameplay;
+     if(modern_keyboard && !preset_gameplay && !pc_controls_in_menu())modern_keyboard=0;

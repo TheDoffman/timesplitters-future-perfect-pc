@@ -32,6 +32,8 @@ namespace TimeSplitters.Launcher
                 Core.Require(Number(data,"game_pid")>0 && Number(data,"game_pid")<=Int32.MaxValue && Number(data,"game_started_ticks")>0,"Invalid game process identity; file retained.");
             return data;
         }
+        internal static string ConsoleLogTag(string root)
+        {var data=Read(root);return data==null?null:Json.String(data,"log_tag");}
         static void Save(string root,Dictionary<string,object> data)
         {
             Write(root,Record,Json.Encode(data));

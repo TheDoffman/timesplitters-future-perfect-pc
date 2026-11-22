@@ -136,17 +136,22 @@ static void sidebar_binding(int action,int binding,int quick,float x,float y,flo
     if(capture_action==action&&slot==binding)snprintf(text,sizeof text,conflict_key?"Conflict":"Press key");
     else if(key)pc_settings_key_name(key,text,sizeof text);else snprintf(text,sizeof text,"Unbound");
     if(quick){float chip=fminf(w,fmaxf(24.f,pc_developer_font_measure(text,11,400,PC_FONT_UI).advance+16));x+=w-chip;w=chip;}
-    if(!pc_settings_action_editable(current.preset,action)) {
-        sidebar_box(x,y,w,25,UI_FIELD,5);
-        sidebar_text_style(x+5,y,w-10,25,UI_MUTED,text,11.f,400,1);return;
-    }
     sidebar_button(UI_BIND,action,binding,quick,x,y,w,25,text,capture_action==action&&slot==binding);
     if(sidebar_count)snprintf(sidebar_widgets[sidebar_count-1].name,80,"%s",name);
 }
-static double sidebar_video_fov(void);
+#include "pc_display.h"
+static int sidebar_video_number_field(int id) {return id==5?VIDEO_FOV:id==6?VIDEO_WEAPON_FOV:VIDEO_CROSSHAIR;}
+static double sidebar_minimum(int id) {return id==7?PC_CROSSHAIR_SIZE_MIN:id>=5?PC_FOV_MIN:id==2?.001:.05;}
+static double sidebar_maximum(int id) {return id==7?PC_CROSSHAIR_SIZE_MAX:id>=5?PC_FOV_MAX:id==2?10.:4.;}
+static double sidebar_increment(int id) {return id==7?5:id>=5?1:id==2?.01:.1;}
+static double sidebar_slider_value(int id,float fraction) {
+    double step=id>=5?sidebar_increment(id):.05;
+    return sidebar_minimum(id)+round(fraction*(sidebar_maximum(id)-sidebar_minimum(id))/step)*step;
+}
+static double sidebar_video_number(int id);
 static double sidebar_value(int id) {
     PcDeveloperState s;pc_developer_get(&s);
-    return id==5?sidebar_video_fov():id==1?s.manual_speed:id==2?draft.sensitivity:id==3?s.slow_speed:s.fast_speed;
+    return id>=5?sidebar_video_number(id):id==1?s.manual_speed:id==2?draft.sensitivity:id==3?s.slow_speed:s.fast_speed;
 }
 static void sidebar_number(const char *name,int id) {
     if(!sidebar_row_matches(name))return;
@@ -280,7 +285,7 @@ static void sidebar_settings(void) {
 }
 static void sidebar_keyboard(void) {
     sidebar_button(UI_TAB,SETTINGS,0,0,17,sidebar_y,408,32,"<  Settings (discard unsaved bindings)",0);sidebar_y+=42;
-    sidebar_text_face(26,sidebar_y,382,18,UI_MUTED,draft.preset?"Modern PC: choose Custom in Controls to edit gameplay.":"Click a slot, press a key. Delete clears. Save to apply.",11,400,0,PC_FONT_UI);sidebar_y+=28;
+    sidebar_text_face(26,sidebar_y,382,18,UI_MUTED,"Click a slot, press a key. Delete clears. Save to apply.",11,400,0,PC_FONT_UI);sidebar_y+=28;
     int any=0;for(int i=0;i<PC_ACTION_COUNT;i++)if(sidebar_match(pc_action_labels[i]))any=1;
     if(any) {
         sidebar_group_match=0;
@@ -418,7 +423,7 @@ static void sidebar_layout(unsigned width,unsigned height,PcDeveloperLine *out,u
 }
 static void sidebar_set_value(int id,double value) {
     if((id==1||id==3||id==4)&&!developer_shared_edit())return;
-    if(id==5){sidebar_video_draft.value[VIDEO_FOV]=(int)fmin(100,fmax(40,round(value)));}
+    if(id>=5){double step=sidebar_increment(id);sidebar_video_draft.value[sidebar_video_number_field(id)]=(int)fmin(sidebar_maximum(id),fmax(sidebar_minimum(id),round(value/step)*step));}
     else if(id==1)speed_adjust(value);
     else if(id==2){draft.sensitivity=fmin(10.,fmax(.001,value));if(page==KEYBOARD)sidebar_dirty=1;else sidebar_save();}
     else {AcquireSRWLockExclusive(&dev_lock);if(id==3)state.slow_speed=fmin(4.,fmax(.05,value));else state.fast_speed=fmin(4.,fmax(.05,value));ReleaseSRWLockExclusive(&dev_lock);}
@@ -426,7 +431,9 @@ static void sidebar_set_value(int id,double value) {
 static int sidebar_commit_number(void) {
     if(!edit_number)return 1;
     char *end;double v=strtod(number,&end);int id=edit_number;
-    if(!*number||*end||!isfinite(v)||v<(id==5?40:id==2?.001:.05)||v>(id==5?100:id==2?10.:4.)) {snprintf(status,sizeof status,"Enter a value from %s.",id==5?"40 to 100":id==2?"0.001 to 10":"0.05 to 4");return 0;}
+    if(!*number||*end||!isfinite(v)||v<sidebar_minimum(id)||v>sidebar_maximum(id)||(id==7&&fmod(v,5.)!=0)) {
+        snprintf(status,sizeof status,id==7?"Enter a multiple of 5 from %g to %g.":"Enter a value from %g to %g.",sidebar_minimum(id),sidebar_maximum(id));return 0;
+    }
     sidebar_set_value(id,v);edit_number=0;status[0]=0;return 1;
 }
 static void sidebar_go(int next) {
@@ -455,13 +462,10 @@ static void sidebar_activate(const DeveloperWidget *v,int direction) {
     case UI_SEARCH:sidebar_search_edit=1;edit_number=0;capture_action=-1;sidebar_select_all=0;break;
     case UI_CLEAR:sidebar_search[0]=0;sidebar_search_edit=1;sidebar_scroll[page]=0;break;
     case UI_NUMBER:edit_number=v->a;capture_action=-1;sidebar_select_all=1;snprintf(number,sizeof number,v->a==2?"%.4g":"%.2f",sidebar_value(v->a));snprintf(status,sizeof status,"Type a value; Enter applies, Escape cancels.");break;
-    case UI_STEP:sidebar_set_value(v->a,sidebar_value(v->a)+(v->a==5?1:v->a==2?.01:.1)*(direction?direction:v->b));break;
+    case UI_STEP:sidebar_set_value(v->a,sidebar_value(v->a)+sidebar_increment(v->a)*(direction?direction:v->b));break;
     case UI_PRESET:sidebar_set_value(v->a,v->value);break;
     case UI_BIND: {
         if(v->value){char error[160];if(!pc_settings_read(&draft,error,sizeof error))pc_settings_defaults(&draft);}
-        if(!pc_settings_action_editable(draft.preset,v->a)) {
-            snprintf(status,sizeof status,"Choose Custom in Controls to edit preset gameplay bindings.");break;
-        }
         capture_action=v->a;slot=v->b;sidebar_quick_bind=(int)v->value;conflict_key=0;edit_number=0;
         snprintf(status,sizeof status,"Press a key. Delete clears; Escape cancels.");break;}
     case UI_SETTING:if(v->a)draft.enabled=!draft.enabled;else draft.invert_y=!draft.invert_y;sidebar_save();break;
@@ -522,7 +526,7 @@ void pc_developer_frame(void) {
             else if(!conflict_key)for(int k=1;k<256;k++)if(sidebar_edge(keys,k)) {
                 int key=k==0x2e?0:k,result=pc_settings_assign(&draft,capture_action,slot,key,0);
                 if(result<0){conflict_key=key;snprintf(status,sizeof status,"Already bound. Enter moves it; Escape cancels.");}
-                else if(result)sidebar_capture_done();else snprintf(status,sizeof status,"That key is reserved or used by the active preset. Choose another.");break;
+                else if(result)sidebar_capture_done();else snprintf(status,sizeof status,"That key is reserved. Choose another.");break;
             }
         } else {
             if(escape) {
@@ -552,7 +556,7 @@ void pc_developer_frame(void) {
                     DeveloperWidget v=sidebar_widgets[sidebar_focus];int dir=sidebar_edge(keys,0x27)?1:sidebar_edge(keys,0x25)?-1:0;
                     if(enter)sidebar_activate(&v,0);
                     else if(dir) {
-                        if(v.kind==UI_NUMBER||v.kind==UI_SLIDER)sidebar_set_value(v.a,sidebar_value(v.a)+dir*(v.a==5?1:v.a==2?.01:.1));
+                        if(v.kind==UI_NUMBER||v.kind==UI_SLIDER)sidebar_set_value(v.a,sidebar_value(v.a)+dir*sidebar_increment(v.a));
                         else sidebar_activate(&v,dir);
                     }
                 }
@@ -573,7 +577,7 @@ void pc_developer_frame(void) {
             }
             if(p.valid&&p.left&&sidebar_drag>=0&&(unsigned)sidebar_drag<sidebar_count) {
                 DeveloperWidget v=sidebar_widgets[sidebar_drag];
-                if(v.kind==UI_SLIDER){float fraction=fmaxf(0,fminf(1,(sidebar_pointer_x-v.x)/v.w));sidebar_set_value(v.a,v.a==5?40+round(fraction*60):.05+round(fraction*79)*.05);}
+                if(v.kind==UI_SLIDER){float fraction=fmaxf(0,fminf(1,(sidebar_pointer_x-v.x)/v.w));sidebar_set_value(v.a,sidebar_slider_value(v.a,fraction));}
                 else if(v.kind==UI_SCROLL)sidebar_scroll[page]=sidebar_max_scroll*fmaxf(0,fminf(1,(sidebar_pointer_y-v.y)/v.h));
             } else sidebar_drag=-1;
         }
@@ -591,7 +595,7 @@ void pc_developer_frame(void) {
     }
     InterlockedExchange(&shortcut_blocked,capture_action>=0||edit_number);memcpy(previous,keys,sizeof previous);
 }
-unsigned pc_developer_lines(unsigned width,unsigned height,PcDeveloperLine *out,unsigned capacity) {
+static unsigned developer_sidebar_lines(unsigned width,unsigned height,PcDeveloperLine *out,unsigned capacity) {
     if(!out||!capacity||width<100||height<100)return 0;
     if(!pc_developer_open()) {
         /* Preserve the dormant named disclaimer without putting it back in the

@@ -21,7 +21,8 @@
 extern int pc_model_transform_entry(void);
 #define RECOMP_FAST_ENTRY(site) \
     (((site)==0x151E80u && pc_model_transform_entry()) || \
-     ((site)==0x28F560u && pc_native_skip_boss_mines() ? (g_esp+=4,1) : 0))
+     ((site)==0x28F560u && pc_native_skip_boss_mines() ? (g_esp+=4,1) : 0) || \
+     ((site)==0x140630u && pc_native_skip_input_hints() ? (g_esp+=4,1) : 0))
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
 /* Crow's eight-slot mine pool uses authored fixed steps (2AA6A0), including
@@ -34,7 +35,16 @@ static inline int pc_native_skip_boss_mines(void)
         (!*(const uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset) ||
          !(*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset)>0.f));
 }
+/* Gameplay hint producers publish once per raw script/input tick. The original
+ * fade update consumes their one-update positive velocity then sets decay.
+ * Extra render calls must not consume that marker before the next raw tick. */
+static inline int pc_native_skip_input_hints(void)
+{
+    return g_tsfp_native_timing_active &&
+        !*(const uint32_t *)((uintptr_t)0x4E7940u+g_xbox_mem_offset);
+}
 #include "pc_native_uplink.h"
+#include "pc_native_weapon_bob.h"
 #include "pc_native_material.h"
 #include "pc_native_statistics_guest.h"
 #include "pc_native_trap_guest.h"
@@ -258,7 +268,10 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
      * pressed input comes from raw ticks, which pause can offset from game
      * ticks. Admit advancing fractional frames without changing any clocks,
      * proximity, obstruction, target eligibility or repeat-cooldown rules. */
-    if ((site == 0xA0DE8u || site == 0x108793u || site == 0x164E00u || site == 0x224170u || site == 0x222B60u || site == 0x21AF90u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+    /* Stationary gun entry B4DF0 has the same pause-only admission gate.
+     * Its raw pressed edge must survive fractional game frames after pausing;
+     * the routine discards EAX before distance/facing/occupancy checks. */
+    if ((site == 0xB4E5Eu || site == 0xA0DE8u || site == 0x108793u || site == 0x164E00u || site == 0x224170u || site == 0x222B60u || site == 0x21AF90u || site == 0x1D88B0u || site == 0x1260C0u || site == 0x1C2F09u || site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xCA040u ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
@@ -411,7 +424,9 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
     return value;
 }
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
-    (((site)==0x1C397Fu || (site)==0x1C2B36u) && (address)==0x4E7944u ? \
+    ((site)==0xD6251u && (address)==0x4E7944u ? \
+     (pc_native_weapon_bob_clock(),(uint32_t)(value)) : \
+     ((site)==0x1C397Fu || (site)==0x1C2B36u) && (address)==0x4E7944u ? \
      pc_native_uplink_gate((site)==0x1C397Fu ? g_ebp : \
        *(const uint32_t *)((uintptr_t)g_esp+0x14u+g_xbox_mem_offset),(uint32_t)(value)) : \
     (site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
@@ -427,6 +442,13 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    /* Pair hint fade time with its original raw-tick refresh cadence. Keep
+     * game-speed scaling, pause and all other UI clocks unchanged. */
+    if(site==0x140652u && g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        if(raw>0.f && isfinite(raw) && right>0.f)
+            right=right/raw*(float)*(const uint32_t *)((uintptr_t)0x4E7940u+g_xbox_mem_offset);
+    }
     if(site==0x3505D7u)return pc_native_uplink_throw(left,right);
     /* Spawner 164010 is dispatched by the whole-tick scheduler 15E830.
      * Its countdown must consume that tick, not the latest render fraction.
@@ -591,7 +613,9 @@ static inline float pc_native_divide(uint32_t site, float left, float right)
 }
 extern float pc_native_kind35_turn(float value);
 #define RECOMP_F32_DIV_AT(site, left, right) \
-    ((site)==0xE237Au ? pc_native_kind35_turn((float)(left)/(float)(right)) : \
+    (((site)==0x1C45BFu || (site)==0x1C4640u) ? \
+     pc_native_weapon_bob_divide((float)(left),(float)(right)) : \
+     (site)==0xE237Au ? pc_native_kind35_turn((float)(left)/(float)(right)) : \
     pc_native_divide((uint32_t)(site), (float)(left), (float)(right)))
 /* The original NPC aim tracker closes 5% of its gap per whole update.
  * Normalize only this argument, leaving the shared interpolation helper and

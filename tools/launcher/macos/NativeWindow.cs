@@ -29,6 +29,7 @@ namespace TimeSplitters.Launcher
             Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
             channelPicker.SetReleases(Array.Empty<Release>(),GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
             Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  "+LauncherPlatform.HostName);
+            textureUpdatesState=new TextureUpdateCheck(root);textureUpdatesState.Changed+=()=>Ui.Post(TextureCheckChanged);
             Click("HomeNav",()=>Page("CommandCenter"));Click("SettingsNav",ShowSettings);Click("NewsNav",()=>Run(News));
             Click("RepairNav",()=>Maintenance());Click("SupportNav",()=>NativeHost.Open("https://github.com/"+ReleaseClient.Repository+"/issues"));
             Click("DiscordNav",()=>NativeHost.Open(ReleaseClient.DiscordInvite));
@@ -59,12 +60,13 @@ namespace TimeSplitters.Launcher
                 Directory.CreateDirectory(Core.PathIn(root,".launcher"));installationLock=new FileStream(Core.PathIn(root,LauncherPlatform.LockFile),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
                 Core.RecoverLauncher(root);Core.Recover(root);TexturePack.Recover(root);Core.CleanupGameAfterStartup(root);string recovered=null;try{recovered=GameSessions.Recover(root);}catch(Exception ex){LauncherLog.Write(root,"Session recovery deferred: "+ex.GetType().Name);}Refresh();if(recovered!=null)Maintenance(true);SelfUpdate.CleanupAfterStartup(root);
                 foreach(var name in new[]{".launcher/mac-self-helper",".launcher/mac-update-helper"})try{File.Delete(Core.PathIn(root,name));}catch(IOException){}
+                var backgroundTextures=textureUpdatesState.StartIfOptedIn();
                 await Check();string result=Core.PathIn(root,".launcher/last-result.txt");if(File.Exists(result)){Status(File.ReadAllText(result));File.Delete(result);}
                 issuesTimer=new DispatcherTimer{Interval=TimeSpan.FromMinutes(5)};issuesTimer.Tick+=(a,b)=>{if(Find<ContentControl>("NewsHost").IsVisible && WindowState!=WindowState.Minimized && !busy)Run(()=>newsPage.RefreshIssues());};issuesTimer.Start();
             }catch(Exception ex){Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
             Activated+=(s,e)=>{if(newsPage!=null&&Find<Control>("NewsHost").IsVisible&&!busy)Run(newsPage.RefreshIssuesIfDue);};
             Closing+=(s,e)=>{if(!NativeStartup.HandingOff && (busy || gameRunning)){e.Cancel=true;Status("Wait for the operation or game to finish before closing the launcher.");}};
-            Closed+=(s,e)=>{issuesTimer?.Stop();newsPage?.Dispose();operation?.Cancel();installationLock?.Dispose();client.Dispose();};
+            Closed+=(s,e)=>{closed=true;textureUpdatesState.Dispose();consolePage?.Dispose();issuesTimer?.Stop();newsPage?.Dispose();operation?.Cancel();installationLock?.Dispose();client.Dispose();};
         }
         T Find<T>(string name) where T:Control { return this.FindControl<T>(name)??throw new InvalidOperationException("Missing launcher control: "+name); }
         void Click(string name,Action action){Find<Button>(name).Click+=(s,e)=>{try{action();}catch(Exception ex){Status(ex.Message);}};}
@@ -76,6 +78,10 @@ namespace TimeSplitters.Launcher
         bool Preview=>SelectedGameChannel!="stable";
         void SetChannels(Release[] releases,string selected)
         {channelPicker.SetReleases(releases,selected);}
+        TextureUpdateCheck textureUpdatesState;bool closed;
+        void TextureCheckChanged(){if(closed)return;var label=Find<TextBlock>("TextureUpdateStatus");label.Text=textureUpdatesState.Status;ToolTip.SetTip(label,textureUpdatesState.Details);label.IsVisible=label.Text.Length>0;settings?.RefreshTextureCheck();}
+        ConsolePage consolePage;
+        void ShowConsole(){Maintenance();maintenance.SelectConsole();}
         void Page(string name){
             if(name!="SettingsHost"&&settings!=null)settings.DismissPrompt();
             foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost"),("SavesNav","SavesHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
@@ -174,7 +180,7 @@ namespace TimeSplitters.Launcher
         }
         async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","The launcher restarts after restoring the previous game. Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{NativeStartup.HandoffGame(root,true);}finally{if(!NativeStartup.HandingOff){busy=false;Refresh();}}}}
         void ShowSaves(){if(busy||gameRunning||(!render&&Core.GameRunning())){Status("Close the game before managing saves.");return;}if(savesPage==null){savesPage=new SavesPage(root,render,installationLock!=null);savesPage.OpenFolder+=OpenFolder;savesPage.OpenSaveLocation+=path=>{Directory.CreateDirectory(path);NativeHost.Open(path);};savesPage.PickSaveFolder=async()=>{var picked=await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions {Title="Choose TimeSplitters save folder",AllowMultiple=false});return picked.FirstOrDefault()?.TryGetLocalPath();};savesPage.BusyChanged+=value=>{busy=value;Refresh();};Find<ContentControl>("SavesHost").Content=savesPage.View;}savesPage.Reload();Page("SavesHost");}
-        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.TextureBusyChanged+=value=>{busy=value;Refresh();};settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");settings.CheckTexturesIfOptedIn();}
+        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render,textureUpdatesState);settings.TextureBusyChanged+=value=>{busy=value;Refresh();};settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
         async Task News()
         {
             if(newsPage==null){newsPage=new NativeNews(root,client,()=>SelectedGameChannel);Find<ContentControl>("NewsHost").Content=newsPage.View;}
@@ -189,7 +195,7 @@ namespace TimeSplitters.Launcher
         NativeMaintenance maintenance;
         void Maintenance(bool diagnostics=false)
         {
-            if(maintenance==null){maintenance=new NativeMaintenance(root,this);Find<ContentControl>("MaintenanceHost").Content=maintenance.View;}
+            if(maintenance==null){consolePage=new ConsolePage(root,render,true);maintenance=new NativeMaintenance(root,this,consolePage);Find<ContentControl>("MaintenanceHost").Content=maintenance.View;}
             maintenance.Select(diagnostics);Page("MaintenanceHost");
         }
         internal async Task Maintain(Func<CancellationToken,Task> action)
@@ -247,6 +253,7 @@ namespace TimeSplitters.Launcher
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
             if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>SelectedGameChannel);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
+            if(mode.Contains("console"))ShowConsole();
             if(mode.Contains("game-data"))Find<Expander>("GameDataExpander").IsExpanded=true;
             if(mode.Contains("download")){
                 var snapshot=new TransferSnapshot{Phase="Downloading",Bytes=(long)(22.2*1048576),Total=(long)(84.5*1048576),BytesPerSecond=1.7*1048576};

@@ -14,11 +14,14 @@ RECOMP_TLS int g_fp_top;
 #define WORD_AT(a) MEM32(a)
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL: line %d %s\n",__LINE__,#x);exit(1);}}while(0)
 static int ui_placement,wide,wrapped,pending,draws,blurs;
+/* The original actor reveal executes outside the shared pause-glass scope. */
+static RECOMP_TLS unsigned pause_glass_depth;
 static uint32_t ui_tag,rectangle[9];
 static float scale;
 static int projected_x;
 static int guest_writable(uint32_t a,size_t n){return a==0x3000 && n<=0x24;}
 static int pc_display_wide_now(void){return wide;}
+int pc_display_crosshair_size(void){return 100;}
 static float pc_display_hud_scale(void){return scale;}
 static void sub_001CDAE0(void){}
 static void sub_00022FF0(void){pending=0;}

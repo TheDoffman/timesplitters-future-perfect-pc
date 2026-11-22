@@ -1,15 +1,20 @@
-[Sticks](controller-deadzones.md), [keys](control-presets.md), [updates](main-menu-update.md).
+[Bob](weapon-bob.md).
+[Exit](pause-settings.md).
+[Turn Speed](controls-options.md).
+[V-Sync](video-options.md#optional-v-sync-2026-11-17).
+
+[Sync telemetry](network-sync-telemetry.md).
+[Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
+[Actors](network-actor-lifetime.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
-[Uplink throw tests and policy](native-uplink.md#throw-impulse).
-Networking: `pc_network_enabled()` reads startup config once,
-then uses shared atomic flags in the indirect-dispatch hot path. The System Link
-menu explicitly calls `pc_network_enable_lan()`; Online connect/disconnect publishes
-its own flag. Missing launch files are not retried on every guest call, and an
-explicit disconnect does not re-import stale startup credentials. Windows, Mac
-and Linux share this policy. See `tests/network/network_eligibility.c`.
+[Uplink](native-uplink.md#throw-impulse); [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
+[Network startup](network-performance.md): one-time config read, atomic dispatch;
+LAN enables explicitly, Online publishes connect/disconnect. No stale re-import.
+Shared Windows/Mac/Linux; fixture: `tests/network/network_eligibility.c`.
+[Sun/visibility](fidelity-comparison.md): optional preset removed; normal settings restored.
 
-[Story/shared Tools policy](developer-tools-integration.md).
+[Story Tools/Video](developer-tools-integration.md).
 
 [Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
 [Input](controls-options.md).
@@ -18,19 +23,17 @@ and Linux share this policy. See `tests/network/network_eligibility.c`.
 [Display](video-options.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
-# [Systems](video-options.md)
+# [Aim](hud-sizing.md)
 
 [SDL](linux-game.md).
 
-Native input self-tests use click/Escape capture after F1 became the optional
-Developer Tools shortcut. This changes only synthetic test events in
-src/native/input_sdl.c; Linux passes, native Mac execution remains pending.
+SDL synthetic capture tests use click/Escape; F1 opens Tools. Linux passes; Mac pending.
 
 PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-[Co-op](story-campaign-lifecycle.md). [Exit/save](multiplayer-exit.md).
+[Co-op](story-campaign-lifecycle.md); [Story](systems-details.md); [exits/saves](multiplayer-exit.md).
 
 [Mech](mounted-mouse.md).
 
@@ -51,7 +54,7 @@ Aim/animation: [diagnostic limits](native-local-trace.md).
 GPU cache fixture/config: [runtime](runtime.md).
 
 Native player contact: [clear-slide policy/trace](native-player-contact.md).
-Registers: [policy/tests](gpr-refs.md).
+GPRs: [scoped aliases/tests](gpr-refs.md).
 Script/audio clocks: [contracts](native-script-clocks.md).
 
 <!-- packet:start -->
@@ -79,7 +82,7 @@ Textures: `src/textures/`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/textures/`. Sanitized replacements now live
 in `assets/textures` (DDS via Git LFS), audited by `tools/textures/build_textures.py` for optional delivery;
 Private art stays local. Networking: `src/network/`, HLE/kernel patches and
-`tools/network/online.py`; [LAN](system-link.md), [Online UI](multiplayer-ui.md). Crash capture:
+`tools/network/online.py`; [LAN](system-link.md), [Migration](multiplayer-ui.md). Crash capture:
 `src/diagnostics/`, runtime crash hooks and launcher diagnostics.
 Audio: `src/hle/hle_dsound*`, `hle_xmv*`. [Beta audio](../development/positional-audio.md).
 General buffering, lifecycle, format and device recovery are unconditional;
@@ -929,10 +932,9 @@ Reset points left from the top of its arc (counterclockwise); hold-speed ends sh
 See [sidebar contracts and history](systems-continuation.md#developer-tools-sidebar-presentation)
 for input/save boundaries, styles, clipping and native adapter details.
 
-The Settings tab now has independent Input Settings / Video Settings categories.
-`pc_video_sidebar_ui.inc` owns drafts/selectors; `pc_video_sidebar.inc` consumes
-value-only mailbox requests on the guest frame, using existing display/graphics
-setters and native subtitle persistence. See the continuation for contracts.
+Settings separates Input / Video. `pc_video_sidebar_ui.inc` owns drafts;
+`pc_video_sidebar.inc` consumes value-only requests on the guest frame through
+shared display/graphics setters and native subtitle persistence. See the continuation.
 
 ## Audio playback updates
 
