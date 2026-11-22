@@ -1,5 +1,11 @@
 # Windows Vulkan default and MSVC build policy
 
+PR580 CI portability: the Windows RHI build job targets the installed Visual
+Studio 18 2026 generator on windows-2025-vs2026 (pinned CMake4.4.4 supports it).
+The shared launcher test treats missing child renderer variables portably with
+ContainsKey before indexing; native .NET's dictionary indexer throws for absent keys.
+Production launcher behavior and backend policy are unchanged by these repairs.
+
 Available-host acceptance is complete on RTX4070SUPER/617.42, gameSHAa8a26b31:
 see docs/development/windows-renderer-results.md and its matrix. Performance,
 quality/display, two Story openings, Venice/bots, five-minute movement/pause,

@@ -1,4 +1,4 @@
-[Renderer CI checks](windows-vulkan.md).
+[Renderer CI portability](windows-vulkan.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

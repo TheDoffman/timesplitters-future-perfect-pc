@@ -225,7 +225,7 @@ jobs:
         run: |
           git -C external/ts3FPrecomp submodule update --init --depth 1 third_party/Vulkan-Headers third_party/volk third_party/VulkanMemoryAllocator
           python tools/build/windows_vulkan.py --setup
-          cmake -S tests/windows-rhi -B build/windows/rhi-compare -G "Visual Studio 17 2022" -A x64
+          cmake -S tests/windows-rhi -B build/windows/rhi-compare -G "Visual Studio 18 2026" -A x64
           cmake --build build/windows/rhi-compare --config Release --parallel 4
           # Execution is a local hardware acceptance check; CI retains its WARP pixel tests.
       - name: Upload test results

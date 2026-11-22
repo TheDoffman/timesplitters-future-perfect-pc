@@ -1,3 +1,8 @@
+Shared renderer UI checks use ContainsKey before indexing the child environment:
+native .NET omits stripped renderer overrides, while Windows Framework's indexer
+returns null for missing keys. Both must reject inherited overrides and preserve
+the saved Windows preference. PR580 CI checks native Mac and Linux execution.
+
 Extended Windows renderer acceptance uses the unchanged SettingsPage/LaunchGame
 through tests/launcher_lifecycle/RendererGameSmoke.cs, driven by
 tools/testing/test-launcher-renderers-windows.py. --compile-only is in launcher

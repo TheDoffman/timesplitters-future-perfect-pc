@@ -80,7 +80,10 @@ public static class LauncherSharedUiChecks
                         var model=GameSettings.Load(folder,null);model.Renderer=backend;model.Save();
                         var reopened=GameSettings.Load(folder,null);
                         Need(reopened.Renderer==backend,"Renderer did not survive reload");
-                        Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]==
+                        var childEnvironment=GameSettings.StartInfo(folder).EnvironmentVariables;
+                        string childBackend=childEnvironment.ContainsKey("RECOMP_D3D8_BACKEND")?
+                            childEnvironment["RECOMP_D3D8_BACKEND"]:null;
+                        Need(childBackend==
                             (LauncherPlatform.SupportsRendererSelection?backend:null),"Wrong child renderer or inherited override leaked");
                         reopened.Sensitivity=.2;reopened.Save();
                         Need(GameSettings.Load(folder,null).Renderer==backend,"Unrelated save reset renderer");
@@ -100,7 +103,7 @@ public static class LauncherSharedUiChecks
                 string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));
                 Core.Write(manifest,Json.Encode(new {version="v1.2.3",auto_display_resolution=true}));
                 Need(!GameSettings.Load(folder,null).CanSelectRenderer,"Older package advertised unsupported renderer choice");
-                Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]==null,"Older package received override");
+                Need(!GameSettings.StartInfo(folder).EnvironmentVariables.ContainsKey("RECOMP_D3D8_BACKEND"),"Older package received override");
                 Core.Write(manifest,Json.Encode(new {version="v1.2.3",auto_display_resolution=true,graphics_backends=new[]{"d3d11","vulkan"}}));
                 Need(GameSettings.Load(folder,null).CanSelectRenderer==LauncherPlatform.SupportsRendererSelection,"Package backend metadata ignored");
             });
