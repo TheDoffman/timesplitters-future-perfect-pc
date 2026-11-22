@@ -28,6 +28,7 @@ import subprocess
 import sys
 from native_mac_common import recycle_test_disks
 import vulkan_sdk
+import spirv_cross
 from build_textures import ensure_pack
 
 ROOT = _layout_root
@@ -94,6 +95,7 @@ def main():
         sdk = None
         if renderer == 'vulkan':
             sdk = vulkan_sdk.setup(runtime_root) if args.setup else vulkan_sdk.verify_install(runtime_root)
+            spirv_cross.setup(runtime_root) if args.setup else spirv_cross.verify(runtime_root)
     except (OSError, ValueError, RuntimeError) as error:
         raise SystemExit(f'Native renderer prerequisite: {error}') from error
     print(f'Native renderer: {renderer} (requested {args.renderer})', flush=True)

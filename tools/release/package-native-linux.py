@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Prepare a relocatable Linux x64 package from verified binaries, without game data."""
 import argparse
+import spirv_cross
 import hashlib
 import json
 import os
@@ -214,6 +215,7 @@ def main():
         if source.is_symlink():raise ValueError('Linked launcher member')
         if source.is_file():copy(source,stage,source.relative_to(args.launcher))
     copy(ROOT/'config/pc-controls.default.json',stage,'Settings/pc-controls.json')
+    gl_compiler = spirv_cross.verify(ROOT)
     copy(ROOT/'LICENSE',stage,'Licenses/Project.txt')
     for file in COMPANION:copy(repo_file(ROOT,'tools',file),stage,'Support/Online/'+file)
     copy(ROOT/'build/online-icon/multiplayer.png',stage,'Support/Online/multiplayer.png')
@@ -265,6 +267,9 @@ def main():
     for source in (upstream/'third_party/Vulkan-Headers/LICENSES').iterdir():
         if source.is_file():copy(source,stage,'Licenses/Vulkan-Headers-'+source.name)
     if (ROOT/'vendor/smaa/LICENSE.txt').is_file():copy(ROOT/'vendor/smaa/LICENSE.txt',stage,'Licenses/SMAA.txt')
+    copy(gl_compiler/'LICENSE',stage,'Licenses/SPIRV-Cross-OpenGL.txt')
+    copy(ROOT/'config/build/spirv-cross.json',stage,'Support/Graphics/spirv-cross-pin.json')
+    copy(gl_compiler/'receipt.json',stage,'Support/Graphics/spirv-cross-receipt.json')
     copy(ROOT/'assets/ui/input-icons/ATTRIBUTION.md',stage,'Licenses/Keyboard-mouse-icons.txt')
     for origin,name in [('assets/ui/fonts/Selawik-OFL.txt','Selawik-OFL.txt'),('assets/ui/fonts/Cousine-OFL.txt','Cousine-OFL.txt'),('vendor/stb/LICENSE','stb.txt')]:
         copy(ROOT/origin,stage,'Licenses/'+name)

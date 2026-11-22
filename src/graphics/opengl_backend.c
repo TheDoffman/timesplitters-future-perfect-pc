@@ -60,6 +60,13 @@ static int extension(const char *name)
     for(GLint i=0;i<count;i++)if(!strcmp((const char *)G.GetStringi(GL_EXTENSIONS,i),name))return 1;
     return 0;
 }
+static void APIENTRY debug_message(GLenum source,GLenum type,GLuint id,GLenum severity,
+                                  GLsizei length,const GLchar *message,const void *user)
+{
+    (void)source;(void)id;(void)length;(void)user;
+    if(type==GL_DEBUG_TYPE_ERROR || severity==GL_DEBUG_SEVERITY_HIGH)
+        fprintf(stderr,"[RHI] ERROR: opengl driver: %s\n",message);
+}
 static GlFormat format(RhiFormat value)
 {
     GlFormat f={0};
@@ -637,6 +644,10 @@ static int g_device_create(const RhiDeviceDesc *desc)
 #define LOAD_OPTIONAL(type,name) G.name=(type)tsfp_gl_host_proc(S.host,"gl" #name);
     TSFP_GL_OPTIONAL(LOAD_OPTIONAL)
 #undef LOAD_OPTIONAL
+    if(G.DebugMessageCallback && extension("GL_KHR_debug")) {
+        glEnable(GL_DEBUG_OUTPUT);glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        G.DebugMessageCallback(debug_message,NULL);
+    }
     S.storage=G.TexStorage2D && G.TexStorage3D && extension("GL_ARB_texture_storage");
     S.storage_ms=G.TexStorage2DMultisample && G.TexStorage3DMultisample && extension("GL_ARB_texture_storage_multisample");
     S.views=G.TextureView && extension("GL_ARB_texture_view");S.stencil_texture=extension("GL_ARB_stencil_texturing");
@@ -666,18 +677,100 @@ static void g_device_destroy(void)
     }
     tsfp_gl_host_destroy(S.host);memset(&S,0,sizeof S);memset(&G,0,sizeof G);
 }
+/* The title can create its device on one guest thread and render on another.
+ * One context lease per public RHI operation serializes GL state and makes that
+ * handoff explicit. Internal calls do not reacquire. No guest/gameplay fork. */
+static int enter_backend(void)
+{
+    tsfp_gl_host_lock();
+    if(S.host && !tsfp_gl_host_make_current(S.host)) {
+        fprintf(stderr,"[RHI] ERROR: opengl context handoff failed\n");
+        S.failed=1;tsfp_gl_host_unlock();return 0;
+    }
+    return 1;
+}
+static void leave_backend(void)
+{tsfp_gl_host_release(S.host);tsfp_gl_host_unlock();}
+#define GL_VOID(type,name,params,call,args) \
+ static void lease_##name params {if(!enter_backend())return;call args;leave_backend();}
+#define GL_VALUE(type,name,params,call,args,failure) \
+ static type lease_##name params {if(!enter_backend())return failure;type value=call args;leave_backend();return value;}
+GL_VALUE(int, device_create, (const RhiDeviceDesc * a0), g_device_create, (a0), -1)
+GL_VOID(void, device_destroy, (void), g_device_destroy, ())
+GL_VALUE(int, device_ready, (void), g_ready, (), 0)
+GL_VALUE(RhiView *, swapchain_view, (void), g_swap_view, (), NULL)
+GL_VALUE(int, swapchain_resize, (uint32_t a0, uint32_t a1), g_resize, (a0, a1), -1)
+GL_VALUE(int32_t, present, (uint32_t a0), g_present, (a0), -1)
+GL_VALUE(int, swapchain_readback, (void * a0, uint32_t a1, uint32_t * a2, uint32_t * a3), g_swap_readback, (a0, a1, a2, a3), -1)
+GL_VOID(void, swapchain_set_vrr, (int a0), g_vrr, (a0))
+GL_VALUE(RhiBuffer *, buffer_create, (const RhiBufferDesc * a0, const void * a1), g_buffer_create, (a0, a1), NULL)
+GL_VOID(void, buffer_destroy, (RhiBuffer * a0), g_buffer_destroy, (a0))
+GL_VALUE(void *, buffer_map, (RhiBuffer * a0, uint32_t a1), g_buffer_map, (a0, a1), NULL)
+GL_VOID(void, buffer_unmap, (RhiBuffer * a0), g_buffer_unmap, (a0))
+GL_VOID(void, buffer_update, (RhiBuffer * a0, const void * a1), g_buffer_update, (a0, a1))
+GL_VALUE(RhiImage *, image_create, (const RhiImageDesc * a0, const RhiSubresourceData * a1), g_image_create, (a0, a1), NULL)
+GL_VALUE(RhiImage *, image_retain, (RhiImage * a0), g_image_retain, (a0), NULL)
+GL_VOID(void, image_destroy, (RhiImage * a0), g_image_destroy, (a0))
+GL_VOID(void, image_get_desc, (const RhiImage * a0, RhiImageDesc * a1), g_image_desc, (a0, a1))
+GL_VOID(void, image_update, (RhiImage * a0, uint32_t a1, const RhiBox * a2, const void * a3, uint32_t a4, uint32_t a5), g_image_update, (a0, a1, a2, a3, a4, a5))
+GL_VALUE(int, image_readback, (RhiImage * a0, uint32_t a1, void * a2, uint32_t a3), g_image_readback, (a0, a1, a2, a3), -1)
+GL_VALUE(RhiView  *, view_create, (RhiImage * a0, uint32_t a1, const RhiViewDesc * a2), g_view_create, (a0, a1, a2), NULL)
+GL_VOID(void, view_destroy, (RhiView * a0), g_view_destroy, (a0))
+GL_VALUE(RhiImage *, view_image, (const RhiView * a0), g_view_image, (a0), NULL)
+GL_VALUE(int, sample_count_supported, (RhiFormat a0, uint32_t a1), g_sample_count, (a0, a1), 0)
+GL_VALUE(RhiShader *, shader_create, (uint32_t a0, const RhiShaderSource * a1, char * a2, size_t a3), g_shader_create, (a0, a1, a2, a3), NULL)
+GL_VOID(void, shader_destroy, (RhiShader * a0), g_shader_destroy, (a0))
+GL_VALUE(RhiVertexLayout *, vertex_layout_create, (const RhiVertexElement * a0, uint32_t a1, const RhiShader * a2), g_layout_create, (a0, a1, a2), NULL)
+GL_VOID(void, vertex_layout_destroy, (RhiVertexLayout * a0), g_layout_destroy, (a0))
+GL_VALUE(RhiBlendState  *, blend_state_create, (const RhiBlendDesc * a0), g_blend_create, (a0), NULL)
+GL_VALUE(RhiDepthState  *, depth_state_create, (const RhiDepthDesc * a0), g_depth_create, (a0), NULL)
+GL_VALUE(RhiRasterState *, raster_state_create, (const RhiRasterDesc * a0), g_raster_create, (a0), NULL)
+GL_VALUE(RhiSampler     *, sampler_create, (const RhiSamplerDesc * a0), g_sampler_create, (a0), NULL)
+GL_VOID(void, blend_state_destroy, (RhiBlendState * a0), g_blend_destroy, (a0))
+GL_VOID(void, depth_state_destroy, (RhiDepthState * a0), g_depth_destroy, (a0))
+GL_VOID(void, raster_state_destroy, (RhiRasterState * a0), g_raster_destroy, (a0))
+GL_VOID(void, sampler_destroy, (RhiSampler * a0), g_sampler_destroy, (a0))
+GL_VOID(void, set_render_target, (RhiView * a0, RhiView * a1), g_set_render_target, (a0, a1))
+GL_VOID(void, output_save, (RhiOutputState * a0), g_output_save, (a0))
+GL_VOID(void, output_restore, (RhiOutputState * a0), g_output_restore, (a0))
+GL_VALUE(int, output_color_is, (const RhiOutputState * a0, const RhiView * a1), g_output_color_is, (a0, a1), 0)
+GL_VOID(void, set_viewports, (uint32_t a0, const RhiViewport * a1), g_viewports, (a0, a1))
+GL_VOID(void, set_scissor, (const RhiRect * a0), g_scissor, (a0))
+GL_VOID(void, set_topology, (uint32_t a0), g_topology, (a0))
+GL_VOID(void, set_vertex_layout, (RhiVertexLayout * a0), g_set_layout, (a0))
+GL_VOID(void, set_vertex_buffer, (uint32_t a0, RhiBuffer * a1, uint32_t a2, uint32_t a3), g_vertex_buffer, (a0, a1, a2, a3))
+GL_VOID(void, set_index_buffer, (RhiBuffer * a0, uint32_t a1, uint32_t a2), g_index_buffer, (a0, a1, a2))
+GL_VOID(void, set_shader, (uint32_t a0, RhiShader * a1), g_set_shader, (a0, a1))
+GL_VOID(void, set_uniform_buffers, (uint32_t a0, uint32_t a1, uint32_t a2, RhiBuffer *const * a3), g_uniforms, (a0, a1, a2, a3))
+GL_VOID(void, set_textures, (uint32_t a0, uint32_t a1, RhiView *const * a2), g_textures, (a0, a1, a2))
+GL_VOID(void, set_samplers, (uint32_t a0, uint32_t a1, RhiSampler *const * a2), g_samplers, (a0, a1, a2))
+GL_VOID(void, set_blend_state, (RhiBlendState * a0, const float * a1, uint32_t a2), g_blend, (a0, a1, a2))
+GL_VOID(void, set_depth_state, (RhiDepthState * a0, uint32_t a1), g_depth, (a0, a1))
+GL_VOID(void, set_raster_state, (RhiRasterState * a0), g_raster, (a0))
+GL_VOID(void, draw, (uint32_t a0, uint32_t a1), g_draw, (a0, a1))
+GL_VOID(void, draw_indexed, (uint32_t a0, uint32_t a1, int32_t a2), g_draw_indexed, (a0, a1, a2))
+GL_VOID(void, clear_color, (RhiView * a0, const float * a1), g_clear_color, (a0, a1))
+GL_VOID(void, clear_depth, (RhiView * a0, uint32_t a1, float a2, uint8_t a3), g_clear_depth, (a0, a1, a2, a3))
+GL_VALUE(int, image_resolve, (RhiImage * a0, uint32_t a1, RhiImage * a2, uint32_t a3), g_resolve, (a0, a1, a2, a3), -1)
+GL_VALUE(RhiOcclusion *, occlusion_create, (void), g_query_create, (), NULL)
+GL_VOID(void, occlusion_destroy, (RhiOcclusion * a0), g_query_destroy, (a0))
+GL_VALUE(int, occlusion_begin, (RhiOcclusion * a0), g_query_begin, (a0), 0)
+GL_VALUE(int, occlusion_end, (RhiOcclusion * a0), g_query_end, (a0), 0)
+GL_VALUE(int, occlusion_result, (RhiOcclusion * a0, uint64_t * a1), g_query_result, (a0, a1), -1)
+#undef GL_VOID
+#undef GL_VALUE
 const RhiBackend rhi_opengl_backend={
-    .name="opengl",.device_create=g_device_create,.device_destroy=g_device_destroy,.device_ready=g_ready,
-    .swapchain_view=g_swap_view,.swapchain_resize=g_resize,.present=g_present,.swapchain_readback=g_swap_readback,.swapchain_set_vrr=g_vrr,
-    .buffer_create=g_buffer_create,.buffer_destroy=g_buffer_destroy,.buffer_map=g_buffer_map,.buffer_unmap=g_buffer_unmap,.buffer_update=g_buffer_update,
-    .image_create=g_image_create,.image_retain=g_image_retain,.image_destroy=g_image_destroy,.image_get_desc=g_image_desc,.image_update=g_image_update,.image_readback=g_image_readback,
-    .view_create=g_view_create,.view_destroy=g_view_destroy,.view_image=g_view_image,.sample_count_supported=g_sample_count,
-    .shader_create=g_shader_create,.shader_destroy=g_shader_destroy,.vertex_layout_create=g_layout_create,.vertex_layout_destroy=g_layout_destroy,
-    .blend_state_create=g_blend_create,.depth_state_create=g_depth_create,.raster_state_create=g_raster_create,.sampler_create=g_sampler_create,
-    .blend_state_destroy=g_blend_destroy,.depth_state_destroy=g_depth_destroy,.raster_state_destroy=g_raster_destroy,.sampler_destroy=g_sampler_destroy,
-    .set_render_target=g_set_render_target,.output_save=g_output_save,.output_restore=g_output_restore,.output_color_is=g_output_color_is,
-    .set_viewports=g_viewports,.set_scissor=g_scissor,.set_topology=g_topology,.set_vertex_layout=g_set_layout,.set_vertex_buffer=g_vertex_buffer,
-    .set_index_buffer=g_index_buffer,.set_shader=g_set_shader,.set_uniform_buffers=g_uniforms,.set_textures=g_textures,.set_samplers=g_samplers,
-    .set_blend_state=g_blend,.set_depth_state=g_depth,.set_raster_state=g_raster,.draw=g_draw,.draw_indexed=g_draw_indexed,.clear_color=g_clear_color,.clear_depth=g_clear_depth,
-    .image_resolve=g_resolve,.occlusion_create=g_query_create,.occlusion_destroy=g_query_destroy,.occlusion_begin=g_query_begin,.occlusion_end=g_query_end,.occlusion_result=g_query_result
+    .name="opengl",.device_create=lease_device_create,.device_destroy=lease_device_destroy,.device_ready=lease_device_ready,
+    .swapchain_view=lease_swapchain_view,.swapchain_resize=lease_swapchain_resize,.present=lease_present,.swapchain_readback=lease_swapchain_readback,.swapchain_set_vrr=lease_swapchain_set_vrr,
+    .buffer_create=lease_buffer_create,.buffer_destroy=lease_buffer_destroy,.buffer_map=lease_buffer_map,.buffer_unmap=lease_buffer_unmap,.buffer_update=lease_buffer_update,
+    .image_create=lease_image_create,.image_retain=lease_image_retain,.image_destroy=lease_image_destroy,.image_get_desc=lease_image_get_desc,.image_update=lease_image_update,.image_readback=lease_image_readback,
+    .view_create=lease_view_create,.view_destroy=lease_view_destroy,.view_image=lease_view_image,.sample_count_supported=lease_sample_count_supported,
+    .shader_create=lease_shader_create,.shader_destroy=lease_shader_destroy,.vertex_layout_create=lease_vertex_layout_create,.vertex_layout_destroy=lease_vertex_layout_destroy,
+    .blend_state_create=lease_blend_state_create,.depth_state_create=lease_depth_state_create,.raster_state_create=lease_raster_state_create,.sampler_create=lease_sampler_create,
+    .blend_state_destroy=lease_blend_state_destroy,.depth_state_destroy=lease_depth_state_destroy,.raster_state_destroy=lease_raster_state_destroy,.sampler_destroy=lease_sampler_destroy,
+    .set_render_target=lease_set_render_target,.output_save=lease_output_save,.output_restore=lease_output_restore,.output_color_is=lease_output_color_is,
+    .set_viewports=lease_set_viewports,.set_scissor=lease_set_scissor,.set_topology=lease_set_topology,.set_vertex_layout=lease_set_vertex_layout,.set_vertex_buffer=lease_set_vertex_buffer,
+    .set_index_buffer=lease_set_index_buffer,.set_shader=lease_set_shader,.set_uniform_buffers=lease_set_uniform_buffers,.set_textures=lease_set_textures,.set_samplers=lease_set_samplers,
+    .set_blend_state=lease_set_blend_state,.set_depth_state=lease_set_depth_state,.set_raster_state=lease_set_raster_state,.draw=lease_draw,.draw_indexed=lease_draw_indexed,.clear_color=lease_clear_color,.clear_depth=lease_clear_depth,
+    .image_resolve=lease_image_resolve,.occlusion_create=lease_occlusion_create,.occlusion_destroy=lease_occlusion_destroy,.occlusion_begin=lease_occlusion_begin,.occlusion_end=lease_occlusion_end,.occlusion_result=lease_occlusion_result
 };

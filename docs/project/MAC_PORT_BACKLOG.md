@@ -3,7 +3,10 @@ feature/opengl-startup-recovery, based on local4c287926. Shared startup transact
 HLSL-to-GLSL compiler and complete common RHI backend now pass Windows hardware
 contracts, including actual Vulkan-to-GL startup recovery in a test-only build.
 Production recovery is OFF on all hosts. Ordinary build/setup/package/license
-integration remains. Native OpenGL4.1 lacks guaranteed texture-view/storage and
+wiring is present after58d450d9; only Windows build is verified. Native host
+execution remains unrun. Public RHI context leases handle guest-thread handoff;
+its first Windows game run failed progression/performance acceptance, so this
+is not approved recovery. Native OpenGL4.1 lacks guaranteed texture-view/storage and
 mirror-once extensions: adapt required views/capabilities before native acceptance.
 SDL Vulkan-to-GL window replacement must preserve logical identity and input,
 debug/settings/fullscreen bindings. Native builds/GPU execution, game effects,

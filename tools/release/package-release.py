@@ -16,6 +16,7 @@ else:
         return _LayoutPath(root) / area / name
 
 import argparse
+import spirv_cross
 import hashlib
 import json
 import os
@@ -61,6 +62,7 @@ def main():
     cache=(ROOT/'build/windows/CMakeCache.txt').read_text()
     if not re.search(r'^XBOXRECOMP_VULKAN:BOOL=ON$',cache,re.M):
         raise RuntimeError('Rebuild with Windows Vulkan enabled before packaging both backends')
+    gl_compiler = spirv_cross.verify(ROOT)
     stage = args.output.resolve() / name
     stage.mkdir(parents=True, exist_ok=False)
     upstream = ROOT / 'external/ts3FPrecomp'
@@ -80,6 +82,9 @@ def main():
     for dxc_name in ('LICENSE-LLVM.txt', 'LICENSE-MIT.txt', 'LICENSE-MS.txt'):
         copy(windows_dxc/dxc_name, 'Licenses/DXC-'+dxc_name)
     copy(windows_dxc/'receipt.json', 'Support/Graphics/dxc-receipt.json')
+    copy(gl_compiler/'LICENSE', 'Licenses/SPIRV-Cross-OpenGL.txt')
+    copy(ROOT/'config/build/spirv-cross.json', 'Support/Graphics/spirv-cross-pin.json')
+    copy(gl_compiler/'receipt.json', 'Support/Graphics/spirv-cross-receipt.json')
     copy(ROOT / 'build/windows/Release/tsfp_crash_helper.exe', 'Bin/tsfp_crash_helper.exe')
     copy(ROOT/'build/launcher/TimeSplitters Launcher.exe', 'TimeSplitters Launcher.exe')
     copy(ROOT/'build/launcher/Bin/TimeSplitters.App.exe', 'Bin/TimeSplitters.App.exe')

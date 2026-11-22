@@ -1,3 +1,38 @@
+## OpenGL ordinary build and failed first gameplay acceptance (2026-11-22)
+
+Local uncommitted checkpoint after58d450d9 on feature/opengl-startup-recovery.
+Patch3054 compiles the shared OpenGL RHI beside Vulkan; ordinary Windows Build
+and its required checks pass. Setup/build verification and all3 package writers
+now retain the pinned static compiler dependency and exact license/provenance.
+Legacy Mac GL builds are unchanged. 123 selected Python checks pass,9 skipped;
+native build/package/GPU execution remains unrun.
+
+Real game testing exposed a creation/render-thread context handoff. Public RHI
+operations now serialize and lease the context; a Windows GPU regression tests
+worker rendering while the creation thread stays alive and subsequent return.
+The explicitGL hardware contract passes. The game build SHA256
+078bd47d0c40df65663bee6ec6cca17edec86404b47bb35abe73a5f0dec82442
+ran isolated for120s on Windows11/RTX4070SUPER617.42 (MSVC19.44,
+SDK1.4.363.0 DXC/SPIRV-Cross). gl-lease-01 used capture, replayed navigation,
+stress input and pause/resume at1280x720/Original60. It **failed** gameplay
+acceptance: Story/opening geometry, correct renderer, presents, no renderer errors
+and pause/resume passed; firearm handoff, movement, hand animation and ammunition
+checks failed. Opening capture shows upright textured geometry and level text.
+Late presentation logs are about6-7 FPS; capture-enabled measurements are not a
+benchmark. Runner-bounded termination exit1 is not clean-exit acceptance.
+Evidence: private/test-saves/high-refresh/60-gl-lease-01-opengl-validation.json
+and three retained BMPs; build log logs/opengl-game-build.log. Personal files were
+preserved. Optimize context scheduling and investigate progression/compiler costs
+before retrying game acceptance. Production recovery remains OFF everywhere;
+no universal readiness. Native window/capability work and remaining scene/effects,
+display, preservation, performance/stability acceptance are still pending.
+
+Final contract recheck after context handoff: all5 accepted-fixture recovery cases,
+all8 ordinary recovery-OFF cases and explicitGL pass, with Vulkan validation.
+Historical controls upgrade passes with the complete new patch stack. Fixture
+acceptance restored OFF. See agent-context/opengl-recovery.md for report hashes.
+These passes do not override the failed real-game acceptance above.
+
 ## OpenGL recovery GPU implementation; production remains disabled (2026-11-22)
 
 Local feature/opengl-startup-recovery checkpoint follows64ec1809 (foundation),

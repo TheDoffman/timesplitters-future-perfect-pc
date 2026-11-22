@@ -49,6 +49,34 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #ifdef RHI_VULKAN_SDL
 #include "vulkan_present_outcomes.h"
 #endif
+#if defined(TSFP_WINDOWS_RHI_TEST) && defined(RHI_HAVE_OPENGL)
+static DWORD WINAPI gl_thread_handoff(void *unused)
+{
+    (void)unused;
+    RhiView *swap=rhi_swapchain_view();CHECK(swap);
+    const float red[4]={1,0,0,1};rhi_clear_color(swap,red);
+    unsigned char pixels[64*64*4];uint32_t w=64,h=64;
+    CHECK(rhi_swapchain_readback(pixels,64*4,&w,&h)==0);
+    CHECK(pixels[0]==255 && pixels[1]==0 && pixels[2]==0);
+    CHECK(rhi_present(0)==0);return 0;
+}
+static void gl_handoff_test(void)
+{
+    if(strcmp(rhi_backend_name(),"opengl"))return;
+    /* The creation thread remains alive, so a driver cannot hide a leaked
+     * current context by automatically detaching it when that thread exits. */
+    for(unsigned i=0;i<2;i++) {
+        HANDLE thread=CreateThread(NULL,0,gl_thread_handoff,NULL,0,NULL);CHECK(thread);
+        CHECK(WaitForSingleObject(thread,10000)==WAIT_OBJECT_0);
+        DWORD code=1;CHECK(GetExitCodeThread(thread,&code) && !code);CloseHandle(thread);
+        const float blue[4]={0,0,1,1};rhi_clear_color(rhi_swapchain_view(),blue);
+        unsigned char pixels[64*64*4];uint32_t w=64,h=64;
+        CHECK(rhi_swapchain_readback(pixels,64*4,&w,&h)==0);
+        CHECK(pixels[0]==0 && pixels[1]==0 && pixels[2]==255);
+    }
+    puts("PASS: OpenGL creation/render thread handoff and return");
+}
+#endif
 int main(void) {
     void *window=NULL;
 #ifdef TSFP_WINDOWS_RHI_TEST
@@ -85,6 +113,9 @@ int main(void) {
     const char *expected=getenv("TSFP_TEST_EXPECT_BACKEND");
     CHECK(!strcmp(rhi_backend_name(),expected?expected:(backend?backend:"vulkan")));
     printf("BACKEND: %s\n",rhi_backend_name());
+#ifdef RHI_HAVE_OPENGL
+    gl_handoff_test();
+#endif
 #elif defined(RHI_VULKAN_SDL)
     CHECK(SDL_Init(SDL_INIT_VIDEO));
     window=SDL_CreateWindow("Shared RHI regression",64,64,SDL_WINDOW_VULKAN|SDL_WINDOW_HIDDEN);

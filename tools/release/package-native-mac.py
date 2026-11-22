@@ -17,6 +17,7 @@ else:
         return _LayoutPath(root) / area / name
 
 import argparse
+import spirv_cross
 import hashlib
 import json
 import os
@@ -210,6 +211,7 @@ def main():
         _, texture_rows, textures = ensure_pack(ROOT, args.texture_pack)
     prepare_licenses(args.licenses)
     name = f'TimeSplitters-Future-Perfect-PC-{args.version}-macos-arm64'
+    gl_compiler = spirv_cross.verify(ROOT)
     stage = args.output.resolve()/name
     stage.mkdir(parents=True, exist_ok=False)
 
@@ -254,6 +256,9 @@ def main():
     for origin,license_name in [('assets/ui/fonts/Selawik-OFL.txt','Selawik-OFL.txt'),('assets/ui/fonts/Cousine-OFL.txt','Cousine-OFL.txt'),('vendor/stb/LICENSE','stb.txt')]:
         copy(ROOT/origin,'Licenses/'+license_name)
     copy(ROOT/'vendor/smaa/LICENSE.txt', 'Licenses/SMAA.txt')
+    copy(gl_compiler/'LICENSE', 'Licenses/SPIRV-Cross-OpenGL.txt')
+    copy(ROOT/'config/build/spirv-cross.json', 'Support/Graphics/spirv-cross-pin.json')
+    copy(gl_compiler/'receipt.json', 'Support/Graphics/spirv-cross-receipt.json')
     (stage/'Launch.command').write_text('#!/bin/sh\nset -eu\nROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$ROOT/TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher" --root "$ROOT" "$@"\n')
     (stage/'Launch.command').chmod(0o755)
     (stage/GAME).chmod(0o755)

@@ -5,6 +5,10 @@ Linux and modern native Mac builds. If Vulkan cannot initialize, Windows reports
 a startup error instead of switching to Direct3D 11. Check the GPU driver and
 packaged shader-compiler files when diagnosing startup failures.
 
+An experimental OpenGL recovery backend is under development. Automatic
+OpenGL recovery is disabled pending game, performance and platform acceptance;
+its GPU tests alone do not establish a working fallback for players.
+
 The launcher uses Vulkan automatically and has no renderer selector. Older
 saved D3D11 choices are ignored. Linux and modern native Mac packages also use
 Vulkan by default.

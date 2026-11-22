@@ -14,9 +14,9 @@ before trying OpenGL, changes g_rhi only after successful recovery, destroys
 failed OpenGL resources too, and logs both-failed versus disabled states. It
 never changes saved configuration or recovers from later presentation failures.
 It requires RHI_HAVE_OPENGL plus TSFP_OPENGL_RECOVERY_ACCEPTED; the latter
-defaults to0. The shared OpenGL RHI is implemented and registered in the opt-in Windows
-hardware fixture. Ordinary game builds do not compile it yet and retain
-Vulkan/no-automatic-recovery behavior. Tests use
+defaults to0. The shared OpenGL RHI is compiled beside Vulkan by ordinary builds through
+patch3054, but automatic recovery remains unapproved. Explicit developer
+RECOMP_D3D8_BACKEND=opengl does not change saved preferences. Tests use
 resource-owning spies to cover order, disabled hosts, missing backend, both
 failures, explicit-GL failure without recursion and descriptor preservation.
 
@@ -47,8 +47,9 @@ SPIRV-Cross is pinned to SDK1.4.363.0's commit in config/build/spirv-cross.json.
 installs only needed sources/headers/LICENSE into ignored external/spirv-cross.
 Normal verification checks installed file hashes. `spirv_cross.cmake` compiles
 the same static implementation for each host; no shader-generation fork or
-extra compiler process per shader. Setup/package/license integration into
-ordinary game builds is still required before enabling the production backend.
+extra compiler process per shader. Windows Setup and native common-renderer --setup install it; ordinary builds
+verify before compiling. All three package writers retain its exact license,
+pin and receipt. macOS retains a separate driver SPIRV-Cross notice too.
 
 ## Checkpoint evidence and next work
 
@@ -86,8 +87,8 @@ Sixteen selected Python policy/installer/renderer checks passed. Test-only failu
 environments use child-process overrides; no installed driver or personal setting
 is modified. Production recovery remains OFF on every platform.
 
-Remaining implementation/acceptance: ordinary setup/build/package/license wiring;
-native Vulkan-to-GL window replacement with event/input/debug bindings and stable
+Remaining implementation/acceptance: efficient context scheduling and actual-game
+acceptance; native Vulkan-to-GL window replacement with event/input/debug bindings and stable
 logical window identity; native builds and GPU execution; representative game
 menus/gameplay/effects, display modes/resizing, settings preservation, bounded
 performance/stability and explicit per-platform acceptance. Native GL4.1 without
@@ -110,3 +111,51 @@ Local shader commands:
 Create the generated output directory first. Native builds require the verified
 TSFP_VULKAN_SDK and SDL3 package paths; executables omit Release/.exe on native
 single-config generators. These native commands have not been run here.
+
+## Ordinary build and first game run (after58d450d9)
+
+Patch3054 adds opengl_backend.cmake to common Vulkan game builds; legacy Mac GL
+builds do not acquire this dependency. Setup verifies the same static source pin
+on every host; package writers copy Licenses/SPIRV-Cross-OpenGL.txt plus the
+Graphics pin/receipt. Native builds/packages have not been executed on-host.
+Windows normal tsfp.ps1 Build passed with MSVC and all mandatory build checks.
+123 selected Python tests passed, with9 host-dependent skips; package fixtures
+assert the exact new notice and provenance files are retained.
+
+The first isolated game probe exposed a real context handoff: OpenGL was current
+on the creation guest thread, while a later clear ran without a current context.
+`opengl_backend.c` now serializes each public RHI entry and acquires/releases a
+context lease through opengl_host.c (SRW lock/WGL or pthread/SDL). Internal g_*
+calls stay in the lease. The GPU fixture tests worker clears/readback/present
+while the creation thread stays alive, then hands rendering back to that thread.
+Optional KHR_debug errors are logged as renderer errors. This baseline favors
+correct thread ownership; its per-operation context switches need optimization.
+Do not assume this fixes all native thread/event constraints.
+
+ExplicitGL asset-free contracts pass. The ordinary game SHA256
+078bd47d0c40df65663bee6ec6cca17edec86404b47bb35abe73a5f0dec82442
+was tested for120s using native_refresh_game.py --backend opengl --fps60
+--windowed --stress --pause-check --capture --label gl-lease-01. This **failed**
+gameplay acceptance: it reached Story/opening geometry, presented without renderer
+errors and observed pause/resume, but firearm handoff, movement, animation and
+ammunition checks failed. Captured opening geometry/text is upright and textured;
+that is limited scene evidence. Late reported presentation was about6-7 FPS.
+This capture-enabled run is not a clean performance benchmark, nor proof of the
+cause of slow progression. It ended at the runner's bound (terminated, exit1),
+not a tested clean game exit. Report and three retained frames are under
+private/test-saves/high-refresh/60-gl-lease-01-opengl-*. Separate compiler latency,
+context handoff overhead and game progression before enabling recovery.
+No personal saves/settings/textures were used or modified. All production gates
+remain OFF. Native SDL window replacement and GL4.1 capability adaptation,
+actual game effects/display/settings/performance/stability acceptance remain.
+
+After context leases: all five accepted-fixture recovery cases passed again,
+including the new live-creation-thread handoff check in recovered GL. All8
+original recovery-OFF cases and explicitGL passed; Vulkan validation stayed active
+on the positive Vulkan paths. Historical-controls-to-current-stack upgrade passed
+with patch3054 omitted only from the historical input, restored by full upgrade.
+Recovery acceptance was restored OFF after tests. Current fixture hashes:
+
+- rhi-windows: `6cc59cc17f29d5d1c5453f1cedd6b554bf70200deeca847879574fec8545a57e` (passed).
+- rhi-windows-opengl: `6cc59cc17f29d5d1c5453f1cedd6b554bf70200deeca847879574fec8545a57e` (passed).
+- rhi-windows-opengl-recovery: `5bb4c4a33d9aaf8bb021b708ae992e38be99ae85d390f5ae8608869cfd09a6c3` (passed).

@@ -47,6 +47,13 @@ failed:
     fprintf(stderr,"[RHI] opengl: could not create a core4.1 context (Windows error %lu)\n",GetLastError());
     tsfp_gl_host_destroy(host);return NULL;
 }
+static SRWLOCK context_lock=SRWLOCK_INIT;
+void tsfp_gl_host_lock(void){AcquireSRWLockExclusive(&context_lock);}
+void tsfp_gl_host_unlock(void){ReleaseSRWLockExclusive(&context_lock);}
+int tsfp_gl_host_make_current(TsfpGlHost *host)
+{return host && wglMakeCurrent(host->dc,host->context);}
+void tsfp_gl_host_release(TsfpGlHost *host)
+{if(host)wglMakeCurrent(NULL,NULL);}
 int tsfp_gl_host_present(TsfpGlHost *host,int interval)
 {
     typedef BOOL (WINAPI *SwapInterval)(int);
@@ -65,6 +72,7 @@ void tsfp_gl_host_destroy(TsfpGlHost *host)
 }
 #else
 #include <SDL3/SDL.h>
+#include <pthread.h>
 struct TsfpGlHost {SDL_Window *window;SDL_GLContext context;};
 TsfpGlHost *tsfp_gl_host_create(void *window)
 {
@@ -86,6 +94,13 @@ failed:
 }
 void *tsfp_gl_host_proc(TsfpGlHost *host,const char *name)
 {return host && host->context && name?(void *)SDL_GL_GetProcAddress(name):NULL;}
+static pthread_mutex_t context_lock=PTHREAD_MUTEX_INITIALIZER;
+void tsfp_gl_host_lock(void){pthread_mutex_lock(&context_lock);}
+void tsfp_gl_host_unlock(void){pthread_mutex_unlock(&context_lock);}
+int tsfp_gl_host_make_current(TsfpGlHost *host)
+{return host && SDL_GL_MakeCurrent(host->window,host->context);}
+void tsfp_gl_host_release(TsfpGlHost *host)
+{if(host)SDL_GL_MakeCurrent(host->window,NULL);}
 int tsfp_gl_host_present(TsfpGlHost *host,int interval)
 {
     if(!host || !SDL_GL_SetSwapInterval(interval?1:0))return -1;

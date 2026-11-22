@@ -241,7 +241,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '2810-arcade-player-name-anchor.patch', '3001-host-visibility-queries.patch','3050-windows-vulkan-primary.patch','3051-windows-no-renderer-fallback.patch','3052-shared-opengl-startup-recovery.patch','3053-shared-shader-reflection.patch'):
+        if patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '2810-arcade-player-name-anchor.patch', '3001-host-visibility-queries.patch','3050-windows-vulkan-primary.patch','3051-windows-no-renderer-fallback.patch','3052-shared-opengl-startup-recovery.patch','3053-shared-shader-reflection.patch','3054-shared-opengl-build.patch'):
             continue  # Requires the complete graphics stack installed by the upgrade.
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
