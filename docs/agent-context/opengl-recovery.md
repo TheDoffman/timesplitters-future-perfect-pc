@@ -694,3 +694,37 @@ and20 portable Mac-package checks pass. Mac package requires Vulkan/MoltenVK
 before verifying SPIRV-Cross; explicit legacy-GL build skips this compiler, so
 the inspected package path does not add a legacy-build dependency. Native Mac
 hardware and actual legacy package acceptance remain unavailable. Gates remain0.
+
+
+### Full native GL contract passes; primary-window gap confirmed
+
+Atf0d57ff7, optimized full-RHI receipts pass for accelerated WSL/NVIDIA(2.149s),
+llvmpipe(2.823s) and accelerated restricted4.1(1.299s). All use fixture SHA256
+fa14e523eec8c563573afb791555882f93ce34212f5c23b62ace6ea5182aaa07.
+Native receipts:logs/rhi-linux-opengl-d3d12.json,rhi-linux-opengl-software.json,
+rhi-linux-opengl-d3d12-gl41.json. Checks include pixels, full MSAA/SSAO where
+advertised, face/mip preservation, typed-null, visibility, worker dispatch,
+resource retirement, actual swap and repeated device/context cleanup. Driver
+and SDK/compiler/source hashes are retained. The prior optimized heap crash
+no longer occurs after the narrowed face-view snapshot change. ASAN and noisy
+WSL Memcheck diagnostics are supporting investigation, not clean acceptance.
+Windows full and restricted GL pass again. Production recovery remainsOFF.
+
+The ordinary Linux Vulkan-only fixture and production frame replay both pass
+on lavapipe(4.934s), confirming the runner returns to its normal Vulkan build;
+fixture955e39ae18bdca7bfcfb10133cb24674f9600b6a4b45f55204cc73206a7fef45.
+No GL replay is claimed. Native game/menu/input/display/performance/package and
+automatic recovery acceptance remain separate, still pending.
+
+Native logs/native-vulkan-window-no-driver.log confirms a missing ICD fails
+SDL_CreateWindow before shared rhi_device_create. The native primary-window
+adapter now retries an API-neutral window after logging the SDL Vulkan error,
+letting shared startup attempt Vulkan and apply its existing acceptance policy.
+It never chooses OpenGL, changes settings or enables a production gate. The
+existing replacement helper can later stage an OpenGL drawable after failed
+Vulkan cleanup. Neutral-window failure remains a clear window error. This path
+is confined to the common native frontend; legacy Mac GL is unchanged. The
+portable OS-call fixture passes Windows checks for Vulkan-window success,
+Vulkan-window failure then neutral success, both window creations failing,
+main-thread guard, flags/title/size retention and no renderer selection/commit.
+Actual native adapter compilation/recovery/window-rebind tests are next.

@@ -36,7 +36,7 @@ void *tsfp_native_renderer_window(unsigned width,unsigned height)
         fprintf(stderr,"[native-rhi] window creation requires the main thread\n");return NULL;
     }
     if(!SDL_WasInit(SDL_INIT_VIDEO) && !SDL_InitSubSystem(SDL_INIT_VIDEO))return NULL;
-    native_window=SDL_CreateWindow("TimeSplitters: Future Perfect — Shared Native Renderer",
+    native_window=tsfp_native_primary_window("TimeSplitters: Future Perfect — Shared Native Renderer",
         width?width:640,height?height:480,tsfp_native_window_flags(SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY));
     if(!native_window){fprintf(stderr,"[native-rhi] window: %s\n",SDL_GetError());return NULL;}
     native_logical_window=native_window;
@@ -44,7 +44,8 @@ void *tsfp_native_renderer_window(unsigned width,unsigned height)
     tsfp_renderer_host_bind(native_window,d3d8_overlay_shutdown);
     tsfp_native_settings_attach(native_window);
     SDL_RaiseWindow(native_window);
-    fprintf(stderr,"[native-rhi] common Xbox renderer, SDL Vulkan window\n");
+    fprintf(stderr,"[native-rhi] common Xbox renderer, SDL %s window\n",
+        (SDL_GetWindowFlags(native_window)&SDL_WINDOW_VULKAN)?"Vulkan":"API-neutral");
     return native_window;
 }
 

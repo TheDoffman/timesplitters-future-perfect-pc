@@ -19,3 +19,4 @@ def test_window_transaction(tmp_path):
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
     assert 'staging, preservation and rollback' in result.stdout
+    assert 'primary-window failure reaches shared startup without selecting a renderer' in result.stdout

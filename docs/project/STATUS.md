@@ -1,3 +1,23 @@
+## Full Linux OpenGL RHI contracts pass; native recovery still pending (2026-11-22)
+
+Atf0d57ff7, full shared OpenGL pixels/resources/MSAA/SSAO, cube-face/mip
+preservation, typed-null, visibility, main-thread worker dispatch, swap and
+context recreation pass on Linux llvmpipe and accelerated WSL/NVIDIA. The
+restricted4.1 accelerated path passes too. Windows full/restricted fixtures
+pass; all5 Windows recovery cases passed before the final face snapshot change.
+Vulkan-only Linux RHI and production replay still pass on lavapipe. New source
+fixes exact MSAA count reporting, cube resolve destination preservation and
+sampled cube-face views after a Mesa D3D12 heap-corruption investigation.
+[Provenance and scope](../agent-context/opengl-recovery.md).
+
+Missing-ICD native probing confirms SDL window creation can fail before RHI
+startup. The thin native adapter now retries an API-neutral window so shared
+policy owns selection. Its portable failure/preservation unit passes Windows;
+actual native recovery/window replacement, game/display/input/performance and
+package acceptance remain. All production recovery gates remainOFF. Native Mac
+hardware acceptance is unavailable and deprecated OpenGL remains a limitation;
+legacy Mac GL is unchanged. Changes remain local/committed; no publication.
+
 ## Linux GL pixels and swaps pass on software and WSL/NVIDIA (2026-11-22)
 
 At sourcea81715a4, Linux standalone shared-HLSL translation, sampled/tinted/null-

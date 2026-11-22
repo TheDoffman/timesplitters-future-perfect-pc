@@ -1,3 +1,13 @@
+OpenGL checkpoint atf0d57ff7: Linux full-RHI software and WSL/NVIDIA pixels,
+resources, MSAA/SSAO, worker/context cleanup and swaps pass; restricted4.1 and
+ordinary Vulkan/replay pass too. Shared fixes cover exact sample counts, cube
+resolves and sampled face snapshots. The native primary-window adapter now
+retries a neutral SDL window after Vulkan drawable failure, retaining selection
+in shared startup policy. Actual native recovery/game/display/performance/package
+checks and Mac host acceptance remain pending, with every recovery gateOFF.
+Legacy Mac GL remains unchanged; deprecated GL limits and exact provenance are
+in agent-context/opengl-recovery.md. No universal readiness is claimed.
+
 Latest OpenGL evidence at a81715a4: native Linux pixels and actual swap pass
 under llvmpipe and WSL D3D12/NVIDIA RTX4070SUPER. Optional swap control is now
 shared WGL/SDL host policy: refusal preserves settings and still swaps; a real

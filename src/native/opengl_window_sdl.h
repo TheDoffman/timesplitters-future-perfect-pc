@@ -2,6 +2,18 @@
 #define TSFP_OPENGL_WINDOW_SDL_H
 #include <SDL3/SDL.h>
 #include <stdio.h>
+/* SDL may reject a Vulkan drawable before the shared RHI sees the failure.
+ * A neutral window lets that single startup transaction own renderer selection;
+ * this adapter neither enables recovery nor creates an OpenGL context. */
+static SDL_Window *tsfp_native_primary_window(const char *title,int width,int height,SDL_WindowFlags flags)
+{
+    if(!SDL_IsMainThread())return NULL;
+    flags&=~(SDL_WINDOW_OPENGL|SDL_WINDOW_VULKAN);
+    SDL_Window *window=SDL_CreateWindow(title,width,height,flags|SDL_WINDOW_VULKAN);
+    if(window)return window;
+    fprintf(stderr,"[native-rhi] Vulkan drawable unavailable: %s; trying API-neutral window for shared startup\n",SDL_GetError());
+    return SDL_CreateWindow(title,width,height,flags);
+}
 /* Called only after failed Vulkan resources have been destroyed. Stage a new
  * drawable without touching the original or saved configuration. The owner
  * commits event/input/settings bindings once all required window operations

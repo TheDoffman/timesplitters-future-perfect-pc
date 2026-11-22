@@ -12,6 +12,7 @@ static SDL_Window old,staged,*owner,*settings_window;
 static void *logical_token;
 static int position_available,main_thread,step,fail_step,commit_calls,reject_commit,show_calls,raise_calls;
 static SDL_DisplayMode mode;
+static int primary_mode,primary_calls,fail_vulkan,fail_neutral;
 static int advance(void){return ++step!=fail_step;}
 bool SDL_IsMainThread(void){return main_thread!=0;}
 SDL_WindowFlags SDL_GetWindowFlags(SDL_Window *w){assert(w && !w->destroyed);return w->flags;}
@@ -25,6 +26,12 @@ bool SDL_GL_SetAttribute(SDL_GLAttr attribute,int value){
     return advance()!=0;
 }
 SDL_Window *SDL_CreateWindow(const char *title,int w,int h,SDL_WindowFlags flags){
+    if(primary_mode) {
+        primary_calls++;assert(!(flags&SDL_WINDOW_OPENGL));
+        if((flags&SDL_WINDOW_VULKAN)?fail_vulkan:fail_neutral)return NULL;
+        SDL_Window *result=(flags&SDL_WINDOW_VULKAN)?&old:&staged;
+        *result=(SDL_Window){w,h,0,0,0,flags,title};return result;
+    }
     assert(flags&SDL_WINDOW_OPENGL);assert(!(flags&SDL_WINDOW_VULKAN));
     if(!advance())return NULL;
     staged=(SDL_Window){w,h,0,0,0,flags,title};return &staged;
@@ -77,5 +84,18 @@ int main(void){
     reset(0);old.flags=SDL_WINDOW_OPENGL;assert(tsfp_native_gl_window(&old,commit)==&old);
     assert(!step && !commit_calls && !old.destroyed);
     reset(0);main_thread=0;assert(!tsfp_native_gl_window(&old,commit));assert(!step && !old.destroyed);
+    reset(0);primary_mode=1;primary_calls=fail_vulkan=fail_neutral=0;
+    SDL_WindowFlags flags=SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIDDEN|SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    assert(tsfp_native_primary_window("Primary",640,480,flags)==&old);
+    assert(primary_calls==1 && old.flags==(flags|SDL_WINDOW_VULKAN));
+    fail_vulkan=1;primary_calls=0;
+    assert(tsfp_native_primary_window("Primary",640,480,flags)==&staged);
+    assert(primary_calls==2 && staged.flags==flags && staged.w==640 && staged.h==480);
+    assert(!strcmp(staged.title,"Primary") && !commit_calls && !old.destroyed);
+    fail_neutral=1;primary_calls=0;
+    assert(!tsfp_native_primary_window("Primary",640,480,flags));assert(primary_calls==2);
+    main_thread=0;primary_calls=0;
+    assert(!tsfp_native_primary_window("Primary",640,480,flags));assert(!primary_calls);
+    puts("PASS: SDL primary-window failure reaches shared startup without selecting a renderer");
     puts("PASS: SDL OpenGL window staging, preservation and rollback");return 0;
 }
