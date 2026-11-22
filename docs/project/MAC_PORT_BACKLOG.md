@@ -25,6 +25,13 @@ native acceptance still prevent approval. WSL prerequisites are now verified in
 a separate checkout; source/build/GPU execution at this checkpoint is pending. Legacy Mac GL is unchanged and Apple's OpenGL is deprecated. See
 agent-context/opengl-recovery.md and STATUS for hashes and exact evidence.
 
+Native OpenGL wiring correction at c479c63a: patch3054 requires
+TSFP_PC_CONTROLS_DIR, but ordinary Mac/Linux commands pass TSFP_NATIVE_DIR. Derive
+the shared graphics source path from the native adapter directory without enabling
+Windows PC feature flags. Standalone Linux Vulkan/replay/MMIO build and software
+Vulkan contracts pass; manually enabled OpenGL static-library compilation passes.
+No ordinary native OpenGL game link/GPU acceptance is established. Gates stay OFF.
+
 Windows renderer startup failure (2026-11-22): automatic D3D11 recovery removed
 at user request. Patch3051 gates the failure policy to Windows Vulkan builds;
 shared cleanup remains the same. Native Mac/Linux behavior and legacy GL are

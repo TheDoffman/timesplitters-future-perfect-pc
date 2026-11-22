@@ -1,3 +1,13 @@
+Linux follow-up at sourcec479c63a: common Vulkan/replay and MMIO builds pass;
+explicit Mesa lavapipe Vulkan/resource/presentation/replay contracts pass. This
+is software-driver foundation evidence, not gameplay or OpenGL GPU acceptance.
+The standalone OpenGL static-library compile also passes when explicitly given
+the shared-source path. Inspection found patch3054's native build wiring is
+incomplete: ordinary native builders pass TSFP_NATIVE_DIR, while the OpenGL
+include requires TSFP_PC_CONTROLS_DIR. Correct the shared source-path derivation
+before claiming native ordinary integration. Detailed evidence and remaining
+checks: [OpenGL recovery](../agent-context/opengl-recovery.md). All gates stay OFF.
+
 ## Actual OpenGL launcher recovery passes; failed startup now exits (2026-11-22)
 
 Local checkpoint afterac4fb17d on feature/opengl-startup-recovery. The actual

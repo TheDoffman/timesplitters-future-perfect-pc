@@ -411,3 +411,36 @@ SDK files; verify only. SPIRV-Cross and private/game are read-only reuse links t
 the Windows source/data. Do not duplicate game extracts or alter other checkouts.
 Fetch this checkpoint's final commit before native source/build/GPU testing.
 These are prerequisite results only; no Linux game/GPU acceptance is established.
+
+### Linux build baseline and newly identified wiring gap
+
+At committed sourcec479c63a, the separate Linux checkout imports pinned runtime
+d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845 and applies the full patch stack. Existing
+SDL/Vulkan submodule caches were shallow and Git refused clone references, so
+own pinned submodules were fetched normally; other checkouts remain unchanged.
+`test-rhi-linux.py --build-only` passes the existing common Vulkan/replay build
+and MMIO test. The ordinary runner with explicit
+/usr/share/vulkan/icd.d/lvp_icd.json then passes Vulkan pixel/resource/presentation
+and production replay contracts under Mesa software rendering. Linux-native
+logs/rhi-linux.json records compiler/SDK/driver/executable hashes and scope.
+Windows-side transcript logs/opengl-linux-vulkan-baseline.log retains output.
+These are neither hardware game performance nor OpenGL GPU acceptance.
+
+The standalone fixture does not initially include OpenGL. More importantly,
+patch3054 conditions its include on TSFP_PC_CONTROLS_DIR, while ordinary native
+Mac/Linux build commands pass TSFP_NATIVE_DIR and TSFP_NATIVE_RHI instead. No
+assignment bridges those paths in the current runtime. Therefore previous notes
+about all-host ordinary OpenGL wiring describe intent, not verified integration;
+the native wiring remains incomplete. A local standalone compile with explicit
+TSFP_PC_CONTROLS_DIR=/root/tsfp-opengl-recovery/src successfully builds
+opengl_backend.c, opengl_host.c, opengl_shader.cpp and static libxbox_d3d8.a;
+it is only a compile probe and does not fix native game build commands or prove
+linking/GPU execution. Its fixture cache now retains that experimental flag.
+
+Next: after the live Windows upgrade suite finishes against its stable patch
+list, add a follow-up shared CMake patch deriving the OpenGL source path from
+TSFP_NATIVE_DIR on common native builds, without enabling unrelated Windows PC
+feature flags or changing legacy Mac builds. Revalidate/migrate patches, then
+sync Git to Linux and build/test the actual native OpenGL path. Keep every
+production acceptance gate OFF. Native main-thread servicing,4.1 capabilities,
+null non2D resources, full native game build and acceptance remain unresolved.
