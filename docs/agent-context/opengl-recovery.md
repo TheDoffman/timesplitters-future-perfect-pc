@@ -645,3 +645,13 @@ vendor and version logging from Windows-only context code into shared device
 initialization so native receipts can establish the actual driver too. Preserve
 non-error HIGH shader warnings as WARNING; lower-severity performance hints keep
 the existing suppression. The failed receipt remains failed pending rerun.
+
+
+At016713cf, native software full-RHI receipt passes (3.215s execution), including
+worker/main-thread dispatch, all MSAA/SSAO/null/query contracts and two context
+recreations; executable2bedb96eb4b3b8b6b59d3065c92422ef3686895643758eb3b15641de6177acda.
+Windows explicitGL and restricted4.1 fixtures also pass after exact-count changes.
+Accelerated WSL/NVIDIA full-RHI run reaches the cube/mip resolve preservation
+assertion and fails. Add precise samples/subresource/pixel/RGBA diagnostics to
+that assertion before choosing an implementation fix. The accelerated failed
+receipt remains failed, and no platform acceptance is inferred. Gates remain0.
