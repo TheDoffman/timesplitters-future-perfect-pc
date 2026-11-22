@@ -1459,3 +1459,36 @@ correct after the measured movement. This completes the Windows gate recheck,
 not the full cross-platform goal. Native Linux real-game recovery/both-fail and
 selector lifecycle, enhanced/display/package checks and physical performance
 acceptance remain separate; Mac hardware is unavailable. Both native gates0.
+
+
+## Native actual-game recovery transaction verified
+
+Clean source2398062a native normal Build/MMIO checks pass. Normal ELF SHA256
+791eaca3b3dc7a5130f70545f4e55a0846435530832baf5cbef42c640ac442b1.
+A guarded, ignored CMake include supplies acceptance1 only to rhi.c for the
+trial; Linux production header remains0. Trial ELF SHA256
+3f3f4f079637d699b6f2f1dd2dc4067e42b62040f14c8c5d446c437ba4151c81.
+linux-real-recovery-01 passes120s: missing child-only Vulkan manifest, one GL
+recovery, only GL guest presents,3600 periodic presents, owned-state movement,
+settings/custom DDS preservation and retained sandbox saves. No personal data
+paths are used. linux-real-both-fail-01 overrides the child's Mesa GL version to
+3.3 so the required4.1 context cannot start; both failure reasons, one recovery,
+no presents/selection, exit2 in<20s, exact settings/custom assets/saves pass.
+No shared SDK file or system driver was changed.
+
+The finally path clears CMAKE_PROJECT_INCLUDE, rebuilds/tests normal, and restores
+the exact791eaca3... baseline ELF. logs/native-real-game-recovery-01/receipt.json
+records both hashes, include SHA256683d6675cbc928f37598595b5a22e48116da00cc9853a3b28caf431d6ca3950c,
+source and successful restoration. Per-case receipts/scripts/captures remain in
+logs/linux-real-{recovery,both-fail}-01. This closes actual native startup and
+failure-preservation evidence; Linux remains disabled for other acceptance gaps.
+
+The new tracked test-linux-launcher-renderers.py/NativeEndToEnd selector route
+will exercise the actual saved UI choice in an owned minimal install and normal
+monitor lifecycle. It cannot override the selected backend in test environment.
+It explicitly does not certify package relocation or physical window visibility;
+Linux lacks that cross-process window query, so update-recovery policy remains
+unchanged. Existing Mac window-observation assertions remain required. Filesystem
+regressions reject unrelated/linked fixture paths and ensure restaging hardlinks
+does not overwrite the old/shared executable. Native compile/runtime checks of
+this new selector route are pending; Linux/Mac gates remain0.

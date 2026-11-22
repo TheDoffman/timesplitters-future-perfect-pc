@@ -1,4 +1,4 @@
-[GL gate](opengl-recovery.md).
+[GL tests](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

@@ -1,3 +1,14 @@
+Native selector integration probe: test-linux-launcher-renderers.py stages an owned
+minimal installation under private/test-saves/native-linux/launcher-session. The
+opt-in NativeEndToEnd renderer plan opens the actual Settings page, switches from
+the opposite saved choice, saves, and passes StartInfo's selected backend intact
+to MonitorGame. Test environment cannot override RECOMP_D3D8_BACKEND. Existing
+Mac lifecycle checks remain strict. Linux selector reports window observation as
+unverified and requires selected-backend presents instead; this is lifecycle/
+routing coverage, not physical visibility or update-recovery approval. Original
+assets are read separately; this fixture is not release package relocation.
+Native compile/runtime verification of this new route remains pending.
+
 Launcher renderer selector restored in development (2026-11-22): shared
 SettingsPage Graphics > Advanced offers Vulkan (Default) and OpenGL. GameSettings
 loads/saves launcher.renderer and sends the selected RECOMP_D3D8_BACKEND after
