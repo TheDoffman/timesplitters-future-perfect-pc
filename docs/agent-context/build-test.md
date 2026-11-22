@@ -1,4 +1,4 @@
-[GL resolve](opengl-recovery.md).
+[GL cube](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

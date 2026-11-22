@@ -402,6 +402,17 @@ static int g_resolve(RhiImage *source,uint32_t src,RhiImage *dest,uint32_t dst)
     unsigned w=level_size(source->desc.width,src%source->desc.mip_levels),h=level_size(source->desc.height,src%source->desc.mip_levels);
     if(w!=level_size(dest->desc.width,dst%dest->desc.mip_levels) || h!=level_size(dest->desc.height,dst%dest->desc.mip_levels))return -1;
     GlFormat f=format(source->desc.format);if(f.block)return -1;
+    /* Some GL implementations resolve to layer0 even when a cube face is
+     * attached. Resolve into plain2D storage first, then copy the chosen face;
+     * the latter path preserves the destination layer and every adjacent mip. */
+    if(source->desc.samples>1 && dest->desc.cube) {
+        RhiImageDesc desc=dest->desc;desc.width=w;desc.height=h;
+        desc.depth=desc.mip_levels=desc.samples=1;desc.cube=0;
+        RhiImage *single=g_image_create(&desc,NULL);if(!single)return -1;
+        int result=g_resolve(source,src,single,0);
+        if(!result)result=g_resolve(single,0,dest,dst);
+        g_image_destroy(single);return result;
+    }
     int complete=work_framebuffer(S.readbuffer,source,src,f.depth) && work_framebuffer(S.writebuffer,dest,dst,f.depth);
     if(complete){G.BindFramebuffer(GL_READ_FRAMEBUFFER,S.readbuffer);G.BindFramebuffer(GL_DRAW_FRAMEBUFFER,S.writebuffer);
         glDisable(GL_SCISSOR_TEST);G.BlitFramebuffer(0,0,w,h,0,0,w,h,f.depth?(GL_DEPTH_BUFFER_BIT|(f.stencil?GL_STENCIL_BUFFER_BIT:0)):GL_COLOR_BUFFER_BIT,GL_NEAREST);}

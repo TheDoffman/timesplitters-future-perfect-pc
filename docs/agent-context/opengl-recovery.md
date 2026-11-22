@@ -655,3 +655,18 @@ Accelerated WSL/NVIDIA full-RHI run reaches the cube/mip resolve preservation
 assertion and fails. Add precise samples/subresource/pixel/RGBA diagnostics to
 that assertion before choosing an implementation fix. The accelerated failed
 receipt remains failed, and no platform acceptance is inferred. Gates remain0.
+
+
+The accelerated failure at6bdcdfb6 writes green tosub1(face0,mip1), while the
+requested destination issub11(face5,mip1). An ignored direct GL reproduction,
+without the RHI/shader/game frontend, confirms Mesa25.2.8 D3D12/NVIDIA changes
+face0 and leaves face5 blue; llvmpipe changes only face5. Same-context GL errors
+remain0. Resolving first into a plain single-sample2D texture, then copying into
+the selected cube face, preserves all faces on accelerated WSL too. Integrate
+that common path only for MS-to-cube resolves, leaving ordinary2D resolves and
+all non-MS copies unchanged. Temporary allocation failure returns error and
+partial storage is retired normally. It adds one allocation/copy for this case;
+full-suite and game/performance acceptance are still required. Direct ignored
+probe logs:cube-probe-d3d12.log,cube-probe-software.log and
+cube-probe-staging-d3d12.log in the native checkout. Native restricted4.1 full-RHI
+receipt passes on the accelerated driver(1.784s); gates remain0.
