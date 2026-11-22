@@ -25,7 +25,7 @@ def test_ui_layout(tmp_path,fixture):
 
 def test_guest_placement_hooks():
     manual=(ROOT/'external/ts3FPrecomp/titles/futureperfect/src/recomp_manual.c').read_text()
-    for address in (0x1334d0,0x133ab0,0x1358a0,0x12e3f0,0x12f670,0x14b930,0x1409c0,0x13fc50,0x142d10):
+    for address in (0x1334d0,0x133ab0,0x1358a0,0x12e3f0,0x12f670,0x14b930,0x1409c0,0x13fc50,0x142d10,0x12dba0):
         # The shared panel's callback reuses text mappings inside the same
         # placement boundary. Its execution/lifetime is tested by the scope suite.
         callback='pc_panel_text_original' if address==0x12e3f0 else f'sub_{address:08X}_gen'

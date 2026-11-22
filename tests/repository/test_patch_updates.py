@@ -241,7 +241,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch','3050-windows-vulkan-primary.patch'):
+        if patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '2810-arcade-player-name-anchor.patch', '3001-host-visibility-queries.patch','3050-windows-vulkan-primary.patch'):
             continue  # Requires the complete graphics stack installed by the upgrade.
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
@@ -334,6 +334,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert_current_sharing_installed(checkout)
     assert b'pc_display_aim_panel(sub_00137010_gen,0x00137010u);' in manual.read_bytes()
     assert b'pc_display_ui(sub_00142D10_gen,0x00142D10u);' in manual.read_bytes()
+    assert b'pc_display_ui(sub_0012DBA0_gen,0x0012DBA0u);' in manual.read_bytes()
     for hook in ('pc_unlock_requirement', 'pc_unlock_event', 'pc_unlock_movie', 'pc_unlock_profile_init'):
         assert hook.encode() + b'(' in manual.read_bytes()
     bindings=(checkout / 'src/input/input_bindings.c').read_text()
