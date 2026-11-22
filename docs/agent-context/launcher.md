@@ -13,7 +13,8 @@ without Vulkan driver metadata/ICD/loader requirements; full installation Verify
 still checks the primary package. Checkout GL retains pinned SDK integrity checks
 for its shared compiler, but injects no Vulkan overrides. Legacy gl manifests
 keep their existing route. Native Mac execution remains unverified.
-No automatic recovery gate changes. See [selector and acceptance](opengl-recovery.md).
+Windows automatic recovery is now accepted; native gates remain0. See
+[selector and acceptance](opengl-recovery.md).
 RendererGameSmoke now selects/saves both choices through the actual UI and
 LaunchGame; game hardware acceptance remains separate from launcher unit checks.
 

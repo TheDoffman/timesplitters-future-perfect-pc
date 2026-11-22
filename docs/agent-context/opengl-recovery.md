@@ -2,8 +2,8 @@
 
 Current gate decision (2026-11-22): Windows default is enabled after its
 acceptance checks below. Linux and native Mac remain disabled. Earlier OFF
-checkpoints are historical; the normal enabled Windows build still needs its
-final integration recheck. The restored Vulkan/OpenGL launcher selector remains.
+checkpoints are historical. The ordinary enabled Windows build and actual
+launcher integration checks pass. The Vulkan/OpenGL launcher selector remains.
 
 
 Goal (amended by the user on 2026-11-22): Vulkan remains the default, and the
@@ -1428,3 +1428,34 @@ owning startup transaction pass7 units. Normal enabled build and actual launcher
 recovery/both-fail verification must follow before reporting final acceptance.
 Linux WSL fullscreen/performance and remaining native checks cannot enable its
 gate; Mac hardware remains unavailable, OpenGL deprecated, legacy path unchanged.
+
+
+## Ordinary enabled Windows build and integration pass
+
+Clean sourcebfb73181 supported Build and mandatory checks PASS, matching symbols
+recreated, CMAKE_PROJECT_INCLUDE empty. The normal xbox_d3d8 project contains no
+private TSFP_OPENGL_RECOVERY_ACCEPTED compile definition; the tracked acceptance
+header supplies the Windows default. Game SHA256
+a8cf11b698b143a680a87e2766f75d4520b5ef5cb52ef1eee48082d00202ae9a.
+
+The same normal game passes all three actual-launcher routes:
+- vk-enabled-default-01:120s Vulkan gameplay/input/quality, no recovery attempts,
+  clean exit0 and preserved settings/assets; guest clock59.9798Hz.
+- gl-enabled-startup-recovery-01:120s Vulkan primary with child-only missing ICD,
+  exactly one recovery, only OpenGL presents, gameplay/input/quality, clean exit0
+  and preserved Vulkan preference/assets; guest clock60.0067Hz.
+- gl-enabled-both-fail-01: one recovery attempt, both failure reasons, no renderer
+  selection/presents, bounded exit2 and byte-identical settings/custom assets.
+
+Seven platform/transaction units pass on Windows and native Linux; the Windows
+combined build-policy/transaction subset passes14. The rebuilt disabled-policy
+Windows fixture (explicit0 despite production1) passes all eight ordinary cases
+with Vulkan validation, including missing driver/device/compiler and ownership.
+Evidence: logs/windows-enabled-recovery-build.log,
+logs/windows-enabled-build-policy-units.log, native platform-acceptance-native-units.log,
+logs/windows-gated-disabled-fixture.log and logs/renderer-validation/<labels>/.
+Native final controls frame001.bmp was also reviewed: world/weapon/HUD remain
+correct after the measured movement. This completes the Windows gate recheck,
+not the full cross-platform goal. Native Linux real-game recovery/both-fail and
+selector lifecycle, enhanced/display/package checks and physical performance
+acceptance remain separate; Mac hardware is unavailable. Both native gates0.
