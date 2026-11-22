@@ -1,4 +1,4 @@
-[GL paths](opengl-recovery.md).
+[GL pixel](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

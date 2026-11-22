@@ -529,3 +529,11 @@ GPU execution with main-thread callbacks/window recovery,4.1 mirror-once and
 compression capabilities, full native game/package and available-host acceptance.
 Native Mac hardware remains unavailable; retain exact missing acceptance and
 legacy compatibility/deprecated OpenGL limitations. Do not claim universal support.
+
+At committed ada78e05, Linux full-stack revalidation and all7 CMake cases pass.
+With TSFP_PC_CONTROLS_DIR removed from the fixture cache, the ordinary native
+path builds actual opengl_backend/host/shader objects and links production replay
+successfully. Transcript: logs/opengl-linux-native-path-build.log. This resolves
+the source-path/link gap; it is not a full native game or GL GPU acceptance pass.
+The standalone pixel probe now prints actual GL vendor/renderer/version to keep
+subsequent native pixel results attributable to the real driver.

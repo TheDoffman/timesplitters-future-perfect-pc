@@ -29,6 +29,7 @@ int main(int argc,char **argv)
     window=SDL_CreateWindow("OpenGL shader pixel contract",64,64,SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN);
 #endif
     assert(window);TsfpGlHost *host=tsfp_gl_host_create(window);assert(host);
+    std::printf("OpenGL vendor=%s renderer=%s version=%s\n",(const char *)glGetString(GL_VENDOR),(const char *)glGetString(GL_RENDERER),(const char *)glGetString(GL_VERSION));
     LOAD(PFNGLCREATESHADERPROC,glCreateShader);LOAD(PFNGLSHADERSOURCEPROC,glShaderSource);
     LOAD(PFNGLCOMPILESHADERPROC,glCompileShader);LOAD(PFNGLGETSHADERIVPROC,glGetShaderiv);
     LOAD(PFNGLGETSHADERINFOLOGPROC,glGetShaderInfoLog);LOAD(PFNGLCREATEPROGRAMPROC,glCreateProgram);
