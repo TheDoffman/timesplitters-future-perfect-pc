@@ -1,3 +1,9 @@
+Native selector fixtures archive an active/unexpected session record only when
+its referenced processes are demonstrably no longer this owned installation.
+Live/unknown identities are refused; original records are retained in evidence.
+This resets interrupted test fixtures without changing production GameSessions
+recovery. Native parent/child identity tracking remains mandatory for Story reads.
+
 Native selector integration probe: test-linux-launcher-renderers.py stages an owned
 minimal installation under private/test-saves/native-linux/launcher-session. The
 opt-in NativeEndToEnd renderer plan opens the actual Settings page, switches from

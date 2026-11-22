@@ -1,4 +1,4 @@
-[GL read](opengl-recovery.md).
+[GL PIDs](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

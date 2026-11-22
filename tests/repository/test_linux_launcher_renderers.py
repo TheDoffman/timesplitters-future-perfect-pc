@@ -25,6 +25,30 @@ def test_linked_or_escaping_routes_are_rejected(tmp_path):
     assert not list(outside.iterdir())
 
 
+def test_dead_owned_session_is_archived_but_live_installation_is_retained(tmp_path):
+    session=tmp_path/'session';session.mkdir();(session/'.launcher').mkdir()
+    (session/'renderer-test-install.json').write_text(json.dumps(selector.FIXTURE_OWNER))
+    record=session/'.launcher/game-session.json';record.write_text(json.dumps({'state':'active','launcher_pid':12,'game_pid':13}))
+    evidence=tmp_path/'evidence';evidence.mkdir();proc=tmp_path/'proc';proc.mkdir()
+    selector.archive_stale_session(session,evidence,proc)
+    assert not record.exists() and json.loads((evidence/'previous-game-session.json').read_text())['game_pid']==13
+    record.write_text(json.dumps({'state':'active','launcher_pid':12}))
+    identity=proc/'12';identity.mkdir();(identity/'cmdline').write_bytes(b'launcher\0--root\0'+os.fsencode(session)+b'\0')
+    before=record.read_bytes()
+    with pytest.raises(ValueError,match='live process'):selector.archive_stale_session(session,evidence,proc)
+    assert record.read_bytes()==before
+
+
+def test_unknown_live_process_state_cannot_be_discarded(tmp_path):
+    session=tmp_path/'session';session.mkdir();(session/'.launcher').mkdir()
+    (session/'renderer-test-install.json').write_text(json.dumps(selector.FIXTURE_OWNER))
+    record=session/'.launcher/game-session.json';record.write_text(json.dumps({'state':'active','launcher_pid':12}))
+    proc=tmp_path/'proc';identity=proc/'12';identity.mkdir(parents=True)
+    (identity/'cmdline').write_bytes(b'');(identity/'status').write_text('State:\tR (running)\n')
+    with pytest.raises(ValueError,match='unknown'):selector.archive_stale_session(session,tmp_path,proc)
+    assert record.exists()
+
+
 def test_restage_relinks_without_overwriting_shared_executable(tmp_path):
     root=tmp_path;scope=root/'private/test-saves/native-linux';scope.mkdir(parents=True)
     source=root/'build/linux/game/futureperfect_recomp';source.parent.mkdir(parents=True);source.write_bytes(b'first ELF')

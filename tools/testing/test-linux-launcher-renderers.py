@@ -22,6 +22,7 @@ import sys
 import time
 
 ROOT=Path(__file__).resolve().parents[2]
+FIXTURE_OWNER={'schema':1,'owner':'linux-launcher-renderers'}
 sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
@@ -43,7 +44,7 @@ def unlinked(path,scope):
 def stage(root,scope,manifest):
     session=unlinked(scope/'launcher-session',scope)
     marker=session/'renderer-test-install.json'
-    owner={'schema':1,'owner':'linux-launcher-renderers'}
+    owner=FIXTURE_OWNER
     if session.exists() and (not marker.is_file() or json.loads(marker.read_text())!=owner):
         raise ValueError('Refuse an installation not owned by this test')
     session.mkdir(exist_ok=True)
@@ -67,7 +68,32 @@ def stage(root,scope,manifest):
     return session
 
 
+def archive_stale_session(session,evidence,proc=Path('/proc')):
+    marker=unlinked(session/'renderer-test-install.json',session)
+    if not marker.is_file() or json.loads(marker.read_text())!=FIXTURE_OWNER:raise ValueError('Unowned test installation')
+    record=unlinked(session/'.launcher/game-session.json',session)
+    if not record.exists():return
+    data=json.loads(record.read_text())
+    if data.get('state') not in ('active','unexpected'):return
+    for key in ('launcher_pid','game_pid'):
+        pid=data.get(key)
+        if pid is None:continue
+        if type(pid)!=int or pid<=0:raise ValueError('Invalid previous test process identity')
+        try:arguments=(proc/str(pid)/'cmdline').read_bytes().split(b'\0')
+        except FileNotFoundError:continue
+        if os.fsencode(session) in arguments or os.fsencode(session/'Bin/futureperfect_recomp') in arguments:
+            raise ValueError('Previous test installation still has a live process')
+        if not any(arguments):
+            try:status=(proc/str(pid)/'status').read_text()
+            except FileNotFoundError:continue
+            if not re.search(r'^State:\s+[ZX]',status,re.M):raise ValueError('Previous process termination is unknown')
+    # The ordinary test-session entry bypasses startup recovery. Archive only
+    # this owned, demonstrably stale record; never alter production recovery.
+    shutil.copy2(record,evidence/'previous-game-session.json');record.unlink()
+
+
 def run_case(args,scope,session,backend,evidence,native,rhi):
+    archive_stale_session(session,evidence)
     env=native['runtime_environment']()
     if backend=='vulkan' and args.driver_manifest:rhi['linux_vulkan_sdk'].select_driver(env,args.driver_manifest)
     if backend=='opengl':env=rhi['configure_gl_environment'](env,args.gl_driver,args.gl_adapter)
