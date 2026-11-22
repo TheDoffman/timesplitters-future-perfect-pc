@@ -1,3 +1,11 @@
+Adaptive common-native GL dispatch (development): the SDL owner now pumps
+recent work without sleeping per GPU call, then returns to bounded waits after
+quiescence. An owner-only serial and thin native adapter preserve CPU-only worker
+serialization. Native TLS/input/cleanup unit passes; real throughput/gameplay and
+Mac host acceptance remain pending. Windows and separate legacy Mac entry routes
+are unchanged; no automatic recovery gate is enabled. See
+agent-context/opengl-recovery.md#adaptive-native-dispatch-implementation-checkpoint.
+
 Common RHI OpenGL packed-color repair (development,2026-11-22): the same
 354-draw capture exposed BGRA vertex colors bound as RGBA. The shared GL binding
 and GPU regression now preserve channel order; controlled Windows replay closely

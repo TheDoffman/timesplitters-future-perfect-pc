@@ -1209,3 +1209,27 @@ and idle CPU; do not silently ship a diagnostic busy-poll loop. Native actual
 GL Story/effects/window/performance/package acceptance, WSL fullscreen limitation
 review, Windows recovery-gate approval and unavailable Mac checks remain in the
 full goal. All production recovery gates remainOFF.
+
+## Adaptive native dispatch implementation checkpoint
+
+The native SDL GL host now exposes an owner-thread progress serial, incremented
+only when main_operation executes on the SDL owner. CPU-only operations still
+run on foreign threads under their existing call_lock and do not write it.
+renderer_rhi_sdl provides the thin host getter to native main; there is no new
+RHI backend policy/vtable or generated-code change. Windows host dispatch and
+legacy Mac's inline entry route are unchanged.
+
+guest_dispatch_sdl pumps callbacks continuously during a burst, extending an
+active window on each progress change. After two1ms idle-timeout quanta without
+work it returns to bounded1ms waits. Pumping/NULL waits preserve queued input.
+The optional progress callback retains the old bounded-wait behavior when absent.
+Unsigned serial inequality handles wrap without inventing a time source. Guest
+TLS/setup/cleanup/stack size and pthread result/join handling remain unchanged.
+
+The actual updated C helper passes its native Clang headless busy-guest unit
+against a read-only Windows source/header snapshot with output in native/tmp.
+It covers burst progress, idle waits, deadline/wrap behavior, TLS ownership,
+return/join, preexisting video, init/thread failures, wrong owner and pthread_exit.
+Native build, real-driver throughput, active Story and idle CPU checks are still
+required. This checkpoint records implementation, not acceptance; all production
+automatic recovery gates remainOFF.

@@ -19,3 +19,4 @@ def test_guest_polling_and_host_dispatch(tmp_path):
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
     assert 'continuous owner dispatch during guest polling, TLS ownership' in result.stdout
+    assert 'adaptive burst dispatch, idle waits and serial wrap' in result.stdout

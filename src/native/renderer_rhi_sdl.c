@@ -15,6 +15,8 @@
 #include "renderer_host_selftest.inc"
 
 static SDL_Window *native_window;
+unsigned tsfp_renderer_host_dispatch_serial(void)
+{return tsfp_gl_host_main_dispatch_serial();}
 static void *native_logical_window;
 static int commit_gl_window(SDL_Window *old,SDL_Window *next)
 {

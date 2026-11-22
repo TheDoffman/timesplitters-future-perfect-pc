@@ -19,6 +19,7 @@
 #ifdef TSFP_RHI_RENDERER
 #include "rhi.h"
 #include "guest_dispatch_sdl.h"
+#include "renderer_host_sdl.h"
 #endif
 
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi, g_ebp;
@@ -161,7 +162,7 @@ int main(int argc, char **argv)
         extern int tsfp_native_debug_test(void);return tsfp_native_debug_test();
     }
 #ifdef TSFP_RHI_RENDERER
-    if(rhi_startup_may_use_opengl())return tsfp_native_dispatch_guest(guest_main,NULL);
+    if(rhi_startup_may_use_opengl())return tsfp_native_dispatch_guest(guest_main,NULL,tsfp_renderer_host_dispatch_serial);
 #endif
     return guest_main(NULL);
 }

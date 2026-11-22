@@ -153,11 +153,16 @@ failed:
 void *tsfp_gl_host_proc(TsfpGlHost *host,const char *name)
 {return host && host->context && name?(void *)SDL_GL_GetProcAddress(name):NULL;}
 static pthread_mutex_t call_lock=PTHREAD_MUTEX_INITIALIZER;
+static unsigned main_dispatch_serial;
+unsigned tsfp_gl_host_main_dispatch_serial(void){return main_dispatch_serial;}
 typedef struct {void (*operation)(void *);void *argument;} MainCall;
 static void main_operation(void *argument)
 {
     MainCall *call=argument;pthread_mutex_lock(&call_lock);
     call->operation(call->argument);pthread_mutex_unlock(&call_lock);
+    /* CPU-only operations can run on foreign threads under call_lock. Only
+     * the SDL owner writes/reads this serial, avoiding a cross-thread race. */
+    if(SDL_IsMainThread())++main_dispatch_serial;
 }
 int tsfp_gl_host_run(void (*operation)(void *),void *argument,int gpu)
 {

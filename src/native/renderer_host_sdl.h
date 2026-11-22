@@ -7,4 +7,6 @@ void tsfp_renderer_host_bind(SDL_Window *window, void (*on_quit)(void));
 /* Main-thread startup recovery only, after Vulkan resources are destroyed.
  * Keep the original RHI token valid for drawable-size queries. */
 int tsfp_renderer_host_replace_window(SDL_Window *old_window,SDL_Window *new_window);
+/* Common RHI adapter only; read from the SDL owner while dispatching work. */
+unsigned tsfp_renderer_host_dispatch_serial(void);
 #endif
