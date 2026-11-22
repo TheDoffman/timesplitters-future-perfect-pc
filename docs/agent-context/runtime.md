@@ -1,4 +1,4 @@
-[GL cube](opengl-recovery.md).
+[GL faces](opengl-recovery.md).
 [Wide HUD](ultrawide-player-markers.md).
 [MP](native-multiplayer-menu.md).
 

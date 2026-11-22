@@ -304,7 +304,10 @@ static RhiView *g_view_create(RhiImage *image,uint32_t kind,const RhiViewDesc *i
         (d->cube && v.dim!=RHI_VIEW_DIM_CUBE) ||
         (v.dim==RHI_VIEW_DIM_2D_ARRAY && image->target!=GL_TEXTURE_2D_ARRAY);
     if(kind==RHI_VIEW_SAMPLED && (subset || stencil)) {
-        if(!S.views || !image->immutable || (stencil && !S.stencil_texture)) {
+        /* A cube face exposed as2D can corrupt Mesa D3D12 resource state
+         * after sampling and resolving it. Reuse the versioned4.1 snapshot
+         * path for face views; full cube sampling keeps its original storage. */
+        if((d->cube && v.dim!=RHI_VIEW_DIM_CUBE) || !S.views || !image->immutable || (stencil && !S.stencil_texture)) {
             if(d->samples>1){g_view_destroy(view);return NULL;}
             RhiImageDesc proxy=*d;
             proxy.width=level_size(d->width,v.base_mip);proxy.height=level_size(d->height,v.base_mip);

@@ -670,3 +670,27 @@ full-suite and game/performance acceptance are still required. Direct ignored
 probe logs:cube-probe-d3d12.log,cube-probe-software.log and
 cube-probe-staging-d3d12.log in the native checkout. Native restricted4.1 full-RHI
 receipt passes on the accelerated driver(1.784s); gates remain0.
+
+
+After84c0fe5b, Windows full/restricted GL and all5 accepted recovery fixtures pass
+(acceptance restoredOFF). Native optimized accelerated GL then corrupts the heap
+at varying later allocations. ASAN/Valgrind completion alone was misleading:
+filtered Memcheck identifies a real4-byte read/write4bytes beyond an internal
+Mesa48-byte allocation, at msaa_color_surface.h:23 after uploads atline18.
+A debug-symbol fixture copy isolates that source line; the MSAA color companion
+alone reproduces it. Many other Valgrind reports concern untracked WSL GPU
+mappings; those do not establish a clean memory result. No personal state used.
+
+An ignored optimized backend variant reusing the existing4.1 snapshot path for
+cube subsets completes the full accelerated suite. Integrate the change narrowly
+for cube-face views exposed as2D/array; full cube sampling and ordinary array
+views retain their existing storage. The snapshot refreshes only when the image
+version changes and uses the already tested shared format/upload logic. This
+avoids driver resource-state corruption after sampling a face and resolving its
+MSAA companion. It adds cached face storage/readback when changed; game-level
+performance still needs acceptance. Exact final narrowing and normal suites
+must pass again. Native23 Python/C checks, Windows22checks(1Linux-only skip),
+and20 portable Mac-package checks pass. Mac package requires Vulkan/MoltenVK
+before verifying SPIRV-Cross; explicit legacy-GL build skips this compiler, so
+the inspected package path does not add a legacy-build dependency. Native Mac
+hardware and actual legacy package acceptance remain unavailable. Gates remain0.
