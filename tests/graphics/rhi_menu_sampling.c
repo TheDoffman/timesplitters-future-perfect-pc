@@ -51,20 +51,9 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #ifdef RHI_VULKAN_SDL
 #include "vulkan_present_outcomes.h"
 #endif
-#if defined(TSFP_WINDOWS_RHI_TEST) && defined(RHI_HAVE_OPENGL)
-static DWORD WINAPI gl_thread_handoff(void *unused)
+#ifdef RHI_HAVE_OPENGL
+static void gl_resource_work(unsigned channel)
 {
-    (void)unused;
-    RhiView *swap=rhi_swapchain_view();CHECK(swap);
-    const float red[4]={1,0,0,1};rhi_clear_color(swap,red);
-    unsigned char pixels[64*64*4];uint32_t w=64,h=64;
-    CHECK(rhi_swapchain_readback(pixels,64*4,&w,&h)==0);
-    CHECK(pixels[0]==255 && pixels[1]==0 && pixels[2]==0);
-    CHECK(rhi_present(0)==0);return 0;
-}
-static DWORD WINAPI gl_resource_thread(void *argument)
-{
-    unsigned channel=(unsigned)(uintptr_t)argument;
     for(unsigned iteration=0;iteration<8;iteration++) {
         RhiImageDesc desc={0};desc.type=RHI_IMAGE_2D;desc.width=desc.height=4;
         desc.depth=desc.mip_levels=desc.samples=1;desc.format=RHI_FORMAT_R8G8B8A8_UNORM;
@@ -78,8 +67,41 @@ static DWORD WINAPI gl_resource_thread(void *argument)
          * operation or device destruction must consume the retired objects. */
         rhi_view_destroy(view);rhi_image_destroy(image);
     }
-    return 0;
 }
+#endif
+#if defined(RHI_VULKAN_SDL) && defined(RHI_HAVE_OPENGL)
+typedef struct {unsigned channel;SDL_AtomicInt done;} GlNativeWorker;
+static int gl_native_work(void *argument)
+{GlNativeWorker *worker=argument;gl_resource_work(worker->channel);SDL_SetAtomicInt(&worker->done,1);return 0;}
+static void gl_native_handoff_test(void)
+{
+    if(strcmp(rhi_backend_name(),"opengl"))return;
+    GlNativeWorker workers[2]={0};SDL_Thread *threads[2];
+    for(unsigned i=0;i<2;i++){workers[i].channel=i;threads[i]=SDL_CreateThread(gl_native_work,"GL resource test",&workers[i]);CHECK(threads[i]);}
+    Uint64 bound=SDL_GetTicks()+10000;
+    while(!SDL_GetAtomicInt(&workers[0].done) || !SDL_GetAtomicInt(&workers[1].done)) {
+        CHECK(SDL_GetTicks()<bound);SDL_PumpEvents();SDL_Delay(1);
+    }
+    for(unsigned i=0;i<2;i++){int status=1;SDL_WaitThread(threads[i],&status);CHECK(status==0);}
+    const float blue[4]={0,0,1,1};rhi_clear_color(rhi_swapchain_view(),blue);
+    unsigned char pixels[64*64*4];uint32_t w=64,h=64;
+    CHECK(!rhi_swapchain_readback(pixels,64*4,&w,&h));CHECK(pixels[2]==255 && !pixels[0]);CHECK(!rhi_present(0));
+    puts("PASS: OpenGL native main-thread dispatch, concurrent resources and deferred deletion");
+}
+#endif
+#if defined(TSFP_WINDOWS_RHI_TEST) && defined(RHI_HAVE_OPENGL)
+static DWORD WINAPI gl_thread_handoff(void *unused)
+{
+    (void)unused;
+    RhiView *swap=rhi_swapchain_view();CHECK(swap);
+    const float red[4]={1,0,0,1};rhi_clear_color(swap,red);
+    unsigned char pixels[64*64*4];uint32_t w=64,h=64;
+    CHECK(rhi_swapchain_readback(pixels,64*4,&w,&h)==0);
+    CHECK(pixels[0]==255 && pixels[1]==0 && pixels[2]==0);
+    CHECK(rhi_present(0)==0);return 0;
+}
+static DWORD WINAPI gl_resource_thread(void *argument)
+{gl_resource_work((unsigned)(uintptr_t)argument);return 0;}
 static void gl_handoff_test(void)
 {
     if(strcmp(rhi_backend_name(),"opengl"))return;
@@ -144,11 +166,22 @@ int main(void) {
 #endif
 #elif defined(RHI_VULKAN_SDL)
     CHECK(SDL_Init(SDL_INIT_VIDEO));
-    window=SDL_CreateWindow("Shared RHI regression",64,64,SDL_WINDOW_VULKAN|SDL_WINDOW_HIDDEN);
+    const char *backend="vulkan";
+#ifdef TSFP_NATIVE_GL_TEST
+    if(getenv("RECOMP_D3D8_BACKEND"))backend=getenv("RECOMP_D3D8_BACKEND");
+    CHECK(!strcmp(backend,"vulkan") || !strcmp(backend,"opengl"));
+#endif
+    int gl=!strcmp(backend,"opengl");
+    if(gl){CHECK(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,4));CHECK(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,1));CHECK(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE));}
+    window=SDL_CreateWindow("Shared RHI regression",64,64,(gl?SDL_WINDOW_OPENGL:SDL_WINDOW_VULKAN)|SDL_WINDOW_HIDDEN);
     CHECK(window);
-    CHECK(rhi_select_backend("vulkan")==0);
+    CHECK(rhi_select_backend(backend)==0);
     RhiDeviceDesc device={window,64,64,2,1,1};
     CHECK(rhi_device_create(&device)==0 && rhi_device_ready());
+    CHECK(!strcmp(rhi_backend_name(),backend));printf("BACKEND: %s\n",rhi_backend_name());
+#ifdef RHI_HAVE_OPENGL
+    gl_native_handoff_test();
+#endif
 #elif defined(_WIN32)
     ID3D11Device *warp=NULL;ID3D11DeviceContext *context=NULL;D3D_FEATURE_LEVEL feature;
     CHECK(SUCCEEDED(D3D11CreateDevice(NULL,D3D_DRIVER_TYPE_WARP,NULL,0,NULL,0,
@@ -159,7 +192,7 @@ int main(void) {
 #error A native host adapter is required
 #endif
     int limited=0;
-#ifdef TSFP_WINDOWS_RHI_TEST
+#if defined(TSFP_WINDOWS_RHI_TEST) || defined(TSFP_NATIVE_GL_TEST)
     limited=getenv("TSFP_TEST_GL41_VIEWS")!=NULL;
 #endif
     RhiShader *vs=shader(RHI_STAGE_VERTEX,
@@ -261,7 +294,7 @@ int main(void) {
     CHECK(abs(pixels[0]-64)<=1 && abs(pixels[1]-128)<=1 && abs(pixels[2]-191)<=1);
     CHECK(rhi_present(0)==0);
 #ifdef RHI_VULKAN_SDL
-    vulkan_present_outcomes();
+    if(!strcmp(rhi_backend_name(),"vulkan"))vulkan_present_outcomes();
 #endif
     }
 #endif
@@ -274,7 +307,7 @@ int main(void) {
         test_msaa_targets();test_msaa_shared_depth();test_msaa_scaled_target();}
     test_visibility_queries();
     rhi_device_destroy();
-#ifdef TSFP_WINDOWS_RHI_TEST
+#if defined(TSFP_WINDOWS_RHI_TEST) || defined(TSFP_NATIVE_GL_TEST)
 #ifdef RHI_HAVE_OPENGL
     if(window && !strcmp(rhi_backend_name(),"opengl")) {
         /* Reuse the same pixel-formatted window across independent context /
@@ -290,7 +323,9 @@ int main(void) {
         puts("PASS: OpenGL worker/context recreation and repeated cleanup");
     }
 #endif
+    #ifdef TSFP_WINDOWS_RHI_TEST
     if(window)DestroyWindow((HWND)window);
+    #endif
 #endif
 #ifdef RHI_VULKAN_SDL
     SDL_DestroyWindow(window);SDL_Quit();

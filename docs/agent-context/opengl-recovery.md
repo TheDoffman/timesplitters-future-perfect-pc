@@ -599,3 +599,26 @@ capability review (including4.1 mirror-once/compression), Windows final platform
 acceptance decision and per-platform gates. Native Mac hardware is unavailable;
 keep its exact missing checks, deprecated GL limits and legacy compatibility
 recorded. All production gates remain OFF; no publication or merge.
+
+
+### Native full-RHI fixture opt-in
+
+`tests/rhi` now accepts TSFP_TEST_OPENGL, defaultOFF, to compile the same common
+backend in the native contract executable. Its startup acceptance is explicitly0;
+this opt-in is not production recovery. `test-rhi-linux.py --backend opengl`
+selects an isolated explicit-GL window and full shared pixel/resource contract.
+`--gl-driver software|d3d12|system`, optional `--gl-adapter`, and `--gl41`
+apply only to the child environment. Vulkan-only controls cannot be mixed with
+OpenGL. Driver-specific receipts prevent software results replacing accelerated
+results. The Vulkan replay contract is not claimed for an explicit-GL run.
+
+Native SDL worker tests pump main-thread callbacks while two threads create,
+clear/read and retire resources; main then reads/presents again. Both native and
+Windows fixtures recreate and repeatedly destroy the device on the same window.
+The runner requires typed-null pixels, worker dispatch, cleanup and observed
+requested driver, plus restricted-view markers when requested. Existing CI's
+Linux foundation suite checks child-only driver selection and rejection of partial
+or erroneous output. Windows Python checks:14passed,1Linux-only skip. Native
+compilation and GPU execution for this new full-RHI path are pending at this
+source checkpoint; earlier standalone pixels do not establish these results.
+All production gates remain OFF.

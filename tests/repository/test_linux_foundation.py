@@ -159,3 +159,52 @@ def test_sdk_versions_match_and_linux_archive_has_integrity_pin():
     assert spec['platform'] == 'Linux-x86_64'
     assert len(spec['sha256']) == 64 and spec['bytes'] > 0
     assert spec['url'].startswith('https://sdk.lunarg.com/')
+
+
+def linux_renderer_runner():
+    spec = importlib.util.spec_from_file_location(
+        'linux_rhi_gl_runner', ROOT / 'tools/testing/test-rhi-linux.py')
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    return runner
+
+
+def test_gl_driver_environment_is_child_only_and_clears_stale_controls():
+    runner = linux_renderer_runner()
+    parent = dict(GALLIUM_DRIVER='wrong', LIBGL_ALWAYS_SOFTWARE='1',
+                  MESA_LOADER_DRIVER_OVERRIDE='wrong', TSFP_TEST_GL41_VIEWS='1',
+                  MESA_D3D12_DEFAULT_ADAPTER_NAME='wrong', DISPLAY=':9',
+                  LD_LIBRARY_PATH='/pinned-sdk/lib', RECOMP_SAVE_DIR='/isolated/saves')
+    original = parent.copy()
+    env = runner.configure_gl_environment(parent, 'd3d12', 'NVIDIA')
+    assert parent == original
+    assert env['GALLIUM_DRIVER'] == 'd3d12'
+    assert env['MESA_D3D12_DEFAULT_ADAPTER_NAME'] == 'NVIDIA'
+    assert env['LD_LIBRARY_PATH'] == '/usr/lib/wsl/lib:/pinned-sdk/lib'
+    assert env['RECOMP_SAVE_DIR'] == '/isolated/saves' and env['DISPLAY'] == ':9'
+    assert 'LIBGL_ALWAYS_SOFTWARE' not in env
+    assert 'TSFP_TEST_GL41_VIEWS' not in env
+    env = runner.configure_gl_environment(parent, 'software', restricted=True)
+    assert env['GALLIUM_DRIVER'] == 'llvmpipe'
+    assert env['TSFP_TEST_GL41_VIEWS'] == '1'
+    assert 'MESA_D3D12_DEFAULT_ADAPTER_NAME' not in env
+    env = runner.configure_gl_environment(parent, 'system')
+    assert 'GALLIUM_DRIVER' not in env and 'MESA_LOADER_DRIVER_OVERRIDE' not in env
+
+
+def test_gl_receipt_requires_pixels_dispatch_cleanup_and_observed_driver():
+    runner = linux_renderer_runner()
+    markers = ['BACKEND: opengl', 'PASS: OpenGL typed null textures',
+               'PASS: OpenGL native main-thread dispatch',
+               'PASS: OpenGL worker/context recreation and repeated cleanup',
+               'D3D12 (NVIDIA)', 'PASS: OpenGL4.1 subset/']
+    output = '\n'.join(markers)
+    runner.require_gl_contract(output, 'd3d12', True)
+    for marker in markers:
+        with pytest.raises(RuntimeError):
+            runner.require_gl_contract(output.replace(marker, ''), 'd3d12', True)
+    with pytest.raises(RuntimeError):
+        runner.require_gl_contract(output + '\n[RHI] ERROR invalid resource', 'd3d12')
+    with pytest.raises(RuntimeError):
+        runner.require_gl_contract(output, 'software')
+    runner.require_gl_contract(output.replace('D3D12 (NVIDIA)', 'llvmpipe'), 'software')

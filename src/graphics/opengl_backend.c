@@ -809,7 +809,7 @@ static int g_device_create(const RhiDeviceDesc *desc)
     S.storage=G.TexStorage2D && G.TexStorage3D && extension("GL_ARB_texture_storage");
     S.storage_ms=G.TexStorage2DMultisample && G.TexStorage3DMultisample && extension("GL_ARB_texture_storage_multisample");
     S.views=G.TextureView && extension("GL_ARB_texture_view");S.stencil_texture=extension("GL_ARB_stencil_texturing");
-#ifdef TSFP_WINDOWS_RHI_TEST
+#if defined(TSFP_WINDOWS_RHI_TEST) || defined(TSFP_NATIVE_GL_TEST)
     if(getenv("TSFP_TEST_GL41_VIEWS")) {
         S.storage=S.storage_ms=S.views=S.stencil_texture=0;
         fprintf(stderr,"[RHI] opengl: testing core4.1 compatibility views; MSAA capability unavailable\n");
