@@ -5475,6 +5475,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 
 ### MAC-052 — Experimental network bot setup (issue #25)
+
+Issue #330 door follow-up (branch `fix/330-online-door-sync`): shared
+`pc_network_doors.h`, `pc_network_doors_transport.inc` and
+`pc_network_doors_guest.inc` carry host animation numbers through the existing
+network transport and original door update. No new OS adapter or launcher change
+is needed. Windows live Zeppelin/bots and Bunker/humans-only checks pass; shared
+Windows/native policy fixtures, original US joining-state routines and UDP/bridge
+checks pass. Native Mac/Linux and mixed-peer gameplay remain awaiting validation.
+See [door contract](../agent-context/network-doors.md) and STATUS for scope.
+
 Issue #229 Gladiator follow-up (branch `fix/229-gladiator-selection`, uncommitted):
 `src/network/pc_network_bots_guest.inc` adds the audited host publisher return PC
 35A609 to the existing activity allowlist. This shared Windows/native-network

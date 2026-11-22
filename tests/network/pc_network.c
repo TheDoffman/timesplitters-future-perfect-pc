@@ -181,6 +181,24 @@ int main(void)
         CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
         Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
         pc_network_bots_context(0,0,0,0,0);
+        /* Door animation extensions bypass the title's small receive buffer
+           and require the same admitted host/session as bot snapshots. */
+        {
+            unsigned char door_packet[40+28+sizeof(PcNetworkDoorState)]={0};
+            PcNetworkDoorState door={0},result;uint32_t tick=20,count=1;
+            door.slot=3;door.key=0x30303237u;door.kind=6;door.phase=1;door.progress=.5f;door.target=1.f;
+            memcpy(door_packet,packet,40);memcpy(door_packet+40,"TSFDR01",8);
+            memcpy(door_packet+48,memory+150,8);memcpy(door_packet+56,&match,4);
+            memcpy(door_packet+60,&tick,4);memcpy(door_packet+64,&count,4);memcpy(door_packet+68,&door,sizeof door);
+            pc_network_doors_context(2,host,match);
+            CHECK(sendto(raw,(char *)door_packet,sizeof door_packet,0,(struct sockaddr *)&to,sizeof to)==sizeof door_packet);
+            Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);
+            CHECK(pc_network_doors_receive(&result,1)==1 && result.slot==3 && result.progress==.5f);
+            tick++;memcpy(door_packet+60,&tick,4);door_packet[48]^=1;
+            CHECK(sendto(raw,(char *)door_packet,sizeof door_packet,0,(struct sockaddr *)&to,sizeof to)==sizeof door_packet);
+            Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_doors_receive(&result,1));
+            pc_network_doors_context(0,0,0);
+        }
         /* A connected guest need not be in the host's XNet conversion cache. */
         {
             SOCKET target=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
@@ -199,6 +217,16 @@ int main(void)
             CHECK(!memcmp(outbound+40,"TSFBAI2",8));
             CHECK(!memcmp(outbound+48,memory+150,8));
             memset(&received,0,sizeof received);memcpy(&received,outbound+60,offsetof(PcNetworkBotState,ragdoll));CHECK(received.tick==12 && received.slot==2);
+            {
+                PcNetworkDoorState door={0},result;
+                door.key=7;door.phase=3;door.progress=.75f;
+                pc_network_doors_context(1,0,match);pc_network_doors_targets(&target_ip,1);
+                pc_network_doors_send(13,&door,1);
+                CHECK(recv(target,(char *)outbound,sizeof outbound,0)==68+sizeof door);
+                CHECK(!memcmp(outbound+40,"TSFDR01",8) && !memcmp(outbound+48,memory+150,8));
+                memcpy(&result,outbound+68,sizeof result);CHECK(result.key==7 && result.progress==.75f);
+                pc_network_doors_context(0,0,0);
+            }
             closesocket(target);pc_network_bots_context(0,0,0,0,0);
         }
     }
@@ -291,6 +319,22 @@ int main(void)
             Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);
             CHECK(pc_network_bots_receive(2,&received) && received.tick==11);
             pc_network_bots_context(0,0,0,0,0);
+            {
+                unsigned char door_frame[68+28+sizeof(PcNetworkDoorState)]={0};
+                PcNetworkDoorState door={0},result;uint32_t tick=20,count=1;
+                door.slot=3;door.key=7;door.phase=1;door.progress=.5f;door.target=1.f;
+                memcpy(door_frame,packet,68);memcpy(door_frame+68,"TSFDR01",8);
+                memcpy(door_frame+76,memory+150,8);memcpy(door_frame+84,&match,4);
+                memcpy(door_frame+88,&tick,4);memcpy(door_frame+92,&count,4);memcpy(door_frame+96,&door,sizeof door);
+                pc_network_doors_context(2,host,match);
+                CHECK(sendto(raw,(char *)door_frame,sizeof door_frame,0,(struct sockaddr *)&native,sizeof native)==sizeof door_frame);
+                Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);
+                CHECK(pc_network_doors_receive(&result,1)==1 && result.slot==3 && result.progress==.5f);
+                door_frame[76]^=1;
+                CHECK(sendto(raw,(char *)door_frame,sizeof door_frame,0,(struct sockaddr *)&native,sizeof native)==sizeof door_frame);
+                Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_doors_receive(&result,1));
+                pc_network_doors_context(0,0,0);
+            }
             /* Host snapshots retain the session key and virtual destination
                when encapsulated for the Python bridge. */
             memcpy(memory+900,memory+150,8);memory[900]^=1;

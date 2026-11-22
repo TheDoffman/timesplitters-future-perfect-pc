@@ -16,6 +16,7 @@ int pc_network_set_online(const char *configuration);
 int pc_network_latency(double *milliseconds, unsigned *peers);
 #include "pc_network_bots_state.h"
 #include "pc_network_sync.h"
+#include "pc_network_doors.h"
 /* Bounded local counters; caller supplies RTT separately from its fresh probe. */
 int pc_network_sync_snapshot(int32_t values[PC_NETWORK_SYNC_FIELDS]);
 typedef struct PcDeveloperPeer { uint32_t ip; int local,host; char name[65]; } PcDeveloperPeer;
