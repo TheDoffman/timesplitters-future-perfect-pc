@@ -2259,6 +2259,15 @@
       ]
     },
     {
+      "name": "3059-native-renderer-dispatch-policy.patch",
+      "path": "patches/graphics/rendering/3059-native-renderer-dispatch-policy.patch",
+      "sha256": "dd61452f3790d8efc75707c6e8038d91dc9442cedf26945fb1d02ad6009cc31e",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

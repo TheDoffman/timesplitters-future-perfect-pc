@@ -29,7 +29,7 @@ static void *prepare_gl_window(void *logical_window)
     return tsfp_native_gl_window(native_window,commit_gl_window);
 }
 
-void *tsfp_native_renderer_window(unsigned width,unsigned height)
+static void *renderer_window_on_main(unsigned width,unsigned height)
 {
     if(native_window)return native_window;
     if(!SDL_IsMainThread()) {
@@ -47,6 +47,21 @@ void *tsfp_native_renderer_window(unsigned width,unsigned height)
     fprintf(stderr,"[native-rhi] common Xbox renderer, SDL %s window\n",
         (SDL_GetWindowFlags(native_window)&SDL_WINDOW_VULKAN)?"Vulkan":"API-neutral");
     return native_window;
+}
+
+typedef struct {unsigned width,height;void *window;} NativeWindowRequest;
+static void create_renderer_window(void *opaque)
+{
+    NativeWindowRequest *request=opaque;
+    request->window=renderer_window_on_main(request->width,request->height);
+}
+void *tsfp_native_renderer_window(unsigned width,unsigned height)
+{
+    if(SDL_IsMainThread())return renderer_window_on_main(width,height);
+    NativeWindowRequest request={width,height,NULL};
+    if(!SDL_RunOnMainThread(create_renderer_window,&request,true))
+        fprintf(stderr,"[native-rhi] window dispatch failed: %s\n",SDL_GetError());
+    return request.window;
 }
 
 /* Bounded smoke through the actual common Xbox device, not only RHI calls. */

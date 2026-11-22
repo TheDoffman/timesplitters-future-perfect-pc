@@ -1,3 +1,11 @@
+Continuous native SDL dispatch implementation is pending acceptance: shared
+startup query3059 routes only explicit GL or accepted Vulkan→GL recovery to an
+owned guest worker and main-thread SDL service. Entire guest TLS/kernel/crash
+initialization stays on that worker; window creation marshals to the owner.
+Ordinary native Vulkan with recoveryOFF and legacy Mac GL retain inline guest
+execution. No original game polling branch/clock is changed. Native build/guest
+checks are next; Mac host acceptance remains unavailable, recovery gatesOFF.
+
 Native OpenGL guest-loop checkpoint (unverified implementation): actual Linux
 GL stalls after one frame; owned GDB shows a worker awaiting main-thread GL
 while main waits on a guest event. Patch3058 adds optional POSIX wait servicing;

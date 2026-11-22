@@ -880,3 +880,29 @@ Further native execution/dispatch integration is required before gameplay and
 recovery acceptance; no generated guest code was edited. All gates remain0.
 The Vulkan control's archived BMP was reviewed as rendered starfield/lens-flare
 intro imagery; it is not proof of active gameplay/menu/input acceptance.
+
+
+### Continuous SDL owner loop for eligible native startup
+
+Patch3059 exposes rhi_startup_may_use_opengl: a side-effect-free query using
+startup's existing backend list/environment resolution and accepted Vulkan→GL
+recovery gate. Native main uses it after existing helper/self-test routes. If
+GL can be selected, the complete guest body (TLS registers, memory/kernel setup,
+crash stack and entry) runs on an owned POSIX worker while SDL main continuously
+services callbacks. Otherwise guest_main executes inline as before. The legacy
+Mac path does not acquire TSFP_RHI_RENDERER and remains inline; unverified Mac
+normal Vulkan startup with recovery0 is also unchanged. No guest polling branch,
+clock or generated code is edited. Windows has its own entry/host loop.
+
+The new native guest_dispatch_sdl.h initializes missing video only on the owner,
+allocates16MiB worker stack, preserves the worker's result, joins after done and
+uses a pthread cleanup handler so explicit thread exit/cancellation also releases
+the owner loop. Native window requests from guest workers synchronously marshal
+to the owner; native_window reads/creation remain on that thread. The RHI fixture
+checks dispatch eligibility without changing backend selection. The headless
+native fixture models a guest busy-polling while another thread synchronously
+requests main work, plus TLS isolation, result/join, existing-video retention,
+wrong owner, init/create failure and explicit thread exit. Registered in common
+native and Linux CI suites. Windows45 supporting checks pass,7 native-dependent
+skips. Native compilation and real guest progress remain pending at this source
+checkpoint; all production recovery gates remain0.

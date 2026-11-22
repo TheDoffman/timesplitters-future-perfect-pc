@@ -140,6 +140,13 @@ static void gl_handoff_test(void)
 #endif
 int main(void) {
     void *window=NULL;
+#ifdef TSFP_NATIVE_GL_TEST
+    const char *before=rhi_backend_name(),*requested=getenv("RECOMP_D3D8_BACKEND");
+    int dispatch=rhi_startup_may_use_opengl();
+    CHECK(!strcmp(before,rhi_backend_name()));
+    CHECK(dispatch==(TSFP_OPENGL_RECOVERY_ACCEPTED || (requested && !strcmp(requested,"opengl"))));
+    printf("NATIVE-DISPATCH: %d\n",dispatch);
+#endif
 #ifdef TSFP_WINDOWS_RHI_TEST
     const char *backend=getenv("RECOMP_D3D8_BACKEND");
     int supported=!backend || !strcmp(backend,"vulkan") || !strcmp(backend,"d3d11");

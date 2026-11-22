@@ -16,6 +16,10 @@
 #include "video_startup_sdl.h"
 #endif
 #include <sys/ucontext.h>
+#ifdef TSFP_RHI_RENDERER
+#include "rhi.h"
+#include "guest_dispatch_sdl.h"
+#endif
 
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi, g_ebp;
 extern ptrdiff_t g_xbox_mem_offset;
@@ -35,34 +39,9 @@ static void fault(int sig, siginfo_t *info, void *context)
 
 static void capture_guest(uint32_t r[8]){r[0]=g_eax;r[1]=g_ecx;r[2]=g_edx;r[3]=g_esp;r[4]=g_ebx;r[5]=g_esi;r[6]=g_edi;r[7]=g_ebp;}
 
-int main(int argc, char **argv)
+static int guest_main(void *unused)
 {
-    extern int pc_game_restart_bootstrap(int,char **);
-    if(!pc_game_restart_bootstrap(argc,argv))return 1;
-    int helper_result=tsfp_native_crash_helper(argc,argv);if(helper_result>=0)return helper_result;
-#ifdef __linux__
-    /* Own video/events before Xbox initialization can start an audio worker.
-     * Keep crash-report helper processes independent of the desktop. */
-    if (!tsfp_native_video_startup()) return 1;
-#endif
-    if(argc==2 && strcmp(argv[1],"--online-self-test")==0) {
-        extern int pc_online_self_test(void);return pc_online_self_test();
-    }
-    if(argc==2 && strcmp(argv[1],"--renderer-self-test")==0) {
-        extern int tsfp_native_renderer_test(void);
-        return tsfp_native_renderer_test();
-    }
-
-    if(argc==2 && strcmp(argv[1],"--input-self-test")==0) {
-        extern int tsfp_native_input_test(void);return tsfp_native_input_test();
-    }
-    if(argc==2 && strcmp(argv[1],"--settings-self-test")==0) {
-        extern int tsfp_native_settings_test(void);return tsfp_native_settings_test();
-    }
-    if(argc==2 && strcmp(argv[1],"--debug-self-test")==0) {
-        extern int tsfp_native_debug_test(void);return tsfp_native_debug_test();
-    }
-    (void)argc; (void)argv;
+    (void)unused;
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
     extern void xbox_SetAllocationObserver(void (*observer)(uint32_t,uint32_t,uint32_t));
@@ -152,4 +131,37 @@ int main(int argc, char **argv)
     xbox_MemoryLayoutShutdown();
     free(data);
     return 0;
+}
+
+int main(int argc, char **argv)
+{
+    extern int pc_game_restart_bootstrap(int,char **);
+    if(!pc_game_restart_bootstrap(argc,argv))return 1;
+    int helper_result=tsfp_native_crash_helper(argc,argv);if(helper_result>=0)return helper_result;
+#ifdef __linux__
+    /* Own video/events before Xbox initialization can start an audio worker.
+     * Keep crash-report helper processes independent of the desktop. */
+    if (!tsfp_native_video_startup()) return 1;
+#endif
+    if(argc==2 && strcmp(argv[1],"--online-self-test")==0) {
+        extern int pc_online_self_test(void);return pc_online_self_test();
+    }
+    if(argc==2 && strcmp(argv[1],"--renderer-self-test")==0) {
+        extern int tsfp_native_renderer_test(void);
+        return tsfp_native_renderer_test();
+    }
+
+    if(argc==2 && strcmp(argv[1],"--input-self-test")==0) {
+        extern int tsfp_native_input_test(void);return tsfp_native_input_test();
+    }
+    if(argc==2 && strcmp(argv[1],"--settings-self-test")==0) {
+        extern int tsfp_native_settings_test(void);return tsfp_native_settings_test();
+    }
+    if(argc==2 && strcmp(argv[1],"--debug-self-test")==0) {
+        extern int tsfp_native_debug_test(void);return tsfp_native_debug_test();
+    }
+#ifdef TSFP_RHI_RENDERER
+    if(rhi_startup_may_use_opengl())return tsfp_native_dispatch_guest(guest_main,NULL);
+#endif
+    return guest_main(NULL);
 }
