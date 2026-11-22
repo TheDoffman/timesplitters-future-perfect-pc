@@ -866,3 +866,17 @@ Registered in common native suites plus Linux CI. Historical minimal upgrade
 inputs omit3058 with the other startup-only patches; real full upgrades retain
 it. Windows29 supporting tests pass,1Linux-only skip; native unit/build/game
 rerun remains required before considering this fix verified. Gates remain0.
+
+
+At5617455d, the native UBSan wait fixture plus runtime-suite checks pass13tests;
+ordinary native game rebuild/MMIO succeeds. Actual `gl-main-wait-01` stillstalls
+at1frame and is NOT accepted. `gl-main-wait-02` owned-process GDB confirms the
+callback is installed and recursion guard0, but the main thread has advanced
+out of the kernel wait into a pure guest floating-point polling loop
+(sub00156840, branch156877). The render worker still awaits main-thread GL.
+The wait-service fix alone therefore cannot provide continuous SDL dispatch.
+Its unit result must not be conflated with actual guest-loop readiness.
+Further native execution/dispatch integration is required before gameplay and
+recovery acceptance; no generated guest code was edited. All gates remain0.
+The Vulkan control's archived BMP was reviewed as rendered starfield/lens-flare
+intro imagery; it is not proof of active gameplay/menu/input acceptance.

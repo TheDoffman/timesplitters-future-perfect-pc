@@ -1,3 +1,16 @@
+## Native guest dispatch remains unfinished (2026-11-22)
+
+Windows current renderer fixes pass fresh visual/display and matched uncaptured
+OpenGL/Vulkan120s checks at121561a5. Linux full game builds, shared RHI/recovery
+fixtures pass, and actual common frontend drawing/windowed presentation works.
+Actual OpenGL guest execution still stops after one frame. Owned GDB first
+proved a kernel wait blocked main-thread GL dispatch; patch3058's native wait
+unit passes, but the game subsequently spins in a guest polling loop while the
+render worker awaits main-thread work. Continuous native SDL dispatch remains
+required. WSL Wayland also declines fullscreen for both renderers. Every recovery
+gate remainsOFF; no native gameplay or universal readiness is claimed.
+[Exact source/build evidence](../agent-context/opengl-recovery.md).
+
 ## Full Linux OpenGL RHI contracts pass; native recovery still pending (2026-11-22)
 
 Atf0d57ff7, full shared OpenGL pixels/resources/MSAA/SSAO, cube-face/mip
