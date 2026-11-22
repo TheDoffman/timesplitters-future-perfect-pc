@@ -260,6 +260,26 @@ public static class LauncherSharedUiChecks
                     Need(GameSettings.Load(folder,null).VSync==value,"Cancel saved V-Sync");
                 }
             });
+#if MACOS || LINUX
+            Test("native OpenGL needs its compiler but no Vulkan driver metadata",()=>{
+                string folder=Path.Combine(root,"opengl-preflight");Directory.CreateDirectory(Path.Combine(folder,"Bin"));
+                var hashes=new Dictionary<string,object>();
+                foreach(var name in new[]{"Bin/libdxcompiler.dylib","Bin/libcrypto.3.dylib"}){
+                    File.WriteAllText(Core.PathIn(folder,name),"library");hashes[name]=Core.Hash(Core.PathIn(folder,name));
+                }
+                // A stale/missing Vulkan installation must not prevent a deliberate GL launch.
+                hashes["Bin/libvulkan.1.dylib"]=new string('a',64);hashes["Bin/libMoltenVK.dylib"]=new string('b',64);
+                var manifest=new Dictionary<string,object>{{"vulkan_driver","unavailable"},{"files",hashes}};
+                var env=NativeHost.PortableGpuEnvironment(folder,manifest,"opengl");
+                Need(env.Count==1 && (string)env["DYLD_LIBRARY_PATH"]==Core.PathIn(folder,"Bin"),"GL selected Vulkan overrides or lost its compiler path");
+                bool rejected=false;try{NativeHost.PortableGpuEnvironment(folder,manifest,"vulkan");}catch{rejected=true;}
+                Need(rejected,"Vulkan accepted unavailable driver metadata");
+                File.WriteAllText(Core.PathIn(folder,"Bin/libdxcompiler.dylib"),"changed");
+                rejected=false;try{NativeHost.PortableGpuEnvironment(folder,manifest,"opengl");}catch{rejected=true;}
+                Need(rejected,"GL bypassed compiler integrity checks");
+                Need(!Directory.Exists(Path.Combine(folder,"Settings")),"Read-only preflight wrote settings");
+            });
+#endif
             SaveBackupChecks.Run(root,Test);
             Test("complete language packs save, cancel, launch and restore English",()=>{
                 string folder=Path.Combine(root,"languages");Directory.CreateDirectory(folder);

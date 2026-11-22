@@ -1,4 +1,4 @@
-[GL flow](opengl-recovery.md).
+[GL preflight](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

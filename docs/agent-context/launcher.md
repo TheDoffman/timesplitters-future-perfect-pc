@@ -7,8 +7,12 @@ settings remain preserved. Save/Cancel/dirty-state and restart persistence have
 shared UI regressions; the Windows settings child checks both actual environments.
 New build/package supported_renderers receipts advertise compiled choices; old
 receipts allow only their primary backend. Unsupported selection remains saved
-but launch fails clearly with update/selection guidance. Native driver preparation
-still needs validation for explicit OpenGL, especially Mac Vulkan prerequisites.
+but launch fails clearly with update/selection guidance. Native launch/--check preflight and Configure now follow the selected renderer.
+Mac common OpenGL validates DXC/other shared dylibs and sets its library path
+without Vulkan driver metadata/ICD/loader requirements; full installation Verify
+still checks the primary package. Checkout GL retains pinned SDK integrity checks
+for its shared compiler, but injects no Vulkan overrides. Legacy gl manifests
+keep their existing route. Native Mac execution remains unverified.
 No automatic recovery gate changes. See [selector and acceptance](opengl-recovery.md).
 RendererGameSmoke now selects/saves both choices through the actual UI and
 LaunchGame; game hardware acceptance remains separate from launcher unit checks.

@@ -147,6 +147,13 @@ def select_driver(manifest, override=None):
 
 def launch_environment(root, manifest, override=None):
     """Shared read-only launcher boundary; no preferences or manifest writes."""
+    renderer = manifest.get('renderer', 'vulkan')
+    if renderer == 'opengl':
+        # Both common backends use the pinned DXC library. An explicit GL launch
+        # does not select a Vulkan driver or inject Vulkan loader overrides.
+        return dict(DYLD_LIBRARY_PATH=str(verify_install(root) / 'lib'))
+    if renderer != 'vulkan':
+        raise ValueError('Unknown renderer')
     driver = select_driver(manifest, override)
     return gpu_environment(verify_install(root), driver)
 

@@ -67,7 +67,7 @@ return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(
 #if MACOS
 Core.Require(StorageError==null,StorageError);
 #endif
-Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine(LauncherPlatform.HostName+" launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
+Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root,GameSettings.Load(Root,null).Renderer);Console.WriteLine(LauncherPlatform.HostName+" launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
             return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args);
         }
         internal static string FindRoot(string[] args, string baseDirectory=null)

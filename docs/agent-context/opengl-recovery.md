@@ -1325,3 +1325,23 @@ Linux automatic recovery staysOFF pending corrected state/control verification,
 display/fullscreen, performance and packaged-host acceptance. Native Mac remains
 unavailable with its own unchanged acceptance gaps; Windows checks cannot waive
 those requirements. No personal save/settings directory was used.
+
+
+## Renderer-aware native launch preflight
+
+NativeWindow Play and command-line --check now pass the saved renderer to
+NativeHost.CheckBuild. Configure uses the already scrubbed/selected child backend.
+For Mac common OpenGL, PortableGpuEnvironment checks DXC and other shared dylibs,
+sets DYLD_LIBRARY_PATH, and does not require Vulkan loader/MoltenVK/ICD metadata.
+Vulkan keeps its original checks, environment and driver restrictions. Full
+installation Verify still checks the primary package; legacy renderer=gl routes
+are unchanged. The checkout helper passes renderer metadata into launch_environment:
+OpenGL verifies the pinned compiler SDK but does not select/inject Vulkan driver
+settings. No save/settings/manifest writes are added. Native Mac runtime behavior
+remains unavailable, not approved by a source fix.
+
+New actual C# shared UI regression exercises the portable GL environment with
+missing Vulkan files/driver metadata, rejecting a changed compiler. Python SDK
+regressions verify GL bypasses Vulkan selection but still requires compiler
+integrity. The45 SDK/native-Mac launcher Python checks pass. Native C# build/run
+and Mac compile checks must follow; all production automatic gates remainOFF.
