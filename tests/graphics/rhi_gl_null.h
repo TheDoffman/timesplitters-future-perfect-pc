@@ -3,6 +3,10 @@
 static void gl_null_case(RhiView *target,unsigned type,unsigned layers,int cube,unsigned format,unsigned samples,
                          const char *source,const void *data,unsigned row,const float expected[4],const float missing[4])
 {
+    if(samples>1) {
+        while(samples<=8 && !rhi_sample_count_supported(format,samples))samples*=2;
+        CHECK(samples<=8); /* Still require both multisample null-resource cases. */
+    }
     fprintf(stderr,"NULL case type=%u layers=%u cube=%d format=%u samples=%u\n",type,layers,cube,format,samples);
     RhiImageDesc d={0};d.type=type;d.width=d.height=d.mip_levels=1;d.depth=layers;d.cube=cube;d.samples=samples;
     d.format=format;d.bind=RHI_BIND_SAMPLED|(format==RHI_FORMAT_D32_FLOAT?RHI_BIND_DEPTH:RHI_BIND_RENDER_TARGET);

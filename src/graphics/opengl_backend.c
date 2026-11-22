@@ -87,8 +87,10 @@ static void APIENTRY debug_message(GLenum source,GLenum type,GLuint id,GLenum se
                                   GLsizei length,const GLchar *message,const void *user)
 {
     (void)source;(void)id;(void)length;(void)user;
-    if(type==GL_DEBUG_TYPE_ERROR || severity==GL_DEBUG_SEVERITY_HIGH)
+    if(type==GL_DEBUG_TYPE_ERROR)
         fprintf(stderr,"[RHI] ERROR: opengl driver: %s\n",message);
+    else if(severity==GL_DEBUG_SEVERITY_HIGH || severity==GL_DEBUG_SEVERITY_MEDIUM)
+        fprintf(stderr,"[RHI] WARNING: opengl driver (severity0x%x): %s\n",severity,message);
 }
 static GlFormat format(RhiFormat value)
 {
@@ -175,13 +177,21 @@ static int g_sample_count(RhiFormat value,uint32_t samples)
      * Core4.1 compatibility preserves requested settings but advertises only
      * the complete single-sample path rather than creating unusable views. */
     if(!S.stencil_texture || !S.views || !S.storage_ms)return 0;
-    /* Probe the real internal format; GL_MAX_SAMPLES alone overstates support
-     * for integer or floating targets on some drivers. No bound state changes. */
-    GLint previous=0;GLuint id=0;glGetIntegerv(GL_TEXTURE_BINDING_2D_MULTISAMPLE,&previous);
-    glGenTextures(1,&id);glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,id);
-    G.TexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,samples,f.internal,4,4,GL_TRUE);
-    GLenum error=glGetError();glBindTexture(GL_TEXTURE_2D_MULTISAMPLE,(GLuint)previous);glDeleteTextures(1,&id);
-    while(glGetError()!=GL_NO_ERROR){}return error==GL_NO_ERROR;
+    /* Allocation may round the request up (e.g.2 to4), so successful storage
+     * alone does not prove an exact sample count. Query both texture targets
+     * without deliberately generating driver errors for unsupported counts. */
+    if(!G.GetInternalformativ)return 0;
+    GLint major=0,minor=0;glGetIntegerv(GL_MAJOR_VERSION,&major);glGetIntegerv(GL_MINOR_VERSION,&minor);
+    if(major<4 || (major==4 && minor<3 && !extension("GL_ARB_internalformat_query2")))return 0;
+    const GLenum targets[]={GL_TEXTURE_2D_MULTISAMPLE,GL_TEXTURE_2D_MULTISAMPLE_ARRAY};
+    for(unsigned target=0;target<2;target++) {
+        GLint counts[32]={0};int found=0;
+        G.GetInternalformativ(targets[target],f.internal,GL_SAMPLES,32,counts);
+        if(!gl_ok("sample count query"))return 0;
+        for(unsigned i=0;i<32;i++)if(counts[i]==(GLint)samples)found=1;
+        if(!found)return 0;
+    }
+    return 1;
 }
 static RhiImage *image_create_target(const RhiImageDesc *input,const RhiSubresourceData *data,int array)
 {

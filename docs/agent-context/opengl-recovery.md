@@ -622,3 +622,16 @@ or erroneous output. Windows Python checks:14passed,1Linux-only skip. Native
 compilation and GPU execution for this new full-RHI path are pending at this
 source checkpoint; earlier standalone pixels do not establish these results.
 All production gates remain OFF.
+
+
+First full native software run at1656ab60 compiled and dispatched worker work,
+but failed the sample-averaging pixel assertion. Existing allocation probes only
+checked for GL error; OpenGL can round requested2 to actual4. Unsupported8 also
+emitted an expected API error during capability probing. Replace allocation
+probes with exact GL_SAMPLES queries for both 2D multisample and array targets,
+requiring query2/core4.3 support for the already extension-dependent MS path.
+No unsupported sample allocation or false exact-count claim is needed. Typed-null
+MS tests choose an advertised count, still requiring both positive/missing cases.
+Mesa compiler warnings retain their severity in WARNING logs; GL error-type
+messages remain ERROR, and GL status/compile/link failures keep their checks.
+The failed run is not Linux acceptance; reruns are required. Gates remain OFF.
