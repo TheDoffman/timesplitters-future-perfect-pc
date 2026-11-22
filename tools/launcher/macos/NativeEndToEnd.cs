@@ -37,7 +37,7 @@ namespace TimeSplitters.Launcher
                     Core.Require(picker.SelectedIndex!=selected,"Selector test must switch from the opposite saved renderer.");
                     picker.SelectedIndex=selected;
                     var save=settings.View.GetLogicalDescendants().OfType<Button>().Single(b=>b.Name=="SettingsSaveButton");
-                    save.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    save.RaiseEvent(new RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
                     Core.Require(GameSettings.Load(root,null).Renderer==renderer&&!save.IsEnabled,"Renderer selection was not saved.");
                 }
                 NativeHost.CheckBuild(launchRoot,selector?renderer:null);

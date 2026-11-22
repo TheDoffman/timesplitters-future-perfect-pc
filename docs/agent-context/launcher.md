@@ -7,7 +7,8 @@ Mac lifecycle checks remain strict. Linux selector reports window observation as
 unverified and requires selected-backend presents instead; this is lifecycle/
 routing coverage, not physical visibility or update-recovery approval. Original
 assets are read separately; this fixture is not release package relocation.
-Native compile/runtime verification of this new route remains pending.
+Selector Save uses the actual Avalonia routed click (qualified to avoid the
+window Button helper name); compile/runtime verification remains pending.
 
 Launcher renderer selector restored in development (2026-11-22): shared
 SettingsPage Graphics > Advanced offers Vulkan (Default) and OpenGL. GameSettings
