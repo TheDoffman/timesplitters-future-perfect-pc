@@ -2141,6 +2141,14 @@
       ]
     },
     {
+      "name": "2810-arcade-player-name-anchor.patch",
+      "path": "patches/graphics/interface/2810-arcade-player-name-anchor.patch",
+      "sha256": "c7e30b39756566eebfb6809be5ebb972ac65cff92a0b795ffece37e8d171d1cd",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "3000-arcade-migration-build.patch",
       "path": "patches/network/3000-arcade-migration-build.patch",
       "sha256": "8c6479f6b5010dfa7e67f2af754bab0ce927ccd8d38ccc73894c73a71ab676e7",

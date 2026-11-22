@@ -1,0 +1,16 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1618,2 +1618,13 @@
+ /* US HUD groups: preserve proportions and anchor whole widgets. */
++/* Arcade's local player-name label uses the authored left HUD inset. */
++extern void sub_0012DBA0_gen(void);
++void sub_0012DBA0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_ui(sub_0012DBA0_gen,0x0012DBA0u);
++#else
++    sub_0012DBA0_gen();
++#endif
++}
++
+ extern void sub_0013FC50_gen(void);
