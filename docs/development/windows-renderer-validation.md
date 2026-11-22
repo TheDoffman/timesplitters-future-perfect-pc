@@ -5,9 +5,14 @@ Vulkan driver/device/compiler contracts require initialization failure without
 backend switching. Recovery rows and measurements below are historical; use
 tools/testing/test-rhi-windows.py for the current startup-failure checks.
 
-The launcher selector was removed on 2026-11-22. The real-launcher runner now
-checks Vulkan only; paired launcher measurements below describe the previously
-validated builds. Use the direct game/RHI runners for new D3D11 comparisons.
+The launcher selector was removed on 2026-11-22. The normal launcher still selects Vulkan. The opt-in runner also supports
+--backend opengl as an explicit developer StartInfo probe, and --startup-recovery
+opengl|both-fail through actual Vulkan LaunchGame with isolated failure injection.
+Recovery probes require an explicitly accepted local development binary; normal
+production builds intentionally keep recovery disabled. No renderer selector was
+restored. Paired D3D11 measurements below are historical; use direct game/RHI
+runners for new D3D11 comparisons. The matrix below does not approve OpenGL;
+current recovery evidence is in [the recovery guide](../agent-context/opengl-recovery.md).
 
 This is the acceptance matrix for making Vulkan the Windows default while
 retaining Direct3D 11. Available-host acceptance is complete; the

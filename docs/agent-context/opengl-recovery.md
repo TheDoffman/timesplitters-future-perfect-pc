@@ -308,3 +308,106 @@ the recovery fixture was rebuilt with acceptance OFF afterward. Those final
 rebuilds have distinct hashes: ordinary `77266c99780686c7fcf31ea0cf0e3308d7db652adc8862751e65e7d2d7ac59bb`,
 recovery `b8d3410541fe8cc829e5c33582ef4a189bb165462c4b486dc646f331ef3c0760`.
 The earlier explicitGL/restricted4.1 hashes above describe their actual runs.
+
+## Actual launcher recovery and terminal failure (afterac4fb17d)
+
+The opt-in Windows runner accepts --startup-recovery opengl|both-fail only with
+its actual Vulkan launcher route. It inherits a nonexistent Vulkan driver path
+in the test harness/child only; launcher defaults and saved renderer policy are
+unchanged. Successful recovery requires one attempt/selection, the original
+Vulkan failure reason, only OpenGL guest presents, gameplay/quality checks and
+clean exit. Both-fail requires one attempt, both reasons, no selection/presents,
+bounded exit with a nonzero code and byte-identical Settings files. Synthetic
+installed custom DDS files are hashed before/after both routes; this proves
+file preservation, not installed Enhanced-pack visual fidelity.
+
+The trial uses a local ignored CMake project include, setting
+TSFP_OPENGL_RECOVERY_ACCEPTED=1 solely on xbox_d3d8's rhi.c source. It does not
+change tracked production eligibility. The normal game must be reconfigured
+without that include and rebuilt after testing. Do not package the trial binary.
+The full ALL_BUILD trial initially hit unrelated smoke targets lacking project
+includes; the explicit futureperfect_recomp target builds successfully. The
+supported tsfp.ps1 Build remains the ordinary full-build/check route.
+
+A real both-fail probe exposed a missing integration step: HLE shadow_create
+logged CreateDevice failure, destroyed its window, then let the console guest
+run blind. Patch3055 terminates common-frontend startup with status2 after a
+flushed explicit error; failed backend attempts were already destroyed by the
+shared RHI transaction. It does not change the legacy-Mac frontend's historical
+path. Raw RHI fixtures still return failure for repeated-cleanup tests.
+
+Test injection also has a source-build detail: removing sandbox DXC DLLs does
+not guarantee failure because the development executable has an absolute DXC
+fallback. gl-launcher-both-fail-01 therefore timed out while GL worked, not an
+engine failure. The nonshipped tests/launcher_lifecycle/DxcUnavailable.c fixture
+exports DxcCreateInstance returning E_FAIL; only a copied DLL in the disposable
+install uses it. No system/source dependency is renamed or modified. With this
+injection gl-launcher-both-fail-02 exposed the blind-run defect; it is historical
+failed evidence. After3055, gl-launcher-both-fail-03 passes in0.42s with exit2,
+no presents, exact settings and installed custom asset preservation.
+
+Before3055, gl-launcher-recover-01 passes120s through actual LaunchGame: Vulkan
+vkCreateInstance failure, one OpenGL recovery, gameplay/movement/weapon,
+MSAA4/SMAA2/AF16/actual SSAO, saved quality/defaultVulkan and clean exit0.
+Game SHA256 0d2cad5ca70faaca6b6e2d8c9e1531ccdac63d9c884d0318b73e8605e2f2bdc3;
+sourceac4fb17d plus uncommitted test harness and local trial definition.
+Reports: logs/renderer-validation/<label>/. Later3055 game provenance and Scotland
+acceptance are recorded after their runs, separately from this earlier binary.
+All production platform gates remain OFF pending the remaining goal checks.
+
+### Shutdown integration and final trial evidence
+
+Scotland trials01/02 reached gameplay and completed fullscreen/resize but failed
+clean exit with0xC0000005 immediately after the exit-trace stack heading. Trial03
+added an AV guard around diagnostics, which passes injected unit faults, but still
+failed in the game. Do not report those runs as overall acceptance. The exact
+internal faulting instruction was not captured. Patch3056 now logs successful
+exit status without walking stacks after CRT/driver teardown; nonzero exits retain
+AV-guarded tracing. Only tracing is guarded. The Windows native test includes
+production exit_trace.c, injects stack-capture/symbol/guest-stack faults, checks
+requested0/2 outcomes, and confirms an AV outside reporting still fails. It is
+registered in the native_windows CI suite. The guard alone was insufficient;
+the normal-exit policy change is part of the validated fix.
+
+After3055/3056, gl-recover-scotland-04 passes120s actual-launcher automatic
+Vulkan-to-GL recovery, scene4 gameplay/movement/weapon, active4x MSAA/SSAO/SMAA,
+Auto resizing, fullscreen/windowed/restore, installed custom DDS preservation,
+saved quality/defaultVulkan and clean exit0. Game SHA256 `11c959a9e59c67274e93ecb7de3f0c9c7804a31d896c1a46095fd3a7870cc632`.
+Reviewed DXGI desktop frames vulkan-0.png and vulkan-1.png are actually recovered
+OpenGL: upright cave/wood surfaces, held pistol, reticle, ammunition HUD and bullet
+impact; later movement approaches a wall. The filename reflects the launcher's
+requested primary, not the renderer that presented. Captured display dimensions
+and scene-target checks pass; these capture-enabled samples are not a benchmark.
+The final log explicitly records normal exit with stack tracing skipped.
+
+gl-launcher-both-fail-04 passes again with the same trial executable: exit2,
+one recovery attempt, both failure reasons, no presents/selection, exact saved
+settings and installed custom DDS preservation. Windows11/MSVC19.44/RTX4070SUPER
+617.42/SDK1.4.363.0; sourceac4fb17d plus the patches/test changes in this checkpoint
+and the local accepted rhi.c definition. Older successful both-fail03 used game
+bd7112dbfe13560ce2b7826816043c3e1683e924a8567d0320cdacd731a0bda8.
+
+The trial CMake include was then removed and ordinary tsfp.ps1 Build plus its
+mandatory tests passed. No accepted definition remains in the ordinary game
+project/cache. vk-after-recovery-fixes-01 passes120s Scotland gameplay through
+unchanged LaunchGame with actual Vulkan, requested4x MSAA/SMAA/AF16 and actual
+SSAO, preserved custom DDS/defaultVulkan/quality and clean exit0. Its ordinary
+executable SHA256 is `f6ec54e5dc74e4713132bf1190af148f49f3fb56f98340994eefb4ad22c73f26`. Production recovery remains OFF everywhere.
+
+The first broad patch-upgrade test run overlapped the addition of3056: its static
+fixture file list lacked the newly added exit_trace.c target, causing15 failures
+and61 passes. This is invalid final upgrade evidence; the full suite is being
+rerun against the now-stable patch list. Both full-stack revalidation runs pass.
+The final unit/hardware/upgrade results are recorded after completion.
+
+Linux preparation: separate /root/tsfp-opengl-recovery checkout at ac4fb17d,
+pinned requirements installed, SPIRV-Cross verified, Linux SDK1.4.363.0 verified
+and the same supported US XBE hash confirmed. The Windows worktree .git file uses
+a Windows absolute path, so Linux cloned the common TS Decompile/.git object
+store, without editing another checkout. The SDK verifier rejected a symlinked
+installation; the new checkout instead has real directories with hardlinked
+immutable SDK files from /root/tsfp-linux. Never run setup or modify these shared
+SDK files; verify only. SPIRV-Cross and private/game are read-only reuse links to
+the Windows source/data. Do not duplicate game extracts or alter other checkouts.
+Fetch this checkpoint's final commit before native source/build/GPU testing.
+These are prerequisite results only; no Linux game/GPU acceptance is established.

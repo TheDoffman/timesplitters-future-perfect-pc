@@ -1,3 +1,30 @@
+## Actual OpenGL launcher recovery passes; failed startup now exits (2026-11-22)
+
+Local checkpoint afterac4fb17d on feature/opengl-startup-recovery. The actual
+unchanged launcher now passes bounded Vulkan-failure-to-OpenGL gameplay in two
+Story openings, including Scotland fullscreen/Auto resize and actual SSAO/MSAA.
+A separate both-fail case exits2 promptly with clear reasons, no presents and
+exact settings/custom DDS preservation. Patch3055 fixes the previous blind run
+after host CreateDevice failure, preserving the legacy-Mac path.
+
+Scotland exposed a shutdown fault at exit stack tracing. An exception guard alone
+was insufficient. Patch3056 logs normal exit without a post-teardown stack walk;
+nonzero exits keep guarded diagnostics. Injected tests preserve0/2 and confirm
+faults outside tracing still fail. The final Scotland recovery test exits0 and
+reviewed desktop frames show upright world/weapon/reticle/HUD/impact rendering.
+The temporary accepted compile definition was removed; ordinary Windows Build
+and mandatory checks pass. A120s actual-launcher Vulkan Scotland control also
+passes, preserving graphics/default settings and custom DDS bytes, with exit0.
+Exact executable hashes, failed earlier trials and test scope are in
+[recovery evidence](../agent-context/opengl-recovery.md).
+
+All production recovery gates remain OFF. Native build/GPU/event-loop/capability
+acceptance and remaining common resource review are still pending. A separate
+WSL checkout now has verified pinned Python/compiler/SDK prerequisites and the
+supported US XBE, reusing immutable dependencies/data; this is not a Linux build
+or gameplay pass. Native Mac hardware is unavailable and legacy GL is unchanged.
+Apple OpenGL is deprecated. No publication or merge has occurred.
+
 ## OpenGL display, effects and five-minute Windows stability pass; recovery gated (2026-11-22)
 
 Local checkpoint after33e5a469 on feature/opengl-startup-recovery. Shared GL4.1

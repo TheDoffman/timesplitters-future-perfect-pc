@@ -15,8 +15,14 @@ logical identity, input/settings rebinding and main-thread GPU dispatch are
 implemented with injected rollback tests, but actual event servicing remains
 unverified. Native build/package/GPU/display/effects/settings/performance checks
 are pending; Linux WSL work is not yet completed, Mac hardware unavailable here.
-Actual ordinary-game recovery trials, extra scenes and texture preservation also
-remain. Legacy Mac GL is unchanged and Apple's OpenGL is deprecated. See
+Actual Windows launcher recovery, both-fail termination, Scotland display/gameplay
+and synthetic installed custom DDS preservation now pass in a local trial.
+Patch3055 exits failed common-frontend startup instead of running blind; legacy
+Mac keeps its old path. Patch3056 guards Windows failure tracing and avoids normal
+post-teardown stack walks. The trial definition is removed and normal Vulkan
+launcher gameplay/build checks pass again. Remaining common resource review and
+native acceptance still prevent approval. WSL prerequisites are now verified in
+a separate checkout; source/build/GPU execution at this checkpoint is pending. Legacy Mac GL is unchanged and Apple's OpenGL is deprecated. See
 agent-context/opengl-recovery.md and STATUS for hashes and exact evidence.
 
 Windows renderer startup failure (2026-11-22): automatic D3D11 recovery removed

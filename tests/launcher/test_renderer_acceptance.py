@@ -189,8 +189,8 @@ def test_save_copy_refuses_redirected_destination_without_changing_source(tmp_pa
 
 
 def test_timeout_stops_owned_child_and_recycles_only_test_disks(tmp_path, monkeypatch):
-    install = tmp_path / "install"
-    install.mkdir()
+    install = tmp_path / "private/test-saves/install"
+    install.mkdir(parents=True)
     run = tmp_path / "run"
     args = SimpleNamespace(seconds=120, capture=False, width=1280, height=720,
                            msaa=1, aa=0, anisotropy=1, fullscreen=False, label="timeout")
@@ -225,3 +225,43 @@ def test_timeout_stops_owned_child_and_recycles_only_test_disks(tmp_path, monkey
     assert child.killed
     assert cleaned == [("stop", install), ("recycle", install)]
     assert not (evidence / "vulkan-cold/verified.json").exists()
+
+
+def test_recovery_requires_explicit_attempt_reason_and_outcome():
+    prefix='[RHI] vulkan: vkCreateInstance failed\n[RHI] Vulkan initialization failed; attempting OpenGL startup recovery\n'
+    selected=prefix+'[RHI] startup recovery selected opengl\n'
+    assert all(runner.recovery_checks(selected,'opengl').values())
+    assert not all(runner.recovery_checks(selected.replace('vkCreateInstance failed','unknown'),'opengl').values())
+    assert not all(runner.recovery_checks(selected+selected,'opengl').values())
+    assert not all(runner.recovery_checks(selected+'[PRESENT] backend=d3d11','opengl').values())
+    failed=prefix.replace('vkCreateInstance failed','DXC is present but would not start')+'shared DXC shader compiler is unavailable\n[RHI] ERROR: Vulkan and OpenGL initialization failed; no renderer is ready\n'
+    assert all(runner.recovery_checks(failed,'both-fail').values())
+    assert not all(runner.recovery_checks(failed+'[PRESENT] backend=opengl','both-fail').values())
+    assert not all(runner.recovery_checks(failed+'[RHI] startup recovery selected opengl','both-fail').values())
+
+
+def test_installed_custom_assets_survive_and_changes_are_detected(tmp_path,monkeypatch):
+    monkeypatch.setattr(runner,'ROOT',tmp_path)
+    install=tmp_path/'private/test-saves/install'
+    before=runner.preservation_snapshot(install)
+    assert runner.preserved_files(install,before)
+    path=install/next(iter(before))
+    path.write_bytes(b'changed')
+    assert not runner.preserved_files(install,before)
+    path.unlink()
+    assert not runner.preserved_files(install,before)
+
+
+def test_preservation_snapshot_refuses_linked_custom_file(tmp_path,monkeypatch):
+    monkeypatch.setattr(runner,'ROOT',tmp_path)
+    install=tmp_path/'private/test-saves/install'
+    runner.preservation_snapshot(install)
+    outside=tmp_path/'outside.dds'
+    outside.write_bytes(b'outside')
+    try:
+        (install/'Textures/Custom/linked.dds').symlink_to(outside)
+    except OSError:
+        pytest.skip('Host does not permit creating a file symlink')
+    with pytest.raises(ValueError,match='linked test path'):
+        runner.preservation_snapshot(install)
+    assert outside.read_bytes()==b'outside'

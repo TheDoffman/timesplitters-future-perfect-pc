@@ -88,3 +88,7 @@ The experimental OpenGL recovery backend now passes bounded Windows gameplay,
 display and stability checks in developer tests. Automatic recovery remains
 disabled until the remaining acceptance checks pass; Vulkan remains the default
 and the launcher has no renderer selector. Native Linux/Mac recovery is unverified.
+
+Renderer startup failure now exits with an error instead of letting the game
+continue without a picture. Source tests cover automatic OpenGL recovery through
+the real launcher, but production recovery is still disabled pending acceptance.

@@ -122,7 +122,8 @@ public static class RendererGameSmoke {
  }
  static async Task Run(string backend){
   string expectedBackend=config.ContainsKey("expected_backend")?(string)config["expected_backend"]:backend;
-  Need(expectedBackend==backend,"Renderer fallback is not supported");
+  string recovery=config.ContainsKey("startup_recovery")?(string)config["startup_recovery"]:null;
+  Need(expectedBackend==backend || (backend=="vulkan" && expectedBackend=="opengl" && (recovery=="opengl" || recovery=="both-fail")),"Unrequested renderer fallback");
   var initial=GameSettings.Load(root,null);initial.SkipStartupSplashes=true;initial.Width=Number("width",1280);initial.Height=Number("height",720);initial.Fullscreen=Flag("fullscreen");initial.Msaa=Number("msaa",1);initial.PostAntiAliasing=Number("aa",0);initial.Anisotropy=Number("anisotropy",1);initial.AmbientOcclusion=Number("ao",0);initial.Save();
   // Shared executable is unmodified; preview mode only suppresses network checks.
   var ui=new LauncherWindow(root,true);ui.Window.Show();ui.ShowSettings(1);
@@ -133,10 +134,22 @@ public static class RendererGameSmoke {
   Console.WriteLine(backend=="vulkan"?"DEFAULT Vulkan through actual launcher settings and LaunchGame":"DEVELOPER OpenGL probe through launcher settings/StartInfo; child-only backend override");
   if(backend=="opengl")ui.Window.Hide();
   int duration=Number("seconds",120);Need(duration>=120 && duration<=600,"Duration outside 120..600 seconds");
+  var settingsBefore=Directory.GetFiles(Path.Combine(root,"Settings")).ToDictionary(p=>p,p=>File.ReadAllBytes(p));
   var clock=Stopwatch.StartNew();
   var method=typeof(LauncherWindow).GetMethod("LaunchGame",BindingFlags.Instance|BindingFlags.NonPublic);
   var launch=backend=="vulkan"?(Task)method.Invoke(ui,new object[]{null}):LaunchProbe(backend);
   string liveLog=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").OrderBy(File.GetLastWriteTimeUtc).Last();
+  if(recovery=="both-fail"){
+   var done=await Task.WhenAny(launch,Task.Delay(30000));Need(done==launch,"Both-fail startup did not terminate within30s");await launch;
+   string text=File.ReadAllText(liveLog);File.Copy(liveLog,Path.Combine(evidence,backend+".err"),true);
+   Need(text.Contains("Vulkan and OpenGL initialization failed; no renderer is ready") && !text.Contains("[PRESENT]"),"Both-fail startup diagnostics/presentation incorrect");
+   var session=Json.Object(File.ReadAllText(Path.Combine(root,".launcher/game-session.json")));
+   Need(Convert.ToInt32(session["exit_code"])!=0,"Failed startup was reported as clean exit");
+   foreach(var file in settingsBefore)Need(File.ReadAllBytes(file.Key).SequenceEqual(file.Value),"Failed startup changed saved settings: "+file.Key);
+   Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","Failed startup changed launcher default");
+   File.WriteAllText(Path.Combine(evidence,backend+"-result.json"),Json.Encode(new {passed=true,backend=backend,launch_route="launcher",startup_outcome="both-fail",seconds=clock.Elapsed.TotalSeconds,exit_code=session["exit_code"],settings_preserved=true,source_log=liveLog}));
+   Console.WriteLine("PASS actual launcher bounded both-fail startup and settings preservation");return;
+  }
   Process game=null;
   while(game==null && clock.Elapsed.TotalSeconds<10){foreach(var p in Process.GetProcessesByName("futureperfect_recomp")){try{if(String.Equals(p.MainModule.FileName,Path.GetFullPath(Path.Combine(root,"Bin/futureperfect_recomp.exe")),StringComparison.OrdinalIgnoreCase)){game=p;break;}}catch{}p.Dispose();}await Task.Delay(100);}
   Need(game!=null,"Launcher did not create game process");owned=game;

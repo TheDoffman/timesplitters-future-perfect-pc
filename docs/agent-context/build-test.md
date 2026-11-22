@@ -1,4 +1,4 @@
-[GL 4.1](opengl-recovery.md).
+[GL fail](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

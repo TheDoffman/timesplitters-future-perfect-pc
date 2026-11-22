@@ -305,7 +305,8 @@
     "tests/gameplay/test_prediction_targets.py",
     "tests/repository/test_config_initialization.py",
     "tests/gameplay/test_pc_refresh.py",
-    "tests/graphics/test_window_theme.py"
+    "tests/graphics/test_window_theme.py",
+    "tests/diagnostics/test_exit_trace_guard.py"
   ],
   "release": [
     "tests/launcher/test_publish_release.py",
