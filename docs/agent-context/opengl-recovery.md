@@ -728,3 +728,23 @@ portable OS-call fixture passes Windows checks for Vulkan-window success,
 Vulkan-window failure then neutral success, both window creations failing,
 main-thread guard, flags/title/size retention and no renderer selection/commit.
 Actual native adapter compilation/recovery/window-rebind tests are next.
+
+
+### Native automatic-recovery fixture wiring
+
+The native RHI fixture now uses the real primary-window helper and real GL
+window-replacement helper with a fixture-owned commit callback. The retained
+logical token is asserted while title/dimensions and the replacement's GL flag
+are checked after automatic recovery. `TSFP_TEST_OPENGL_RECOVERY` is a private
+fixture compile switch, requires TSFP_TEST_OPENGL and defaultsOFF. Ordinary
+Linux runner explicitly resets itOFF on every configure. Production gates stay0.
+This fixture verifies its own window owner; it does not prove production input,
+settings-dialog/render-host rebinding or guest wait-loop service in an actual game.
+
+Expected startup failure verifies no ready renderer, unchanged Vulkan selection,
+and repeated cleanup; partial GL drawable failure can occur after replacement.
+Native fixture builds also provide a nonshipped libdxcompiler stub for genuine
+both-fail tests, using portable32-bit HRESULT/export/calling conventions with
+the same Windows lifecycle stub source. The installed pinned SDK is never
+renamed/modified. Windows window/runner units:15passed,1Linux-only skip. Actual
+native compile and injected recovery runs are pending this wiring checkpoint.

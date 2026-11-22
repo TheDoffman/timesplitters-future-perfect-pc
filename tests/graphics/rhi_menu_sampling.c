@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #ifdef RHI_VULKAN_SDL
 #include <SDL3/SDL.h>
+#include "opengl_window_sdl.h"
 #endif
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x);exit(1); } } while(0)
 static RhiImage *target;
@@ -48,6 +49,9 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #include "rhi_vertex_streams.h"
 #include "rhi_gl41_views.h"
 #include "rhi_gl_null.h"
+#ifdef RHI_HAVE_OPENGL
+#include "opengl_host.h"
+#endif
 #ifdef RHI_VULKAN_SDL
 #include "vulkan_present_outcomes.h"
 #endif
@@ -70,6 +74,15 @@ static void gl_resource_work(unsigned channel)
 }
 #endif
 #if defined(RHI_VULKAN_SDL) && defined(RHI_HAVE_OPENGL)
+static SDL_Window *native_test_window;
+static void *native_test_logical;
+static int native_test_commit(SDL_Window *old,SDL_Window *next)
+{CHECK(old==native_test_window);native_test_window=next;return 1;}
+static void *native_test_prepare(void *logical)
+{
+    CHECK(logical==native_test_logical || logical==native_test_window);
+    return tsfp_native_gl_window(native_test_window,native_test_commit);
+}
 typedef struct {unsigned channel;SDL_AtomicInt done;} GlNativeWorker;
 static int gl_native_work(void *argument)
 {GlNativeWorker *worker=argument;gl_resource_work(worker->channel);SDL_SetAtomicInt(&worker->done,1);return 0;}
@@ -173,12 +186,41 @@ int main(void) {
 #endif
     int gl=!strcmp(backend,"opengl");
     if(gl){CHECK(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,4));CHECK(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,1));CHECK(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,SDL_GL_CONTEXT_PROFILE_CORE));}
-    window=SDL_CreateWindow("Shared RHI regression",64,64,(gl?SDL_WINDOW_OPENGL:SDL_WINDOW_VULKAN)|SDL_WINDOW_HIDDEN);
+    window=gl?SDL_CreateWindow("Shared RHI regression",64,64,SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN):
+        tsfp_native_primary_window("Shared RHI regression",64,64,SDL_WINDOW_HIDDEN);
+    if(!window)fprintf(stderr,"Native fixture window: %s\n",SDL_GetError());
     CHECK(window);
+#ifdef RHI_HAVE_OPENGL
+    native_test_window=window;native_test_logical=window;
+    tsfp_gl_host_set_window_adapter(native_test_prepare);
+#endif
     CHECK(rhi_select_backend(backend)==0);
     RhiDeviceDesc device={window,64,64,2,1,1};
+    if(getenv("TSFP_TEST_EMPTY_DRAWABLE"))device.width=0;
+    if(getenv("TSFP_TEST_EXPECT_STARTUP_FAILURE")) {
+        CHECK(rhi_device_create(&device)!=0);
+        CHECK(!rhi_device_ready() && !strcmp(rhi_backend_name(),"vulkan"));
+        rhi_device_destroy();rhi_device_destroy();CHECK(!rhi_device_ready());
+#ifdef RHI_HAVE_OPENGL
+        window=native_test_window;
+#endif
+        SDL_DestroyWindow(window);SDL_Quit();
+        puts("PASS: native startup failed with no renderer ready and repeated cleanup");return 0;
+    }
     CHECK(rhi_device_create(&device)==0 && rhi_device_ready());
-    CHECK(!strcmp(rhi_backend_name(),backend));printf("BACKEND: %s\n",rhi_backend_name());
+    const char *expected=getenv("TSFP_TEST_EXPECT_BACKEND");
+    CHECK(!strcmp(rhi_backend_name(),expected?expected:backend));printf("BACKEND: %s\n",rhi_backend_name());
+#ifdef RHI_HAVE_OPENGL
+    window=native_test_window;
+    if(strcmp(backend,rhi_backend_name())) {
+        int width=0,height=0;
+        CHECK(native_test_logical==device.window && window!=device.window);
+        CHECK(SDL_GetWindowFlags(window)&SDL_WINDOW_OPENGL);
+        CHECK(SDL_GetWindowSize(window,&width,&height) && width==64 && height==64);
+        CHECK(!strcmp(SDL_GetWindowTitle(window),"Shared RHI regression"));
+        puts("PASS: native automatic drawable replacement and retained logical window");
+    }
+#endif
 #ifdef RHI_HAVE_OPENGL
     gl_native_handoff_test();
 #endif

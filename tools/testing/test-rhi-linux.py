@@ -106,7 +106,7 @@ def main():
     build = ROOT / 'build/linux/rhi-tests'
     run(cmake, '-S', ROOT / 'tests/rhi', '-B', build, '-G', 'Ninja',
         '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_MAKE_PROGRAM=' + str(ninja),
-        '-DTSFP_VULKAN_SDK=' + str(sdk),'-DTSFP_TEST_OPENGL='+('ON' if args.backend=='opengl' else 'OFF'))
+        '-DTSFP_VULKAN_SDK=' + str(sdk),'-DTSFP_TEST_OPENGL='+('ON' if args.backend=='opengl' else 'OFF'), '-DTSFP_TEST_OPENGL_RECOVERY=OFF')
     run(cmake, '--build', build, '--target', 'tsfp_rhi_vulkan_test', 'd3d8_replay', 'tsfp_native_mmio_test', '--parallel', '4')
     run(build / 'tsfp_native_mmio_test')
     exe, replay = build / 'tsfp_rhi_vulkan_test', build / 'replay/d3d8_replay'
