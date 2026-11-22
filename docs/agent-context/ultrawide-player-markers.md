@@ -19,6 +19,10 @@ split-screen layouts remain intact. Shared source covers Windows D3D11/Vulkan,
 Linux Vulkan and native Mac/legacy GL; this is not per-platform duplication.
 No profile, player name, team colour, icon visibility or network state changes.
 
+The historical controls-only upgrade fixture defers patch 2810 until its
+graphics prerequisites are installed, then verifies the player-name hook in
+the full upgrade. It does not omit the hook from current runtime validation.
+
 Validation: tests/graphics/test_ui_layout.py executes the production adapter
 with deferred batch spies, seven aspect ratios (including 3440x1440 and 5120x1440),
 two independently positioned actors, both icon calls, unchanged UV/colour words,
