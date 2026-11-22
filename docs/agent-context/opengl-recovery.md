@@ -537,3 +537,9 @@ successfully. Transcript: logs/opengl-linux-native-path-build.log. This resolves
 the source-path/link gap; it is not a full native game or GL GPU acceptance pass.
 The standalone pixel probe now prints actual GL vendor/renderer/version to keep
 subsequent native pixel results attributable to the real driver.
+
+The first Linux standalone run builds and passes translation plus preceding
+sample/tint/null-mask pixel assertions, but aborts at host presentation. This is
+not a GL presentation pass. SDL swap-interval and swap failures now log separate
+reasons; driver identity is flushed before assertions so failed runs retain it.
+Investigate the native error before changing presentation policy or acceptance.

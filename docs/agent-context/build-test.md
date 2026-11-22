@@ -1,4 +1,4 @@
-[GL pixel](opengl-recovery.md).
+[GL pixels](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

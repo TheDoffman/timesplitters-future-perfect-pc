@@ -169,8 +169,14 @@ void tsfp_gl_host_release(TsfpGlHost *host)
 {if(host)SDL_GL_MakeCurrent(host->window,NULL);}
 int tsfp_gl_host_present(TsfpGlHost *host,int interval)
 {
-    if(!host || !SDL_GL_SetSwapInterval(interval?1:0))return -1;
-    return SDL_GL_SwapWindow(host->window)?0:-1;
+    if(!host)return -1;
+    if(!SDL_GL_SetSwapInterval(interval?1:0)) {
+        fprintf(stderr,"[RHI] opengl: swap interval %d failed: %s\n",interval?1:0,SDL_GetError());return -1;
+    }
+    if(!SDL_GL_SwapWindow(host->window)) {
+        fprintf(stderr,"[RHI] ERROR: opengl SDL swap failed: %s\n",SDL_GetError());return -1;
+    }
+    return 0;
 }
 void tsfp_gl_host_destroy(TsfpGlHost *host)
 {
