@@ -144,7 +144,8 @@ def main():
         (logs / ('rhi-linux' + suffix + '.log')).write_text(output)
         print(output)
         result.check_returncode()
-        require_clean_validation(output)
+        if args.backend == 'vulkan':
+            require_clean_validation(output)
         if 'PASS: shared RHI' not in output:
             raise RuntimeError('Shared RHI success marker missing')
         if args.backend=='opengl':

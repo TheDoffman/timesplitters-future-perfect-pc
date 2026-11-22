@@ -1,4 +1,4 @@
-[GL caps](opengl-recovery.md).
+[GL driver](opengl-recovery.md).
 [Wide HUD](ultrawide-player-markers.md).
 [MP](native-multiplayer-menu.md).
 

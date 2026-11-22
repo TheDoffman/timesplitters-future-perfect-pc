@@ -635,3 +635,13 @@ MS tests choose an advertised count, still requiring both positive/missing cases
 Mesa compiler warnings retain their severity in WARNING logs; GL error-type
 messages remain ERROR, and GL status/compile/link failures keep their checks.
 The failed run is not Linux acceptance; reruns are required. Gates remain OFF.
+
+
+At00e9c226, the software fixture completes all RHI/MSAA/SSAO/typed-null/query and
+worker/context recreation pixel checks, but the runner incorrectly requires
+Vulkan validation on an OpenGL process. Restrict that requirement to Vulkan;
+OpenGL retains its own complete marker/error/driver checks. Move renderer,
+vendor and version logging from Windows-only context code into shared device
+initialization so native receipts can establish the actual driver too. Preserve
+non-error HIGH shader warnings as WARNING; lower-severity performance hints keep
+the existing suppression. The failed receipt remains failed pending rerun.

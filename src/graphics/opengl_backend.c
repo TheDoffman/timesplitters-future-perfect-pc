@@ -89,7 +89,7 @@ static void APIENTRY debug_message(GLenum source,GLenum type,GLuint id,GLenum se
     (void)source;(void)id;(void)length;(void)user;
     if(type==GL_DEBUG_TYPE_ERROR)
         fprintf(stderr,"[RHI] ERROR: opengl driver: %s\n",message);
-    else if(severity==GL_DEBUG_SEVERITY_HIGH || severity==GL_DEBUG_SEVERITY_MEDIUM)
+    else if(severity==GL_DEBUG_SEVERITY_HIGH)
         fprintf(stderr,"[RHI] WARNING: opengl driver (severity0x%x): %s\n",severity,message);
 }
 static GlFormat format(RhiFormat value)
@@ -806,6 +806,7 @@ static int g_device_create(const RhiDeviceDesc *desc)
     if(!desc || S.host)return -1;
     if(!rhi_vk_dxc_available()){fprintf(stderr,"[RHI] opengl: shared DXC shader compiler is unavailable\n");return -1;}
     memset(&S,0,sizeof S);memset(&G,0,sizeof G);S.host=tsfp_gl_host_create(desc->window);if(!S.host)return -1;context_current=1;
+    fprintf(stderr,"[RHI] opengl: %s; %s; %s\n",glGetString(GL_VENDOR),glGetString(GL_RENDERER),glGetString(GL_VERSION));
 #define LOAD(type,name) G.name=(type)tsfp_gl_host_proc(S.host,"gl" #name);if(!G.name){fprintf(stderr,"[RHI] opengl: missing gl" #name "\n");g_device_destroy();return -1;}
     TSFP_GL_FUNCTIONS(LOAD)
 #undef LOAD

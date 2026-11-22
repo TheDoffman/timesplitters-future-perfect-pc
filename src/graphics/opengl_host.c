@@ -45,7 +45,6 @@ TsfpGlHost *tsfp_gl_host_create(void *window)
     if(!core)goto failed;
     wglMakeCurrent(NULL,NULL);wglDeleteContext(host->context);host->context=core;
     if(!wglMakeCurrent(host->dc,host->context))goto failed;
-    fprintf(stderr,"[RHI] opengl: %s; %s\n",glGetString(GL_RENDERER),glGetString(GL_VERSION));
     return host;
 failed:
     fprintf(stderr,"[RHI] opengl: could not create a core4.1 context (Windows error %lu)\n",GetLastError());
