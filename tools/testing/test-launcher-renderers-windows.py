@@ -108,7 +108,8 @@ def compile_capture():
     folder.mkdir(parents=True, exist_ok=True)
     compiler, env = native_compiler(folder)
     output = folder / "renderer-window-capture.exe"
-    subprocess.run([compiler, "/nologo", "/EHsc", "/std:c++17",
+    # Current C++/WinRT headers require standard coroutines on VS 2026.
+    subprocess.run([compiler, "/nologo", "/EHsc", "/std:c++20",
                     str(ROOT / "tests/launcher_lifecycle/RendererWindowCapture.cpp"),
                     "/Fe:" + str(output), "/Fo:" + str(folder / "renderer-window-capture.obj"),
                     "/link", "d3d11.lib", "dxgi.lib", "windowsapp.lib",

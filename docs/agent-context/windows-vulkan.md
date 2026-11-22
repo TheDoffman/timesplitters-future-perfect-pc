@@ -15,6 +15,10 @@ receipt/files and Vulkan-enabled CMake cache. package_launcher.py now supplies
 checksum-consistent synthetic inputs through the real production verifier and
 checks packaged DLL/license/receipt inclusion. Production pin checks stay strict;
 no runtime or launcher binary change is required for this fixture correction.
+The test-only DXGI helper compiles as C++20: VS2026's STL rejects the deprecated
+experimental coroutine path selected by its C++/WinRT headers under C++17.
+Use standard coroutine support rather than suppressing that diagnostic. The
+game/RHI compiler standards and rendering behavior are unchanged.
 
 Normal Windows packages build both backends and prefer Vulkan. Patch
 `graphics/rendering/3050-windows-vulkan-primary.patch` changes initial RHI
