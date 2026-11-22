@@ -12,7 +12,8 @@ static SDL_Window old,staged,*owner,*settings_window;
 static void *logical_token;
 static int position_available,main_thread,step,fail_step,commit_calls,reject_commit,show_calls,raise_calls;
 static SDL_DisplayMode mode;
-static int primary_mode,primary_calls,fail_vulkan,fail_neutral;
+static int primary_mode,primary_calls,fail_vulkan,fail_neutral,wayland;
+const char *SDL_GetCurrentVideoDriver(void){return wayland?"wayland":"x11";}
 static int advance(void){return ++step!=fail_step;}
 bool SDL_IsMainThread(void){return main_thread!=0;}
 SDL_WindowFlags SDL_GetWindowFlags(SDL_Window *w){assert(w && !w->destroyed);return w->flags;}
@@ -37,7 +38,7 @@ SDL_Window *SDL_CreateWindow(const char *title,int w,int h,SDL_WindowFlags flags
     staged=(SDL_Window){w,h,0,0,0,flags,title};return &staged;
 }
 const SDL_DisplayMode *SDL_GetWindowFullscreenMode(SDL_Window *w){(void)w;return &mode;}
-bool SDL_SetWindowPosition(SDL_Window *w,int x,int y){if(!advance())return false;w->x=x;w->y=y;return true;}
+bool SDL_SetWindowPosition(SDL_Window *w,int x,int y){assert(!wayland);if(!advance())return false;w->x=x;w->y=y;return true;}
 bool SDL_SetWindowFullscreenMode(SDL_Window *w,const SDL_DisplayMode *m){(void)w;assert(m==&mode);return advance()!=0;}
 bool SDL_SetWindowFullscreen(SDL_Window *w,bool on){assert(on);if(!advance())return false;w->flags|=SDL_WINDOW_FULLSCREEN;return true;}
 bool SDL_MaximizeWindow(SDL_Window *w){if(!advance())return false;w->flags|=SDL_WINDOW_MAXIMIZED;return true;}
@@ -54,7 +55,7 @@ static int commit(SDL_Window *before,SDL_Window *after){
 static void reset(SDL_WindowFlags extra){
     old=(SDL_Window){960,540,123,456,0,SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY|extra,"Original title"};
     staged=(SDL_Window){0};owner=settings_window=&old;logical_token=&old;
-    main_thread=position_available=1;step=fail_step=commit_calls=reject_commit=show_calls=raise_calls=0;
+    wayland=0;main_thread=position_available=1;step=fail_step=commit_calls=reject_commit=show_calls=raise_calls=0;
 }
 int main(void){
     reset(SDL_WINDOW_FULLSCREEN);
@@ -81,6 +82,10 @@ int main(void){
      * the replacement rather than turning an unsupported query into failure. */
     reset(0);position_available=0;assert(tsfp_native_gl_window(&old,commit)==&staged);
     assert(staged.x==0 && staged.y==0 && old.destroyed);
+    /* Cached Wayland coordinates do not authorize placing a normal window. */
+    reset(0);wayland=1;assert(position_available);
+    assert(tsfp_native_gl_window(&old,commit)==&staged);
+    assert(staged.x==0 && staged.y==0 && old.destroyed && owner==&staged);
     reset(0);old.flags=SDL_WINDOW_OPENGL;assert(tsfp_native_gl_window(&old,commit)==&old);
     assert(!step && !commit_calls && !old.destroyed);
     reset(0);main_thread=0;assert(!tsfp_native_gl_window(&old,commit));assert(!step && !old.destroyed);

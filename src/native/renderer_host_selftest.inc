@@ -45,17 +45,23 @@ static int native_test_renderer_window_modes(SDL_Window *window, IDirect3DDevice
     int ok=SDL_SetWindowFullscreen(window,false) && SDL_SyncWindow(window);
     ok &= SDL_SetWindowSize(window,640,360) && SDL_SyncWindow(window);
     for(int fullscreen=0;fullscreen<2;fullscreen++) {
-        ok &= SDL_SetWindowFullscreen(window,fullscreen!=0) && SDL_SyncWindow(window);
+        int requested=SDL_SetWindowFullscreen(window,fullscreen!=0);
+        int synced=requested && SDL_SyncWindow(window);
+        char transition_error[256]={0};
+        if(!synced)snprintf(transition_error,sizeof transition_error,"%s",SDL_GetError());
         rhi_pump_events();
-        ok &= ((SDL_GetWindowFlags(window)&SDL_WINDOW_FULLSCREEN)!=0)==(fullscreen!=0);
+        int active=(SDL_GetWindowFlags(window)&SDL_WINDOW_FULLSCREEN)!=0;
         int expected_w=0,expected_h=0;uint32_t width=0,height=0;
-        ok &= SDL_GetWindowSizeInPixels(window,&expected_w,&expected_h);
-        ok &= rhi_drawable_size(window,&width,&height);
-        ok &= width==(uint32_t)expected_w && height==(uint32_t)expected_h && width>0 && height>0;
-        ok &= SUCCEEDED(dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF00FF00,1,0));
-        ok &= dev->lpVtbl->Swap(dev,0)==0;
+        int sized=SDL_GetWindowSizeInPixels(window,&expected_w,&expected_h) && rhi_drawable_size(window,&width,&height);
+        int cleared=SUCCEEDED(dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF00FF00,1,0));
+        int presented=dev->lpVtbl->Swap(dev,0);
+        int step_ok=requested && synced && active==fullscreen && sized &&
+            width==(uint32_t)expected_w && height==(uint32_t)expected_h && width>0 && height>0 && cleared && presented==0;
+        ok &= step_ok;
         fprintf(stderr,"[native-window-test] %s drawable %ux%u, present: %s\n",
-            fullscreen?"fullscreen":"windowed",width,height,ok?"PASS":"FAIL");
+            fullscreen?"fullscreen":"windowed",width,height,step_ok?"PASS":"FAIL");
+        if(!step_ok)fprintf(stderr,"[native-window-test] request=%d sync=%d active=%d wanted=%d size=%d expected=%dx%d clear=%d present=%d error=%s\n",
+            requested,synced,active,fullscreen,sized,expected_w,expected_h,cleared,presented,transition_error);
     }
     ok &= SDL_SetWindowFullscreen(window,false) && SDL_SyncWindow(window);
     ok &= SDL_SetWindowSize(window,old_w,old_h) && SDL_SyncWindow(window);

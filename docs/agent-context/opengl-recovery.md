@@ -779,3 +779,45 @@ Windows17passed,1Linux-only skip. The portable stub compiles and loads as a Wind
 DLL: stdcall, exact signed32-bit E_FAIL and cleared output pointer are verified.
 Integrated runner rerun is required after this source checkpoint. Production
 recovery gates remain0; no publication/merge.
+
+
+### Actual game builds and first native integration checks
+
+At121561a5, integrated native recovery matrix passes all5cases, private gate
+restoredOFF, plus26 registered Python/C checks. Native receipt
+logs/rhi-linux-opengl-recovery-d3d12.json; total15.463s including restore rebuild.
+Windows ordinary Build/mandatory checks pass. Fresh explicitGL game
+`gl-native-fixes-02` passes120s Auto1x1/MSAA4/SMAA/AF16/AO, fullscreen/resize/
+restore, automatic scene target resize, movement/weapon, settings/custom DDS
+preservation and clean0. Captures88/106 reviewed: world/weapon/HUD, sky/fog/fire,
+changed camera/ammunition. The prior01 receipt staysFAILED: I passed0x0 forAuto,
+but the runner's actual Auto setting is1x1; its resolution assertion correctly
+rejected that request. No test was weakened. Game SHA256
+ d58b7df6e1ea9bc83e21b3aba5b2c5334a01dd3f59c34ba2b8e4333def899d62.
+Matched uncaptured120s `gl-perf-fixes-01` and actual-launcher
+`vk-after-native-fixes-01` pass: fixed1280x720/MSAA4/SMAA/AF16/AO, clean0 and
+preservation. Observed85-115s guest rates60.02/60.03Hz, handles555/643flat,
+CPUcore equivalents1.48/.71 respectively. These are bounded stability/process
+observations during another build, not GPU completion/scanout benchmarks.
+
+The native Linux actual game builds successfully with Clang18/O2/debug symbols,
+assertions, shared US generation and MMIO checks. Source121561a5, clean manifest;
+executable717d5b82f7cfdee2de3d62c0ac15f65c78af5bf90f8cd6b1fa353ba63afd7aa8.
+Native logs/opengl-native-game-build.log and build/linux/game/BUILD.json retain
+provenance. Initial actual executable renderer-self-test reached Vulkan
+clear/draw/depth/overlay and window modes, then lost the WSL X connection;
+subsequent GL could not initialize video. Weston sockets/logs show its display
+service recovered automatically; no host restart was issued. Those results fail
+acceptance and are not GL rendering evidence.
+
+Direct Wayland actual Vulkan self-test instead reaches a fullscreen/restore
+assertion failure, still unresolved. Direct GL reveals a real replacement bug:
+SDL returns cached window coordinates but rejects SetWindowPosition for a normal
+Wayland window. Skip querying/restoring placement on that display backend; the
+compositor owns it. Preserve all other transaction checks and non-Wayland
+positioning. The portable unit now proves a successful cached-position query
+cannot cause a forbidden Wayland move. Native window-mode self-test diagnostics
+now identify request/sync/active-state/drawable/clear/present failures per step,
+retaining all acceptance predicates. Windows unit passes; native rebuild and
+rerun required. Actual guest/menu/input/display/performance/package and native
+Mac hardware checks remain pending. All production recovery gates remain0.

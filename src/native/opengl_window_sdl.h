@@ -2,6 +2,7 @@
 #define TSFP_OPENGL_WINDOW_SDL_H
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include <string.h>
 /* SDL may reject a Vulkan drawable before the shared RHI sees the failure.
  * A neutral window lets that single startup transaction own renderer selection;
  * this adapter neither enables recovery nor creates an OpenGL context. */
@@ -25,7 +26,10 @@ static SDL_Window *tsfp_native_gl_window(SDL_Window *old,
     if(SDL_GetWindowFlags(old)&SDL_WINDOW_OPENGL)return old;
     int width=0,height=0,x=SDL_WINDOWPOS_UNDEFINED,y=SDL_WINDOWPOS_UNDEFINED;
     if(!SDL_GetWindowSize(old,&width,&height) || width<=0 || height<=0)return NULL;
-    int positioned=SDL_GetWindowPosition(old,&x,&y);
+    const char *driver=SDL_GetCurrentVideoDriver();
+    /* Wayland may return cached coordinates although moving a normal window
+     * is forbidden. Let the compositor place the replacement in that case. */
+    int positioned=!(driver && !strcmp(driver,"wayland")) && SDL_GetWindowPosition(old,&x,&y);
     SDL_WindowFlags previous=SDL_GetWindowFlags(old);
     SDL_WindowFlags flags=SDL_WINDOW_OPENGL|SDL_WINDOW_HIDDEN|
         (previous&(SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY|SDL_WINDOW_BORDERLESS));

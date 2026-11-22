@@ -1,4 +1,4 @@
-[GL SDL](opengl-recovery.md).
+[GL wl](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 
