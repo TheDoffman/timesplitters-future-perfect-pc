@@ -1,8 +1,10 @@
 # Windows renderer acceptance
 
 This is the acceptance matrix for making Vulkan the Windows default while
-retaining Direct3D 11. It is an active investigation, not a declaration of full
-game or cross-vendor compatibility. Compare the same executable, original
+retaining Direct3D 11. Available-host acceptance is complete; the
+[measured report](windows-renderer-results.md) records its bounded scope and
+unverified hardware. It is not a declaration of full-game or cross-vendor
+compatibility. Compare the same executable, original
 60-Hz gameplay timing, settings, profile and input sequence on both backends.
 
 The available host is Windows 11 Pro 10.0.26300 x64, NVIDIA RTX 4070 SUPER,
@@ -14,15 +16,15 @@ install another driver over this host simply to expand the matrix.
 | Gate | Acceptance evidence required | Current state |
 | --- | --- | --- |
 | L1 Launcher selection | Save D3D11, run; save Vulkan, run; reopening preserves preference and logs identify only the requested backend | Passed, source f4b615a9, two 120-second first-mission runs |
-| L2 Recovery | Default/explicit Vulkan missing-driver, missing-DXC and no-device startup recover to D3D11; explicit D3D11 ownership remains correct | Existing eight-case production RHI contract passed; retain executable hashes |
+| L2 Recovery | Default/explicit Vulkan missing-driver, missing-DXC and no-device startup recover to D3D11; explicit D3D11 ownership remains correct | Eight production RHI cases passed; actual-launcher unavailable-compiler case now runs D3D11, preserves saved Vulkan and restores the owned DLL link |
 | P1 Frame pacing | At least three matched uncaptured runs per backend; report median/p95/p99 intervals, >25/50-ms frames, CPU and memory; loading excluded | Passed on this host: three ETW runs each, steady displayed/submitted relative gates and no >25ms steady gaps; [measurements](windows-renderer-results.md) |
 | P2 Cold/warm loading | Empty per-test caches, then same-cache repeat; record window/scene readiness, cache files and resource use; no inherited personal caches | One cold plus two warm runs each measured; cache reads verified, startup/loading gaps reported separately; no isolated shader-compile timing claim |
-| V1 Common rendering | Reviewed paired level captures identifying the actual shadow, blend/transparency, reflection/screen-copy, filtering, depth and AA features exercised | Stable opening-mission world/HUD/weapon/glow reviewed after display transitions; other targeted features/levels pending |
-| V2 Resource contracts | Production HLSL, signed texture mapping, texture formats, depth replay, screen copy, MSAA, SSAO and visibility checks on both hardware backends | Existing production RHI fixture passed; this is separate from level appearance |
+| V1 Common rendering | Reviewed paired level captures identifying the actual shadow, blend/transparency, reflection/screen-copy, filtering, depth and AA features exercised | Passed representative Story/Arcade/Scotland water review plus production pixel contracts for stencil/visibility, screen copy, blend, shared depth and SSAO; exact views and limits in measured report |
+| V2 Resource contracts | Production HLSL, signed texture mapping, texture formats, depth replay, screen copy, MSAA, SSAO and visibility checks on both hardware backends | Final eight-case RHI rerun passes with required Vulkan validation active and no diagnostics; fixture hash/logs retained separately from level appearance |
 | D1 Display | Windowed/fullscreen transitions, window resize, supported startup resolutions, repeated switching; requested backend preserved; no failed presents | Rebuilt Auto/fixed cycles and four paired common-resolution/quality cases pass on game a8a26b31; reviewed DXGI captures, one1080p physical monitor |
 | Q1 Quality settings | Off/FXAA/SMAA, supported MSAA and filtering values selected and exercised on both backends; confirm effective runtime settings and reviewed captures | Four DXGI pairs pass functional setting checks and reviewed world/weapon/HUD; MSAA1/2/4/8, AAOff/FXAA/SMAA and filtering2/4/8/16, with filtering1 in the baseline; detailed feature encounters remain V1 |
-| S1 Stability | Bounded extended gameplay across representative Story and Arcade levels; no crash, hang, render error, unexplained resource growth or unintended fallback | Both Time to Split and corrected Scotland120s pairs pass; five-minute and actual paired Arcade coverage pending |
-| G1 Gameplay | Compare game-clock cadence, movement, firearm/ammo, input, pause/resume and save/load from copied profiles | Both Story pairs pass bounded movement/ticks and reviewed ammo; signed Accept/Cancel saves reload in Vulkan-D3D11-Vulkan and reverse orders; extended pause/resume pending |
+| S1 Stability | Bounded extended gameplay across representative Story and Arcade levels; no crash, hang, render error, unexplained resource growth or unintended fallback | Both Story120s pairs, paired Venice with bots and five-minute movement/pause pairs pass; late clocks59.966/59.986Hz, bounded memory/handles and reviewed late imagery |
+| G1 Gameplay | Compare game-clock cadence, movement, firearm/ammo, input, pause/resume and save/load from copied profiles | Both Story pairs pass bounded movement/ticks and reviewed ammo; signed Accept/Cancel saves reload in Vulkan-D3D11-Vulkan and reverse orders; extended pause/resume and late movement also pass |
 | H1 Hardware | Run the same matrix on available GPUs; list model/driver and actual tested scope | NVIDIA available; AMD/Intel and other drivers unverified, follow-up below |
 
 Performance gates flag regressions for investigation rather than excusing visual

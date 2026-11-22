@@ -1,5 +1,15 @@
 # Windows Vulkan default and MSVC build policy
 
+Available-host acceptance is complete on RTX4070SUPER/617.42, gameSHAa8a26b31:
+see docs/development/windows-renderer-results.md and its matrix. Performance,
+quality/display, two Story openings, Venice/bots, five-minute movement/pause,
+signed cross-backend saves and actual-launcher compiler recovery pass. Targeted
+water views match; final eight production RHI cases pass with Vulkan validation
+active.30selectedtests and --compile-only pass. AMD/Intel/otherdrivers, native
+Mac/Linux and other monitor arrangements remain unverified. Historical progress
+notes below are superseded by that report; do not rerun already resolved gates
+or reinterpret old failed reports as passes. No merge/publication occurred.
+
 Normal Windows packages build both backends and prefer Vulkan. Patch
 `graphics/rendering/3050-windows-vulkan-primary.patch` changes initial RHI
 selection while keeping D3D11 first in the recovery table. An explicit
@@ -211,8 +221,9 @@ fallback. Acceptance requires the missing-compiler diagnostic, explicit recovery
 message and exclusively D3D11 presents, while the saved choice remains Vulkan.
 Other backend/shader/present/gameplay checks remain strict. Cleanup failure must
 leave report.passed=false. compile-only also builds the DLL; a native load/export
-probe confirms it loads and lacks DxcCreateInstance. Actual game acceptance is
-pending; this is unavailable-compiler-entry-point simulation, not driver removal.
+probe confirms it loads and lacks DxcCreateInstance. Actual game acceptance now
+passes in launcher-dxc-recovery-01, with original DLL link restoration verified;
+this is unavailable-compiler-entry-point simulation, not driver removal.
 
 Additional-level acceptance must declare expected_scene (integer1..99; default2).
 Scotland is scene4, observed in its owned game's samples; the old harness rejected
@@ -227,8 +238,9 @@ Both corrected Scotland cases now pass, with reviewed revolver/world/decal/HUD
 captures, ammo8->4 and advancing60Hz clocks. Arcade exploration confirms the
 Vietnam/Hotel/Venice list order, reaches Venice scene46 and visible Deathmatch.
 arcade-venice.json uses that route plus the existing no-score-limit sequence and
-bounded respawn inputs; its paired acceptance is pending, not established by the
-probe-only run. expected_weapon=-1 remains a world/input rather than weapon-ID gate.
+bounded respawn inputs. Its actual-launcher pair now passes with reviewed map,
+no-score-limit setup and indoor/outdoor gameplay captures. expected_weapon=-1
+remains a world/input rather than weapon-ID gate.
 
 The save probe needed two observer updates, not game fixes: unified Controls
 opens at General's tab header, so Right/Down/Down selects Controller/Inverse Look;
@@ -251,4 +263,8 @@ RendererGameSmoke now refreshes seconds/QPC and guest state together after all
 blocking input/display/counter work, before sampling position/pause/resources.
 Polled first-present readiness also uses its actual observation time. Do not
 relax the59-61Hz gate to mask stale observations. Fresh acceptance is paired
-story-soak-dxgi-02; remaining recovery/Arcade/water queues follow only its success.
+story-soak-dxgi-02, now passed on both backends with <10ms seconds/QPC offset
+spread and late clocks59.966/59.986Hz. Recovery/Arcade/targeted water runs also
+complete successfully; final RHI validation requires the explicit existing SDK
+layer path external/vulkan-sdk/windows/1.4.363.0/Bin. The first final wrapper
+rejects validation-inactive output; rhi-final-02 is the validated evidence.

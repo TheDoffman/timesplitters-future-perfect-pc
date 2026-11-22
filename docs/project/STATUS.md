@@ -1,4 +1,34 @@
-## Windows renderer performance cohort passed; quality review open (2026-11-21)
+## Windows Vulkan acceptance completed on available NVIDIA host (2026-11-21)
+
+The bounded Windows acceptance matrix passes on RTX 4070 SUPER / driver 617.42,
+using the same game SHA a8a26b31 and launcher SHA a4854d60 throughout. Vulkan remains
+the Windows default; D3D11 remains selectable and recovers automatically when
+Vulkan's compiler is unavailable. The actual-launcher recovery case presents with
+D3D11, completes gameplay and preserves the saved Vulkan preference. The owned
+compiler link is restored; installed drivers and source/build compiler DLLs are
+unchanged. Final eight-case production RHI checks pass with Vulkan validation
+active and no validation diagnostics.
+
+Three uncaptured ETW runs per backend pass the frame-pacing thresholds at the
+60 FPS cap. Vulkan uses more private/dedicated GPU memory in that cohort.
+Four paired quality/display settings cases, Auto/fixed resizing, Time to Split,
+Scotland and Venice with bots pass. Five-minute paired movement/pause runs pass
+late clocks, input and resource limits; reviewed late images remain consistent.
+Original signed Accept/Cancel saves reload correctly in both backend orders.
+Targeted Scotland water GPU readbacks match qualitatively, including foreground
+occlusion and splash blending; production pixel tests complement the level views.
+The [measured report](../development/windows-renderer-results.md) records hashes,
+measurements, reviewed views, retained observer failures and reproducible commands.
+
+Final selected checks:30 tests passed plus harness/capture/compiler-stub build
+and live-log sharing checks. The shared Auto allocation fix was rebuilt and
+validated on Windows earlier in this goal. No current-host acceptance gate remains
+open. AMD/Intel, other drivers, native Mac/Linux, native4K/8K scanout and other
+monitor layouts remain unverified. Coverage is representative, not a full-game
+playthrough or proof against slower leaks. Work is local on feature/windows-vulkan;
+no merge or release publication.
+
+## Earlier performance and quality progress (superseded by acceptance above)
 
 Three uncaptured actual-launcher runs per backend complete on RTX4070SUPER/
 driver617.42 with gameSHAa8a26b31 and PresentMon2.6.0. QPC-aligned85-115s

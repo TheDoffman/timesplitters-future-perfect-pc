@@ -1,11 +1,13 @@
 # Windows Vulkan versus D3D11: measured results
 
-Validation is ongoing. These are the current-host performance results; the
-[acceptance matrix](windows-renderer-validation.md) owns remaining quality,
-level, stability and save/load gates.
+Available-host acceptance is complete: the tested Windows Vulkan default passes
+the [acceptance matrix](windows-renderer-validation.md), with D3D11 retained as
+the launcher option and automatic startup fallback. Frame pacing is comparable
+at the 60 FPS cap; Vulkan's measured allocation footprint is higher.
+This is bounded NVIDIA/Windows acceptance, not whole-game or cross-vendor certification.
 
-Host: Windows 11 Pro26300 x64, RTX4070SUPER, driver617.42,24logicalCPU.
-Game source8b3e6fca, native SHA256
+Host: Windows 11 Pro 26300 x64, RTX 4070 SUPER, driver 617.42, 24 logical CPUs.
+Game build source 8b3e6fca, native SHA256
 `a8a26b31dfa9bc4174bdfe6fd4d157f3e01b3fefe17e269cb51b809db80a7cb1`.
 Launcher SHA256
 `a4854d60b0b5262512ad41f07f543293638f4b637438df9fd98b6acaade4c690`.
@@ -64,8 +66,8 @@ values are peak observations in the same active gameplay window.
 
 Vulkan has a higher allocated/committed footprint and slightly higher per-frame
 GPU work/latency in this cohort, while interval cadence remains comparable.
-This is an observed cost, not classified as a leak. Sustained memory-growth
-acceptance remains open until the longer soak is reviewed.
+This is an observed cost, not classified as a leak. The bounded five-minute
+growth checks below pass; slower leaks and other levels remain outside that result.
 Warm cases have populated application caches and logged disk-cache reads.
 First-present times are polled readiness observations, not isolated compiler
 benchmarks. Fixed menu input timing also masks small loading-time differences.
@@ -179,3 +181,108 @@ persistence. Failed earlier probes remain failed: one used obsolete Controls
 navigation; another correctly saved but assumed an obsolete two-slot fixture.
 The updated test verifies the changed draft before acting and selects the actual
 canonical saved slot. Original fixture signatures/bytes remain preserved.
+
+## Five-minute movement and pause checks passed
+
+story-soak-dxgi-02 runs each backend for300seconds through the actual launcher,
+same1920x1080/Original60 settings and copied seed. Walking continues through294s;
+Escape152s/E154s exercises the original pause menu. Both cases observe the pause
+state and resumed gameplay, at least86 active last30second samples, movement,
+clean exit, no failed presents/fallback/render errors and bounded resource growth.
+Reviewed200/295second desktop captures show consistent world/NPC/weapon/HUD/ammo.
+
+| Backend | Last30s guest ticks/s | Median private growth MiB | Median dedicated GPU growth MiB | Handle change |
+| --- | ---: | ---: | ---: | ---: |
+| D3D11 | 59.966 | 14.08 | 10.16 | -8 |
+| Vulkan | 59.986 | 17.40 | 8.45 | -10 |
+
+Growth compares the85-115second and final30second windows. Limits are128MiB for
+private/dedicated GPU allocation and32 additional handles; these are regression
+alarms, not proof against slower leaks or sustained combat. Capture runs supply
+functional/stability evidence and are not substituted for uncaptured ETW timing.
+
+The earlier story-soak-dxgi-01 report remains failed: its observer recorded time
+before blocking input holds, producing58.945Hz from stale seconds despite
+59.977Hz using actual QPC elapsed time. The corrected harness samples seconds,
+QPC and guest state after blocking work. Its fresh runs have under10ms variation
+in seconds/QPC offset, consistent with the reported0.01second rounding. The
+strict59-61Hz acceptance gate was retained.
+
+## Actual-launcher compiler recovery passed
+
+launcher-dxc-recovery-01 saves Vulkan through the normal settings UI, then launches
+with a valid test-only compiler DLL missing DxcCreateInstance in its disposable
+Bin. The normal game logs the unavailable-compiler diagnostic and recovery,
+presents exclusively with D3D11, performs the same first-mission movement/fire
+checks and exits0. The saved renderer remains Vulkan. Other backend/shader/present
+checks remain strict. This tests compiler unavailability, not removal of a driver.
+
+Cleanup restores the original compiler hard link; its SHA256 is
+`5888d3e590f5bfd8743484e7f31313996734adec5741506271a5c6368cbe8ba9`.
+Source/build compiler DLLs and installed drivers are unchanged. Existing separate
+production RHI contracts cover missing-driver/no-device recovery and ownership;
+those fixtures are distinct from this real-game launcher check.
+
+## Arcade and targeted visual review passed
+
+arcade-venice-dxgi-01 passes both actual-launcher paths at the same game hash.
+Reviewed 33s captures confirm Venice, and 47s captures confirm no score limit and
+recommended bots. The 80/112s views show outdoor/indoor stone geometry, lamps,
+weapon/HUD, damage blending and ammunition changes. Both runs move, advance the
+game clock at approximately 60 Hz, present with the requested backend and exit0.
+Spawn positions, bot actions and viewpoints differ; this is qualitative review.
+
+The existing surface-native route additionally runs on each explicitly selected
+backend with Original60, classic textures and the same 1280x720 scene. Reviewed
+private/test-saves/renderer-water-dd and renderer-water-vk turn-right.png and
+path-heading.png show consistent Scotland ocean/environment shading, jetty,
+foreground rock occlusion, weapon/HUD and splash blending. Splash/animation phase
+varies. Both direct-child diagnostic sessions close cleanly with the same game
+hash, actual requested presents and no fallback/crash/shader error. These GPU
+readbacks support targeted feature review; they are separate from launcher and
+uncaptured performance acceptance.
+
+Final production RHI hardware checks pass all eight cases in
+logs/renderer-validation/rhi-final-02/verified.json, fixture SHA256
+`ae3daec556d9a627d0029c971689b27bc76943da33c96f91fa3cb74cfa2ce5c3`.
+Default/explicit Vulkan run with validation active and no diagnostics, using the
+existing SDK layer directory external/vulkan-sdk/windows/1.4.363.0/Bin.
+The earlier final wrapper attempt is rejected because validation was inactive;
+it is not substituted for this validated rerun. Pixel/resource assertions cover
+production HLSL sampling, blend/stencil/scissor, full/partial screen copies,
+byte/half/full-float feedback, shared depth, SSAO contact/sky/resize, MSAA1/4
+resource/resolve behavior and visibility/cutout/wall occlusion. They complement
+reviewed level images rather than certify every shadow/mirror/effect encounter.
+
+Final selected unit/model/fixture checks: 30 passed. --compile-only also passes
+for the real-log sharing probe, C# launcher harness, DXGI capture helper and
+unavailable-compiler test DLL. Fixture/source files remain preserved; no merge
+or release was published. All measured game runs use the native executable hash
+above; source/build hashes and per-case provenance remain in local reports.
+
+## Coverage limits and reproduction
+
+Only the RTX 4070 SUPER/617.42 Windows host was available. AMD, Intel, other
+drivers, native Mac/Linux, native 4K/8K scanout and other monitor arrangements are
+unverified. Follow the matrix's same-executable/settings/profile procedure on each
+additional host. Vendor/OS shader caches were not cleared; no input-to-photon or
+uncapped-throughput claim is made. The runs cover representative openings and a
+five-minute movement/pause sequence, not a full-game playthrough or slower leaks.
+Native follow-up uses the [Linux acceptance procedure](linux-acceptance.md) and
+[Mac port acceptance backlog](../project/MAC_PORT_BACKLOG.md), with each host's
+own native build/data fixture. A Windows or software-renderer pass cannot certify them.
+
+Reproduce the paired extended and Arcade checks after building the normal game
+and launcher and preparing the supported local Test Lab fixture:
+
+```powershell
+.venv/Scripts/python.exe tools/testing/test-launcher-renderers-windows.py --label my-soak --seconds 300 --scenario-file tests/fixtures/renderer-scenarios/story-opening-soak.json --fullscreen --width 1920 --height 1080 --capture-times 80,112,200,295
+.venv/Scripts/python.exe tools/testing/test-launcher-renderers-windows.py --label my-venice --scenario-file tests/fixtures/renderer-scenarios/arcade-venice.json --capture-times 33,47,70,80,112
+.venv/Scripts/python.exe tools/testing/test-launcher-renderers-windows.py --label my-recovery --backend vulkan --unavailable-dxc --capture
+.venv/Scripts/python.exe tools/testing/test-rhi-windows.py --validation-layer-path external/vulkan-sdk/windows/1.4.363.0/Bin
+```
+
+Use fresh labels. Measurement and quality commands are in the matrix; use the
+same explicit test-only backend sequence with stability_transitions_game.py for
+the surface-native diagnostic route. Keep timing, validation and GPU readback
+runs separate. Saved user preferences and personal profiles are not test fixtures.
