@@ -27,15 +27,40 @@ import sys
 import threading
 import time
 
-def Server(*args, **kwargs):
-    """Local integration runs require the separately maintained server fixture."""
-    try:
-        from lobby_server import Server as fixture
-    except ImportError as error:
-        raise ValueError('Local Story testing needs the private server fixture on PYTHONPATH. '
-                         'Use the shared service for normal play.') from error
-    return fixture(*args, **kwargs)
 from testing_profile import contained, prepare_run, recycle_disks
+
+
+class LocalTestDirectory:
+    """Current private-directory implementation, isolated from public services."""
+    def __init__(self, root):
+        import ssl
+        from online_private import Directory, Server, SharedRelay, certificate
+        state = contained(root, root / 'private/test-saves/story-directory', 'private/test-saves')
+        self.server = Server(('127.0.0.1', 0), Directory())
+        self.relay = None
+        self.thread = None
+        try:
+            cert, key, self.fingerprint = certificate(state)
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.minimum_version = ssl.TLSVersion.TLSv1_2
+            context.load_cert_chain(cert, key)
+            self.server.socket = context.wrap_socket(self.server.socket, server_side=True,
+                                                     do_handshake_on_connect=False)
+            self.relay = SharedRelay(self.server.directory, 0)
+            self.address = f'https://127.0.0.1:{self.server.server_port}'
+            self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+            self.thread.start()
+        except BaseException:
+            self.close()
+            raise
+
+    def close(self):
+        if self.thread and self.thread.is_alive():
+            self.server.shutdown()
+            self.thread.join(timeout=3)
+        self.server.server_close()
+        if self.relay:
+            self.relay.close()
 
 ROOT = Path(__file__).resolve().parents[2]
 LOG_LIMIT = 4 * 1024 * 1024
@@ -47,7 +72,7 @@ def verify_build(root):
         raise ValueError('Release game not found. Run tsfp.ps1 -Action Build first.')
     subprocess.run([sys.executable, str(root / 'tools/build/network-identity.py'),
                     '--verify', '--executable', str(exe)], check=True, cwd=root)
-    manifest = json.loads((root / 'build/windows/generated/network-identity.json').read_text())
+    manifest = json.loads((root / 'build/windows/generated/network-identity.json').read_text(encoding='utf-8'))
     for name, digest in manifest['files']:
         if name.startswith(('src/', 'patches/', 'tools/')) or name == 'VERSION':
             source = root / name
@@ -69,7 +94,7 @@ def drain(pipe, destination):
             remaining = max(0, remaining - len(chunk))
 
 
-def configure(root, run, directory, role):
+def configure(root, run, directory, role, fingerprint):
     env = prepare_run(root, run)
     (run / 'runtime.ini').write_text(
         'fullscreen = 0\nframe_interp = 1\nframe_target = 0\nframe_cap = 60\nrefresh_rate = 0\n')
@@ -78,10 +103,12 @@ def configure(root, run, directory, role):
         probe.bind(('127.0.0.1', 0))
         port = probe.getsockname()[1]
     settings = contained(root, run / 'online-settings.json', 'private/test-saves')
-    settings.write_text(json.dumps(dict(directory=directory, fingerprint='',
+    settings.write_text(json.dumps(dict(directory=directory, fingerprint=fingerprint,
         name=f'Local Story - {role}', port=port, automatic_host=False,
         detect_public_address=False, public_address='')) + '\n')
-    env.update(TSFP_ONLINE_SETTINGS=str(settings), RECOMP_WINDOW_BACKGROUND='1',
+    env.pop('TSFP_ONLINE_TEST_COMMAND', None)
+    env.update(TSFP_ONLINE_DIRECTORY=directory, TSFP_ONLINE_FINGERPRINT=fingerprint,
+               TSFP_ONLINE_SETTINGS=str(settings), RECOMP_WINDOW_BACKGROUND='1',
                RECOMP_PC_MOUSE='1', TSFP_DISCORD_CONFIG=str(run / 'discord.ini'))
     return env
 
@@ -99,19 +126,15 @@ def play(root, players=2, seconds=0):
     with session_lock.open('x') as stream:
         stream.write(str(os.getpid()))
     server = None
-    server_thread = None
     children = []
     threads = []
     runs = []
     try:
-        server = Server(('127.0.0.1', 0))
-        directory = f'http://127.0.0.1:{server.server_port}'
-        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
-        server_thread.start()
+        server = LocalTestDirectory(root)
         roles = ['host', 'guest'] + ['guest2', 'guest3'][:players-2]
         for role in roles:
             run = contained(root, root / f'private/test-saves/story-manual-{role}', 'private/test-saves')
-            env = configure(root, run, directory, role)
+            env = configure(root, run, server.address, role, server.fingerprint)
             with (run / 'run.lock').open('x') as stream:
                 stream.write(str(os.getpid()))
             runs.append(run)
@@ -125,9 +148,9 @@ def play(root, players=2, seconds=0):
                 thread.start()
                 threads.append(thread)
             print(f'{role}: game PID {child.pid}; isolated files: {run}', flush=True)
-        print('\nSelect Test Lab, then Story > Online in every game.\n'
-            'Host: click Start New Match in the Online browser, then Start New Match in the game.\n'
-              "Guests: click Refresh, select the host's lobby, then Join selected.\n"
+        print('\nSelect Test Lab, then Story > Online > Online in every game.\n'
+            'Host: select Start New Match, keep Game Type = Story and Privacy = Open, then Create Lobby.\n'
+              "Guests: select the host lobby in Matches Available (R refreshes the list).\n"
               'In the host game, select Time to Split and start when everyone is present.\n'
               'Alt+Tab switches games; E/Space confirms and F goes back.\n'
               'Keep this terminal open. Close ALL game windows to finish, or press Ctrl+C here.\n'
@@ -154,11 +177,8 @@ def play(root, players=2, seconds=0):
                 child.wait(timeout=10)
         for thread in threads:
             thread.join(timeout=10)
-        if server_thread is not None:
-            server.shutdown()
-            server_thread.join(timeout=3)
         if server is not None:
-            server.server_close()
+            server.close()
         # Retain markers if cleanup fails, preventing unsafe preparation on rerun.
         for run in runs:
             recycle_disks(root, run)

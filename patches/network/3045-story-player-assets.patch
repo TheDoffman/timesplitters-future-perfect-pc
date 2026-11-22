@@ -1,0 +1,26 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -121,1 +121,23 @@
++extern void sub_00062F50_gen(void);
++void sub_00062F50(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_story_network_catalog(sub_00062F50_gen);
++#else
++    sub_00062F50_gen();
++#endif
++}
++
++
++extern void sub_00158BC0_gen(void);
++void sub_00158BC0(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_story_network_player_assets(sub_00158BC0_gen);
++#else
++    sub_00158BC0_gen();
++#endif
++}
++
++
+ extern void sub_00216230_gen(void);

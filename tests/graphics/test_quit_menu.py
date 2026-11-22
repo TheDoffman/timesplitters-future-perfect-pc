@@ -439,6 +439,72 @@ def test_story_original_room_scissor(tmp_path):
     assert 'PASS:' in compile_and_run(tmp_path,source)
 
 
+def test_story_original_player_asset_preload(tmp_path):
+    from test_recomp_float_joins import compile_and_run, config, FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        info=dict(name='sub_00158BC0_gen',end=0x158c7e)
+        original=FunctionTranslator(image,{0x158bc0:info}).translate_function(0x158bc0,info)
+    finally:
+        vars(config).update(previous)
+    production=(ROOT/'src/network/pc_story_load.inc').read_text(encoding='utf-8')
+    adapter=production[production.index('void pc_story_network_player_assets('):production.index('/* Original6B100')]
+    source=(ROOT/'tests/network/story_assets_original.c').read_text(encoding='utf-8')
+    output=compile_and_run(tmp_path,source.replace('/* ORIGINAL_ASSET_PRELOAD */',original).replace('/* PRODUCTION_ASSET_ADAPTER */',adapter))
+    assert 'PASS:' in output
+
+
+def test_story_complete_player_catalog(tmp_path):
+    from test_recomp_float_joins import compile_and_run
+    production=(ROOT/'src/network/pc_story_load.inc').read_text(encoding='utf-8')
+    adapter=production[production.index('void pc_story_network_catalog('):production.index("/* Story's original158BC0")]
+    reader=(ROOT/'src/network/pc_story_catalog.h').read_text(encoding='utf-8')
+    source=(ROOT/'tests/network/story_catalog.c').read_text(encoding='utf-8')
+    assert 'PASS:' in compile_and_run(tmp_path,'#define _WIN32 1\n'+source.replace('/* CATALOG_READER */',reader).replace('/* CATALOG_ADAPTER */',adapter))
+    archive=ROOT/'private/game/pak/arcade/l_100.pak'
+    if archive.is_file():
+        import json
+        code=reader+'\n#include <assert.h>\nint main(void){uint32_t n=0;FILE *f=fopen('+json.dumps(archive.as_posix())+',"rb");assert(f);unsigned char *d=story_catalog_read(f,&n);fclose(f);assert(d);uint32_t pool;memcpy(&pool,d+4,4);unsigned found=0;for(uint32_t o=8+pool;o+40<=n;o+=40){uint32_t r[10];memcpy(r,d+o,40);if(r[0]==1595 || r[0]==1596 || r[0]==1597 || r[0]==1598){assert(!(r[8]&0x2000000));++found;}}assert(found==4);free(d);puts("PASS: original complete catalog contains both extra player models and hands");return 0;}\n'
+        assert 'PASS:' in compile_and_run(tmp_path,code)
+
+
+@pytest.mark.parametrize('primary_for_everyone', [False, True])
+def test_story_original_splitscreen_spawns(tmp_path, primary_for_everyone):
+    from test_recomp_float_joins import compile_and_run, config, FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        info=dict(name='sub_000CF060_gen',end=0xcf1fd)
+        original=FunctionTranslator(image,{0xcf060:info}).translate_function(0xcf060,info)
+    finally:
+        vars(config).update(previous)
+    production=(ROOT/'src/network/pc_story_load.inc').read_text(encoding='utf-8')
+    adapter=production[production.index('void pc_story_network_spawn_pad('):production.index('void pc_story_network_frame(')]
+    if primary_for_everyone:
+        needle='WORD_AT(context)=slot?1u:0u;'
+        assert needle in adapter
+        adapter=adapter.replace(needle,'WORD_AT(context)=0u;')
+    source=(ROOT/'tests/network/story_spawn_original.c').read_text(encoding='utf-8')
+    source=source.replace('/* ORIGINAL_SPAWN_SELECTOR */',original).replace('/* PRODUCTION_SPAWN_ADAPTER */',adapter)
+    if primary_for_everyone:
+        with pytest.raises(AssertionError,match='select_pad'):
+            compile_and_run(tmp_path,source)
+    else:
+        output=compile_and_run(tmp_path,source)
+        assert 'PASS:' in output
+
+
 def test_story_original_config_stages(tmp_path):
     """Execute the original stage builder, not a hand-written factory model."""
     from test_recomp_float_joins import compile_and_run
@@ -498,6 +564,9 @@ def test_story_original_config_stages(tmp_path):
     scores=(ROOT/'src/network/pc_network_guest.inc').read_text(encoding='utf-8')
     adapters+=scores[scores.index('static void pc_network_guest_scores('):]
     adapters=(ROOT/'src/network/pc_story_campaign.inc').read_text(encoding='utf-8')+'\n'+adapters
+    lobby=(ROOT/'src/network/pc_story_lobby.inc').read_text(encoding='utf-8')
+    characters=lobby[lobby.index('static uint8_t story_player_character('):lobby.index('/* The existing reliable lobby packet')]
+    adapters+=characters
     source=source.replace('/* PRODUCTION_TRANSITION_ADAPTERS */',adapters)
     output=compile_and_run(tmp_path,source.replace('/* ORIGINAL_STAGE_BUILDER */',code)
         .replace('/* ORIGINAL_MISSION_DATA */',constants)
@@ -819,7 +888,7 @@ def test_multiplayer_runtime_wrapper_dispatch(tmp_path, provider):
     text = manual.read_text(encoding='utf-8')
     addresses = ('003592F0', '00065420', '001AF950', '00079860', '001922D0',
                  '002EAF60', '002EAFC0', '002EB030', '002EC090', '002EC650',
-                 '00065470', '002EB0C0', '002EB290')
+                 '00065470', '002EB0C0', '002EB290', '00158BC0', '00062F50')
     wrappers = []
     for address in addresses:
         match = re.search(r'void sub_'+address+r'\(void\)\n\{\n.*?\n\}', text, re.S)

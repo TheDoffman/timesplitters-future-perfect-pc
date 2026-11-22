@@ -61,7 +61,11 @@ cancel late results and close their sessions. Community settings and private
 server endpoints are separate. A private server invitation (`tsfp-server:` URL/pin)
 differs from a lobby code. Browse includes both game types; Story availability
 retains existing release/platform policy. The desktop UI remains only for explicit
-legacy test automation. The three platform adapters spawn without disabling the
+legacy test automation. Current Story manual/pair tests instead traverse this
+native chooser, browser and Create Lobby page through ordinary inputs. They
+redirect the isolated process's service defaults to a pinned local HTTPS endpoint
+using the current private-directory/relay implementation; no legacy browser
+command or historical server module is required. See [Story test routing](story-campaign-lifecycle.md#regression-and-live-routes). The three platform adapters spawn without disabling the
 game window or entering the desktop-browser wait.
 
 `pc_online_menu_host.inc` owns bounded file IPC, validating version, length,
@@ -693,3 +697,16 @@ The Windows production FOV/menu fixture checks cleanup -> original backend
 initialization -> bridge leave, the owned factory/guest stack, and stage reset;
 removing the initialization call is a required failing control. See STATUS for
 actual paired gameplay and remaining host acceptance.
+
+
+## Story lobby composition (2026-11-22)
+
+`mp_lobby_tick` polls the native controller, then resolves the retained Story
+lobby callback before the Arcade party-return callback or original tick. The
+native-menu resolver precedes Story's resolver in the public dispatcher; calling
+only the original tick bypassed Story's one-time guest Ready setter, input masking,
+Player Progress footer and party-return preparation. The new-menu first-mission
+probe reproduced a four-person lobby that could not start. The production public-
+dispatch fixture now checks both roles, the original tick, one-time readiness and
+Story footer under the native wrapper. Local/Arcade/native host exclusions retain
+their existing paths; this adds no native Mac/Linux Story transport capability.

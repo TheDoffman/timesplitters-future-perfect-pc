@@ -52,7 +52,9 @@ static unsigned context_spawns,ready_calls;
 void sub_000D2CE0(void){marker=82;}
 void sub_0015BCC0_gen(void){marker=83;}
 static unsigned retired_bodies;
-static unsigned pad_fallbacks;
+static unsigned pad_fallbacks,player_asset_calls;
+void sub_000622D0(void){marker=203;}
+void sub_000D7780(void){marker=200;}
 void sub_000CF060_gen(void){marker=16;}
 void sub_0009A420_gen(void){marker=27;}
 void sub_0025EE60(void){marker=31;}
@@ -351,9 +353,12 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         if(args[0]==0x73000 || args[0]==0x73400) {++npc_weapons_removed;WORD_AT(args[0]+0x28)|=0x80000000u;}
         else ++npc_removed;
         return 0;}
+    if(fn==sub_000D7780){CHECK(count==2 && args[0]==args[1] &&
+        args[0]==((uint8_t *)memory)[0x7de414+player_asset_calls]);++player_asset_calls;return 0;}
+    if(fn==sub_000622D0){CHECK(count==3 && args[0]==0x478784 && !args[1] && args[2]==1);return 1;}
     if(fn==sub_0025EE60){CHECK(count==1 && args[0]==0);return story_checkpoint;}
-    if(fn==sub_0009A420_gen){CHECK(count==1 && args[0]==0x1f40);return 0x78000;}
-    if(fn==sub_000CF060_gen){CHECK(count==1 && WORD_AT(args[0])==0);++pad_fallbacks;return 77;}
+    if(fn==sub_0009A420_gen){CHECK(count==1 && args[0]==77);return 0x78000;}
+    if(fn==sub_000CF060_gen){CHECK(count==1 && WORD_AT(args[0])==1 && !WORD_AT(0x6b988c));++pad_fallbacks;return 77;}
     else if(fn==sub_0003D7B0 && count==1 && args[0]==0x17a8){return 0x33000;}
     else if(fn==sub_0003D7B0 && count==1 && args[0]==0x17a7){return 0x33020;}
     else if(fn==sub_0003D7B0){
@@ -468,6 +473,11 @@ void pc_character_ragdoll_preserve(uint32_t e,uint32_t c){(void)e;(void)c;}
 #endif
 #include "pc_story_load.inc"
 #ifdef _WIN32
+BOOL xbox_translate_path(const char *path,WCHAR *out,DWORD bytes)
+{(void)path;(void)out;(void)bytes;return 0;}
+void sub_0003DFA0(void){marker=201;}
+#endif
+#ifdef _WIN32
 static unsigned reward_rows;
 static void reward_row_original(void)
 {CHECK(WORD_AT(g_esp+12)==0x21 && WORD_AT(g_esp+20)==0x2eb0a0);++reward_rows;g_esp+=4;}
@@ -525,7 +535,15 @@ static void npc_spawn_original(void)
 #ifdef _WIN32
 static unsigned failure_original_calls;
 static uint32_t pad_original_result=UINT32_MAX;
-static void pad_original(void){g_eax=pad_original_result;g_esp+=4;}
+static int pad_local_contract;
+static void pad_original(void){
+    if(pad_local_contract) {
+        const uint32_t context=WORD_AT(g_esp+4);
+        CHECK(WORD_AT(context)<=1 && !WORD_AT(0x6b988c) && WORD_AT(context+0x1504)==0x7fffffff);
+        g_eax=(story_checkpoint?9000u:8000u)+WORD_AT(context);
+    } else g_eax=pad_original_result;
+    g_esp+=4;
+}
 static void team_original(void)
 {WORD_AT(WORD_AT(g_esp+4)+0x84)=WORD_AT(g_esp+8);g_eax=77;g_esp+=4;}
 static void team_init_original(void)
@@ -541,7 +559,7 @@ static void hit_trace_original(void)
 static void loadout_ammo_original(void){g_eax=9;g_esp+=4;}
 static void loadout_grant_original(void)
 {((uint8_t *)memory)[WORD_AT(g_esp+4)+0x54c+WORD_AT(g_esp+8)]=1;g_eax=11;g_esp+=4;}
-static void start_tag_original(void){CHECK(WORD_AT(g_esp+4)==0x1f40);g_eax=1001;g_esp+=4;}
+static void start_tag_original(void){CHECK(WORD_AT(g_esp+4)==77);g_eax=1001;g_esp+=4;}
 static unsigned script_original_calls;
 static void script_original(void)
 {++script_original_calls;WORD_AT(0x7de45c)|=0x2000000;WORD_AT(0x6114)=256;g_eax=19;g_esp+=4;}
@@ -703,7 +721,7 @@ int main(void)
         CHECK(story_factories==1 && config[0x60]==0x5a && config[4]==0xa9 && WORD_AT(0x78ad2c)==13);
         WORD_AT(0x76b1a4)=10;CHECK(pc_story_network_prepare(0x78ad58));
         CHECK(story_factories==1); /* pending copy must not rebuild/reseed the serialized config */
-        CHECK(config[0x14]==12 && config[0x15]==12 && WORD_AT(0x78adb0)==0x80008);
+        CHECK(config[0x14]==12 && config[0x15]==0 && WORD_AT(0x78adb0)==0x80008);
         memcpy((uint8_t *)memory+0x9000,config,0xa0);
         WORD_AT(0x76b140)=2;story_lobby_mission=0;story_lobby_difficulty=0;
         CHECK(pc_story_network_prepare(0x9000));
@@ -752,16 +770,16 @@ int main(void)
         WORD_AT(extra)=3;WORD_AT(extra+4)=0x55;
         g_esp=0x1800;WORD_AT(g_esp+4)=extra;
         pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==0x7f03 && g_esp==0x1804 && pad_fallbacks==1);
+        CHECK(g_eax==UINT32_MAX && g_esp==0x1804 && pad_fallbacks==0);
         CHECK(WORD_AT(extra)==3 && WORD_AT(extra+4)==0x55);
         pad_original_result=88;g_esp=0x1800;pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==88 && pad_fallbacks==1);
+        CHECK(g_eax==88 && pad_fallbacks==0);
         pad_original_result=UINT32_MAX;WORD_AT(0x76b1a4)=12;
         g_esp=0x1800;pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==UINT32_MAX && pad_fallbacks==1);
+        CHECK(g_eax==UINT32_MAX && pad_fallbacks==0);
         WORD_AT(0x76b1a4)=15;online_mode=PC_ONLINE_ARCADE;
         g_esp=0x1800;pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==UINT32_MAX && pad_fallbacks==1);
+        CHECK(g_eax==UINT32_MAX && pad_fallbacks==0);
         online_mode=PC_ONLINE_STORY;WORD_AT(0x790950)=2;
         WORD_AT(0x79094c)=4;g_esp=0x1800;WORD_AT(g_esp)=0x123456;
         pc_story_network_script_trace(script_original,0xd4b00);
@@ -960,18 +978,30 @@ int main(void)
         CHECK(context_spawns==spawns_before+2); /* initial load only */
     }
     {
-        /* Every remote body starts beside the primary hanging pad, with
-           distinct16bit tokens and no change to checkpoint selection. */
-        online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
-        WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;
-        ((uint8_t *)memory)[0x7de455]=10;WORD_AT(0x790950)=4;WORD_AT(0x7b0c48)=0x6000;
-        story_checkpoint=0;story_extra_pad_storage=0xa000;
-        const uint32_t extra=0x6000+2*0x1584;
-        WORD_AT(extra)=2;g_esp=0x1800;WORD_AT(g_esp+4)=extra;
-        pad_original_result=88;pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==0x7f02 && g_esp==0x1804 && WORD_AT(extra)==2);
-        WORD_AT(extra+0x1584)=3;g_esp=0x1800;WORD_AT(g_esp+4)=extra+0x1584;
-        pc_story_network_spawn_pad(pad_original);CHECK(g_eax==0x7f03);
+        /* Every mission and peer resolves slot0 as local P1 and slots1..3
+           as local P2, including checkpoint starts. Ownership/cache survive. */
+        static const unsigned scenes[13]={2,4,18,11,1,17,6,22,5,14,9,26,81};
+        pad_local_contract=1;
+        for(unsigned mission=0;mission<13;mission++) for(unsigned count=2;count<=4;count++)
+        for(unsigned role=1;role<=2;role++) for(unsigned checkpoint=0;checkpoint<=1;checkpoint++) {
+            online_mode=PC_ONLINE_STORY;story_lobby_mission=mission;story_pending_stage=1;
+            WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=role;WORD_AT(0x76b1a4)=15;
+            WORD_AT(0x79094c)=scenes[mission];WORD_AT(0x7de458)=0x80008;
+            ((uint8_t *)memory)[0x7de455]=10;WORD_AT(0x790950)=count;WORD_AT(0x7b0c48)=0x6000;
+            story_checkpoint=checkpoint;story_rejoin_pose_valid=0;
+            for(unsigned slot=0;slot<count;slot++) {
+                const uint32_t context=0x6000+slot*0x1584;
+                WORD_AT(context)=slot;WORD_AT(context+4)=0x55;WORD_AT(context+0x1504)=0x1234;
+                WORD_AT(0x6b988c)=1;g_esp=0x1800;WORD_AT(g_esp+4)=context;
+                pc_story_network_spawn_pad(pad_original);
+                CHECK(g_eax==(checkpoint?9000u:8000u)+(slot?1u:0u) && g_esp==0x1804);
+                CHECK(WORD_AT(context)==slot && WORD_AT(context+4)==0x55 &&
+                      WORD_AT(context+0x1504)==0x1234 && WORD_AT(0x6b988c)==1);
+            }
+        }
+        pad_local_contract=0;story_checkpoint=0;story_extra_pad_storage=0xa000;
+        /* Rejoin keeps its validated pose and uses P2's original pad metadata,
+           without adding a per-slot position offset. */
         const float position[3]={10.f,20.f,30.f};
         memset((uint8_t *)memory+0x78000,0x5a,32);
         memcpy((uint8_t *)memory+0x7800c,position,12);
@@ -980,50 +1010,22 @@ int main(void)
             pc_story_network_start_record(frame_original);
             const uint32_t target=0xa000+(slot-1)*32;
             float p[3];memcpy(p,(uint8_t *)memory+target+12,12);
-            CHECK(g_eax==target && g_esp==0x1804 && p[0]==(slot==2?8.f:slot==1?12.f:14.f) &&
+            CHECK(g_eax==target && g_esp==0x1804 && p[0]==10.f &&
                   p[1]==20.f && p[2]==30.f && WORD_AT(target+4)==0x5a5a5a5a);
         }
         story_rejoin_pose_valid=1;story_rejoin_position[0]=100.f;
         story_rejoin_position[1]=200.f;story_rejoin_position[2]=300.f;story_rejoin_heading=1.5f;
         g_esp=0x1800;WORD_AT(g_esp+4)=0x7f01;pc_story_network_start_record(frame_original);
         float joined_pad[4];memcpy(joined_pad,(uint8_t *)memory+0xa00c,sizeof joined_pad);
-        CHECK(joined_pad[0]==102.f && joined_pad[1]==200.f && joined_pad[2]==300.f && joined_pad[3]==1.5f);
+        CHECK(joined_pad[0]==100.f && joined_pad[1]==200.f && joined_pad[2]==300.f && joined_pad[3]==1.5f);
         story_rejoin_pose_valid=0;
         float original_x;memcpy(&original_x,(uint8_t *)memory+0x7800c,4);CHECK(original_x==10.f);
-        g_esp=0x1800;WORD_AT(g_esp+4)=0x7f03;
-        pc_story_network_start_tag(start_tag_original);
+        g_esp=0x1800;WORD_AT(g_esp+4)=0x7f03;pc_story_network_start_tag(start_tag_original);
         CHECK(g_eax==1001 && g_esp==0x1804 && WORD_AT(0x1804)==0x7f03);
-        g_esp=0x1800;WORD_AT(g_esp+4)=0xa040;
-        pc_story_network_start_index(frame_original);
-        CHECK(g_eax==0x7f03 && g_esp==0x1804 && (uint16_t)g_eax==0x7f03);
-
-        /* Remote network setup can follow the first active body; keep the
-           initial pad choice until the original checkpoint predicate changes. */
-        WORD_AT(extra+0x114)=2;WORD_AT(extra+0x1584+0x114)=4;
-        story_context_start_pending=0;g_esp=0x1800;pc_story_network_frame(frame_original);
-        CHECK(story_checkpoint==0);
-        g_esp=0x1800;WORD_AT(g_esp+4)=extra;pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==0x7f02); /* an active body is not the end of network setup */
-        for(unsigned slot=0;slot<2;slot++) {
-            const uint32_t context=0x6000+slot*0x1584;WORD_AT(context)=slot;
-            g_esp=0x1800;WORD_AT(g_esp+4)=context;pc_story_network_spawn_pad(pad_original);
-            CHECK(g_eax==(slot?0x7f01u:0x1f40u));
-        }
-        story_checkpoint=1;g_esp=0x1800;WORD_AT(g_esp+4)=extra;
-        pc_story_network_spawn_pad(pad_original);CHECK(g_eax==88); /* checkpoint owns selection */
-        const unsigned checkpoint_fallbacks=pad_fallbacks;
-        pad_original_result=UINT32_MAX;g_esp=0x1800;pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==0x7f02 && pad_fallbacks==checkpoint_fallbacks+1 && WORD_AT(extra)==2);
-        pad_original_result=88;story_checkpoint=0;
-        g_esp=0x1800;WORD_AT(g_esp+4)=0x7f02;pc_story_network_start_record(frame_original);
-        CHECK(g_eax==0xa020);
-        WORD_AT(0x79094c)=3;g_esp=0x1800;WORD_AT(g_esp+4)=extra+0x1584;
-        pc_story_network_spawn_pad(pad_original);CHECK(g_eax==88);
-        WORD_AT(0x79094c)=2;story_checkpoint=0;
-        story_extra_pad_storage=0;allocation_ok=0;g_esp=0x1800;WORD_AT(g_esp+4)=extra;
-        pc_story_network_spawn_pad(pad_original);CHECK(g_eax==88);
-        allocation_ok=1;story_checkpoint=0;
+        g_esp=0x1800;WORD_AT(g_esp+4)=0xa040;pc_story_network_start_index(frame_original);
+        CHECK(g_eax==0x7f03 && g_esp==0x1804);
     }
+
     {
         online_mode=PC_ONLINE_STORY;WORD_AT(0x76b108)=1;WORD_AT(0x76b140)=1;
         WORD_AT(0x76b1a4)=15;WORD_AT(0x79094c)=2;WORD_AT(0x7de458)=0x80008;

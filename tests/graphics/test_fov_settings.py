@@ -27,7 +27,7 @@ def test_native_menu_callbacks_compile(tmp_path, source):
     assert result.returncode == 0, result.stdout + result.stderr
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows settings persistence adapter')
-@pytest.mark.parametrize("mutation", ["fixed", "original-controller-speed", "drain-other-menu", "original-system-link", "missing-lan-activation", "missing-browser-backend-init", "story-before-lobby"])
+@pytest.mark.parametrize("mutation", ["fixed", "original-controller-speed", "drain-other-menu", "original-system-link", "missing-lan-activation", "missing-browser-backend-init", "missing-native-story-tick", "story-before-lobby"])
 def test_fov_settings(tmp_path, mutation):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / 'fov.exe'
@@ -104,9 +104,10 @@ def test_fov_settings(tmp_path, mutation):
         fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
         source = tmp_path / 'fov_settings.c'
         source.write_text(fixture, encoding='utf-8')
-    if mutation == 'missing-browser-backend-init':
+    if mutation in ('missing-browser-backend-init', 'missing-native-story-tick'):
         adapter = (ROOT / 'src/interface/pc_multiplayer_menu.inc').read_text(encoding='utf-8')
-        needle = '    guest_call(sub_001CB950,1,WORD_AT(frame+4u));'
+        needle = ('    retained=story_lobby_lookup(address);' if mutation == 'missing-native-story-tick'
+                  else '    guest_call(sub_001CB950,1,WORD_AT(frame+4u));')
         assert needle in adapter
         (tmp_path / 'pc_multiplayer_menu.inc').write_text(adapter.replace(needle, ''), encoding='utf-8')
         menu = tmp_path / 'pc_display_menu.c'
@@ -127,6 +128,9 @@ def test_fov_settings(tmp_path, mutation):
     if mutation == 'missing-lan-activation':
         assert result.returncode != 0
         assert 'getenv("TSFP_NETWORK")' in result.stderr
+    elif mutation == 'missing-native-story-tick':
+        assert result.returncode != 0
+        assert 'native_story_ready_calls==1' in result.stderr
     elif mutation == 'missing-browser-backend-init':
         assert result.returncode != 0
         assert 'native_backend_resets==1' in result.stderr

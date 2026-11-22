@@ -61,12 +61,23 @@ preserved authored callbacks and frozen/cinematic exclusions.
 The original-US contract verifies the advancing wrapper and native freeze gate.
 STATUS records bounded live evidence separately from full mission acceptance.
 
-Extra slots use the mission's original primary-start selector only when its
-authored start list is exhausted. Peer-local private pad IDs7F01..7F03 carry
-distinct numeric starts, with matching record/tag/index hooks. They never index
-ordinary pad tables directly. Rejoin uses the host's validated numeric pose.
-The first mission's hanging-start pad8000 remains restricted to its opening;
-checkpoint starts use the original selector instead.
+Online roles are fixed by `story_player_character` in `pc_story_lobby.inc`:
+slot0 is Cortez12, slot1 is this mission's original Splitscreen sidekick from
+mission-table row+Eh, slot2 is selectable Private Hicks104, and slot3 is
+Private Jones103. First-mission P2 is the original Story Hicks75. Lobby,
+validated host/guest launch configs, restart and next-mission preparation all
+apply the same mapping while retaining joined ownership and other config data.
+P1 remains Cortez12 even where the original final mission selected variant116.
+
+`pc_story_network_spawn_pad` asks original CF060 for local slot0 for P1 and
+local slot1 for every other online player. The temporary slot, cached-pad and
+random-map selector changes are restored before returning; player ownership,
+body creation, native authored starts and checkpoint lookup remain engine-owned.
+This replaces the former mission-one placement of all peers beside Cortez and
+the primary-pad fallback for extra players. It introduces no position offsets.
+Private rejoin tokens7F01..7F03 retain P2 pad metadata and the host's validated
+numeric rejoin pose; record/tag/index hooks never index ordinary pad tables with
+a private token. Local Story, Arcade and movies use their original paths.
 
 Camera tags, fades, inset views, active cue lifetime and rally positions use the
 shared numeric snapshot path. A fresh later mission must not wait for Time to
@@ -126,7 +137,25 @@ the real65940 completion/ending/reward builder for every party size. Existing
 mission-one and mutation checks remain active. These are controlled engine-boundary
 tests; they do not prove authored checkpoint scripts, collision or full missions.
 
-`Test-StoryCoop.ps1 -Players 2|3|4` opens isolated manual games. The bounded runner
+`Test-StoryCoop.ps1 -Players 2|3|4` opens isolated manual games.
+Both this launcher and `story_pair_game.py` now use the current `online_private`
+HTTPS directory/UDP relay implementation via `story_coop_local.LocalTestDirectory`.
+Only the isolated service URL and certificate pin are overridden. Automated
+inputs traverse Story > Online > Online > Matches Available > Start New Match >
+Create Lobby (guests select the listed host). No `TSFP_ONLINE_TEST_COMMAND` or
+removed `lobby_server` fixture is used by these Story routes. Captures retain
+network-chooser, native-match-browser and native-create-options for review.
+Role/start evidence resolves the owned slot from the active actor with local_port0;
+guest admission can differ from process launch order. Reordered actor/ownership
+fixtures reject missing or ambiguous owners before checking native start traces.
+`Test-StoryCoop.ps1 -Seconds 15` bounds a launcher smoke run; manual play has no
+limit by default. Directory certificates remain in isolated test storage.
+The native menu's lobby wrapper must delegate to `story_lobby_lookup` before
+its original/Arcade fallback. That preserves automatic guest readiness, authored
+Options/Progress controls and Story party returns; bypassing it leaves GO blocked.
+The production FOV/dispatcher fixture exercises this composition through the
+public lookup for both host and guest, including one-time reliable Ready.
+ The bounded runner
 accepts three players too. Use `tests/network/story_pair_game.py --load-probe
 --lobby-controls --mission 1 --difficulty 0 --players 3 --fire-probe --restart-probe --skip-intro`
 for Scotland the Brave loading, owned movement/fire and coordinated level reload.
@@ -137,3 +166,42 @@ route remains specific to mission one; do not relabel it as campaign coverage.
 The shared helpers require no new OS adapter. Existing native Story transport
 remains unsupported (MAC-013); Windows fixtures do not establish Mac/Linux live
 Story acceptance. Keep that capability gap distinct from shared policy coverage.
+
+## Character/start parity validation (2026-11-21)
+
+`test_story_original_splitscreen_spawns` executes the verified original US CF060
+against two authored starts and checkpoint bookmarks, comparing online parties
+of2/3/4 with its actual local P1/P2 results. Its all-primary mutation must fail.
+`test_story_original_config_stages` compares P2 with the original65940 builder
+for all13 missions. The campaign fixture checks host/guest config ownership and
+roles; the start matrix checks all13 scenes and both peer roles. These remain
+in the existing menu CI route. The bounded four-client first-mission runner
+adds `--role-spawn-probe`, which checks config/model IDs and traced native starts;
+read-only actor snapshots now include model kinds. Live results are in STATUS.
+
+Patch3045 wraps original158BC0, the Story character dependency preload. After
+its authored NPC cast is registered, `pc_story_network_player_assets` passes each
+configured human model to the original D7780 dependency registration. This
+includes body, hands and animation resources for Hicks/Jones, which are absent
+from some missions' fixed cast. It runs only in typed Online Story gameplay
+loading; movies, local play and other modes retain their original preload.
+The native wrapper shares the adapter but its unsupported Story transport stays
+inactive. Missing assets are not hidden with a filename-pointer guard.
+
+The same patch wraps original62F50's exact generic-catalog request. Typed online
+Story gameplay reads the original complete dictionary from the bounded P5CK
+entry in `pak/arcade/l_100.pak`, through the existing translated game root. Its
+918 generic rows match the ordinary Story base; original per-level/cinematic
+tables still merge afterward. The extra human body/hand rows are otherwise
+absent from the Story catalog. `pc_story_catalog.h` bounds the index/payload,
+validates offsets and strings, and rejects compressed/malformed entries. The
+replacement uses the original scene arena (3DFA0 tag1), preserving registers,
+arguments and the ordinary fallback. No game archive is modified or extracted
+to disk. The menu CI route tests the reader, guest adapter and original catalog.
+
+Original62790 omits the shared character archive in Story. Before158BC0, the
+adapter mounts `pak/chr.pak` through original622D0(path,0,1), exactly matching
+the Arcade mount parameters. Native archive deduplication, lookup and lifetime
+remain responsible for the payloads. No model-cache retry or forced resurrection
+is added. Resource snapshots include the model pointer at+4; dictionary entries
+or metadata flags alone do not establish loaded/constructed models.

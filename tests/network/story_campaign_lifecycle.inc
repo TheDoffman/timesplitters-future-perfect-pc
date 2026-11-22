@@ -31,6 +31,25 @@ static void campaign_lifecycle_matrix(void)
             WORD_AT(context+0x14)=body;WORD_AT(context+0x114)=2;
             WORD_AT(body+0x150)=context;WORD_AT(body+0x7c)=actor;WORD_AT(actor)=body;
         }
+        /* Both host and guest config copies enforce roles without changing
+           joined ownership, difficulty or unrelated config bytes. */
+        for(unsigned peer=1;peer<=2;peer++) {
+            uint8_t *pending=(uint8_t *)memory+0x78ad58;
+            memcpy(pending,config,0xa0);pending[4]=0xa9;pending[0x60]=0x5a;
+            WORD_AT(0x4d1aceu+mission*0x44)=75u+mission;
+            WORD_AT(0x76b140)=peer;WORD_AT(0x76b1a4)=10;
+            g_esp=0x1800;WORD_AT(g_esp)=0;
+            CHECK(pc_story_network_prepare(0x78ad58));
+            CHECK(pending[0x14]==12 && pending[0x15]==75u+mission);
+            if(count>2)CHECK(pending[0x16]==104);
+            if(count>3)CHECK(pending[0x17]==103);
+            CHECK(pending[0]==count && pending[1]==1 && pending[4]==0xa9 && pending[0x60]==0x5a);
+        }
+        WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=15;
+        for(unsigned slot=0;slot<count;slot++)config[0x14+slot]=story_player_character(mission,slot);
+        player_asset_calls=0;g_esp=0x1800;g_eax=0x12345678;
+        pc_story_network_player_assets(frame_original);
+        CHECK(player_asset_calls==count && g_esp==0x1804 && g_eax==0x12345678);
         CHECK(story_campaign_scene(mission)==scenes[mission]);
         CHECK(story_checkpoint_scope() && story_restart_session() && story_cine_session());
         CHECK(story_drop_session() && story_world_session() && story_effect_session());

@@ -370,7 +370,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch','3045-story-player-assets.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):

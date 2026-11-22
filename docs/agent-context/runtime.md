@@ -1,12 +1,12 @@
 [Pad](controller-deadzones.md); [tools](developer-tools-integration.md).
-[MP](native-multiplayer-menu.md).
+[3045 assets](story-campaign-lifecycle.md).
 
 [Bob](weapon-bob.md);[Uplink](native-uplink.md).
 [UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
 [Sun](fidelity-comparison.md); [Aim](hud-sizing.md).
 [Depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
-[MP hooks](multiplayer-exit.md)
+[Exit](multiplayer-exit.md)
 2465 wraps356800 for rewards;
 profile mapper356870 stays original. See [contract](systems-details.md#four-player-rewards-context).
 

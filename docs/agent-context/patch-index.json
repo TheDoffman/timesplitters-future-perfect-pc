@@ -2173,6 +2173,14 @@
       ]
     },
     {
+      "name": "3045-story-player-assets.patch",
+      "path": "patches/network/3045-story-player-assets.patch",
+      "sha256": "eddb8abf1658cbd20ea54ff3f1c3a67fa25d0f50c8d25fead092bb35a92bf0ae",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

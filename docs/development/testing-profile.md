@@ -10,11 +10,14 @@ For manual **Windows Online Story co-op** testing on one PC, run:
 ```
 
 The helper verifies the sealed Release build and game data, opens two games by
-default, and starts a loopback-only lobby directory. No port forwarding or public
-IP lookup is needed. In each game select **Test Lab → Story → Online**. In one
-Online browser click **Start New Match**, return to that game and select
-**Start New Match** there too. In the other browsers click **Refresh**, select
-the host's lobby, then **Join selected**. The host chooses **Time to Split**
+default, and starts the current private-directory implementation on a local HTTPS
+endpoint with its UDP relay. No removed server fixture, port forwarding or public
+IP lookup is needed. In each game select **Test Lab ? Story ? Online ? Online**.
+This uses the current in-game network chooser and **Matches Available** browser;
+the test endpoint is supplied only to these isolated processes. The host selects
+**Start New Match**, keeps **Game Type: Story** and **Privacy: Open**, then selects
+**Create Lobby**. Guests select the host's row in **Matches Available** (R refreshes
+the list). The host chooses **Time to Split**
 and starts once everyone is present. Use Alt+Tab to switch games; E/Space confirms
 and F goes back. The first mission has human start-to-finish acceptance with
 2–4 players. Shared loading, checkpoint, restart and cinematic handling now
@@ -29,6 +32,7 @@ the games exit. Personal saves/settings and the canonical fixture are preserved.
 If a hard interruption leaves `story-manual.lock` or a role's `run.lock`, close
 that session's games before removing its stale markers. A build is required
 before the helper can run; it does not compile automatically.
+`-Seconds 15` optionally bounds a startup smoke run; the default waits for you.
 
 The local **Test Lab** profile unlocks story levels, Arcade content/characters
 and challenges. Collectible/pickup progress is preserved from a fresh profile,

@@ -3492,6 +3492,21 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story characters and Splitscreen starts (2026-11-21, uncommitted on online-story-coop):**
+  Shared Story config now chooses Cortez, the original per-mission sidekick,
+  Private Hicks and Private Jones. Existing native start wrappers use the original
+  P1/P2 selector for slots0/1..3, retaining checkpoint and rejoin handling without
+  primary-start offsets. Sources: `src/network/pc_story_lobby.inc` and
+  `pc_story_load.inc` and `pc_story_catalog.h`; see the campaign guide and STATUS.
+  Complete original model metadata and native dependency registration enable
+  the extra characters. The bounded catalog parser is shared; activating native
+  Story must map its file-open call to the existing native game-path adapter
+  (Windows currently uses translated wide paths). No catalog policy is duplicated.
+  Native Mac/Linux Story still requires the existing MAC-013 transport adapter;
+  Windows/original-code checks do not establish native gameplay acceptance.
+  Remaining acceptance: native first-mission roles/models/starts, movement,
+  fire, restart/checkpoints and campaign flow once that adapter is available.
+
 - **Story human animation initialization (2026-11-09, uncommitted on online-story-coop):**
   Shared campaign source invokes the original advancing/freeze-aware model
   routine for fully initialized live Story humans without an authored callback. Both peer roles,

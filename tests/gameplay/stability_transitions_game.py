@@ -71,6 +71,7 @@ def main():
     parser.add_argument('--pair-role',choices=['host','guest'])
     parser.add_argument('--pair-owner-pid',type=int,help='Controller ancestor allowed to own other games in this paired probe')
     parser.add_argument('--directory')
+    parser.add_argument('--directory-fingerprint')
     parser.add_argument('--lobby-code')
     parser.add_argument('--pair-load-probe',action='store_true')
     parser.add_argument('--story-presentation-probe',action='store_true')
@@ -137,7 +138,7 @@ def main():
     if args.scenario=='story-pair':
         from urllib.parse import urlsplit
         endpoint=urlsplit(args.directory or '')
-        assert args.pair_role and endpoint.scheme=='http' and endpoint.hostname=='127.0.0.1'
+        assert args.pair_role and endpoint.scheme=='https' and args.directory_fingerprint and endpoint.hostname=='127.0.0.1'
         assert endpoint.port and not endpoint.username and not endpoint.password
         assert endpoint.path in ('','/') and not endpoint.query and not endpoint.fragment
         if args.pair_role=='guest':
@@ -205,7 +206,8 @@ def main():
             dict(keys=[70],label='local-back',wait=5),
             dict(keys=[70],label='chooser-back',wait=5),
             dict(keys=[69],label='story-chooser-again',wait=5),
-            dict(keys=[40,69],cancel_online=True,label='online-cancelled',wait=5),
+            dict(keys=[40,69],label='native-network-chooser',wait=4),
+            dict(keys=[70],label='native-network-back',wait=4),
             dict(stop=True)]
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     elif args.scenario=='story-local-load':
@@ -231,29 +233,25 @@ def main():
     if args.scenario in ('story-host','story-host-controls','story-pair'):
         env['TSFP_STORY_TRACE']='1'
         env['TSFP_BOT_TRACE']=str(run/'story-hit-trace.log')
-        import socket
-        from lobby_server import Server
+        from story_coop_local import LocalTestDirectory
         if args.scenario!='story-pair':
-            directory_server=Server(('127.0.0.1',0))
-            directory_thread=threading.Thread(target=directory_server.serve_forever,daemon=True)
-            directory_thread.start()
-        directory_address=args.directory if args.scenario=='story-pair' else f'http://127.0.0.1:{directory_server.server_port}'
-        with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as probe:
-            probe.bind(('127.0.0.1',0));host_port=probe.getsockname()[1]
-        command_root=ROOT/'private/network-validation'/args.run_name
-        command_root.mkdir(parents=True,exist_ok=True)
-        online_command=command_root/'online-command.json'
-        online_command.write_text(json.dumps(dict(directory=directory_address,
-            action='join' if args.pair_role=='guest' else 'host',code=args.lobby_code,
-            port=host_port,automatic_host=False)))
-        env['TSFP_ONLINE_TEST_COMMAND']=str(online_command)
+            directory_server=LocalTestDirectory(ROOT)
+        directory_address=args.directory if args.scenario=='story-pair' else directory_server.address
+        fingerprint=args.directory_fingerprint if args.scenario=='story-pair' else directory_server.fingerprint
+        # Redirect only the service endpoint; every selection uses production
+        # native menus and the headless companion, with no legacy automation.
+        env.pop('TSFP_ONLINE_TEST_COMMAND',None)
+        env.update(TSFP_ONLINE_DIRECTORY=directory_address,TSFP_ONLINE_FINGERPRINT=fingerprint)
         route=[dict(label='main-menu',wait=24),dict(keys=[69],label='story-chooser',wait=4),
-            dict(keys=[40,69],label='network-browser',wait=10),
-            dict(keys=[69],label='host-lobby',wait=10),dict(stop=True)]
-        if args.scenario=='story-pair':
-            if args.pair_role=='guest':
-                route[3]=dict(keys=[40,69],label='guest-lobby',wait=10)
-            route[-1:]=[] if args.pair_load_probe else [dict(label='pair-wait',wait=10) for _ in range(9)]+[dict(stop=True)]
+            dict(keys=[40,69],label='network-chooser',wait=4),
+            dict(keys=[69],label='native-match-browser',wait=10)]
+        if args.pair_role=='guest':
+            route += [dict(keys=[40,69],label='guest-lobby',wait=12)]
+        else:
+            route += [dict(keys=[69],label='native-create-options',wait=4),
+                      dict(keys=[40,40,40,69],label='host-lobby',wait=12)]
+        route += [] if args.pair_load_probe else ([dict(label='pair-wait',wait=10) for _ in range(9)]
+                  if args.scenario=='story-pair' else [])+[dict(stop=True)]
         if args.scenario=='story-host-controls':
             route[-1:]=[dict(keys=[89],label='story-options',wait=4,expect_menu=0x5238e0),
                 dict(keys=[40,69],label='story-difficulty',wait=4,expect_story_difficulty=True),
@@ -545,7 +543,19 @@ def main():
     def story_scene_snapshot(world=False):
         setup=word(0x74C36C)
         budget=word(setup+8) if setup else None
+        character_resources=[]
+        catalog=word(0x791d4c)
+        for slot in range(min((word(0x7de400) or 0)&255,4)):
+            kind=(word(0x7de414+slot) or 0)&255
+            for part,offset in [('body',0x20),('hands',0x24)]:
+                model=word(0x53a3b0+kind*48+offset)
+                index=short(0x78b860+model*2) if model is not None and 0<=model<2512 else None
+                metadata=catalog+index*48 if catalog and index is not None and 0<=index<8192 else None
+                character_resources.append(dict(slot=slot,kind=kind,part=part,model=model,index=index,
+                    resident=word(metadata+4) if metadata else None,
+                    flags=word(metadata+0x28) if metadata else None,key=word(metadata+0x10) if metadata else None))
         return dict(setup=setup,budget_index=budget,
+            character_resources=character_resources,
             budget_count=word(0x53D2D0+budget*0xA4) if budget is not None and budget<256 else None,
             record_counts={hex(offset):word(setup+offset) for offset in (0x10,0x28,0x30,0x88,0xB0,0xE0)} if setup else {},
             checkpoint_pads=[checkpoint_pad(i,word(setup+0x24))
@@ -571,6 +581,7 @@ def main():
                 position=[real(entity+0x64+i*4) for i in range(3)] if entity else []
                 context=(word(0x7B0C48) or 0)+slot*0x1584
                 actors.append(dict(slot=slot,entity=entity,position=position,
+                    kind=[short(actor+0x48),short(actor+0x4a)],
                     context=context,local_port=word(context+4),context_flags=word(context+0xc),
                     story_view=dict(firstperson_animation_mode=word(context+0x14f8),camera=word(context+8),
                         matrix_buffer=word(word(context+8)+0x208) if word(context+8) else None,
@@ -906,7 +917,7 @@ def main():
     finally:
         close();lock.unlink()
         if directory_server:
-            directory_server.shutdown();directory_thread.join(timeout=3);directory_server.server_close()
+            directory_server.close()
         (run/'states.json').write_text(json.dumps(samples))
         (run/'report.json').write_text(json.dumps(report,indent=2))
         recycle_disks(ROOT,run);check_fixture(ROOT)
@@ -933,7 +944,7 @@ def main():
         text=(run/'run0.err').read_text(errors='replace')
         assert text.count('[PC-STORY] Local/Online chooser opened')>=2
         assert '[PC-STORY] Original local Story route selected' in text
-        assert any('online_child' in item for item in report)
+        assert any(item.get('command',{}).get('label')=='native-network-back' for item in report)
     if args.scenario=='story-local-load':
         played=[item for item in report if item.get('active_mode') in (4,14) and
             item.get('scene',101)<100 and item.get('actor_pool') and

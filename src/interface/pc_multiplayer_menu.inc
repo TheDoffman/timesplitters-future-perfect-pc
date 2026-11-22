@@ -834,7 +834,13 @@ static void mp_lobby_tick(void (*original)(void),uint32_t address)
 {
     GuestRegisters saved;save_registers(&saved);native_multiplayer_tick();restore_registers(&saved);
     if(!mp_native_passthrough){g_esp+=4u;return;}
-    void (*retained)(void)=multiplayer_exit_lookup(address);
+    /* Native Online owns controller polling; Story still owns readiness,
+       authored options and party-return handling inside the retained lobby. */
+    void (*retained)(void)=NULL;
+#ifdef _WIN32
+    retained=story_lobby_lookup(address);
+#endif
+    if(!retained)retained=multiplayer_exit_lookup(address);
     if(retained)retained();else original();
 }
 static void mp_host_tick(void){mp_lobby_tick(sub_001A8D30,0x1a8d30u);}

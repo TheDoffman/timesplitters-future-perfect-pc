@@ -47,6 +47,18 @@ static int story_lobby_rendering(void)
 unsigned pc_story_network_player_limit(void)
 { return pc_online_mode()==PC_ONLINE_STORY?4u:0u; }
 
+/* Original65940 uses mission+C/+E for the two Splitscreen roles. Extra online
+   players use the selectable Hicks/Jones models, not another scripted sidekick. */
+static uint8_t story_player_character(unsigned mission,unsigned slot)
+{
+    if(slot==1u && mission<13u) {
+        uint16_t sidekick;
+        memcpy(&sidekick,(const void *)((uintptr_t)(0x004d1aceu+mission*0x44u)+g_xbox_mem_offset),2u);
+        return (uint8_t)sidekick;
+    }
+    return slot==2u?104u:slot==3u?103u:12u;
+}
+
 /* The existing reliable lobby packet carries this same config. Keep its
    capacity/ownership bytes intact; only publish the host's Story selection. */
 void pc_story_network_lobby_config(void)
@@ -59,8 +71,9 @@ void pc_story_network_lobby_config(void)
     if(scene<0 || scene>=100) return;
     config[0x54]=(uint8_t)scene;config[0x55]=10u;config[0x56]=2u;
     config[0x57]=(uint8_t)story_lobby_difficulty;config[2]=0;
-    for(unsigned i=0;i<16u;i++)
-        if(WORD_AT(0x0077728Cu+i*0x124u)&1u) config[0x14u+i]=12u;
+    for(unsigned i=0;i<4u;i++)
+        if(WORD_AT(0x0077728Cu+i*0x124u)&1u)
+            config[0x14u+i]=story_player_character(story_lobby_mission,i);
 }
 
 static void story_lobby_received_selection(void)

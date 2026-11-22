@@ -17,6 +17,10 @@ static ULONGLONG ticks(void) { return clock_ms; }
 #define GetTickCount64 ticks
 #include "../src/interface/pc_display.c"
 #include "../src/interface/pc_display_menu.c"
+BOOL xbox_translate_path(const char *path,WCHAR *out,DWORD bytes)
+{(void)path;(void)out;(void)bytes;return 0;}
+void sub_0003DFA0(void){}
+void sub_000622D0(void){}
 /* Developer Tools is a separate guest-thread consumer. These menu fixtures
  * retain normal HUD visibility and reject accidental flight/Story actions. */
 static PcVideoSnapshot sidebar_video_observed;
@@ -503,11 +507,15 @@ void sub_001A2700(void) {
     STUB(sub_000653B0) STUB(sub_00065940) STUB(sub_00352640) STUB(sub_00352650) STUB(sub_00356490) STUB(sub_002EB030)
 STUB(sub_00170ED0) STUB(sub_00165D80) STUB(sub_00165A40) STUB(sub_00167CA0) STUB(sub_00167CE0) STUB(sub_00167BC0)
 STUB(sub_00351580) STUB(sub_003515A0) STUB(sub_00352200) STUB(sub_00351F60) STUB(sub_003513C0) STUB(sub_001677E0) STUB(sub_000B2E50) STUB(sub_0034FF30)
-STUB(sub_000D7550) STUB(sub_000A9070) STUB(sub_0015BCA0) STUB(sub_0015BCC0)
+STUB(sub_000D7780) STUB(sub_000D7550) STUB(sub_000A9070) STUB(sub_0015BCA0) STUB(sub_0015BCC0)
 STUB(sub_002402B0) STUB(sub_00353A90)
 STUB(sub_0025EAD0) STUB(sub_0025EC70) STUB(sub_000C6100) STUB(sub_000D4B00) STUB(sub_000D4BE0) STUB(sub_000D1EC0) STUB(sub_000D2DE0) STUB(sub_000A6F90)
-STUB(sub_001A8D30) STUB(sub_001A8F30) STUB(sub_002CB090) STUB(sub_002CAFE0) STUB(sub_002D62F0)
-STUB(sub_00197890) STUB(sub_002CA9F0) STUB(sub_003535C0) STUB(sub_003544B0) STUB(sub_00359EB0) STUB(sub_00198E20) STUB(sub_00040F00)
+static unsigned native_story_original_ticks,native_story_ready_calls;
+void sub_001A8D30(void){native_story_original_ticks++;g_esp+=4;}
+void sub_001A8F30(void){native_story_original_ticks++;g_esp+=4;}
+void sub_00359EB0(void){CHECK(!WORD_AT(g_esp+4) && WORD_AT(g_esp+8)==1u);native_story_ready_calls++;*((uint8_t*)((uintptr_t)WORD_AT(0x774028)+g_xbox_mem_offset+0x2fa))=1;g_esp+=4;}
+STUB(sub_002CB090) STUB(sub_002CAFE0) STUB(sub_002D62F0)
+STUB(sub_00197890) STUB(sub_002CA9F0) STUB(sub_003535C0) STUB(sub_003544B0) STUB(sub_00198E20) STUB(sub_00040F00)
 STUB(sub_00080F20)
 STUB(sub_002CAD80)
 static float drawn;
@@ -637,6 +645,22 @@ int main(int argc,char **argv)
         CHECK(pc_display_menu_lookup(STORY_BACK_CB)==story_lobby_difficulty_back);
         WORD_AT(0x76b140)=2;WORD_AT(0x76b1a4)=12;WORD_AT(0x300004)=0x4e99d4;
         CHECK(pc_display_menu_lookup(STORY_BUILD_CB)==story_lobby_header);
+        /* Native-menu wrappers must compose with Story readiness and footer
+           handling. Calling Story helpers alone missed this dispatch conflict. */
+        mp_ui.storage=0x320000;mp_native_passthrough=1;mp_ui.source=0;
+        mp_ui.poll_at=clock_ms+1000;story_lobby_captions=0x330000;
+        WORD_AT(0x774028)=0x340000;WORD_AT(0x6b94d8)=0;
+        CHECK(pc_display_menu_lookup(0x1a8f30)==mp_guest_tick);
+        guest_call(pc_display_menu_lookup(0x1a8f30),1,0x300000u);
+        CHECK(native_story_ready_calls==1 && native_story_original_ticks==1);
+        CHECK(*((uint8_t*)mem+0x3402fa)==1 && WORD_AT(0x300128)==1);
+        guest_call(pc_display_menu_lookup(0x1a8f30),1,0x300000u);
+        CHECK(native_story_ready_calls==1 && native_story_original_ticks==2);
+        WORD_AT(0x76b140)=1;WORD_AT(0x76b1a4)=11;WORD_AT(0x300004)=0x4e99c4;
+        CHECK(pc_display_menu_lookup(0x1a8d30)==mp_host_tick);
+        guest_call(pc_display_menu_lookup(0x1a8d30),1,0x300000u);
+        CHECK(native_story_original_ticks==3 && WORD_AT(0x30015c)==story_lobby_captions+32);
+        memset(&mp_ui,0,sizeof mp_ui);mp_native_passthrough=0;story_lobby_captions=0;
         online_mode=PC_ONLINE_NONE;story_lobby_options=0;story_difficulty_descriptor=0;
         WORD_AT(0x79094c)=0;WORD_AT(0x76b140)=0;WORD_AT(0x76b1a4)=0;
         CHECK(pc_display_menu_lookup(STORY_BACK_CB)==story_back);

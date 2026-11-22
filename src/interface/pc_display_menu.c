@@ -36,6 +36,7 @@ static int native_multiplayer_browser_notice(uint32_t menu);
 static int native_multiplayer_notice_bounds(uint32_t menu,float x,float y,float w,float h);
 #ifdef _WIN32
 static void native_multiplayer_story_open(uint32_t menu);
+static void (*story_lobby_lookup(uint32_t address))(void);
 static void story_rewards_profiles_capture(void);
 #endif
 static void (*native_multiplayer_lookup(uint32_t address))(void);

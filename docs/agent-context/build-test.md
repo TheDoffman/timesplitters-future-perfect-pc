@@ -33,7 +33,7 @@ neutralizes gameplay but retains raw camera keys. Both host defines cover
 automatic/assigned pad blocking/resume, ownership and disconnect/focus/parser.
 Runtime CI also covers Developer Tools flight/mouse. Patch2630 follows2620.
 
-[Co-op](story-campaign-lifecycle.md).
+[Roles](story-campaign-lifecycle.md).
 `test_developer_tools.py` runs in runtime CI: sidebar tab/dock centers at
 1x/1.5x/2x, both docks, independent vertical scaling and retained painted extents
 on input-only frames. Fixture-local locks/atomics support standalone non-Windows

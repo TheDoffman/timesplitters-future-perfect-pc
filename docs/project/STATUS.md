@@ -1,3 +1,91 @@
+## Current Online Story test flow and launcher repair (2026-11-22)
+
+Local/uncommitted on online-story-coop at4d12949b6 plus the character/start work.
+Reproduced Test-StoryCoop.ps1 failing before game launch because its Python helper
+imported removed lobby_server. Manual/pair helpers now use current online_private
+Server/Directory/SharedRelay with isolated pinned HTTPS and ephemeral ports.
+Only process-local service defaults change. Ordinary inputs traverse Story >
+Online > Online > Matches Available > Start New Match > Create Lobby, or the
+listed host for guests. No historical server or legacy browser override is used.
+Manual instructions match these menus; optional -Seconds bounds startup checks.
+
+The new route exposed mp_lobby_tick bypassing Story's handler: guest Ready never
+ran and GO stayed in the lobby. Compose native controller polling with the
+existing Story tick before Arcade/original fallback. The public-dispatch fixture
+checks host/guest original ticks, one-time reliable Ready and Story footer;
+removing this delegation fails the regression mutation.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433/MSBuild17.12.6; supported US XBE
+validated; default Windows frontend (Vulkan off; driver not queried). Supported
+Release build and built-in checks pass, exit0. Final executable SHA-256:
+a4d8037423532db3ae0217f5958529a7602b9395bcf537be9d7680b1ea3e3aa6.
+Launcher/controller/private/evidence suites100 pass, FOV/launcher21 pass with2
+Mac-only skips, menu/Tools70 pass, plus six actual-ownership cases
+(184 distinct passing cases across these commands). The actual PowerShell entry point launched two games and recycled
+only their owned disposable data after12s. Context/index and whitespace pass.
+
+Fresh four-client native-menu first-mission validation passes: actual configured
+and constructed characters12/75/104/103 on all peers, original P1 pad8000 and
+P2-P4 pad8034, owned movement and firing/ammunition use, guest pause isolation,
+and coordinated host restart with all four active contexts/roles/loadout retained.
+Actual admitted owned slots were0/2/1/3 for host/guest/guest2/guest3: the probe now
+resolves each actor's local_port0 instead of assuming process launch order.
+Reviewed current browser/Create/lobby, host load-after, guest3 firing and restart
+captures. Exact shared P2 placement still overlaps secondary bodies/cameras until
+movement separates them. All four runners exited0 and recycled disposable images.
+This is bounded first-mission smoke coverage, not full mission/campaign completion,
+checkpoint walking, combat/world synchronization or remote-service acceptance.
+Current pair receipt and matching symbols: private/network-validation/story-four/.
+Evidence: logs/story-native-menu-build.log, logs/story-native-menu-tests.log,
+logs/story-native-menu-final-regressions.log, logs/story-native-menu-menu-regressions.log,
+logs/story-native-menu-launcher-smoke.log, logs/story-native-menu-first-mission.log.
+Native Mac/Linux Story and physical cross-device/Internet checks remain unrun
+(MAC-013). Personal settings/saves and the canonical Test Lab fixture are preserved.
+
+## Online Story characters and Splitscreen starts (2026-11-21, local validation)
+
+On online-story-coop at4d12949b6 plus uncommitted changes, human slots use
+Cortez12, the original per-mission secondary character, Private Hicks104 and
+Private Jones103. Original65940 verifies the sidekick for all13 missions.
+Initial/checkpoint lookup maps P1 to original local P1 and P2-P4 to local P2,
+restoring ownership/cache/random state. Validated rejoin handling is retained.
+
+Story's catalog excludes the extra models and its archive setup explicitly
+skips chr.pak. Patch3045 supplies the original complete dictionary (all918
+generic rows unchanged), retains level overrides, mounts chr.pak through native
+622D0 with Arcade's parameters, and registers configured humans through D7780.
+The original resource queue constructs body/hand/animation resources. The bounded
+reader uses the translated game root and native scene arena; game files are
+unchanged. A rejected cache-warming/initial-spawn retry experiment was removed.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433/MSBuild17.12.6, supported US XBE
+hash verified. Final affected menu/FOV/Story/Tools/local-runner suite:100 passed,
+two native-host skips. Patch tracking25 checks and fresh/repeated/historical-Mac
+patch upgrades pass (final upgrade rerun2 passed). Context/index and whitespace
+checks pass. Supported Windows Release build and all built-in checks pass.
+Default Windows frontend, Vulkan off; GPU driver not queried. Preserved existing
+VERSION edit0.7.0-story-coop-beta.1. Final executable SHA-256:
+6da4b461d7f95ff62e79c1c8a76ccbbd1d9782bf1a9c4fdf426c39a20d0bbb25.
+
+Four isolated loopback clients passed first-mission intro/handoff, constructed
+kinds12/75/104/103 on every peer, native starts8000 for P1 and8034 for P2-P4,
+separately owned movement, pistol ammunition consumption and coordinated host
+restart with roles/loadout retained. Reviewed host load-before/after and firing
+captures, guest3 firing/restart captures. The exact shared secondary point can
+overlap the three bodies and clip their camera until movement separates them;
+no spacing offset was added. This bounded smoke test does not establish mission
+completion, checkpoint walking, hit/world synchronization or full-campaign
+acceptance. The13-mission config/start matrix is CPU coverage. Native Mac/Linux
+Story retains MAC-013; native live play and remote Internet/hardware are unrun.
+
+Earlier evidence: logs/story-roles-character-mount-build.log,
+logs/story-roles-mount-final-tests.log and logs/story-roles-first-mission-mounted.log.
+That earlier run used a public-history267a53f4f^ fixture outside this checkout.
+The reused story-four pair-evidence.json/symbols now belong to the current-menu
+follow-up above; no historical fixture is needed by the repaired runners. Personal
+saves/settings and canonical Test Lab fixture are unchanged; the runner recycled
+disposable images/frame dumps. No commit/push/publication for this work.
+
 ## Online Story branch synchronization (2026-11-21)
 
 Merged main61926ecfd into online-story-coop from0a5414051, preserving the

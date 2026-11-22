@@ -33,6 +33,8 @@ void pc_story_network_rewards_context_slot(void (*original)(void));
 void pc_story_network_profile_save(void (*original)(void));
 void pc_story_network_ready(void (*original)(void));
 void pc_story_network_asset(void (*original)(void));
+void pc_story_network_player_assets(void (*original)(void));
+void pc_story_network_catalog(void (*original)(void));
 void pc_story_network_npc_trace(void (*original)(void),uint32_t address);
 int pc_story_network_actor_active(uint32_t caller,unsigned index,uint32_t entity);
 void pc_story_network_npc_constructor(void (*original)(void));

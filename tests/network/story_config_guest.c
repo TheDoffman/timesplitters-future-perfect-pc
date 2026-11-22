@@ -272,5 +272,16 @@ int main(void){
         assert(MEM8(0x10054)==106 && MEM8(0x10055)==9 && !MEM32(0x10058));
         assert(MEM32(0x790950)==humans);
     }
+    /* Compare online P2 directly with the actual local two-player builder for
+       every mission; P1 is always ordinary Cortez, including The Hooded Man. */
+    for(unsigned mission=0;mission<13;mission++) {
+        story_mode=0;MEM32(0x78ad48)=mission;MEM32(0x78ad50)=1;MEM32(0x5236c4)=2;
+        MEM32(0x79094c)=101;g_esp=0x20000;MEM32(g_esp)=0x12345678;MEM32(g_esp+4)=0x10000;
+        sub_00065940();
+        assert(MEM8(0x10015)==MEM16(0x4d1aceu+mission*0x44));
+        assert(story_player_character(mission,0)==12);
+        assert(story_player_character(mission,1)==MEM8(0x10015));
+        assert(story_player_character(mission,2)==104 && story_player_character(mission,3)==103);
+    }
     puts("PASS: original Story stages, thirteen-mission completion matrix, rewards readiness, next-mission selection and guest ABI");free(memory);return 0;
 }

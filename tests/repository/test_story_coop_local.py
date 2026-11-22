@@ -38,11 +38,14 @@ def test_configuration_is_local_and_has_no_synthetic_input(tmp_path, monkeypatch
     def prepare(root, target):
         assert root == tmp_path
         target.mkdir(parents=True)
-        return {'RECOMP_SAVE_DIR': str(target / 'saves')}
+        return {'RECOMP_SAVE_DIR': str(target / 'saves'), 'TSFP_ONLINE_TEST_COMMAND': 'legacy'}
     monkeypatch.setattr(launcher, 'prepare_run', prepare)
-    env = launcher.configure(tmp_path, run, 'http://127.0.0.1:12345', 'host')
+    env = launcher.configure(tmp_path, run, 'https://127.0.0.1:12345', 'host', 'a'*64)
     settings = json.loads(Path(env['TSFP_ONLINE_SETTINGS']).read_text())
-    assert settings['directory'] == 'http://127.0.0.1:12345'
+    assert settings['directory'] == 'https://127.0.0.1:12345'
+    assert settings['fingerprint'] == 'a'*64
+    assert env['TSFP_ONLINE_DIRECTORY'] == settings['directory']
+    assert env['TSFP_ONLINE_FINGERPRINT'] == settings['fingerprint']
     assert not settings['automatic_host'] and not settings['detect_public_address']
     assert settings['public_address'] == ''
     assert 1024 <= settings['port'] <= 65535
@@ -79,16 +82,13 @@ def test_session_closes_only_owned_games_and_recycles_after_exit(tmp_path, monke
             events.append('wait')
             return 0
     class Directory:
-        server_port = 12345
-        def __init__(self, address):
-            assert address == ('127.0.0.1', 0)
-        def serve_forever(self):
-            pass
-        def shutdown(self):
-            events.append('shutdown')
-        def server_close(self):
+        address = 'https://127.0.0.1:12345'
+        fingerprint = 'a'*64
+        def __init__(self, root):
+            assert root == tmp_path
+        def close(self):
             events.append('server_close')
-    def configure(root, run, directory, role):
+    def configure(root, run, directory, role, fingerprint):
         run.mkdir(parents=True)
         return {'role': role}
     def spawn(command, **kwargs):
@@ -104,7 +104,7 @@ def test_session_closes_only_owned_games_and_recycles_after_exit(tmp_path, monke
     monkeypatch.setattr(launcher, 'os', SimpleNamespace(name='nt', getpid=lambda: 456))
     monkeypatch.setattr(launcher, 'verify_build', lambda root: root / 'game.exe')
     monkeypatch.setattr(launcher, 'configure', configure)
-    monkeypatch.setattr(launcher, 'Server', Directory)
+    monkeypatch.setattr(launcher, 'LocalTestDirectory', Directory)
     monkeypatch.setattr(launcher.subprocess, 'Popen', spawn)
     monkeypatch.setattr(launcher.subprocess, 'CREATE_NEW_PROCESS_GROUP', 0, raising=False)
     monkeypatch.setattr(launcher, 'recycle_disks', recycle)
@@ -131,3 +131,44 @@ def test_existing_session_lock_is_preserved(tmp_path, monkeypatch):
     with pytest.raises(FileExistsError):
         launcher.play(tmp_path)
     assert lock.read_text() == 'other runner'
+
+
+def test_current_directory_tls_and_story_relay(tmp_path):
+    from online_client import Client, Session
+    from online_menu import Controller, BROWSE, CREATE, JOIN, CONNECTED, LIST
+    import time
+    directory = launcher.LocalTestDirectory(tmp_path)
+    controllers = [Controller('a'*64), Controller('a'*64)]
+    def action(controller, kind, sequence=1, code=''):
+        controller.community=(directory.address,directory.fingerprint)
+        controller.begin(dict(sequence=sequence,action=kind,mode=2,source=0,
+                              public=True,port=30821,name='Story test',code=code,address=''))
+        deadline=time.monotonic()+10
+        while controller.status==1 and time.monotonic()<deadline:
+            time.sleep(.02)
+    try:
+        host, guest = controllers
+        action(host, CREATE)
+        assert host.status == CONNECTED, host.message
+        assert isinstance(host.session, Session) and host.session.bridge.relay is not None
+        action(guest, BROWSE)
+        assert guest.status == LIST and len(guest.lobbies)==1, guest.message
+        assert guest.lobbies[0]['mode']=='story'
+        action(guest, JOIN, 2, guest.lobbies[0]['code'])
+        assert guest.status == CONNECTED, guest.message
+        assert guest.session.bridge.relay is not None
+        with pytest.raises(ValueError):
+            Client(directory.address, 'b'*64).request('GET','/v2/lobbies?compatibility='+'a'*64)
+    finally:
+        for controller in reversed(controllers):controller.close()
+        directory.close()
+
+
+def test_story_live_route_uses_native_menus_without_legacy_override():
+    source=(Path(__file__).resolve().parents[1]/'gameplay/stability_transitions_game.py').read_text(encoding='utf-8')
+    start=source.index("    if args.scenario in ('story-host','story-host-controls','story-pair'):")
+    route=source[start:source.index("    if args.scenario in ('crowd-vietnam'",start)]
+    assert 'from lobby_server' not in route
+    assert "env['TSFP_ONLINE_TEST_COMMAND']=" not in route
+    assert "env.pop('TSFP_ONLINE_TEST_COMMAND',None)" in route
+    assert all(label in route for label in ('network-chooser','native-match-browser','native-create-options'))

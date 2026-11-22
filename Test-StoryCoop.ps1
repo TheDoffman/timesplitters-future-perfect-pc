@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [ValidateSet(2, 3, 4)]
-    [int]$Players = 2
+    [int]$Players = 2,
+    [ValidateRange(0, 600)]
+    [int]$Seconds = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,5 +11,5 @@ $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $python)) {
     throw 'Python environment not found. Run setup.ps1 first.'
 }
-& $python (Join-Path $PSScriptRoot 'tools\testing\story_coop_local.py') --players $Players
+& $python (Join-Path $PSScriptRoot 'tools\testing\story_coop_local.py') --players $Players --seconds $Seconds
 exit $LASTEXITCODE

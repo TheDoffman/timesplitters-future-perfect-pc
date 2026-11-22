@@ -16,7 +16,6 @@ import shutil
 from pathlib import Path
 import subprocess
 import sys
-import threading
 import time
 import zipfile
 
@@ -24,18 +23,20 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
-def Server(*args, **kwargs):
-    try:
-        from lobby_server import Server as fixture
-    except ImportError as error:
-        raise RuntimeError('Local integration testing requires the private server fixture on PYTHONPATH.') from error
-    return fixture(*args, **kwargs)
+from story_coop_local import LocalTestDirectory, verify_build
 from online_client import Client
 
 
 def read_json(path,default=None):
     try:return json.loads(path.read_text(encoding='utf-8'))
     except (OSError,ValueError):return default
+
+
+def owned_player_slot(state):
+    """Admission order, rather than process launch order, owns the human slot."""
+    owned=[actor['slot'] for actor in state['actors'] if actor.get('local_port')==0]
+    assert len(owned)==1,('Expected exactly one owned input context',owned)
+    return owned[0]
 
 
 def npc_health_agrees(host,peer):
@@ -53,11 +54,12 @@ def main():
     parser.add_argument('--mission',type=int,choices=range(13),default=0,help='Story mission index; 0 is Time to Split')
     parser.add_argument('--difficulty',type=int,choices=range(3),default=1,help='0 Easy, 1 Normal, 2 Hard')
     parser.add_argument('--lobby-only',action='store_true',help='Stop after changed lobby controls; no GO/load/movement')
-    parser.add_argument('--menu-navigation-probe',action='store_true',help='With --lobby-only, capture difficulty Back, lobby exit, host-loss main return and Story reentry for visual review')
+    parser.add_argument('--menu-navigation-probe',action='store_true',help='With --lobby-only, capture difficulty Back, lobby exit, host-loss browser return and native network chooser for visual review')
     parser.add_argument('--players',type=int,choices=[2,3,4],default=2,help='Actual instances/players admitted to the isolated lobby')
     parser.add_argument('--fire-probe',action='store_true',help='Check owned firearms and ammunition consumption; save captures for interaction review')
     parser.add_argument('--combat-probe',action='store_true',help='After firearm checks, walk an added guest forward and test host acceptance of a hit on a live enemy')
     parser.add_argument('--restart-probe',action='store_true',help='After opening/fire checks, test host-only level restart and fresh handoff on every peer')
+    parser.add_argument('--role-spawn-probe',action='store_true',help='Check first-mission character roles and original Splitscreen P1/P2 start selection on every peer')
     parser.add_argument('--checkpoint-probe',action='store_true',help='Walk ordinary inputs toward the first checkpoint; stop after checkpoint reload, never complete the level')
     parser.add_argument('--presentation-probe',action='store_true',help='Retain five early-opening frames per peer for cinematic/black-screen review')
     parser.add_argument('--skip-intro',action='store_true',help='Diagnostic host skip after fresh intro captures; default lets the first-level intro finish naturally')
@@ -71,6 +73,7 @@ def main():
     assert not args.fire_probe or (args.load_probe and not args.lobby_only)
     assert not args.checkpoint_probe or (args.fire_probe and args.mission==0 and not args.restart_probe)
     assert not args.restart_probe or (args.fire_probe and not args.lobby_only)
+    assert not args.role_spawn_probe or (args.load_probe and not args.lobby_only and args.mission==0)
     assert not args.combat_probe or (args.fire_probe and args.mission==0)
     assert not args.npc_observe_seconds or (args.load_probe and not args.lobby_only)
     assert not args.script_observe_seconds or (args.load_probe and not args.lobby_only)
@@ -81,13 +84,10 @@ def main():
         assert len(args.receipt_id)==32 and all(c in '0123456789abcdef' for c in args.receipt_id)
     assert os.name=='nt','Windows native transport required'
     seal=read_json(ROOT/'build/windows/generated/network-build.json')
-    exe=ROOT/'build/windows/Release/futureperfect_recomp.exe'
+    exe=verify_build(ROOT)
     assert seal and hashlib.sha256(exe.read_bytes()).hexdigest()==seal['executable_sha256']
     identity=read_json(ROOT/'build/windows/generated/network-identity.json')
     assert identity and identity['compatibility']==seal['compatibility']
-    for name,digest in identity['files']:
-        if name.startswith(('src/pc_story','src/pc_network','src/pc_online','src/pc_display_menu','src/network/pc_character_pose.h','src/network/pc_character_effects.h')) or name=='tools/network/online.py':
-            assert hashlib.sha256((ROOT/name).read_bytes().replace(b'\r\n',b'\n')).hexdigest()==digest, 'Rebuild required: '+name
     evidence_root=ROOT/'private/network-validation'/('story-four' if args.players==4 else 'story-load-pair' if args.load_probe else 'story-pair')
     evidence_root.mkdir(parents=True,exist_ok=True)
     # Each child owns a different run lock and every save/settings path. Never
@@ -113,17 +113,19 @@ def main():
         result['symbols_archive_sha256']=hashlib.sha256(saved.read_bytes()).hexdigest()
     record=evidence_root/'pair-evidence.json'
     record.write_text(json.dumps(result,indent=2)+'\n')
-    directory=Server(('127.0.0.1',0))
-    thread=threading.Thread(target=directory.serve_forever,daemon=True);thread.start()
-    address=f'http://127.0.0.1:{directory.server_port}'
-    client=Client(address)
+    directory=LocalTestDirectory(ROOT)
+    address=directory.address
+    client=Client(address,directory.fingerprint)
+    result['menu_flow']='native: Story > Online > Online > Matches Available > Start New Match/Create Lobby or select host'
+    result['directory_implementation']='current online_private HTTPS/UDP relay; loopback test endpoint'
     children={};streams=[]
     deadline=time.monotonic()+(600 if args.restart_probe or args.checkpoint_probe else 450 if args.load_probe and args.mission==0 and not args.skip_intro else 330 if args.load_probe else 210)
 
     def launch(role,code=None):
         command=[sys.executable,str(ROOT/'tests/gameplay/stability_transitions_game.py'),
             '--run-name',runs[role].name,'--scenario','story-pair','--pair-role',('host' if role=='host' else 'guest'),
-            '--pair-owner-pid',str(os.getpid()),'--directory',address]
+            '--pair-owner-pid',str(os.getpid()),'--directory',address,
+            '--directory-fingerprint',directory.fingerprint]
         if code:command+=['--lobby-code',code]
         if args.load_probe:command+=['--pair-load-probe']
         if args.presentation_probe:command+=['--story-presentation-probe']
@@ -221,10 +223,7 @@ def main():
                     navigation['levels_back']=menu_step('host','nav-levels-back',[70])
                     navigation['lobby_back']=menu_step('host','nav-lobby-back',[70])
                     navigation['guest_host_loss']=menu_step('guest','nav-host-loss',wait=20)
-                    navigation['main']=menu_step('host','nav-main',[70])
-                    navigation['reenter_story']=menu_step('host','nav-story-reentry',[69])
-                    navigation['guest_reenter_story']=menu_step('guest','nav-story-reentry',[69])
-                    navigation['local_levels']=menu_step('host','nav-local-levels',[69])
+                    navigation['network_chooser']=menu_step('host','nav-network-chooser',[70])
                     result['menu_navigation']=navigation
                     result['menu_navigation_review']='Review all nav-*.png; captures alone do not assert menu content.'
                 result['status']='lobby-controls-passed'
@@ -306,6 +305,26 @@ def main():
                     assert len({a['entity'] for a in s['actors']})==args.players,(role,'aliased actors',s)
                     assert all(a.get('health') is not None and math.isfinite(a['health']) and a['health']>0 for a in s['actors']),(role,'nonliving actor before movement',s)
                 assert all(s['scene']==before['host']['scene'] for s in before.values()),'Story scenes differ'
+                if args.role_spawn_probe:
+                    expected_characters=[12,75,104,103][:args.players]
+                    role_starts={}
+                    for role,s in before.items():
+                        assert s['active_config']['characters'][:args.players]==expected_characters,(role,'Story config roles',s['active_config'])
+                        assert [a['kind'][0] for a in s['actors']]==expected_characters,(role,'Constructed Story bodies',s['actors'])
+                        trace=(runs[role]/'run0.err').read_text(errors='replace')
+                        starts={}
+                        for slot,local_role,pad in re.findall(r'\[PC-STORY-SPLITSCREEN-START\] slot=(\d+) local_role=(\d+) pad=([0-9A-F]+) rejoin=0',trace):
+                            slot=int(slot)
+                            assert int(local_role)==(1 if slot else 0)
+                            starts.setdefault(slot,int(pad,16))
+                        owned_slot=owned_player_slot(s)
+                        assert owned_slot in starts,(role,'Missing owned original start selection',owned_slot,starts)
+                        assert all(pad!=0xffffffff for pad in starts.values()),(role,'Invalid Splitscreen start',starts)
+                        role_starts[role]=dict(characters=expected_characters,owned_slot=owned_slot,starts=starts)
+                    observed={slot:{row['starts'][slot] for row in role_starts.values() if slot in row['starts']} for slot in range(args.players)}
+                    assert all(len(pads)==1 for pads in observed.values()),('Peer start disagreement',observed)
+                    assert all(observed[slot]==observed[1] for slot in range(1,args.players)) and observed[0]!=observed[1],('Splitscreen starts',observed)
+                    result['roles_and_starts']=role_starts
                 if args.lobby_controls:
                     for role,s in before.items():
                         assert all(s['active_config'][k]==expected[k] for k in ('scene','rule','variant','difficulty')),(role,'Loaded selection differs from host lobby',s)
@@ -536,7 +555,7 @@ def main():
             if child.poll() not in (None,0):result['status']='failed'
         # Preserve handles/PIDs in the evidence if shutdown is not terminal;
         # never kill unrelated Python/game processes or reset active profiles.
-        directory.shutdown();thread.join(timeout=3);directory.server_close()
+        directory.close()
         for output in streams:output.close()
         record.write_text(json.dumps(result,indent=2)+'\n')
     assert result['status']==('lobby-controls-passed' if args.lobby_only else 'load-probe-passed' if args.load_probe else 'lobby-precondition-passed'),result
