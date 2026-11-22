@@ -1,7 +1,7 @@
 [Bob](weapon-bob.md), [Exit](pause-settings.md), [Turn](controls-options.md).
 [V-Sync](video-options.md); [Auto](windows-vulkan.md#auto-resolution-allocation).
 
-[GL caps](opengl-recovery.md).
+[GL RGB](opengl-recovery.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
 [Actors](network-actor-lifetime.md).
 [Tex](texture-preference.md); [arms](video-options.md).

@@ -1,3 +1,10 @@
+Common RHI OpenGL packed-color repair (development,2026-11-22): the same
+354-draw capture exposed BGRA vertex colors bound as RGBA. The shared GL binding
+and GPU regression now preserve channel order; controlled Windows replay closely
+matches D3D11 and leaves Vulkan output unchanged. This applies to common native
+RHI, not the separate legacy Mac frontend. Native hardware/game verification
+remains pending and recovery staysOFF. See agent-context/opengl-recovery.md.
+
 Common OpenGL minimum-capability checks (development,2026-11-22): core4.1,
 full S3TC BC1/2/3 and mirror-once are now required before shared RHI resources
 are allocated; failed contexts are cleaned and a retry is tested. Portable

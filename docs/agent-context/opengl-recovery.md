@@ -1113,3 +1113,32 @@ VertexAttribPointer consumes that as ordinary RGBA. This is a concrete candidate
 for the first draw discrepancy; add an asymmetric BGRA vertex pixel regression
 before changing the binding. Do not modify gameplay colors, fog or shaders to
 compensate. Other differences still need controlled replays after the repair.
+
+## Packed BGRA vertex color repair
+
+The asymmetric packed BGRA vertex regression in rhi_vertex_streams.h reproduces
+this failure before the repair: red0.78431374 instead of0.15686275. Failure is
+retained in logs/rhi-bgra-before.{log,json}. The GL binding now uses GL_BGRA as
+VertexAttribPointer's size token for RHI_FORMAT_B8G8R8A8_UNORM, retaining the
+existing unsigned-byte type and normalized=true. RGBA/float attributes are
+unchanged. The vertex declaration, not a shader/color/fog workaround, owns this
+ordering. See [Khronos vertex BGRA rules](https://registry.khronos.org/OpenGL/extensions/ARB/ARB_vertex_array_bgra.txt).
+The shared header is used by all RHI fixtures, and GL receipt validators now
+require its success marker. This shared backend change also applies to native
+common RHI; legacy Mac GL remains separate and unchanged.
+
+Full GL, restricted4.1 GL, Vulkan and D3D11 GPU contracts pass after the repair.
+Rebuilt production replay uses the exact same354-draw capture in frame-parity-02:
+0 failed/malformed/unmapped/unknown operations for all backends. Reviewed GL image
+now has the expected brown world, gray crosshair/tutorial buttons and white HUD.
+GL-vs-D3D11 differs at10/307200 pixels, RGB mean absolute error0.000044488 on0..255,
+maximum6,8 channel values differ by>1. GL-vs-Vulkan mean0.14823459/max12 matches
+the existing Vulkan-vs-D3D11 mean0.14820530/max12 baseline closely. Vulkan's before/
+after image is byte-identical. logs/frame-parity-02/pixel-comparison.json retains
+exact metrics; this is one representative scene, not whole-game certification.
+
+No game EXE was rebuilt for these replay checks yet; the61074a... isolated game
+produced the immutable capture before the fix, while the rebuilt replay tool
+contains the current backend. Final supported game build, actual launcher GL
+capture/gameplay, native host acceptance and Windows startup-recovery enablement
+remain separate required work. All production automatic-recovery gates stay0.

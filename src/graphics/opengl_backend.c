@@ -544,7 +544,9 @@ static RhiVertexLayout *g_layout_create(const RhiVertexElement *elements,uint32_
             if(vs->text.inputs[j].location>=(unsigned)limit){free(layout);return NULL;}
             GlAttribute *a=&layout->attributes[layout->count++];a->location=vs->text.inputs[j].location;
             a->slot=e->slot;a->offset=offset;a->format=f;
-            a->components=f.format==GL_RED || f.format==GL_RED_INTEGER?1:f.format==GL_RG?2:f.format==GL_RGB?3:4;
+            /* GL_BGRA is the normalized vertex-size token, not four RGBA bytes. */
+            a->components=e->format==RHI_FORMAT_B8G8R8A8_UNORM?GL_BGRA:
+                f.format==GL_RED || f.format==GL_RED_INTEGER?1:f.format==GL_RG?2:f.format==GL_RGB?3:4;
         }
     }
     return layout;

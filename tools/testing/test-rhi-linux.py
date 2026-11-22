@@ -45,6 +45,7 @@ def require_gl_contract(output, driver, restricted=False):
     markers = ('BACKEND: opengl', 'PASS: OpenGL typed null textures',
                'PASS: shared mirror-once sampling beyond both texture edges',
                'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
+               'PASS: packed BGRA vertex colors preserve shader channel ordering',
                'PASS: OpenGL native main-thread dispatch',
                'PASS: OpenGL worker/context recreation and repeated cleanup')
     if any(marker not in output for marker in markers) or '[RHI] ERROR' in output:

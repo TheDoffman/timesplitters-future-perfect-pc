@@ -1,4 +1,4 @@
-[GL req](opengl-recovery.md).
+[GL RGB](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 

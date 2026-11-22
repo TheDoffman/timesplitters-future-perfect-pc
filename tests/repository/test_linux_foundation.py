@@ -197,6 +197,7 @@ def test_gl_receipt_requires_pixels_dispatch_cleanup_and_observed_driver():
     markers = ['BACKEND: opengl', 'PASS: OpenGL typed null textures',
         'PASS: shared mirror-once sampling beyond both texture edges',
         'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
+        'PASS: packed BGRA vertex colors preserve shader channel ordering',
                'PASS: OpenGL native main-thread dispatch',
                'PASS: OpenGL worker/context recreation and repeated cleanup',
                'D3D12 (NVIDIA)', 'PASS: OpenGL4.1 subset/']
@@ -240,6 +241,7 @@ def test_native_recovery_receipt_rejects_failed_window_cleanup_or_continued_rend
     positive = '\n'.join(('BACKEND: opengl', 'PASS: OpenGL typed null textures',
         'PASS: shared mirror-once sampling beyond both texture edges',
         'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
+        'PASS: packed BGRA vertex colors preserve shader channel ordering',
         'PASS: OpenGL native main-thread dispatch',
         'PASS: OpenGL worker/context recreation and repeated cleanup',
         'D3D12 (NVIDIA)', 'startup recovery selected opengl',

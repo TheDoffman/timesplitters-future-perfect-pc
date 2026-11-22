@@ -1,3 +1,14 @@
+## Common OpenGL color ordering repair (development,2026-11-22)
+
+Controlled replay of one354-draw game frame confirms and fixes BGRA vertex colors
+being consumed as RGBA by OpenGL. The asymmetric GPU regression fails before the
+binding repair and passes after; all Windows backend contracts pass. Replayed
+OpenGL and D3D11 images differ at only10/307200 pixels; Vulkan output is unchanged.
+Minimum core4.1/S3TC/mirror-once startup checks and8 recovery cases also pass in a
+private accepted fixture. Actual rebuilt-game and native acceptance remain
+pending; no production automatic recovery is enabled. Evidence:
+[OpenGL recovery](../agent-context/opengl-recovery.md#packed-bgra-vertex-color-repair).
+
 ## Launcher Vulkan/OpenGL selection in development (2026-11-22)
 
 Shared Graphics > Advanced > Renderer now restores Vulkan (Default) and OpenGL,

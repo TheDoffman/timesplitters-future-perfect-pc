@@ -37,7 +37,22 @@ static void rhi_vertex_streams_test(RhiView *output)
         }
         rhi_set_index_buffer(NULL,16,0);rhi_buffer_destroy(indices);
     }
-    rhi_set_vertex_layout(NULL);rhi_set_vertex_buffer(1,NULL,0,0);rhi_set_vertex_buffer(2,NULL,0,0);
+    /* The Xbox declaration's D3DCOLOR uses BGRA bytes, not ordinary RGBA.
+     * Keep the shader unchanged: the vertex format owns the channel ordering. */
+    elements[1].format=RHI_FORMAT_B8G8R8A8_UNORM;
+    RhiVertexLayout *bgra=rhi_vertex_layout_create(elements,2,vs);CHECK(bgra);
+    rhi_set_vertex_layout(bgra);rhi_draw(3,1);
+    {float pixels[64*64*4];const unsigned channels[4]={2,1,0,3};
+        CHECK(!rhi_image_readback(target,0,pixels,64*4*sizeof(float)));
+        for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<4;c++) {
+            if(fabsf(pixels[i*4+c]-colors[4+channels[c]]/255.f)>=.0001f)
+                fprintf(stderr,"BGRA vertex pixel%u c%u: %.8f expected %.8f\n",i,c,pixels[i*4+c],colors[4+channels[c]]/255.f);
+            CHECK(fabsf(pixels[i*4+c]-colors[4+channels[c]]/255.f)<.0001f);
+        }
+    }
+    rhi_set_vertex_layout(NULL);rhi_vertex_layout_destroy(bgra);
+    puts("PASS: packed BGRA vertex colors preserve shader channel ordering");
+    rhi_set_vertex_buffer(1,NULL,0,0);rhi_set_vertex_buffer(2,NULL,0,0);
     rhi_vertex_layout_destroy(layout);rhi_buffer_destroy(position);rhi_buffer_destroy(color);
     rhi_raster_state_destroy(raster);rhi_depth_state_destroy(depth);rhi_blend_state_destroy(blend);
     rhi_set_shader(RHI_STAGE_VERTEX,NULL);rhi_set_shader(RHI_STAGE_PIXEL,NULL);rhi_shader_destroy(vs);rhi_shader_destroy(ps);

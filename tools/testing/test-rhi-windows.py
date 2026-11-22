@@ -82,7 +82,7 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
                       'PASS: shared RHI HLSL' in output and '[VKVAL' not in output and
                       'could not start; using' not in output)
         if expected=='opengl' and not startup_failure:
-            passed=passed and all(marker in output for marker in ('PASS: OpenGL typed null textures','PASS: shared mirror-once sampling beyond both texture edges','PASS: shared BC1/BC2/BC3 sampled colors and alpha'))
+            passed=passed and all(marker in output for marker in ('PASS: OpenGL typed null textures','PASS: shared mirror-once sampling beyond both texture edges','PASS: shared BC1/BC2/BC3 sampled colors and alpha','PASS: packed BGRA vertex colors preserve shader channel ordering'))
         if gl41:passed=passed and 'PASS: OpenGL4.1 subset/array/cube/volume/stencil/compressed views' in output and 'SKIP: MSAA/SSAO' in output
         if recovered:passed=passed and no_fallback and 'startup recovery selected opengl' in output
         if mode=='opengl-partial-fail':passed=passed and 'drawable target initialization failed' in output
