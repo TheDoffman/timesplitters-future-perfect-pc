@@ -1,3 +1,12 @@
+Latest OpenGL evidence at a81715a4: native Linux pixels and actual swap pass
+under llvmpipe and WSL D3D12/NVIDIA RTX4070SUPER. Optional swap control is now
+shared WGL/SDL host policy: refusal preserves settings and still swaps; a real
+swap failure remains an error. Windows fullscreen/MSAA8/AO gameplay, GPU contracts
+and builds pass. Native full-RHI recovery, main-thread servicing, full game/
+display/performance/package and Mac host acceptance remain pending. Default Linux
+GL selection is software; the explicit accelerated test environment is recorded
+in agent-context/opengl-recovery.md. All platform recovery gates remain OFF.
+
 Current OpenGL checkpoint afterdf6814a7: patch3057 fixes common native source
 path discovery without enabling Windows PC features;7 CMake cases and5 targeted
 fresh/historical/round-trip upgrade checks pass. Typed zero resources and per-read

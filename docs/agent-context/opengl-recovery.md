@@ -557,3 +557,45 @@ repeated failures retain nonzero status with bounded logs, recovery/recreation
 and preference preservation. Registered in native CI; Windows unit/WGL pixels
 pass. Native pixel rerun is required before calling Linux presentation passed.
 Standalone success text now says OpenGL driver rather than claiming hardware.
+
+### Confirmed Linux swap and available accelerated driver
+
+At sourcea81715a4, the Linux presentation-policy unit and standalone GL pixel
+probe both pass. Mesa llvmpipe LLVM20.1.2, GL4.5 Core Mesa25.2.8 accepts the real
+swap after SDL rejects interval0; the preference remains requested0 and effective
+interval is unspecified. It is software rendering, not hardware performance.
+Native logs/opengl-pixels-linux.json records source/executable/generated shader
+hashes, compiler/tool/SDK pin and actual loaded DXC path/hash. LD_DEBUG confirms
+the pinned SDK1.4.363.0/x86_64/lib/libdxcompiler.so was loaded (SHA256
+e26ca85aa40bad99f5aed8f90f274277ab05ef4a03827f9033e3026ca9227562).
+Compiler GNU C++13.3.0, CMake4.4.4; default SDL probe uses llvmpipe.
+
+The existing WSL bridge and d3d12_dri module are installed. Adding only the bridge
+library path still selects llvmpipe, but child-only GALLIUM_DRIVER=d3d12,
+MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA and LD_LIBRARY_PATH prefix/usr/lib/wsl/lib
+select Microsoft Corporation / D3D12(NVIDIA GeForce RTX4070SUPER), GL4.6 Core
+Mesa25.2.8-0ubuntu0.24.04.4. The same sampled/tinted/masked pixels and actual swap
+pass on this accelerated configuration too. It still refuses interval0; the
+shared optional-control policy reports that and allows the successful swap.
+This is the WSL driver implementation of OpenGL, not a new game D3D11 renderer.
+Native logs/opengl-pixels-linux-d3d12.json retains the environment and hashes;
+Windows transcript logs/opengl-linux-d3d12-probe.log. Do not claim Linux full-RHI,
+window-recovery, game, performance or platform acceptance from this small probe.
+Use the accelerated environment for remaining Linux acceptance where applicable.
+
+After the presentation change, Windows explicitGL, restricted4.1 and all5 actual
+recovery fixture cases pass again; acceptance restored OFF. Ordinary Windows
+Build and mandatory checks pass. gl-present-fullscreen-01 passes120s first-mission
+startup1920x1080 fullscreen, active MSAA8/actual SSAO, requested/saved FXAA1/AF16,
+quality/defaultVulkan/custom DDS preservation and clean exit0. FXAA application
+still has no independent game diagnostic. Its noncapture85-115s window reports
+59.98 guest ticks/s and558-560 handles; not a GPU/scanout benchmark.
+Game SHA256 `10f68d2af2246f2937669dd88eb8c358cf5adbb8b49f0d890b8319cacdc42277`. Sourcea81715a4, Windows11/MSVC19.44/RTX4070SUPER617.42/SDK1.4.363.0.
+
+Current remaining work: native full-RHI OpenGL/recovery fixtures and main-thread
+worker/event-loop checks; full native game/package, menus/gameplay/effects/display
+and bounded performance/stability on available Linux hardware; explicit startup
+capability review (including4.1 mirror-once/compression), Windows final platform
+acceptance decision and per-platform gates. Native Mac hardware is unavailable;
+keep its exact missing checks, deprecated GL limits and legacy compatibility
+recorded. All production gates remain OFF; no publication or merge.

@@ -1,3 +1,24 @@
+## Linux GL pixels and swaps pass on software and WSL/NVIDIA (2026-11-22)
+
+At sourcea81715a4, Linux standalone shared-HLSL translation, sampled/tinted/null-
+masked pixels and an actual swap pass. SDL interval0 is unsupported on this
+host; the shared host policy preserves the request, reports refusal and lets
+actual swap success determine the result. Real swap failure still returns error.
+The policy unit passes on Windows/Linux; Windows WGL/RHI/recovery and mandatory
+build checks pass again. A120s1920x1080/MSAA8/actual-AO Windows game check passes
+quality/custom DDS preservation and clean exit0 (FXAA1 requested/saved).
+
+Default Linux probing selects Mesa llvmpipe GL4.5. Explicit child-only WSL bridge
+configuration also passes on D3D12(NVIDIA RTX4070SUPER), GL4.6 Mesa25.2.8. This is
+accelerated OpenGL via WSL, not the game's D3D11 backend. Full driver/compiler/
+source/shader/executable provenance and exact environment are in
+[recovery evidence](../agent-context/opengl-recovery.md).
+
+Linux full-RHI recovery/window/threading and complete game/display/performance/
+package checks remain. Windows final capability/policy review and platform gate
+decision remain; native Mac host acceptance is unavailable. All production
+recovery gates are OFF. Small pixel probes do not establish platform readiness.
+
 ## Native OpenGL source path fixed; null-resource sampling validated (2026-11-22)
 
 Patch3057 derives common native graphics sources from TSFP_NATIVE_DIR without
