@@ -748,3 +748,34 @@ both-fail tests, using portable32-bit HRESULT/export/calling conventions with
 the same Windows lifecycle stub source. The installed pinned SDK is never
 renamed/modified. Windows window/runner units:15passed,1Linux-only skip. Actual
 native compile and injected recovery runs are pending this wiring checkpoint.
+
+
+Atc036186c, actual native full-GL compile/pixels and23 window/CMake/runner units
+pass. A private accepted fixture then passes all5 real injected cases: Vulkan
+success(1.187s), no-driver→GL(2.094s), no-device→GL(1.994s), both-fail(.014s),
+and partial drawable failure(.188s). Fixture SHA256
+ a5dea5ab58438f0a10d8867f28d19eedc2f142a5ea3e98ca25d9d4190706d2af.
+Vulkan success uses validated lavapipe; recovered GL uses accelerated WSL/NVIDIA.
+Missing-driver recovery includes real neutral-window creation and GL replacement.
+Both-fail uses the real nonshipped DXC stub and no presents. Partial failure
+replaces the window, fails target initialization and safely repeats cleanup.
+Acceptance is restoredOFF and rebuilt. Native logs/rhi-linux-opengl-recovery.json
+andnative-recovery-<case>.log retain this first manual run. These are fixture
+window ownership checks, not actual guest/settings/input/game/package acceptance.
+
+`test-rhi-linux.py --opengl-recovery --gl-driver d3d12 --gl-adapter NVIDIA
+--driver-manifest /usr/share/vulkan/icd.d/lvp_icd.json` now repeats the matrix,
+records source/compiler/SDK/executable/case logs, validates every contract, and
+restores private acceptanceOFF in finally, including failures. Driver-specific
+recovery receipts are separate from explicit-GL and ordinary Vulkan results.
+Build-only/restricted/explicit-GL recovery combinations are rejected. Ordinary
+runner always resets private acceptanceOFF. Both normal startup and the native
+fullscreen smoke's fresh window use the same neutral retry helper.
+
+Existing registered foundation tests verify isolated faults, exact missing-driver
+and DXC-stub injection, unchanged save/display paths, and reject missing window/
+cleanup markers, ineffective compiler injection or rendering after both-fail.
+Windows17passed,1Linux-only skip. The portable stub compiles and loads as a Windows
+DLL: stdcall, exact signed32-bit E_FAIL and cleared output pointer are verified.
+Integrated runner rerun is required after this source checkpoint. Production
+recovery gates remain0; no publication/merge.

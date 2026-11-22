@@ -69,7 +69,7 @@ int tsfp_native_renderer_test(void)
          * fullscreen drawing/present is tested again by the mode checks below. */
         if(wanted) {
             tsfp_renderer_host_bind(NULL,NULL);SDL_DestroyWindow(native_window);
-            native_window=SDL_CreateWindow("Native renderer regression",64,64,
+            native_window=tsfp_native_primary_window("Native renderer regression",64,64,
                 SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
             pp.hDeviceWindow=native_window;
             if(!native_window)return 1;
