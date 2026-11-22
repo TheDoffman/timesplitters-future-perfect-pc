@@ -2201,6 +2201,23 @@
       ]
     },
     {
+      "name": "3052-shared-opengl-startup-recovery.patch",
+      "path": "patches/graphics/rendering/3052-shared-opengl-startup-recovery.patch",
+      "sha256": "5ed65de7ce610b24fc561c2a3a350cbaf1642113dc9e8d3bff109cd563051b69",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi_backend.h"
+      ]
+    },
+    {
+      "name": "3053-shared-shader-reflection.patch",
+      "path": "patches/graphics/rendering/3053-shared-shader-reflection.patch",
+      "sha256": "7a54cd12395a438068b50be76ff82a16a917000e4123d7d38714b2f817a627a9",
+      "targets": [
+        "src/d3d/rhi_vulkan_dxc.cpp"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

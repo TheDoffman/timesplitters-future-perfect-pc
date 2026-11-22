@@ -1,3 +1,34 @@
+## OpenGL recovery foundation; production recovery remains disabled (2026-11-22)
+
+Goal implementation is in progress on feature/opengl-startup-recovery, based on
+local4c287926 plus main694fc53a. Patch3052 routes production startup through the
+shared transaction, with OpenGL absent/unapproved by default. The policy tests
+Vulkan success, approved GL success, both failing, partial cleanup ordering,
+repeated cleanup, disabled/unavailable fallback and descriptor preservation.
+Patch3053 shares DXC compilation and enables HLSL semantic reflection only for GL;
+the existing Vulkan compiler flags stay unchanged. Source-pinned SPIRV-Cross
+f11ba9f0 (SDK1.4.363.0) translates the same production HLSL to GLSL410.
+
+On Windows11/RTX4070SUPER/617.42, the shader contract passes vertex/pixel semantic
+subset linking, uniform and separate texture/sampler register mapping, fetch-only
+textures, legacy HLSL vector conditionals, and invalid-source rejection. GLSL
+syntax/link checks pass with the verified SDK glslangValidator. A real WGL4.1
+core context compiles/links those generated shaders, draws sampled/tinted pixels,
+reads the expected colour and presents successfully. New startup/installer tests
+plus selected renderer safety checks pass16 tests. All8 existing production RHI
+hardware cases pass with Vulkan validation, including disabled recovery failures.
+The startup transaction also passes GCC -O2 under Ubuntu24.04 WSL, and the
+historical-controls upgrade regression passes with the new patches included
+in current-stack acceptance. These contracts are not an implemented OpenGL RHI backend or actual game
+acceptance. Native Mac/Linux shader/context execution is unrun. Ordinary builds
+retain their previous Vulkan behavior and there is no new launcher selector.
+
+Remaining: full OpenGL resource/view/state/draw/resolve/readback/query backend,
+native window recovery adapters, normal build/setup/package/license integration,
+per-platform acceptance gates, and representative menu/gameplay/effects/display/
+settings/performance/stability checks. No platform is approved for automatic GL
+recovery yet. The active goal remains incomplete. See agent-context/opengl-recovery.md.
+
 ## Windows Vulkan startup without automatic fallback (2026-11-22)
 
 User-requested change on fix/windows-vulkan-no-fallback, based on main694fc53a.

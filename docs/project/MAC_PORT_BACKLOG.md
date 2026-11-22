@@ -1,3 +1,13 @@
+OpenGL recovery goal (2026-11-22): implementation in progress on
+feature/opengl-startup-recovery, based on local4c287926. Shared startup transaction,
+HLSL-to-GLSL compiler and WGL/SDL context boundary are being added. Recovery is
+not enabled on any production host. Windows shader/context pixel contract passes;
+this does not establish full RHI or gameplay support. Native OpenGL4.1 context,
+window replacement after Vulkan failure, OS event/input bindings, GPU resources,
+effects, fullscreen/resize, settings preservation and performance/stability checks
+remain required. Existing legacy Mac GL is unchanged and remains deprecated by
+Apple. No universal fallback claim. See agent-context/opengl-recovery.md and STATUS.
+
 Windows renderer startup failure (2026-11-22): automatic D3D11 recovery removed
 at user request. Patch3051 gates the failure policy to Windows Vulkan builds;
 shared cleanup remains the same. Native Mac/Linux behavior and legacy GL are

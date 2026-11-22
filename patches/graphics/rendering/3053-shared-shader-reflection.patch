@@ -1,0 +1,33 @@
+--- a/src/d3d/rhi_vulkan_dxc.cpp
++++ b/src/d3d/rhi_vulkan_dxc.cpp
+@@ -115,9 +115,9 @@
+     return (target && target[0] == 'p') ? L"ps_6_0" : L"vs_6_0";
+ }
+ 
+-extern "C" int rhi_vk_dxc_compile(uint32_t stage, const RhiShaderSource *src,
++static int compile_shader(uint32_t stage, const RhiShaderSource *src,
+                                   uint32_t **spirv, size_t *spirv_bytes,
+-                                  char *err, size_t err_len)
++                                  char *err, size_t err_len, bool reflection)
+ {
+     std::lock_guard<std::mutex> hold(g_lock);
+     std::vector<std::wstring> keep;
+@@ -143,6 +143,7 @@
+     swprintf(b_shift, 16, L"%u", stage == RHI_STAGE_VERTEX ? RHI_VK_VS_UNIFORM_BASE
+                                                            : RHI_VK_PS_UNIFORM_BASE);
+     keep.push_back(L"-spirv");
++    if (reflection) keep.push_back(L"-fspv-reflect");
+     /* The common generators target FXC's vector conditionals and legacy
+      * loop scope. Do not inherit a newer DXC default language dialect. */
+     keep.push_back(L"-HV"); keep.push_back(L"2018");
+@@ -202,3 +203,10 @@
+     result->Release();
+     return ok;
+ }
++
++extern "C" int rhi_vk_dxc_compile(uint32_t stage,const RhiShaderSource *src,
++    uint32_t **spirv,size_t *bytes,char *error,size_t size)
++{return compile_shader(stage,src,spirv,bytes,error,size,false);}
++extern "C" int rhi_gl_dxc_compile(uint32_t stage,const RhiShaderSource *src,
++    uint32_t **spirv,size_t *bytes,char *error,size_t size)
++{return compile_shader(stage,src,spirv,bytes,error,size,true);}
