@@ -93,5 +93,5 @@ int main(int argc,char **argv)
 #else
     SDL_DestroyWindow((SDL_Window *)window);SDL_Quit();
 #endif
-    std::puts("PASS: generated GLSL linked and rendered exact sampled/tinted pixels on hardware");
+    std::puts("PASS: generated GLSL linked and rendered exact sampled/tinted and masked pixels on the OpenGL driver");
 }

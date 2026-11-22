@@ -1,4 +1,5 @@
 #include "opengl_host.h"
+#include "opengl_present.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -11,7 +12,7 @@ void tsfp_gl_host_set_window_adapter(void *(*prepare)(void *))
 #endif
 #include <windows.h>
 #include <GL/gl.h>
-struct TsfpGlHost { HWND window;HDC dc;HGLRC context;HMODULE library; };
+struct TsfpGlHost {TsfpGlPresentState presentation; HWND window;HDC dc;HGLRC context;HMODULE library; };
 void *tsfp_gl_host_proc(TsfpGlHost *host,const char *name)
 {
     if(!host || !host->context || !name)return NULL;
@@ -100,14 +101,20 @@ int tsfp_gl_host_make_current(TsfpGlHost *host)
 {return host && wglMakeCurrent(host->dc,host->context);}
 void tsfp_gl_host_release(TsfpGlHost *host)
 {if(host)wglMakeCurrent(NULL,NULL);}
-int tsfp_gl_host_present(TsfpGlHost *host,int interval)
+static int driver_interval(void *context,int interval,const char **reason)
 {
-    typedef BOOL (WINAPI *SwapInterval)(int);
-    if(!host)return -1;
+    typedef BOOL (WINAPI *SwapInterval)(int);TsfpGlHost *host=context;
     SwapInterval set=(SwapInterval)tsfp_gl_host_proc(host,"wglSwapIntervalEXT");
-    if(set && !set(interval?1:0))return -1;
-    return SwapBuffers(host->dc)?0:-1;
+    if(!set){*reason="WGL_EXT_swap_control unavailable";return 0;}
+    if(!set(interval)){*reason="WGL driver refused request";return 0;}return 1;
 }
+static int driver_swap(void *context,const char **reason)
+{
+    TsfpGlHost *host=context;
+    if(!SwapBuffers(host->dc)){*reason="SwapBuffers failed";return 0;}return 1;
+}
+int tsfp_gl_host_present(TsfpGlHost *host,int interval)
+{return host?tsfp_gl_present_driver(&host->presentation,host,interval,driver_interval,driver_swap):-1;}
 void tsfp_gl_host_destroy(TsfpGlHost *host)
 {
     if(!host)return;
@@ -119,7 +126,7 @@ void tsfp_gl_host_destroy(TsfpGlHost *host)
 #else
 #include <SDL3/SDL.h>
 #include <pthread.h>
-struct TsfpGlHost {SDL_Window *window;SDL_GLContext context;};
+struct TsfpGlHost {TsfpGlPresentState presentation;SDL_Window *window;SDL_GLContext context;};
 TsfpGlHost *tsfp_gl_host_create(void *window)
 {
     TsfpGlHost *host=calloc(1,sizeof *host);
@@ -167,17 +174,17 @@ int tsfp_gl_host_make_current(TsfpGlHost *host)
 {return host && SDL_GL_MakeCurrent(host->window,host->context);}
 void tsfp_gl_host_release(TsfpGlHost *host)
 {if(host)SDL_GL_MakeCurrent(host->window,NULL);}
-int tsfp_gl_host_present(TsfpGlHost *host,int interval)
+static int driver_interval(void *context,int interval,const char **reason)
 {
-    if(!host)return -1;
-    if(!SDL_GL_SetSwapInterval(interval?1:0)) {
-        fprintf(stderr,"[RHI] opengl: swap interval %d failed: %s\n",interval?1:0,SDL_GetError());return -1;
-    }
-    if(!SDL_GL_SwapWindow(host->window)) {
-        fprintf(stderr,"[RHI] ERROR: opengl SDL swap failed: %s\n",SDL_GetError());return -1;
-    }
-    return 0;
+    (void)context;if(!SDL_GL_SetSwapInterval(interval)){*reason=SDL_GetError();return 0;}return 1;
 }
+static int driver_swap(void *context,const char **reason)
+{
+    TsfpGlHost *host=context;
+    if(!SDL_GL_SwapWindow(host->window)){*reason=SDL_GetError();return 0;}return 1;
+}
+int tsfp_gl_host_present(TsfpGlHost *host,int interval)
+{return host?tsfp_gl_present_driver(&host->presentation,host,interval,driver_interval,driver_swap):-1;}
 void tsfp_gl_host_destroy(TsfpGlHost *host)
 {
     if(!host)return;

@@ -543,3 +543,17 @@ sample/tint/null-mask pixel assertions, but aborts at host presentation. This is
 not a GL presentation pass. SDL swap-interval and swap failures now log separate
 reasons; driver identity is flushed before assertions so failed runs retain it.
 Investigate the native error before changing presentation policy or acceptance.
+
+Native presentation diagnosis: the first pixel run is Mesa llvmpipe LLVM20.1.2,
+GL4.5 Core Mesa25.2.8-0ubuntu0.24.04.4, not hardware acceleration. SDL refuses
+swap interval0 with "That operation is not supported" before attempting a swap.
+The new common opengl_present.h policy treats swap control as optional: attempt
+it once per requested-value change, log refusal and still perform the real swap.
+Saved preference is not changed and no actual interval is falsely claimed. A real
+swap failure remains fatal to that present and is reported once until recovery.
+WGL and SDL supply only setting/swap calls; policy is shared. Native legacy GL
+is unaffected. Test fixture callbacks prove refusal still swaps, changes retry,
+repeated failures retain nonzero status with bounded logs, recovery/recreation
+and preference preservation. Registered in native CI; Windows unit/WGL pixels
+pass. Native pixel rerun is required before calling Linux presentation passed.
+Standalone success text now says OpenGL driver rather than claiming hardware.
