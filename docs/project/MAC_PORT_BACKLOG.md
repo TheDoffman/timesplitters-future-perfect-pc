@@ -1,3 +1,41 @@
+Auto-resolution accepted-target fix (2026-11-21): **Awaiting validation** on
+native Mac/Linux. Shared pc_display_scene_size no longer lets HUD sizing consume
+a pending drawable resize; frame_done commits only successful allocations and
+retries failures. The shared SDL policy regression passes under Windows MSVC,
+including interleaved sizing and failed allocation. No OS adapter is deferred.
+Native acceptance: build, select Auto, resize/fullscreen, confirm actual native
+scene-target changes, check HUD/depth and failed-allocation recovery. Windows
+old-build failures reproduce on both backends; rebuilt hardware checks now pass
+on both with gameSHAa8a26b31. Native-host checks remain pending. See STATUS Auto-resolution allocation fix section.
+
+Windows renderer acceptance tooling (2026-11-21): host-specific WPF/GPU test
+runner only; no new shared gameplay or native launcher behavior. Native source
+and current defaults are unchanged; no Mac adapter implementation is deferred.
+The new Windows evidence does not verify Mac/Linux renderer or native UI gates.
+See ../development/windows-renderer-validation.md for scope and outstanding work.
+
+Windows launcher renderer selector (2026-11-21): **Awaiting validation** of
+shared-model preservation on native Mac/Linux. The shared SettingsPage/model
+stores launcher.renderer, while the thin LauncherPlatform capability hides the
+Windows-only Vulkan/D3D11 selector and suppresses its environment override on
+native hosts. No native renderer change or adapter implementation is deferred.
+Both native projects compile on Windows; native acceptance remains: run shared
+UI checks, save an unrelated preference with a copied D3D11 choice, and confirm
+normal native launch. Windows Save/Cancel and child-process mapping pass.
+
+Windows Vulkan primary renderer (2026-11-21, `feature/windows-vulkan` after
+`fe035bd6`): **Awaiting validation** on native Mac/Linux for shared DXC
+preflight and partial-initialization cleanup. Windows now prefers the existing
+Vulkan backend and recovers to D3D11; its normal Release build, eight RHI cases
+and default gameplay validation pass. `3050-windows-vulkan-primary.patch`
+owns preference/recovery and shared initialization cleanup. Modern native Mac
+and Linux already prefer Vulkan; legacy Mac GL is unchanged. No new Mac adapter
+implementation is deferred. Remaining native acceptance: build the full patch
+stack, run the RHI/production-replay contracts, exercise failed initialization
+cleanup and verify first-level gameplay with the packaged DXC. Windows compiler
+rules and package metadata are host-specific and need no Mac counterpart.
+See [measured status](STATUS.md#windows-vulkan-primary-renderer-2026-11-21).
+
 Controller Turn Speed extension (2026-11-20, source on
 `feature/controller-turn-speed`, validation base af9d3453): **Awaiting validation** on native
 Mac/Linux. Shared `pc_controls_menu.inc`/`pc_menu_sliders.inc` extend 0..1 to 0..1.5
@@ -10987,3 +11025,19 @@ checks pass; Ubuntu/WSL's POSIX persistence/failure fixture passes. These do not
 verify native Mac rendering. Remaining acceptance: native Mac and Linux builds,
 physical On/Off in frontend/pause, resize/fullscreen/context recovery, driver
 behavior, and timed gameplay/loading at each supported FPS target. See STATUS.
+## Windows Vulkan build and comparison (2026-11-21)
+
+**Not applicable** for Mac adaptation. Source is on `feature/windows-vulkan`,
+based on `61926ecf`; Windows dependency/build/package helpers explicitly include
+the existing Vulkan backend beside D3D11. `windows_vulkan.py` owns the pinned
+Windows DXC delivery, `tests/windows-rhi`/`test-rhi-windows.py` own hardware
+comparison and startup fallback acceptance, and `native_refresh_game.py` owns
+the isolated Windows backend/gameplay/frame-recording options. D3D11 remains
+the Windows default pending normal Release acceptance.
+
+No common renderer policy or Mac/Linux adapter is changed. Their existing
+Vulkan/DXC setup remains in place. The shared RHI C fixture adds only a guarded
+Windows test-host branch; native adapters retain their existing paths. No Mac
+implementation is deferred. Mac/Linux GPU/gameplay checks were not rerun on
+this Windows host. Measured Windows outcomes and compiler limits are in
+[STATUS](STATUS.md#windows-vulkan-comparison-2026-11-21).

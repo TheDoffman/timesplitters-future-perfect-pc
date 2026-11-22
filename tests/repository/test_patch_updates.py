@@ -241,7 +241,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
+        if patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch','3050-windows-vulkan-primary.patch'):
             continue  # Requires the complete graphics stack installed by the upgrade.
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
@@ -320,6 +320,12 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     assert installer.apply_patches(checkout, PATCHES)
     assert_current_calendar_installed(checkout)
     assert_current_pause_glass_installed(checkout)
+    # The historical subset omits the newer graphics prerequisites; its full
+    # upgrade must still install Vulkan preference, recovery and build policy.
+    rhi=(checkout/'src/d3d/rhi.c').read_text()
+    assert '#if defined(RHI_HAVE_VULKAN)\nconst RhiBackend *g_rhi = &rhi_vulkan_backend;' in rhi
+    assert 'if (!rhi_vk_dxc_available()) return -1;' in (checkout/'src/d3d/rhi_vulkan.c').read_text()
+    assert 'tsfp_configure_generated_msvc' in (checkout/'titles/futureperfect/CMakeLists.txt').read_text()
     # This historical snapshot predates shared effect depth; verify the full upgrade.
     for name in ('src/hle/hle_d3d8_record.c', 'src/replay/d3d8_replay.c'):
         text = (checkout / name).read_text()

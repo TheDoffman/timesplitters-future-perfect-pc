@@ -20,6 +20,7 @@ else:
         return _LayoutPath(root) / area / name
 
 import ctypes as c
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -33,7 +34,12 @@ from testing_profile import signature,BODY_SIZE,contained,FIXTURE
 
 
 def main():
-    run=ROOT/'private/test-saves/controls-accept'
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-name',default='controls-accept')
+    parser.add_argument('--renderer-sequence',nargs=3,choices=('vulkan','d3d11'))
+    args=parser.parse_args()
+    assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
+    run=ROOT/'private/test-saves'/args.run_name
     assert not (run/'run.lock').exists(),'Another test owns the run directory'
     # prepare_run restores the seed but deliberately retains additional slots.
     # Recycle only this test's known game-created Test Lab copy on repeat runs.
@@ -57,7 +63,9 @@ def main():
     kernel.OpenProcess.restype=c.c_void_p
     kernel.ReadProcessMemory.argtypes=[c.c_void_p,c.c_void_p,c.c_void_p,c.c_size_t,c.c_void_p]
     kernel.CloseHandle.argtypes=[c.c_void_p]
-    evidence={}
+    evidence=dict(renderer_sequence=args.renderer_sequence,
+                  scope='Guest Accept/Cancel/save/reload through original menu; direct isolated child, not launcher',
+                  executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest())
 
     def profiles():
         found={}
@@ -90,19 +98,25 @@ def main():
             time.sleep(.2)
         raise AssertionError('Timed out at '+label)
 
-    with (ROOT/'logs/controls-accept-game.log').open('w') as log:
+    with (ROOT/'logs'/(args.run_name+'-game.log')).open('w') as log:
+        renderer_args=['--renderer-sequence',*args.renderer_sequence] if args.renderer_sequence else []
         process=subprocess.Popen([sys.executable,str(ROOT/'tests/gameplay/stability_transitions_game.py'),
-                                  '--run-name','controls-accept'],cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
+                                  '--run-name',args.run_name,*renderer_args],cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
         try:
             end=time.monotonic()+30
             while not (run/'run.lock').exists():
                 assert process.poll() is None and time.monotonic()<end
                 time.sleep(.2)
             command('main',wait=22)
-            row=command('controls-before',keys=[38,38,38,69,40,40,69],gap=.8,wait=3)
+            controls_keys=[38,38,38,69,40,40,69,39,40,40]
+            # Current unified Controls opens on its General tab/header. Right
+            # selects Controller; two Downs select Inverse Look. A/D adjust,
+            # while Left/Right switch tabs rather than editing the guest draft.
+            row=command('controls-before',keys=controls_keys,gap=.8,wait=3)
             assert inverse(row['pid'])
             before=profiles();assert len(before)==1
-            command('accept-selected',keys=[40,40,39,38,38,38,38],wait=3)
+            row=command('accept-selected',keys=[68,40,40,40,40,40],wait=3)
+            assert not inverse(row['pid']),'Inverse Look draft did not toggle OFF'
             command('accepted-settings',keys=[69],wait=3)
             accepted=profiles()
             changed={slot:raw for slot,raw in accepted.items() if before.get(slot)!=raw}
@@ -113,21 +127,26 @@ def main():
             evidence['saved_before_quit']=True
             evidence['active_slot']=active
             evidence['accepted_sha256']=hashlib.sha256(raw).hexdigest()
-            # The renamed canonical fixture produces a second Test Lab slot on
-            # its first game write. Select that slot explicitly on relaunch.
-            assert len(accepted)==2
-            events=[(5000,69),(10000,69),(14000,40),(16000,40),(18000,69)]
+            # Canonical fixtures update their existing slot. Older renamed
+            # fixtures create a second slot; select that copy explicitly.
+            assert len(accepted) in (1,2)
+            assert (active in before)==(len(accepted)==1)
+            evidence['saved_slot_count']=len(accepted)
+            events=[(5000,69),(10000,69),(14000,40)]
+            if len(accepted)==2:events.append((16000,40))
+            events.append((18000,69))
             (run/'input.txt').write_text('\n'.join(f'{t+d} key {k} {v}' for t,k in events
                                                  for d,v in [(0,1),(180,0)])+'\n')
             command('reloaded-main',restart=True,wait=22)
-            row=command('accepted-reloaded',keys=[38,38,38,69,40,40,69],gap=.8,wait=3)
+            row=command('accepted-reloaded',keys=controls_keys,gap=.8,wait=3)
             assert not inverse(row['pid'])
             evidence['accept_reloaded_off']=True
-            command('cancel-selected',keys=[40,40,39,38,38,38],wait=3)
+            row=command('cancel-selected',keys=[68,40,40,40,40,40,40],wait=3)
+            assert inverse(row['pid']),'Cancel test did not create an ON draft'
             command('cancelled-settings',keys=[69],wait=3)
             assert profiles()==accepted,'Cancel wrote the draft'
             command('cancel-reloaded-main',restart=True,wait=22)
-            row=command('cancel-reloaded',keys=[38,38,38,69,40,40,69],gap=.8,wait=3)
+            row=command('cancel-reloaded',keys=controls_keys,gap=.8,wait=3)
             assert not inverse(row['pid']) and profiles()==accepted
             evidence['cancel_preserved_save_and_reload']=True
             print('PASS: Accept saved before quit; immediate Settings exit/reload retained OFF; Cancel preserved OFF across another restart')
@@ -136,6 +155,12 @@ def main():
                 with commands.open('a') as f:f.write('{"stop":true}\n')
                 process.wait(45)
         assert process.returncode==0
+    if args.renderer_sequence:
+        for index,backend in enumerate(args.renderer_sequence):
+            text=(run/f'run{index}.err').read_text(errors='replace')
+            assert '[PRESENT] backend='+backend in text
+            assert 'could not start; using' not in text and '[CRASH]' not in text
+        evidence['requested_backends_presented']=True
     (run/'verification.json').write_text(json.dumps(evidence,indent=2)+'\n')
 
 

@@ -68,6 +68,72 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("renderer preference persists, launches explicitly and respects platform capabilities",()=>{
+                string folder=Path.Combine(root,"renderer");Directory.CreateDirectory(folder);
+                var initial=GameSettings.Load(folder,null);
+                Need(initial.Renderer=="vulkan","Fresh renderer must prefer Vulkan");
+                Need(initial.CanSelectRenderer==LauncherPlatform.SupportsRendererSelection,"Development capability mismatch");
+                string old=Environment.GetEnvironmentVariable("RECOMP_D3D8_BACKEND");
+                Environment.SetEnvironmentVariable("RECOMP_D3D8_BACKEND","inherited-invalid");
+                try {
+                    foreach(string backend in new[]{"d3d11","vulkan"}) {
+                        var model=GameSettings.Load(folder,null);model.Renderer=backend;model.Save();
+                        var reopened=GameSettings.Load(folder,null);
+                        Need(reopened.Renderer==backend,"Renderer did not survive reload");
+                        var childEnvironment=GameSettings.StartInfo(folder).EnvironmentVariables;
+                        string childBackend=childEnvironment.ContainsKey("RECOMP_D3D8_BACKEND")?
+                            childEnvironment["RECOMP_D3D8_BACKEND"]:null;
+                        Need(childBackend==
+                            (LauncherPlatform.SupportsRendererSelection?backend:null),"Wrong child renderer or inherited override leaked");
+                        reopened.Sensitivity=.2;reopened.Save();
+                        Need(GameSettings.Load(folder,null).Renderer==backend,"Unrelated save reset renderer");
+                    }
+                } finally {Environment.SetEnvironmentVariable("RECOMP_D3D8_BACKEND",old);}
+                var invalid=GameSettings.Load(folder,null);invalid.Renderer="opengl";
+                string controls=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);string before=File.ReadAllText(controls);
+                bool rejected=false;try{invalid.Save();}catch(Exception){rejected=true;}
+                Need(rejected && File.ReadAllText(controls)==before,"Invalid renderer changed settings");
+                File.WriteAllText(controls,before.Replace("vulkan","opengl"));
+                rejected=false;try{GameSettings.StartInfo(folder);}catch(Exception){rejected=true;}
+                Need(rejected,"Malformed saved renderer reached launch");File.WriteAllText(controls,before);
+                var stale=GameSettings.Load(folder,null);var fresh=GameSettings.Load(folder,null);
+                fresh.Renderer="d3d11";fresh.Save();stale.Renderer="vulkan";
+                rejected=false;try{stale.Save();}catch(Exception){rejected=true;}
+                Need(rejected && GameSettings.Load(folder,null).Renderer=="d3d11","Stale draft overwrote another save");
+                string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));
+                Core.Write(manifest,Json.Encode(new {version="v1.2.3",auto_display_resolution=true}));
+                Need(!GameSettings.Load(folder,null).CanSelectRenderer,"Older package advertised unsupported renderer choice");
+                Need(!GameSettings.StartInfo(folder).EnvironmentVariables.ContainsKey("RECOMP_D3D8_BACKEND"),"Older package received override");
+                Core.Write(manifest,Json.Encode(new {version="v1.2.3",auto_display_resolution=true,graphics_backends=new[]{"d3d11","vulkan"}}));
+                Need(GameSettings.Load(folder,null).CanSelectRenderer==LauncherPlatform.SupportsRendererSelection,"Package backend metadata ignored");
+            });
+            Test("graphics renderer selector uses save and cancel and hides unsupported native choices",()=>{
+                string folder=Path.Combine(root,"renderer-ui");Directory.CreateDirectory(folder);
+                var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
+#if MACOS || LINUX
+                Need(!All(page.View).OfType<ComboBox>().Any(x=>x.Name=="GraphicsRenderer"),"Native UI exposed Windows renderer choice");
+                var model=GameSettings.Load(folder,null);model.Renderer="d3d11";model.Save();
+                page=new SettingsPage(new ResourceDictionary(),folder,true);
+                Find<CheckBox>(page.View,"EnhancedTextures").IsChecked=true;Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(GameSettings.Load(folder,null).Renderer=="d3d11","Native save lost Windows preference");
+#else
+                var choice=Find<ComboBox>(page.View,"GraphicsRenderer");var save=Find<Button>(page.View,"SettingsSaveButton");
+                Need(choice.IsEnabled && choice.SelectedIndex==0,"Default renderer UI incorrect");
+                Click(save);Need(!save.IsEnabled,"Saved baseline still dirty");
+                choice.SelectedIndex=1;Need(save.IsEnabled,"Renderer change not marked unsaved");
+                Click(Find<Button>(page.View,"SettingsCancelButton"));
+                Need(GameSettings.Load(folder,null).Renderer=="vulkan","Cancel saved renderer draft");
+                Click(save);Need(!save.IsEnabled,"Successful save still dirty");
+                Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="d3d11","UI did not select D3D11 at launch");
+                page=new SettingsPage(new ResourceDictionary(),folder,true);choice=Find<ComboBox>(page.View,"GraphicsRenderer");
+                Need(choice.SelectedIndex==1,"Reopened renderer choice lost");
+                choice.SelectedIndex=0;Click(Find<Button>(page.View,"SettingsSaveButton"));
+                Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","UI did not restore Vulkan at launch");
+                Core.Write(Core.PathIn(folder,LauncherPlatform.ManifestPath(folder)),Json.Encode(new {version="v1.2.3",auto_display_resolution=true}));
+                page=new SettingsPage(new ResourceDictionary(),folder,true);
+                Need(!Find<ComboBox>(page.View,"GraphicsRenderer").IsEnabled,"Older build selector enabled");
+#endif
+            });
             Test("console tails live shared files, preserves UTF8 and separates errors",()=>{
                 string folder=Path.Combine(root,"console");Directory.CreateDirectory(folder);
                 var tail=new GameLogTail(folder);tail.Poll();Need(tail.Text(false)=="","Missing log should be empty");

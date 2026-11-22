@@ -2173,6 +2173,18 @@
       ]
     },
     {
+      "name": "3050-windows-vulkan-primary.patch",
+      "path": "patches/graphics/rendering/3050-windows-vulkan-primary.patch",
+      "sha256": "56596bd9293a78e54ee8728a1edd10439b7f45a48ccb7c8f986fe2f9f82c9297",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c",
+        "src/d3d/rhi_vulkan_dxc.cpp",
+        "titles/futureperfect/CMakeLists.txt"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

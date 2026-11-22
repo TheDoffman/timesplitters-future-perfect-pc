@@ -109,7 +109,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 
 | Platform | Support and known limits |
 | --- | --- |
-| **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
+| **Windows 10/11 x64** | [Vulkan rendering with D3D11 recovery](docs/players/windows-vulkan.md), keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
 | **Mac (Apple Silicon)** | Native launcher, game and experimental Online/LAN multiplayer. Intel Macs are unsupported. The app is not notarized; see [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution), [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
 | **Linux x64 (experimental)** | Native launcher and portable SDL/Vulkan game package, with experimental Online/LAN multiplayer. Package, isolated gameplay and X11/Wayland renderer checks pass under Ubuntu/WSL. Physical desktop GPU/Wayland, controller and Steam Deck acceptance remain pending. See the [Linux launcher guide](docs/players/linux-launcher.md) and [acceptance limits](docs/development/linux-acceptance.md). |
 

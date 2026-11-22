@@ -219,6 +219,15 @@ jobs:
       - name: Test native runtime, rendering and input regressions
         if: needs.plan.outputs.native == 'true'
         run: python tools/ci/run-runtime-checks.py native --shard ${{ matrix.shard }}/3 --profile-prefix ci
+
+      - name: Build Windows Vulkan and D3D11 hardware comparison fixture
+        if: runner.os == 'Windows' && matrix.shard == 1
+        run: |
+          git -C external/ts3FPrecomp submodule update --init --depth 1 third_party/Vulkan-Headers third_party/volk third_party/VulkanMemoryAllocator
+          python tools/build/windows_vulkan.py --setup
+          cmake -S tests/windows-rhi -B build/windows/rhi-compare -G "Visual Studio 18 2026" -A x64
+          cmake --build build/windows/rhi-compare --config Release --parallel 4
+          # Execution is a local hardware acceptance check; CI retains its WARP pixel tests.
       - name: Upload test results
         if: always()
         continue-on-error: true

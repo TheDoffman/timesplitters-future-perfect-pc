@@ -51,6 +51,23 @@ namespace TimeSplitters.Launcher
             }
         }
         public bool ShaderCache = true;
+        public string Renderer = "vulkan";
+        public static readonly string[] Renderers = { "vulkan", "d3d11" };
+        public static readonly string[] RendererLabels = { "Vulkan (Default)", "Direct3D 11" };
+        public bool CanSelectRenderer
+        {
+            get {
+                if(!LauncherPlatform.SupportsRendererSelection)return false;
+                string path=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
+                if(!File.Exists(path))return true; // Development build.
+                try {
+                    object value;
+                    if(!Json.Object(Text(Read(path))).TryGetValue("graphics_backends",out value))return false;
+                    var backends=((IEnumerable)value).Cast<object>().OfType<string>().ToArray();
+                    return Renderers.All(backends.Contains);
+                } catch { return false; }
+            }
+        }
         public string LanguagePack = "en";
         public static readonly string[] LanguagePacks = { "en", "fr", "de", "it", "es" };
         public static readonly string[] LanguagePackLabels = { "English", "Français", "Deutsch", "Italiano", "Español" };
@@ -195,6 +212,11 @@ namespace TimeSplitters.Launcher
             if (model.document.TryGetValue("launcher", out value))
             {
                 var launcher = Map(value);
+                if (launcher.TryGetValue("renderer", out value))
+                {
+                    Core.Require(value is string, "Renderer must be Vulkan or Direct3D 11. No settings were changed.");
+                    model.Renderer = (string)value;
+                }
                 if (launcher.TryGetValue("language_pack", out value))
                 {
                     Core.Require(value is string, "Language pack must be a language code. No settings were changed.");
@@ -429,6 +451,7 @@ namespace TimeSplitters.Launcher
         { string v; int n; if (!values.TryGetValue(key, out v)) return fallback; if (Int32.TryParse(v, out n)) return n; if (v == "true" || v == "on" || v == "yes") return 1; if (v == "false" || v == "off" || v == "no") return 0; throw new InvalidDataException("Invalid runtime setting: " + key); }
         public void Validate(bool loading=false)
         {
+            Core.Require(Renderers.Contains(Renderer), "Choose Vulkan or Direct3D 11.");
             Core.Require(LanguagePacks.Contains(LanguagePack), "Choose a supported game language pack.");
             Core.Require(loading || LanguagePack == "en" || CanSelectLanguagePack, "Update the game to a release with language-pack support before selecting another language.");
             Core.Require(NativeFrameRates.Contains(NativeFps), "Choose 60 FPS (Original), 120 FPS (Beta), 180 FPS (Beta), or 240 FPS (Beta).");
@@ -540,6 +563,7 @@ namespace TimeSplitters.Launcher
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             Map(value)["enhanced_textures"] = EnhancedTextures;
             Map(value)["language_pack"] = LanguagePack;
+            Map(value)["renderer"] = Renderer;
             if (!document.TryGetValue("debug", out value)) document["debug"] = value = new Dictionary<string, object>();
             Map(value)["show_counter"] = ShowCounter;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"smaa",Smaa?"1":"0"}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"vsync",VSync?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
@@ -587,6 +611,7 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["TSFP_GAME_UPDATE_NOTICE"] = GameUpdateNotice.Path(root);
             info.EnvironmentVariables["TSFP_GAME_INSTALLED_VERSION"] = Core.InstalledVersion(root);
             info.EnvironmentVariables["TSFP_CRASH_EXTENDED"] = CrashReports.ExtendedForNextLaunch ? "1" : "0";
+            if(model.CanSelectRenderer)info.EnvironmentVariables["RECOMP_D3D8_BACKEND"] = model.Renderer;
             // Explicit zero also overrides an old native_fps runtime preference.
             info.EnvironmentVariables["TSFP_NATIVE_FPS"] = model.NativeFps.ToString(CultureInfo.InvariantCulture);
             info.EnvironmentVariables["TSFP_GAME_LANGUAGE"] = model.LanguagePack;

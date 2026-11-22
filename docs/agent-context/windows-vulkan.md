@@ -1,0 +1,286 @@
+# Windows Vulkan default and MSVC build policy
+
+PR580 CI portability: the Windows RHI build job targets the installed Visual
+Studio 18 2026 generator on windows-2025-vs2026 (pinned CMake4.4.4 supports it).
+The shared launcher test treats missing child renderer variables portably with
+ContainsKey before indexing; native .NET's dictionary indexer throws for absent keys.
+Production launcher behavior and backend policy are unchanged by these repairs.
+
+Available-host acceptance is complete on RTX4070SUPER/617.42, gameSHAa8a26b31:
+see docs/development/windows-renderer-results.md and its matrix. Performance,
+quality/display, two Story openings, Venice/bots, five-minute movement/pause,
+signed cross-backend saves and actual-launcher compiler recovery pass. Targeted
+water views match; final eight production RHI cases pass with Vulkan validation
+active.30selectedtests and --compile-only pass. AMD/Intel/otherdrivers, native
+Mac/Linux and other monitor arrangements remain unverified. Historical progress
+notes below are superseded by that report; do not rerun already resolved gates
+or reinterpret old failed reports as passes. No merge/publication occurred.
+
+PR580 CI found the synthetic launcher-package fixture lacked the new DXC pin,
+receipt/files and Vulkan-enabled CMake cache. package_launcher.py now supplies
+checksum-consistent synthetic inputs through the real production verifier and
+checks packaged DLL/license/receipt inclusion. Production pin checks stay strict;
+no runtime or launcher binary change is required for this fixture correction.
+The test-only DXGI helper compiles as C++20: VS2026's STL rejects the deprecated
+experimental coroutine path selected by its C++/WinRT headers under C++17.
+Use standard coroutine support rather than suppressing that diagnostic. The
+game/RHI compiler standards and rendering behavior are unchanged.
+
+Normal Windows packages build both backends and prefer Vulkan. Patch
+`graphics/rendering/3050-windows-vulkan-primary.patch` changes initial RHI
+selection while keeping D3D11 first in the recovery table. An explicit
+`RECOMP_D3D8_BACKEND=d3d11` remains available. Linux/native Mac already prefer
+Vulkan; legacy Mac OpenGL is unchanged.
+
+Before Vulkan allocates GPU resources, `rhi_vk_dxc_available` initializes the
+verified dynamic shader compiler. Missing DXC returns through the same D3D11
+recovery path as a missing Vulkan driver. Partial initialization also destroys
+the instance/surface/debug messenger, and allocator destruction is guarded.
+`rhi_d3d11_adopt` explicitly selects the backend owning the adopted device;
+WARP fixtures must not keep the initial Vulkan dispatch table.
+
+`tests/windows-rhi` and `tools/testing/test-rhi-windows.py` exercise default
+Vulkan, explicit D3D11/Vulkan, missing driver/compiler/device recovery and
+explicit D3D11 adoption. The no-device case uses the loader's vendor filter in
+the child process only. With a verified SDK path, ordinary Vulkan cases require
+active validation and reject any Vulkan diagnostic or silent fallback.
+`native_refresh_game.py --backend auto` leaves the backend override absent and
+requires actual Vulkan guest presents. `--backend d3d11` provides the reference.
+Tagged JSON reports record requested and observed backend; saves/config/cache
+paths remain isolated. Frame profiling and capture/validation are separate runs.
+
+The normal Release build applies maintained MSVC compatibility rules through
+`src/runtime/msvc_generated_code.cmake` and `tools/build/msvc_generated_code.py`.
+`config/build/msvc-generated-code.json` identifies the eight measured compiler
+exceptions by guest definition, not generated chunk filename. Three units use
+`/Od /Ob0`; the others limit inlining with `/Ob1`. Other source keeps Release
+optimization. Debug is unchanged. This is a supported host-compiler policy,
+not a generated C edit or a change to guest instructions. It preserves bounded
+builds after source regrouping and fails on missing/duplicate policy definitions.
+The output JSON records affected units and symbols.
+
+MSBuild uses fresh per-source compiler processes, with `-CompileJobs` controlling
+their bound (default two). Tests cover regrouped chunks, unchanged source bytes,
+stronger rules when definitions share a unit, invalid/absent definitions,
+and CMake's actual Debug/Release option expansion. Do not restore handwritten
+VCXPROJ exceptions or overwrite another checkout's pending compiler work.
+
+Standard build replay checks explicitly use D3D11, so building does not require
+a validation SDK. Dedicated Vulkan acceptance uses the verified SDK. Release
+packaging lists Vulkan as the default and includes the pinned DXC DLLs/notices.
+The historical controls-upgrade fixture defers patch 3050 until its full graphics
+prerequisites are restored, then verifies that the upgrade installs the Vulkan
+preference, compiler preflight and maintained MSVC policy.
+See [player/build commands](../players/windows-vulkan.md) and measured results
+in [STATUS](../project/STATUS.md).
+
+## Launcher renderer selection
+
+`GameSettings.Renderer` defaults to vulkan; the shared controls JSON launcher
+object stores renderer as vulkan/d3d11 using the existing atomic save/rollback
+and stale-file checks. `Validate` rejects other values before saving or launching.
+Windows `SettingsPage.GraphicsRenderer` offers Vulkan (Default)/Direct3D 11 in
+Graphics > Display; draft tracking and Save/Cancel follow other settings.
+`StartInfo` scrubs inherited runtime variables, then explicitly maps the saved
+choice to RECOMP_D3D8_BACKEND only when CanSelectRenderer is true. A package must
+advertise both graphics_backends, or be an unpackaged development build.
+Legacy packages retain their built-in choice and get an update hint.
+`LauncherPlatform.SupportsRendererSelection` is false for MACOS/LINUX; their UI
+hides the selector and unrelated saves preserve the Windows preference without
+applying it to the native process. Automatic Vulkan startup fallback is unchanged.
+
+Validation: `tools/build/build-launcher.ps1 -Test` passed all existing suites plus
+two shared renderer cases. Coverage includes reload, unrelated saves, invalid
+values, stale-file protection, inherited overrides, legacy/new package metadata,
+UI Save/Cancel and reopening. The three Python shared-layout checks also pass. The existing settings child fixture now launches
+both selected backends and checks the actual child's renderer environment.
+`--render-settings-graphics` preview was reviewed at 1152x772. NativeLauncher.csproj
+and LinuxLauncher.csproj compile with zero errors on Windows (two pre-existing
+Avalonia obsolete-event warnings each). Native runtime UI checks remain pending.
+SDK 9.0.312 selects ILLink 8.0.25 while the native lock expects 8.0.32; compilation
+used isolated NuGetLockFilePath files under build/, leaving tracked locks intact.
+No renderer/game rebuild is required for this settings-only change; see the
+existing hardware validation above for the two production backends and recovery.
+
+Actual launcher/game follow-up (2026-11-21): source f4b615a9 passed D3D11 then
+Vulkan for 120 seconds each on RTX 4070 SUPER / driver 617.42. An isolated WPF
+harness selects and saves through SettingsPage, then invokes unmodified
+LauncherWindow.LaunchGame; no backend environment injection. Both reach Story,
+move/fire, present on the selected backend without fallback, and exit 0. Normal
+launcher runs do not enable SDK validation. Evidence and scope are recorded in
+STATUS; local report is logs/launcher-renderer-gameplay/report.json. No code fix.
+
+## Extended acceptance goal
+
+The live gate matrix is docs/development/windows-renderer-validation.md; its
+remaining gates must not be inferred from the earlier opening-mission smoke.
+tools/testing/test-launcher-renderers-windows.py compiles the opt-in WPF harness
+tests/launcher_lifecycle/RendererGameSmoke.cs outside release package inputs. It
+uses actual shared SettingsPage Save and unchanged LauncherWindow.LaunchGame,
+per-label application caches, owned fixture copies and process-path-checked
+cleanup. --warm repeats a populated application cache; driver caches are outside
+this cold/warm scope. --capture runs are separate from resource measurements.
+CPU time, memory, handles and optional dedicated GPU bytes are sampled alongside
+guest ticks. First-present observation is polled and is not scanout timing.
+--compile-only needs no game data or GPU and is registered in launcher-build.yml.
+tests/launcher/test_renderer_acceptance.py guards stale passes, redirected
+Data/Saves paths, timeout cleanup, package separation and measurement windows.
+First four baseline-cold-warm-01 cases passed; STATUS records hashes and resource
+differences, including the Vulkan private-commit increase. Repeats, precise frame
+pacing, display/quality matrices, additional levels and save/load remain pending.
+
+Live first-present observation must use ReadLiveLog with FileShare.ReadWrite
+(and Delete), because the launcher retains its stderr writer. compile_harness
+also runs --self-test-io against an active writer without requiring a GPU/game.
+baseline-cold-warm-02 failed in the old observer; its report remains failed.
+
+Display acceptance: --display-cycle (requires capture, starts windowed) checks
+actual WS_POPUP transitions with Alt+Enter, resizes the client and restores it.
+--capture-times selects <=12 ordered in-session checkpoints. effective_settings
+rejects scene/MSAA mismatch and SMAA fallback; Auto checks native resize logs
+against the actual resized client. Seven runner safety/measurement tests cover
+these gates. baseline-cold-warm-03 passed all4 on2428e479; STATUS records dedicated
+GPU allocation and memory observations. Display/quality hardware runs are next.
+
+Fixed scene display-fixed-01 passed both backends (sourcef6c2958b), including
+actual fullscreen1920x1080, windowed640x480, resize1008x729 and restoration,
+with active scene1280x720 unchanged as intended. Auto remains a separate gate.
+--scenario-file validates <=64 ordered key actions/holds and snapshots only
+known expectations. story-scotland.json selects the second reviewed Story row;
+its hardware coverage is pending. expected_weapon=-1 is a world/input test,
+not firearm acceptance. Measurements exclude flagged cutscenes. Eight runner
+unit tests pass; explicit guest saving is not proven by a normal window close.
+
+## Auto-resolution allocation
+
+Auto failures on both old backends exposed native HUD sizing consuming the
+pending host-size change. pc_display_scene_size now initializes its cached
+Auto mode once; later queries retain the accepted dimensions until
+pc_display_frame_done successfully calls xbox_D3D8ChangeResolution. An
+interleaved HUD query must not suppress allocation or defeat failure retry.
+tests/graphics/pc_display_auto.c reproduces the old failure and checks cached
+geometry, successful resize, rollback, retry and manual override on shared SDL
+policy. Both display-model tests pass; normal Windows rebuild and actual paired
+Auto resize acceptance are still required. Mac/Linux native runs are pending.
+
+Optional ETW console is pinned by config/build/presentmon-windows.json (2.6.0,
+MIT, standalone EXE only). Official release asset size/SHA were verified; its
+license/receipt stay under ignored external/presentmon/2.6.0. No service, driver
+or OS permission changes were made. A PID-filtered two-second ETW prerequisite
+probe starts/stops successfully without elevation; actual graphics traces remain
+pending. Launcher samples now include QPC milliseconds for later ETW alignment.
+
+Rebuilt Windows Auto acceptance now passes both backends on gameSHAa8a26b31
+(source8b3e6fca): native targets1920x1080,640x480,1008x729,640x480 follow the
+actual mode/resize cycle, with reviewed consistent gameplay captures and exit0.
+Mac/Linux runtime acceptance remains pending; historical failed reports remain
+failed. --presentmon uses the pinned console, UUID session names and owned PID
+filtering, with --no_track_input. --repetitions3 makes one cold and two warm
+application-cache runs per backend. QPC-aligned ETW measurements require one
+swap chain, owned PID, sufficient displayed frames and coherent interval/row
+coverage. These are measurement-integrity gates; relative performance acceptance
+requires the separate comparison of all runs. Nine runner unit tests pass.
+
+The completed pacing-etw-01 cohort now passes relative current-host frame gates:
+three actual-launcher runs each,59.99-60.03FPS and no steady85-115s interval>25ms.
+docs/development/windows-renderer-results.md retains all measurements and cache/
+loading limitations. Quality machine checks pass four pairs, but fullscreen
+Vulkan GDI screenshots are black/stale; their visual acceptance is unresolved.
+Do not infer appearance from successful gameplay/present logs or ETW alone.
+
+RendererGameSmoke now calls the test-only RendererWindowCapture.cpp helper for
+visual runs. DXGI desktop duplication captures only the path-verified game
+rectangle; GDI CopyFromScreen can retain a stale initial bitmap for fullscreen
+Vulkan. A focused1920x1080/MSAA2/FXAA Vulkan diagnostic has correct GPU readback
+and DXGI scene/HUD/weapon/fire; actual-launcher quality recapture remains pending.
+compile-only builds both harness/helper without GPU use. Normal capture reports
+record method plus helper/source hashes. Window must fit one unrotated output
+on the default graphics adapter; unsupported layouts fail rather than saving an
+incorrect image. Captures are bounded and excluded from performance cohorts.
+quality-fxaa-dxgi-03 now has reviewed consistent80/112s fullscreen world/fire/
+weapon/HUD/ammo on both actual-launcher runs and clean exits. Early11s duplicate
+output could still be black; the helper now drains two initial arrivals and
+requires an unmasked actual-image timestamp, validated by a focused three-frame
+probe. Remaining quality cases exercise that stricter source; do not count early
+stale frames as visual passes.
+
+Guest save/load follow-up reuses tests/storage/profile_accept_game.py with a
+unique --run-name and --renderer-sequence vulkan d3d11 vulkan (or reverse).
+stability_transitions_game.py applies the explicit test-only choice per restart,
+repeating the final choice for later children; at most four choices. The original
+Accept/Cancel menu path must change exactly the inverse-look body byte, retain
+the original signature and reload the saved draft across restarts. Each requested
+backend must actually present with no fallback/crash. This is direct-child save
+acceptance, distinct from the unchanged launcher selection gate; hardware runs
+remain pending. Provenance records sequence and native executable hash.
+
+Runs >=300seconds additionally require sustained_checks: >=40 active last30s
+samples and >=90% gameplay coverage,59-61Hz guest ticks, observed late movement,
+median private/GPU growth <=128MiB and handle growth <=32 versus85-115s. Missing
+GPU counters stay explicitly unavailable. story-opening-soak.json schedules
+alternating bounded movement through294s; the opening firearm/shot checks still
+run85-115s. These bounded growth limits flag regressions and do not exclude slower
+leaks or prove sustained combat. The unit fixture rejects frozen late input/
+clocks and excess memory growth. Actual paired five-minute acceptance is pending.
+The soak also pauses with Escape at152s and resumes with the original menu's E
+at154s. Samples observe the original pause-manager pointer761C48 bit0 without
+writing guest memory. A validated pause_expected flag requires >=3 paused scene2
+samples followed by resumed late gameplay; no pause claim comes from keys alone.
+
+--unavailable-dxc is an opt-in actual-launcher recovery case, requiring one cold
+saved-Vulkan run. UnavailableDxc.c builds a valid test DLL without DxcCreateInstance
+under build/renderer-validation. The runner unlinks only the disposable Bin hard
+link, installs that stub and restores the build DLL link during cleanup. It never
+writes through a hard link or changes drivers/compiler installations/PATH. This
+drives the normal missing-compiler path even when the build has an absolute DXC
+fallback. Acceptance requires the missing-compiler diagnostic, explicit recovery
+message and exclusively D3D11 presents, while the saved choice remains Vulkan.
+Other backend/shader/present/gameplay checks remain strict. Cleanup failure must
+leave report.passed=false. compile-only also builds the DLL; a native load/export
+probe confirms it loads and lacks DxcCreateInstance. Actual game acceptance now
+passes in launcher-dxc-recovery-01, with original DLL link restoration verified;
+this is unavailable-compiler-entry-point simulation, not driver removal.
+
+Additional-level acceptance must declare expected_scene (integer1..99; default2).
+Scotland is scene4, observed in its owned game's samples; the old harness rejected
+it despite visible gameplay because it only sampled scene2. C# world/weapon reads,
+Python resource/ETW windows and sustained/pause checks now use that same validated
+scene expectation. Menus/loading/cutscene flags cannot satisfy the gameplay gate.
+story-scotland.json declares4 and adds a bounded left strafe to avoid a fixed
+cliff-facing spawn blocking every movement input. Old story-scotland-dxgi-01
+remains failed; fresh paired hardware acceptance is story-scotland-dxgi-02.
+
+Both corrected Scotland cases now pass, with reviewed revolver/world/decal/HUD
+captures, ammo8->4 and advancing60Hz clocks. Arcade exploration confirms the
+Vietnam/Hotel/Venice list order, reaches Venice scene46 and visible Deathmatch.
+arcade-venice.json uses that route plus the existing no-score-limit sequence and
+bounded respawn inputs. Its actual-launcher pair now passes with reviewed map,
+no-score-limit setup and indoor/outdoor gameplay captures. expected_weapon=-1
+remains a world/input rather than weapon-ID gate.
+
+The save probe needed two observer updates, not game fixes: unified Controls
+opens at General's tab header, so Right/Down/Down selects Controller/Inverse Look;
+D edits its draft, whereas Right switches tabs. Five Downs reach Accept, six
+reach Cancel. Require the expected draft bit before each action. A valid original
+save now changes exactly bodybyte6 255->254 in the existing canonical slot, with
+valid HMAC; older renamed fixtures can create a second slot. Reload chooses one
+Down for the canonical slot or two for the new copy, rejecting ambiguous slot
+counts/identity. Original failed runs are retained. Both corrected cross-backend
+orders now pass (renderer-save-vk-dd-vk-03 and renderer-save-dd-vk-dd): canonical
+slot count1, exact bodybyte6 change, accepted SHA95fdcc0f, valid signature, actual
+requested backend presents and Cancel/reload preservation. Profile bytes,
+signatures and Cancel rollback remain strict assertions. See measured report.
+
+story-soak-dxgi-01 D3D11 closed cleanly and passed pause/resume, movement and
+resource limits but failed the strict late clock gate (58.945Hz). Input holds
+blocked after the loop's old seconds timestamp; actual QPC elapsed29.4448s versus
+recorded29.96s gives59.9766Hz for the same tick interval. Keep that report failed.
+RendererGameSmoke now refreshes seconds/QPC and guest state together after all
+blocking input/display/counter work, before sampling position/pause/resources.
+Polled first-present readiness also uses its actual observation time. Do not
+relax the59-61Hz gate to mask stale observations. Fresh acceptance is paired
+story-soak-dxgi-02, now passed on both backends with <10ms seconds/QPC offset
+spread and late clocks59.966/59.986Hz. Recovery/Arcade/targeted water runs also
+complete successfully; final RHI validation requires the explicit existing SDK
+layer path external/vulkan-sdk/windows/1.4.363.0/Bin. The first final wrapper
+rejects validation-inactive output; rhi-final-02 is the validated evidence.

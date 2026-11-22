@@ -55,7 +55,7 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Test startup preferences, packaging and Windows game icons
-        run: python -m pytest tests/launcher/test_launcher_startup.py tests/launcher/package_launcher.py tests/launcher/test_launcher_cache.py tests/repository/test_game_icon.py -q --tb=short
+        run: python -m pytest tests/launcher/test_launcher_startup.py tests/launcher/package_launcher.py tests/launcher/test_launcher_cache.py tests/launcher/test_renderer_acceptance.py tests/repository/test_game_icon.py -q --tb=short
       - name: Recover checksum-pinned original artwork
         shell: powershell
         run: ./tools/build/fetch-launcher-art.ps1
@@ -64,6 +64,8 @@ jobs:
         run: |
           ./tools/build/build-launcher.ps1 -Test -RequireArtwork -BannerPath build/launcher-art/launcher-banner.png -LogoPath build/launcher-art/launcher-logo.png -BackdropPath build/launcher-art/launcher-backdrop.png
           Copy-Item build/launcher/launcher.ico build/launcher-art/launcher.ico
+      - name: Compile opt-in Windows renderer gameplay harness
+        run: python tools/testing/test-launcher-renderers-windows.py --compile-only
       - name: Verify Windows update package and record its source
         run: python tools/release/launcher-release.py stamp --directory build/launcher --platform windows-x64
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
