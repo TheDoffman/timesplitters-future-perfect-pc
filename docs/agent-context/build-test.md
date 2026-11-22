@@ -1,4 +1,4 @@
-[GL RHI](opengl-recovery.md).
+[GL caps](opengl-recovery.md).
 
 [0.7 sync](network-sync-telemetry.md).
 
