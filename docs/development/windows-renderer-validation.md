@@ -1,5 +1,9 @@
 # Windows renderer acceptance
 
+The launcher selector was removed on 2026-11-22. The real-launcher runner now
+checks Vulkan only; paired launcher measurements below describe the previously
+validated builds. Use the direct game/RHI runners for new D3D11 comparisons.
+
 This is the acceptance matrix for making Vulkan the Windows default while
 retaining Direct3D 11. Available-host acceptance is complete; the
 [measured report](windows-renderer-results.md) records its bounded scope and

@@ -76,39 +76,15 @@ in [STATUS](../project/STATUS.md).
 
 ## Launcher renderer selection
 
-`GameSettings.Renderer` defaults to vulkan; the shared controls JSON launcher
-object stores renderer as vulkan/d3d11 using the existing atomic save/rollback
-and stale-file checks. `Validate` rejects other values before saving or launching.
-Windows `SettingsPage.GraphicsRenderer` offers Vulkan (Default)/Direct3D 11 in
-Graphics > Display; draft tracking and Save/Cancel follow other settings.
-`StartInfo` scrubs inherited runtime variables, then explicitly maps the saved
-choice to RECOMP_D3D8_BACKEND only when CanSelectRenderer is true. A package must
-advertise both graphics_backends, or be an unpackaged development build.
-Legacy packages retain their built-in choice and get an update hint.
-`LauncherPlatform.SupportsRendererSelection` is false for MACOS/LINUX; their UI
-hides the selector and unrelated saves preserve the Windows preference without
-applying it to the native process. Automatic Vulkan startup fallback is unchanged.
-
-Validation: `tools/build/build-launcher.ps1 -Test` passed all existing suites plus
-two shared renderer cases. Coverage includes reload, unrelated saves, invalid
-values, stale-file protection, inherited overrides, legacy/new package metadata,
-UI Save/Cancel and reopening. The three Python shared-layout checks also pass. The existing settings child fixture now launches
-both selected backends and checks the actual child's renderer environment.
-`--render-settings-graphics` preview was reviewed at 1152x772. NativeLauncher.csproj
-and LinuxLauncher.csproj compile with zero errors on Windows (two pre-existing
-Avalonia obsolete-event warnings each). Native runtime UI checks remain pending.
-SDK 9.0.312 selects ILLink 8.0.25 while the native lock expects 8.0.32; compilation
-used isolated NuGetLockFilePath files under build/, leaving tracked locks intact.
-No renderer/game rebuild is required for this settings-only change; see the
-existing hardware validation above for the two production backends and recovery.
-
-Actual launcher/game follow-up (2026-11-21): source f4b615a9 passed D3D11 then
-Vulkan for 120 seconds each on RTX 4070 SUPER / driver 617.42. An isolated WPF
-harness selects and saves through SettingsPage, then invokes unmodified
-LauncherWindow.LaunchGame; no backend environment injection. Both reach Story,
-move/fire, present on the selected backend without fallback, and exit 0. Normal
-launcher runs do not enable SDK validation. Evidence and scope are recorded in
-STATUS; local report is logs/launcher-renderer-gameplay/report.json. No code fix.
+Removed at user request on 2026-11-22. All current platform packages prefer
+Vulkan. SettingsPage has no backend selector; GameSettings neither reads nor
+writes launcher.renderer, but preserves it as unknown data. Windows child
+launches explicitly request Vulkan after stripping inherited overrides. Native
+hosts keep manifest-selected SDK/driver routing. Runtime startup fallback and
+explicit developer overrides in direct game/RHI runners remain unchanged.
+The real-launcher acceptance helper accepts only --backend vulkan now; prior
+paired D3D11/Vulkan launcher evidence is historical, not a current UI contract.
+No game binary rebuild is needed. Legacy Mac GL builds retain compatibility.
 
 ## Extended acceptance goal
 

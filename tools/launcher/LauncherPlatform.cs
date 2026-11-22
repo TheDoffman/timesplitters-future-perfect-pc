@@ -8,11 +8,6 @@ namespace TimeSplitters.Launcher
     // config parsing and download policy stay in the existing shared classes.
     public static class LauncherPlatform
     {
-#if MACOS || LINUX
-        public static bool SupportsRendererSelection { get { return false; } }
-#else
-        public static bool SupportsRendererSelection { get { return true; } }
-#endif
         // Cloud Files markers describe storage, not a redirected pathname.
         // Keep every other reparse tag (including unknown tags) rejected.
         // The native Mac window owns mac.lock for its entire lifetime. Its busy

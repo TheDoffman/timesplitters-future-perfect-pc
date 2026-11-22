@@ -77,12 +77,10 @@ public static class RendererGameSmoke {
   // Shared executable is unmodified; preview mode only suppresses network checks.
   var ui=new LauncherWindow(root,true);ui.Window.Show();ui.ShowSettings(1);
   var page=(SettingsPage)typeof(LauncherWindow).GetField("settings",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(ui);
-  var combo=Find<ComboBox>(page.View,"GraphicsRenderer");Need(combo.IsEnabled,"Renderer selector disabled");
-  combo.SelectedIndex=Array.IndexOf(GameSettings.Renderers,backend);
+  Need(backend=="vulkan","Launcher now uses Vulkan; use the RHI runner for explicit D3D11 comparisons");
+  Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","Launcher default is not Vulkan");
   Find<Button>(page.View,"SettingsSaveButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-  Need(GameSettings.Load(root,null).Renderer==backend,"UI choice not saved");
-  Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]==backend,"Saved backend not mapped");
-  Console.WriteLine("SAVED "+backend+" through GraphicsRenderer and SettingsSaveButton");
+  Console.WriteLine("DEFAULT Vulkan through actual launcher settings and LaunchGame");
   int duration=Number("seconds",120);Need(duration>=120 && duration<=600,"Duration outside 120..600 seconds");
   var clock=Stopwatch.StartNew();
   var method=typeof(LauncherWindow).GetMethod("LaunchGame",BindingFlags.Instance|BindingFlags.NonPublic);
@@ -153,12 +151,13 @@ public static class RendererGameSmoke {
    PostMessage(hwnd,0x10,IntPtr.Zero,IntPtr.Zero);
    var done=await Task.WhenAny(launch,Task.Delay(15000));Need(done==launch,"Launcher did not finish after closing game");await launch;
    Need(game.HasExited && game.ExitCode==0,"Game did not close cleanly");
-   var model=GameSettings.Load(root,null);Need(model.Renderer==backend,"Game run changed saved selection");
+   Need(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","Game run changed launcher default");
+   var model=GameSettings.Load(root,null);
    Need(model.Msaa==Number("msaa",1) && model.PostAntiAliasing==Number("aa",0) && model.Anisotropy==Number("anisotropy",1),"Game run changed saved quality settings");
    string err=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").OrderBy(File.GetLastWriteTimeUtc).Last();string text=File.ReadAllText(err);File.Copy(err,Path.Combine(evidence,backend+".err"),true);
    Need(text.Contains("[PRESENT] backend="+expectedBackend),"Expected backend did not present");Need(!text.Contains("[CRASH]"),"Crash in game log");
    File.WriteAllText(Path.Combine(evidence,backend+"-result.json"),Json.Encode(new {passed=true,backend=backend,pid=game.Id,seconds=clock.Elapsed.TotalSeconds,window_seconds=windowSeconds,story_seconds=storySeconds,first_present_observed_seconds=firstPresentSeconds,gameplay_ready_seconds=gameplayReadySeconds,gpu_metric_available=gpuDedicated.HasValue,capture_enabled=Flag("capture"),display_cycle_completed=Flag("display_cycle") && displayStage==4,display_snapshots=displaySnapshots,settings=config,gameplay_samples=positions.Count,equipped_samples=equipped,tick_delta=lastTick-firstTick,exit_code=game.ExitCode,source_log=err}));
-   Console.WriteLine("PASS saved "+backend+", observed "+expectedBackend+": actual launcher, scenario gameplay, movement, weapon expectation, presents and clean exit; ticks="+(lastTick-firstTick));
+   Console.WriteLine("PASS default "+backend+", observed "+expectedBackend+": actual launcher, scenario gameplay, movement, weapon expectation, presents and clean exit; ticks="+(lastTick-firstTick));
   }finally{foreach(var counter in gpuCounters)counter.Dispose();if(!game.HasExited){game.Kill();game.WaitForExit(10000);}game.Dispose();owned=null;ui.Window.Close();}
  }
 }

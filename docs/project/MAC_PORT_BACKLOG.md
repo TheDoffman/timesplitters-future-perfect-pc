@@ -14,14 +14,12 @@ and current defaults are unchanged; no Mac adapter implementation is deferred.
 The new Windows evidence does not verify Mac/Linux renderer or native UI gates.
 See ../development/windows-renderer-validation.md for scope and outstanding work.
 
-Windows launcher renderer selector (2026-11-21): **Awaiting validation** of
-shared-model preservation on native Mac/Linux. The shared SettingsPage/model
-stores launcher.renderer, while the thin LauncherPlatform capability hides the
-Windows-only Vulkan/D3D11 selector and suppresses its environment override on
-native hosts. No native renderer change or adapter implementation is deferred.
-Both native projects compile on Windows; native acceptance remains: run shared
-UI checks, save an unrelated preference with a copied D3D11 choice, and confirm
-normal native launch. Windows Save/Cancel and child-process mapping pass.
+Launcher renderer simplification (2026-11-22): shared SettingsPage no longer
+exposes the Windows selector. Retired launcher.renderer data is preserved but
+ignored; Windows requests Vulkan, while native Mac/Linux retain manifest-based
+Vulkan driver routing. No native implementation is deferred. Shared native
+compilation and runtime UI checks are recorded in STATUS; Windows testing does
+not establish native execution. Legacy Mac GL compatibility is unchanged.
 
 Windows Vulkan primary renderer (2026-11-21, `feature/windows-vulkan` after
 `fe035bd6`): **Awaiting validation** on native Mac/Linux for shared DXC
