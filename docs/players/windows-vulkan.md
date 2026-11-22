@@ -83,3 +83,8 @@ Frame CSVs measure CPU intervals between successful present calls, not scanout.
 Compare matching gameplay windows, excluding startup, loading and pause.
 
 Measured outcomes and the default decision belong in [STATUS](../project/STATUS.md).
+
+The experimental OpenGL recovery backend now passes bounded Windows gameplay,
+display and stability checks in developer tests. Automatic recovery remains
+disabled until the remaining acceptance checks pass; Vulkan remains the default
+and the launcher has no renderer selector. Native Linux/Mac recovery is unverified.

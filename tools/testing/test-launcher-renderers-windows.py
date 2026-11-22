@@ -1,6 +1,8 @@
 """Bounded real-game renderer acceptance through the unchanged Windows launcher.
 
 Requires the normal native game and launcher builds, and the Test Lab fixture.
+Vulkan uses the actual launcher path. Explicit OpenGL is a developer child-only
+StartInfo probe; it does not add a renderer selector or change launcher defaults.
 No personal saves, settings or shader caches are used. Capture and measurement
 runs are separate; CPU samples are process CPU time, not GPU/display timing.
 """
@@ -59,7 +61,7 @@ def prepare_install(run):
         shutil.copyfile(ROOT / "tests/fixtures/pc-controls.json", controls)
     contained(ROOT, install / "Launch.ps1", "private/test-saves").write_text("# Isolated test marker; launcher starts the native EXE.\n")
     contained(ROOT, install / "BUILD.json", "private/test-saves").write_text(json.dumps(dict(
-        version="v0.8.0-dev", graphics_backends=["d3d11", "vulkan"],
+        version="v0.8.0-dev", graphics_backends=["d3d11", "vulkan", "opengl"],
         graphics_default="vulkan", auto_display_resolution=True, display_settings_version=5)))
     return install
 
@@ -136,17 +138,20 @@ def measurements(samples, expected_scene=2):
 
 
 def effective_settings(text, config):
-    scene = re.search(r"\[GRAPHICS\] Scene (\d+)x(\d+), MSAA (\d+) requested / (\d+) active", text)
+    scenes = [tuple(map(int,row)) for row in re.findall(
+        r"\[GRAPHICS\] Scene (\d+)x(\d+), MSAA (\d+) requested / (\d+) active", text)]
     expected = (config["width"], config["height"], config["msaa"], config["msaa"])
     automatic = config["width"] == config["height"] == 1
-    observed = tuple(map(int, scene.groups())) if scene else None
-    checks = dict(scene_resolution_and_msaa=bool(observed) and
-                  ((observed[0] >= 640 and observed[1] >= 480 and observed[2:] == expected[2:])
-                   if automatic else observed == expected))
+    checks = dict(scene_resolution_and_msaa=bool(scenes) and all(
+        ((row[0]>=640 and row[1]>=480 and row[2:]==expected[2:]) if automatic else row==expected)
+        for row in scenes))
     if config["aa"] == 2:
         checks["smaa_enabled"] = "[SMAA] enabled:" in text and "[SMAA] unavailable" not in text
     else:
         checks["smaa_disabled"] = "[SMAA] enabled:" not in text
+    if config.get("ao",0):
+        checks["ambient_occlusion_applied"] = bool(re.search(
+            r"\[SSAO\] applied: backend=\S+ samples="+str(config["msaa"])+r" world=",text)) and "SSAO setup failed" not in text
     return checks
 
 
@@ -308,7 +313,7 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     copy_saves(run, install)
     config = dict(backend=backend, seconds=args.seconds, capture=args.capture,
                   width=args.width, height=args.height, msaa=args.msaa, aa=args.aa,
-                  anisotropy=args.anisotropy, fullscreen=args.fullscreen)
+                  anisotropy=args.anisotropy, ao=getattr(args,"ao",0), fullscreen=args.fullscreen)
     config["display_cycle"] = getattr(args, "display_cycle", False)
     config.update(scenario_options(getattr(args, "scenario_file", None), args.seconds))
     if args.capture:
@@ -392,7 +397,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--label", help="Unique evidence/cache label; letters, numbers and hyphens")
     parser.add_argument("--compile-only", action="store_true", help="CI build check; no game data or GPU required")
-    parser.add_argument("--backend", choices=("vulkan",), default="vulkan")
+    parser.add_argument("--backend", choices=("vulkan", "opengl"), default="vulkan",
+                        help="Vulkan: actual launcher; OpenGL: explicit developer StartInfo probe")
     parser.add_argument("--warm", action="store_true", help="Repeat each cold case with its populated isolated cache")
     parser.add_argument("--repetitions", type=int, choices=(1, 2, 3), help="Matched runs per backend: cold followed by warm repetitions")
     parser.add_argument("--presentmon", action="store_true", help="Collect PID-filtered ETW display/submission timing with the pinned console")
@@ -408,6 +414,7 @@ def main():
     parser.add_argument("--msaa", type=int, choices=(1, 2, 4, 8), default=1)
     parser.add_argument("--aa", type=int, choices=(0, 1, 2), default=0, help="Off / FXAA / SMAA")
     parser.add_argument("--anisotropy", type=int, choices=(1, 2, 4, 8, 16), default=1)
+    parser.add_argument("--ao",type=int,choices=(0,1),default=0,help="Request and verify world ambient occlusion")
     args = parser.parse_args()
     if os.name != "nt":
         parser.error("Windows hardware runner")
@@ -443,7 +450,7 @@ def main():
                   launcher_sha256=digest(ROOT / "build/launcher/Bin/TimeSplitters.App.exe"),
                   harness_sha256=digest(ROOT / "tests/launcher_lifecycle/RendererGameSmoke.cs"),
                   runner_sha256=digest(Path(__file__)),
-                  capture_enabled=args.capture, cases={})
+                  capture_enabled=args.capture, launch_route="launcher" if args.backend=="vulkan" else "developer-start-info", cases={})
     if args.presentmon:
         report["presentmon_sha256"] = digest(pinned_presentmon())
         report["presentmon_version"] = json.loads((ROOT / "config/build/presentmon-windows.json").read_text())["version"]

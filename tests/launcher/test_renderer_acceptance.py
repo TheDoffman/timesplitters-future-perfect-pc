@@ -107,9 +107,20 @@ def test_effective_settings_require_active_msaa_and_successful_smaa():
     assert not runner.effective_settings(log.replace("4 active", "2 active"), config)["scene_resolution_and_msaa"]
     assert not runner.effective_settings(log.replace("1920x1080", "640x480"), config)["scene_resolution_and_msaa"]
     assert not runner.effective_settings(log + "[SMAA] unavailable", config)["smaa_enabled"]
+    assert not runner.effective_settings(log+"[GRAPHICS] Scene 640x480, MSAA 4 requested / 4 active", config)["scene_resolution_and_msaa"]
     config.update(width=1, height=1, aa=0)
     assert all(runner.effective_settings("[GRAPHICS] Scene 1008x729, MSAA 4 requested / 4 active", config).values())
     assert not runner.effective_settings(log, config)["smaa_disabled"]
+
+
+def test_ambient_occlusion_requires_applied_effect_and_matching_samples():
+    config=dict(width=1920,height=1080,msaa=8,aa=1,ao=1)
+    text="[GRAPHICS] Scene 1920x1080, MSAA 8 requested / 8 active\n"
+    assert not runner.effective_settings(text,config)["ambient_occlusion_applied"]
+    text+="[SSAO] applied: backend=opengl samples=8 world=1920x1080\n"
+    assert all(runner.effective_settings(text,config).values())
+    assert not runner.effective_settings(text.replace("samples=8","samples=4"),config)["ambient_occlusion_applied"]
+    assert not runner.effective_settings(text+"SSAO setup failed",config)["ambient_occlusion_applied"]
 
 
 def test_scenarios_bound_input_and_do_not_allow_arbitrary_expectation_overrides(tmp_path):

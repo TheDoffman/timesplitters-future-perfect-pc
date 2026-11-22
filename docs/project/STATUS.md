@@ -1,3 +1,32 @@
+## OpenGL display, effects and five-minute Windows stability pass; recovery gated (2026-11-22)
+
+Local checkpoint after33e5a469 on feature/opengl-startup-recovery. Shared GL4.1
+single-sample snapshots now cover subset/array/cube/volume/compressed/depth/stencil
+views without texture-view/storage extensions; GLSL410 count queries use uniforms.
+The restricted4.1 fixture, ordinary explicitGL contracts, shader translation and
+Windows full Build pass. All5 accepted-fixture recovery cases and all8 ordinary
+recovery-OFF cases pass after these changes. Fixture acceptance restored OFF.
+Native host readiness is not inferred from NVIDIA.
+
+Isolated Windows11/RTX4070SUPER617.42 game runs pass desktop presentation,
+fullscreen/windowed transitions, Auto resizing, startup1080p fullscreen, active
+MSAA4/8 and actual SSAO application. Requested SMAA/FXAA/AF and launcher Vulkan
+default are preserved. The300s gl-soak-01 passes late movement/60Hz guest clock,
+pause/resume, bounded resource growth and clean exit0. Latest game SHA256
+3426c47c19d61fd95f25a596fea8ca11c50884d9c0595c2bcf5582b3da3c75d4;
+earlier display/effect runs use distinct documented hashes. Vulkan's120s actual
+launcher regression control also passes gameplay and clean exit0. Desktop
+captures were reviewed separately from measurement; no GPU/scanout benchmark or
+long-term leak claim. Exact provenance and failed earlier harness trials are in
+[OpenGL recovery evidence](../agent-context/opengl-recovery.md).
+
+Automatic recovery remains OFF everywhere. Actual ordinary-game recovery/both-fail
+launcher trials, additional scenes, texture preservation and native build/GPU/
+display/performance checks remain. SDL main-thread servicing and native4.1
+capabilities still need on-host proof; no native Mac hardware is available here.
+Legacy Mac behavior is preserved; Apple OpenGL remains deprecated. No publishing
+or merge is authorized by this checkpoint.
+
 ## OpenGL worker restores first-mission throughput; recovery still gated (2026-11-22)
 
 Local checkpoint after886eb735, feature/opengl-startup-recovery. The shared RHI

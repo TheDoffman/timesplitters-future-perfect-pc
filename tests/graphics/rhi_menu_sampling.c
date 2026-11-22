@@ -46,6 +46,7 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #include "rhi_state_cache.h"
 #include "rhi_compatibility.h"
 #include "rhi_vertex_streams.h"
+#include "rhi_gl41_views.h"
 #ifdef RHI_VULKAN_SDL
 #include "vulkan_present_outcomes.h"
 #endif
@@ -156,6 +157,10 @@ int main(void) {
 #else
 #error A native host adapter is required
 #endif
+    int limited=0;
+#ifdef TSFP_WINDOWS_RHI_TEST
+    limited=getenv("TSFP_TEST_GL41_VIEWS")!=NULL;
+#endif
     RhiShader *vs=shader(RHI_STAGE_VERTEX,
         "float4 main(uint id:SV_VertexID):SV_POSITION {"
         "return float4(id==2?3.0:-1.0,id==1?3.0:-1.0,0,1);}","vs_5_0");
@@ -236,13 +241,12 @@ int main(void) {
     rhi_set_shader(RHI_STAGE_PIXEL,ps);rhi_set_textures(0,1,&srv);
     rhi_set_samplers(0,1,&sampler);rhi_set_uniform_buffers(RHI_STAGE_PIXEL,0,1,&parameters);
     rhi_depth_replay_test(rtv);
-    rhi_screen_copy_test(rtv);
+    if(!limited)rhi_screen_copy_test(rtv);
     rhi_state_cache_test(rtv);
     rhi_set_raster_state(raster);rhi_set_depth_state(depth,0);
     rhi_set_blend_state(blend,NULL,~0u);rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
-    test_guest_surface_companion(rtv);
-    test_msaa_surface_views(rtv);
-    test_ssao_pass(rtv);
+    if(!limited){test_guest_surface_companion(rtv);test_msaa_surface_views(rtv);test_ssao_pass(rtv);}
+    else {gl41_views_test(rtv);puts("SKIP: MSAA/SSAO multisample contracts;4.1 compatibility advertises single-sample only");}
 
 #if defined(RHI_VULKAN_SDL) || defined(TSFP_WINDOWS_RHI_TEST)
     /* Also exercise presentation and the swapchain readback channel order. */
@@ -264,12 +268,8 @@ int main(void) {
     rhi_view_destroy(srv);rhi_image_destroy(texture);rhi_view_destroy(rtv);rhi_image_destroy(target);
     rhi_shader_destroy(ps);rhi_shader_destroy(vs);rhi_raster_state_destroy(raster);
     rhi_depth_state_destroy(depth);rhi_blend_state_destroy(blend);
-    test_msaa_resolve();
-    test_msaa_subresources();
-    test_msaa_color_surface();
-    test_msaa_targets();
-    test_msaa_shared_depth();
-    test_msaa_scaled_target();
+    if(!limited){test_msaa_resolve();test_msaa_subresources();test_msaa_color_surface();
+        test_msaa_targets();test_msaa_shared_depth();test_msaa_scaled_target();}
     test_visibility_queries();
     rhi_device_destroy();
 #ifdef TSFP_WINDOWS_RHI_TEST

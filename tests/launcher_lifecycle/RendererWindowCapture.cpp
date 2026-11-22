@@ -43,6 +43,8 @@ int wmain(int argc, wchar_t **argv) {
     EnumWindows(Find, reinterpret_cast<LPARAM>(&search));
     if (search.count != 1)
       throw std::runtime_error("Game window is not unique");
+    if (GetForegroundWindow()!=search.hwnd)
+      throw std::runtime_error("Game is not foreground; desktop capture may be occluded");
 
     com_ptr<ID3D11Device> device;
     com_ptr<ID3D11DeviceContext> context;
@@ -112,6 +114,8 @@ int wmain(int argc, wchar_t **argv) {
     context->CopySubresourceRegion(staging.get(), 0, 0, 0, 0, tex.get(), 0,
                                    &box);
     check_hresult(duplicate->ReleaseFrame());
+    if (GetForegroundWindow()!=search.hwnd)
+      throw std::runtime_error("Game lost foreground during desktop capture");
     D3D11_TEXTURE2D_DESC desc;
     staging->GetDesc(&desc);
     D3D11_MAPPED_SUBRESOURCE data;

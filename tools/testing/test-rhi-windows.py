@@ -13,14 +13,15 @@ sys.path.insert(0, str(ROOT/'tools/build'))
 from windows_vulkan import verify, sha256
 
 
-def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False):
+def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False, gl41=False):
     verify(root)
     exe = root/'build/windows/rhi-compare/Release/tsfp_windows_rhi_test.exe'
     report = dict(executable_sha256=sha256(exe), backends={}, passed=False,
                   scope='Windows hardware RHI pixel/resource/swapchain contract; no gameplay/performance claim')
     logs = root/'logs'
     logs.mkdir(exist_ok=True)
-    report_path=logs/('rhi-windows-opengl-recovery.json' if opengl_recovery else f'rhi-windows-{selected_backend}.json' if selected_backend else 'rhi-windows.json')
+    report_path=logs/('rhi-windows-opengl-gl41.json' if gl41 else 'rhi-windows-opengl-recovery.json' if opengl_recovery else f'rhi-windows-{selected_backend}.json' if selected_backend else 'rhi-windows.json')
+    if gl41:report['scope']='OpenGL4.1 single-sample shader/resource/query compatibility; MSAA omitted, no native-host acceptance'
     report_path.write_text(json.dumps(report,indent=2)+'\n')
     modes=(selected_backend,) if selected_backend else ('default','d3d11','vulkan','vulkan-no-driver','default-no-driver','default-no-dxc','default-no-device','adopt-d3d11')
     if opengl_recovery:modes=('default','opengl-recover-no-driver','opengl-recover-no-device','opengl-both-fail','opengl-partial-fail')
@@ -35,6 +36,7 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
         env.update(RECOMP_SHADER_CACHE='0', RECOMP_VK_VALIDATION='1',
                    RECOMP_DISPLAY_CONFIG=str(folder/'runtime.ini'), TSFP_DISPLAY_CONFIG=str(folder/'display.ini'),
                    RECOMP_SAVE_DIR=str(folder/'saves'), RECOMP_INPUT_CONFIG=str(folder/'controls.json'))
+        if gl41:env['TSFP_TEST_GL41_VIEWS']='1'
         if not mode.startswith('default'):env['RECOMP_D3D8_BACKEND']=backend
         if startup_failure:env.update(TSFP_TEST_EXPECT_STARTUP_FAILURE='1',RECOMP_VK_VALIDATION='0')
         if recovered:env.update(TSFP_TEST_EXPECT_BACKEND='opengl',RECOMP_VK_VALIDATION='0')
@@ -64,7 +66,8 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
                 return value.decode(errors='replace') if isinstance(value,bytes) else (value or '')
             result=subprocess.CompletedProcess([str(exe)],-1,decoded(error.stdout),decoded(error.stderr)+'\nTIMEOUT\n')
         output = result.stdout+result.stderr
-        (logs/f'rhi-windows-{mode}.log').write_text(output)
+        log_name=f'rhi-windows-{mode}'+('-gl41' if gl41 else '')+'.log'
+        (logs/log_name).write_text(output)
         no_fallback = 'using d3d11' not in output and 'BACKEND: d3d11' not in output
         if startup_failure:
             passed = (result.returncode==0 and no_fallback and
@@ -76,6 +79,7 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
             passed = (result.returncode==0 and f'BACKEND: {expected}' in output and
                       'PASS: shared RHI HLSL' in output and '[VKVAL' not in output and
                       'could not start; using' not in output)
+        if gl41:passed=passed and 'PASS: OpenGL4.1 subset/array/cube/volume/stencil/compressed views' in output and 'SKIP: MSAA/SSAO' in output
         if recovered:passed=passed and no_fallback and 'startup recovery selected opengl' in output
         if mode=='opengl-partial-fail':passed=passed and 'drawable target initialization failed' in output
         if mode in ('default-no-dxc','opengl-both-fail'):passed=passed and 'DXC compiler (dxcompiler) was not found' in output
@@ -85,7 +89,7 @@ def run(root=ROOT, layer_path=None, selected_backend=None, opengl_recovery=False
         report['backends'][mode] = dict(exit_code=result.returncode, passed=passed,
             elapsed_seconds=round(time.monotonic()-start,3),
             validation_available='validation on' in output,
-            log=f'logs/rhi-windows-{mode}.log')
+            log='logs/'+log_name)
         print(mode, 'PASS' if passed else 'FAIL', flush=True)
         report_path.write_text(json.dumps(report,indent=2)+'\n')
     report['passed'] = all(item['passed'] for item in report['backends'].values())
@@ -98,6 +102,10 @@ if __name__ == '__main__':
     parser.add_argument('--validation-layer-path',type=Path)
     parser.add_argument('--backend',choices=('vulkan','d3d11','opengl'))
     parser.add_argument('--opengl-recovery',action='store_true',help='Require the fixture-only accepted OpenGL recovery build')
+    parser.add_argument('--opengl-gl41',action='store_true',help='Force the single-sample4.1 view compatibility path in the Windows GL fixture')
     args=parser.parse_args()
     if args.opengl_recovery and args.backend:parser.error('Choose --backend or --opengl-recovery')
-    raise SystemExit(run(layer_path=args.validation_layer_path,selected_backend=args.backend,opengl_recovery=args.opengl_recovery))
+    if args.opengl_gl41:
+        if args.opengl_recovery or args.backend not in (None,'opengl'):parser.error('The4.1 probe requires explicit OpenGL without recovery cases')
+        args.backend='opengl'
+    raise SystemExit(run(layer_path=args.validation_layer_path,selected_backend=args.backend,opengl_recovery=args.opengl_recovery,gl41=args.opengl_gl41))

@@ -145,24 +145,30 @@ extern "C" int tsfp_gl_shader_translate(unsigned stage,const RhiShaderSource *so
             compiler.unset_decoration(r.combined_id,spv::DecorationDescriptorSet);
         }
         std::string glsl=normalize_varyings(compiler.compile(),wires,stage==RHI_STAGE_VERTEX);
-        /* textureSamples is newer than GL4.1. The backend already knows each
-         * bound view's exact sample count; expose it as a uniform on all hosts. */
-        std::string sample_uniforms;
-        for(unsigned i=0;i<out->sampler_count;i++) {
-            const auto &sampler=out->samplers[i];
-            std::string call="textureSamples("+std::string(sampler.name)+")";
-            std::string name="tsfp_samples_"+std::to_string(sampler.unit);
-            bool used=false;size_t at;
-            while((at=glsl.find(call))!=std::string::npos){glsl.replace(at,call.size(),name);used=true;}
-            if(used)sample_uniforms+="uniform int "+name+";\n";
-        }
-        if(!sample_uniforms.empty()) {
-            if(glsl.find("textureSamples(")!=std::string::npos)throw std::runtime_error("Unsupported sample-query sampler expression");
-            auto ext=glsl.find("#extension GL_ARB_texture_query_samples");
+        /*4.1 has textureSize, but sample/level-count queries are later GLSL
+         * features. The RHI already knows exact bound-view counts on all hosts. */
+        std::string query_uniforms;
+        const char *queries[]={"textureSamples","textureQueryLevels"};
+        const char *prefixes[]={"tsfp_samples_","tsfp_levels_"};
+        const char *extensions[]={"GL_ARB_texture_query_samples","GL_ARB_texture_query_levels"};
+        for(unsigned query=0;query<2;query++) {
+            for(unsigned i=0;i<out->sampler_count;i++) {
+                const auto &sampler=out->samplers[i];
+                std::string call=std::string(queries[query])+"("+sampler.name+")";
+                std::string name=std::string(prefixes[query])+std::to_string(sampler.unit);
+                bool used=false;size_t at;
+                while((at=glsl.find(call))!=std::string::npos){glsl.replace(at,call.size(),name);used=true;}
+                if(used)query_uniforms+="uniform int "+name+";\n";
+            }
+            if(glsl.find(std::string(queries[query])+"(")!=std::string::npos)
+                throw std::runtime_error("Unsupported texture-query sampler expression");
+            auto ext=glsl.find(std::string("#extension ")+extensions[query]);
             if(ext!=std::string::npos)glsl.erase(ext,glsl.find('\n',ext)-ext+1);
+        }
+        if(!query_uniforms.empty()) {
             size_t last=glsl.rfind("#extension");
             size_t at=glsl.find('\n',last==std::string::npos?0:last)+1;
-            glsl.insert(at,sample_uniforms);
+            glsl.insert(at,query_uniforms);
         }
         out->source=static_cast<char *>(std::malloc(glsl.size()+1));
         if (!out->source)throw std::bad_alloc();

@@ -1,23 +1,23 @@
 OpenGL recovery goal (2026-11-22): implementation in progress on
 feature/opengl-startup-recovery, based on local4c287926. Shared startup transaction,
-HLSL-to-GLSL compiler and complete common RHI backend now pass Windows hardware
-contracts, including actual Vulkan-to-GL startup recovery in a test-only build.
-Production recovery is OFF on all hosts. Ordinary build/setup/package/license
-wiring is present after58d450d9; only Windows build is verified. Native host
-execution remains unrun. Public RHI context leases handle guest-thread handoff;
-its first Windows game run failed progression/performance acceptance, so this
-is not approved recovery. Native OpenGL4.1 lacks guaranteed texture-view/storage and
-mirror-once extensions: adapt required views/capabilities before native acceptance.
-SDL Vulkan-to-GL window replacement is now implemented through the staged
-opengl_window_sdl.h transaction, retained logical host identity, input/settings
-rebinding and main-thread GPU dispatch. Injected rollback/preservation tests and
-GCC syntax pass, but actual native event servicing and UI/GPU behavior remain
-unverified. The Windows context worker now passes120s first-mission gameplay at
-60FPS; it does not establish native throughput. Native builds/GPU execution,
-GL4.1 view/stencil/mirror-once adaptation, effects, resizing/fullscreen, settings
-preservation and performance/stability acceptance remain required.
-Legacy Mac GL is unchanged; Apple's OpenGL is deprecated. Windows pixel tests do
-not establish native support. See agent-context/opengl-recovery.md and STATUS.
+shader compiler and common RHI backend pass Windows hardware recovery contracts
+in an explicitly accepted fixture. Production recovery stays OFF on all hosts.
+The context worker now passes first-mission gameplay, desktop presentation,
+fullscreen/resize, actual SSAO/MSAA and a300s bounded stability/clean-exit check.
+These Windows results do not establish native throughput or readiness.
+
+Shared single-sample view snapshots now cover subset/array/cube/volume/compressed/
+depth/stencil without texture-view/storage extensions; count queries use GLSL410
+uniforms. A restricted Windows fixture verifies this route; other NVIDIA
+extensions remain available. Native mirror-once/compression/capability acceptance
+and copied-view performance still require native hardware. SDL window staging,
+logical identity, input/settings rebinding and main-thread GPU dispatch are
+implemented with injected rollback tests, but actual event servicing remains
+unverified. Native build/package/GPU/display/effects/settings/performance checks
+are pending; Linux WSL work is not yet completed, Mac hardware unavailable here.
+Actual ordinary-game recovery trials, extra scenes and texture preservation also
+remain. Legacy Mac GL is unchanged and Apple's OpenGL is deprecated. See
+agent-context/opengl-recovery.md and STATUS for hashes and exact evidence.
 
 Windows renderer startup failure (2026-11-22): automatic D3D11 recovery removed
 at user request. Patch3051 gates the failure policy to Windows Vulkan builds;

@@ -235,6 +235,14 @@ not a real internet-peer test.
 Windows uses the shared D3D11 path. Native Vulkan uses the same HLSL/algorithms.
 Patch 2512 exposes common renderer declarations under TSFP_RHI_RENDERER.
 `src/native/vulkan_probe.cmake` links xbox_config for cache paths.
+The experimental common OpenGL RHI is separate from that legacy adapter.
+On drivers missing required multisample texture-view/stencil facilities, it
+selects active single-sample rendering while preserving the requested MSAA value.
+Sampled subset views use versioned private copies when driver texture views are
+unavailable; this compatibility route can cost additional memory and copying.
+Native host capability/performance acceptance is still pending; automatic
+recovery remains disabled. See [recovery evidence](../agent-context/opengl-recovery.md).
+
 The legacy OpenGL adapter (`graphics_preferences_gl.inc`) preserves preferences
 and supplies cache controls, but explicitly labels graphics effects as requiring
 Vulkan. These effects are not implemented in legacy GL.

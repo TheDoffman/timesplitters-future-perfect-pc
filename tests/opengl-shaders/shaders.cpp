@@ -43,6 +43,11 @@ int main(int argc,char **argv)
     auto load=translate(RHI_STAGE_PIXEL,
         "Texture2D image:register(t8);float4 main(float4 p:SV_POSITION):SV_TARGET{return image.Load(int3(p.xy,0));}");
     assert(load.sampler_count==1 && load.samplers[0].texture_slot==8 && load.samplers[0].sampler_slot==~0u);
+    auto dimensions=translate(RHI_STAGE_PIXEL,
+        "Texture2D image:register(t4);float4 main(float4 p:SV_POSITION):SV_TARGET{uint w,h,m;image.GetDimensions(0,w,h,m);return float4(w,h,m,1);}");
+    assert(dimensions.sampler_count==1 && dimensions.samplers[0].texture_slot==4);
+    assert(!std::strstr(dimensions.source,"textureQueryLevels(") && !std::strstr(dimensions.source,"GL_ARB_texture_query_levels"));
+    assert(std::strstr(dimensions.source,"uniform int tsfp_levels_"));
     auto legacy=translate(RHI_STAGE_PIXEL,
         "float4 main(float4 p:SV_POSITION):SV_TARGET{float3 a=float3(p.x,128,256);return float4(a>=128?float3(.2,.4,.6):float3(.8,.1,.3),1);}");
     std::ofstream(std::string(argv[1])+"/interface.vert")<<vertex.source;
@@ -50,6 +55,8 @@ int main(int argc,char **argv)
     std::ofstream(std::string(argv[1])+"/fetch.frag")<<load.source;
     std::ofstream(std::string(argv[1])+"/legacy.frag")<<legacy.source;
     tsfp_gl_shader_text_free(&vertex);tsfp_gl_shader_text_free(&pixel);
+    std::ofstream(std::string(argv[1])+"/dimensions.frag")<<dimensions.source;
+    tsfp_gl_shader_text_free(&dimensions);
     tsfp_gl_shader_text_free(&load);tsfp_gl_shader_text_free(&legacy);
     assert(!vertex.source && !vertex.block_count);
     const char *invalid="float4 main(:";RhiShaderSource bad={invalid,std::strlen(invalid),"invalid",nullptr,"main","ps_5_0",1};

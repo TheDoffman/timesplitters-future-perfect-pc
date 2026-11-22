@@ -33,7 +33,7 @@ shader, data upload/readback remain unchanged, and final screen blit must flip Y
 Depth is remapped from D3D/Vulkan0..1 to GL-1..1. The Windows hardware suite verifies asymmetric pixels, depth/stencil, culling,
 array/cube/volume images, MSAA, resolves and screen copies. Canonical wide
 interstage wires allow a pixel shader to consume fewer vector components;
-textureSamples is lowered to backend sample-count uniforms for GLSL410.
+textureSamples and textureQueryLevels are lowered to bound-view count uniforms for GLSL410.
 
 `opengl_host.c/.h` is the small window/context boundary: WGL4.1 on Windows,
 SDL GL on native hosts, function lookup and swap interval. It does not own the
@@ -94,9 +94,8 @@ Remaining implementation/acceptance: efficient context scheduling and actual-gam
 acceptance; native Vulkan-to-GL window replacement with event/input/debug bindings and stable
 logical window identity; native builds and GPU execution; representative game
 menus/gameplay/effects, display modes/resizing, settings preservation, bounded
-performance/stability and explicit per-platform acceptance. Native GL4.1 without
-ARB_texture_view/immutable storage still needs subset/stencil-view adaptation or
-an explicit capability failure before startup is accepted. Other review targets:
+performance/stability and explicit per-platform acceptance. The current single-sample subset/stencil adaptation is described below; native
+GL4.1 still requires actual host capability and performance acceptance. Other review targets:
 null non2D resources, interstage arrays, depth-bias clamp and native mirror-once.
 Windows driver extensions do not establish macOS4.1 capability. Mac OpenGL is
 deprecated; preserve existing legacy-Mac behavior and do not claim future OS
@@ -229,3 +228,83 @@ pass with9 skips. These are not native SDL/GPU/game acceptance. Native event
 servicing, native build/package execution and required4.1 resource-view/stencil/
 mirror-once adaptation remain; Linux/Mac gates stay OFF. Existing legacy Mac GL
 still uses its original frontend, and Apple's OpenGL remains deprecated.
+
+## OpenGL4.1 views and Windows display/stability checkpoint (after33e5a469)
+
+The common backend now copies sampled subset views into versioned private
+single-sample images when texture views/immutable storage are unavailable.
+This covers array layers (including one-layer arrays), cube faces, volume mips,
+compressed blocks, packed depth and integer stencil. Uploads, clears, draws and
+resolves invalidate snapshots. Refresh completes before binding all samplers,
+preventing later copies from disturbing earlier bindings. Copies use bounded
+staging (512MiB maximum); they may cost more than driver texture views. Requested
+MSAA remains saved, but active rendering is single-sample if the driver cannot
+provide required multisample views and stencil sampling. Overspecified mip chains
+are rejected. Shader sample-count and mip-count queries lower to bound-view
+uniforms, avoiding later GLSL textureSamples/textureQueryLevels requirements.
+
+`tests/graphics/rhi_gl41_views.h` verifies source changes, multiple samplers,
+GetDimensions, array/cube/volume/depth/stencil and compressed views. Run
+`test-rhi-windows.py --opengl-gl41` to deliberately disable those view/storage
+extensions in the fixture. Its report/log have distinct gl41 names. This test
+omits multisample contracts explicitly; normal explicitGL tests retain them.
+NVIDIA still supplies other extensions: this is not native Mac4.1 acceptance.
+Standalone shared-HLSL translation, generated GLSL syntax and both GL suites
+pass after the query lowering. Ordinary Windows Build passes as well.
+
+Windows11 x64, MSVC19.44, RTX4070SUPER/617.42, SDK1.4.363.0; source HEAD33e5a469
+plus this checkpoint's changes. All runs use isolated Test Lab saves/settings,
+verified US XBE and child-only overrides. The nonshipped acceptance harness now
+supports an explicit developer OpenGL StartInfo probe; this is distinct from the
+unchanged launcher's Vulkan LaunchGame path. No player renderer selector exists.
+The harness drains shared child logs, verifies foreground game identity around
+DXGI desktop capture and preserves requested graphics values/default Vulkan.
+It checks every logged scene size/MSAA pair, and AO requires an actual successful
+render/apply diagnostic rather than a saved checkbox. Synthetic input is scoped
+to the test game. Captures and resource-measurement runs remain separate.
+
+- gl-display-auto-03:120s PASS, Auto/MSAA4/SMAA2/AF16, clean exit0. Verified desktop
+  presentation at640x480,1920x1080 fullscreen,1008x729 resized and640x480 restored.
+  Reviewed frames show upright world/fog/weapon/tutorial/reticle/ammunition HUD.
+  Game SHA256 b17ad140d55d446541da06e90ab9ca85e22ce740a45ef8b6c92fff2d7e5b04a5.
+- gl-quality-ao-fxaa-02:120s PASS, startup1920x1080 fullscreen/MSAA8/AF16/AO1,
+  actual SSAO applied at8 samples/1920x1080, clean exit0. FXAA1 is requested and
+  preserved; independent FXAA application is not established by a separate log.
+  Reviewed desktop frame is upright with world/weapon/HUD. Game SHA256
+  fda24e029946c1a35ed1ccbf318ca3d7abfb1f20e79e7419fa14b0e272e463f2.
+- vk-primary-control-01:120s PASS via actual unchanged launcher, Vulkan gameplay,
+  settings and clean exit0; same fda24e... game. No recovery was invoked.
+- gl-soak-01:300s PASS after latest query lowering. Game SHA256
+  3426c47c19d61fd95f25a596fea8ca11c50884d9c0595c2bcf5582b3da3c75d4.
+  Movement, weapon, pause/resume, last30s active gameplay/60Hz clock, bounded
+  private/GPU memory/handles and clean exit0 pass. Median growth between sampled
+  windows: private4734976 bytes, handles-6, dedicatedGPU-593920 bytes. The85-115s
+  window reports59.98 guest ticks/s and553 handles. These are guest/CPU/resource
+  measurements, not scanout/GPU timings or proof against slower leaks.
+
+Reports, logs and retained desktop PNGs: logs/renderer-validation/<label>/.
+Earlier gl-display-fixed-01 failed navigation; fixed-02/auto-01 captures were
+occluded by test UI and are not visual acceptance. Auto-02 correctly rejected
+lost foreground. gl-quality-ao-fxaa-01 failed startup-fullscreen due to the probe's
+background flag; the corrected probe's later run above supersedes it. Preserve
+these distinctions rather than relabel failed trials as accepted evidence.
+
+Production recovery is still OFF on every host. Remaining: automatic recovery in
+an ordinary-game launcher trial with forced Vulkan failure and both-fail proof;
+additional representative scenes; explicit installed-texture preservation;
+null non2D resources and relevant capability review; native build/package/GPU
+execution, main-thread event servicing, mirror-once/compression compatibility,
+quality/display/performance acceptance. Linux WSL build work is available but not
+yet completed here. Native Mac hardware is unavailable. Legacy Mac frontend is
+unchanged; Apple OpenGL is deprecated. Windows checks cannot approve native hosts.
+
+Latest query-lowering contract recheck: all5 accepted-fixture recovery cases
+and all8 ordinary recovery-OFF cases pass; acceptance restored OFF. ExplicitGL
+and restricted4.1 also pass. Ordinary/explicit/restricted fixture SHA256
+`a2b5aaf9bee2f0abc5fdd1fa3f80cd24ae3b28ad46dafa54925ac6961bb717f3`;
+recovery fixture `3e8a4ff7fae2044e98f42c2fed2fc06126bd4c9fb8efb1017d235a43c8e9b220`.
+Positive Vulkan paths also pass the final recheck with active SDK validation;
+the recovery fixture was rebuilt with acceptance OFF afterward. Those final
+rebuilds have distinct hashes: ordinary `77266c99780686c7fcf31ea0cf0e3308d7db652adc8862751e65e7d2d7ac59bb`,
+recovery `b8d3410541fe8cc829e5c33582ef4a189bb165462c4b486dc646f331ef3c0760`.
+The earlier explicitGL/restricted4.1 hashes above describe their actual runs.
