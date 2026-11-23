@@ -2181,6 +2181,14 @@
       ]
     },
     {
+      "name": "3040-arcade-solo-lobby.patch",
+      "path": "patches/network/3040-arcade-solo-lobby.patch",
+      "sha256": "da33bd8f3b1903c87b022df48e09c484dad121024e54ea7aca362c5b5174285c",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "3050-windows-vulkan-primary.patch",
       "path": "patches/graphics/rendering/3050-windows-vulkan-primary.patch",
       "sha256": "56596bd9293a78e54ee8728a1edd10439b7f45a48ccb7c8f986fe2f9f82c9297",
