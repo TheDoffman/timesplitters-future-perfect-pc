@@ -17,23 +17,23 @@ namespace TimeSplitters.Launcher
         static void UpdateHelper(string parentRoot) {
             string root=Path.Combine(parentRoot,"update helper Ω");Directory.CreateDirectory(root);
             LauncherPlatform.CopyFile(Environment.ProcessPath,Core.PathIn(root,Core.LauncherName));
-            string helper=Core.PathIn(root,".launcher/update-helper");Directory.CreateDirectory(Path.GetDirectoryName(helper));
-            LauncherPlatform.CopyFile(Environment.ProcessPath,helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
             string saves=Core.PathIn(root,"Saves/keep");Directory.CreateDirectory(Path.GetDirectoryName(saves));File.WriteAllText(saves,"personal save");
             LauncherRestartChecks.Stage(root,"v1.0.0");Core.InstallPending(root);
             LauncherRestartChecks.Stage(root,"v1.1.0");
-            var start=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};
-            using(var parent=Process.Start(new ProcessStartInfo("/bin/sleep","5"){UseShellExecute=false})) {
-                foreach(var arg in new[]{"--test-game-helper",root,parent.Id.ToString()})start.ArgumentList.Add(arg);
-                using(var child=Process.Start(start)) {
+            string helperFolder;
+            using(var parent=Process.Start(new ProcessStartInfo("/bin/sleep","60"){UseShellExecute=false})) {
+                var start=NativeStartup.PrepareGameHelper(root,parent.Id,probe:true);helperFolder=Path.GetDirectoryName(start.FileName);
+                try { using(var child=Process.Start(start)) {
                     try {
                         var deadline=Stopwatch.StartNew();string capture=Core.PathIn(root,"update-progress-preview.png");
-                        while(!File.Exists(capture) && !child.HasExited && deadline.ElapsedMilliseconds<4000)System.Threading.Thread.Sleep(50);
+                        while(!File.Exists(capture) && !child.HasExited && deadline.ElapsedMilliseconds<20000)System.Threading.Thread.Sleep(50);
                         Need(File.Exists(capture)&&!child.HasExited&&!parent.HasExited,"Updater did not remain visible while waiting for its parent");
-                        Need(child.WaitForExit(30000)&&child.ExitCode==0,"Visible update helper failed or timed out");
+                        parent.Kill();parent.WaitForExit();
+                        Need(child.WaitForExit(45000)&&child.ExitCode==0,"Visible update helper failed or timed out");
                     } finally {if(!child.HasExited){child.Kill(true);child.WaitForExit();}}
-                }
+                }} finally {if(!parent.HasExited){parent.Kill();parent.WaitForExit();}}
             }
+            Need(!Directory.Exists(helperFolder),"Completed helper resources were not cleaned up");
             Need(Core.InstalledVersion(root)=="v1.1.0" && !Directory.Exists(Core.PathIn(root,".launcher/pending")),"Visible helper did not install and clean up");
             Need(File.ReadAllText(saves)=="personal save","Visible helper changed saves");
             Need(File.Exists(Core.PathIn(root,"game-update-preview.png")),"Visible helper did not reopen the launcher");
@@ -44,8 +44,7 @@ namespace TimeSplitters.Launcher
             if(!String.IsNullOrEmpty(evidence))File.Copy(Core.PathIn(root,"update-installing-preview.png"),evidence,true);
             LauncherRestartChecks.Stage(root,"v1.2.0");
             File.AppendAllText(Core.PathIn(root,".launcher/pending/payload/"+LauncherPlatform.GameBinary),"tampered");
-            var rejected=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};
-            foreach(var arg in new[]{"--test-game-helper",root,Int32.MaxValue.ToString()})rejected.ArgumentList.Add(arg);
+            var rejected=NativeStartup.PrepareGameHelper(root,Int32.MaxValue,probe:true);
             using(var child=Process.Start(rejected)) {
                 try {Need(child.WaitForExit(30000)&&child.ExitCode==1,"Tampered helper update was accepted or hung");}
                 finally {if(!child.HasExited){child.Kill(true);child.WaitForExit();}}

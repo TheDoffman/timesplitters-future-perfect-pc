@@ -1,3 +1,11 @@
+Issue558 / PR588 native helper follow-up: **Awaiting validation** on native Mac.
+Hosted package testing exposed missing bundle-side libSkiaSharp in the copied game
+updater once it acquired a GUI. Preparation now copies all matching bundle-side
+native UI dylibs into its isolated helper directory; exit cleanup preserves unknown
+entries. Mac package tests verify copied hashes and a real rendered install/restart.
+Local Linux package/UI/lifecycle checks pass; corrected hosted Mac CI is pending.
+No game/runtime renderer policy changes. See [STATUS](STATUS.md).
+
 Issue #558 performance follow-up (2026-11-22; implementation `dce61f73`, integrated in `542a7b00`):
 **Awaiting validation** on native Mac. Core.InstallPending compares actual installed
 bytes with verified staged hashes, retaining equal runtime files and journaling only

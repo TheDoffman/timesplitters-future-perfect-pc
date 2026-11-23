@@ -34,7 +34,8 @@ namespace TimeSplitters.Launcher
             if(args.Length==3 && args[0]=="--apply-self")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]));
             if(args.Length==3 && NativeUpdateWindow.IsHelper(args)) {
                 Root=Path.GetFullPath(args[1]); Int32.Parse(args[2]);
-                return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args);
+                try { return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args); }
+                finally { NativeStartup.CleanupGameHelper(Root,Environment.ProcessPath); }
             }
             if(args.Length==3 && args[0]=="--extract-art") { ExtractArt(args[1],args[2]);return 0; }
             if(args.Length==1 && args[0]=="--test")

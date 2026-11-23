@@ -1,3 +1,17 @@
+## Issue #558 hosted CI follow-up (2026-11-22)
+
+PR588's initial hosted Windows suite passed. Linux exposed an overly strict4s
+cold-start assertion; its functional parent-wait check now allows20s for the ready
+frame and explicitly releases a still-live bounded parent afterward. Mac package
+verification exposed libSkiaSharp missing beside the copied game helper: its newly
+visible UI needs the bundle's native dylibs. NativeStartup now prepares an isolated
+GUID helper directory with the matching native UI libraries before handoff, and
+cleans it after UI shutdown. Mac package checks use this production path and verify
+library hashes, visible installation and resource cleanup. Local Linux --test --package
+(including actual corruption/repair/restart),54 native UI groups and34 Python tests /
+31 subtests pass. Corrected hosted Mac/Linux checks are pending on this source;
+manual native Mac and physical Steam Deck acceptance remain unverified.
+
 ## Issue #558 main integration (2026-11-22)
 
 Implementation `dce61f73` was integrated with current main `f1d84f6c` in `542a7b00`.

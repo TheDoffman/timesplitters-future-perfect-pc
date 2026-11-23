@@ -54,7 +54,7 @@ namespace TimeSplitters.Launcher
             ProcessStartInfo info;
             using(var progress=new UpdateProgress(root)) {
                 progress.Report("Preparing the installer");
-                info=await Task.Run(()=>PrepareHelper(root,".launcher/mac-update-helper",rollback?"--rollback-game":"--apply-game"));
+                info=await Task.Run(()=>PrepareGameHelper(root,Environment.ProcessId,rollback));
             }
             LaunchHelper(info);
         }
@@ -64,6 +64,36 @@ namespace TimeSplitters.Launcher
             string helper=Core.PathIn(root,name);Directory.CreateDirectory(Path.GetDirectoryName(helper));
             LauncherPlatform.CopyFile(Environment.ProcessPath,helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
             var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add(action);info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());return info;
+        }
+        internal static ProcessStartInfo PrepareGameHelper(string root,int parent,bool rollback=false,bool probe=false) {
+            string relative=".launcher/game-helper-"+Guid.NewGuid().ToString("N");
+            string folder=Core.PathIn(root,relative);Directory.CreateDirectory(folder);
+            string executable=Path.Combine(folder,"TimeSplitters.Launcher");
+            try {
+                LauncherPlatform.CopyFile(Environment.ProcessPath,executable);
+#if MACOS
+                // Signed Mac bundles keep native UI libraries beside their host.
+                // The helper must own its copy while that bundle is replaced.
+                foreach(string library in Directory.GetFiles(Path.GetDirectoryName(Environment.ProcessPath),"*.dylib")) {
+                    Core.RequireUnlinked(library,"Linked helper UI library.");
+                    LauncherPlatform.CopyFile(library,Path.Combine(folder,Path.GetFileName(library)));
+                }
+#endif
+                var info=new ProcessStartInfo(executable){UseShellExecute=false,WorkingDirectory=root};
+                foreach(string arg in new[]{probe?"--test-game-helper":rollback?"--rollback-game":"--apply-game",root,parent.ToString()})info.ArgumentList.Add(arg);
+                return info;
+            } catch { CleanupGameHelper(root,executable);throw; }
+        }
+        internal static void CleanupGameHelper(string root,string executable) {
+            try {
+                string folder=Path.GetDirectoryName(executable),name=Path.GetFileName(folder);Guid id;
+                if(!name.StartsWith("game-helper-",StringComparison.Ordinal) || !Guid.TryParseExact(name.Substring(12),"N",out id))return;
+                string relative=".launcher/"+name;
+                if(Path.GetFullPath(folder)!=Core.PathIn(root,relative))return;
+                foreach(string entry in Directory.GetFileSystemEntries(folder))
+                    if(Directory.Exists(entry) || (Path.GetFileName(entry)!="TimeSplitters.Launcher" && Path.GetExtension(entry)!=".dylib"))return;
+                Core.RemoveOwned(root,relative);
+            } catch(Exception ex) {LauncherLog.Write(root,"Game helper cleanup deferred: "+ex.Message);}
         }
         static void LaunchHelper(ProcessStartInfo info) {
             Process.Start(info);

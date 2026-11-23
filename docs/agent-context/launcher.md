@@ -1,5 +1,14 @@
 ## Game update progress (issue #558)
 
+PR588 native CI follow-up: NativeStartup.PrepareGameHelper owns a GUID-scoped
+.launcher/game-helper-* directory, copying the host and Mac bundle-side *.dylib UI
+libraries before launch. This isolates the progress UI from bundle replacement.
+Program cleans only that validated helper directory after the UI exits, preserving
+unknown entries. Native package tests use the production preparation path, verify
+copied Mac library hashes and rendered progress, and check resource cleanup. Linux
+waits up to20s for a real ready frame while its parent stays alive, then releases the
+parent explicitly; a4s cold-start latency assertion was inappropriate for CI.
+
 `UpdateProgress` in UpdateRestart.cs carries optional shared phase/percentage reports
 and logs phase durations. Core.Unpack/InstallPending/Apply/Rollback and the automatic
 save backup forward them without changing hashes, journals or recovery policy.
