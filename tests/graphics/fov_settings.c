@@ -21,6 +21,7 @@ static ULONGLONG ticks(void) { return clock_ms; }
 static int renderer_save_ok=1,renderer_saved=-1,renderer_restart_calls,renderer_restart_ok;
 static const char *active_renderer="vulkan";
 const char *rhi_backend_name(void){return active_renderer;}
+int pc_settings_renderer_read(int fallback){return renderer_saved<0?fallback:renderer_saved;}
 int pc_settings_renderer_save(int value,char *error,size_t bytes){(void)error;(void)bytes;if(!renderer_save_ok)return 0;renderer_saved=value;return 1;}
 int pc_game_restart_renderer(const char *value){assert(!strcmp(value,"opengl")||!strcmp(value,"vulkan"));renderer_restart_calls++;return renderer_restart_ok;}
 #include "../src/interface/pc_display_menu.c"
@@ -750,19 +751,28 @@ int main(int argc,char **argv)
     call(SELECT_CB,3,0);CHECK(page==DISPLAY_RESTART && graphics_options.msaa==1 && graphics_options.supersampling==2);
     call(SELECT_CB,0,0);CHECK(page==DISPLAY_GRAPHICS && staged_supersampling==2 && !display_dirty());
     refresh(DISPLAY_ADVANCED,0);
-    /* Renderer edits stage across tabs, fail safely and restart only on Apply. */
+    /* Renderer uses the shared staged Apply / Later / Restart Now flow. */
     CHECK(renderer_row && !staged_renderer && !renderer_restart_calls);
     WORD_AT(renderer_row+0xc8)=1;read_choices();update_apply();
     CHECK(display_dirty() && renderer_saved==-1 && !renderer_restart_calls);
-    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(4)+g_xbox_mem_offset),"Restart"));
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(4)+g_xbox_mem_offset),"Apply"));
+    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(RENDERER_TEXT_BASE)+g_xbox_mem_offset),"Requires restart"));
     refresh(DISPLAY_VIEW,0);refresh(DISPLAY_ADVANCED,0);CHECK(WORD_AT(renderer_row+0xc8)==1);
     renderer_save_ok=0;call(SELECT_CB,3,0);CHECK(display_dirty() && !renderer_restart_calls && renderer_saved==-1);
-    renderer_save_ok=1;call(SELECT_CB,3,0);CHECK(renderer_saved==1 && renderer_restart_calls==1 && display_dirty() && *status);
-    renderer_restart_ok=1;call(SELECT_CB,3,0);CHECK(renderer_restart_calls==2 && page!=DISPLAY_RESTART);
-    /* Simulate the replacement process observing OpenGL, then switch back. */
+    renderer_save_ok=1;call(SELECT_CB,3,0);CHECK(renderer_saved==1 && !renderer_restart_calls && page==DISPLAY_RESTART);
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_ADVANCED && !display_dirty() && !renderer_restart_calls);
+    call(TICK_CB,109,0);CHECK(page==DISPLAY_ADVANCED); /* Later does not nag. */
+    call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);refresh(DISPLAY_ADVANCED,0);
+    CHECK(staged_renderer==1 && applied_renderer==1 && running_renderer==0 && !display_dirty());
+    CHECK(strstr((char *)((uintptr_t)TEXT_ADDRESS(RENDERER_TEXT_BASE)+g_xbox_mem_offset),"Requires restart"));
+    refresh(DISPLAY_RESTART,1);call(SELECT_CB,1,0);CHECK(renderer_restart_calls==1 && *status);
+    renderer_restart_ok=1;refresh(DISPLAY_RESTART,1);call(SELECT_CB,1,0);CHECK(renderer_restart_calls==2);
+    /* Simulate the replacement process observing the saved OpenGL backend. */
     active_renderer="opengl";call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);refresh(DISPLAY_ADVANCED,0);
-    CHECK(staged_renderer==1 && applied_renderer==1);
-    WORD_AT(renderer_row+0xc8)=0;read_choices();call(SELECT_CB,3,0);CHECK(renderer_saved==0 && renderer_restart_calls==3);
+    CHECK(staged_renderer==1 && applied_renderer==1 && running_renderer==1);
+    CHECK(!strcmp((char *)((uintptr_t)TEXT_ADDRESS(RENDERER_TEXT_BASE)+g_xbox_mem_offset),"Renderer"));
+    WORD_AT(renderer_row+0xc8)=0;read_choices();call(SELECT_CB,3,0);CHECK(renderer_saved==0 && page==DISPLAY_RESTART && renderer_restart_calls==2);
+    call(SELECT_CB,1,0);CHECK(renderer_restart_calls==3);
     active_renderer="vulkan";call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);refresh(DISPLAY_ADVANCED,0);
     /* Leaving without Apply discards the uncommitted restart choice. */
     WORD_AT(graphics_rows[5]+0xc8)=3;read_choices();CHECK(staged_supersampling==3);

@@ -505,7 +505,7 @@ static int staged_msaa=1,staged_supersampling;
 static int staged_anisotropy=1,staged_ao,staged_cache=1;
 static int restart_baseline_set,running_msaa=1,running_supersampling;
 static uint32_t post_aa_row,renderer_row;
-static int staged_renderer,applied_renderer;
+static int staged_renderer,applied_renderer,running_renderer;
 static uint32_t apply_row;
 static uint32_t rate_row,subtitle_row,feed_row,counter_row;
 static uint32_t hud_row,watermark_row;
@@ -1234,7 +1234,6 @@ static int display_dirty(void)
 static void update_apply(void)
 {
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART && guest_writable(apply_row,0x2c)) {
-        text_at(4,staged_renderer!=applied_renderer?"Apply & Restart":"Apply");
         /* Native disabled-row bit: gray paint and no keyboard/mouse action. */
         if(display_dirty())WORD_AT(apply_row+0x28)&=~1u;
         else WORD_AT(apply_row+0x28)|=1u;
@@ -1287,12 +1286,11 @@ static void labels(void)
     } else if(page==DISPLAY_ADVANCED) {
         graphics_labels();
         if(applied_renderer>=0) {
-            renderer_row=guest_call(sub_00079D60_gen,6,text_at(RENDERER_TEXT_BASE,"Renderer (Active: %s)",applied_renderer?"OpenGL":"Vulkan"),109u,0u,0u,0u,0u);
+            renderer_row=guest_call(sub_00079D60_gen,6,text_at(RENDERER_TEXT_BASE,"Renderer%s",staged_renderer!=running_renderer?" (Requires restart)":""),109u,0u,0u,0u,0u);
             guest_call(sub_0007D480,2,0x8400u,0u);
-            guest_call(sub_000717D0,1,text_at(RENDERER_TEXT_BASE+1,"Vulkan (Default)"));
-            guest_call(sub_000717D0,1,text_at(RENDERER_TEXT_BASE+2,"OpenGL (Compatibility)"));
+            guest_call(sub_000717D0,1,text_at(RENDERER_TEXT_BASE+1,"Vulkan"));
+            guest_call(sub_000717D0,1,text_at(RENDERER_TEXT_BASE+2,"OpenGL"));
             guest_call(sub_00075430,2,renderer_row,(uint32_t)staged_renderer);
-            small_note(RENDERER_TEXT_BASE+3,"Changing renderer restarts the game and leaves this session.");
         }
     } else if(page==DISPLAY_GRAPHICS) {
         graphics_labels();
@@ -1355,7 +1353,7 @@ static void labels(void)
         guest_call(sub_00079710,1,0u);
         if(page==DISPLAY_GRAPHICS)
             guest_call(sub_00079D60_gen,6,text_at(85,"Advanced"),108u,0u,0u,SELECT_CB,0u);
-        apply_row=guest_call(sub_00079D60_gen,6,text_at(4,staged_renderer!=applied_renderer?"Apply & Restart":"Apply"),3u,0u,0u,SELECT_CB,0u);
+        apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
     }
 }
@@ -1468,7 +1466,7 @@ static void apply_changes(void)
     if(page!=DISPLAY_CONFIRM && page!=DISPLAY_RESTART)apply_page=page;
     int display_changed=!mode_equal(staged,previous) || staged_fov!=previous_fov || staged_weapon_fov!=previous_weapon_fov || staged_crosshair!=previous_crosshair;
     int rate_changed=staged_rate!=applied_rate,display_saved=0,rate_saved=0;
-    int restart_changed=graphics_restart_dirty(),graphics_saved=0,aa_saved=0;
+    int restart_changed=graphics_restart_dirty() || staged_renderer!=applied_renderer,graphics_saved=0,aa_saved=0;
     int window_changed=staged_fullscreen!=previous_fullscreen,window_saved=0;
     int vsync_changed=staged_vsync!=applied_vsync,vsync_saved=0;
     int renderer_changed=staged_renderer!=applied_renderer,texture_saved=0;
@@ -1517,12 +1515,8 @@ static void apply_changes(void)
     previous=staged;previous_fov=staged_fov;previous_weapon_fov=staged_weapon_fov;previous_weapon_percent=pc_display_weapon_fov_legacy_percent();previous_crosshair=staged_crosshair;applied_rate=staged_rate;applied_texture=texture_choice;
     applied_aa=staged_aa;applied_vsync=staged_vsync;
     deadline=0;*status=0;filter_modes();
-    if(renderer_changed) {
-        if(!pc_game_restart_renderer(staged_renderer?"opengl":"vulkan")) {
-            snprintf(status,sizeof status,"Could not restart. Apply & Restart to retry.");
-            refresh(apply_page,0);
-        }
-    } else refresh(restart_changed?DISPLAY_RESTART:apply_page,restart_changed?2:0);
+    applied_renderer=staged_renderer;
+    refresh(restart_changed?DISPLAY_RESTART:apply_page,restart_changed?2:0);
     return;
 failed:
     pc_display_set_fov(previous_fov);
@@ -1556,7 +1550,8 @@ static void select_callback(void)
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==DISPLAY_RESTART) {
         if(selected==0)refresh(apply_page,apply_page==DISPLAY_ADVANCED?2:0);
-        else if(selected==1 && !pc_game_restart()) {
+        else if(selected==1 && !(applied_renderer>=0 && applied_renderer!=running_renderer?
+                    pc_game_restart_renderer(applied_renderer?"opengl":"vulkan"):pc_game_restart())) {
             snprintf(status,sizeof status,"Could not restart. Please relaunch manually.");
             refresh(apply_page,apply_page==DISPLAY_ADVANCED?2:0);
         }
@@ -1673,7 +1668,8 @@ static void activate(void)
         }
     }
     if(storage) {
-        staged_renderer=applied_renderer=menu_renderer();
+        running_renderer=menu_renderer();
+        staged_renderer=applied_renderer=running_renderer>=0?pc_settings_renderer_read(running_renderer):-1;
         staged_fullscreen=previous_fullscreen=pc_display_fullscreen();
         staged=previous=pc_display_current();staged_fov=previous_fov=pc_display_fov();
         staged_weapon_fov=previous_weapon_fov=pc_display_weapon_fov_degrees();previous_weapon_percent=pc_display_weapon_fov_legacy_percent();

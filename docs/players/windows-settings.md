@@ -2,9 +2,9 @@
 
 ## Renderer (current development build)
 
-Open **Video Options > Graphics > Advanced > Renderer** from Settings or the pause menu. Choose **Vulkan (Default)** or **OpenGL (Compatibility)**. The row also shows the renderer currently running.
+Open **Video Options > Graphics > Advanced > Renderer** from Settings or the pause menu. Choose **Vulkan** or **OpenGL**. Vulkan remains the default.
 
-Changing this choice changes Apply to **Apply & Restart**. Applying saves the choice and restarts the game immediately, leaving your current session. Go back without applying to discard the change. If saving the choice or creating the replacement process fails, the current game stays open and reports the error. The launcher uses the same saved renderer preference.
+Choose **Apply** to save, then select **Later** or **Restart Now**, just like MSAA and supersampling. Later keeps the current renderer running. **Requires restart** stays beside Renderer until the selected backend is running. Back without applying discards the edit. The launcher uses the same saved preference.
 
 ## Supersampling (current development build)
 

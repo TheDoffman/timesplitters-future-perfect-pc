@@ -500,6 +500,20 @@ int pc_settings_view_save(const PcViewSettings *settings,char *error,size_t byte
     return ok;
 }
 
+int pc_settings_renderer_read(int fallback)
+{
+    recomp_bindings_init();
+    char *text=g_have_path?read_file(g_path):NULL;
+    const char *launcher=text?pc_member(text,"launcher",NULL):NULL,*end=NULL;
+    const char *value=launcher&&*launcher=='{'?pc_member(launcher,"renderer",&end):NULL;
+    int renderer=fallback;
+    if(value && end-value==8) {
+        if(!memcmp(value,"\"vulkan\"",8))renderer=0;
+        else if(!memcmp(value,"\"opengl\"",8))renderer=1;
+    }
+    free(text);return renderer;
+}
+
 int pc_settings_renderer_save(int opengl,char *error,size_t bytes)
 {
     recomp_bindings_init();
