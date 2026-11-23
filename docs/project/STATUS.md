@@ -21,8 +21,14 @@ the first generated bundle; the supported builder succeeded with its output in
 a host-local cache. Windows and Linux native execution are unavailable here.
 The launcher package also passes isolated install, signature/corruption checks,
 repair, helper restart/render and personal-file preservation. This is a local
-patched 1.7.0 build, not a published launcher release. Installation into the
-active user folder is pending game shutdown; the running session is preserved.
+patched 1.7.0 build, not a published launcher release. Installation follow-up (2026-11-23): after the user closed the game, the
+verified local package was installed through the shared update lock and rollback
+transaction. All29 launcher hashes and14,569 protected-file snapshots matched;
+settings were additionally byte-hashed. Game BUILD.json remained unchanged.
+The existing bundle-root FinderInfo attribute was removed to satisfy strict
+codesign verification; signature and installed --check pass. Previous launcher
+files remain in .launcher/self-rollback. Final UI reopening was blocked by the
+locked Mac; no new game was launched.
 
 ## Installed game warning investigation (2026-11-22)
 
