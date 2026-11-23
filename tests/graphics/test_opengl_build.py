@@ -1,6 +1,7 @@
 """Execute the production CMake wiring for native, Windows and legacy inputs."""
 from pathlib import Path
 import os
+import shutil
 import subprocess
 import sys
 import pytest
@@ -38,8 +39,14 @@ def test_common_opengl_source_selection(tmp_path,host,vulkan,rhi,pc,native,expec
     (tmp_path/'CMakeLists.txt').write_text(script)
     suffix='.exe' if os.name=='nt' else ''
     tools=Path(sys.executable).parent
-    result=subprocess.run([str(tools/('cmake'+suffix)),'-S',str(tmp_path),'-B',str(tmp_path/'build'),
-        '-G','Ninja','-DCMAKE_MAKE_PROGRAM='+str(tools/('ninja'+suffix))],capture_output=True,text=True,timeout=30)
+    # A global Windows Python installs entry points under Scripts, while a
+    # venv places them beside python.exe. Resolve this interpreter's tools first.
+    search=os.pathsep.join(map(str,(tools,tools/'Scripts')))
+    cmake=shutil.which('cmake'+suffix,path=search)
+    ninja=shutil.which('ninja'+suffix,path=search)
+    assert cmake and ninja, 'Install the pinned cmake/ninja requirements for this Python'
+    result=subprocess.run([cmake,'-S',str(tmp_path),'-B',str(tmp_path/'build'),
+        '-G','Ninja','-DCMAKE_MAKE_PROGRAM='+ninja],capture_output=True,text=True,timeout=30)
     assert result.returncode==0,result.stdout+result.stderr
     selected=tmp_path/'build/selected.txt'
     assert selected.exists()==(expected is not None)
