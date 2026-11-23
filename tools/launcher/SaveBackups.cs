@@ -183,18 +183,19 @@ namespace TimeSplitters.Launcher
                                 using(var target=zip.CreateEntry(block.Entry,CompressionLevel.Optimal).Open())target.Write(buffer,0,n);file.Blocks.Add(block);
                             }
                             offset+=n;completed+=n;
-                            if(completed/(16*1024*1024)!=lastReport){lastReport=completed/(16*1024*1024);if(progress!=null)progress.Report("Backing up "+file.Name+" · "+(logical==0?100:completed*100/logical)+"%");}
+                            if(completed/(16*1024*1024)!=lastReport){lastReport=completed/(16*1024*1024);UpdateProgress.Count(progress,"Backing up saves",completed,logical);}
                         }
                     }
                     byte[] manifest=System.Text.Encoding.UTF8.GetBytes(Json.Encode(m));
                     using(var outputEntry=zip.CreateEntry("backup.json").Open())outputEntry.Write(manifest,0,manifest.Length);
                     using(var writer=new StreamWriter(zip.CreateEntry("backup.sha256").Open()))writer.Write(Hash(manifest,manifest.Length));
                 }
+                UpdateProgress.Send(progress,"Checking the save backup");
                 ValidateArchive(temporary,m.Id,token);token.ThrowIfCancellationRequested();File.Move(temporary,output);return Info(m,new FileInfo(output).Length);
             } finally { foreach(var source in sources)source.Dispose();if(File.Exists(temporary))File.Delete(temporary); }
         }
-        public static void BeforeGameChange(string root)
-        { Recover(root);CreateLocked(root,"Before game update",null,CancellationToken.None);Core.Require(!Core.GameRunning(),"Close the game before changing the installed release."); }
+        public static void BeforeGameChange(string root, IProgress<string> progress = null)
+        { Recover(root);CreateLocked(root,"Before game update",progress,CancellationToken.None);Core.Require(!Core.GameRunning(),"Close the game before changing the installed release."); }
         static string GameVersionLabel(string root)
         {
             try {string path=Core.PathIn(root,LauncherPlatform.ManifestPath(root));if(!File.Exists(path))return "Unversioned game";

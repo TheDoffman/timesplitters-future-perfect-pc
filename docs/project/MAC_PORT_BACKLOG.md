@@ -135,6 +135,34 @@ shared cleanup remains the same. Native Mac/Linux behavior and legacy GL are
 unchanged, so no native adapter implementation is deferred. Windows hardware
 RHI tests cover startup failure without switching APIs; native checks are unrun.
 
+Issue558 / PR588 native helper follow-up: **Awaiting validation** on native Mac.
+Hosted package testing exposed missing bundle-side libSkiaSharp in the copied game
+updater once it acquired a GUI. Preparation now copies all matching bundle-side
+native UI dylibs into its isolated helper directory; exit cleanup preserves unknown
+entries. Mac package tests verify copied hashes and a real rendered install/restart.
+Local Linux package/UI/lifecycle checks pass; corrected hosted Mac CI is pending.
+No game/runtime renderer policy changes. See [STATUS](STATUS.md).
+
+Issue #558 performance follow-up (2026-11-22; implementation `dce61f73`, integrated in `542a7b00`):
+**Awaiting validation** on native Mac. Core.InstallPending compares actual installed
+bytes with verified staged hashes, retaining equal runtime files and journaling only
+replacements/removals plus BUILD.json. Windows and native Linux reuse/repair/rollback,
+tampered-stage and timestamp tests pass; the existing native Executable adapter restores
+execute bits on reused files. No new OS API or separate Mac implementation is needed.
+Validate real Mac release upgrade/rollback, preserved files, permissions, progress UI
+and storage timing on a Mac. Linux measured releases/caveats are in [STATUS](STATUS.md);
+WSL timings do not establish Mac or Steam Deck performance. Publication pending.
+
+Issue #558 game update progress (2026-11-19; local `investigate/linux-update-558`,
+base `1f835403`): **Awaiting validation** on native Mac. Optional progress in shared
+Core/SaveBackups/UpdateRestart is consumed by WPF and the shared Avalonia host.
+NativeUpdateWindow shows parent wait, verification/backups/install/cleanup/restart;
+NativeStartup prepares the copied helper asynchronously. No separate Mac policy
+or deferred adapter is needed. Linux WSL/Xvfb helper lifecycle and Windows launcher
+checks pass; Mac must verify copied-helper graphics/startup, close protection,
+ordinary and rejected-payload update, rollback and preserved storage routing on a
+Mac. See [STATUS](STATUS.md) for evidence and remaining acceptance limits.
+
 Auto-resolution accepted-target fix (2026-11-21): **Awaiting validation** on
 native Mac/Linux. Shared pc_display_scene_size no longer lets HUD sizing consume
 a pending drawable resize; frame_done commits only successful allocations and

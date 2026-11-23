@@ -365,6 +365,93 @@ Native host execution is unrun; the policy is gated to Windows. User saves and
 settings are preserved. Local logs: windows-vulkan-no-fallback-build.log and
 private/test-saves/quick-test/game.err.
 
+## Issue #558 hosted CI follow-up (2026-11-22)
+
+PR588's initial hosted Windows suite passed. Linux exposed an overly strict4s
+cold-start assertion; its functional parent-wait check now allows20s for the ready
+frame and explicitly releases a still-live bounded parent afterward. Mac package
+verification exposed libSkiaSharp missing beside the copied game helper: its newly
+visible UI needs the bundle's native dylibs. NativeStartup now prepares an isolated
+GUID helper directory with the matching native UI libraries before handoff, and
+cleans it after UI shutdown. Mac package checks use this production path and verify
+library hashes, visible installation and resource cleanup. Local Linux --test --package
+(including actual corruption/repair/restart),54 native UI groups and34 Python tests /
+31 subtests pass. Corrected hosted Mac/Linux checks are pending on this source;
+manual native Mac and physical Steam Deck acceptance remain unverified.
+
+## Issue #558 main integration (2026-11-22)
+
+Implementation `dce61f73` was integrated with current main `f1d84f6c` in `542a7b00`.
+Only documentation needed conflict resolution; both validation histories were retained.
+The combined Windows full launcher suite and Linux launcher build/adapters/copied-helper
+checks passed; native shared UI now has54 passing groups. Python launcher/native/startup
+contracts:34 passed,31 subtests passed. Context/whitespace checks pass. Native Mac and
+physical Steam Deck acceptance remain unverified. This is a source integration, not a
+published launcher release; #558 remains open until publication/confirmation.
+
+## Issue #558 real-release update performance (2026-11-22)
+
+Implementation `dce61f73`, validation base `1f835403`. The shared installer
+now hashes eligible installed runtime files against the verified incoming manifest
+and retains identical files. It avoids backing up/replacing them, while keeping a
+journal entry for every replacement/removal and BUILD.json. Corrupted targets still
+repair; all staged files still verify; settings/textures/independent launcher rules
+remain. Native execute bits are corrected on reused scripts. Validated journal lookup
+now uses a dictionary instead of a repeated list scan.
+
+Measured actual published Linux v0.6.1 → v0.6.2 ZIPs, both checked against GitHub asset
+SHA-256. Ubuntu24.04 x64 under WSL3.0.5/kernel6.18.58.1, SDK8.0.426; native source and
+an 8GiB ext4 loop test volume backed by D:, archives on D:. Two alternating valid
+before/after runs, with verified restore and sync between runs, without global cache
+flush: baseline47.40/32.94s, optimized23.49/27.84s after download (about36% lower mean;
+small local sample, storage/cache dependent). Logical write volume fell from3.83GB
+to2.57GB (about33%);1,504 files/628,349,007 bytes were reused, avoiding about1.26GB of
+backup/replacement writes. Archive extraction and all initial staged-file hashes remain.
+
+A real-package run through the actual copied updater window and rendered restarted
+installed launcher completed in25.98s, including post-download preparation and helper/
+UI startup. Before/after checks verified1,528 game files, retained independent launcher,
+Data/Saves markers and settings. A separate final checksum confirmed every byte of the
+synthetic5GiB sparse save image. Captured Installing-phase UI reviewed. This does not
+measure game startup/play or physical Steam Deck performance.
+
+Windows full launcher build/test, Linux build/adapters/actual helper/reuse cases and
+53 shared native UI groups pass. Python launcher/native/startup contracts:34 passed,
+31 subtests passed. Reuse fixtures cover timestamps, damaged installed files, native
+execute modes, delta rollback and tampered unchanged staging. One earlier run and its
+failed restore were excluded because a WSL interruption left their starting fixture
+inconsistent; the old release was rebuilt from its verified archive before valid runs.
+Selected timing/hash reports remain under ignored logs/issue-558-performance. Temporary
+benchmark volumes/downloads are removed after evidence capture. No personal files used.
+Native Mac and real SteamOS/SD acceptance remain pending; no three-minute Deck fix or
+universal speedup is claimed. Publication and issue closure remain pending.
+
+## Game update progress — issue #558 (2026-11-19)
+
+Local branch `investigate/linux-update-558`, base main `1f835403`; publication pending.
+Shared preparation/installer progress now spans archive checks, extraction, staged
+verification, save/rollback backups, file installation, cleanup and restart. Linux/Mac
+use a responsive copied-helper window with elapsed time and protected closing;
+Windows has a WPF adapter over the same shared worker. Helper preparation runs off
+the native UI thread. Verification, save preservation and recovery rules are retained.
+
+Windows x64 / .NET Framework 4.8: full `build-launcher.ps1 -Test` passed (116 updater
+regressions, 51 shared UI groups and the existing download/startup/settings/maintenance
+suites). Python launcher/startup/native contracts: 34 passed, 31 subtests passed.
+Ubuntu 24.04 x64 under WSL / .NET SDK 8.0.426 / Xvfb: launcher build, Linux adapters,
+shared restart/rollback/observer-failure tests and 53 UI groups passed. The real copied
+helper stayed visible during a bounded parent wait, refused closing mid-operation,
+delivered Installing-phase reports to the rendered UI, installed a synthetic release,
+retained saves, cleaned staging and reopened the rendered installed launcher. A second
+helper rejected a modified payload and reopened the unchanged installation. Extraction
+cancellation is covered. Selected Installing-phase capture reviewed. No private game
+data, personal saves or settings were used. No game rebuild was necessary.
+
+These are local synthetic installer/lifecycle tests, not a full published-release
+update or Steam Deck timing benchmark. Native Mac execution and physical SteamOS/SD
+storage acceptance remain unverified. This fixes silent progress; it does not claim
+a reduction in installation disk work or the reported three-minute duration.
+
 ## Online automatic-door synchronization (#330, 2026-11-22)
 
 Branch `fix/330-online-door-sync`, based on main `9a1e37d1`. Two isolated

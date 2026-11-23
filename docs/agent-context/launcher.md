@@ -1,3 +1,8 @@
+## Game update progress (issue #558)
+
+Shared update progress/reuse, copied UI dependencies, test routes and native
+acceptance: [details](game-update-progress.md).
+
 Native selector fixtures archive an active/unexpected session record only when
 its referenced processes are demonstrably no longer this owned installation.
 Live/unknown identities are refused; original records are retained in evidence.
