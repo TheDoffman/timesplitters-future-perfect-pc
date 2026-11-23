@@ -129,7 +129,7 @@ int main(int argc,char **argv)
         PcDeveloperState restored_view;pc_developer_get(&restored_view);
         CHECK(restored_view.hide_hud&&restored_view.hide_watermark&&restored_view.hide_viewmodel);
         CHECK(pc_settings_renderer_save(1,error,sizeof error));
-    saved=load(path);CHECK(saved&&strstr(saved,"\"renderer\":\"opengl\"")&&strstr(saved,"retained_mouse"));free(saved);
+    saved=load(path);CHECK(saved&&strstr(saved,"\"renderer\":\"opengl\"")&&strstr(saved,"retained_mouse")&&strstr(saved,"future_render_key"));free(saved);
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
     CHECK(!pc_settings_renderer_save(0,error,sizeof error));
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
@@ -149,7 +149,7 @@ int main(int argc,char **argv)
     snprintf(screenshot,sizeof screenshot,"%s\\settings-dialog.bmp",argv[2]);
     original=load(argv[1]); CHECK(original && original[0]=='{');
     f=fopen(path,"wb"); CHECK(f);
-    fputs("{\"developer_view\":{\"future_view_key\":42},\"retained\":{\"text\":\"escaped \\\" brace } [\",\"values\":[1,2]},",f);
+    fputs("{\"launcher\":{\"future_render_key\":42},\"developer_view\":{\"future_view_key\":42},\"retained\":{\"text\":\"escaped \\\" brace } [\",\"values\":[1,2]},",f);
     {
         char *mouse=strstr(original,"\"mouse\"");
         char *brace=mouse?strchr(mouse,'{'):NULL;
