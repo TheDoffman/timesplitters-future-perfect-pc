@@ -1,3 +1,6 @@
+[Cold startup network ordering and tests](launcher-startup.md). Both launcher
+hosts use shared TextureUpdateCheck.StartAfter; request ordering changes only.
+
 Release preparation (2026-11-23): the user selected game0.7.1 and launcher1.7.1
 for the merged main changes through e29f51d2, rather than the suggested minor
 increments. New renderer choices and update progress require the official

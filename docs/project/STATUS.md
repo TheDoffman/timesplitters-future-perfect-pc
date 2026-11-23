@@ -1,3 +1,56 @@
+## 2026-11-23 - Launcher restart crash
+
+Publication review replaces the discarded task assignment with the existing
+C#5-compatible local-variable form for Windows' Framework compiler. Startup
+ordering is unchanged; required Windows/Mac/Linux CI will validate the pushed head.
+
+Task branch codex/launcher-startup-crash from main000231fb3d7461ded91d78316b7c990871ebda08;
+Local source and build; unpublished. Original checkout pause branch6239ce95,
+its local STATUS edits and untracked files remain untouched. Installed launcher
+1.7.1 source receipt2544c4e9 / UUID E23219A3-C647-331B-A754-97061A42401D matches
+the supplied crash; all29 current launcher-manifest hashes verify.
+
+On macOS27.2.1 ARM64, pinned SDK8.0.426/runtime8.0.32/Avalonia11.3.22,
+ten isolated five-second starts without texture opt-in survived. Enabling only
+the disposable texture opt-in reproduced SIGABRT in0.93s: fatal
+System.AccessViolationException in HttpConnectionPool.SendAsync through
+ReadTextureManifest/TextureUpdateCheck.Fetch. Another trial with tiering disabled
+crashed in Socket.AwaitableSocketAsyncEventArgs.ConnectAsync. This establishes
+the cold concurrent HTTP trigger, not the exact upstream runtime defect.
+
+Shared startup sequencing now waits for the game check before starting the
+optional texture check. Native signed build,26 native regression groups,
+55 shared UI groups,51 Python tests and31 subtests pass. Twelve consecutive
+five-second starts with texture opt-in and --skip-self-update survived; each
+owned process was then terminated deliberately. These are bounded launcher
+startup checks, not game or long-session acceptance. Network requests used
+published release metadata; no texture downloads or game launches occurred.
+The actual ZIP package corruption/repair, parent-exit/helper restart, rendered
+output, signed automatic migration and personal-file preservation checks pass.
+The new launcher also passes --check against the installed game (read-only). Windows/Linux execution and publication remain pending.
+
+Build/package output is ~/Library/Caches/tsfp-launcher-startup-crash; detailed
+local evidence is logs/launcher-crash-{build,python-tests,package-test}.log and
+logs/launcher-crash-probe/. After the user saved/closed the game and explicitly
+authorized installation, the tested code from local commitceaa4116 was installed
+through AcquireUpdateLock/SelfUpdate.Unpack/Core.ApplyLauncher. All29 installed
+launcher hashes match;15,959 protected files retain their metadata, and settings
+and small-file content hashes match. Strict/deep codesign and installed --check
+pass. Only the app-root disallowed FinderInfo attribute was removed. Verified
+staging was recycled; updater recovery was retained at installation time.
+
+Finder reopen reached a macOS Desktop-folder consent request after the local
+binary signature changed: tccd records kTCCServiceSystemPolicyDesktopFolder
+and a mismatched previous code requirement. The waiting process was sampled in
+native file-open, without a new HTTP crash. User consent is pending; the OS
+notification app is unavailable to Computer Use, so visible Home acceptance
+is not yet claimed. No TCC edits or permission bypass. Local provenance is in
+the cache LOCAL-FIX.json and installed .launcher/local-startup-fix.json.
+No personal data was used for automated tests. The installation preceded any
+source push or PR. Publication follow-through is PR #595, refreshed onto main
+74bec377 to retain the merged console-filter change. Required CI is pending;
+no new launcher release has been published.
+
 ## Launcher console error filter (2026-11-22)
 
 Local `codex/launcher-console-errors`, base main `9a1e37d1`: shared
