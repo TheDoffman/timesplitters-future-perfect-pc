@@ -39,6 +39,15 @@ namespace TimeSplitters.Launcher
         static async Task<TextureRelease> Fetch(CancellationToken token)
         {using(var client=new ReleaseClient())return await TextureDownload.Check(client,token).ConfigureAwait(false);}
         void Notify(){if(!disposed&&Changed!=null)Changed();}
+        public async Task StartAfter(Task initialCheck)
+        {
+            // A post-update restart skips the bootstrap HTTP request. Let the
+            // initial game check finish before cold-starting another HTTP client:
+            // concurrent first requests can abort the pinned macOS .NET runtime.
+            // The texture request itself remains optional and nonblocking.
+            await initialCheck.ConfigureAwait(false);
+            _ = StartIfOptedIn();
+        }
         public Task StartIfOptedIn()
         {lock(gate){if(disposed||automaticStarted||!TextureDownload.OptedIn(root))return Task.FromResult(false);automaticStarted=true;return CheckAsync();}}
         public Task CheckAsync()

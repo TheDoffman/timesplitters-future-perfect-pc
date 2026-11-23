@@ -1,3 +1,36 @@
+## 2026-11-23 - Launcher restart crash
+
+Task branch codex/launcher-startup-crash from main000231fb3d7461ded91d78316b7c990871ebda08;
+Local source and build; unpublished. Original checkout pause branch6239ce95,
+its local STATUS edits and untracked files remain untouched. Installed launcher
+1.7.1 source receipt2544c4e9 / UUID E23219A3-C647-331B-A754-97061A42401D matches
+the supplied crash; all29 current launcher-manifest hashes verify.
+
+On macOS27.2.1 ARM64, pinned SDK8.0.426/runtime8.0.32/Avalonia11.3.22,
+ten isolated five-second starts without texture opt-in survived. Enabling only
+the disposable texture opt-in reproduced SIGABRT in0.93s: fatal
+System.AccessViolationException in HttpConnectionPool.SendAsync through
+ReadTextureManifest/TextureUpdateCheck.Fetch. Another trial with tiering disabled
+crashed in Socket.AwaitableSocketAsyncEventArgs.ConnectAsync. This establishes
+the cold concurrent HTTP trigger, not the exact upstream runtime defect.
+
+Shared startup sequencing now waits for the game check before starting the
+optional texture check. Native signed build,26 native regression groups,
+55 shared UI groups,51 Python tests and31 subtests pass. Twelve consecutive
+five-second starts with texture opt-in and --skip-self-update survived; each
+owned process was then terminated deliberately. These are bounded launcher
+startup checks, not game or long-session acceptance. Network requests used
+published release metadata; no texture downloads or game launches occurred.
+The actual ZIP package corruption/repair, parent-exit/helper restart, rendered
+output, signed automatic migration and personal-file preservation checks pass.
+The new launcher also passes --check against the installed game (read-only). Windows/Linux execution and publication remain pending.
+
+Build/package output is ~/Library/Caches/tsfp-launcher-startup-crash; detailed
+local evidence is logs/launcher-crash-{build,python-tests,package-test}.log and
+logs/launcher-crash-probe/. The active installed launcher/game are not changed
+until the user finishes the current session; no personal data was used for
+automated tests. No source push, PR, main merge or release publication.
+
 Mac native build and platform/input/renderer checks passed; its settings runner
 still expected the initial backup after a new three-save renderer round trip.
 Updated that test guard to require the immediately preceding OpenGL snapshot,

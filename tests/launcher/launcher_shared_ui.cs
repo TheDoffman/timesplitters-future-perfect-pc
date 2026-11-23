@@ -533,6 +533,31 @@ public static class LauncherSharedUiChecks
                 fov.Value=original+2;Click(save);
                 Need(save.IsEnabled && saves==3 && File.ReadAllText(controls)==external,"Conflicting save disabled retry or overwrote external settings");
             });
+            Test("startup texture requests wait for the initial game check",()=>{
+                string folder=Path.Combine(root,"startup-textures");Directory.CreateDirectory(folder);
+                TextureDownload.SetOptedIn(folder,true);
+                var initial=new System.Threading.Tasks.TaskCompletionSource<bool>();
+                var texture=new System.Threading.Tasks.TaskCompletionSource<TextureRelease>();int calls=0;
+                using(var check=new TextureUpdateCheck(folder,token=>{System.Threading.Interlocked.Increment(ref calls);return texture.Task;},(pack,token)=>System.Threading.Tasks.Task.FromResult(0L))) {
+                    var startup=check.StartAfter(initial.Task);
+                    Need(!startup.IsCompleted&&!check.IsChecking&&calls==0,"Cold HTTP checks overlapped");
+                    initial.SetResult(false); // An offline game check still completes normally.
+                    Need(startup.Wait(5000),"Startup waited for the background texture download");
+                    Need(System.Threading.SpinWait.SpinUntil(()=>calls==1,5000)&&check.IsChecking,"Opted-in textures did not start after the game check");
+                    Need(!texture.Task.IsCompleted,"Fixture stopped exercising background work");
+                    var pending=check.CheckAsync();texture.SetResult(new TextureRelease{Version="1.2.3"});
+                    Need(pending.Wait(5000)&&check.Status=="Textures up to date","Deferred texture check did not finish");
+                }
+                var closing=new System.Threading.Tasks.TaskCompletionSource<bool>();
+                var closed=new TextureUpdateCheck(folder,token=>{calls++;return texture.Task;});
+                var waiting=closed.StartAfter(closing.Task);closed.Dispose();closing.SetResult(true);
+                Need(waiting.Wait(5000)&&calls==1,"Closing during the game check started texture work");
+                TextureDownload.SetOptedIn(folder,false);
+                using(var optedOut=new TextureUpdateCheck(folder,token=>{calls++;return texture.Task;})) {
+                    optedOut.StartAfter(System.Threading.Tasks.Task.FromResult(true)).GetAwaiter().GetResult();
+                    Need(calls==1&&!optedOut.IsChecking,"Sequenced startup changed texture opt-in");
+                }
+            });
             Test("texture checks are optional, coalesced and nonblocking",()=>{
                 string folder=Path.Combine(root,"background-textures");Directory.CreateDirectory(folder);
                 var release=new TextureRelease {Version="1.2.3"};

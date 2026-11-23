@@ -1,3 +1,18 @@
+## MAC-021 follow-up: launcher restart crash (2026-11-23)
+
+**Implemented — native Mac validation recorded in STATUS; Windows/Linux host
+execution pending.** Local branch codex/launcher-startup-crash, base000231fb.
+The shared TextureUpdateCheck.StartAfter contract runs the initial game check
+before optional background texture requests. tools/launcher/Launcher.cs and
+macos/NativeWindow.cs use it on WPF and Avalonia; no additional Mac adapter is
+needed. This avoids the reproduced cold concurrent HTTP access violation on
+macOS after updates skip the bootstrap request. Existing automatic texture
+opt-in, installed packs, settings and saves remain unchanged.
+Acceptance: pinned native build and shared tests, repeated isolated post-update
+starts with textures opted in, package repair/restart/preservation and read-only
+installed prerequisites. See [measured evidence](STATUS.md#2026-11-23---launcher-restart-crash).
+Windows/Linux native execution and a future published release remain pending.
+
 ## Current OpenGL recovery / selector status (2026-11-22)
 
 **Implemented in shared source; native Mac acceptance deferred.** Windows now
