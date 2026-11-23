@@ -128,15 +128,7 @@ int main(int argc,char **argv)
         CHECK(view.hide_hud&&view.hide_watermark&&view.hide_viewmodel);
         PcDeveloperState restored_view;pc_developer_get(&restored_view);
         CHECK(restored_view.hide_hud&&restored_view.hide_watermark&&restored_view.hide_viewmodel);
-        CHECK(pc_settings_renderer_save(1,error,sizeof error));
-    saved=load(path);CHECK(saved&&strstr(saved,"\"renderer\":\"opengl\"")&&strstr(saved,"retained_mouse")&&strstr(saved,"future_render_key"));free(saved);
-    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
-    CHECK(!pc_settings_renderer_save(0,error,sizeof error));
-    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
-    saved=load(path);CHECK(saved&&strstr(saved,"\"renderer\":\"opengl\""));free(saved);
-    CHECK(pc_settings_renderer_save(0,error,sizeof error));
-    CHECK(!pc_settings_renderer_save(2,error,sizeof error));
-    owner=CreateWindowExA(0,"STATIC","Restored menu",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
+        owner=CreateWindowExA(0,"STATIC","Restored menu",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
         CHECK(owner); pc_settings_attach(owner); CHECK(!GetMenu(owner));
         pc_settings_detach(owner); DestroyWindow(owner);
         puts("PASS: bindings and menu visibility reload in a fresh process"); return 0;
@@ -212,6 +204,14 @@ int main(int argc,char **argv)
         pc_settings_view_read(&restored);CHECK(restored.hide_hud);
         view=(PcViewSettings){0};CHECK(pc_settings_view_save(&view,error,sizeof error));
     }
+    CHECK(pc_settings_renderer_save(1,error,sizeof error));
+    saved=load(path);CHECK(saved&&strstr(saved,"\"renderer\":\"opengl\"")&&strstr(saved,"retained_mouse")&&strstr(saved,"future_render_key"));free(saved);
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+    CHECK(!pc_settings_renderer_save(0,error,sizeof error));
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+    saved=load(path);CHECK(saved&&strstr(saved,"\"renderer\":\"opengl\""));free(saved);
+    CHECK(pc_settings_renderer_save(0,error,sizeof error));
+    CHECK(!pc_settings_renderer_save(2,error,sizeof error));
     owner=CreateWindowExA(0,"STATIC","PC settings integration test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner);
     CHECK(!pc_settings_menu_visible());
