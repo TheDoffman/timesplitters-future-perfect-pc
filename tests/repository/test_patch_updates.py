@@ -377,8 +377,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch'):
-            continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch','3040-arcade-solo-lobby.patch'):
+            continue  # Historical inputs predate Tools/presets and capture/join/solo wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -409,6 +409,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     # The trace depends on network wrapper context; like the network patches,
     # it belongs to the full migration, not the historical Mac-only fixture.
     assert installer.apply_patches(checkout, old_patches)
+    manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
+    assert 'pc_network_bots_guest_minimum' not in manual.read_text()
     assert installer.apply_patches(checkout, PATCHES)
     assert_current_calendar_installed(checkout)
     assert_current_pause_glass_installed(checkout)
@@ -416,6 +418,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     cmake = (checkout / 'titles/futureperfect/CMakeLists.txt').read_text()
     assert 'TSFP_NATIVE_DIR' in cmake and 'pc_network.c' in cmake
     manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    assert manual.count('pc_network_bots_guest_minimum(sub_00064EA0_gen)') == 1
     assert 'pc_story_failure_trace(sub_00067450_gen,0x00067450u)' in manual
     assert 'pc_story_network_frame(sub_000681C0_gen)' in manual
     assert 'pc_story_lobby_details(sub_001986A0_gen)' in manual

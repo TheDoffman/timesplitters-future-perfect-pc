@@ -1,5 +1,5 @@
 [Wide HUD](ultrawide-player-markers.md).
-[MP](native-multiplayer-menu.md).
+[MP](native-multiplayer-menu.md#one-player-arcade-lobbies).
 
 [Bob](weapon-bob.md);[Uplink](native-uplink.md).
 [UI](controls-options.md); [feed](../development/arcade-kill-feed.md).

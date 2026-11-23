@@ -4,7 +4,7 @@
 
 [0.7 sync](network-sync-telemetry.md).
 
-[Turn Speed](controls-options.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
+[Turn Speed](controls-options.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md#one-player-arcade-lobbies).
 [Actors](network-actor-lifetime.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
