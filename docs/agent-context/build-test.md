@@ -1,4 +1,4 @@
-[GL](opengl-recovery.md). [Updates](launcher.md#game-update-progress-issue-558).
+[GL/restart](opengl-recovery.md). [Updates](game-update-progress.md).
 CI fixtures/dependency ordering: [GL](opengl-recovery.md#publication-ci).
 
 [0.7 sync](network-sync-telemetry.md).

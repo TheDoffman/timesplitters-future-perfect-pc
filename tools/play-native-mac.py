@@ -71,7 +71,7 @@ def prepare_settings(root):
 
 def renderer_environment(existing, root, manifest, driver=None):
     """Honor the executable's renderer without changing saved preferences."""
-    env = {k:v for k,v in existing.items() if not k.startswith(('VK_', 'SDL_VULKAN', 'DYLD_'))}
+    env = {k:v for k,v in existing.items() if not k.startswith(('VK_', 'SDL_VULKAN', 'DYLD_', 'TSFP_RESTART_VULKAN_'))}
     renderer = manifest.get('renderer', 'gl')
     if renderer == 'vulkan':
         try:

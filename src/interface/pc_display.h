@@ -7,6 +7,7 @@ typedef void *HWND;
 #endif
 int pc_game_restart_bootstrap(int argc,char **argv);
 int pc_game_restart(void);
+int pc_game_restart_renderer(const char *renderer);
 #define PC_FOV_DEFAULT 55
 #define PC_FOV_MIN 40
 #define PC_FOV_MAX 100

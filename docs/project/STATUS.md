@@ -46436,3 +46436,8 @@ builds the hardware comparison fixture on Windows; actual Vulkan execution is
 a local hardware check, while existing CI WARP pixel checks remain in place.
 Mac/Linux adapters and their DXC setup were unchanged; native validation was
 not rerun on this host. No release or default promotion was performed.
+
+
+## In-game renderer Apply & Restart (2026-11-23)
+
+Current task branch adds the shared native Video Options advanced renderer choice, saves the launcher's preference and immediately restarts on Apply & Restart. Both choices, staged navigation, save failure, restart retry, and real wait-for-parent process handoff pass the Windows focused checks (28 passed, two native-only checks skipped). Supported Windows build and native checks are in progress; native Mac runtime acceptance is not claimed. See docs/agent-context/opengl-recovery.md#in-game-renderer-restart. No release or main publication requested for this follow-up.

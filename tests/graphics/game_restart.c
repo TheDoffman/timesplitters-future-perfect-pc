@@ -14,20 +14,25 @@ int main(int argc,char **argv)
 {
     if(!pc_game_restart_bootstrap(argc,argv))return 2;
     if(argc!=2)return 3;
+    const char *selection=getenv("TSFP_RESTART_TEST_RENDERER");
     char *phase=getenv("TSFP_RESTART_TEST_CHILD");
     if(phase) {
         FILE *f=fopen(argv[1],"rb");if(!f)return 4;
         int done=fgetc(f);fclose(f);if(done!='P')return 5;
         if(getenv("TSFP_RESTART_WAIT"))return 6;
+        if(strcmp(getenv("RECOMP_D3D8_BACKEND"),selection?selection:"vulkan"))return 14;
         if(strcmp(getenv("RECOMP_SAVE_DIR"),"isolated path with spaces"))return 7;
         f=fopen(argv[1],"wb");if(!f)return 8;fputs("CHILD",f);fclose(f);return 0;
     }
+    if(pc_game_restart_renderer("d3d11"))return 16;
     if(pc_game_restart())return 9; /* No window: fail without exiting. */
     WNDCLASSW klass={0};klass.lpfnWndProc=proc;klass.lpszClassName=L"RestartTest";
     klass.hInstance=GetModuleHandle(NULL);if(!RegisterClassW(&klass))return 10;
     window=CreateWindowW(klass.lpszClassName,L"",0,0,0,0,0,HWND_MESSAGE,NULL,klass.hInstance,NULL);
     _putenv_s("TSFP_RESTART_TEST_CHILD","1");_putenv_s("RECOMP_SAVE_DIR","isolated path with spaces");
-    if(!pc_game_restart() || !pc_game_restart())return 11;
+    _putenv_s("RECOMP_D3D8_BACKEND","vulkan");
+    if(!pc_game_restart_renderer(selection) || !pc_game_restart_renderer(selection))return 11;
+    if(strcmp(getenv("RECOMP_D3D8_BACKEND"),"vulkan"))return 15;
     MSG message;while(GetMessageW(&message,NULL,0,0)>0){TranslateMessage(&message);DispatchMessageW(&message);}
     Sleep(300); /* Child must still be blocked even after quit request. */
     FILE *f=fopen(argv[1],"rb");if(f){fclose(f);return 12;}
@@ -49,15 +54,19 @@ int main(int argc,char **argv)
 {
     if(!pc_game_restart_bootstrap(argc,argv))return 2;
     if(argc!=2)return 3;
+    const char *selection=getenv("TSFP_RESTART_TEST_RENDERER");
     if(getenv("TSFP_RESTART_TEST_CHILD")) {
         FILE *f=fopen(argv[1],"rb");if(!f)return 4;
         int done=fgetc(f);fclose(f);if(done!='P')return 5;
         if(getenv("TSFP_RESTART_WAIT"))return 6;
+        if(strcmp(getenv("RECOMP_D3D8_BACKEND"),selection?selection:"vulkan"))return 14;
         if(strcmp(getenv("RECOMP_SAVE_DIR"),"isolated path with spaces"))return 7;
         f=fopen(argv[1],"wb");if(!f)return 8;fputs("CHILD",f);fclose(f);return 0;
     }
     setenv("TSFP_RESTART_TEST_CHILD","1",1);setenv("RECOMP_SAVE_DIR","isolated path with spaces",1);
-    if(!pc_game_restart() || !pc_game_restart() || !closing)return 11;
+    setenv("RECOMP_D3D8_BACKEND","vulkan",1);
+    if(!pc_game_restart_renderer(selection) || !pc_game_restart_renderer(selection) || !closing)return 11;
+    if(strcmp(getenv("RECOMP_D3D8_BACKEND"),"vulkan"))return 15;
     usleep(300000);
     FILE *f=fopen(argv[1],"rb");if(f){fclose(f);return 12;}
     f=fopen(argv[1],"wb");if(!f)return 13;fputs("PARENT FINISHED",f);fclose(f);return 0;

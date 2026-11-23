@@ -15,9 +15,10 @@ int pc_game_restart_bootstrap(int argc,char **argv)
     DWORD result=WaitForSingleObject(parent,60000);CloseHandle(parent);
     return result==WAIT_OBJECT_0;
 }
-int pc_game_restart(void)
+int pc_game_restart_renderer(const char *renderer)
 {
     static int requested;
+    if(renderer && strcmp(renderer,"vulkan") && strcmp(renderer,"opengl"))return 0;
     if(requested)return 1;
     HWND window=xbox_D3D8Window();if(!window)return 0;
     HANDLE parent=NULL;
@@ -32,12 +33,14 @@ int pc_game_restart(void)
     swprintf(marker,96,L"TSFP_RESTART_WAIT=%llx",(unsigned long long)(uintptr_t)parent);
     wchar_t *old=GetEnvironmentStringsW();if(!old){CloseHandle(parent);return 0;}
     size_t count=0;for(const wchar_t *p=old;*p;p+=wcslen(p)+1)count+=wcslen(p)+1;
-    wchar_t *env=calloc(count+wcslen(marker)+3,sizeof(wchar_t));
+    const wchar_t *backend=renderer?(!strcmp(renderer,"opengl")?L"RECOMP_D3D8_BACKEND=opengl":L"RECOMP_D3D8_BACKEND=vulkan"):NULL;
+    wchar_t *env=calloc(count+wcslen(marker)+(backend?wcslen(backend)+1:0)+3,sizeof(wchar_t));
     if(!env){FreeEnvironmentStringsW(old);CloseHandle(parent);return 0;}
     size_t used=0;for(const wchar_t *p=old;*p;p+=wcslen(p)+1) {
-        if(!_wcsnicmp(p,L"TSFP_RESTART_WAIT=",18))continue;
+        if(!_wcsnicmp(p,L"TSFP_RESTART_WAIT=",18) || (backend&&!_wcsnicmp(p,L"RECOMP_D3D8_BACKEND=",19)))continue;
         size_t n=wcslen(p)+1;memcpy(env+used,p,n*sizeof(wchar_t));used+=n;
     }
+    if(backend){wcscpy(env+used,backend);used+=wcslen(backend)+1;}
     wcscpy(env+used,marker);FreeEnvironmentStringsW(old);
     SIZE_T bytes=0;InitializeProcThreadAttributeList(NULL,1,0,&bytes);
     STARTUPINFOEXW start={0};start.StartupInfo.cb=sizeof start;
@@ -87,19 +90,35 @@ int pc_game_restart_bootstrap(int argc,char **argv)
     if(fstat(fd,&st) || !S_ISFIFO(st.st_mode))return 0;
     struct pollfd wait={fd,POLLIN,0};int result;
     do {result=poll(&wait,1,60000);}while(result<0 && errno==EINTR);
-    close(fd);return result>0 && (wait.revents&POLLHUP);
+    close(fd);
+    int finished=result>0 && (wait.revents&POLLHUP);
+#ifdef __APPLE__
+    /* GL launches intentionally leave Vulkan overrides inactive. The launcher
+     * supplies verified dormant metadata for switching back during a restart. */
+    const char *renderer=getenv("RECOMP_D3D8_BACKEND");
+    if(finished && renderer && !strcmp(renderer,"vulkan")) {
+        const char *names[]={"DYLD_LIBRARY_PATH","SDL_VULKAN_LIBRARY","VK_DRIVER_FILES","VK_LAYER_PATH","RECOMP_SHADER_CACHE"};
+        for(unsigned i=0;i<sizeof names/sizeof *names;i++) {
+            char key[96];snprintf(key,sizeof key,"TSFP_RESTART_VULKAN_%s",names[i]);
+            const char *value=getenv(key);if(value && setenv(names[i],value,1))return 0;
+        }
+    }
+#endif
+    return finished;
 }
-int pc_game_restart(void)
+int pc_game_restart_renderer(const char *renderer)
 {
     static int requested;
+    if(renderer && strcmp(renderer,"vulkan") && strcmp(renderer,"opengl"))return 0;
     if(requested)return 1;
     if(!restart_arguments || !restart_executable[0])return 0;
     int pipefd[2];if(pipe(pipefd))return 0;
     if(fcntl(pipefd[1],F_SETFD,FD_CLOEXEC)<0){close(pipefd[0]);close(pipefd[1]);return 0;}
     size_t count=0;while(environ[count])count++;
-    char **env=calloc(count+2,sizeof *env);if(!env){close(pipefd[0]);close(pipefd[1]);return 0;}
-    size_t used=0;for(size_t i=0;i<count;i++)if(strncmp(environ[i],"TSFP_RESTART_WAIT=",18))env[used++]=environ[i];
-    char marker[64];snprintf(marker,sizeof marker,"TSFP_RESTART_WAIT=%d",pipefd[0]);env[used]=marker;
+    char **env=calloc(count+3,sizeof *env);if(!env){close(pipefd[0]);close(pipefd[1]);return 0;}
+    size_t used=0;for(size_t i=0;i<count;i++)if(strncmp(environ[i],"TSFP_RESTART_WAIT=",18) && (!renderer||strncmp(environ[i],"RECOMP_D3D8_BACKEND=",19)))env[used++]=environ[i];
+    char marker[64],backend[64];snprintf(marker,sizeof marker,"TSFP_RESTART_WAIT=%d",pipefd[0]);env[used++]=marker;
+    if(renderer){snprintf(backend,sizeof backend,"RECOMP_D3D8_BACKEND=%s",renderer);env[used]=backend;}
     pid_t child;int result=posix_spawn(&child,restart_executable,NULL,NULL,restart_arguments,env);
     free(env);close(pipefd[0]);
     if(result){close(pipefd[1]);return 0;}
@@ -111,3 +130,5 @@ int pc_game_restart(void)
     return requested;
 }
 #endif
+
+int pc_game_restart(void){return pc_game_restart_renderer(NULL);}

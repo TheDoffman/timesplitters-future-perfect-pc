@@ -151,11 +151,21 @@ def launch_environment(root, manifest, override=None):
     if renderer == 'opengl':
         # Both common backends use the pinned DXC library. An explicit GL launch
         # does not select a Vulkan driver or inject Vulkan loader overrides.
-        return dict(DYLD_LIBRARY_PATH=str(verify_install(root) / 'lib'))
+        sdk = verify_install(root)
+        env = dict(DYLD_LIBRARY_PATH=str(sdk / 'lib'))
+        # Dormant metadata is consumed only by a requested in-game Vulkan restart.
+        try:
+            env.update({'TSFP_RESTART_VULKAN_' + key: value
+                        for key, value in gpu_environment(sdk, select_driver(manifest, override)).items()})
+        except ValueError:
+            pass  # Invalid Vulkan metadata must not block explicit OpenGL.
+        return env
     if renderer != 'vulkan':
         raise ValueError('Unknown renderer')
     driver = select_driver(manifest, override)
-    return gpu_environment(verify_install(root), driver)
+    env = gpu_environment(verify_install(root), driver)
+    env.update({'TSFP_RESTART_VULKAN_' + key: value for key, value in list(env.items())})
+    return env
 
 
 def gpu_environment(sdk, driver):

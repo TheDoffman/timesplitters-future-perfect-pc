@@ -1,3 +1,5 @@
+Renderer restart metadata and shared preference: [in-game flow](opengl-recovery.md#in-game-renderer-restart).
+
 ## Game update progress (issue #558)
 
 Shared update progress/reuse, copied UI dependencies, test routes and native

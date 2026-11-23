@@ -500,6 +500,20 @@ int pc_settings_view_save(const PcViewSettings *settings,char *error,size_t byte
     return ok;
 }
 
+int pc_settings_renderer_save(int opengl,char *error,size_t bytes)
+{
+    recomp_bindings_init();
+    char *text=g_have_path?read_file(g_path):NULL;
+    const char *launcher=text?pc_member(text,"launcher",NULL):NULL;
+    int ok=(opengl==0||opengl==1)&&text&&*ws(text)=='{';
+    if(ok&&!launcher)ok=pc_replace_member(&text,ws(text),"launcher","{}");
+    launcher=ok?pc_member(text,"launcher",NULL):NULL;
+    if(ok)ok=launcher&&*launcher=='{'&&pc_replace_member(&text,launcher,"renderer",opengl?"\"opengl\"":"\"vulkan\"")&&pc_write_config(text);
+    free(text);
+    if(!ok)snprintf(error,bytes,"Could not save renderer. Your previous settings were kept.");
+    return ok;
+}
+
 int pc_settings_menu_visible(void)
 {
     char *text;
