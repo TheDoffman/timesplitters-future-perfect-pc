@@ -54,7 +54,7 @@ Exit: `test_online_menu.py`, `test_quit_menu.py`, `test_fov_settings.py`;
 native `--test`/`--online-self-test`. Clang Story fixtures use the Windows guest
 adapter with the real host trap; hexadecimal additions need token boundaries.
 
-Game0.6.0 bundles launcher1.6.0; publish the launcher first. Keep release gates:
+Release0.7.1 bundles launcher1.7.1; publish launcher first. Retain all gates:
 exact clean source on Windows/Mac/Linux, native/package/preservation checks,
 matching multiplayer identities and all nine public asset hashes. Linux hardware
 and full-campaign acceptance remain separate from configured-host checks.
