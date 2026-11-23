@@ -27,9 +27,23 @@ The new launcher also passes --check against the installed game (read-only). Win
 
 Build/package output is ~/Library/Caches/tsfp-launcher-startup-crash; detailed
 local evidence is logs/launcher-crash-{build,python-tests,package-test}.log and
-logs/launcher-crash-probe/. The active installed launcher/game are not changed
-until the user finishes the current session; no personal data was used for
-automated tests. No source push, PR, main merge or release publication.
+logs/launcher-crash-probe/. After the user saved/closed the game and explicitly
+authorized installation, the tested code from local commitceaa4116 was installed
+through AcquireUpdateLock/SelfUpdate.Unpack/Core.ApplyLauncher. All29 installed
+launcher hashes match;15,959 protected files retain their metadata, and settings
+and small-file content hashes match. Strict/deep codesign and installed --check
+pass. Only the app-root disallowed FinderInfo attribute was removed. Verified
+staging was recycled; updater recovery was retained at installation time.
+
+Finder reopen reached a macOS Desktop-folder consent request after the local
+binary signature changed: tccd records kTCCServiceSystemPolicyDesktopFolder
+and a mismatched previous code requirement. The waiting process was sampled in
+native file-open, without a new HTTP crash. User consent is pending; the OS
+notification app is unavailable to Computer Use, so visible Home acceptance
+is not yet claimed. No TCC edits or permission bypass. Local provenance is in
+the cache LOCAL-FIX.json and installed .launcher/local-startup-fix.json.
+No personal data was used for automated tests. No source push, PR, main merge
+or release publication.
 
 Mac native build and platform/input/renderer checks passed; its settings runner
 still expected the initial backup after a new three-save renderer round trip.

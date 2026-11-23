@@ -11,7 +11,9 @@ opt-in, installed packs, settings and saves remain unchanged.
 Acceptance: pinned native build and shared tests, repeated isolated post-update
 starts with textures opted in, package repair/restart/preservation and read-only
 installed prerequisites. See [measured evidence](STATUS.md#2026-11-23---launcher-restart-crash).
-Windows/Linux native execution and a future published release remain pending.
+Local commitceaa4116 is installed and passes manifest/signature/preflight checks.
+Finder Home acceptance awaits the renewed macOS Desktop-folder consent; see
+STATUS. Windows/Linux native execution and a future published release remain pending.
 
 ## Current OpenGL recovery / selector status (2026-11-22)
 
