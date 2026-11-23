@@ -68,6 +68,8 @@ def weapon_set_metrics(run):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-name',default='stability-transitions')
+    parser.add_argument('--renderer-sequence',nargs='+',choices=('auto','vulkan','d3d11'),
+                        help='Test-only backend per child/restart; last choice repeats (at most four)')
     parser.add_argument('--pair-role',choices=['host','guest'])
     parser.add_argument('--pair-owner-pid',type=int,help='Controller ancestor allowed to own other games in this paired probe')
     parser.add_argument('--directory')
@@ -151,6 +153,8 @@ def main():
     assert not args.sample_network_ms or args.lan_role
     assert not args.trace_network_poses or args.lan_role
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
+    if args.renderer_sequence and len(args.renderer_sequence)>4:
+        parser.error('--renderer-sequence accepts at most four children')
     assert os.name=='nt'
     # Bounded foreground tests must not compete with another checkout or play
     # session. Never close the other process; leave it to its owner instead.
@@ -705,6 +709,10 @@ def main():
         except Exception as exc:motion_errors.append(repr(exc))
     def launch(index):
         nonlocal process,handle,window,motion_thread
+        if args.renderer_sequence:
+            renderer=args.renderer_sequence[min(index,len(args.renderer_sequence)-1)]
+            env.pop('RECOMP_D3D8_BACKEND',None)
+            if renderer!='auto':env['RECOMP_D3D8_BACKEND']=renderer
         publish_input_state(ROOT,state,'0 0\n')
         if args.trace_surface_images:
             env['TSFP_SURFACE_TRACE']=str(run/f'run{index}-surface.csv')
@@ -812,7 +820,7 @@ def main():
         native_surface_mode="default" if args.native_surfaces is None else ("enabled" if args.native_surfaces else "disabled"),
         profile_delay_seconds=args.profile_delay_seconds,
         profile_pc_symbol=args.profile_pc_symbol,
-        guest_lock=args.guest_lock,dispatch_lock=args.dispatch_lock,guest_one_cpu=args.guest_one_cpu,guest_concurrency=args.watch_guest_execution,native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_effects=args.watch_effects,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        guest_lock=args.guest_lock,dispatch_lock=args.dispatch_lock,guest_one_cpu=args.guest_one_cpu,guest_concurrency=args.watch_guest_execution,native_fps=args.native_fps or 0,native_surfaces=args.native_surfaces,scenario=args.scenario,seconds=args.seconds,captures=not args.no_captures,watch_effects=args.watch_effects,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,renderer_sequence=args.renderer_sequence,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)

@@ -18,6 +18,62 @@ checks pass; Mac must verify copied-helper graphics/startup, close protection,
 ordinary and rejected-payload update, rollback and preserved storage routing on a
 Mac. See [STATUS](STATUS.md) for evidence and remaining acceptance limits.
 
+Auto-resolution accepted-target fix (2026-11-21): **Awaiting validation** on
+native Mac/Linux. Shared pc_display_scene_size no longer lets HUD sizing consume
+a pending drawable resize; frame_done commits only successful allocations and
+retries failures. The shared SDL policy regression passes under Windows MSVC,
+including interleaved sizing and failed allocation. No OS adapter is deferred.
+Native acceptance: build, select Auto, resize/fullscreen, confirm actual native
+scene-target changes, check HUD/depth and failed-allocation recovery. Windows
+old-build failures reproduce on both backends; rebuilt hardware checks now pass
+on both with gameSHAa8a26b31. Native-host checks remain pending. See STATUS Auto-resolution allocation fix section.
+
+Windows renderer acceptance tooling (2026-11-21): host-specific WPF/GPU test
+runner only; no new shared gameplay or native launcher behavior. Native source
+and current defaults are unchanged; no Mac adapter implementation is deferred.
+The new Windows evidence does not verify Mac/Linux renderer or native UI gates.
+See ../development/windows-renderer-validation.md for scope and outstanding work.
+
+Launcher renderer simplification (2026-11-22): shared SettingsPage no longer
+exposes the Windows selector. Retired launcher.renderer data is preserved but
+ignored; Windows requests Vulkan, while native Mac/Linux retain manifest-based
+Vulkan driver routing. No native implementation is deferred. Shared native
+compilation and runtime UI checks are recorded in STATUS; Windows testing does
+not establish native execution. Legacy Mac GL compatibility is unchanged.
+
+Windows Vulkan primary renderer (2026-11-21, `feature/windows-vulkan` after
+`fe035bd6`): **Awaiting validation** on native Mac/Linux for shared DXC
+preflight and partial-initialization cleanup. Windows now prefers the existing
+Vulkan backend and recovers to D3D11; its normal Release build, eight RHI cases
+and default gameplay validation pass. `3050-windows-vulkan-primary.patch`
+owns preference/recovery and shared initialization cleanup. Modern native Mac
+and Linux already prefer Vulkan; legacy Mac GL is unchanged. No new Mac adapter
+implementation is deferred. Remaining native acceptance: build the full patch
+stack, run the RHI/production-replay contracts, exercise failed initialization
+cleanup and verify first-level gameplay with the packaged DXC. Windows compiler
+rules and package metadata are host-specific and need no Mac counterpart.
+See [measured status](STATUS.md#windows-vulkan-primary-renderer-2026-11-21).
+
+Controller Turn Speed extension (2026-11-20, source on
+`feature/controller-turn-speed`, validation base af9d3453): **Awaiting validation** on native
+Mac/Linux. Shared `pc_controls_menu.inc`/`pc_menu_sliders.inc` extend 0..1 to 0..1.5
+with original 0.05 steps; selected profiles, defaults, Accept/Cancel and native
+save layout remain unchanged. Both existing host menu adapters use this source;
+no OS adaptation is deferred. Windows original-code/pointer fixtures and a live isolated D3D11 acceptance
+build (including its local compiler workaround) are recorded in [STATUS](STATUS.md). Remaining native acceptance: frontend/pause
+adjustment with a physical pad, save/relaunch, Cancel, all four players and
+actual aiming feel at old/new maxima. No native Mac/Linux gameplay claim.
+
+Walking weapon bob #557 (2026-11-19, uncommitted fix/557-weapon-bob):
+**Awaiting validation** on native Mac/Linux. The shared numeric policy and
+pc_native_visual_time_guest.inc use pc_native_weapon_bob.h to retain matching
+fractional displacement duration and normalize only the original walking-bob
+phase/amplitude divisions. No host adapter is required. Windows and POSIX
+original-routine fixtures are distinct from live gameplay. Native acceptance:
+compare Sci-Fi Handgun walking/stopping at60/120/180/240, slow motion, split
+screen and rate changes. See [contract](../agent-context/weapon-bob.md) and
+[measured validation](STATUS.md). Keep #557 open until a fixing release is live.
+
 Background texture checks (2026-11-18, source90014bf6): shared TextureUpdateCheck model and SettingsPage handling work through thin WPF/Avalonia Ui.Post adapters. Linux cross-build passes. Native Mac/Linux startup, footer transitions, settings reuse, cancellation and offline visual acceptance remain awaiting validation; no new platform adapter is deferred.
 
 Compact settings follow-up (2026-11-18, source90014bf6): SettingsPage/SettingsTiles provide common compact cards, collapse and width-based layout on WPF and Avalonia. No OS adapter is needed; Linux cross-build passed. Native Mac/Linux window resizing, keyboard traversal, dropdowns and visual review remain awaiting validation. Settings persistence stays shared.
@@ -5439,6 +5495,24 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 
 ### MAC-052 — Experimental network bot setup (issue #25)
+
+Issue #330 door follow-up (branch `fix/330-online-door-sync`): shared
+`pc_network_doors.h`, `pc_network_doors_transport.inc` and
+`pc_network_doors_guest.inc` carry host animation numbers through the existing
+network transport and original door update. No new OS adapter or launcher change
+is needed. Windows live Zeppelin/bots and Bunker/humans-only checks pass; shared
+Windows/native policy fixtures, original US joining-state routines and UDP/bridge
+checks pass. Native Mac/Linux and mixed-peer gameplay remain awaiting validation.
+See [door contract](../agent-context/network-doors.md) and STATUS for scope.
+
+Issue #229 Gladiator follow-up (branch `fix/229-gladiator-selection`, uncommitted):
+`src/network/pc_network_bots_guest.inc` adds the audited host publisher return PC
+35A609 to the existing activity allowlist. This shared Windows/native-network
+adapter needs no new Mac/Linux implementation. Original-code regression tests
+cover human suicides and stable bot ownership; Windows two-instance Online
+acceptance confirmed the guest suicide case with six bots. Native Mac/Linux and
+mixed-peer gameplay remain awaiting validation; see STATUS and the bounded
+[Gladiator guide](../agent-context/gladiator-selection.md).
 
 Issue #222 follow-up (`59cc489`, branch `222-bug-online-bots-are-stuttery-for-guests`): `src/network/pc_network_bot_motion.h` supplies shared
 numeric replica interpolation, integrated through the existing Windows bot hook
@@ -10987,3 +11061,19 @@ checks pass; Ubuntu/WSL's POSIX persistence/failure fixture passes. These do not
 verify native Mac rendering. Remaining acceptance: native Mac and Linux builds,
 physical On/Off in frontend/pause, resize/fullscreen/context recovery, driver
 behavior, and timed gameplay/loading at each supported FPS target. See STATUS.
+## Windows Vulkan build and comparison (2026-11-21)
+
+**Not applicable** for Mac adaptation. Source is on `feature/windows-vulkan`,
+based on `61926ecf`; Windows dependency/build/package helpers explicitly include
+the existing Vulkan backend beside D3D11. `windows_vulkan.py` owns the pinned
+Windows DXC delivery, `tests/windows-rhi`/`test-rhi-windows.py` own hardware
+comparison and startup fallback acceptance, and `native_refresh_game.py` owns
+the isolated Windows backend/gameplay/frame-recording options. D3D11 remains
+the Windows default pending normal Release acceptance.
+
+No common renderer policy or Mac/Linux adapter is changed. Their existing
+Vulkan/DXC setup remains in place. The shared RHI C fixture adds only a guarded
+Windows test-host branch; native adapters retain their existing paths. No Mac
+implementation is deferred. Mac/Linux GPU/gameplay checks were not rerun on
+this Windows host. Measured Windows outcomes and compiler limits are in
+[STATUS](STATUS.md#windows-vulkan-comparison-2026-11-21).

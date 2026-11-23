@@ -1,6 +1,6 @@
 #requires -Version 5.1
 <#
-Render the documented v1.4.0 Windows launcher with isolated Stable sample data.
+Render the documented v1.7.0 Windows launcher with isolated Stable sample data.
 Run with Windows PowerShell -STA. Supply the source-built application recorded
 in README.md beside this script. No game, updater or live network check runs.
 #>
@@ -15,9 +15,9 @@ if (!$Output) { $Output = Join-Path $PSScriptRoot 'launcher-preview.png' }
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
     throw 'Run this script with Windows PowerShell -STA.'
 }
-$expectedHash = '9eb58f9a508e83634151c96cb42b1cf2f54ca385fc3321767b3ceb8ed446fe7d'
+$expectedHash = 'dcb32a5a6f1e673e08afc9c9776815b4d1c4a23f7b8b1eb44fbdc65750c04436'
 if ((Get-FileHash -LiteralPath $ApplicationPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expectedHash) {
-    throw 'Application does not match the documented v1.4.0 preview build.'
+    throw 'Application does not match the documented v1.7.0 preview build.'
 }
 $PreviewRoot = [IO.Path]::GetFullPath($PreviewRoot)
 if (Test-Path -LiteralPath $PreviewRoot) {
@@ -33,7 +33,7 @@ try {
     $releases = [Array]::CreateInstance($assembly.GetType('TimeSplitters.Launcher.Release'), 0)
     $setChannels = $ui.GetType().GetMethod('SetChannels', [Reflection.BindingFlags]'Instance,NonPublic')
     $null = $setChannels.Invoke($ui, [object[]]@($releases, 'stable'))
-    $ui.Window.FindName('InstalledLabel').Text = 'Installed game (sample)'
+    $ui.Window.FindName('InstalledLabel').Text = 'v0.7.0 (sample)'
     $ui.Window.FindName('ChannelBadge').Text = [char]0x25cf + '  STABLE CHANNEL'
     $visual = $ui.Window.Content
     $visual.Background = $ui.Window.Background

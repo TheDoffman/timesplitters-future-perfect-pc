@@ -25,6 +25,11 @@ Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
 </div>
 
+**Stable multiplayer release:** [Game 0.7.0](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.7.0)
+and [launcher 1.7.0](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.7.0)
+bring Online Arcade hosting and joining into the game's **Multiplayer** menu on
+all three platforms. Update the launcher and game before playing together.
+
 <table>
   <tr>
     <td width="50%"><a href="docs/assets/gameplay-story1.jpg"><img src="docs/assets/gameplay-story1.jpg" alt="Dual-wielding weapons on an orange battlefield beneath an exploding aircraft" width="100%"></a></td>
@@ -51,7 +56,7 @@ Windows, Mac and Linux use the same installation steps:
 | Step | Installation |
 | :---: | --- |
 | **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip), [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip), or [Linux x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip). The download starts directly; you can also use the buttons above. |
-| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. On Linux, preserve executable permissions and run **Launch.sh** or **TimeSplitters.Launcher**, keeping the full package together. |
+| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. On Linux, preserve executable permissions and run **TimeSplitters.Launcher**, keeping `Support` with it. The larger Linux game ZIP also includes **Launch.sh**. |
 | **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. The launcher downloads and verifies the latest available game build for your platform. Choose a preview only when opting into testing. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
 | **05** | **Press Play Game.** The launcher minimizes while the game runs and returns when you finish. |
@@ -65,9 +70,9 @@ texture download. See [cloning without optional textures](CONTRIBUTING.md#clone-
 
 ### Launcher preview
 
-![TimeSplitters launcher v1.4.0 with Stable selected, Play Game, updates and settings](docs/assets/launcher-preview.png)
+![TimeSplitters launcher v1.7.0 with Stable selected, Play Game, Game settings and Tools & Logs](docs/assets/launcher-preview.png)
 
-Launcher v1.4.0 interface preview with illustrative installation data.
+Launcher v1.7.0 interface preview with illustrative game 0.7.0 installation data.
 **Stable** is selected, matching the setup instructions above.
 
 <details>
@@ -76,11 +81,13 @@ Launcher v1.4.0 interface preview with illustrative installation data.
 - **Windows:** Windows 10/11 x64 with .NET Framework 4.8.
 - **Linux:** x64, Ubuntu 24.04 / glibc 2.39 or newer, a desktop display and a working system Vulkan driver. Wayland needs XWayland. See the [Linux launcher guide](docs/players/linux-launcher.md).
 - **Mac:** Apple Silicon (M1 or newer). The launcher targets macOS 12+; the
-  current shared Vulkan game renderer requires macOS 26+. See the
-  [Mac guide](docs/players/macos.md) for the legacy OpenGL fallback on older systems.
+  published game 0.7.0 package requires **macOS 27+**. Check each game release's
+  requirements before downloading. The [Mac guide](docs/players/macos.md)
+  separately documents source builds and the legacy OpenGL fallback.
 - Your supported **US Xbox game**, title ID `45410066`; [exact executable hash](docs/development/building.md#inputs-and-generated-files).
-- Internet access for the initial runtime download; about **5 GB** for the game,
-  plus space for update staging, rollback and any optional textures.
+- Internet access for the initial runtime download. Allow about **5 GB** for
+  original game data, plus the installed runtime, update staging, rollback and
+  any optional textures. Package download sizes vary by platform.
 - **Stable** is the default game channel. Choose **Preview**, then **Beta** or a named feature under **Testing track** for opt-in testing. Each track follows its own updates in launcher 1.3.0+. See [release channels](docs/release/releasing.md).
 - Keep the whole installation together, especially `Data`, `Settings`, `Saves`
   and the launcher's recovery files. Normal updates preserve existing data,
@@ -102,9 +109,9 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 
 | Platform | Support and known limits |
 | --- | --- |
-| **Windows 10/11 x64** | Keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
-| **Mac (Apple Silicon)** | Native launcher and game; Intel Macs are unsupported. The app is not notarized, so startup may require the [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution). See [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
-| **Linux x64 (experimental)** | Native launcher and portable SDL/Vulkan game package, validated on Ubuntu/WSL. Native desktop GPU, Wayland, controller and Steam Deck acceptance remain pending. See the [Linux launcher guide](docs/players/linux-launcher.md) and [acceptance limits](docs/development/linux-acceptance.md). |
+| **Windows 10/11 x64** | [Vulkan rendering with D3D11 recovery](docs/players/windows-vulkan.md), keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
+| **Mac (Apple Silicon)** | Native launcher, game and experimental Online/LAN multiplayer. Intel Macs are unsupported. The app is not notarized; see [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution), [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
+| **Linux x64 (experimental)** | Native launcher and portable SDL/Vulkan game package, with experimental Online/LAN multiplayer. Package, isolated gameplay and X11/Wayland renderer checks pass under Ubuntu/WSL. Physical desktop GPU/Wayland, controller and Steam Deck acceptance remain pending. See the [Linux launcher guide](docs/players/linux-launcher.md) and [acceptance limits](docs/development/linux-acceptance.md). |
 
 <a name="pc-features"></a>
 
@@ -113,12 +120,13 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | Feature | Details |
 | --- | --- |
 | **Keyboard and mouse** | Direct aiming, customizable bindings, mouse-driven menus and input prompts that follow your controls. |
-| **Widescreen** | 1080p, 1440p, 4K and ultrawide support, with adjustable field of view. |
+| **Widescreen & HUD** | 1080p, 1440p, 4K and ultrawide support, adjustable field of view and crosshair size. |
+| **V-Sync** | Optional in-game and launcher setting, independent of the selected frame-rate target. |
 | **Anti-aliasing** | Optional [SMAA 1x High](docs/players/smaa.md) smooths jagged edges on compatible Direct3D 11/Vulkan builds. |
 | **High frame rate** | Original 60 FPS by default; compatible game builds offer opt-in [120/180/240 FPS beta settings](docs/analysis/native-high-refresh.md). |
-| **Launcher** | Game installation, updates, repair, rollback and settings. |
+| **Launcher** | Game installation, updates, repair, rollback, compact settings and live game output under **Tools & Logs → Console**. |
 | **Local split-screen** | Play with multiple players on the same screen using controllers. |
-| **Online multiplayer** | Player-hosted Online and LAN matches with bot support. Windows only. |
+| **Online multiplayer** | Experimental Arcade multiplayer on Windows, Mac and Linux: community Online lobbies, Invite Only codes, player-hosted Private Servers and LAN. Bot support is experimental. |
 | **Extras** | Optional [Discord Rich Presence](docs/players/discord-presence.md), FPS overlays and local crash diagnostics. |
 
 Availability depends on your platform and installed game version. Check the
@@ -144,24 +152,38 @@ is supported; additional players need controllers.
 
 ### Online / LAN
 
-Choose **Multiplayer → Online** to host or join a match on the Community server, or **Private Server** to host your own. Choose**SLAN* for Llocalpnetwork lay. 
-veryone needs matching game builds and data.
-Private server hosting requires a **UPnP** capable router, or port forwarding; guests join using the host's invitation.
-Follow the [multiplayer guide](docs/players/multiplayer.md) for setup, ports and bots.
+Everyone needs the **same game build and matching supported US Xbox game data**.
+Hosting and joining use the game's own menus:
 
-Online is experimental;
-Story co-op is not supported yet.
+- **Join:** choose **Multiplayer → Online**, select a match, then **Join** and
+  **Ready**. Invite Only matches require the host's **lobby code**.
+- **Host:** choose **Online → Start New Match**, select **Arcade** and **Open**
+  or **Invite Only**, then **Create Lobby**. Set the map and rules in **Options**;
+  when everyone is Ready, choose **Go**. Community Online uses a relay and
+  players do not need port forwarding.
+- **Private Server:** run your own match list and share its **server invite**.
+  Only the server owner needs working UPnP or manual port forwarding. A server
+  invite connects to the match list; a lobby code unlocks an Invite Only match.
+- **LAN:** choose **Multiplayer → LAN** for players on the same local network.
+
+Online Arcade and bots remain experimental. **Story co-op requires a separate
+compatible testing build** and is not enabled by the general Stable release.
+See the [multiplayer guide](docs/players/multiplayer.md) for private-server ports,
+firewalls, rematches, bots and troubleshooting.
 
 ## Enhanced textures
 
-The partial texture overhaul is an optional launcher download for Windows, Mac
-and Linux.
+Enhanced textures are an optional launcher download for Windows, Mac and Linux.
 **Classic** textures remain the default.
 
-When the optional pack is available, use **Game settings → Graphics & resolution
-→ Check texture downloads**, then **Download / update textures**. Enable and save
+Use **Game settings → Graphics → Enhanced textures → Check texture downloads**,
+then **Download / update textures**. Enable and save
 **Use enhanced textures (Beta)** to use it on future launches. See the
 [texture guide](docs/textures/textures.md) for availability, coverage and known issues.
+
+Optional startup update checks run in the background and report in the launcher
+footer. Downloads still require confirmation. Game updates preserve installed
+and custom texture packs even though game ZIPs omit the optional pack.
 
 ## Developer Tools
 
@@ -173,7 +195,8 @@ In multiplayer, the host controls the **Tools** tab through **Options > Develope
 Tools** (default **Off**). **Settings** and **Diagnostics** remain accessible;
 **Time & audio** and **Player & progression** are unavailable online.
 
-Native Mac/Linux validation is pending; see [validation](docs/project/STATUS.md).
+See [validation](docs/project/STATUS.md) for Developer Tools checks and the
+remaining native Mac/Linux gameplay and visual acceptance work.
 
 <a name="guides--support"></a>
 
@@ -185,14 +208,16 @@ Native Mac/Linux validation is pending; see [validation](docs/project/STATUS.md)
 | --- | --- |
 | [Windows launcher](docs/players/launcher.md) | [Build from source](docs/development/building.md) |
 | [Mac launcher](docs/players/mac-launcher.md) | [Native Mac build](docs/players/macos.md) |
+| [Linux launcher](docs/players/linux-launcher.md) | [Linux build & acceptance](docs/development/linux.md) |
 | [Controls & display](docs/players/windows-settings.md) | [Shared Windows/Mac architecture](docs/development/shared-platform.md) |
 | [Multiplayer](docs/players/multiplayer.md) | [Release publishing](docs/release/releasing.md) |
 | [Textures](docs/textures/textures.md) | [Isolated gameplay testing](docs/development/testing-profile.md) |
 | [Crash reports](docs/players/windows-crash-logger.md) | [Repository map for agents](docs/agent-context/README.md) |
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
-with your installed versions, platform and steps to reproduce. The launcher's
-**Diagnostics** page provides local reports and logs; nothing uploads automatically.
+with your installed versions, platform and steps to reproduce. Open
+**Tools & Logs → System & Reports** for diagnostics or **Console** for live game
+output. Nothing uploads automatically.
 Keep personal saves and game data private.
 
 Suggest improvements in **[Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas)**.
@@ -215,7 +240,3 @@ components retain their own [licenses and credits](LICENSES/README.md).
 **This license does not cover the original TimeSplitters game or its assets.**
 You must supply your own supported game files. Original game data, generated
 game code, personal settings and saves are not included in this repository.
-
-The [Linux x64 launcher](docs/players/linux-launcher.md) uses the shared desktop
-interface and installs the matching Linux game package. See the Linux guide for
-desktop prerequisites and the experimental port's remaining validation limits.

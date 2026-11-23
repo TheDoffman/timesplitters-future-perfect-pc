@@ -1,0 +1,112 @@
+{
+  "scenario": "Venice - Arcade Custom Deathmatch, recommended bots, no score limit",
+  "expected_scene": 46,
+  "expected_weapon": -1,
+  "skip_intro": false,
+  "input": [
+    {
+      "at": 5,
+      "key": 69
+    },
+    {
+      "at": 10,
+      "key": 69
+    },
+    {
+      "at": 14,
+      "key": 40
+    },
+    {
+      "at": 18,
+      "key": 69
+    },
+    {
+      "at": 22,
+      "key": 40
+    },
+    {
+      "at": 24,
+      "key": 69
+    },
+    {
+      "at": 26,
+      "key": 69
+    },
+    {
+      "at": 28,
+      "key": 69
+    },
+    {
+      "at": 30,
+      "key": 40
+    },
+    {
+      "at": 32,
+      "key": 40
+    },
+    {
+      "at": 34,
+      "key": 69
+    },
+    {
+      "at": 38,
+      "key": 40
+    },
+    {
+      "at": 40,
+      "key": 37
+    },
+    {
+      "at": 41,
+      "key": 37
+    },
+    {
+      "at": 42,
+      "key": 37
+    },
+    {
+      "at": 43,
+      "key": 37
+    },
+    {
+      "at": 44,
+      "key": 37
+    },
+    {
+      "at": 46,
+      "key": 38
+    },
+    {
+      "at": 48,
+      "key": 69
+    },
+    {
+      "at": 52,
+      "key": 69
+    },
+    {
+      "at": 56,
+      "key": 69
+    },
+    {
+      "at": 68,
+      "key": 69
+    },
+    {
+      "at": 80,
+      "key": 69
+    },
+    {
+      "at": 84,
+      "key": 69
+    },
+    {
+      "at": 96,
+      "key": 69
+    },
+    {
+      "at": 108,
+      "key": 69
+    }
+  ]
+}

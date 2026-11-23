@@ -1,12 +1,14 @@
 [Update tests #558](launcher.md#game-update-progress-issue-558).
 
-[Sync telemetry](network-sync-telemetry.md).
+[Renderer default](windows-vulkan.md).
 
-[Pads](controller-deadzones.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
+[0.7 sync](network-sync-telemetry.md).
+
+[Turn Speed](controls-options.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
 [Actors](network-actor-lifetime.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
-[V-Sync](video-options.md).
+[Doors](network-doors.md).
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
@@ -134,8 +136,7 @@ They check acceptance/ABI rather than complete real geometry. See the
 [contact trace schema](native-player-contact.md) before interpreting live CSVs.
 
 <!-- packet:start -->
-Windows: `powershell -NoProfile -File tsfp.ps1 -Action Build` validates patches
-and fingerprints, regenerates, builds/tests MSVC x64. Output:
+Windows: `tsfp.ps1 -Action Build` validates/regenerates and builds/tests MSVC x64. Output:
 `build/windows/Release/futureperfect_recomp.exe`. Never edit generated C.
 Mac: `tools/build/build-native-mac.py` (`--generate` if stale, `--setup` for setup).
 Output: `build/macos/futureperfect_recomp`. Auto uses Vulkan on macOS26+, GL
@@ -613,11 +614,11 @@ The Windows-specific fixture compiles the model against deterministic
 monitor/window adapters: secondary fullscreen desktop size, windowed resize,
 minimize/query failure, allocation rollback/retry, persistence and preview
 rollback, manual override, and Auto ratio filtering. `tests/graphics/pc_display.c` retains
-manual scene/camera/HUD tests. `test_cutscene_letterbox.py` checks effective
-output and air-lift FOV (#339), including a guard-removal mutation. With a local
-US XBE it executes all four lift regions through the production camera hook.
-Launcher tests cover Auto UI/filter/save, defaults and older packages. Cocoa's
-self-test recognizes Auto; physical Retina/multi-display checks need Mac.
+manual scene/camera/HUD tests. `test_cutscene_letterbox.py` lifts all four US
+air-lift regions through the production camera hook, with a guard-removal mutation.
+[Original-actor fixtures](runtime-ci.md) retain shared pause-glass TLS state.
+Launcher checks cover Auto UI/filter/save, defaults and older packages; Cocoa
+self-test recognizes Auto. Physical Retina/multi-display checks need Mac.
 
 The historical controls-only fixture in `test_patch_updates.py` excludes
 `-auto-display.patch` until the complete-stack migration installs its display,

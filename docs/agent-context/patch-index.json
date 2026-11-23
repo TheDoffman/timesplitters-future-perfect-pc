@@ -2141,6 +2141,14 @@
       ]
     },
     {
+      "name": "2810-arcade-player-name-anchor.patch",
+      "path": "patches/graphics/interface/2810-arcade-player-name-anchor.patch",
+      "sha256": "c7e30b39756566eebfb6809be5ebb972ac65cff92a0b795ffece37e8d171d1cd",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "3000-arcade-migration-build.patch",
       "path": "patches/network/3000-arcade-migration-build.patch",
       "sha256": "8c6479f6b5010dfa7e67f2af754bab0ce927ccd8d38ccc73894c73a71ab676e7",
@@ -2170,6 +2178,18 @@
       "sha256": "5461ad8ef364754d86281264689d21211ad65649a776847c70056a85eb013ab4",
       "targets": [
         "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
+      "name": "3050-windows-vulkan-primary.patch",
+      "path": "patches/graphics/rendering/3050-windows-vulkan-primary.patch",
+      "sha256": "56596bd9293a78e54ee8728a1edd10439b7f45a48ccb7c8f986fe2f9f82c9297",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi_d3d11.c",
+        "src/d3d/rhi_vulkan.c",
+        "src/d3d/rhi_vulkan_dxc.cpp",
+        "titles/futureperfect/CMakeLists.txt"
       ]
     },
     {

@@ -10,6 +10,8 @@ param(
     [string[]]$Peers,
     [ValidateSet('Debug', 'Release', 'RelWithDebInfo')]
     [string]$Configuration = 'Release',
+    [ValidateRange(1, 64)]
+    [int]$CompileJobs = 2,
     [int]$Seconds = 30
 )
 
@@ -80,6 +82,9 @@ try {
             '-DXBSDB_BUILD_UNITTEST=OFF')
         Invoke-Checked $cmake @('--build', "$db\build", '--config', 'Release', '--target', 'XbSymbolDatabaseCLI', '--parallel', '4')
         & (Join-Path $projectRoot 'tools\build\fetch-video.ps1')
+        Invoke-Checked 'git' @('-C', $toolRoot, 'submodule', 'update', '--init', '--depth', '1',
+            'third_party/Vulkan-Headers', 'third_party/volk', 'third_party/VulkanMemoryAllocator')
+        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\windows_vulkan.py'), '--setup')
     }
     elseif ($Action -eq 'Status') {
         Write-Output "Tool checkout: $toolRoot"
@@ -152,6 +157,7 @@ try {
                 }
                 'Build' {
                     Assert-Game
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\windows_vulkan.py'))
                     if (!$SkipTextures -and ((Get-Content (Join-Path $projectRoot 'config\textures\texture-pack.json') -Raw | ConvertFrom-Json).delivery -eq 'bundled')) {
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\textures\build_textures.py'))
                     }
@@ -181,14 +187,19 @@ try {
                     $gameIconResource = & (Join-Path $projectRoot 'tools\build\build-game-icon.ps1')
                     Invoke-Checked $cmake @('-S', 'titles/futureperfect', '-B', $buildRoot,
                         '-G', 'Visual Studio 17 2022', '-A', 'x64',
+                        '-DXBOXRECOMP_VULKAN=ON',
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/storage/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src",
                         "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource",
                         "-DTSFP_GAME_MANIFEST=$projectRoot/config/build/windows-game.manifest")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_discord_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_discord_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4',
+                        '--', "/p:CL_MPCount=$CompileJobs")
+                    foreach ($dll in @('dxcompiler.dll', 'dxil.dll')) {
+                        Copy-Item -LiteralPath (Join-Path $toolRoot "third_party/dxc/bin/x64/$dll") -Destination (Join-Path $buildRoot "$Configuration/$dll")
+                    }
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/graphics/ghost_targets.py'),
-                        (Join-Path $buildRoot "xboxrecomp/src/replay/$Configuration/d3d8_replay.exe"))
+                        (Join-Path $buildRoot "xboxrecomp/src/replay/$Configuration/d3d8_replay.exe"), '--backend', 'd3d11')
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_discord_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_hang_policy_test.exe") @()

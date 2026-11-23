@@ -24,7 +24,12 @@ and mutations that remove the fix or break flushing/restoration. Wrapper checks
 read the pinned runtime after the complete patch stack has been applied and
 compile both Windows/native-Mac configurations. The original-US-routine case
 requires the local checksum-verified `private/game/default.xbe` and skips in CI
-without it. These contracts do not establish Mac scene fidelity or replace the
+without it. Its extracted production drawing code also reads the shared
+`pause_glass_depth` TLS state; the original-actor fixture declares it with the
+production type and starts outside that scope. The full UI fixture separately
+tests nonzero pause-glass scopes. Retain the original geometry, blur, UV, tint
+and ABI assertions when refreshing fixture dependencies.
+These contracts do not establish Mac scene fidelity or replace the
 recorded Windows in-game confirmation; no personal saves are used.
 The optional router context-reader contracts use Node's built-in test runner
 (`node --test tests/repository/repository-context.test.mjs`); game building still uses the

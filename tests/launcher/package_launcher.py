@@ -29,6 +29,7 @@ import tempfile
 import unittest
 from unittest import mock
 import zipfile
+from windows_vulkan import FILES as DXC_FILES
 
 ROOT = _layout_root
 sys.path.insert(0, str(ROOT/'tools'))
@@ -108,6 +109,18 @@ class LauncherPackaging(unittest.TestCase):
                              'third_party/ffmpeg/bin/swresample-6.dll']:
                 put(upstream / relative)
             put(root / 'ProgramFiles/Microsoft Visual Studio/2022/Test/VC/Redist/MSVC/1/x64/Microsoft.VC143.CRT/vcruntime140.dll')
+            # Keep the real pinned-file verifier active in this synthetic package.
+            dxc = upstream / 'third_party/dxc'
+            dxc_hashes = {}
+            for relative in DXC_FILES:
+                path = dxc / relative
+                put(path)
+                dxc_hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+            pin = {'version': 'fixture', 'sha256': hashlib.sha256(b'fixture archive').hexdigest()}
+            (root / 'config/build').mkdir(parents=True)
+            (root / 'config/build/dxc-windows.json').write_text(json.dumps(pin))
+            (dxc / 'receipt.json').write_text(json.dumps({'archive_sha256': pin['sha256'], 'files': dxc_hashes}))
+            (root / 'build/windows/CMakeCache.txt').write_text('XBOXRECOMP_VULKAN:BOOL=ON\n')
             with mock.patch.object(package, 'ROOT', root), \
                     mock.patch.object(sys, 'argv', ['package-release.py', '--version', 'v1.2.3']), \
                     mock.patch.dict(os.environ, {'ProgramFiles': str(root / 'ProgramFiles')}), \
@@ -126,6 +139,10 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertIn(prefix + 'TimeSplitters Launcher.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/TimeSplitters.App.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/tsfp_crash_helper.exe', archive.namelist())
+                for relative in ['Bin/dxcompiler.dll', 'Bin/dxil.dll', 'Licenses/DXC-LICENSE-MIT.txt',
+                                 'Licenses/DXC-LICENSE-MS.txt', 'Licenses/DXC-LICENSE-LLVM.txt',
+                                 'Support/Graphics/dxc-receipt.json']:
+                    self.assertIn(prefix + relative, archive.namelist())
                 self.assertIn(prefix + 'Support/Discord/README.txt', archive.namelist())
                 self.assertEqual(archive.read(prefix + 'Support/Discord/pc-discord.default.ini'), discord_default)
                 self.assertNotIn(prefix + 'Discord-setup.txt', archive.namelist())

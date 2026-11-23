@@ -27,7 +27,7 @@ def test_native_menu_callbacks_compile(tmp_path, source):
     assert result.returncode == 0, result.stdout + result.stderr
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows settings persistence adapter')
-@pytest.mark.parametrize("mutation", ["fixed", "drain-other-menu", "original-system-link", "missing-lan-activation", "missing-browser-backend-init"])
+@pytest.mark.parametrize("mutation", ["fixed", "original-controller-speed", "drain-other-menu", "original-system-link", "missing-lan-activation", "missing-browser-backend-init"])
 def test_fov_settings(tmp_path, mutation):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / 'fov.exe'
@@ -62,6 +62,29 @@ def test_fov_settings(tmp_path, mutation):
         fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
         source = tmp_path / 'fov_settings.c'
         source.write_text('#define TSFP_TEST_ORIGINAL_SYSTEM_LINK\n' + fixture, encoding='utf-8')
+    if mutation == 'original-controller-speed':
+        import hashlib
+        xbe = ROOT / 'private/game/default.xbe'
+        if not xbe.is_file():
+            pytest.skip('Supported local US executable required')
+        image = xbe.read_bytes()
+        assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+        sys.path.insert(0, str(RUNTIME))
+        from tools.recomp import config
+        from tools.recomp.translator import FunctionTranslator
+        previous = dict(vars(config))
+        try:
+            config.configure_from_xbe(str(xbe))
+            functions = {0x2eab30: dict(name='speed_original', end=0x2eaca7),
+                         0x2e9e50: dict(name='speed_accept_original', end=0x2e9e9d)}
+            translator = FunctionTranslator(image, functions)
+            code = '\n'.join(translator.translate_function(a, info) for a, info in functions.items())
+        finally:
+            vars(config).update(previous)
+        (tmp_path / 'controller_speed_original.inc').write_text(code, encoding='utf-8')
+        fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', (ROOT / 'src/interface/pc_display_menu.c').as_posix())
+        source = tmp_path / 'fov_settings.c'
+        source.write_text('#define TSFP_TEST_CONTROLLER_SPEED\n' + fixture, encoding='utf-8')
     if mutation == 'drain-other-menu':
         adapter = (ROOT / 'src/storage/pc_storage_menu.inc').read_text(encoding='utf-8')
         guard = 'if(sd_picker_menu && sd_picker_menu==menu)'

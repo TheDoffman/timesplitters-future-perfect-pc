@@ -113,6 +113,7 @@ void pc_display_ui(void (*original)(void),uint32_t tag)
            Giving only RANK a left anchor shifts SCORE toward it on widescreen. */
         if(WORD_AT(g_esp)!=0x0012EC8Bu && WORD_AT(g_esp)!=0x0012EA9Bu){original();return;}
         placement=3;break;
+    case 0x0012DBA0u: /* Arcade's local player name, measured from the left inset. */
     case 0x0013FC50u: /* Story date/title, including all outline/shadow passes. */
     case 0x0012F670u: case 0x0014B930u: case 0x001409C0u: placement=3;break;
     default:original();return;
@@ -429,7 +430,7 @@ static int aim_full_view(void)
 void pc_display_aim_primitive(void (*original)(void),unsigned kind)
 {
     uint32_t frame=g_esp,caller=WORD_AT(frame),offset=4,points=2;
-    int anchor=1,matched=0;
+    int anchor=1,matched=0,actor_icon=0;
     if(kind==2) menu_character_quad();
     if(kind==0) {
         matched=caller==0x0014CC10u || caller==0x001481E9u ||
@@ -440,17 +441,21 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
         switch(caller) {
         case 0x00135BB4u:case 0x00135C5Au:case 0x00135CA7u:anchor=3;matched=1;break;
         case 0x00135CF6u:case 0x00135D58u:case 0x00135D95u:anchor=4;matched=1;break;
+        /* sub_0013C560 projects each actor before emitting these two icon
+           rectangles. Fit each rectangle about its own projected midpoint;
+           never pull its position into the centered 4:3 HUD canvas. */
+        case 0x0013CF7Au:case 0x0013D04Eu:actor_icon=1;matched=1;break;
         }
     }
     if(matched && !pc_developer_hud_visible()){g_esp+=4u;return;}
-    if(!matched || !aim_full_view()){original();return;}
+    if(!matched || (actor_icon && !pc_display_wide_now()) || !aim_full_view()){original();return;}
     uint32_t saved[8],old_tag=ui_tag;int old=ui_placement;
     float xy[8];
     for(unsigned i=0;i<points*2;i++)saved[i]=WORD_AT(frame+offset+i*4);
     memcpy(xy,saved,points*2*sizeof(float));
-    if(kind!=2) {
+    if(kind!=2 || actor_icon) {
         pc_ui_aim_shape(xy,points,pc_display_hud_scale());
-        pc_ui_aim_size(xy,points,pc_display_crosshair_size()*.01f);
+        if(!actor_icon)pc_ui_aim_size(xy,points,pc_display_crosshair_size()*.01f);
         for(unsigned i=0;i<points*2;i++)memcpy(&WORD_AT(frame+offset+i*4),&xy[i],4);
     }
     ui_place(anchor,caller);original();ui_place(old,old_tag);

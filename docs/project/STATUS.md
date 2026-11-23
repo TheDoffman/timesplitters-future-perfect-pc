@@ -61,6 +61,556 @@ update or Steam Deck timing benchmark. Native Mac execution and physical SteamOS
 storage acceptance remain unverified. This fixes silent progress; it does not claim
 a reduction in installation disk work or the reported three-minute duration.
 
+## Online automatic-door synchronization (#330, 2026-11-22)
+
+Branch `fix/330-online-door-sync`, based on main `9a1e37d1`. Two isolated
+Windows Online instances reproduced Zeppelin host doors opening for bots while
+guest doors remained closed. The original joining packet restores only open or
+closed endpoints; it does not continuously carry door animation progress.
+A guest proximity-only prototype still produced incorrect timing and endpoints
+and was discarded. The shared fix sends host numeric animation state through an
+authenticated, bounded extension of the existing LAN/Online transport. The
+original door update, rendering, locks and gameplay simulation remain in use.
+No launcher setting/server API is added. #330 remains open pending publication.
+
+Windows Release D3D11/Vulkan build, isolated post-build checks, identity sealing
+and matching crash-symbol generation pass. All 34 focused cases plus 14
+transport/identity cases pass, including
+production Windows/native frame and transport adapters, actual original US
+joining-state receiver/setters and deliberate regression mutations. Real UDP
+LAN receive/send and Online bridge receive/key-rejection tests pass. The
+unrelated virtual-pad focus probe remains skipped when foreground activation
+is denied. Native Mac/Linux gameplay and physical WAN remain unverified.
+
+The first Mac CI run caught a test-double name collision with Darwin's `htons`
+macro. The fixture now uses a namespaced byte-order helper; production gameplay
+and transport code are unchanged by this portability correction.
+Strict Mac checkpoint tests also caught an unused static header helper; marking
+the validator inline preserves behavior and permits those header-only clients.
+The menu-only FOV fixture supplies the new door API doubles explicitly; its
+Windows link check does not depend on optimizing away the public frame adapter.
+
+Live acceptance uses Original60, Vulkan and private-host Online v2 on one Windows
+computer. Zeppelin with two humans/six bots: 18,000 door comparisons over 91.64
+seconds, nine moving doors, mean progress error 0.0000916, maximum 0.0991 and no
+error above 0.1. Baseline: 765 of 6,000 comparisons above 0.1, including fully open
+host/closed guest doors. The corrected paired driver completed movement and
+replication checks without disconnect, then cleaned up. Bunker with two humans
+and zero bots: both players opened separate doors and walked through them using
+file-driven keyboard/mouse input, without guest memory writes. Both peers agreed
+on those doors. Across 25,200 comparisons over 91.44 seconds the mean error was
+0.00000397; one asynchronous transition edge was 0.100000009 (one animation step).
+These are two-map checks, not an all-map or native-host claim. Saves/settings
+were isolated; captures, hashes and numeric observations remain in ignored logs.
+
+## Online Gladiator bot selection (#229, 2026-11-22)
+
+The shared bot-activity adapter now accepts a selected AI actor in the original
+host Gladiator publisher. Previously its human-only check rejected that bot and
+repeated the suicide fallback every update. Human/controller eligibility and
+selection, scoring and packet rules remain unchanged. Publication is pending;
+#229 stays open until a release containing this fix is available.
+
+Windows: 14 focused tests pass, including original US selection/publication/
+receiver routines and a mutation that removes the fix. Release D3D11/Vulkan
+build, post-build checks and identity/symbol verification pass. Two isolated
+Windows Online instances with six bots, Original60 and Vulkan confirmed a guest
+Gladiator rocket suicide: both peers incremented the self-kill counter, selected
+the same bot and continued without endless selection or disconnect. The run
+completed in 449 seconds with movement/replication checks and cleanup. A separate
+normal-loadout pair also passed. No guest memory was written to seed gameplay.
+Live host suicide is covered only by original-code tests; physical WAN,
+community relay, Mac and Linux gameplay remain unverified. The unrelated
+virtual-pad focus probe skipped when foreground activation was refused.
+
+## Launcher Vulkan default without a renderer selector (2026-11-22)
+
+Local branch feature/launcher-vulkan-default, based on main1f6fa9da: removed
+GraphicsRenderer and its preference/capability plumbing from the shared launcher.
+Windows launch always requests Vulkan after clearing inherited overrides. Old
+launcher.renderer values are ignored and preserved as unknown JSON data, so an
+old D3D11 choice or invalid value cannot select another backend or block launch.
+Native Mac/Linux keep existing manifest-based Vulkan driver routing. Automatic
+Windows startup fallback and legacy Mac GL compatibility are unchanged.
+
+Windows launcher builds. The new shared UI regression passes (selector absent,
+old values preserved, child override Vulkan);116 updater regression groups and
+54 isolated settings checks pass, including an actual child reading Vulkan.
+35 selected Python checks and acceptance --compile-only pass. Mac/Linux projects
+compile with SDK9.0.312 and isolated lockfiles (zero errors, two existing obsolete
+event warnings each). Native UI execution is unrun. Full Windows -Test stops at
+an unrelated save-restore guard because the user's interactive game is running;
+the game is left open. No new gameplay or GPU acceptance is claimed for this
+launcher-only change; no game rebuild is needed. Local results are in
+logs/launcher-vulkan-default-*.log. Previous paired-backend measurements below
+remain historical evidence, and the launcher acceptance helper now tests Vulkan
+only; direct game/RHI runners retain explicit backend comparisons.
+
+## Windows Vulkan acceptance completed on available NVIDIA host (2026-11-21)
+
+The bounded Windows acceptance matrix passes on RTX 4070 SUPER / driver 617.42,
+using the same game SHA a8a26b31 and launcher SHA a4854d60 throughout. Vulkan remains
+the Windows default; D3D11 remains selectable and recovers automatically when
+Vulkan's compiler is unavailable. The actual-launcher recovery case presents with
+D3D11, completes gameplay and preserves the saved Vulkan preference. The owned
+compiler link is restored; installed drivers and source/build compiler DLLs are
+unchanged. Final eight-case production RHI checks pass with Vulkan validation
+active and no validation diagnostics.
+
+Three uncaptured ETW runs per backend pass the frame-pacing thresholds at the
+60 FPS cap. Vulkan uses more private/dedicated GPU memory in that cohort.
+Four paired quality/display settings cases, Auto/fixed resizing, Time to Split,
+Scotland and Venice with bots pass. Five-minute paired movement/pause runs pass
+late clocks, input and resource limits; reviewed late images remain consistent.
+Original signed Accept/Cancel saves reload correctly in both backend orders.
+Targeted Scotland water GPU readbacks match qualitatively, including foreground
+occlusion and splash blending; production pixel tests complement the level views.
+The [measured report](../development/windows-renderer-results.md) records hashes,
+measurements, reviewed views, retained observer failures and reproducible commands.
+
+Final selected checks:30 tests passed plus harness/capture/compiler-stub build
+and live-log sharing checks. The shared Auto allocation fix was rebuilt and
+validated on Windows earlier in this goal. No current-host acceptance gate remains
+open. AMD/Intel, other drivers, native Mac/Linux, native4K/8K scanout and other
+monitor layouts remain unverified. Coverage is representative, not a full-game
+playthrough or proof against slower leaks. Work is local on feature/windows-vulkan;
+no merge or release publication.
+
+## Earlier performance and quality progress (superseded by acceptance above)
+
+Three uncaptured actual-launcher runs per backend complete on RTX4070SUPER/
+driver617.42 with gameSHAa8a26b31 and PresentMon2.6.0. QPC-aligned85-115s
+gameplay is59.99-60.03FPS, with no submitted/displayed intervals over25ms.
+Vulkan/D3D11 median-of-three interval ratios pass the median+10% andp95/p99+20%
+gates. The [measured report](../development/windows-renderer-results.md) records
+all six cases, CPU, private/resident/dedicated GPU memory, latency, cache and
+startup/loading gaps. Vulkan allocates more private/GPU memory in this cohort;
+longer growth/stability testing remains open. These results supersede the older
+pending performance note below, not other acceptance gates.
+
+The original Vulkan fullscreen GDI captures were black/stale. GPU readback and
+DXGI duplication establish correct presented gameplay; the launcher helper now
+uses bounded DXGI captures with PID/executable checks. Four fresh paired
+quality/display cases pass and their gameplay images have been reviewed: FXAA/
+MSAA2/filter4, SMAA/MSAA4/filter16, Off/MSAA8/filter8, and window cycling at
+MSAA1/filter2. These cover selected scene sizes1024x768 through3840x2160 on one
+1080p monitor, not native4K scanout or every resolution combination. Additional targeted effects/levels, sustained gameplay and
+actual guest save/load were initially pending. Save/load now passes both renderer
+orders through original Accept/Cancel actions: exact expected bodybyte6 change,
+valid signatures, same accepted SHA95fdcc0f, OFF loaded by the other renderer and
+Cancel preserved after a third process restart. All six requested backends
+present with clean session exits. These are direct-child guest save tests, separate
+from launcher selection. Two Story pairs now pass (Time to Split and Scotland
+scene4); longer gameplay, paired Arcade and targeted effect views remain pending.
+Overall goal remains active. AMD/Intel,
+other drivers and native Mac/Linux validation remain unverified. Local branch
+only; no merge or release publication.
+
+## Rebuilt Auto-resolution acceptance passed (2026-11-21)
+
+The normal Windows Build -SkipTextures completed successfully, including its
+standard build checks. The shared Auto fix is in build source8b3e6fca; game
+SHA256 is `a8a26b31dfa9bc4174bdfe6fd4d157f3e01b3fefe17e269cb51b809db80a7cb1`.
+Build/source-policy hashes are in logs/renderer-acceptance-build-provenance.json.
+
+Both actual launcher paths pass display-auto-fixed-01 on this same new executable.
+D3D11 and Vulkan now log native scene-target changes1920x1080 ->640x480 ->1008x729
+->640x480, matching the real fullscreen/windowed/resize/restore geometry. Their
+strict automatic_resize_applied checks pass, with correct requested backends,
+no fallback or failed presents, controlled gameplay and exit0. Reviewed paired
+112s captures show consistent world/weapon/HUD geometry and ammo12 after firing.
+Old failed Auto reports remain failed; they are not relabelled as successful.
+Mac/Linux shared-policy runtime acceptance remains pending on native hosts.
+
+The optional pinned ETW console successfully captures our actual game PID without
+machine permission/service changes. The acceptance wrapper now supports
+--presentmon and --repetitions3: UUID-named PID-filtered sessions, input tracking
+disabled, bounded capture and owned-session cleanup. Frames are QPC-aligned to
+non-cutscene85-115s gameplay and report submitted/displayed interval distributions,
+GPU-busy and display-latency distributions. Missing displayed frames, another PID,
+ambiguous swap chains or inconsistent frame-row coverage fail the measurement.
+A trace-valid case is not itself the relative performance gate; compare all three
+runs per backend against the matrix thresholds before accepting P1.
+Nine runner tests plus model/selected launcher checks pass:26 tests /31subtests.
+Actual three-run performance results remain pending. Additional quality/level,
+stability and explicit save/load gates remain open; the overall goal is active.
+
+## Auto-resolution allocation fix under validation (2026-11-21)
+
+The new hardware resize gate found a shared failure on the old game hash0c1d5903:
+D3D11 display-auto-01 and Vulkan display-auto-old-vulkan-01 both changed window
+sizes and CPU camera aspect, but never logged a matching native scene-target
+resize. Their strict acceptance reports remain failed despite clean game exits
+and otherwise successful backend/presentation checks. This is not Vulkan-only.
+
+Native HUD sizing calls pc_display_scene_size before end-of-frame allocation.
+That query refreshed the cached Auto mode, so pc_display_frame_done mistook the
+requested dimensions for an already applied resize and skipped the allocator.
+A new interleaved-HUD-probe regression fails on the old shared code (applied_w
+never becomes2560). The fix establishes the initial scene snapshot once and
+leaves subsequent effective-size changes to the successful frame-done commit.
+Failure retains the previous target and later frames retry.
+
+Both tests in test_pc_display_modes.py pass after the fix, including the shared
+SDL policy compiled under MSVC. The normal native Windows rebuild and paired
+hardware rerun are pending. Source change is shared across Windows, native Mac
+and Linux; native-host execution remains awaiting validation. Previous fixed
+1280x720 scene results remain historical evidence on the old hash, not acceptance
+of the new executable. No main merge or publication.
+
+## Fixed-resolution fullscreen and resize acceptance (2026-11-21)
+
+Both actual launcher paths pass display-fixed-01 on sourcef6c2958b: windowed
+640x480 client -> Alt+Enter fullscreen1920x1080 -> windowed640x480 -> resized
+1008x729 client -> restored640x480, while the selected scene target intentionally
+remains1280x720. Scene/MSAA1 log checks, no-fallback/no-failed-present checks,
+movement/firearm checks and exit0 all pass. Exact rectangles/styles and captured
+checkpoints are retained in each verified.json/display.json and PNGs under
+`logs/renderer-validation/display-fixed-01`.
+
+Reviewed paired stable gameplay captures at80/104/112s: world, HUD, weapon and
+additive glow rendering remain consistent after the transitions. The66s images
+are during the animated handoff and are not aligned static viewpoints; D3D11's
+fullscreen image also contains a transient vendor overlay. Neither observation
+is counted as a renderer mismatch or a precise paired visual comparison.
+Automatic render-target resizing and additional startup resolutions are next;
+these results do not establish those separate gates.
+
+The harness now accepts a bounded JSON input schedule for other Story/Arcade
+scenarios, with explicit expected-weapon metadata. The Scotland the Brave
+schedule is derived from reviewed profile/main/level menus and is awaiting its
+hardware run. A wildcard weapon expectation checks world/player input only;
+it must not be labelled an opening-firearm test. Cutscene samples are excluded
+from measured gameplay. Eight runner unit tests and the native IO/compiler check
+pass (23 Python tests /31 subtests with the selected launcher checks).
+The ordinary window-close smoke leaves the copied profile bytes unchanged, so
+it is not being counted as the still-pending explicit guest save/load check.
+
+## Renderer resource repeat and display acceptance extension (2026-11-21)
+
+All four baseline-cold-warm-03 launcher cases pass on source2428e479, with the
+unchanged game/launcher executable hashes recorded above. This repeat adds the
+shared live-log observer and per-process dedicated GPU counters. Application
+caches start empty and warm runs prove disk reads; driver caches remain untouched.
+
+| Backend/cache | CPU core equivalents | Peak private MiB | Peak resident MiB | Peak dedicated GPU MiB | Guest ticks/s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| d3d11-cold | 0.617 | 265.25 | 235.82 | 41.57 | 59.987 |
+| d3d11-warm | 0.660 | 261.84 | 230.79 | 42.01 | 59.966 |
+| vulkan-cold | 0.634 | 372.28 | 238.86 | 151.33 | 60.000 |
+| vulkan-warm | 0.655 | 367.01 | 231.01 | 151.33 | 60.000 |
+
+The Vulkan allocation/commit difference repeats, while resident memory remains
+close. Dedicated allocation is steady in the observed 85-115s window. This is
+not evidence of a leak, and does not replace the pending longer stability test.
+First-window and first-present observations are readiness samples with polling
+resolution, not precise shader-compilation or scanout measurements. Raw report:
+`logs/renderer-validation/baseline-cold-warm-03/report.json`.
+
+The opt-in harness now checks initial window styles, actual Alt+Enter transitions,
+resize and size restoration, configurable bounded capture checkpoints, and
+active scene resolution/MSAA/SMAA log state. Automatic resolution must log a
+native scene resize matching the observed client dimensions. The new display and
+quality gates have unit/compile checks; their hardware scenarios are next and
+must not be inferred from this resource repeat. No production renderer change.
+
+## Renderer acceptance live-log observer fix (2026-11-21)
+
+The first-present observer added after the initial four-case baseline hit a
+Windows sharing violation: File.ReadAllText did not permit the launcher's active
+write handle. This was an acceptance-harness failure, not a renderer failure.
+The failed baseline-cold-warm-02 report remains passed=false; its owned child
+was stopped and disposable disks recycled. ReadLiveLog now explicitly shares
+read/write/delete, and --compile-only runs a native live-writer/read test before
+any hardware session. That test and all six acceptance safety/measurement tests
+pass. Fresh evidence labels are required for reruns; no stale pass is reused.
+No production launcher/runtime behavior changed.
+
+## Renderer acceptance matrix and cold/warm launcher runs (2026-11-21)
+
+The active Vulkan/D3D11 validation goal now has an explicit
+[matrix and reproduction steps](../development/windows-renderer-validation.md).
+This is ongoing acceptance work; frame-pacing repetitions, display transitions,
+quality settings, additional Story/Arcade visuals, extended stability and explicit
+save/load comparisons remain open. Only RTX 4070 SUPER / driver 617.42 is available;
+AMD, Intel and other driver combinations remain unverified.
+
+The promoted opt-in Windows runner uses actual SettingsPage selection/Save and
+unmodified LauncherWindow.LaunchGame. It locks the sandbox, hard-links immutable
+game data, copies the Test Lab profile, isolates APPDATA/LOCALAPPDATA, bounds
+sessions/logs and recycles only disposable virtual disks. Test binaries live
+outside launcher package inputs. CI runs safety/measurement unit checks and
+compiles the hardware harness; CI does not claim real-game hardware execution.
+
+First uncaptured 120-second cold/warm pair per backend: all four cases pass,
+reach Story, move/fire, present only on the selected backend and exit 0.
+
+| Backend/cache | CPU core equivalents, 85-115s | Peak private MiB | Peak working-set MiB | Guest ticks/s |
+| --- | ---: | ---: | ---: | ---: |
+| d3d11-cold | 0.653 | 263.95 | 235.21 | 59.987 |
+| d3d11-warm | 0.582 | 259.62 | 228.59 | 60.034 |
+| vulkan-cold | 0.637 | 369.76 | 238.35 | 60.007 |
+| vulkan-warm | 0.624 | 367.67 | 231.81 | 59.987 |
+
+Vulkan private commitment is about 106-108 MiB higher in this pair; resident
+memory differs by roughly 3 MiB. This difference is measured, not yet classified
+as a leak/regression. Repeats and sustained samples are still required. CPU is
+process time divided by wall time, not machine CPU percentage or GPU time.
+Window creation is 0.178-0.196s and the scripted Story transition is about46.2s;
+scripted input masks smaller loading differences, so these are readiness smoke
+observations rather than a precise shader-compilation benchmark.
+
+Application caches begin empty, grow to40 D3D11 /42 Vulkan files, and warm runs
+log disk-cache hits (ending at41 /42 files). Driver/OS caches were not cleared.
+Local report: `logs/renderer-validation/baseline-cold-warm-01/report.json`.
+Game SHA remains `0c1d590355889cf53223d05349e97fb5d13ef9d8f8b9ba9e872cf75134bc2b9f`;
+launcher SHA remains `a4854d60b0b5262512ad41f07f543293638f4b637438df9fd98b6acaade4c690`.
+This set used promoted harness SHA
+`967fed4ce48b1c25a7f1e8eca87cc0a9afca6e456fd169c03fcce82eb8a000f6`
+from basefcb25b5e. The subsequently compiled harness adds per-process dedicated
+GPU-memory counters and first-present observation; those new measurements need
+a follow-up run. Windows counters are available on this host. Current checks:
+21 Python tests /31 subtests pass, and the final C# harness compiles. The canonical
+fixture is unchanged and the first set's disposable disks were recycled.
+No runtime/launcher fix, main merge or publication occurred.
+
+## Launcher renderer switching gameplay validation (2026-11-21)
+
+**Passed D3D11, then Vulkan through the real Windows launcher settings and
+launch path.** Launcher source is `f4b615a9`, on feature/windows-vulkan.
+An isolated WPF harness drives SettingsPage.GraphicsRenderer and the Save button,
+reopens the launcher, and invokes unmodified LauncherWindow.LaunchGame. Preview
+mode suppresses launcher networking only; the native game is real. No backend
+environment override or replacement executable was injected. The synthetic
+installation manifest advertises both compiled backends; game data/executable
+use hard links, and saves/settings use disposable Test Lab copies.
+
+Each run lasted 120 seconds, reached the first Story mission, equipped weapon 14,
+responded to movement and firing, and closed normally with exit code 0. Reviewed
+80/112-second screenshots show the world/weapon rendering correctly and magazine
+ammo falling from 16 to 12. Logs identify only the chosen backend, with no fallback,
+shader/RHI errors or failed presents. The 85-115 second observation window has
+92 D3D11 / 91 Vulkan gameplay samples and 1771 / 1772 advancing ticks respectively
+(59.993 / 60.007 guest ticks per second; this is not a GPU/scanout measurement).
+The saved choice survived both launches and ends on Vulkan. Normal startup-splash
+skipping was enabled; Vulkan SDK validation was not enabled in this launcher run.
+
+Host: Windows 11 Pro 10.0.26300 x64, RTX 4070 SUPER, driver 617.42.
+Game SHA-256: `0c1d590355889cf53223d05349e97fb5d13ef9d8f8b9ba9e872cf75134bc2b9f`.
+Launcher SHA-256: `a4854d60b0b5262512ad41f07f543293638f4b637438df9fd98b6acaade4c690`.
+Local evidence: `logs/launcher-renderer-gameplay/report.json`, per-backend logs,
+state samples and three PNGs each; harness: `logs/RendererGameSmoke.cs`.
+Canonical Test Lab fixture hashes pass; disposable virtual disks were recycled,
+and no game/harness process remains. Personal saves/settings were not used.
+No launcher/runtime fix was needed. Scope is this GPU and the opening mission,
+not full-game or cross-vendor acceptance. No merge/publication was performed.
+
+## Windows launcher renderer setting (2026-11-21)
+
+Game settings > Graphics > Display now offers Renderer (next launch), with
+Vulkan (Default) and Direct3D 11. Save settings and restart the game to apply.
+The existing controls JSON transaction stores launcher.renderer; unrelated saves,
+Cancel and stale-draft protection retain their established behavior. Vulkan
+startup recovery to D3D11 remains unchanged. Older packages without both declared
+backends show a disabled selector and update hint. Mac/Linux hide this Windows
+choice and preserve its saved value without passing an unsupported backend.
+
+Windows `tools/build/build-launcher.ps1 -Test` passed, including shared UI checks
+for persistence, inherited-environment scrubbing, Save/Cancel, invalid settings,
+stale drafts and legacy package handling. Both selected values reached real
+child processes. The Graphics PNG preview was reviewed at 1152x772.
+Mac and Linux projects compile on Windows with zero errors; native UI execution
+is awaiting native-host validation. No game renderer/runtime code changed here.
+Local work remains on feature/windows-vulkan; no publication or main merge.
+
+## Windows Vulkan primary renderer (2026-11-21)
+
+**Vulkan is now the Windows default, with D3D11 recovery.** This supersedes the
+earlier opt-in-only decision in the Windows Vulkan comparison section below.
+Source is on `feature/windows-vulkan`, following `fe035bd6`; the separate
+checkout's pending compiler/launcher work was preserved. No main merge or
+release publication was performed.
+
+Patch `3050-windows-vulkan-primary.patch` prefers Vulkan when compiled while
+retaining D3D11 as the recovery backend. Shader-compiler initialization happens
+before GPU allocations, so missing DXC can recover instead of reaching a blank
+rendering path. Partial initialization releases its instance/surface/messenger,
+and allocator destruction is guarded. Explicitly adopting a D3D11 device also
+selects its backend, preserving WARP/native-device ownership in Vulkan-first
+builds. Windows packaging now records `graphics_default=vulkan`.
+
+The normal `tsfp.ps1 -Action Build -SkipTextures` Release workflow passes with
+maintained MSVC compatibility rules, replacing the prior handwritten VCXPROJ
+overrides. `msvc_generated_code.py` resolves the eight measured exception
+definitions from `config/build/msvc-generated-code.json` to their current
+generated files. It never edits generated C or drops guest instructions. Three
+affected units use `/Od /Ob0`, five use `/Ob1`; other source retains Release
+optimization and Debug is unchanged. Fresh per-source compiler processes use
+the `-CompileJobs` bound (default two). Tests verify symbol regrouping, input
+preservation, stronger rules in shared units, invalid/missing definitions and
+CMake's actual Debug/Release expansion. An attempted `/O2 /Ob0` probe still
+stalled on the large `sub_000DD1B0` body; the supported policy uses the measured
+exceptions rather than claiming that compiler optimization issue is solved.
+
+All standard build checks passed, including graphics clear/readback, production
+replay, storage, controls, settings, prompts, display, textures, diagnostics,
+network, Discord and hang policy. Matching crash symbols and sealed network
+identity were produced. The standard build replay baseline explicitly selects
+D3D11 so developers do not need a Vulkan validation SDK merely to build; the
+dedicated Vulkan checks below require the verified SDK.
+
+On Windows 11 x64/MSVC 14.44.35207, RTX 4070 SUPER driver 617.42 / Vulkan 1.4,
+the final normal-build executable SHA-256 is:
+`0c1d590355889cf53223d05349e97fb5d13ef9d8f8b9ba9e872cf75134bc2b9f`.
+Runtime/XBE pins are unchanged; the supported US XBE and Test Lab fixture were
+verified. Each game run uses disposable settings, saves and shader caches.
+
+All eight real RHI cases passed: default Vulkan without an override, explicit
+Vulkan, explicit D3D11, explicit Vulkan missing-driver recovery, default
+missing-driver recovery, missing-DXC recovery, no-usable-device recovery and
+explicit D3D11 WARP adoption. Ordinary Vulkan cases required active SDK 1.4.363.0
+validation and had no warnings/errors. Recovery cases deliberately disable the
+driver/compiler/device only in the child process. The no-device case uses the
+documented loader vendor filter; no system drivers or registrations are changed.
+
+A final 120-second Original 60 FPS / 1280x720 run with `--backend auto` leaves
+`RECOMP_D3D8_BACKEND` unset and observes real Vulkan guest presents. Active
+validation, captured gameplay and all movement, fire/ammunition, hand animation,
+weapon handoff and pause/resume checks passed. The reviewed capture shows the
+expected terrain, sky, weapon, HUD and effects. No crash, silent fallback,
+renderer error or validation diagnostic was observed.
+A separate 45-second default boot with movies enabled also passed, including
+decoded/rendered EA and Free Radical intro clips. Selected startup captures
+and `logs/vulkan-primary-startup.json` retain that evidence; validation remained
+active and clean. This check does not rely on skipping the movie path.
+
+Separate 120-second timing runs use this same executable, with capture and
+validation disabled. The matching first-mission window is approximately 85–115 seconds,
+after loading and pause; each backend contributes 1772 successful guest presents.
+
+| Backend | Mean interval | p95 | p99 | Intervals over 25 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Default Vulkan |16.6666 ms |17.073 ms |17.209 ms |1 |
+| Explicit D3D11 |16.6666 ms |17.042 ms |17.181 ms |0 |
+
+Both sustain approximately 60 FPS at the original cap, with comparable pacing;
+Vulkan's single over 25 ms interval is retained in the data. These are CPU
+intervals between successful present returns, not GPU completion or monitor
+scanout measurements. No uncapped speed advantage or full-campaign acceptance
+is claimed. AMD/Intel GPU hardware, physical controller feel and native Mac/Linux
+GPU/gameplay checks remain unrun on this host. Modern Mac/Linux keep their
+existing Vulkan defaults; legacy Mac OpenGL remains a compatibility path.
+
+Evidence: `logs/vulkan-primary-comparison.json`, `logs/rhi-windows.json`,
+`logs/vulkan-primary-normal-build.log`, `logs/vulkan-primary-gameplay.bmp`,
+`logs/vulkan-primary-replay.log`, and tagged reports/CSVs beneath
+`private/test-saves/high-refresh`. The final comparison report requires matching
+executable hashes and reports `passed=true`. Python/patch regressions are
+recorded in `logs/vulkan-primary-regressions.log`; context and whitespace checks
+are recorded before commit. See [architecture/build policy](../agent-context/windows-vulkan.md)
+and [player commands](../players/windows-vulkan.md).
+The broader regression run passed 85 cases and exposed one historical fixture
+that tried the new renderer patch before its excluded graphics prerequisites.
+That fixture now defers patch 3050 in the historical phase and verifies its
+installation after the full upgrade. Its focused rerun passed (1 test,
+25.56 seconds); `logs/vulkan-primary-upgrade-fix.log` preserves the result.
+
+## Extended controller Turn Speed (2026-11-20)
+
+Source on `feature/controller-turn-speed`; live validation used base `af9d3453`.
+Shared native Controls/slider code extends 0..1 to 0..1.5 in 0.05 steps, without
+rescaling saved values or changing defaults/deadzones/mouse aiming. Mouse paint
+and dragging cover the same range; Accept/Cancel retain the native profile ABI.
+
+Validation host: Windows x64, Python 3.12.14, MSVC 14.44.35207 compiled
+C fixtures. Full pinned runtime patch stack verified in an isolated source
+worktree; no generated guest C was edited. Original-code fixture uses the
+SHA-256-verified supported US XBE. Pointer/settings suites: 11 passed, 2 native
+Mac compile checks skipped on Windows. Full-range original-code tests include
+consumed input, all four players, idle retention, native Accept profile copy,
+draft discard and bounded preview behavior. Context and whitespace checks pass.
+
+Windows acceptance build and live checks completed on Windows 11 build 26300,
+MSVC x64 19.44.35224, D3D11, Original 60 FPS at 960x540. The normal build hit
+MSVC C1002 optimizer heap failures. The successful local acceptance build uses
+per-file compiler processes, /Od on generated recomp_0096.c and /Ob1 on seven
+large generated renderer units (0750,0752,0753,0754,0755,0756,0774); controller
+code retains /O2 /Ob2. This local ignored CMake policy is not a source change or
+certification of the unchanged default-optimization release build. All standard
+Build test executables passed; matching crash symbols were produced.
+
+In a disposable Test Lab copy, main and pause menus reached/stopped at1.5,
+opening preserved the original0.5, main Cancel restored0.5, and pause Cancel
+restored1.5 after an unsaved1.25 draft. Native Accept applied the values in
+Time to Split/Normal. Identical simulated full-stick right inputs (raw mouse off)
+measured5.600003 degrees/game tick at1.0 and7.466666 at1.5: normalized to60 Hz,
+336.0002 versus447.99995 degrees/s, ratio1.333332. A valid signed save stored1.5
+at body offset7C; a fresh game process reloaded it and displayed the full bar
+with Accept disabled. No guest-memory writes or desktop input were used.
+Evidence: logs/controller-speed-validation.json, controller-cap.bmp,
+controller-persisted.bmp and the isolated controller-speed result JSON files.
+Known disposable partition images were recycled after each bounded run.
+
+Physical-controller feel/partial-stick input, native Mac/Linux gameplay and a
+full campaign remain untested. Game release publication remains pending; personal settings, saves and the
+canonical Test Lab fixture were preserved.
+
+Main integration: rebased onto `d296e9a3`; controller pointer/settings suites
+passed again (11 passed, 2 native Mac skips, 26.61 seconds). Context and
+whitespace checks passed. The live acceptance binary predates this rebase.
+
+## Walking weapon bob #557 (2026-11-19)
+
+Local uncommitted fix/557-weapon-bob from main1f835403. Windows x64,
+MSVC14.44.35207; supported US XBE checked by original-routine fixture.
+Reproduced the missing walking path in the existing idle-sway test: with
+constant speed, original phase after one second was2.250000238 at60FPS and
+1.124998689 at120FPS. Original displacement/amplitude likewise halved.
+
+The shared observer retains the preceding player-update interval. Only two
+walking-bob divisions change; clocks, motion, firing and idle RNG stay original.
+Corrected original movement snapshot plus complete weapon-update fixture:
+phase at60/120/144/180/240 is2.250000238/2.249997377/2.250000000/
+2.249998331/2.249999046, with matching final X/Y offsets within0.0000001.
+Quarter-speed, variable intervals, four player histories, invalid/pause time,
+scene resets, catch-up and neighbor-site fallback also pass. Idle-sway RNG
+counts retain parity. Both targeted Windows original-routine cases pass.
+Ubuntu/WSL cc also compiles/runs the final original weapon fixture successfully;
+that is compiler/controlled-runtime evidence, not Linux GPU/gameplay acceptance.
+Repository-context/backlog tests22pass and full patch-stack validation passes.
+
+Publication follow-up2026-11-20: remaining timing group95passed; its dynamic
+Uplink fixture required the real bob observer implementation for linking.
+After that fixture-only correction, the Uplink test also passes. Combined with
+the52 original-dispatch cases, all148 timing cases have passing local results.
+
+Final original fractional-dispatch regression group:52 passed,96 deselected
+in132.70seconds, covering surrounding player, input, weapon, animation,
+projectile and effect timing routines. An earlier full-file
+run encountered missing observer linkage in unrelated fixture helpers; moving
+the observer into the constant-site macro removed that unnecessary dependency.
+The broad runs were stopped and final original-dispatch validation restarted.
+A Windows Release rebuild was started on2026-11-20 using the existing D: build
+with normal O2/Ob2 and one compiler worker. It progressed without errors but
+was stopped when the user requested publication to main instead of waiting
+for the playable build. No full game link, live weapon-bob visual acceptance
+or native Mac gameplay test is claimed. #557 stays open until a fixing release
+is published. PR/merge authorized2026-11-20; release publication is separate.
+## README relevance review (2026-11-20)
+
+Reviewed against main `9c54bd49` and published Stable game 0.7.0 / launcher
+1.7.0. Corrected cross-platform Online Arcade instructions, Linux launcher
+entry point, published Mac game requirement, current texture controls and
+Tools & Logs navigation. All 69 local links/anchors resolve; all three public
+launcher download aliases returned HTTP 200 with matching asset sizes. The
+public Mac game BUILD receipt confirms macOS 27.0 minimum.
+
+On Windows, rendered and visually reviewed the current launcher preview using
+a fresh isolated sample root and the hash-verified 1.7.0 application. Capture
+provenance is in `docs/assets/README.md`. Context and whitespace checks pass.
+Documentation only: no game rebuild, gameplay test or new Mac/Linux runtime
+validation was performed; settings, saves, textures and game data were untouched.
+
 Compact settings native CI follow-up (2026-11-19): Avalonia card heights exposed that shortest-column placement could move collapsed bindings away from Local multiplayer. SettingsTiles now explicitly keeps the collapsed binding card in the local-player column, while expanded bindings still spans both columns. Native regression diagnostics include card bounds.
 
 Background texture checks (2026-11-18, source90014bf6): opted-in launchers start a read-only texture check after recovery, off the UI thread. The footer reports progress/result on all pages; Settings shares the cached result and no longer triggers an automatic modal check. Manual Check is nonblocking; downloads still require confirmation. Shared lifecycle/coalescing/opt-out/error tests and the full Windows launcher suite pass;6 Python startup/shared-UI checks pass; Linux cross-build passes. Sample footer capture reviewed. Native Mac/Linux startup visual acceptance pending.
@@ -45349,3 +45899,107 @@ existing NTFS/Windows exclusive-bind behavior. TLS pins, invitations, rate limit
 authentication and test deadlines are unchanged. Windows affected suite now
 84 passed in24.45s; Python compile/context/whitespace checks pass. Updated Mac CI
 confirmation follows the push; VERSION remains0.6.2.
+## Windows Vulkan comparison (2026-11-21)
+
+Source: `feature/windows-vulkan`, based on current `origin/main` `61926ecf`.
+Work is isolated from the compiler/launcher edits in the older active checkout.
+Windows setup/build now explicitly enables the existing Vulkan backend beside
+D3D11, verifies pinned Microsoft DXC `v1.8.2505.1`, and copies its runtime DLLs.
+Windows release packaging requires a Vulkan-enabled build and bundles the DXC
+DLLs, three notices and receipt. Backend selection remains temporary through
+`RECOMP_D3D8_BACKEND`; no player settings were changed. See
+[build, selection and test commands](../players/windows-vulkan.md).
+
+**Decision: retain D3D11 as the Windows default.** Vulkan passed the bounded
+GPU/gameplay comparison below, but normal Release acceptance failed existing
+MSVC C1002 compiler-heap checks. The working comparison executable uses local
+generated-project compiler overrides. These results do not certify the normal
+unmodified optimization build for default promotion.
+
+Host: Windows 11 x64, MSVC 14.44.35207, Python 3.12.14, NVIDIA GeForce RTX 4070
+SUPER, driver 617.42/Vulkan 1.4. Supported US XBE SHA-256 was verified before
+regeneration and game tests. Runtime pin remains `d90c929`; the complete patch
+stack was applied. Copied generated files failed provenance verification and
+were regenerated through the supported build entry point; none were hand-edited.
+
+Normal `/MP` compilation failed on generated renderer units and MSBuild's
+diagnostic parser exhausted memory. Bounded fresh compiler processes alone did
+not fix individual optimizer failures. The successful ignored validation project
+uses `UseMultiToolTask=true`, `EnforceProcessCountAcrossBuilds=true`,
+`CL_MPCount=8`, `/Ob1` on context units 0750/0752/0753/0754/0755/0756/0774,
+and `/Od` on `recomp_0096.c`, `recomp_context_0750.c` and
+`recomp_context_0753.c`. Other source retains normal Release optimization.
+This is a local build policy, not a tracked generator/runtime change. The
+post-build check block from `tsfp.ps1` passed, including controls/settings/debug,
+storage, prompts, display, textures, network, Discord, hang policy, clear and
+replay checks; disposable partitions were recycled. Network identity was sealed
+and matching crash symbols produced.
+
+The identical executable was used for every game run, SHA-256:
+`dc4c312ac23b4d35620b7d1088cee3c119894cf8b822d21dc4e6aaf044ff66ce`.
+
+### GPU and gameplay correctness
+
+The new asset-free Windows hardware fixture runs the production D3D11/Vulkan
+RHI shaders, texture/resource formats, depth/stencil, feedback/copy, MSAA,
+visibility, swapchain readback and presentation contracts. Both passed. Forced
+Vulkan driver discovery failure also passed: the production startup path
+automatically recovered to D3D11 and completed the same pixel contracts.
+The runner rejects an unintended fallback during the ordinary Vulkan case.
+The production frame-replay executable also passed the triangle, effect-depth/
+feedback and portal/scissor contracts through both backends, with clean active
+Vulkan validation (`logs/windows-renderer-replay.json`).
+
+Vulkan GPU contracts and the 120-second game correctness run used active
+Khronos validation from verified checkout-local SDK 1.4.363.0, with zero
+validation warnings/errors. The SDK was copied using `copy_only=1`; its
+publisher checksum and installation recipe are in the player guide. Initial
+loader diagnostics came from stale third-party overlay registrations. Test-child
+implicit-layer discovery was isolated without changing system registrations.
+
+Each backend completed a separate 120-second Original 60 FPS / 1280x720 first-mission
+capture run with the same synthetic inputs and disposable Test Lab profile.
+Movement, ammunition consumption, changing/advancing hand animation, weapon14
+handoff and pause/resume were observed. Reviewed captures showed consistent
+terrain, sky, weapon, HUD and effects in the opening scene. This is bounded
+first-level acceptance, not a complete campaign or full visual-parity claim.
+
+The first capture-run reports were rejected by a new log parser matching the
+healthy `shader ... 0 failed` summary. The parser and its regression test were
+corrected. Original reports/logs remain intact; `windows-renderer-comparison.json`
+re-evaluates the renderer checks from those raw logs and records both parser
+hashes. The later performance runs use the corrected runner and pass their
+complete gameplay/renderer checks directly.
+
+### Matched gameplay timing
+
+Separate 120-second runs disabled capture and Vulkan validation and used warm,
+disposable per-backend shader caches. Timing samples align by the Windows QPC
+clock with player observations between approximately 85 and 115 seconds,
+excluding startup/loading and the 80–83 second pause. Each window contains 1772
+successful guest presents. These are CPU intervals between successful present
+returns, not GPU execution/completion or monitor scanout measurements.
+
+| Backend | Mean interval | p95 | p99 | Intervals over 25 ms |
+| --- | ---: | ---: | ---: | ---: |
+| D3D11 |16.6666ms |17.070ms |17.202ms |0 |
+| Vulkan |16.6665ms |17.131ms |17.282ms |0 |
+
+Both held approximately 60 FPS at the original cap. Vulkan p95 was 0.36% higher;
+this single capped scene provides no evidence of a speed advantage. Neither
+performance run had a crash, fallback, failed renderer check or failed gameplay
+check. Wider levels, uncapped throughput and AMD/Intel hardware remain untested.
+
+Evidence is local/ignored: `logs/rhi-windows.json`, the three backend logs,
+`logs/windows-renderer-comparison.json`, `logs/d3d11-gameplay.bmp`,
+`logs/vulkan-gameplay.bmp`, build/check logs and the tagged reports/CSVs under
+`private/test-saves/high-refresh`. The canonical Test Lab fixture was checked
+after each run. Personal saves/settings were preserved.
+
+Python validation: graphics/configuration/suite-selection group 17 passed;
+delivery/CI-scope/dependency group 247 passed; corrected dependency/parser and
+backlog group 4 passed. Context/link/index and whitespace checks pass. CI now
+builds the hardware comparison fixture on Windows; actual Vulkan execution is
+a local hardware check, while existing CI WARP pixel checks remain in place.
+Mac/Linux adapters and their DXC setup were unchanged; native validation was
+not rerun on this host. No release or default promotion was performed.

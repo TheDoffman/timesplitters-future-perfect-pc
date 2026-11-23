@@ -44,6 +44,7 @@ static inline int pc_native_skip_input_hints(void)
         !*(const uint32_t *)((uintptr_t)0x4E7940u+g_xbox_mem_offset);
 }
 #include "pc_native_uplink.h"
+#include "pc_native_weapon_bob.h"
 #include "pc_native_material.h"
 #include "pc_native_statistics_guest.h"
 #include "pc_native_trap_guest.h"
@@ -423,7 +424,9 @@ static inline uint32_t pc_native_wind_global_load(uint32_t address,uint32_t valu
     return value;
 }
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
-    (((site)==0x1C397Fu || (site)==0x1C2B36u) && (address)==0x4E7944u ? \
+    ((site)==0xD6251u && (address)==0x4E7944u ? \
+     (pc_native_weapon_bob_clock(),(uint32_t)(value)) : \
+     ((site)==0x1C397Fu || (site)==0x1C2B36u) && (address)==0x4E7944u ? \
      pc_native_uplink_gate((site)==0x1C397Fu ? g_ebp : \
        *(const uint32_t *)((uintptr_t)g_esp+0x14u+g_xbox_mem_offset),(uint32_t)(value)) : \
     (site)==0x433A0u && (address)==0x6B98A4u ? pc_native_demo_dispatch_mode((uint32_t)(value)) : \
@@ -610,7 +613,9 @@ static inline float pc_native_divide(uint32_t site, float left, float right)
 }
 extern float pc_native_kind35_turn(float value);
 #define RECOMP_F32_DIV_AT(site, left, right) \
-    ((site)==0xE237Au ? pc_native_kind35_turn((float)(left)/(float)(right)) : \
+    (((site)==0x1C45BFu || (site)==0x1C4640u) ? \
+     pc_native_weapon_bob_divide((float)(left),(float)(right)) : \
+     (site)==0xE237Au ? pc_native_kind35_turn((float)(left)/(float)(right)) : \
     pc_native_divide((uint32_t)(site), (float)(left), (float)(right)))
 /* The original NPC aim tracker closes 5% of its gap per whole update.
  * Normalize only this argument, leaving the shared interpolation helper and

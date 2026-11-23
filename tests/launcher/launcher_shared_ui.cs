@@ -68,6 +68,32 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("Vulkan default ignores retired choices and strips inherited renderer overrides",()=>{
+                string folder=Path.Combine(root,"renderer");Directory.CreateDirectory(folder);
+                var initial=GameSettings.Load(folder,null);initial.Save();
+                string controls=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
+                string baseline=File.ReadAllText(controls);
+                string old=Environment.GetEnvironmentVariable("RECOMP_D3D8_BACKEND");
+                Environment.SetEnvironmentVariable("RECOMP_D3D8_BACKEND","d3d11");
+                try {
+                    foreach(object retired in new object[]{"d3d11","vulkan","invalid",42}) {
+                        var document=Json.Object(baseline);
+                        ((Dictionary<string,object>)document["launcher"])["renderer"]=retired;
+                        File.WriteAllText(controls,Json.Encode(document));
+                        var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
+                        Need(!All(page.View).OfType<ComboBox>().Any(x=>x.Name=="GraphicsRenderer"),"Renderer selector remains visible");
+                        var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
+                        var saved=(Dictionary<string,object>)Json.Object(File.ReadAllText(controls))["launcher"];
+                        Need(Convert.ToString(saved["renderer"])==Convert.ToString(retired),"Retired data was overwritten");
+                        var child=GameSettings.StartInfo(folder).EnvironmentVariables;
+#if MACOS || LINUX
+                        Need(!child.ContainsKey("RECOMP_D3D8_BACKEND"),"Native launch received a Windows override");
+#else
+                        Need(child["RECOMP_D3D8_BACKEND"]=="vulkan","Retired or inherited renderer changed default");
+#endif
+                    }
+                } finally {Environment.SetEnvironmentVariable("RECOMP_D3D8_BACKEND",old);}
+            });
             Test("console tails live shared files, preserves UTF8 and separates errors",()=>{
                 string folder=Path.Combine(root,"console");Directory.CreateDirectory(folder);
                 var tail=new GameLogTail(folder);tail.Poll();Need(tail.Text(false)=="","Missing log should be empty");

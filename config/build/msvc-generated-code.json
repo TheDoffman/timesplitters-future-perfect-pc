@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "title_id": "45410066",
+  "reason": "MSVC 19.44 optimizer heap exhaustion or excessive compile time in large lifted guest functions; preserve all generated instructions and limit only affected translation units.",
+  "rules": [
+    {"symbol": "sub_000DD1B0", "options": ["/Od", "/Ob0"]},
+    {"symbol": "tsfp_context_run_0039F830", "options": ["/Od", "/Ob0"]},
+    {"symbol": "tsfp_context_run_003A03A0", "options": ["/Ob1"]},
+    {"symbol": "tsfp_context_run_003A0F50", "options": ["/Od", "/Ob0"]},
+    {"symbol": "tsfp_context_run_003A1AC0", "options": ["/Ob1"]},
+    {"symbol": "tsfp_context_run_003A30E0", "options": ["/Ob1"]},
+    {"symbol": "tsfp_context_run_003A4770", "options": ["/Ob1"]},
+    {"symbol": "tsfp_context_run_003BB9C0", "options": ["/Ob1"]}
+  ]
+}

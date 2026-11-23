@@ -587,6 +587,10 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["TSFP_GAME_UPDATE_NOTICE"] = GameUpdateNotice.Path(root);
             info.EnvironmentVariables["TSFP_GAME_INSTALLED_VERSION"] = Core.InstalledVersion(root);
             info.EnvironmentVariables["TSFP_CRASH_EXTENDED"] = CrashReports.ExtendedForNextLaunch ? "1" : "0";
+#if !MACOS && !LINUX
+            // Retired launcher.renderer preferences must not override the shared default.
+            info.EnvironmentVariables["RECOMP_D3D8_BACKEND"] = "vulkan";
+#endif
             // Explicit zero also overrides an old native_fps runtime preference.
             info.EnvironmentVariables["TSFP_NATIVE_FPS"] = model.NativeFps.ToString(CultureInfo.InvariantCulture);
             info.EnvironmentVariables["TSFP_GAME_LANGUAGE"] = model.LanguagePack;

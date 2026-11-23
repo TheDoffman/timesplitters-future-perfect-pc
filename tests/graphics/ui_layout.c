@@ -38,11 +38,11 @@ void sub_0003FA10(void){abort();}
 void sub_0003FCF0(void){abort();}
 void sub_000718E0(void){abort();}
 void sub_0003FB90(void){abort();}
-static int wide=1,players=1,placement,pending=-1,draw_count;
+static int wide=1,players=1,placement,pending=-1,draw_count,crosshair_size=100;
 static int drawn[1024],selected[1024],selection_count;
 static uint32_t tag;
 #define CHECK(x) do { if(!(x)){fprintf(stderr,"FAIL: %s line %d\n",#x,__LINE__);exit(1);} } while(0)
-int pc_display_crosshair_size(void){return 100;}
+int pc_display_crosshair_size(void){return crosshair_size;}
 float pc_display_hud_scale(void) { return hud_scale; }
 static int owned_video,owned_controls,owned_audio;
 static int controls_font_menu(uint32_t menu) {return owned_controls && menu==0x1000;}
@@ -197,6 +197,52 @@ static void test_aim_overlays(void)
     }
     ui_place(0,0);
 }
+static void test_actor_icons(void)
+{
+    const unsigned sizes[][2]={{640,480},{1280,1024},{1920,1080},{1920,1200},
+        {3440,1440},{5120,1440},{7680,4320}};
+    const uint32_t callers[]={0x13cf7a,0x13d04e};
+    /* Two different actors in one frame must keep independent projected
+       centres. Crosshair Size must not resize character markers. */
+    for(unsigned r=0;r<7;r++)for(unsigned c=0;c<2;c++)for(int actor=0;actor<2;actor++) {
+        hud_scale=4.f*sizes[r][1]/(3.f*sizes[r][0]);wide=hud_scale!=1.f;
+        float cx=actor?540.f:100.f,cy=actor?280.f:160.f;
+        float xy[]={cx-12,cy-18,cx+12,cy+18};
+        g_esp=0;stack[0]=callers[c];memcpy(stack+1,xy,sizeof xy);
+        for(unsigned i=5;i<13;i++)stack[i]=0x12345678+i; /* UVs and colours. */
+        uint32_t saved[32];memcpy(saved,stack,sizeof saved);
+        aim_points=2;aim_offset=4;crosshair_size=150;
+        ui_place(2,99);pc_display_aim_primitive(aim_draw,2);sub_00022FF0();
+        CHECK(g_esp==4 && !memcmp(saved,stack,sizeof saved));
+        CHECK(placement==2 && tag==99 && aim_anchor==(wide?1:2));
+        CHECK(fabsf((aim_seen[0]+aim_seen[2])*.5f-cx)<.001f);
+        CHECK(fabsf((aim_seen[1]+aim_seen[3])*.5f-cy)<.001f);
+        float sx=wide?pc_ui_scale_x(hud_scale):1.f,sy=wide?pc_ui_scale_y(hud_scale):1.f;
+        CHECK(fabsf(aim_seen[2]-aim_seen[0]-24*sx)<.001f);
+        CHECK(fabsf(aim_seen[3]-aim_seen[1]-36*sy)<.001f);
+    }
+    /* The local name is a HUD widget, not an actor projection. Preserve all
+       of its queued text passes and the previous placement on return. */
+    for(unsigned r=0;r<7;r++)for(int split=1;split<=2;split++) {
+        hud_scale=4.f*sizes[r][1]/(3.f*sizes[r][0]);wide=hud_scale!=1.f;
+        players=split;g_esp=0;ui_place(2,99);pending=1;int n=draw_count;
+        pc_display_ui(rank_widget,0x12dba0);sub_00022FF0();
+        CHECK(drawn[n]==2 && placement==2 && tag==99 && g_esp==4);
+        int fitted=wide && hud_scale<1.f && split==1;
+        for(int part=0;part<3;part++)CHECK(drawn[n+part+fitted]==(fitted?3:2));
+    }
+    /* Keep existing split-screen and partial-viewport placement untouched. */
+    wide=1;hud_scale=.5581395f;crosshair_size=100;
+    for(unsigned guard=0;guard<3;guard++) {
+        players=guard==0?2:1;view[0]=guard==1?320:0;
+        g_esp=0;stack[0]=guard==2?0x13cf7b:callers[0];
+        float xy[]={80,140,120,180};memcpy(stack+1,xy,sizeof xy);
+        ui_place(2,99);int before=selection_count;
+        pc_display_aim_primitive(aim_draw,2);sub_00022FF0();
+        CHECK(before==selection_count && !memcmp(aim_seen,xy,sizeof xy));
+    }
+    players=1;view[0]=0;ui_place(0,0);draw_count=selection_count=0;
+}
 static void nested_video_text(void)
 {
     float x;memcpy(&x,&font_xy[0],4);CHECK(fabsf(x-.65f)<.00001f);
@@ -206,6 +252,7 @@ static void nested_video_text(void)
 int main(void)
 {
     test_aim_overlays();
+    test_actor_icons();
     {
         float initial[2]={1,1};memcpy(font_xy,initial,sizeof initial);
         owned_video=1;g_esp=0;stack[1]=0x1000;stack[2]=0x2000;
@@ -263,8 +310,8 @@ int main(void)
     g_esp=0;int n=draw_count;pc_display_ui(radar,0x133ab0);
     CHECK(drawn[n]==0 && drawn[n+1]==4 && !radar_group && placement==0);
     int count=selection_count;pc_display_radar_begin();CHECK(count==selection_count);
-    const uint32_t left[]={0x12f670,0x14b930,0x1409c0,0x13fc50};
-    for(unsigned i=0;i<4;i++){g_esp=0;n=draw_count;pc_display_ui(draw,left[i]);CHECK(drawn[n]==3);}
+    const uint32_t left[]={0x12f670,0x14b930,0x1409c0,0x13fc50,0x12dba0};
+    for(unsigned i=0;i<sizeof left/sizeof left[0];i++){g_esp=0;n=draw_count;pc_display_ui(draw,left[i]);CHECK(drawn[n]==3);}
     g_esp=0;n=draw_count;pc_display_ui(draw,0x1358a0);CHECK(drawn[n]==5 && placement==0);
     const uint32_t arcade_panels[]={0x12ec8b,0x12ea9b};
     for(unsigned panel=0;panel<2;panel++) {

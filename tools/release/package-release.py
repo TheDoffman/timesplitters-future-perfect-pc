@@ -27,6 +27,7 @@ import zipfile
 from bundle_online import bundle
 from release_channels import identity as release_identity
 from build_textures import ensure_pack, optional_identity, zip_entries, write_zip, write_source_files
+from windows_vulkan import verify as verify_windows_dxc
 
 ROOT = _layout_root
 
@@ -56,6 +57,10 @@ def main():
     texture_rows, textures = [], optional_identity(ROOT)
     if args.with_textures or args.texture_pack:
         _, texture_rows, textures = ensure_pack(ROOT, args.texture_pack)
+    windows_dxc = verify_windows_dxc(ROOT)
+    cache=(ROOT/'build/windows/CMakeCache.txt').read_text()
+    if not re.search(r'^XBOXRECOMP_VULKAN:BOOL=ON$',cache,re.M):
+        raise RuntimeError('Rebuild with Windows Vulkan enabled before packaging both backends')
     stage = args.output.resolve() / name
     stage.mkdir(parents=True, exist_ok=False)
     upstream = ROOT / 'external/ts3FPrecomp'
@@ -70,6 +75,11 @@ def main():
         shutil.copy2(source, target)
 
     copy(ROOT / 'build/windows/Release/futureperfect_recomp.exe', 'Bin/futureperfect_recomp.exe')
+    for dxc_name in ('dxcompiler.dll', 'dxil.dll'):
+        copy(windows_dxc/'bin/x64'/dxc_name, 'Bin/'+dxc_name)
+    for dxc_name in ('LICENSE-LLVM.txt', 'LICENSE-MIT.txt', 'LICENSE-MS.txt'):
+        copy(windows_dxc/dxc_name, 'Licenses/DXC-'+dxc_name)
+    copy(windows_dxc/'receipt.json', 'Support/Graphics/dxc-receipt.json')
     copy(ROOT / 'build/windows/Release/tsfp_crash_helper.exe', 'Bin/tsfp_crash_helper.exe')
     copy(ROOT/'build/launcher/TimeSplitters Launcher.exe', 'TimeSplitters Launcher.exe')
     copy(ROOT/'build/launcher/Bin/TimeSplitters.App.exe', 'Bin/TimeSplitters.App.exe')
@@ -152,15 +162,18 @@ Confirmed display choices are saved in Settings/pc-display.ini.
 Optional Discord Rich Presence: enable Game settings > Discord with the Discord
 desktop app running. See Support/Discord/README.txt. Fresh installs leave this disabled.
 
-Online multiplayer: choose Online / System Link > Online in the game.
-Host: Start New Match detects your public IPv4 and starts the HTTPS directory.
-Forward TCP 30820 and UDP 30821 to the host PC and allow both through Windows
-Firewall. Copy the invitation from the Online window and send it to friends.
-Guests paste it into Invitation / lobby code and click Join by code.
-Return to the game: host creates a match, guests select it and Ready, host Go.
-Guests do not need port forwarding. Hosting behind carrier-grade NAT requires
-a reachable player to host instead. The game does not configure your router.
-Real internet connections and full-match stability remain experimental.
+Online multiplayer: choose Multiplayer from the main menu, then Online for the
+community match list, Private Server for your own group, or LAN on one network.
+Community Online needs no player port forwarding. To host an Arcade match,
+choose Start New Match, Open or Invite Only, then Create Lobby. Set Options;
+friends select Ready and the host chooses Go. Invite Only needs its lobby code.
+A Private Server has a separate server invite. Only its owner needs working
+UPnP or manual TCP 30820 / UDP 30821 forwarding and firewall access. Keep the
+server running while friends play. Carrier-grade NAT may prevent private hosting;
+use community Online or a reachable friend's server instead.
+Everyone needs matching game builds and supported original game content.
+Online Arcade remains experimental; Story co-op needs a dedicated test build.
+Guide: https://github.com/TheDoffman/timesplitters-future-perfect-pc/blob/main/docs/players/multiplayer.md
 Online preferences and hosting certificates are stored under Settings.
 
 Settings: Settings/pc-controls.json. Saves: Saves. Diagnostics: Logs.
@@ -197,6 +210,9 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
         'textures': textures,
         'upstream_commit': subprocess.check_output(['git', '-C', str(upstream), 'rev-parse', 'HEAD'], text=True).strip(),
         'ffmpeg_archive_sha256': '1689da96399f372cfee985b3f2b9d74685892078059bc37764388f49e3118bdb',
+        'graphics_backends': ['d3d11', 'vulkan'],
+        'graphics_default': 'vulkan',
+        'dxc': json.loads((windows_dxc/'receipt.json').read_text()),
         'files': {p.relative_to(stage).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                   for p in sorted(stage.rglob('*')) if p.is_file()},
     }
