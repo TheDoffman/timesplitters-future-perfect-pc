@@ -11,6 +11,20 @@ OpenGL, saves the choice and uses it on the next launch. Legacy Mac builds retai
 their existing OpenGL default and frontend. D3D11 is not a launcher choice or an
 automatic fallback.
 
+## Integration with current main
+
+Merge `7e3db2c6` includes main `f1d84f6c`. Both sides of the status-document
+conflict are preserved; source merged without conflicts. Updated Windows and
+Linux builds pass, as do64 focused Windows and41 native Linux tests (two
+Windows-only skips). Windows launcher settings/maintenance regressions pass.
+The updated normal Windows game passes120s per saved renderer,120s forced
+startup recovery, and bounded both-fail startup. OpenGL fullscreen/resize and
+reviewed graphics captures pass; settings/assets remain preserved. Current
+normal Windows game SHA256 is
+`5cd6ba6d4e1175459fc6f93372ff5bad5ad0916c6ba1d6dbe0513b59942111c1`.
+Older source/hash rows below retain their original acceptance scope. Platform
+gates and native-host deferrals remain unchanged. Nothing has been pushed.
+
 ## Platform decisions
 
 | Platform | Automatic Vulkan-to-OpenGL recovery | Acceptance |

@@ -1291,8 +1291,9 @@ and1.486 CPU core-equivalents; captures/display changes exclude benchmark claims
 
 Trial EXE SHA25611efbd20c0f8bde8cec02f85fc4ea97ca74d3816c5621f30b45b2e35d484c12d
 uses a local ignored source-only TSFP_OPENGL_RECOVERY_ACCEPTED=1 definition.
-Its cached in-game version stamp predates this source; the recorded clean Git
-source, runner hashes and executable hash identify this test, not that stamp.
+The in-game footer shows game version plus a network-compatibility fingerprint,
+not a Git revision. Recorded Git source, runner hashes and executable hash
+identify this test; the footer is not source-revision provenance.
 The CMake project include must guard CMAKE_CURRENT_SOURCE_DIR==CMAKE_SOURCE_DIR
 because nested SDL/platform project() calls also evaluate the include; an initial
 unguarded local configuration failed before building and was corrected.
@@ -1597,3 +1598,26 @@ capability, visual/effect, window, performance and package checks are recorded i
 the developer report/backlog, with both native recovery gates0. Windows is1;
 Vulkan remains the modern default and the restored selector persists both choices.
 Final commit and clean-worktree checks precede goal completion. No push/merge.
+
+
+## Current-main integration verification
+
+Merge7e3db2c6 integrates mainf1d84f6c (Gladiator selection and online door sync).
+Only STATUS.md conflicted; both histories were retained. No renderer/gameplay
+resolution edits were required. Whole-branch context check against origin/main
+passes. Supported merged Windows Build/checks and matching symbols pass. Native
+Linux build/MMIO passes. Windows focused checks64 pass; Linux41 pass with two
+Windows-specific skips. Windows launcher regressions pass, including54 settings
+and20 maintenance checks.
+
+The same merged normal Windows EXE SHA256
+5cd6ba6d4e1175459fc6f93372ff5bad5ad0916c6ba1d6dbe0513b59942111c1
+passes actual launcher cases main-merge-vulkan-01 and main-merge-opengl-01 (120s
+each), plus main-merge-recovery-01 (120s) and main-merge-both-fail-01 (bounded2).
+GL verifies Auto/MSAA4/SMAA/AF16/AO, fullscreen/windowed/resize/restore; reviewed
+capture shows correctly colored world, fire, weapon and HUD. Preferences/custom
+assets remain preserved. Source is clean7e3db2c6; launcher hash
+06b8b5937fdc0fd61a4d5593fe0681270ad5d09931c4997695b2a97c82c2fc92.
+Available-host acceptance gates are unchanged: Windows1, Linux/Mac0.
+Main was fetched again after tests and remains f1d84f6c, fully included here.
+This records integration/readiness; no main-branch update or push was performed.

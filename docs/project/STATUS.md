@@ -3,8 +3,14 @@
 Integrated mainf1d84f6c (door synchronization and Gladiator selection) into the
 OpenGL feature branch. The only conflict was this append-only status history;
 both sides are preserved. Code merged without conflicts. Acceptance gates remain
-Windows1, Linux/Mac0; launcher choices remain Vulkan/OpenGL. Combined build,
-network/renderer policy and actual launcher/game rechecks are pending below.
+Windows1, Linux/Mac0; launcher choices remain Vulkan/OpenGL. Combined Windows/native Linux builds and focused checks pass. Windows launcher
+regressions pass, including54 settings checks. Focused Windows network/renderer/
+launcher-runner tests pass64; native Linux focused tests pass41 with two
+Windows-specific skips. Actual merged Windows Vulkan and OpenGL selector/game
+runs pass120s each; OpenGL also passes fullscreen/resize and reviewed captures.
+Forced Vulkan→OpenGL recovery passes120s, and both-fail startup exits2 with
+settings/assets intact. Evidence: logs/main-integration-*.log and
+logs/renderer-validation/main-merge-{vulkan,opengl,recovery,both-fail}-01/.
 No main-branch update or publication is performed by this integration commit.
 
 ## Native recovery and saved selector verification (2026-11-22)
