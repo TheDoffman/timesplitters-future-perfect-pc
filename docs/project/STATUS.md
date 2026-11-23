@@ -1,3 +1,383 @@
+## Publication integration of renderer and launcher updates (2026-11-22)
+
+User requested push to main. Merge07eccd39 retains current maind6f97154's issue558
+progress/reuse/copied-helper work plus the validated OpenGL/selector work. Source
+merged automatically; documentation histories were combined and stale removed-
+selector guidance superseded. Updater details moved to a linked supplement to
+respect bounded launcher-context size. Windows launcher regression groups pass,
+including54 settings checks; Python launcher suite286 passed /5 host skips /
+41 subtests; native Linux build/test55 shared UI groups pass; Mac compile0 errors
+(two existing obsolete Avalonia event warnings). The new launcher passes120s OpenGL gameplay, quality, movement/weapon, preserved
+settings/assets and clean exit (`push-main-opengl-01`). Windows recovery1,
+Linux/Mac0 unchanged.
+
+## OpenGL branch integration with current main (2026-11-22)
+
+Integrated mainf1d84f6c (door synchronization and Gladiator selection) into the
+OpenGL feature branch. The only conflict was this append-only status history;
+both sides are preserved. Code merged without conflicts. Acceptance gates remain
+Windows1, Linux/Mac0; launcher choices remain Vulkan/OpenGL. Combined Windows/native Linux builds and focused checks pass. Windows launcher
+regressions pass, including54 settings checks. Focused Windows network/renderer/
+launcher-runner tests pass64; native Linux focused tests pass41 with two
+Windows-specific skips. Actual merged Windows Vulkan and OpenGL selector/game
+runs pass120s each; OpenGL also passes fullscreen/resize and reviewed captures.
+Forced Vulkan→OpenGL recovery passes120s, and both-fail startup exits2 with
+settings/assets intact. Evidence: logs/main-integration-*.log and
+logs/renderer-validation/main-merge-{vulkan,opengl,recovery,both-fail}-01/.
+No main-branch update or publication is performed by this integration commit.
+
+## Native recovery and saved selector verification (2026-11-22)
+
+Actual Linux Vulkan-failure→OpenGL gameplay and both-fail/preservation trials
+pass, and their finally path restores the exact normal disabled-gate game.
+Both saved choices also render active Story through the actual launcher under
+WSLg, but strict minimize checks fail there; these remain failed lifecycle runs.
+Both full120s isolated X11/Openbox selector/gameplay checks pass, including
+minimize/restore; both renderers also pass resize/fullscreen self-tests there.
+Linux stays0 for unresolved normal-desktop,
+physical GPU/performance and native package acceptance. Mac hardware remains
+unavailable/gate0. Windows ordinary primary/recovery/both-fail and stability
+checks pass/gate1. Nothing published or merged.
+[Current report](../development/opengl-startup-recovery.md).
+
+## Windows startup recovery accepted; native gates remain disabled (2026-11-22)
+
+The current Windows300s launcher OpenGL soak passes late gameplay/movement,
+pause/resume, quality, bounded resource growth, settings/assets and clean exit.
+The current eight-case GPU recovery matrix, validated Vulkan, explicit GL and
+restricted4.1 checks also pass. Windows now defaults to startup-only OpenGL
+recovery; the normal enabled build, Vulkan-primary, recovered gameplay and
+both-fail integration checks pass. Linux and
+Mac gates stay0. Linux WSL movement/firing/pause now have owned-state evidence,
+but fullscreen/performance and other native integration checks remain incomplete.
+The renderer selector persists Vulkan/OpenGL choices. Nothing published/merged.
+[Gate decision and evidence](../agent-context/opengl-recovery.md#windows-production-acceptance-decision).
+
+## Launcher selection and recovery recheck (2026-11-22)
+
+The restored launcher offers Vulkan (Default) and OpenGL, persists the choice,
+and has passed actual Windows launcher/game switching checks. D3D11 is absent
+from the selector. Current-source Windows injected startup recovery and both-fail
+checks pass with settings/assets preserved; the ordinary build and mandatory
+checks pass after removing the test-only recovery definition. Four focused
+fresh/historical patch-upgrade tests pass. Native dispatch units and all eight
+Linux RHI recovery cases pass; state-verified windowed OpenGL Story gameplay now
+runs, with bounded idle CPU. WSL fullscreen/performance and further native game/
+package acceptance remain unresolved. Automatic recovery remains disabled on all
+production hosts; native Mac hardware checks are unavailable, and macOS OpenGL
+is deprecated. Local commits only; no publication or merge. Exact provenance:
+[recovery recheck](../agent-context/opengl-recovery.md#current-source-recovery-integration-recheck-2026-11-22).
+
+## Rebuilt OpenGL game acceptance checkpoint (2026-11-22)
+
+Normal Windows code54ee1d6 rebuild and mandatory checks pass after a single-worker
+retry of a compiler-heap failure. The new EXE passes120s per renderer through actual launcher Vulkan/OpenGL
+selection, correctly colored gameplay, quality/display/input and clean exit.
+Linux is writable again:29 units,54 launcher UI groups and8 RHI recovery cases
+pass. Native Vulkan reaches state-verified active Story; native OpenGL dispatch
+throughput and actual gameplay remain unfinished. Both diagnostic pump variants
+are removed and exact normal native ELF restored. All automatic recovery gates
+remainOFF; Mac hardware acceptance is unavailable. Evidence and limits:
+[recovery checkpoint](../agent-context/opengl-recovery.md#rebuilt-game-and-recovered-native-host-after54ee1d6).
+
+## Common OpenGL color ordering repair (development,2026-11-22)
+
+Controlled replay of one354-draw game frame confirms and fixes BGRA vertex colors
+being consumed as RGBA by OpenGL. The asymmetric GPU regression fails before the
+binding repair and passes after; all Windows backend contracts pass. Replayed
+OpenGL and D3D11 images differ at only10/307200 pixels; Vulkan output is unchanged.
+Minimum core4.1/S3TC/mirror-once startup checks and8 recovery cases also pass in a
+private accepted fixture. Actual rebuilt-game and native acceptance remain
+pending; no production automatic recovery is enabled. Evidence:
+[OpenGL recovery](../agent-context/opengl-recovery.md#packed-bgra-vertex-color-repair).
+
+## Launcher Vulkan/OpenGL selection in development (2026-11-22)
+
+Shared Graphics > Advanced > Renderer now restores Vulkan (Default) and OpenGL,
+persists the selection, and passes it to the child. D3D11 stays absent. New
+package capability receipts reject unavailable choices in older games; legacy
+Mac GL defaults are preserved. Windows launcher build/regressions and portable
+checks pass; actual launcher gameplay gl-selector-02 and vk-selector-01 both
+pass120s with display transitions, input, rendered gameplay and clean exit.
+The stricter vk-selector-02 proves OpenGL-to-Vulkan UI switching too. Captures
+show a renderer color difference; matched-state visual comparison remains a
+required graphics acceptance check.
+Native launcher source compiles for Linux/Mac; native runtime checks remain
+pending, with WSL currently failing after disk exhaustion. No automatic recovery
+gate is enabled. Detailed evidence/provenance/limits:
+[OpenGL recovery](../agent-context/opengl-recovery.md#windows-selector-gameplay-and-host-verification-checkpoint).
+
+## Native guest dispatch remains unfinished (2026-11-22)
+
+Windows current renderer fixes pass fresh visual/display and matched uncaptured
+OpenGL/Vulkan120s checks at121561a5. Linux full game builds, shared RHI/recovery
+fixtures pass, and actual common frontend drawing/windowed presentation works.
+Actual OpenGL guest execution still stops after one frame. Owned GDB first
+proved a kernel wait blocked main-thread GL dispatch; patch3058's native wait
+unit passes, but the game subsequently spins in a guest polling loop while the
+render worker awaits main-thread work. Continuous native SDL dispatch remains
+required. WSL Wayland also declines fullscreen for both renderers. Every recovery
+gate remainsOFF; no native gameplay or universal readiness is claimed.
+[Exact source/build evidence](../agent-context/opengl-recovery.md).
+
+## Full Linux OpenGL RHI contracts pass; native recovery still pending (2026-11-22)
+
+Atf0d57ff7, full shared OpenGL pixels/resources/MSAA/SSAO, cube-face/mip
+preservation, typed-null, visibility, main-thread worker dispatch, swap and
+context recreation pass on Linux llvmpipe and accelerated WSL/NVIDIA. The
+restricted4.1 accelerated path passes too. Windows full/restricted fixtures
+pass; all5 Windows recovery cases passed before the final face snapshot change.
+Vulkan-only Linux RHI and production replay still pass on lavapipe. New source
+fixes exact MSAA count reporting, cube resolve destination preservation and
+sampled cube-face views after a Mesa D3D12 heap-corruption investigation.
+[Provenance and scope](../agent-context/opengl-recovery.md).
+
+Missing-ICD native probing confirms SDL window creation can fail before RHI
+startup. The thin native adapter now retries an API-neutral window so shared
+policy owns selection. Its portable failure/preservation unit passes Windows;
+actual native recovery/window replacement, game/display/input/performance and
+package acceptance remain. All production recovery gates remainOFF. Native Mac
+hardware acceptance is unavailable and deprecated OpenGL remains a limitation;
+legacy Mac GL is unchanged. Changes remain local/committed; no publication.
+
+## Linux GL pixels and swaps pass on software and WSL/NVIDIA (2026-11-22)
+
+At sourcea81715a4, Linux standalone shared-HLSL translation, sampled/tinted/null-
+masked pixels and an actual swap pass. SDL interval0 is unsupported on this
+host; the shared host policy preserves the request, reports refusal and lets
+actual swap success determine the result. Real swap failure still returns error.
+The policy unit passes on Windows/Linux; Windows WGL/RHI/recovery and mandatory
+build checks pass again. A120s1920x1080/MSAA8/actual-AO Windows game check passes
+quality/custom DDS preservation and clean exit0 (FXAA1 requested/saved).
+
+Default Linux probing selects Mesa llvmpipe GL4.5. Explicit child-only WSL bridge
+configuration also passes on D3D12(NVIDIA RTX4070SUPER), GL4.6 Mesa25.2.8. This is
+accelerated OpenGL via WSL, not the game's D3D11 backend. Full driver/compiler/
+source/shader/executable provenance and exact environment are in
+[recovery evidence](../agent-context/opengl-recovery.md).
+
+Linux full-RHI recovery/window/threading and complete game/display/performance/
+package checks remain. Windows final capability/policy review and platform gate
+decision remain; native Mac host acceptance is unavailable. All production
+recovery gates are OFF. Small pixel probes do not establish platform readiness.
+
+## Native OpenGL source path fixed; null-resource sampling validated (2026-11-22)
+
+Patch3057 derives common native graphics sources from TSFP_NATIVE_DIR without
+turning on Windows PC features or changing legacy Mac GL. Seven CMake matrix
+checks pass. The broad upgrade run completed75 passing checks and2 failed
+historical-input constructions; after excluding dependent renderer patches only
+from those old inputs, both upgrades plus fresh/round-trip checks pass (5 tests).
+Full upgrades explicitly verify that all current renderer changes are installed.
+
+The common GL RHI now binds typed zero textures and guards each missing-input
+sample, preventing stale cube/volume data, nonzero sampler borders and undefined
+out-of-range null loads. Mixed valid/null inputs remain independent. Shader
+uniforms also stay outside conditional extension branches. Normal GL, restricted
+4.1, all5 accepted-fixture recovery cases and all8 ordinary cases pass, with
+Vulkan validation on positive Vulkan paths; acceptance restored OFF. Standalone
+translation, real WGL pixel/zero-mask and GLSL syntax checks pass.
+
+Windows full Build and mandatory checks pass. A120s first-mission resource run
+and separate desktop-capture/display run pass movement/weapon, actual AO/MSAA4,
+SMAA, preservation and clean exit0 on RTX4070SUPER617.42. Reviewed frames show
+world/NPC/fog/flare/weapon/tutorial/HUD and changing view/ammunition. Exact hashes,
+limits and reports: [OpenGL evidence](../agent-context/opengl-recovery.md).
+All production gates remain OFF. Actual native linking/GL GPU/game execution,
+main-thread servicing and4.1 capability/acceptance checks remain; native Mac
+hardware is unavailable and legacy compatibility/deprecation limits still apply.
+
+Linux follow-up at sourcec479c63a: common Vulkan/replay and MMIO builds pass;
+explicit Mesa lavapipe Vulkan/resource/presentation/replay contracts pass. This
+is software-driver foundation evidence, not gameplay or OpenGL GPU acceptance.
+The standalone OpenGL static-library compile also passes when explicitly given
+the shared-source path. Inspection found patch3054's native build wiring is
+incomplete: ordinary native builders pass TSFP_NATIVE_DIR, while the OpenGL
+include requires TSFP_PC_CONTROLS_DIR. Correct the shared source-path derivation
+before claiming native ordinary integration. Detailed evidence and remaining
+checks: [OpenGL recovery](../agent-context/opengl-recovery.md). All gates stay OFF.
+
+## Actual OpenGL launcher recovery passes; failed startup now exits (2026-11-22)
+
+Local checkpoint afterac4fb17d on feature/opengl-startup-recovery. The actual
+unchanged launcher now passes bounded Vulkan-failure-to-OpenGL gameplay in two
+Story openings, including Scotland fullscreen/Auto resize and actual SSAO/MSAA.
+A separate both-fail case exits2 promptly with clear reasons, no presents and
+exact settings/custom DDS preservation. Patch3055 fixes the previous blind run
+after host CreateDevice failure, preserving the legacy-Mac path.
+
+Scotland exposed a shutdown fault at exit stack tracing. An exception guard alone
+was insufficient. Patch3056 logs normal exit without a post-teardown stack walk;
+nonzero exits keep guarded diagnostics. Injected tests preserve0/2 and confirm
+faults outside tracing still fail. The final Scotland recovery test exits0 and
+reviewed desktop frames show upright world/weapon/reticle/HUD/impact rendering.
+The temporary accepted compile definition was removed; ordinary Windows Build
+and mandatory checks pass. A120s actual-launcher Vulkan Scotland control also
+passes, preserving graphics/default settings and custom DDS bytes, with exit0.
+Exact executable hashes, failed earlier trials and test scope are in
+[recovery evidence](../agent-context/opengl-recovery.md).
+
+All production recovery gates remain OFF. Native build/GPU/event-loop/capability
+acceptance and remaining common resource review are still pending. A separate
+WSL checkout now has verified pinned Python/compiler/SDK prerequisites and the
+supported US XBE, reusing immutable dependencies/data; this is not a Linux build
+or gameplay pass. Native Mac hardware is unavailable and legacy GL is unchanged.
+Apple OpenGL is deprecated. No publication or merge has occurred.
+
+## OpenGL display, effects and five-minute Windows stability pass; recovery gated (2026-11-22)
+
+Local checkpoint after33e5a469 on feature/opengl-startup-recovery. Shared GL4.1
+single-sample snapshots now cover subset/array/cube/volume/compressed/depth/stencil
+views without texture-view/storage extensions; GLSL410 count queries use uniforms.
+The restricted4.1 fixture, ordinary explicitGL contracts, shader translation and
+Windows full Build pass. All5 accepted-fixture recovery cases and all8 ordinary
+recovery-OFF cases pass after these changes. Fixture acceptance restored OFF.
+Native host readiness is not inferred from NVIDIA.
+
+Isolated Windows11/RTX4070SUPER617.42 game runs pass desktop presentation,
+fullscreen/windowed transitions, Auto resizing, startup1080p fullscreen, active
+MSAA4/8 and actual SSAO application. Requested SMAA/FXAA/AF and launcher Vulkan
+default are preserved. The300s gl-soak-01 passes late movement/60Hz guest clock,
+pause/resume, bounded resource growth and clean exit0. Latest game SHA256
+3426c47c19d61fd95f25a596fea8ca11c50884d9c0595c2bcf5582b3da3c75d4;
+earlier display/effect runs use distinct documented hashes. Vulkan's120s actual
+launcher regression control also passes gameplay and clean exit0. Desktop
+captures were reviewed separately from measurement; no GPU/scanout benchmark or
+long-term leak claim. Exact provenance and failed earlier harness trials are in
+[OpenGL recovery evidence](../agent-context/opengl-recovery.md).
+
+Automatic recovery remains OFF everywhere. Actual ordinary-game recovery/both-fail
+launcher trials, additional scenes, texture preservation and native build/GPU/
+display/performance checks remain. SDL main-thread servicing and native4.1
+capabilities still need on-host proof; no native Mac hardware is available here.
+Legacy Mac behavior is preserved; Apple OpenGL remains deprecated. No publishing
+or merge is authorized by this checkpoint.
+
+## OpenGL worker restores first-mission throughput; recovery still gated (2026-11-22)
+
+Local checkpoint after886eb735, feature/opengl-startup-recovery. The shared RHI
+now retires final resource references without guest-thread GL calls, and typed
+host dispatch keeps WGL on a dedicated graphics worker. Windows worker/context
+recreation, concurrent resources and repeated cleanup pass GPU contracts.
+All5 recovery cases, all8 ordinary cases and explicitGL pass; Vulkan validation
+is active on positive Vulkan paths. Fixture acceptance restored OFF.
+
+On Windows11 x64/MSVC19.44/RTX4070SUPER617.42, two120s isolated game runs pass
+first-mission firearm handoff, movement, hand animation, firing and pause/resume
+without renderer errors. Build SHA256
+c291b08cfa97d97b54811a0a1e6b588f8700d9f3695752759df0fa58a6f476a9.
+The measurement run gl-worker-01 observed60FPS late:1800 CPU present intervals
+at85-115s median16.666ms, p9517.179ms, max17.880ms. This is not scanout/GPU timing.
+Late handles stayed550; private memory359530496-367816704 bytes, ending359530496.
+The separate visual run gl-worker-visual-01 passes the same gameplay checks;
+reviewed guest capture shows upright textured world/fog/weapon/tutorial/HUD and
+impact sparks. Both sessions were runner-terminated, so neither proves clean
+exit. Source and measured limitations: agent-context/opengl-recovery.md.
+
+Native SDL GPU calls now dispatch to main; window staging preserves the original
+on failure, retains logical RHI identity, and rebinds input/settings on commit.
+The production window transaction passes injected failure/preservation tests on
+MSVC and WSL GCC; shared GL/native adapters pass GCC syntax checks.136 selected
+Python tests pass,9 skipped. Native event servicing, actual host build/package/
+GPU execution and missingGL4.1 view/stencil/mirror-once capability work remain.
+Windows display/fullscreen/resize, graphics/effects matrices, additional scenes,
+actual recovery game startup, preservation and longer stability/clean-exit checks
+remain. Automatic recovery remains OFF on every production platform; legacy Mac
+behavior is preserved and deprecated OpenGL is not a future-support guarantee.
+
+## OpenGL ordinary build and failed first gameplay acceptance (2026-11-22)
+
+Local uncommitted checkpoint after58d450d9 on feature/opengl-startup-recovery.
+Patch3054 compiles the shared OpenGL RHI beside Vulkan; ordinary Windows Build
+and its required checks pass. Setup/build verification and all3 package writers
+now retain the pinned static compiler dependency and exact license/provenance.
+Legacy Mac GL builds are unchanged. 123 selected Python checks pass,9 skipped;
+native build/package/GPU execution remains unrun.
+
+Real game testing exposed a creation/render-thread context handoff. Public RHI
+operations now serialize and lease the context; a Windows GPU regression tests
+worker rendering while the creation thread stays alive and subsequent return.
+The explicitGL hardware contract passes. The game build SHA256
+078bd47d0c40df65663bee6ec6cca17edec86404b47bb35abe73a5f0dec82442
+ran isolated for120s on Windows11/RTX4070SUPER617.42 (MSVC19.44,
+SDK1.4.363.0 DXC/SPIRV-Cross). gl-lease-01 used capture, replayed navigation,
+stress input and pause/resume at1280x720/Original60. It **failed** gameplay
+acceptance: Story/opening geometry, correct renderer, presents, no renderer errors
+and pause/resume passed; firearm handoff, movement, hand animation and ammunition
+checks failed. Opening capture shows upright textured geometry and level text.
+Late presentation logs are about6-7 FPS; capture-enabled measurements are not a
+benchmark. Runner-bounded termination exit1 is not clean-exit acceptance.
+Evidence: private/test-saves/high-refresh/60-gl-lease-01-opengl-validation.json
+and three retained BMPs; build log logs/opengl-game-build.log. Personal files were
+preserved. Optimize context scheduling and investigate progression/compiler costs
+before retrying game acceptance. Production recovery remains OFF everywhere;
+no universal readiness. Native window/capability work and remaining scene/effects,
+display, preservation, performance/stability acceptance are still pending.
+
+Final contract recheck after context handoff: all5 accepted-fixture recovery cases,
+all8 ordinary recovery-OFF cases and explicitGL pass, with Vulkan validation.
+Historical controls upgrade passes with the complete new patch stack. Fixture
+acceptance restored OFF. See agent-context/opengl-recovery.md for report hashes.
+These passes do not override the failed real-game acceptance above.
+
+## OpenGL recovery GPU implementation; production remains disabled (2026-11-22)
+
+Local feature/opengl-startup-recovery checkpoint follows64ec1809 (foundation),
+based on4c287926 plus main694fc53a. The shared OpenGL backend now implements
+all production RHI operations and uses the common frontend/HLSL compiler.
+The test fixture compiles it through src/graphics/opengl_backend.cmake.
+Shader fixes support narrow interstage inputs and GL4.1 sample-count queries;
+GPU contracts cover image/view/state/streams/readback/resolve/query/screen paths.
+
+Windows11 x64/MSVC19.44/RTX4070SUPER617.42: all8 original RHI cases and
+explicitOpenGL pass with recovery OFF; fixture SHA256
+f73cdea03982e02716cc4c0dacab727b66db164324717f1b8497247959fa45de.
+An accepted test-only build passes five realGPU startup cases: Vulkan success,
+missing Vulkan driver, no Vulkan device, both failing, partialOpenGL setup failure;
+fixture SHA256 ce2c16bf4582f2243f2b9528d310f634ca09547772cf584195d636996f2eafd6.
+Vulkan cases use SDK1.4.363.0 validation. Reports: logs/rhi-windows*.json.
+Standalone shared-shader/WGL pixel probes and16 selected Python checks pass.
+The fixture acceptance option was restored OFF. Child-only injected failures do
+not change installed drivers, saves, settings or textures.
+
+This is GPU contract evidence, not actual game acceptance. Ordinary game builds
+still omit the new backend. Setup/build/package/license integration, native SDL
+window replacement and GL4.1 capability adaptation remain implementation work.
+Native Mac/Linux GPU execution is unrun; WSL policy success is not GPU acceptance.
+Representative menus/gameplay/effects, resizing/fullscreen, preservation and
+bounded performance/stability acceptance remain. All production recovery gates
+remain OFF; no launcher selector or automatic D3D11 path was added. Legacy Mac
+GL remains unchanged; macOS OpenGL is deprecated. Goal incomplete; see
+agent-context/opengl-recovery.md for contracts and exact remaining work.
+
+## Windows Vulkan startup without automatic fallback (2026-11-22)
+
+User-requested change on fix/windows-vulkan-no-fallback, based on main694fc53a.
+Patch3051 makes a Windows Vulkan build report initialization failure, destroy
+partial state and return an error without changing APIs. Explicit developer
+D3D11/WARP diagnostics remain; native Mac/Linux behavior is unchanged. The
+launcher remains Vulkan-only in its UI. Retired the old launcher compiler-
+recovery probe; current negative startup contracts use the production RHI runner.
+
+Windows11/RTX4070SUPER/driver617.42: all8 hardware RHI cases pass, including
+normal Vulkan with active SDK1.4.363.0 validation, explicit D3D11/adoption and
+missing Vulkan driver/device/DXC failures. Negative cases require retained
+Vulkan selection, not-ready state, safe repeated cleanup, the explicit failure
+message and no D3D11 recovery. Report logs/rhi-windows.json, fixture SHA
+2fae848362b58895a9704ddfee1cbe69b42ba20d2d2842215bd55dc9bb14d69f.
+19 selected renderer/compiler Python checks, historical controls upgrade
+regression and launcher acceptance --compile-only pass. Complete patches verify.
+The normal Windows Build and its bundled build tests pass, after building the
+pinned symbol matcher and using Windows PowerShell's .NET Framework icon step.
+Game executable SHA d4ad75ce71f930631dbae896bfab945b8428658237d650875de7994780b0ce83.
+A bounded30s Test Lab startup using isolated saves/settings presents at least
+1500 guest frames on Vulkan, with zero failed presents, no RHI errors, crash or
+D3D11 recovery. The runner terminates at its bound and recycles test disk images;
+this is startup/rendering evidence, not a new full gameplay or performance test.
+Native host execution is unrun; the policy is gated to Windows. User saves and
+settings are preserved. Local logs: windows-vulkan-no-fallback-build.log and
+private/test-saves/quick-test/game.err.
+
 ## Issue #558 hosted CI follow-up (2026-11-22)
 
 PR588's initial hosted Windows suite passed. Linux exposed an overly strict4s

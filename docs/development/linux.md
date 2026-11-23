@@ -1,3 +1,11 @@
+OpenGL recovery implementation is now shared with Windows. Linux's automatic
+recovery gate remains disabled: WSL actual recovery/cleanup/preservation works,
+WSLg fullscreen/minimize checks fail, private X11 checks pass, and physical
+performance/package acceptance remains deferred. Saved Vulkan/OpenGL choices are available in the
+launcher. See [the current acceptance report](opengl-startup-recovery.md) for
+precise host, driver, provenance and deferred checks; virtual X11 evidence does
+not approve physical Linux or Steam Deck behavior.
+
 Visibility repair is validated on Windows: patch3001 uses the shared
 asynchronous exact-query cache and Vulkan per-draw precise sample segments.
 Native Linux GPU/sample/flare occlusion and cleanup acceptance remain pending;

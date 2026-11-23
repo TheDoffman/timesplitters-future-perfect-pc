@@ -6,6 +6,7 @@
 #include "d3d8_xbox.h"
 #include "d3d8_overlay.h"
 #include "rhi.h"
+#include "../graphics/opengl_host.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -14,21 +15,55 @@
 #include "renderer_host_selftest.inc"
 
 static SDL_Window *native_window;
-void *tsfp_native_renderer_window(unsigned width,unsigned height)
+unsigned tsfp_renderer_host_dispatch_serial(void)
+{return tsfp_gl_host_main_dispatch_serial();}
+static void *native_logical_window;
+static int commit_gl_window(SDL_Window *old,SDL_Window *next)
+{
+    if(!tsfp_renderer_host_replace_window(old,next))return 0;
+    tsfp_native_settings_release_input(old);
+    native_window=next;tsfp_native_settings_attach(next);return 1;
+}
+#include "opengl_window_sdl.h"
+static void *prepare_gl_window(void *logical_window)
+{
+    if(logical_window!=native_window && logical_window!=native_logical_window)return NULL;
+    return tsfp_native_gl_window(native_window,commit_gl_window);
+}
+
+static void *renderer_window_on_main(unsigned width,unsigned height)
 {
     if(native_window)return native_window;
     if(!SDL_IsMainThread()) {
         fprintf(stderr,"[native-rhi] window creation requires the main thread\n");return NULL;
     }
     if(!SDL_WasInit(SDL_INIT_VIDEO) && !SDL_InitSubSystem(SDL_INIT_VIDEO))return NULL;
-    native_window=SDL_CreateWindow("TimeSplitters: Future Perfect — Shared Native Renderer",
+    native_window=tsfp_native_primary_window("TimeSplitters: Future Perfect — Shared Native Renderer",
         width?width:640,height?height:480,tsfp_native_window_flags(SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY));
     if(!native_window){fprintf(stderr,"[native-rhi] window: %s\n",SDL_GetError());return NULL;}
+    native_logical_window=native_window;
+    tsfp_gl_host_set_window_adapter(prepare_gl_window);
     tsfp_renderer_host_bind(native_window,d3d8_overlay_shutdown);
     tsfp_native_settings_attach(native_window);
     SDL_RaiseWindow(native_window);
-    fprintf(stderr,"[native-rhi] common Xbox renderer, SDL Vulkan window\n");
+    fprintf(stderr,"[native-rhi] common Xbox renderer, SDL %s window\n",
+        (SDL_GetWindowFlags(native_window)&SDL_WINDOW_VULKAN)?"Vulkan":"API-neutral");
     return native_window;
+}
+
+typedef struct {unsigned width,height;void *window;} NativeWindowRequest;
+static void create_renderer_window(void *opaque)
+{
+    NativeWindowRequest *request=opaque;
+    request->window=renderer_window_on_main(request->width,request->height);
+}
+void *tsfp_native_renderer_window(unsigned width,unsigned height)
+{
+    if(SDL_IsMainThread())return renderer_window_on_main(width,height);
+    NativeWindowRequest request={width,height,NULL};
+    if(!SDL_RunOnMainThread(create_renderer_window,&request,true))
+        fprintf(stderr,"[native-rhi] window dispatch failed: %s\n",SDL_GetError());
+    return request.window;
 }
 
 /* Bounded smoke through the actual common Xbox device, not only RHI calls. */
@@ -51,7 +86,7 @@ int tsfp_native_renderer_test(void)
          * fullscreen drawing/present is tested again by the mode checks below. */
         if(wanted) {
             tsfp_renderer_host_bind(NULL,NULL);SDL_DestroyWindow(native_window);
-            native_window=SDL_CreateWindow("Native renderer regression",64,64,
+            native_window=tsfp_native_primary_window("Native renderer regression",64,64,
                 SDL_WINDOW_VULKAN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
             pp.hDeviceWindow=native_window;
             if(!native_window)return 1;

@@ -1,7 +1,7 @@
 [Bob](weapon-bob.md), [Exit](pause-settings.md), [Turn](controls-options.md).
 [V-Sync](video-options.md); [229](gladiator-selection.md). [Doors](network-doors.md).
 
-[Wide HUD](ultrawide-player-markers.md).
+[GL gate](opengl-recovery.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
 [Actors](network-actor-lifetime.md).
 [Tex](texture-preference.md); [arms](video-options.md).

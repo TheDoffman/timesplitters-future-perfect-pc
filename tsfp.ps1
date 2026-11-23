@@ -85,6 +85,7 @@ try {
         Invoke-Checked 'git' @('-C', $toolRoot, 'submodule', 'update', '--init', '--depth', '1',
             'third_party/Vulkan-Headers', 'third_party/volk', 'third_party/VulkanMemoryAllocator')
         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\windows_vulkan.py'), '--setup')
+        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\spirv_cross.py'), '--setup')
     }
     elseif ($Action -eq 'Status') {
         Write-Output "Tool checkout: $toolRoot"
@@ -158,6 +159,7 @@ try {
                 'Build' {
                     Assert-Game
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\windows_vulkan.py'))
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build\spirv_cross.py'))
                     if (!$SkipTextures -and ((Get-Content (Join-Path $projectRoot 'config\textures\texture-pack.json') -Raw | ConvertFrom-Json).delivery -eq 'bundled')) {
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\textures\build_textures.py'))
                     }

@@ -135,7 +135,7 @@ namespace TimeSplitters.Launcher
         {
             if(busy||gameRunning)return;
             Core.Require(!Core.GameRunning(),"Close the running game before starting another session.");
-            await Task.Run(()=>{NativeHost.CheckData(root);NativeHost.CheckBuild(root);});
+            await Task.Run(()=>{NativeHost.CheckData(root);NativeHost.CheckBuild(root,GameSettings.Load(root,null).Renderer);});
             Core.Require(!Core.GameRunning(),"The game is already running.");
             NativeHost.Prepare(root);var info=GameSettings.StartInfo(root);
             await MonitorGame(info,root);

@@ -159,7 +159,7 @@ def opening_firearm_check(samples):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--backend', choices=('auto','d3d11','vulkan'), default='auto',
+    parser.add_argument('--backend', choices=('auto','d3d11','vulkan','opengl'), default='auto',
                         help='Select the Windows backend without changing player settings')
     parser.add_argument('--vk-validation', action='store_true')
     parser.add_argument('--validation-layer-path', type=Path)

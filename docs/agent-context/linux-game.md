@@ -1,3 +1,13 @@
+## OpenGL recovery checkpoint (2026-11-22)
+
+The native full shared OpenGL RHI fixture passes software, WSL/NVIDIA and
+restricted4.1 pixel/resource/worker/context/swap checks atf0d57ff7. The Vulkan
+fixture/replay still pass on lavapipe. These are separate from actual game and
+startup-recovery acceptance; recovery remains disabled. SDL can reject the
+Vulkan drawable before shared startup: the primary-window adapter now retries
+an API-neutral window, preserving renderer selection for shared RHI policy.
+See [exact evidence and remaining checks](opengl-recovery.md).
+
 ## CI package mirror
 
 The Linux Vulkan job replaces the runner's primary Ubuntu mirror list, when

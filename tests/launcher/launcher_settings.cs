@@ -753,7 +753,8 @@ public static class LauncherSettingsChecks
             Test("child process receives and reads the selected portable settings",()=>{
                 string root=Root("child");var model=GameSettings.Load(root,null);model.Sensitivity=.45;model.Width=2560;model.Height=1440;model.Anisotropy=8;model.SkipStartupSplashes=true;model.Save();
                 Directory.CreateDirectory(Path.Combine(root,"Bin"));File.Copy(typeof(LauncherSettingsChecks).Assembly.Location,Path.Combine(root,"Bin/futureperfect_recomp.exe"));
-                foreach(string renderer in new[]{"vulkan"}) {
+                foreach(string renderer in new[]{"vulkan","opengl","vulkan"}) {
+                    model=GameSettings.Load(root,null);model.Renderer=renderer;model.Save();
                     var info=GameSettings.StartInfo(root);info.Arguments="--settings-child";
                     using(var child=Process.Start(info)) {
                         try {var output=child.StandardOutput.ReadToEndAsync();var errors=child.StandardError.ReadToEndAsync();Require(child.WaitForExit(5000));string text=output.GetAwaiter().GetResult();string error=errors.GetAwaiter().GetResult();Require(child.ExitCode==0 && text.Contains("0.45") && text.Contains("TSFP_DISPLAY_V1 2560 1440") && text.Contains("8") && text.Contains("XMV_PLAY=0") && text.Contains("RENDERER="+renderer));Require(error.Length==0);}

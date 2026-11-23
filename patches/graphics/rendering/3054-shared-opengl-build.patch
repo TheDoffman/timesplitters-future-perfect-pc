@@ -1,0 +1,16 @@
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -92,6 +92,13 @@
+         tsfp_add_vulkan_backend(xbox_d3d8 "${CMAKE_CURRENT_SOURCE_DIR}/../.." "${TSFP_VULKAN_SDK}")
+     endif()
+ 
++    # The same experimental recovery backend is available beside Vulkan on
++    # every common-frontend host. Acceptance is independent and defaults OFF.
++    if(TSFP_PC_CONTROLS_DIR AND (XBOXRECOMP_VULKAN OR TSFP_NATIVE_RHI))
++        include("${TSFP_PC_CONTROLS_DIR}/graphics/opengl_backend.cmake")
++        tsfp_add_opengl_backend(xbox_d3d8 "${CMAKE_CURRENT_SOURCE_DIR}/../..")
++    endif()
++
+     if(WIN32)
+     # Offline smoke test for the pure format layer (no D3D11 device needed).
+     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../tests/d3d8_smoke

@@ -28,6 +28,7 @@ import subprocess
 import sys
 from native_mac_common import recycle_test_disks
 import vulkan_sdk
+import spirv_cross
 from build_textures import ensure_pack
 
 ROOT = _layout_root
@@ -94,6 +95,7 @@ def main():
         sdk = None
         if renderer == 'vulkan':
             sdk = vulkan_sdk.setup(runtime_root) if args.setup else vulkan_sdk.verify_install(runtime_root)
+            spirv_cross.setup(runtime_root) if args.setup else spirv_cross.verify(runtime_root)
     except (OSError, ValueError, RuntimeError) as error:
         raise SystemExit(f'Native renderer prerequisite: {error}') from error
     print(f'Native renderer: {renderer} (requested {args.renderer})', flush=True)
@@ -164,7 +166,7 @@ def main():
                     working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
                     compatibility_identity=json.loads((BUILD / 'generated/network-identity.json').read_text())['compatibility'],
-                    renderer=renderer, vulkan_driver=args.vulkan_driver if renderer=='vulkan' else None, renderer_requested=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
+                    renderer=renderer, supported_renderers=['vulkan','opengl'] if renderer=='vulkan' else ['opengl'], vulkan_driver=args.vulkan_driver if renderer=='vulkan' else None, renderer_requested=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
                     symbol_uuid=subprocess.check_output(['dwarfdump','--uuid',str(BUILD/'futureperfect_recomp.dSYM')],text=True).split(' (arm64)')[0],
                     symbols_sha256=hashlib.sha256((BUILD/'futureperfect_recomp.dSYM/Contents/Resources/DWARF/futureperfect_recomp').read_bytes()).hexdigest(),
                     compiler=subprocess.check_output(['clang', '--version'], text=True).splitlines()[0],

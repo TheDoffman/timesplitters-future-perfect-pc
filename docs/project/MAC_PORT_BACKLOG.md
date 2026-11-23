@@ -1,3 +1,140 @@
+## Current OpenGL recovery / selector status (2026-11-22)
+
+**Implemented in shared source; native Mac acceptance deferred.** Windows now
+uses Vulkan with accepted startup-only OpenGL recovery (bfb73181), and the shared
+launcher offers saved Vulkan/OpenGL selection (65d753d2). Native preflight follows
+the selected backend (c8b8d7d2). Shared policy/shaders/resources live in
+src/graphics/rhi_startup.h, rhi_platform_acceptance.h, opengl_backend.c and
+opengl_shader.cpp; SDL/window/guest dispatch stays in src/native adapters.
+Mac launcher compiles, but no Apple Silicon game/GPU host is available here.
+Its recovery gate remains0. The separate legacy GL build/entry and its compiler
+requirements are preserved; native legacy runtime acceptance is also unavailable.
+Apple OpenGL is deprecated, and common GL needs real4.1/S3TC/mirror-once checks.
+
+Remaining Mac work is **hardware acceptance**, not a claim of universal support:
+Apple Clang game/common+legacy builds, actual capabilities/shaders/resources,
+main-thread SDL/window/input, both startup failure paths, launcher choices,
+save/settings/texture retention, display modes/effects, bounded performance and
+clean relocated packages. The exact checklist and evidence are in
+[the recovery report](../development/opengl-startup-recovery.md#exact-deferred-native-acceptance).
+Earlier investigation checkpoints below are historical; their all-platform-OFF
+and native-stall descriptions are superseded by current Windows/Linux evidence.
+
+Adaptive common-native GL dispatch (development): the SDL owner now pumps
+recent work without sleeping per GPU call, then returns to bounded waits after
+quiescence. An owner-only serial and thin native adapter preserve CPU-only worker
+serialization. Native TLS/input/cleanup unit passes; real throughput/gameplay and
+Mac host acceptance remain pending. Windows and separate legacy Mac entry routes
+are unchanged; no automatic recovery gate is enabled. See
+agent-context/opengl-recovery.md#adaptive-native-dispatch-implementation-checkpoint.
+
+Common RHI OpenGL packed-color repair (development,2026-11-22): the same
+354-draw capture exposed BGRA vertex colors bound as RGBA. The shared GL binding
+and GPU regression now preserve channel order; controlled Windows replay closely
+matches D3D11 and leaves Vulkan output unchanged. This applies to common native
+RHI, not the separate legacy Mac frontend. Native hardware/game verification
+remains pending and recovery staysOFF. See agent-context/opengl-recovery.md.
+
+Common OpenGL minimum-capability checks (development,2026-11-22): core4.1,
+full S3TC BC1/2/3 and mirror-once are now required before shared RHI resources
+are allocated; failed contexts are cleaned and a retry is tested. Portable
+contracts and Windows hardware reject unsupported capabilities. Legacy Mac's
+separate GL frontend is unchanged. Native Mac capability/GPU/game acceptance
+remains unverified and automatic recovery remainsOFF. See
+agent-context/opengl-recovery.md#minimum-opengl-capability-checks.
+
+Renderer selector restored in development (2026-11-22): shared launcher
+Vulkan/OpenGL setting, persistence, explicit child selection and package capability
+checks are implemented; Windows launcher regressions pass. Native driver/library
+preparation, actual native launcher gameplay and Mac visual acceptance remain
+pending. Legacy renderer=gl receipts keep OpenGL defaults. No recovery gate is
+enabled. Details: docs/agent-context/opengl-recovery.md.
+
+Continuous native SDL dispatch implementation is pending acceptance: shared
+startup query3059 routes only explicit GL or accepted Vulkan→GL recovery to an
+owned guest worker and main-thread SDL service. Entire guest TLS/kernel/crash
+initialization stays on that worker; window creation marshals to the owner.
+Ordinary native Vulkan with recoveryOFF and legacy Mac GL retain inline guest
+execution. No original game polling branch/clock is changed. Native build/guest
+checks are next; Mac host acceptance remains unavailable, recovery gatesOFF.
+
+Native OpenGL guest-loop checkpoint (unverified implementation): actual Linux
+GL stalls after one frame; owned GDB shows a worker awaiting main-thread GL
+while main waits on a guest event. Patch3058 adds optional POSIX wait servicing;
+common RHI SDL binds a coalesced main-thread event service. Legacy Mac GL is
+explicitly excluded by TSFP_RHI_RENDERER and retains the original wait path;
+Windows uses OS waits. Native unit/game retests are pending. Direct WSL Wayland
+still declines fullscreen for Vulkan and GL. Every recovery gate staysOFF;
+Mac host acceptance remains unavailable. Details:agent-context/opengl-recovery.md.
+
+OpenGL checkpoint atf0d57ff7: Linux full-RHI software and WSL/NVIDIA pixels,
+resources, MSAA/SSAO, worker/context cleanup and swaps pass; restricted4.1 and
+ordinary Vulkan/replay pass too. Shared fixes cover exact sample counts, cube
+resolves and sampled face snapshots. The native primary-window adapter now
+retries a neutral SDL window after Vulkan drawable failure, retaining selection
+in shared startup policy. Actual native recovery/game/display/performance/package
+checks and Mac host acceptance remain pending, with every recovery gateOFF.
+Legacy Mac GL remains unchanged; deprecated GL limits and exact provenance are
+in agent-context/opengl-recovery.md. No universal readiness is claimed.
+
+Latest OpenGL evidence at a81715a4: native Linux pixels and actual swap pass
+under llvmpipe and WSL D3D12/NVIDIA RTX4070SUPER. Optional swap control is now
+shared WGL/SDL host policy: refusal preserves settings and still swaps; a real
+swap failure remains an error. Windows fullscreen/MSAA8/AO gameplay, GPU contracts
+and builds pass. Native full-RHI recovery, main-thread servicing, full game/
+display/performance/package and Mac host acceptance remain pending. Default Linux
+GL selection is software; the explicit accelerated test environment is recorded
+in agent-context/opengl-recovery.md. All platform recovery gates remain OFF.
+
+Current OpenGL checkpoint afterdf6814a7: patch3057 fixes common native source
+path discovery without enabling Windows PC features;7 CMake cases and5 targeted
+fresh/historical/round-trip upgrade checks pass. Typed zero resources and per-read
+null masks now pass Windows GL/recovery/4.1/pixel contracts and120s gameplay plus
+separate desktop display/visual acceptance. Actual native link/GPU/game checks
+still await the updated Linux checkout and a Mac host. All recovery gates stay
+OFF; native callback servicing, mirror-once/compression and complete available-
+host acceptance remain. Details/hashes: agent-context/opengl-recovery.md.
+
+OpenGL recovery goal (2026-11-22): implementation in progress on
+feature/opengl-startup-recovery, based on local4c287926. Shared startup transaction,
+shader compiler and common RHI backend pass Windows hardware recovery contracts
+in an explicitly accepted fixture. Production recovery stays OFF on all hosts.
+The context worker now passes first-mission gameplay, desktop presentation,
+fullscreen/resize, actual SSAO/MSAA and a300s bounded stability/clean-exit check.
+These Windows results do not establish native throughput or readiness.
+
+Shared single-sample view snapshots now cover subset/array/cube/volume/compressed/
+depth/stencil without texture-view/storage extensions; count queries use GLSL410
+uniforms. A restricted Windows fixture verifies this route; other NVIDIA
+extensions remain available. Native mirror-once/compression/capability acceptance
+and copied-view performance still require native hardware. SDL window staging,
+logical identity, input/settings rebinding and main-thread GPU dispatch are
+implemented with injected rollback tests, but actual event servicing remains
+unverified. Native build/package/GPU/display/effects/settings/performance checks
+are pending; Linux WSL work is not yet completed, Mac hardware unavailable here.
+Actual Windows launcher recovery, both-fail termination, Scotland display/gameplay
+and synthetic installed custom DDS preservation now pass in a local trial.
+Patch3055 exits failed common-frontend startup instead of running blind; legacy
+Mac keeps its old path. Patch3056 guards Windows failure tracing and avoids normal
+post-teardown stack walks. The trial definition is removed and normal Vulkan
+launcher gameplay/build checks pass again. Remaining common resource review and
+native acceptance still prevent approval. WSL prerequisites are now verified in
+a separate checkout; source/build/GPU execution at this checkpoint is pending. Legacy Mac GL is unchanged and Apple's OpenGL is deprecated. See
+agent-context/opengl-recovery.md and STATUS for hashes and exact evidence.
+
+Native OpenGL wiring correction at c479c63a: patch3054 requires
+TSFP_PC_CONTROLS_DIR, but ordinary Mac/Linux commands pass TSFP_NATIVE_DIR. Derive
+the shared graphics source path from the native adapter directory without enabling
+Windows PC feature flags. Standalone Linux Vulkan/replay/MMIO build and software
+Vulkan contracts pass; manually enabled OpenGL static-library compilation passes.
+No ordinary native OpenGL game link/GPU acceptance is established. Gates stay OFF.
+
+Windows renderer startup failure (2026-11-22): automatic D3D11 recovery removed
+at user request. Patch3051 gates the failure policy to Windows Vulkan builds;
+shared cleanup remains the same. Native Mac/Linux behavior and legacy GL are
+unchanged, so no native adapter implementation is deferred. Windows hardware
+RHI tests cover startup failure without switching APIs; native checks are unrun.
+
 Issue558 / PR588 native helper follow-up: **Awaiting validation** on native Mac.
 Hosted package testing exposed missing bundle-side libSkiaSharp in the copied game
 updater once it acquired a GUI. Preparation now copies all matching bundle-side

@@ -268,3 +268,14 @@ required by the reusable build. The final package verifier requires matching
 Windows/Mac/Linux source receipts and all 15 publication assets. These checks
 do not establish Linux game delivery, Wayland window enumeration or Steam Deck
 performance. See [Linux launcher](../players/linux-launcher.md).
+
+## Vulkan/OpenGL selector (next version)
+
+The shared renderer setting offers Vulkan (Default) and OpenGL, with Save/Cancel,
+dirty tracking, reopen persistence and an explicit child backend on each host.
+Package supported_renderers receipts prevent silently requesting an unavailable
+backend in older games. Native legacy renderer=gl keeps its OpenGL default.
+Shared UI tests cover switching, cancellation, retired/malformed preferences,
+inherited overrides, compatibility rejection and legacy defaults. The Windows
+settings child receives both actual environments. GPU/game acceptance remains
+separate; see docs/agent-context/opengl-recovery.md for current host evidence.

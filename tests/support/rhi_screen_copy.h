@@ -145,7 +145,11 @@ static void rhi_screen_copy_test(RhiView *restore_target) {
         CHECK(d3d8_CopyTextureView(texture,offscreen_srv)==S_OK && !((D3D8Texture *)texture)->screen_copy);
         CHECK(d3d8_surface_msaa_resolve((D3D8Surface *)copy_surface));
         unsigned char pixels[8*6*4];CHECK(rhi_image_readback(((D3D8Texture *)texture)->image,0,pixels,8*4)==0);
-        for(unsigned i=0;i<8*6;i++)CHECK(pixels[4*i]==255 && pixels[4*i+1]==0 && pixels[4*i+2]==0 && pixels[4*i+3]==255);
+        for(unsigned i=0;i<8*6;i++) {
+            if(!(pixels[4*i]==255 && pixels[4*i+1]==0 && pixels[4*i+2]==0 && pixels[4*i+3]==255))
+                fprintf(stderr,"MSAA screen copy pixel %u: %u,%u,%u,%u\n",i,pixels[4*i],pixels[4*i+1],pixels[4*i+2],pixels[4*i+3]);
+            CHECK(pixels[4*i]==255 && pixels[4*i+1]==0 && pixels[4*i+2]==0 && pixels[4*i+3]==255);
+        }
         /* Partial copy changes only the requested area of an active target.
          * Its untouched green pixels exist only in multisampled coverage. */
         const float green[4]={0,1,0,1};rhi_clear_color(copy_ms,green);

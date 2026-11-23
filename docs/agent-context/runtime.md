@@ -1,5 +1,6 @@
+[GL gate](opengl-recovery.md).
 [Wide HUD](ultrawide-player-markers.md).
-[MP](native-multiplayer-menu.md#one-player-arcade-lobbies).
+[MP](native-multiplayer-menu.md).
 
 [Bob](weapon-bob.md);[Uplink](native-uplink.md).
 [UI](controls-options.md); [feed](../development/arcade-kill-feed.md).

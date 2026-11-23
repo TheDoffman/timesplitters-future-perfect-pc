@@ -2201,6 +2201,81 @@
       ]
     },
     {
+      "name": "3051-windows-no-renderer-fallback.patch",
+      "path": "patches/graphics/rendering/3051-windows-no-renderer-fallback.patch",
+      "sha256": "fd6346cbb6a2f1f190ed7dd971e528168b43b3ec5f34f52732f1bf8fbac7d080",
+      "targets": [
+        "src/d3d/rhi.c"
+      ]
+    },
+    {
+      "name": "3052-shared-opengl-startup-recovery.patch",
+      "path": "patches/graphics/rendering/3052-shared-opengl-startup-recovery.patch",
+      "sha256": "5ed65de7ce610b24fc561c2a3a350cbaf1642113dc9e8d3bff109cd563051b69",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi_backend.h"
+      ]
+    },
+    {
+      "name": "3053-shared-shader-reflection.patch",
+      "path": "patches/graphics/rendering/3053-shared-shader-reflection.patch",
+      "sha256": "7a54cd12395a438068b50be76ff82a16a917000e4123d7d38714b2f817a627a9",
+      "targets": [
+        "src/d3d/rhi_vulkan_dxc.cpp"
+      ]
+    },
+    {
+      "name": "3054-shared-opengl-build.patch",
+      "path": "patches/graphics/rendering/3054-shared-opengl-build.patch",
+      "sha256": "143ab9d41df1de3c0688d37775f24fbe119a7917ce592f6eadcc34fa68421c0c",
+      "targets": [
+        "src/d3d/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "3055-exit-on-host-renderer-startup-failure.patch",
+      "path": "patches/graphics/rendering/3055-exit-on-host-renderer-startup-failure.patch",
+      "sha256": "4a51d5c788bd143ae1f4864ea273a2021a85947f55aae2a80bf28657d5e5c5f3",
+      "targets": [
+        "src/hle/hle_d3d8.c"
+      ]
+    },
+    {
+      "name": "3056-guard-exit-trace-memory-faults.patch",
+      "path": "patches/graphics/rendering/3056-guard-exit-trace-memory-faults.patch",
+      "sha256": "5c515b44f6de54f92676018879f7077feceb24908aaca5fa749d7cd7ae36baf9",
+      "targets": [
+        "src/kernel/exit_trace.c"
+      ]
+    },
+    {
+      "name": "3057-native-opengl-source-path.patch",
+      "path": "patches/graphics/rendering/3057-native-opengl-source-path.patch",
+      "sha256": "1e31ba2f3fb7c854fe65c217549eee63ba06c39bff51188c7a7cc2b0253426d2",
+      "targets": [
+        "src/d3d/CMakeLists.txt"
+      ]
+    },
+    {
+      "name": "3058-native-opengl-wait-dispatch.patch",
+      "path": "patches/graphics/rendering/3058-native-opengl-wait-dispatch.patch",
+      "sha256": "0fd2ae1500e5a52b647e114a8654ea03e393bc560f9fea67548e280eb426460f",
+      "targets": [
+        "src/platform/win32_compat.c",
+        "src/platform/win32_compat.h"
+      ]
+    },
+    {
+      "name": "3059-native-renderer-dispatch-policy.patch",
+      "path": "patches/graphics/rendering/3059-native-renderer-dispatch-policy.patch",
+      "sha256": "dd61452f3790d8efc75707c6e8038d91dc9442cedf26945fb1d02ad6009cc31e",
+      "targets": [
+        "src/d3d/rhi.c",
+        "src/d3d/rhi.h"
+      ]
+    },
+    {
       "name": "independent-canonical-frame-fixtures.patch",
       "path": "patches/compiler/independent-canonical-frame-fixtures.patch",
       "sha256": "b5cbcffcb9d9c8d3c0d6a13564f82498d657646ce426180e2697a57b9228be5e",

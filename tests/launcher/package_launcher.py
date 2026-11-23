@@ -120,6 +120,17 @@ class LauncherPackaging(unittest.TestCase):
             (root / 'config/build').mkdir(parents=True)
             (root / 'config/build/dxc-windows.json').write_text(json.dumps(pin))
             (dxc / 'receipt.json').write_text(json.dumps({'archive_sha256': pin['sha256'], 'files': dxc_hashes}))
+            # Exercise the real OpenGL source verifier without downloading dependencies.
+            cross = root / 'external/spirv-cross'
+            cross_hashes = {}
+            for relative in (*package.spirv_cross.SOURCES, 'LICENSE', 'spirv_glsl.hpp', 'spirv_cross.hpp'):
+                path = cross / relative
+                put(path)
+                cross_hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+            cross_pin = {'commit': 'fixture', 'sha256': hashlib.sha256(b'cross archive').hexdigest()}
+            (root / 'config/build/spirv-cross.json').write_text(json.dumps(cross_pin))
+            (cross / 'receipt.json').write_text(json.dumps({
+                'commit': cross_pin['commit'], 'archive_sha256': cross_pin['sha256'], 'files': cross_hashes}))
             (root / 'build/windows/CMakeCache.txt').write_text('XBOXRECOMP_VULKAN:BOOL=ON\n')
             with mock.patch.object(package, 'ROOT', root), \
                     mock.patch.object(sys, 'argv', ['package-release.py', '--version', 'v1.2.3']), \
@@ -143,6 +154,10 @@ class LauncherPackaging(unittest.TestCase):
                                  'Licenses/DXC-LICENSE-MS.txt', 'Licenses/DXC-LICENSE-LLVM.txt',
                                  'Support/Graphics/dxc-receipt.json']:
                     self.assertIn(prefix + relative, archive.namelist())
+                for relative in ['Licenses/SPIRV-Cross-OpenGL.txt',
+                                 'Support/Graphics/spirv-cross-pin.json',
+                                 'Support/Graphics/spirv-cross-receipt.json']:
+                    self.assertIn(prefix + relative, archive.namelist())
                 self.assertIn(prefix + 'Support/Discord/README.txt', archive.namelist())
                 self.assertEqual(archive.read(prefix + 'Support/Discord/pc-discord.default.ini'), discord_default)
                 self.assertNotIn(prefix + 'Discord-setup.txt', archive.namelist())
@@ -159,6 +174,7 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))
                 manifest = json.loads(archive.read(prefix + 'BUILD.json'))
                 self.assertEqual(manifest['version'], 'v1.2.3')
+                self.assertEqual(manifest['supported_renderers'], ['vulkan', 'opengl'])
                 self.assertIsNone(manifest['textures'])
                 self.assertFalse(any('/Textures/' in name for name in archive.namelist()))
                 self.assertEqual(manifest['launcher_version'], '1.1.0')

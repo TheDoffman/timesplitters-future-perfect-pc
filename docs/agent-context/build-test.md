@@ -1,6 +1,5 @@
-[Update tests #558](launcher.md#game-update-progress-issue-558).
-
-[Renderer default](windows-vulkan.md).
+[GL](opengl-recovery.md). [Updates](launcher.md#game-update-progress-issue-558).
+CI fixtures/dependency ordering: [GL](opengl-recovery.md#publication-ci).
 
 [0.7 sync](network-sync-telemetry.md).
 
@@ -13,13 +12,13 @@
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
 Warnings: [launcher](launcher.md).
-[Save/checksum tests](multiplayer-exit.md#validation).
+[Save tests](multiplayer-exit.md#validation).
 
 [Online](multiplayer-ui.md); [sun](fidelity-comparison.md).
 [Effect depth](native-effect-depth.md).
 [Update tests](main-menu-update.md).
 [HUD/MSAA](../development/graphics-options.md).
-[SDL/input fixtures](linux-game.md).
+[SDL input](linux-game.md).
 [Font/escape tests](audio-options.md).
 `test_lfs_checkout.py`: pointer clones, opt-in LFS pull, preserved packs.
 [Kill feed](../development/arcade-kill-feed.md)
@@ -31,7 +30,7 @@ cache/pan/split fallback; gain C++ needs initializer_list.
 Streams:8kHz/320-byte refill, ordered callbacks, manual dispatch.
 Movie updater: real DSP + neutral mix spies; speech-tail/gap PCM fixtures.
 `test_audio_output_gain.py`: mute/queue retention, Windows capture.
-[Capture and bounded build](../development/audio-overhaul.md#process-output-capture).
+[Build capture](../development/audio-overhaul.md#process-output-capture).
 `test_controller_profile.py` runs native key/pad guards and dispatch: freecam
 neutralizes gameplay but retains raw camera keys. Both host defines cover
 automatic/assigned pad blocking/resume, ownership and disconnect/focus/parser.

@@ -1,0 +1,37 @@
+diff --git a/src/d3d/rhi.h b/src/d3d/rhi.h
+--- a/src/d3d/rhi.h
++++ b/src/d3d/rhi.h
+@@ -337,6 +337,8 @@
+  * RECOMP_D3D8_BACKEND, and that unset means d3d11. Returns 0 when the
+  * named backend exists; otherwise it says so and keeps d3d11. */
+ int         rhi_select_backend(const char *name);
++/* Native adapters prepare a host event loop before potentially selecting GL. */
++int         rhi_startup_may_use_opengl(void);
+ const char *rhi_backend_name(void);
+ int         rhi_device_create(const RhiDeviceDesc *desc);   /* 0 on success */
+ void        rhi_device_destroy(void);
+diff --git a/src/d3d/rhi.c b/src/d3d/rhi.c
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -181,6 +181,21 @@
+ #ifndef TSFP_OPENGL_RECOVERY_ACCEPTED
+ #define TSFP_OPENGL_RECOVERY_ACCEPTED 0
+ #endif
++/* Same backend list, environment override and acceptance gate as startup.
++ * This query has no selection/device side effects. */
++int rhi_startup_may_use_opengl(void)
++{
++#if defined(RHI_HAVE_OPENGL)
++    const RhiBackend *selected = g_rhi;
++    const char *name = getenv("RECOMP_D3D8_BACKEND");
++    if (name && *name) for (int i = 0; g_backends[i]; i++)
++        if (!strcmp(name, g_backends[i]->name)) { selected = g_backends[i]; break; }
++    return selected == &rhi_opengl_backend ||
++        (TSFP_OPENGL_RECOVERY_ACCEPTED && selected && !strcmp(selected->name, "vulkan"));
++#else
++    return 0;
++#endif
++}
+ int rhi_device_create(const RhiDeviceDesc *d)
+ {
+ #if defined(RHI_HAVE_OPENGL)
