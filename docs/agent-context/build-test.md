@@ -11,7 +11,7 @@
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
-[Launcher startup tests](launcher.md#cold-startup-network-ordering-2026-11-23).
+[Startup tests](launcher-startup.md); [console zero/error tests](launcher.md).
 [Save tests](multiplayer-exit.md#validation).
 
 [Online](multiplayer-ui.md); [sun](fidelity-comparison.md).

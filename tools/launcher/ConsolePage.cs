@@ -40,8 +40,23 @@ namespace TimeSplitters.Launcher
             return String.Join(Environment.NewLine,all.Where(s=>s.Length>0&&(!errorsOnly||IsError(s))));
         }
         static string Prefix(int index){return index==0?"[OUT] ":"[ERR] ";}
-        static readonly Regex error=new Regex(@"\b(error|fatal|exception|panic|failed|failure|assertion)\b",RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
-        public static bool IsError(string text){return error.IsMatch(text);}
+        const RegexOptions LogOptions=RegexOptions.IgnoreCase|RegexOptions.CultureInvariant;
+        // OUT/ERR describe the pipe. An explicit log level describes severity.
+        static readonly Regex level=new Regex(@"^(?:\[[^\]\r\n]+\]\s*)*?(?:\[(?<level>ERROR|FATAL|PANIC|CRITICAL|WARN(?:ING)?|INFO|DEBUG|TRACE)\]|(?<level>ERROR|FATAL|PANIC|CRITICAL|WARN(?:ING)?|INFO|DEBUG|TRACE)(?=[:\s]))",LogOptions);
+        static readonly Regex zeroErrors=new Regex(@"\b(?:[a-z0-9]+_)*(?:errors?|failed|failures?)\s*[=:]\s*0+(?![\w.])|(?<![\w.])0+\s+(?:(?:create|device|voice|allocation)\s+)?(?:errors?|failed|failures?)\b|\bno\s+(?:errors?|failures?|exceptions?)\b",LogOptions);
+        static readonly Regex error=new Regex(@"\b(?:[a-z0-9]+_)*(?:errors?|fatal|exceptions?|panic|failed|failures?|assertion)(?:\b|_)",LogOptions);
+        public static bool IsError(string text)
+        {
+            if(String.IsNullOrWhiteSpace(text))return false;
+            var severity=level.Match(text.TrimStart());
+            if(severity.Success) {
+                string value=severity.Groups["level"].Value.ToUpperInvariant();
+                return value=="ERROR"||value=="FATAL"||value=="PANIC"||value=="CRITICAL";
+            }
+            // Remove only zero/negative evidence, not the whole statistics line:
+            // a positive counter or a separate failure on that line must survive.
+            return error.IsMatch(zeroErrors.Replace(text,""));
+        }
         void Add(string line){lines.Enqueue(line);while(lines.Count>1000)lines.Dequeue();}
         public void Poll()
         {
