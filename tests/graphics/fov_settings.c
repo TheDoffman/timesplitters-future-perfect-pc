@@ -134,6 +134,15 @@ int pc_online_menu_paste(char *text,size_t bytes){(void)text;(void)bytes;CHECK(0
 int pc_online_menu_publish(PcOnlineMatchInfo *info){(void)info;CHECK(0);return 0;}
 int pc_online_menu_publish_roster(struct PcOnlineRoster *info){CHECK(roster_fixture && info->count==1 && !strcmp(info->people[0].name,"Fixture player") && !strcmp(info->people[0].character_name,"Cortez") && info->people[0].portrait==528);roster_publications++;return 1;}
 PcOnlineMode pc_online_mode(void) { return native_retire_fixture?PC_ONLINE_ARCADE:PC_ONLINE_NONE; }
+/* This menu-only fixture does not link the desktop transport. */
+void pc_network_doors_context(unsigned role,uint32_t ip,uint32_t match)
+{(void)role;(void)ip;(void)match;}
+void pc_network_doors_targets(const uint32_t *addresses,unsigned count)
+{(void)addresses;(void)count;}
+void pc_network_doors_send(uint32_t tick,const PcNetworkDoorState *states,unsigned count)
+{(void)tick;(void)states;(void)count;}
+unsigned pc_network_doors_receive(PcNetworkDoorState *states,unsigned capacity)
+{(void)states;(void)capacity;return 0;}
 static void native_retire_factory(void){CHECK(native_retire_fixture);CHECK(WORD_AT(g_esp+8u)==mp_descriptor(MP_BROWSER));native_return_factories++;g_esp+=4;}
 static unsigned online_disconnects,lan_browser_entries,lan_enables;
 static unsigned lan_closing_requests;

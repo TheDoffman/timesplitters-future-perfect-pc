@@ -1,3 +1,12 @@
+## OpenGL branch integration with current main (2026-11-22)
+
+Integrated mainf1d84f6c (door synchronization and Gladiator selection) into the
+OpenGL feature branch. The only conflict was this append-only status history;
+both sides are preserved. Code merged without conflicts. Acceptance gates remain
+Windows1, Linux/Mac0; launcher choices remain Vulkan/OpenGL. Combined build,
+network/renderer policy and actual launcher/game rechecks are pending below.
+No main-branch update or publication is performed by this integration commit.
+
 ## Native recovery and saved selector verification (2026-11-22)
 
 Actual Linux Vulkan-failure→OpenGL gameplay and both-fail/preservation trials
@@ -349,6 +358,68 @@ this is startup/rendering evidence, not a new full gameplay or performance test.
 Native host execution is unrun; the policy is gated to Windows. User saves and
 settings are preserved. Local logs: windows-vulkan-no-fallback-build.log and
 private/test-saves/quick-test/game.err.
+
+## Online automatic-door synchronization (#330, 2026-11-22)
+
+Branch `fix/330-online-door-sync`, based on main `9a1e37d1`. Two isolated
+Windows Online instances reproduced Zeppelin host doors opening for bots while
+guest doors remained closed. The original joining packet restores only open or
+closed endpoints; it does not continuously carry door animation progress.
+A guest proximity-only prototype still produced incorrect timing and endpoints
+and was discarded. The shared fix sends host numeric animation state through an
+authenticated, bounded extension of the existing LAN/Online transport. The
+original door update, rendering, locks and gameplay simulation remain in use.
+No launcher setting/server API is added. #330 remains open pending publication.
+
+Windows Release D3D11/Vulkan build, isolated post-build checks, identity sealing
+and matching crash-symbol generation pass. All 34 focused cases plus 14
+transport/identity cases pass, including
+production Windows/native frame and transport adapters, actual original US
+joining-state receiver/setters and deliberate regression mutations. Real UDP
+LAN receive/send and Online bridge receive/key-rejection tests pass. The
+unrelated virtual-pad focus probe remains skipped when foreground activation
+is denied. Native Mac/Linux gameplay and physical WAN remain unverified.
+
+The first Mac CI run caught a test-double name collision with Darwin's `htons`
+macro. The fixture now uses a namespaced byte-order helper; production gameplay
+and transport code are unchanged by this portability correction.
+Strict Mac checkpoint tests also caught an unused static header helper; marking
+the validator inline preserves behavior and permits those header-only clients.
+The menu-only FOV fixture supplies the new door API doubles explicitly; its
+Windows link check does not depend on optimizing away the public frame adapter.
+
+Live acceptance uses Original60, Vulkan and private-host Online v2 on one Windows
+computer. Zeppelin with two humans/six bots: 18,000 door comparisons over 91.64
+seconds, nine moving doors, mean progress error 0.0000916, maximum 0.0991 and no
+error above 0.1. Baseline: 765 of 6,000 comparisons above 0.1, including fully open
+host/closed guest doors. The corrected paired driver completed movement and
+replication checks without disconnect, then cleaned up. Bunker with two humans
+and zero bots: both players opened separate doors and walked through them using
+file-driven keyboard/mouse input, without guest memory writes. Both peers agreed
+on those doors. Across 25,200 comparisons over 91.44 seconds the mean error was
+0.00000397; one asynchronous transition edge was 0.100000009 (one animation step).
+These are two-map checks, not an all-map or native-host claim. Saves/settings
+were isolated; captures, hashes and numeric observations remain in ignored logs.
+
+## Online Gladiator bot selection (#229, 2026-11-22)
+
+The shared bot-activity adapter now accepts a selected AI actor in the original
+host Gladiator publisher. Previously its human-only check rejected that bot and
+repeated the suicide fallback every update. Human/controller eligibility and
+selection, scoring and packet rules remain unchanged. Publication is pending;
+#229 stays open until a release containing this fix is available.
+
+Windows: 14 focused tests pass, including original US selection/publication/
+receiver routines and a mutation that removes the fix. Release D3D11/Vulkan
+build, post-build checks and identity/symbol verification pass. Two isolated
+Windows Online instances with six bots, Original60 and Vulkan confirmed a guest
+Gladiator rocket suicide: both peers incremented the self-kill counter, selected
+the same bot and continued without endless selection or disconnect. The run
+completed in 449 seconds with movement/replication checks and cleanup. A separate
+normal-loadout pair also passed. No guest memory was written to seed gameplay.
+Live host suicide is covered only by original-code tests; physical WAN,
+community relay, Mac and Linux gameplay remain unverified. The unrelated
+virtual-pad focus probe skipped when foreground activation was refused.
 
 ## Launcher Vulkan default without a renderer selector (2026-11-22)
 

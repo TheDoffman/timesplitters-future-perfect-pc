@@ -74,6 +74,7 @@ static void pc_network_bots_guest_active(void (*original)(void))
     case 0x0013E230u: /* HUD character draw: humans + AI, actor pool */
     case 0x0013EAFEu: /* HUD roster eligibility: humans + AI */
     case 0x0013EBDAu:
+    case 0x0035A609u: /* Gladiator host update: retain a selected AI actor. */
         if (*(uint32_t *)((uintptr_t)0x0076B108u+g_xbox_mem_offset) &&
             pc_network_enabled()) {
             const uint8_t *config=(const uint8_t *)((uintptr_t)0x007DE400u+g_xbox_mem_offset);
@@ -549,6 +550,9 @@ static void pc_network_bots_guest_frame(void (*original)(void))
     }
 #endif
     pc_network_bots_guest_frame_body(original);
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    pc_network_doors_frame();
+#endif
 #ifdef TSFP_ARCADE_MIGRATION
     pc_arcade_migration_frame(1);
 #endif
