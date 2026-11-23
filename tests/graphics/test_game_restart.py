@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[2]
-def test_restart_waits_for_shutdown_and_preserves_environment(tmp_path):
+@pytest.mark.parametrize("renderer", [None, "vulkan", "opengl"])
+def test_restart_waits_for_shutdown_and_preserves_environment(tmp_path, renderer):
     compiler,environment=native_compiler(tmp_path)
     exe=tmp_path/'restart test.exe'
     source=ROOT/'tests/graphics/game_restart.c'
@@ -23,6 +24,9 @@ def test_restart_waits_for_shutdown_and_preserves_environment(tmp_path):
     result=subprocess.run(command,cwd=tmp_path,env=environment,capture_output=True,text=True,timeout=60)
     assert result.returncode==0,result.stdout+result.stderr
     receipt=tmp_path/'restart result.txt'
+    environment=dict(environment)
+    environment.pop("TSFP_RESTART_TEST_RENDERER",None)
+    if renderer:environment["TSFP_RESTART_TEST_RENDERER"]=renderer
     result=subprocess.run([str(exe),str(receipt)],cwd=tmp_path,env=environment,timeout=15)
     assert result.returncode==0
     deadline=time.monotonic()+10

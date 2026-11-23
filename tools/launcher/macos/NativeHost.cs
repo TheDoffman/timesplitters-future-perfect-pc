@@ -146,12 +146,21 @@ namespace TimeSplitters.Launcher
         public static void Configure(ProcessStartInfo info,string root)
         {
             info.WorkingDirectory=root;
-            foreach(var key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())if(key.StartsWith("VK_")||key.StartsWith("SDL_VULKAN")||key.StartsWith("DYLD_"))info.EnvironmentVariables.Remove(key);
+            foreach(var key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())if(key.StartsWith("VK_")||key.StartsWith("SDL_VULKAN")||key.StartsWith("DYLD_")||key.StartsWith("TSFP_RESTART_VULKAN_"))info.EnvironmentVariables.Remove(key);
             string manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
             if(File.Exists(manifest)){
                 var build=Json.Object(File.ReadAllText(manifest));
-                if(Json.String(build,"renderer")=="vulkan")
-                    foreach(var pair in GpuEnvironment(root,build,info.EnvironmentVariables["RECOMP_D3D8_BACKEND"]??"vulkan"))info.EnvironmentVariables[pair.Key]=(string)pair.Value;
+                if(Json.String(build,"renderer")=="vulkan") {
+                    string renderer=info.EnvironmentVariables["RECOMP_D3D8_BACKEND"]??"vulkan";
+                    foreach(var pair in GpuEnvironment(root,build,renderer))info.EnvironmentVariables[pair.Key]=(string)pair.Value;
+#if !LINUX
+                    // Keep verified Vulkan loader settings dormant for an in-game restart.
+                    // A broken Vulkan installation must not prevent an explicit GL launch.
+                    try {foreach(var pair in GpuEnvironment(root,build,"vulkan"))
+                        info.EnvironmentVariables["TSFP_RESTART_VULKAN_"+pair.Key]=(string)pair.Value;}
+                    catch(Exception) { }
+#endif
+                }
             }
             string settings=LauncherPlatform.Checkout(root)?"private/native-settings":"Settings";
             info.EnvironmentVariables["XDG_CONFIG_HOME"]=Core.PathIn(root,settings+"/xdg-config");

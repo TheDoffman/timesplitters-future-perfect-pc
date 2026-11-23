@@ -46436,3 +46436,19 @@ builds the hardware comparison fixture on Windows; actual Vulkan execution is
 a local hardware check, while existing CI WARP pixel checks remain in place.
 Mac/Linux adapters and their DXC setup were unchanged; native validation was
 not rerun on this host. No release or default promotion was performed.
+
+
+## In-game renderer Apply & Restart (2026-11-23)
+
+Implemented on feature/ingame-renderer-restart, not published. Shared frontend/pause Video Options > Graphics > Advanced stages Vulkan/OpenGL with the active renderer named, saves launcher.renderer and immediately restarts on Apply & Restart. No Later option for renderer changes. Back does not save; save/spawn failure leaves the game open for retry. Existing MSAA-only prompts are unchanged.
+
+Validation: supported Windows Build passes all mandatory checks and matching crash symbols (logs/ingame-renderer-final-build.log). The new input settings test proves unknown launcher/mouse properties survive both renderer writes, invalid values and read-only failure. The first full build found a misplaced test-only block in its fresh-process verifier; relocating it after the parent's initialized path corrected the fixture, and the full supported build/checks then passed.
+
+Focused Windows menu/process/launcher checks:28 passed,2 native-only skips; broad launcher/display/texture regressions:312 passed,5 skips,41 subtests; SDK metadata checks:27 passed; context/backlog checks:22 passed. Actual process fixtures cover unchanged/Vulkan/OpenGL child environments, parent-environment preservation and complete parent shutdown before child startup. Linux focused checks:22 passed,8 Windows-only skips. Supported Linux game build/MMIO check and actual GTK settings self-test pass; both renderer writes retain an unknown nested launcher property. Linux launcher build/test passes55 shared UI groups. Mac launcher compile passes with two pre-existing Avalonia obsolete-event warnings; native Mac game/GPU restart acceptance remains pending.
+
+Manual in-game visual/restart acceptance was not completed: the computer-use JavaScript runtime failed to initialize even after retry/reset (kernel-assets path error). Menu callback behavior, actual OS process replacement and persistence are tested separately; do not describe them as a manually observed game renderer round trip. See docs/agent-context/opengl-recovery.md#in-game-renderer-restart and docs/players/windows-settings.md. Personal settings/saves and the main branch were not modified.
+
+
+## Renderer option alignment (2026-11-23)
+
+User confirmed Renderer should match the other advanced options, superseding immediate Apply & Restart. Plain Renderer/Vulkan/OpenGL labels, the existing Requires restart suffix, standard Apply and Later / Restart Now are now shared with MSAA/supersampling. Saved versus running renderer state is separate; Later retains the selection across menu reopen without nagging. Focused Windows menu/process tests pass9 with2 native-only skips. Supported Windows Build passes all mandatory checks and matching crash symbols (logs/renderer-option-alignment-build.log). Supported Linux game/MMIO build passes; actual GTK settings read/save/reload retains unknown launcher properties. Linux focused checks pass3 with8 Windows-only skips. Actual isolated Linux game capture confirms Vulkan/OpenGL choices, the Requires restart suffix and the plain Apply button at640x480; images are ignored under build/renderer-menu-preview/aligned-menu.png. The bounded session ended before the dialog capture: Apply/Later/reopen/Restart Now behavior is verified by the production menu callback fixture, not claimed as a completed live process round trip. Native Mac runtime acceptance remains pending.

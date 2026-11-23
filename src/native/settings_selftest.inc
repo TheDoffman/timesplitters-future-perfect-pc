@@ -45,6 +45,11 @@ int tsfp_native_settings_test(void) {
     if(stat(path,&st)||chmod(path,0400))ok=0;
     else {ok &= !pc_settings_save(&next,error,sizeof error);if(chmod(path,st.st_mode&0777))ok=0;}
     ok &= pc_settings_read(&read,error,sizeof error) && read.keys[19][0]=='I' && fabs(read.sensitivity-.25)<.0001;
+    ok &= pc_settings_renderer_save(1,error,sizeof error);
+    ok &= pc_settings_renderer_read(0)==1;
+    ok &= !pc_settings_renderer_save(2,error,sizeof error);
+    ok &= pc_settings_renderer_save(0,error,sizeof error);
+    ok &= pc_settings_renderer_read(1)==0;
     release_all();
     fprintf(stderr,"[native-settings-test] shared conflict move/cancel, Cocoa capture, saved punctuation/keypad input, preservation and read-only rollback: %s\n",ok?"PASS":"FAIL");
     return ok?0:1;

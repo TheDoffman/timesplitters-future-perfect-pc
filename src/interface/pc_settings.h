@@ -26,6 +26,8 @@ typedef struct PcViewSettings {
     int hide_hud, hide_watermark, hide_viewmodel;
 } PcViewSettings;
 void pc_settings_view_read(PcViewSettings *settings);
+int pc_settings_renderer_read(int fallback);
+int pc_settings_renderer_save(int opengl,char *error,size_t bytes);
 int pc_settings_view_save(const PcViewSettings *settings,char *error,size_t bytes);
 extern const char *const pc_action_labels[PC_ACTION_COUNT];
 /* Shared in-game binding capture; raw keys never pass through menu aliases. */
