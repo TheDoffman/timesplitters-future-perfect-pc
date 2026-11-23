@@ -1,6 +1,16 @@
+## Issue #558 main integration (2026-11-22)
+
+Implementation `dce61f73` was integrated with current main `f1d84f6c` in `542a7b00`.
+Only documentation needed conflict resolution; both validation histories were retained.
+The combined Windows full launcher suite and Linux launcher build/adapters/copied-helper
+checks passed; native shared UI now has54 passing groups. Python launcher/native/startup
+contracts:34 passed,31 subtests passed. Context/whitespace checks pass. Native Mac and
+physical Steam Deck acceptance remain unverified. This is a source integration, not a
+published launcher release; #558 remains open until publication/confirmation.
+
 ## Issue #558 real-release update performance (2026-11-22)
 
-Local/uncommitted `investigate/linux-update-558`, base `1f835403`. The shared installer
+Implementation `dce61f73`, validation base `1f835403`. The shared installer
 now hashes eligible installed runtime files against the verified incoming manifest
 and retains identical files. It avoids backing up/replacing them, while keeping a
 journal entry for every replacement/removal and BUILD.json. Corrupted targets still

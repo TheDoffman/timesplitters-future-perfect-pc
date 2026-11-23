@@ -1,4 +1,4 @@
-Issue #558 performance follow-up (2026-11-22; local/uncommitted after `1f835403`):
+Issue #558 performance follow-up (2026-11-22; implementation `dce61f73`, integrated in `542a7b00`):
 **Awaiting validation** on native Mac. Core.InstallPending compares actual installed
 bytes with verified staged hashes, retaining equal runtime files and journaling only
 replacements/removals plus BUILD.json. Windows and native Linux reuse/repair/rollback,
