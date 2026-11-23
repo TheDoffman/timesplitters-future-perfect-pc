@@ -1,3 +1,17 @@
+## Native recovery and saved selector verification (2026-11-22)
+
+Actual Linux Vulkan-failure→OpenGL gameplay and both-fail/preservation trials
+pass, and their finally path restores the exact normal disabled-gate game.
+Both saved choices also render active Story through the actual launcher under
+WSLg, but strict minimize checks fail there; these remain failed lifecycle runs.
+Both full120s isolated X11/Openbox selector/gameplay checks pass, including
+minimize/restore; both renderers also pass resize/fullscreen self-tests there.
+Linux stays0 for unresolved normal-desktop,
+physical GPU/performance and native package acceptance. Mac hardware remains
+unavailable/gate0. Windows ordinary primary/recovery/both-fail and stability
+checks pass/gate1. Nothing published or merged.
+[Current report](../development/opengl-startup-recovery.md).
+
 ## Windows startup recovery accepted; native gates remain disabled (2026-11-22)
 
 The current Windows300s launcher OpenGL soak passes late gameplay/movement,

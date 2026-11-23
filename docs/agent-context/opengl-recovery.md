@@ -1,4 +1,6 @@
-# OpenGL startup recovery: implementation in progress
+# OpenGL startup recovery: acceptance ledger
+
+Current report: [implementation, decisions and remaining native checks](../development/opengl-startup-recovery.md).
 
 Current gate decision (2026-11-22): Windows default is enabled after its
 acceptance checks below. Linux and native Mac remain disabled. Earlier OFF
@@ -12,8 +14,9 @@ when needed. This supersedes the earlier requirement for no launcher selector.
 Automatic recovery remains limited to Vulkan startup failure on accepted hosts;
 explicit OpenGL selection must start OpenGL directly. D3D11 is not restored.
 Branch feature/opengl-startup-recovery is based on local4c287926 (Windows fallback
-removal), which follows main694fc53a. No goal completion or universal readiness
-is established by this checkpoint. Keep all platform recovery gates disabled.
+removal), which follows main694fc53a. The initial checkpoints below kept every
+gate disabled; those historical entries do not override the current Windows
+acceptance decision. Native acceptance remains explicitly deferred.
 
 ## Launcher selector acceptance added to the goal
 
@@ -1534,3 +1537,63 @@ clears old boot logs, waits for a fresh owned guest entry before opening memory,
 and re-polls transient mapping publication/teardown on the same child. It retains
 a bounded failure for persistent unreadability. Full private-X11 checks follow;
 no renderer or lifecycle acceptance assertion is relaxed. Linux gate stays0.
+
+
+## Final available-host selector and display results
+
+Full private-X11 attempt02 retains FAILED overall: both saved choices render,
+minimize/restore and exit0, but no owned game PID/Story samples were collected.
+The early interrupted attempt left an active session record. The test-session
+entry intentionally bypasses ordinary startup recovery; MonitorGame therefore
+could not start a fresh tracking record. The fixture now archives only owned,
+demonstrably stale records, preserves the old record as evidence, and refuses
+live or unknown referenced processes. Production session recovery is unchanged.
+Five filesystem/liveness regressions pass, including live/unknown refusal.
+
+Source12ba9141 native-selector-x11-full-03 PASS for BOTH120s choices through the
+actual settings controls/Save, normal StartInfo and MonitorGame. Launcher hash
+4bed400f511e7a00b0c6b9c042f8df21ae41660cef8766c05c05581b0e95086e;
+normal game791eaca3... (source2398062a). Vulkan has694 active Story observations,
+OpenGL697. Each minimizes/restores, retains selected/unknown settings, presents
+only the selected backend without fallback, and exits0. Fresh final captures
+for both were reviewed: upright, correctly colored world, weapon, HUD, sun/fire.
+These frames are not a locked-frame parity comparison or a scanout benchmark.
+
+On the same owned Xvfb/Openbox display, ordinary --renderer-self-test passes
+Vulkan and OpenGL resize/fullscreen/clear/present checks in0.378/0.809s. Source,
+executable, driver and logs: native-private-x11-display-01.json and per-backend
+logs. The holder receipt/native-private-wm-full-probe-03.py archive confirms the
+isolated display; its processes are terminated in finally. The host desktop,
+WSLg socket directory, driver registration and shared SDK are unchanged.
+Native final Mac launcher compile succeeds with0 errors (two existing obsolete
+Avalonia event warnings). No native Mac game/GPU run is claimed.
+
+This completes available-host verification. Windows automatic recovery is1;
+Linux/Mac remain0 under the goal's explicit unverified-host allowance. Deferred
+physical/native capability, quality, performance, legacy and clean-package checks
+are listed in docs/development/opengl-startup-recovery.md and MAC_PORT_BACKLOG.md.
+Failed WSLg cases and invalid early probes are retained, not reclassified as
+accepted. No publication/merge was performed. Final completion audit and commit
+must still verify source gates, receipts, restoration, documentation and Git state.
+
+
+## Completion audit
+
+The requirement-by-requirement audit passes35 evidence checks in
+logs/goal-completion-audit.json: authorized base ancestry; actual source gates;
+current normal Windows/native binary hashes; primary/recovery/both-fail game
+receipts; GPU matrices and fixture restoration; bounded Windows stability;
+actual native selector/persistence/Story/lifecycle; virtual resize/fullscreen;
+retained WSLg failures; compiled policy, fixture and UI checks; Mac compile;
+cleared private includes; and player/developer/context artifacts. Source and
+report review also confirm startup-only selection, cleanup order, descriptor/
+settings preservation, shared algorithms/adapters and legacy-Mac build isolation.
+The whole-branch context/index/link check against4c287926 passes.
+
+Implementation and available-host verification are finished under the goal's
+explicit native-host deferral allowance. This does not approve physical Linux,
+Steam Deck or native Mac runtime/package compatibility. Their exact remaining
+capability, visual/effect, window, performance and package checks are recorded in
+the developer report/backlog, with both native recovery gates0. Windows is1;
+Vulkan remains the modern default and the restored selector persists both choices.
+Final commit and clean-worktree checks precede goal completion. No push/merge.

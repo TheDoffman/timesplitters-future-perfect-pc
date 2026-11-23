@@ -1,3 +1,25 @@
+## Current OpenGL recovery / selector status (2026-11-22)
+
+**Implemented in shared source; native Mac acceptance deferred.** Windows now
+uses Vulkan with accepted startup-only OpenGL recovery (bfb73181), and the shared
+launcher offers saved Vulkan/OpenGL selection (65d753d2). Native preflight follows
+the selected backend (c8b8d7d2). Shared policy/shaders/resources live in
+src/graphics/rhi_startup.h, rhi_platform_acceptance.h, opengl_backend.c and
+opengl_shader.cpp; SDL/window/guest dispatch stays in src/native adapters.
+Mac launcher compiles, but no Apple Silicon game/GPU host is available here.
+Its recovery gate remains0. The separate legacy GL build/entry and its compiler
+requirements are preserved; native legacy runtime acceptance is also unavailable.
+Apple OpenGL is deprecated, and common GL needs real4.1/S3TC/mirror-once checks.
+
+Remaining Mac work is **hardware acceptance**, not a claim of universal support:
+Apple Clang game/common+legacy builds, actual capabilities/shaders/resources,
+main-thread SDL/window/input, both startup failure paths, launcher choices,
+save/settings/texture retention, display modes/effects, bounded performance and
+clean relocated packages. The exact checklist and evidence are in
+[the recovery report](../development/opengl-startup-recovery.md#exact-deferred-native-acceptance).
+Earlier investigation checkpoints below are historical; their all-platform-OFF
+and native-stall descriptions are superseded by current Windows/Linux evidence.
+
 Adaptive common-native GL dispatch (development): the SDL owner now pumps
 recent work without sleeping per GPU call, then returns to bounded waits after
 quiescence. An owner-only serial and thin native adapter preserve CPU-only worker
