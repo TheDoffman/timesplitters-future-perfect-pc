@@ -290,8 +290,7 @@ namespace TimeSplitters.Launcher
                 busy = true; Refresh();
                 try { await Task.Run(() => Core.CleanupGameAfterStartup(root)); }
                 finally { busy = false; }
-                var backgroundTextures=textureUpdatesState.StartIfOptedIn();
-                await Check();
+                await textureUpdatesState.StartAfter(Check());
                 string result = Core.PathIn(root, ".launcher/last-result.txt");
                 if (File.Exists(result)) { SetStatus(File.ReadAllText(result)); File.Delete(result); }
                 string selfResult = Core.PathIn(root, ".launcher/self-last-result.txt");

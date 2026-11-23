@@ -1,3 +1,153 @@
+## 2026-11-23 - Launcher restart crash
+
+Publication review replaces the discarded task assignment with the existing
+C#5-compatible local-variable form for Windows' Framework compiler. Startup
+ordering is unchanged; required Windows/Mac/Linux CI will validate the pushed head.
+
+Task branch codex/launcher-startup-crash from main000231fb3d7461ded91d78316b7c990871ebda08;
+Local source and build; unpublished. Original checkout pause branch6239ce95,
+its local STATUS edits and untracked files remain untouched. Installed launcher
+1.7.1 source receipt2544c4e9 / UUID E23219A3-C647-331B-A754-97061A42401D matches
+the supplied crash; all29 current launcher-manifest hashes verify.
+
+On macOS27.2.1 ARM64, pinned SDK8.0.426/runtime8.0.32/Avalonia11.3.22,
+ten isolated five-second starts without texture opt-in survived. Enabling only
+the disposable texture opt-in reproduced SIGABRT in0.93s: fatal
+System.AccessViolationException in HttpConnectionPool.SendAsync through
+ReadTextureManifest/TextureUpdateCheck.Fetch. Another trial with tiering disabled
+crashed in Socket.AwaitableSocketAsyncEventArgs.ConnectAsync. This establishes
+the cold concurrent HTTP trigger, not the exact upstream runtime defect.
+
+Shared startup sequencing now waits for the game check before starting the
+optional texture check. Native signed build,26 native regression groups,
+55 shared UI groups,51 Python tests and31 subtests pass. Twelve consecutive
+five-second starts with texture opt-in and --skip-self-update survived; each
+owned process was then terminated deliberately. These are bounded launcher
+startup checks, not game or long-session acceptance. Network requests used
+published release metadata; no texture downloads or game launches occurred.
+The actual ZIP package corruption/repair, parent-exit/helper restart, rendered
+output, signed automatic migration and personal-file preservation checks pass.
+The new launcher also passes --check against the installed game (read-only). Windows/Linux execution and publication remain pending.
+
+Build/package output is ~/Library/Caches/tsfp-launcher-startup-crash; detailed
+local evidence is logs/launcher-crash-{build,python-tests,package-test}.log and
+logs/launcher-crash-probe/. After the user saved/closed the game and explicitly
+authorized installation, the tested code from local commitceaa4116 was installed
+through AcquireUpdateLock/SelfUpdate.Unpack/Core.ApplyLauncher. All29 installed
+launcher hashes match;15,959 protected files retain their metadata, and settings
+and small-file content hashes match. Strict/deep codesign and installed --check
+pass. Only the app-root disallowed FinderInfo attribute was removed. Verified
+staging was recycled; updater recovery was retained at installation time.
+
+Finder reopen reached a macOS Desktop-folder consent request after the local
+binary signature changed: tccd records kTCCServiceSystemPolicyDesktopFolder
+and a mismatched previous code requirement. The waiting process was sampled in
+native file-open, without a new HTTP crash. User consent is pending; the OS
+notification app is unavailable to Computer Use, so visible Home acceptance
+is not yet claimed. No TCC edits or permission bypass. Local provenance is in
+the cache LOCAL-FIX.json and installed .launcher/local-startup-fix.json.
+No personal data was used for automated tests. The installation preceded any
+source push or PR. Publication follow-through is PR #595, refreshed onto main
+74bec377 to retain the merged console-filter change. Required CI is pending;
+no new launcher release has been published.
+
+## Launcher console error filter (2026-11-22)
+
+Local `codex/launcher-console-errors`, base main `9a1e37d1`: shared
+`GameLogTail.IsError` no longer matches healthy `failed=0`, `0 failed`,
+`0 create failed` or zero audio failure counters as errors. Explicit severity
+headers take precedence over words in their message; unlevelled real failures
+and nonzero counters remain visible from stdout or stderr. Full logs are kept.
+The new classification and partial/live-append regressions run in the existing
+`launcher_shared_ui.cs` suite selected by all three launcher CI hosts.
+
+Native macOS 27.2.1 ARM64, pinned .NET 8.0.426/Avalonia 11.3.22: launcher build,
+signature verification, 26 native regression groups and 54 shared UI groups
+pass. The 31 focused Python launcher checks and 31 subtests also pass.
+Read-only `--root <installed folder> --check` passes for the user's
+installed game. A temporary harness using the actual compiled launcher assembly
+classified the existing session's 8,264-line stderr snapshot: only five failure lines
+remain (waveOut plus two file opens and their status lines). No game was launched
+or personal settings/saves changed by these checks. Existing obsolete
+ToggleButton event warnings remain. Desktop/iCloud metadata prevented signing
+the first generated bundle; the supported builder succeeded with its output in
+a host-local cache. Windows and Linux native execution are unavailable here.
+The launcher package also passes isolated install, signature/corruption checks,
+repair, helper restart/render and personal-file preservation. This is a local
+patched 1.7.0 build, not a published launcher release. Installation follow-up (2026-11-23): after the user closed the game, the
+verified local package was installed through the shared update lock and rollback
+transaction. All29 launcher hashes and14,569 protected-file snapshots matched;
+settings were additionally byte-hashed. Game BUILD.json remained unchanged.
+The existing bundle-root FinderInfo attribute was removed to satisfy strict
+codesign verification; signature and installed --check pass. Previous launcher
+files remain in .launcher/self-rollback. Final UI reopening was blocked by the
+locked Mac; no new game was launched.
+
+PR integration (2026-11-23): merged current main `000231fb` into the task
+branch, retaining both documentation histories and the shared UI regressions.
+The 32 focused Python checks and 31 subtests pass; repository context/index and
+backlog integrity pass. The installed local fix remains the previously validated
+1.7.0 build; integration with main does not replace that binary.
+
+PR #594 CI (2026-11-23), head `762c69e0`, tested merge `98d57f08`:
+[run 45233679146](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/45233679146)
+builds and tests the launcher successfully on Windows Server 2025 x64,
+macOS 15.8.2 ARM64 and Ubuntu 24.04.5 x64 under Xvfb. The console classification
+and live-tail regressions pass on each host (53/55/56 shared UI groups,
+respectively). Mac's 26 native launcher groups also pass. Native package checks
+cover installation, corruption rejection, repair and copied-helper restart;
+the complete three-platform package/source verification and PR validation gate
+pass. No CI failure
+required a source repair. These are launcher checks; runtime/GPU/gameplay jobs
+are outside this PR's selected scope, and no release was published.
+
+## Installed game warning investigation (2026-11-22)
+
+Inspected the user's existing session 20261122-205624-189, installed game v0.6.2
+source 5b092b51, Vulkan/MoltenVK on Apple M5 Pro. The running game differs from
+this task's main source base. The installed US XBE SHA256 matches the required
+3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc.
+Evidence: bounded session stdout/stderr, xbox_kernel.log, current source and
+read-only disassembly of the verified local XBE. No gameplay rerun or fixes to
+the runtime, game files or personal save data were made.
+
+- `overlay.pak`: the original loader at000629BC tries `pak/overlay.pak`;
+  its failed-open branch at000629EE retains handle-1 and continues at00062A21
+  to `pak/xbpad.pak`. This is a tolerated absent pack in the observed startup,
+  not evidence that the required game extract is corrupt. No placeholder added.
+- `TitleData/45410066/$u/contentmeta.xbx`: the host returns ENOENT and the
+  guest receives STATUS_OBJECT_NAME_NOT_FOUND(0xC0000034). Shared title-data
+  routing selects the installed Saves root as intended. This is a content/update
+  metadata path; its absence did not stop this session. The exact higher-level
+  caller/fallback and any optional-content effect are not established, so it is
+  retained as a failed lookup instead of silently whitelisted or fabricated.
+- `waveOutOpen(error11)`: the POSIX compatibility shim deliberately returns
+  MMSYSERR_INVALPARAM; the legacy APU attempt therefore fails. Native SDL output
+  opens later (session line 583), with zero reported device/voice/allocation
+  failures or underruns. Physical audio output was not listened to in this task.
+- `NtQueryVolumeInformationFile(class 1)`: the compiled POSIX kernel_file.c
+  handles size information(class 3) only; class 1 reaches STATUS_NOT_IMPLEMENTED.
+  Class 1 is volume metadata (label/serial/creation time), independently documented
+  in [nxdk's public kernel interface](https://github.com/XboxDev/nxdk/blob/master/lib/xboxkrnl/xboxkrnl.h).
+  Original call0037D716 requests class 1 and branches to its failure path when
+  status is negative. Seven warnings were observed; this is a real compatibility
+  gap, not a missing game file or proof of save corruption. Correct output
+  layout, bounded buffers and host-independent volume identity need separate
+  runtime work and validation before changing this handler.
+- TV encoder option 0x0F reaches kernel_hal.c's default warning/zero-result
+  branch. Required option semantics and visible impact remain unverified;
+  successful Vulkan presents alone do not validate this original hardware query.
+- No-op instructions: fnclex003C8486, wbinvd003DAFF4, out003DD270 and
+  in003DC35D are unsupported by the translator. The IN/OUT pair uses port 80C0;
+  code after IN consumes the unchanged register value to update device state.
+  Thus these warnings cannot all be labelled harmless. Original hardware/status
+  semantics need evidence and focused contracts before implementing substitutes.
+
+The inspected session continued with zero reported presentation failures.
+This does not establish visual fidelity, correct hardware-query behavior or
+complete gameplay compatibility. Launcher filtering fixes diagnostic false
+positives; it does not claim to fix the documented runtime gaps.
+
 Mac native build and platform/input/renderer checks passed; its settings runner
 still expected the initial backup after a new three-save renderer round trip.
 Updated that test guard to require the immediately preceding OpenGL snapshot,

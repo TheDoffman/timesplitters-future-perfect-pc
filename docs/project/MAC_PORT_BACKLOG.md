@@ -1,3 +1,32 @@
+## MAC-021 follow-up: launcher restart crash (2026-11-23)
+
+**Implemented — native Mac validation recorded in STATUS; Windows/Linux host
+execution pending.** Local branch codex/launcher-startup-crash, base000231fb.
+The shared TextureUpdateCheck.StartAfter contract runs the initial game check
+before optional background texture requests. tools/launcher/Launcher.cs and
+macos/NativeWindow.cs use it on WPF and Avalonia; no additional Mac adapter is
+needed. This avoids the reproduced cold concurrent HTTP access violation on
+macOS after updates skip the bootstrap request. Existing automatic texture
+opt-in, installed packs, settings and saves remain unchanged.
+Acceptance: pinned native build and shared tests, repeated isolated post-update
+starts with textures opted in, package repair/restart/preservation and read-only
+installed prerequisites. See [measured evidence](STATUS.md#2026-11-23---launcher-restart-crash).
+Local commitceaa4116 is installed and passes manifest/signature/preflight checks.
+Finder Home acceptance awaits the renewed macOS Desktop-folder consent; see
+STATUS. Windows/Linux native execution and a future published release remain pending.
+
+Launcher console error filter (2026-11-22, local codex/launcher-console-errors):
+**Verified** on native Mac for the shared C# filter, built launcher and automated
+UI/log-tail regression scope in [STATUS](STATUS.md#launcher-console-error-filter-2026-11-22).
+Windows/WPF and Mac/Linux/Avalonia compile the same ConsolePage.cs classification;
+no platform adapter is deferred. All hosts retain real failure messages/nonzero
+counters and full raw logs while excluding healthy zero counters and INFO/WARN
+messages from Errors only. PR #594 CI at head762c69e0 (tested merge98d57f08)
+also passes the Windows, native Mac and Linux launcher builds, console
+regressions and complete package verification; see the linked STATUS evidence.
+The accompanying installed-game warning investigation records existing runtime
+gaps; this launcher-only change does not repair or validate those behaviors.
+
 ## Current OpenGL recovery / selector status (2026-11-22)
 
 **Implemented in shared source; native Mac acceptance deferred.** Windows now

@@ -60,8 +60,7 @@ namespace TimeSplitters.Launcher
                 Directory.CreateDirectory(Core.PathIn(root,".launcher"));installationLock=new FileStream(Core.PathIn(root,LauncherPlatform.LockFile),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
                 Core.RecoverLauncher(root);Core.Recover(root);TexturePack.Recover(root);Core.CleanupGameAfterStartup(root);string recovered=null;try{recovered=GameSessions.Recover(root);}catch(Exception ex){LauncherLog.Write(root,"Session recovery deferred: "+ex.GetType().Name);}Refresh();if(recovered!=null)Maintenance(true);SelfUpdate.CleanupAfterStartup(root);
                 foreach(var name in new[]{".launcher/mac-self-helper",".launcher/mac-update-helper"})try{File.Delete(Core.PathIn(root,name));}catch(IOException){}
-                var backgroundTextures=textureUpdatesState.StartIfOptedIn();
-                await Check();string result=Core.PathIn(root,".launcher/last-result.txt");if(File.Exists(result)){Status(File.ReadAllText(result));File.Delete(result);}
+                await textureUpdatesState.StartAfter(Check());string result=Core.PathIn(root,".launcher/last-result.txt");if(File.Exists(result)){Status(File.ReadAllText(result));File.Delete(result);}
                 issuesTimer=new DispatcherTimer{Interval=TimeSpan.FromMinutes(5)};issuesTimer.Tick+=(a,b)=>{if(Find<ContentControl>("NewsHost").IsVisible && WindowState!=WindowState.Minimized && !busy)Run(()=>newsPage.RefreshIssues());};issuesTimer.Start();
             }catch(Exception ex){Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
             Activated+=(s,e)=>{if(newsPage!=null&&Find<Control>("NewsHost").IsVisible&&!busy)Run(newsPage.RefreshIssuesIfDue);};

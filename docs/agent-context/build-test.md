@@ -11,7 +11,7 @@
 [Throw](native-uplink.md); [Beams](native-projectiles.md).
 [Vietnam](network-performance.md).
 [Tools](developer-tools-integration.md).
-Warnings: [launcher](launcher.md).
+[Startup tests](launcher-startup.md); [console zero/error tests](launcher.md).
 [Save tests](multiplayer-exit.md#validation).
 
 [Online](multiplayer-ui.md); [sun](fidelity-comparison.md).
@@ -75,7 +75,7 @@ Minigun: [readiness/release/pause/input tests](native-minigun.md). CI selects te
 Linux builds retain assertions/numeric policy. Isolated named runner/frame/Story
 fixtures cover 60/120/180/240; cleanup selects only the active save root.
 Upload-copy/sanitizer/GPU contracts run in CI; see [Linux](linux-game.md) and
-[launcher checks, including antivirus diagnostics](launcher.md#antivirus-blocking-diagnostics-issue-476).
+[launcher checks](launcher.md).
 
 Windows passes `config/build/windows-game.manifest` as `TSFP_GAME_MANIFEST`;
 patch 2130 attaches it only to the game. CMake merges system DPI awareness,
