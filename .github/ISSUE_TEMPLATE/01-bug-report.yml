@@ -51,6 +51,7 @@ body:
         **Launcher releases**
 
         <!-- BEGIN AUTO LAUNCHER VERSIONS -->
+        - `v1.7.1`
         - `v1.7.0`
         - `v1.6.2`
         - `v1.6.1`
@@ -80,7 +81,6 @@ body:
         - `v1.2.8`
         - `v1.2.7`
         - `v1.2.6`
-        - `v1.2.5`
         <!-- END AUTO LAUNCHER VERSIONS -->
 
         </details>
