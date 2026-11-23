@@ -34,8 +34,19 @@ PR integration (2026-11-23): merged current main `000231fb` into the task
 branch, retaining both documentation histories and the shared UI regressions.
 The 32 focused Python checks and 31 subtests pass; repository context/index and
 backlog integrity pass. The installed local fix remains the previously validated
-1.7.0 build; integration with main does not replace that binary. Fresh Windows,
-Mac and Linux launcher results belong to PR CI.
+1.7.0 build; integration with main does not replace that binary.
+
+PR #594 CI (2026-11-23), head `762c69e0`, tested merge `98d57f08`:
+[run 45233679146](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/45233679146)
+builds and tests the launcher successfully on Windows Server 2025 x64,
+macOS 15.8.2 ARM64 and Ubuntu 24.04.5 x64 under Xvfb. The console classification
+and live-tail regressions pass on each host (53/55/56 shared UI groups,
+respectively). Mac's 26 native launcher groups also pass. Native package checks
+cover installation, corruption rejection, repair and copied-helper restart;
+the complete three-platform package/source verification and PR validation gate
+pass. No CI failure
+required a source repair. These are launcher checks; runtime/GPU/gameplay jobs
+are outside this PR's selected scope, and no release was published.
 
 ## Installed game warning investigation (2026-11-22)
 

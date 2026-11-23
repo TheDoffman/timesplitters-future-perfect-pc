@@ -4,7 +4,9 @@ UI/log-tail regression scope in [STATUS](STATUS.md#launcher-console-error-filter
 Windows/WPF and Mac/Linux/Avalonia compile the same ConsolePage.cs classification;
 no platform adapter is deferred. All hosts retain real failure messages/nonzero
 counters and full raw logs while excluding healthy zero counters and INFO/WARN
-messages from Errors only. Native Windows/Linux execution remains unrun here.
+messages from Errors only. PR #594 CI at head762c69e0 (tested merge98d57f08)
+also passes the Windows, native Mac and Linux launcher builds, console
+regressions and complete package verification; see the linked STATUS evidence.
 The accompanying installed-game warning investigation records existing runtime
 gaps; this launcher-only change does not repair or validate those behaviors.
 
