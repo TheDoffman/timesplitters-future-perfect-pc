@@ -1,8 +1,8 @@
 # OpenGL startup recovery and launcher selection
 
 Implementation and available-host verification are complete, with the explicit
-native-host deferrals below. This is local work on `feature/opengl-startup-recovery`, based on
-`4c287926`. Nothing from this goal has been published or merged.
+native-host deferrals below. Developed on `feature/opengl-startup-recovery`, based on
+`4c287926`; the user requested publishing the validated integration to main.
 
 The user restored the launcher-selector requirement on 2026-11-22. It supersedes
 the original goal text that removed the selector. Vulkan remains the default for
@@ -23,7 +23,20 @@ reviewed graphics captures pass; settings/assets remain preserved. Current
 normal Windows game SHA256 is
 `5cd6ba6d4e1175459fc6f93372ff5bad5ad0916c6ba1d6dbe0513b59942111c1`.
 Older source/hash rows below retain their original acceptance scope. Platform
-gates and native-host deferrals remain unchanged. Nothing has been pushed.
+gates and native-host deferrals remain unchanged.
+
+## Latest launcher-update integration
+
+Merge `07eccd39` also includes main `d6f97154` and its issue558 update-progress/
+verified-file-reuse fixes. Source merged automatically. Documentation retains
+both histories; obsolete no-selector guidance is superseded by the user's
+restored selector. Detailed updater notes moved to
+[their own guide](../agent-context/game-update-progress.md) to keep the launcher
+context within its size bound. Windows launcher regressions,286 Python tests /
+41 subtests,55 native shared UI groups and Mac compilation pass. The game code
+and accepted platform gates are unchanged from the preceding integration.
+The rebuilt Windows launcher also passes120s ordinary OpenGL gameplay, quality,
+movement/weapon, saved preferences/assets and clean exit (`push-main-opengl-01`).
 
 ## Platform decisions
 

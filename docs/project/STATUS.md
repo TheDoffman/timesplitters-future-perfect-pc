@@ -1,3 +1,16 @@
+## Publication integration of renderer and launcher updates (2026-11-22)
+
+User requested push to main. Merge07eccd39 retains current maind6f97154's issue558
+progress/reuse/copied-helper work plus the validated OpenGL/selector work. Source
+merged automatically; documentation histories were combined and stale removed-
+selector guidance superseded. Updater details moved to a linked supplement to
+respect bounded launcher-context size. Windows launcher regression groups pass,
+including54 settings checks; Python launcher suite286 passed /5 host skips /
+41 subtests; native Linux build/test55 shared UI groups pass; Mac compile0 errors
+(two existing obsolete Avalonia event warnings). The new launcher passes120s OpenGL gameplay, quality, movement/weapon, preserved
+settings/assets and clean exit (`push-main-opengl-01`). Windows recovery1,
+Linux/Mac0 unchanged.
+
 ## OpenGL branch integration with current main (2026-11-22)
 
 Integrated mainf1d84f6c (door synchronization and Gladiator selection) into the

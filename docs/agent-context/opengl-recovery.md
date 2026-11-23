@@ -1621,3 +1621,20 @@ assets remain preserved. Source is clean7e3db2c6; launcher hash
 Available-host acceptance gates are unchanged: Windows1, Linux/Mac0.
 Main was fetched again after tests and remains f1d84f6c, fully included here.
 This records integration/readiness; no main-branch update or push was performed.
+
+
+## User-authorized main publication preparation
+
+The explicit push request followed initial readiness. Refetched main had advanced
+to d6f97154 (issue558 launcher update progress/reuse/copied native UI helpers).
+Merge07eccd39 preserves that source automatically and combines all four document
+conflicts, superseding obsolete no-selector notes. The updater section moved to
+linked game-update-progress.md so the bounded launcher guide remains valid.
+Windows launcher full regressions pass again; Python286 passed/5 host skips/
+41 subtests; native Linux builder --test passes55 shared UI groups; Mac compile
+passes0 errors/two existing warnings. push-main-opengl-01 then passes120s actual
+new-launcher UI selection/normal game, graphics quality, movement/weapon, saved
+settings/custom assets and clean exit. Game hash remains5cd6ba6d... because this
+second integration changes launcher source, not runtime graphics/gameplay.
+The existing Windows1/native0 acceptance decisions remain unchanged. Publication
+is now user-authorized; verify remote main after a non-forced fast-forward push.
