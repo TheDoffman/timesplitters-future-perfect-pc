@@ -1,4 +1,5 @@
 [GL](opengl-recovery.md). [Updates](launcher.md#game-update-progress-issue-558).
+`package_launcher.py`: synthetic DXC/SPIRV-Cross receipts use real verifiers.
 
 [0.7 sync](network-sync-telemetry.md).
 
