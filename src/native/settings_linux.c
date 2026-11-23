@@ -213,6 +213,9 @@ int tsfp_native_settings_test(void){
     gtk_entry_set_text(GTK_ENTRY(e.sensitivity),"0.25");ok&=save_controls(&e,error,sizeof error);
     ok&=pc_settings_read(&actual,error,sizeof error)&&fabs(actual.sensitivity-.25)<1e-9;
     fill_controls(&e,&initial);ok&=save_controls(&e,error,sizeof error);gtk_widget_destroy(e.dialog);dialog_test=0;
+    ok &= pc_settings_renderer_save(1,error,sizeof error);
+    ok &= !pc_settings_renderer_save(2,error,sizeof error);
+    ok &= pc_settings_renderer_save(0,error,sizeof error);
     fprintf(stderr,"%s: GTK controls, invalid number rejection, save/reload and restored values\n",ok?"PASS":"FAIL");return ok?0:1;
 }
 int tsfp_native_debug_test(void){

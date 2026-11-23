@@ -1,5 +1,11 @@
 # Windows controls and display settings
 
+## Renderer (current development build)
+
+Open **Video Options > Graphics > Advanced > Renderer** from Settings or the pause menu. Choose **Vulkan (Default)** or **OpenGL (Compatibility)**. The row also shows the renderer currently running.
+
+Changing this choice changes Apply to **Apply & Restart**. Applying saves the choice and restarts the game immediately, leaving your current session. Go back without applying to discard the change. If saving or starting the replacement fails, the current game stays open and reports the error. The launcher uses the same saved renderer preference.
+
 ## Supersampling (current development build)
 
 Open **Settings / Pause Options → Video Options → Graphics → Supersampling**,
