@@ -36,3 +36,17 @@ def test_corrupt_archive_cannot_create_dependency(tmp_path):
     archive=fixture(tmp_path);archive.write_bytes(b'corrupt')
     with pytest.raises(ValueError,match='pinned bytes/hash'):cross.setup(tmp_path)
     assert not (tmp_path/'external/spirv-cross').exists()
+
+
+@pytest.mark.parametrize('script', ['package-release.py', 'package-native-mac.py', 'package-native-linux.py'])
+def test_package_cli_resolves_grouped_dependencies_without_pythonpath(script):
+    import os
+    import subprocess
+    import sys
+    root = Path(__file__).resolve().parents[2]
+    env = dict(os.environ)
+    env.pop('PYTHONPATH', None)
+    result = subprocess.run([sys.executable, str(root/'tools/release'/script), '--help'],
+                            cwd=root, env=env, capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert '--version' in result.stdout
