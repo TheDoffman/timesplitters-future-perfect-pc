@@ -4,6 +4,7 @@
 #include "graphics/ssao_settings.h"
 #include "graphics/graphics_settings.h"
 static TsfpSsaoPass g_scene_ao;
+static int g_scene_ao_reported;
 void xbox_D3D8AmbientOcclusion(const float *projection)
 {
     D3D8DeviceState *s=&g_device_state;
@@ -22,7 +23,11 @@ void xbox_D3D8AmbientOcclusion(const float *projection)
     rhi_image_get_desc(image,&desc);
     if(desc.width!=s->width||desc.height!=s->height||!(desc.bind&RHI_BIND_SAMPLED))return;
     RhiView *depth=rhi_view_create(image,RHI_VIEW_SAMPLED,NULL);if(!depth)return;
-    if(tsfp_ssao_render_region(&g_scene_ao,depth,x,y,width,height,inverse,projection[5],TSFP_SSAO_RADIUS,TSFP_SSAO_BIAS,TSFP_SSAO_STRENGTH))
-        tsfp_ssao_apply(&g_scene_ao,depth,d3d8_surface_draw_view(s->scene_surface),width,height);
+    if(!g_scene_ao.vs)g_scene_ao_reported=0;
+    if(tsfp_ssao_render_region(&g_scene_ao,depth,x,y,width,height,inverse,projection[5],TSFP_SSAO_RADIUS,TSFP_SSAO_BIAS,TSFP_SSAO_STRENGTH) &&
+       tsfp_ssao_apply(&g_scene_ao,depth,d3d8_surface_draw_view(s->scene_surface),width,height) && !g_scene_ao_reported) {
+        fprintf(stderr,"[SSAO] applied: backend=%s samples=%u world=%ux%u\n",rhi_backend_name(),desc.samples,width,height);
+        g_scene_ao_reported=1;
+    }
     rhi_view_destroy(depth);
 }

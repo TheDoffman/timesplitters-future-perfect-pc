@@ -68,30 +68,50 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
-            Test("Vulkan default ignores retired choices and strips inherited renderer overrides",()=>{
+            Test("renderer selection persists, cancels and overrides inherited backend on every host",()=>{
                 string folder=Path.Combine(root,"renderer");Directory.CreateDirectory(folder);
-                var initial=GameSettings.Load(folder,null);initial.Save();
+                var initial=GameSettings.Load(folder,null);Need(initial.Renderer=="vulkan","New default changed");initial.Save();
                 string controls=Core.PathIn(folder,LauncherPlatform.Settings(folder)[0]);
                 string baseline=File.ReadAllText(controls);
                 string old=Environment.GetEnvironmentVariable("RECOMP_D3D8_BACKEND");
                 Environment.SetEnvironmentVariable("RECOMP_D3D8_BACKEND","d3d11");
                 try {
-                    foreach(object retired in new object[]{"d3d11","vulkan","invalid",42}) {
+                    foreach(object retired in new object[]{"d3d11","invalid",42,true,null}) {
                         var document=Json.Object(baseline);
                         ((Dictionary<string,object>)document["launcher"])["renderer"]=retired;
                         File.WriteAllText(controls,Json.Encode(document));
-                        var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
-                        Need(!All(page.View).OfType<ComboBox>().Any(x=>x.Name=="GraphicsRenderer"),"Renderer selector remains visible");
-                        var model=GameSettings.Load(folder,null);model.Sensitivity=.2;model.Save();
-                        var saved=(Dictionary<string,object>)Json.Object(File.ReadAllText(controls))["launcher"];
-                        Need(Convert.ToString(saved["renderer"])==Convert.ToString(retired),"Retired data was overwritten");
-                        var child=GameSettings.StartInfo(folder).EnvironmentVariables;
-#if MACOS || LINUX
-                        Need(!child.ContainsKey("RECOMP_D3D8_BACKEND"),"Native launch received a Windows override");
-#else
-                        Need(child["RECOMP_D3D8_BACKEND"]=="vulkan","Retired or inherited renderer changed default");
-#endif
+                        Need(GameSettings.Load(folder,null).Renderer=="vulkan","Retired preference changed default");
+                        Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="vulkan","Inherited renderer leaked");
                     }
+                    File.WriteAllText(controls,baseline);
+                    var page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
+                    var picker=Find<ComboBox>(page.View,"GraphicsRenderer");
+                    Need(picker.Items.Count==2 && picker.SelectedIndex==0,"Unexpected renderer choices/default");
+                    picker.SelectedIndex=1;Click(Find<Button>(page.View,"SettingsCancelButton"));
+                    Need(GameSettings.Load(folder,null).Renderer=="vulkan","Cancel saved renderer");
+                    foreach(int selection in new[]{1,0,1}) {
+                        page=new SettingsPage(new ResourceDictionary(),folder,true);page.SelectTab(1);
+                        picker=Find<ComboBox>(page.View,"GraphicsRenderer");picker.SelectedIndex=selection;
+                        var save=Find<Button>(page.View,"SettingsSaveButton");Need(save.IsEnabled,"Renderer edit not dirty");Click(save);
+                        string expected=GameSettings.Renderers[selection];
+                        Need(GameSettings.Load(folder,null).Renderer==expected,"Renderer did not persist");
+                        Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]==expected,"Selected backend not passed to child");
+                        var reopened=new SettingsPage(new ResourceDictionary(),folder,true);reopened.SelectTab(1);
+                        Need(Find<ComboBox>(reopened.View,"GraphicsRenderer").SelectedIndex==selection,"Reopened selection changed");
+                    }
+                    var current=GameSettings.Load(folder,null);current.Sensitivity=.2;current.Width=1280;current.Height=720;current.Save();
+                    Need(GameSettings.Load(folder,null).Renderer=="opengl","Unrelated save lost renderer");
+                    string manifest=Core.PathIn(folder,LauncherPlatform.ManifestPath(folder));Directory.CreateDirectory(Path.GetDirectoryName(manifest));
+                    Core.Write(manifest,Json.Encode(new{version="v1.0.0"}));
+                    bool rejected=false;string rejection="";try{GameSettings.StartInfo(folder);}catch(Exception e){rejection=e.Message;rejected=e.Message.Contains("selected renderer");}
+                    Need(rejected,"Older game did not reject unsupported OpenGL: "+rejection);
+                    Need(GameSettings.Load(folder,null).Renderer=="opengl","Older game reset saved preference");
+                    Core.Write(manifest,Json.Encode(new{version="v1.0.0",supported_renderers=new[]{"vulkan","opengl"}}));
+                    Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="opengl","Supported package rejected OpenGL");
+                    File.WriteAllText(controls,baseline.Replace("\"renderer\":\"vulkan\"","\"renderer\":\"d3d11\""));
+                    Core.Write(manifest,Json.Encode(new{renderer="gl"}));
+                    Need(GameSettings.Load(folder,null).Renderer=="opengl","Legacy Mac default changed");
+                    Need(GameSettings.StartInfo(folder).EnvironmentVariables["RECOMP_D3D8_BACKEND"]=="opengl","Legacy Mac failed to launch");
                 } finally {Environment.SetEnvironmentVariable("RECOMP_D3D8_BACKEND",old);}
             });
             Test("console distinguishes healthy statistics, warnings and actual failures",()=>{
@@ -273,6 +293,26 @@ public static class LauncherSharedUiChecks
                     Need(GameSettings.Load(folder,null).VSync==value,"Cancel saved V-Sync");
                 }
             });
+#if MACOS || LINUX
+            Test("native OpenGL needs its compiler but no Vulkan driver metadata",()=>{
+                string folder=Path.Combine(root,"opengl-preflight");Directory.CreateDirectory(Path.Combine(folder,"Bin"));
+                var hashes=new Dictionary<string,object>();
+                foreach(var name in new[]{"Bin/libdxcompiler.dylib","Bin/libcrypto.3.dylib"}){
+                    File.WriteAllText(Core.PathIn(folder,name),"library");hashes[name]=Core.Hash(Core.PathIn(folder,name));
+                }
+                // A stale/missing Vulkan installation must not prevent a deliberate GL launch.
+                hashes["Bin/libvulkan.1.dylib"]=new string('a',64);hashes["Bin/libMoltenVK.dylib"]=new string('b',64);
+                var manifest=new Dictionary<string,object>{{"vulkan_driver","unavailable"},{"files",hashes}};
+                var env=NativeHost.PortableGpuEnvironment(folder,manifest,"opengl");
+                Need(env.Count==1 && (string)env["DYLD_LIBRARY_PATH"]==Core.PathIn(folder,"Bin"),"GL selected Vulkan overrides or lost its compiler path");
+                bool rejected=false;try{NativeHost.PortableGpuEnvironment(folder,manifest,"vulkan");}catch{rejected=true;}
+                Need(rejected,"Vulkan accepted unavailable driver metadata");
+                File.WriteAllText(Core.PathIn(folder,"Bin/libdxcompiler.dylib"),"changed");
+                rejected=false;try{NativeHost.PortableGpuEnvironment(folder,manifest,"opengl");}catch{rejected=true;}
+                Need(rejected,"GL bypassed compiler integrity checks");
+                Need(!Directory.Exists(Path.Combine(folder,"Settings")),"Read-only preflight wrote settings");
+            });
+#endif
             SaveBackupChecks.Run(root,Test);
             Test("complete language packs save, cancel, launch and restore English",()=>{
                 string folder=Path.Combine(root,"languages");Directory.CreateDirectory(folder);

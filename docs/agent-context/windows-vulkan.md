@@ -1,5 +1,19 @@
 # Windows Vulkan default and MSVC build policy
 
+Windows automatic renderer fallback was removed at user request on 2026-11-22.
+Patch3051 adds an early failure path in rhi_device_create for Windows Vulkan
+builds: log a startup error, destroy partial backend state, return failure
+without changing g_rhi or creating D3D11. Normal Windows builds request Vulkan;
+explicit developer D3D11/WARP comparison fixtures remain available. Native
+platform behavior is unchanged. This supersedes historical recovery notes below.
+
+The Windows RHI runner now requires missing driver, usable device and compiler
+cases to fail initialization, retain the Vulkan backend, remain not ready and
+allow repeated cleanup. Default/explicit Vulkan and explicit D3D11/adoption still
+run the normal pixel/resource/present contracts. The old real-launcher
+--unavailable-dxc recovery probe has been retired; startup-failure acceptance
+is in test-rhi-windows.py. Historical hardware recovery reports are unchanged.
+
 PR580 CI portability: the Windows RHI build job targets the installed Visual
 Studio 18 2026 generator on windows-2025-vs2026 (pinned CMake4.4.4 supports it).
 The shared launcher test treats missing child renderer variables portably with
@@ -76,15 +90,12 @@ in [STATUS](../project/STATUS.md).
 
 ## Launcher renderer selection
 
-Removed at user request on 2026-11-22. All current platform packages prefer
-Vulkan. SettingsPage has no backend selector; GameSettings neither reads nor
-writes launcher.renderer, but preserves it as unknown data. Windows child
-launches explicitly request Vulkan after stripping inherited overrides. Native
-hosts keep manifest-selected SDK/driver routing. Runtime startup fallback and
-explicit developer overrides in direct game/RHI runners remain unchanged.
-The real-launcher acceptance helper accepts only --backend vulkan now; prior
-paired D3D11/Vulkan launcher evidence is historical, not a current UI contract.
-No game binary rebuild is needed. Legacy Mac GL builds retain compatibility.
+Restored in development at user request on 2026-11-22: Vulkan remains default,
+with OpenGL available in launcher Graphics > Advanced > Renderer. The shared
+model saves the choice, strips inherited overrides, and passes the chosen
+backend to LaunchGame. D3D11 is not offered. Package supported_renderers metadata
+prevents an older runtime silently ignoring an OpenGL choice. Automatic startup
+recovery remains separately gated. See [current acceptance](opengl-recovery.md).
 
 ## Extended acceptance goal
 

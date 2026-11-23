@@ -272,6 +272,7 @@
     "tests/network/test_online_host.py",
     "tests/network/test_network_identity.py",
     "tests/network/test_network_guest_dispatch.py",
+    "tests/network/test_arcade_solo_lobby.py",
     "tests/network/test_network_bot_results.py",
     "tests/network/test_network_movement_stats.py",
     "tests/network/test_network_motion_stats.py",
@@ -295,14 +296,23 @@
     "tests/repository/test_story_coop_local.py",
     "tests/network/test_story_evidence.py",
     "tests/repository/test_runtime_checks.py",
-    "tests/support/test_runtime_shards.py"
+    "tests/support/test_runtime_shards.py",
+    "tests/graphics/test_rhi_startup.py",
+    "tests/repository/test_spirv_cross.py",
+    "tests/graphics/test_opengl_window.py",
+    "tests/graphics/test_opengl_build.py",
+    "tests/graphics/test_opengl_present.py",
+    "tests/graphics/test_opengl_capabilities.py",
+    "tests/compiler/test_host_wait_pump.py",
+    "tests/compiler/test_guest_dispatch_sdl.py"
   ],
   "native_windows": [
     "tests/gameplay/test_frame_interpolation.py",
     "tests/gameplay/test_prediction_targets.py",
     "tests/repository/test_config_initialization.py",
     "tests/gameplay/test_pc_refresh.py",
-    "tests/graphics/test_window_theme.py"
+    "tests/graphics/test_window_theme.py",
+    "tests/diagnostics/test_exit_trace_guard.py"
   ],
   "release": [
     "tests/launcher/test_publish_release.py",

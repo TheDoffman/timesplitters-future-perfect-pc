@@ -21,6 +21,13 @@ Install your distribution's desktop libraries if needed. On Ubuntu these include
 `libsm6` and `xdg-utils`. The game additionally needs its Linux Vulkan/runtime
 dependencies; see [Linux development](../development/linux.md).
 
+The next launcher restores **Settings > Graphics > Advanced > Renderer** with
+**Vulkan (Default)** and **OpenGL**. Save the choice before launching; it persists
+across launcher restarts. OpenGL needs a compatible game update and driver.
+Windowed gameplay and input have been checked under WSL, but fullscreen,
+performance and physical Linux/Steam Deck acceptance remain incomplete.
+Automatic OpenGL recovery remains disabled on Linux.
+
 Linux game packages use your distribution's Wayland runtime alongside its
 graphics driver, including when using X11. On minimal Ubuntu installations,
 install `libwayland-client0`, `libwayland-cursor0` and `libwayland-egl1`.

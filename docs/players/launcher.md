@@ -8,6 +8,17 @@ completely into a writable folder and open **TimeSplitters Launcher.exe**.
 Keep the companion files in `Bin` and `Support` with it. Windows 10/11 x64 and
 .NET Framework 4.8 are required; no developer tools or GitHub login are needed.
 
+## Renderer choice (next version)
+
+Under **Settings > Graphics > Advanced > Renderer**, choose **Vulkan (Default)**
+or **OpenGL**, then save and launch the game. The launcher remembers the choice.
+Try OpenGL if Vulkan will not start or renders incorrectly; switch back to Vulkan
+in the same place. Close the game before changing this setting.
+
+OpenGL needs a compatible game update and graphics driver. If the installed game
+lacks the chosen renderer, the launcher asks you to update or choose a supported
+renderer. D3D11 is not offered. Native Mac acceptance remains pending.
+
 ## Windows security prompts at startup
 
 The recovery controls below are in current source for the next launcher update.

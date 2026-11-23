@@ -15,6 +15,7 @@ sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
 import linux_vulkan_sdk
+import spirv_cross
 import linux_ffmpeg
 from vulkan_sdk import sha256
 
@@ -44,6 +45,7 @@ def main():
     if not (game/'pak').is_dir() or not (game/'xmv').is_dir():parser.error('Game folder must contain pak and xmv')
     if shutil.disk_usage(ROOT).free<4*1024**3:parser.error('Build needs at least 4 GiB free')
     sdk=linux_vulkan_sdk.verify_install(ROOT)
+    spirv_cross.setup(ROOT) if args.setup else spirv_cross.verify(ROOT)
     tools=Path(sys.executable).parent;cmake=tools/'cmake';ninja=tools/'ninja'
     if not cmake.is_file() or not ninja.is_file():parser.error('Install shared requirements.txt in this Linux environment')
     runtime=ROOT/'external/ts3FPrecomp';build=ROOT/'build/linux/game'
@@ -84,7 +86,7 @@ def main():
     run(sys.executable,ROOT/'tools/build/network-identity.py','--output',build/'generated','--seal-executable',exe)
     sources=[p for area in ('src','patches','vendor/smaa') for p in (ROOT/area).rglob('*')
              if p.is_file() and 'legacy' not in p.relative_to(ROOT).parts]
-    manifest=dict(display_settings_version=5,platform='linux-x64',renderer='vulkan',build_type='Debug',release_media=media,
+    manifest=dict(display_settings_version=5,platform='linux-x64',renderer='vulkan',supported_renderers=['vulkan','opengl'],build_type='Debug',release_media=media,
         host_optimization=args.host_optimization,host_debug_flags=host_flags,assertions_enabled=True,
         source_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         working_tree_changes=subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True),

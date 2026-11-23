@@ -32,8 +32,11 @@ namespace TimeSplitters.Launcher
 #endif
             if(args.Length==3 && args[0]=="--test-self-helper")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]),true);
             if(args.Length==3 && args[0]=="--apply-self")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]));
-            if(args.Length==3 && (args[0]=="--apply-game" || args[0]=="--rollback-game" || args[0]=="--test-game-helper"))
-                return NativeStartup.ApplyGame(Path.GetFullPath(args[1]),Int32.Parse(args[2]),args[0]=="--rollback-game",args[0]=="--test-game-helper");
+            if(args.Length==3 && NativeUpdateWindow.IsHelper(args)) {
+                Root=Path.GetFullPath(args[1]); Int32.Parse(args[2]);
+                try { return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args); }
+                finally { NativeStartup.CleanupGameHelper(Root,Environment.ProcessPath); }
+            }
             if(args.Length==3 && args[0]=="--extract-art") { ExtractArt(args[1],args[2]);return 0; }
             if(args.Length==1 && args[0]=="--test")
 #if LINUX
@@ -67,7 +70,7 @@ return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(
 #if MACOS
 Core.Require(StorageError==null,StorageError);
 #endif
-Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine(LauncherPlatform.HostName+" launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
+Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root,GameSettings.Load(Root,null).Renderer);Console.WriteLine(LauncherPlatform.HostName+" launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
             return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args);
         }
         internal static string FindRoot(string[] args, string baseDirectory=null)
@@ -147,6 +150,7 @@ Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance)
         }
         internal static Avalonia.Controls.Window StartupWindow(string root,string[] args)
         {
+            if(NativeUpdateWindow.IsHelper(args))return new NativeUpdateWindow(root,args);
             if(NativeInstallation.Translocated(root)||args.Contains("--render-location-preview"))return new NativeLocationWindow(args);
 #if MACOS
             if(Program.InstallRoot!=null && !LauncherPlatform.Checkout(Program.InstallRoot) &&

@@ -16,6 +16,20 @@ import tarfile
 
 import pytest
 
+# These renderer changes postdate the historical controls/Mac-only inputs.
+RENDERER_STARTUP_PATCHES = (
+    '3050-windows-vulkan-primary.patch',
+    '3051-windows-no-renderer-fallback.patch',
+    '3052-shared-opengl-startup-recovery.patch',
+    '3053-shared-shader-reflection.patch',
+    '3054-shared-opengl-build.patch',
+    '3055-exit-on-host-renderer-startup-failure.patch',
+    '3056-guard-exit-trace-memory-faults.patch',
+    '3057-native-opengl-source-path.patch',
+    '3058-native-opengl-wait-dispatch.patch',
+    '3059-native-renderer-dispatch-policy.patch',
+)
+
 STORY_PATCHES = (
     'network-player-payload-lifetime',
     'story-failure-trace',
@@ -105,6 +119,13 @@ def assert_current_pause_glass_installed(tree):
     manual=(tree/'titles/futureperfect/src/recomp_manual.c').read_text(encoding='utf-8')
     assert 'host_CopyTextureRectToTexture' in record
     assert 'pc_display_pause_glass' in manual
+
+
+def assert_current_renderer_startup_installed(tree):
+    assert 'tsfp_rhi_startup(&g_rhi' in (tree/'src/d3d/rhi.c').read_text()
+    assert 'host renderer initialization failed; exiting with status 2' in (tree/'src/hle/hle_d3d8.c').read_text()
+    assert 'stack tracing skipped after teardown' in (tree/'src/kernel/exit_trace.c').read_text()
+    assert 'get_filename_component(tsfp_gl_shared_source "${TSFP_NATIVE_DIR}/.." ABSOLUTE)' in (tree/'src/d3d/CMakeLists.txt').read_text()
 
 
 def test_fresh_checkout_and_repeated_build(checkout):
@@ -241,7 +262,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '2810-arcade-player-name-anchor.patch', '3001-host-visibility-queries.patch','3050-windows-vulkan-primary.patch'):
+        if patch.name in RENDERER_STARTUP_PATCHES or patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '2810-arcade-player-name-anchor.patch', '3001-host-visibility-queries.patch'):
             continue  # Requires the complete graphics stack installed by the upgrade.
         if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
@@ -318,6 +339,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
     assert installer.apply_patches(checkout, PATCHES)
+    assert_current_renderer_startup_installed(checkout)
     assert_current_calendar_installed(checkout)
     assert_current_pause_glass_installed(checkout)
     # The historical subset omits the newer graphics prerequisites; its full
@@ -377,8 +399,10 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch'):
-            continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
+        if patch.name in RENDERER_STARTUP_PATCHES:
+            continue  # Missing common graphics dependencies arrive in the complete upgrade.
+        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch','3040-arcade-solo-lobby.patch'):
+            continue  # Historical inputs predate Tools/presets and capture/join/solo wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
             continue  # Historical stacks predate the graphics/display and kill-feed allocator dependencies.
@@ -409,13 +433,17 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     # The trace depends on network wrapper context; like the network patches,
     # it belongs to the full migration, not the historical Mac-only fixture.
     assert installer.apply_patches(checkout, old_patches)
+    manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
+    assert 'pc_network_bots_guest_minimum' not in manual.read_text()
     assert installer.apply_patches(checkout, PATCHES)
+    assert_current_renderer_startup_installed(checkout)
     assert_current_calendar_installed(checkout)
     assert_current_pause_glass_installed(checkout)
     assert_current_sharing_installed(checkout)
     cmake = (checkout / 'titles/futureperfect/CMakeLists.txt').read_text()
     assert 'TSFP_NATIVE_DIR' in cmake and 'pc_network.c' in cmake
     manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    assert manual.count('pc_network_bots_guest_minimum(sub_00064EA0_gen)') == 1
     assert 'pc_story_failure_trace(sub_00067450_gen,0x00067450u)' in manual
     assert 'pc_story_network_frame(sub_000681C0_gen)' in manual
     assert 'pc_story_lobby_details(sub_001986A0_gen)' in manual

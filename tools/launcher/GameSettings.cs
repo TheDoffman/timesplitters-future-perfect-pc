@@ -51,6 +51,18 @@ namespace TimeSplitters.Launcher
             }
         }
         public bool ShaderCache = true;
+        public string Renderer = "vulkan";
+        public static readonly string[] Renderers = { "vulkan", "opengl" };
+        public static readonly string[] RendererLabels = { "Vulkan (Default)", "OpenGL" };
+        public bool SupportsRenderer(string renderer)
+        {
+            string path=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
+            if(!File.Exists(path))return Renderers.Contains(renderer); // Development build.
+            var manifest=Json.Object(Text(Read(path)));object value;
+            if(manifest.TryGetValue("supported_renderers",out value))
+                return !(value is string) && value is IEnumerable && ((IEnumerable)value).Cast<object>().Any(item=>item is string && (string)item==renderer);
+            return renderer==(Json.String(manifest,"renderer")=="gl"?"opengl":"vulkan");
+        }
         public string LanguagePack = "en";
         public static readonly string[] LanguagePacks = { "en", "fr", "de", "it", "es" };
         public static readonly string[] LanguagePackLabels = { "English", "Français", "Deutsch", "Italiano", "Español" };
@@ -176,6 +188,9 @@ namespace TimeSplitters.Launcher
         public static GameSettings Load(string root, string inheritedRuntime)
         {
             var model = new GameSettings(root);
+            string manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
+            if(File.Exists(manifest) && Json.String(Json.Object(Text(Read(manifest))),"renderer")=="gl")
+                model.Renderer="opengl"; // Preserve legacy Mac packages with no Vulkan backend.
             var Files = model.Files;
             foreach (string file in Files) model.originals[file] = Read(Core.PathIn(root, file));
             model.document = Json.Object(model.originals[Files[0]] == null ? DefaultControls() : Text(model.originals[Files[0]]));
@@ -195,6 +210,9 @@ namespace TimeSplitters.Launcher
             if (model.document.TryGetValue("launcher", out value))
             {
                 var launcher = Map(value);
+                // Ignore retired D3D11 and malformed preferences from older launchers.
+                if(launcher.TryGetValue("renderer",out value) && value is string && Renderers.Contains((string)value))
+                    model.Renderer=(string)value;
                 if (launcher.TryGetValue("language_pack", out value))
                 {
                     Core.Require(value is string, "Language pack must be a language code. No settings were changed.");
@@ -429,6 +447,7 @@ namespace TimeSplitters.Launcher
         { string v; int n; if (!values.TryGetValue(key, out v)) return fallback; if (Int32.TryParse(v, out n)) return n; if (v == "true" || v == "on" || v == "yes") return 1; if (v == "false" || v == "off" || v == "no") return 0; throw new InvalidDataException("Invalid runtime setting: " + key); }
         public void Validate(bool loading=false)
         {
+            Core.Require(Renderers.Contains(Renderer), "Choose Vulkan or OpenGL.");
             Core.Require(LanguagePacks.Contains(LanguagePack), "Choose a supported game language pack.");
             Core.Require(loading || LanguagePack == "en" || CanSelectLanguagePack, "Update the game to a release with language-pack support before selecting another language.");
             Core.Require(NativeFrameRates.Contains(NativeFps), "Choose 60 FPS (Original), 120 FPS (Beta), 180 FPS (Beta), or 240 FPS (Beta).");
@@ -440,7 +459,7 @@ namespace TimeSplitters.Launcher
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
             Core.Require(loading || CanAdjustCrosshair || CrosshairSize==100,"Crosshair Size requires a newer game build. No settings were changed.");
             Core.Require(loading || CanUseWeaponFovDegrees || WeaponFovDegrees==0,"Weapon FOV degrees require a newer game build. No settings were changed.");
-            Core.Require(CrosshairSize>=25 && CrosshairSize<=150 && CrosshairSize%5==0,"Crosshair Size must be 25�150 percent in steps of five.");
+            Core.Require(CrosshairSize>=25 && CrosshairSize<=150 && CrosshairSize%5==0,"Crosshair Size must be 25–150 percent in steps of five.");
             Core.Require(WeaponFovDegrees==0 || (WeaponFovDegrees>=FovMin && WeaponFovDegrees<=FovMax),"Weapon FOV must be between40 and100 degrees.");
             Core.Require(WeaponFov >= 80 && WeaponFov <= 150 && WeaponFov % 5 == 0, "Weapon FOV must be 80–150 percent in steps of five.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
@@ -538,6 +557,7 @@ namespace TimeSplitters.Launcher
             var mouse = Map(value); mouse["sensitivity"] = Sensitivity; mouse["enabled"] = MouseEnabled; mouse["invert_y"] = InvertY;
             if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
+            Map(value)["renderer"] = Renderer;
             Map(value)["enhanced_textures"] = EnhancedTextures;
             Map(value)["language_pack"] = LanguagePack;
             if (!document.TryGetValue("debug", out value)) document["debug"] = value = new Dictionary<string, object>();
@@ -567,6 +587,7 @@ namespace TimeSplitters.Launcher
         public static ProcessStartInfo StartInfo(string root)
         {
             var model = Load(root, null); model.Validate();
+            Core.Require(model.SupportsRenderer(model.Renderer), "The installed game does not support the selected renderer. Update the game or choose a supported renderer in Settings > Graphics.");
             SaveLocations.Resolve(root); // Fail visibly before launching if the chosen drive is missing.
             // Check the selected archive without copying or modifying imported data.
             if(model.LanguagePack != "en") {
@@ -587,10 +608,7 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["TSFP_GAME_UPDATE_NOTICE"] = GameUpdateNotice.Path(root);
             info.EnvironmentVariables["TSFP_GAME_INSTALLED_VERSION"] = Core.InstalledVersion(root);
             info.EnvironmentVariables["TSFP_CRASH_EXTENDED"] = CrashReports.ExtendedForNextLaunch ? "1" : "0";
-#if !MACOS && !LINUX
-            // Retired launcher.renderer preferences must not override the shared default.
-            info.EnvironmentVariables["RECOMP_D3D8_BACKEND"] = "vulkan";
-#endif
+            info.EnvironmentVariables["RECOMP_D3D8_BACKEND"] = model.Renderer;
             // Explicit zero also overrides an old native_fps runtime preference.
             info.EnvironmentVariables["TSFP_NATIVE_FPS"] = model.NativeFps.ToString(CultureInfo.InvariantCulture);
             info.EnvironmentVariables["TSFP_GAME_LANGUAGE"] = model.LanguagePack;

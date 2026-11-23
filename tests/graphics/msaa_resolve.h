@@ -85,6 +85,10 @@ static void test_msaa_subresources(void)
         unsigned size=32>>(sub%2);unsigned char pixels[32*32*4];
         assert(rhi_image_readback(cube,sub,pixels,size*4)==0);
         for(unsigned i=0;i<size*size;i++){
+            if(pixels[i*4]!=0 || pixels[i*4+3]!=255 ||
+               pixels[i*4+1]!=(sub==11?255:0) || pixels[i*4+2]!=(sub==11?0:255))
+                fprintf(stderr,"MSAA subresource mismatch: samples=%u sub=%u pixel=%u rgba=%u,%u,%u,%u\n",
+                    samples,sub,i,pixels[i*4],pixels[i*4+1],pixels[i*4+2],pixels[i*4+3]);
             assert(pixels[i*4]==0 && pixels[i*4+3]==255);
             assert(pixels[i*4+1]==(sub==11?255:0));
             assert(pixels[i*4+2]==(sub==11?0:255));

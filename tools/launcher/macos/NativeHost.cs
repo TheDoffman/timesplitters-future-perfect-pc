@@ -61,7 +61,7 @@ namespace TimeSplitters.Launcher
             Core.Require(Core.Hash(xbe)==XbeHash,"default.xbe does not match the supported US Xbox release.");
             foreach(var name in new[]{"pak","xmv"}) { var path=Core.PathIn(data,name);Core.Require(Directory.Exists(path)&&Directory.EnumerateFileSystemEntries(path).Any(),"Missing or empty game assets: "+name); }
         }
-        public static Dictionary<string,object> CheckBuild(string root)
+        public static Dictionary<string,object> CheckBuild(string root,string renderer=null)
         {
             var manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));Core.Require(File.Exists(manifest),LauncherPlatform.HostName+" build manifest is missing. Build the native runtime first.");
             var m=Json.Object(File.ReadAllText(manifest));var exe=Core.PathIn(root,LauncherPlatform.GamePath(root));Core.Require(File.Exists(exe),LauncherPlatform.HostName+" game executable is missing.");
@@ -73,11 +73,12 @@ namespace TimeSplitters.Launcher
 #else
             using(var stream=File.OpenRead(exe)){var header=new byte[8];Core.Require(stream.Read(header,0,8)==8 && BitConverter.ToUInt32(header,0)==0xfeedfacf && BitConverter.ToUInt32(header,4)==0x0100000c,"This launcher requires a native Apple Silicon game executable.");}
 #endif
-            if(Json.String(m,"renderer")=="vulkan")GpuEnvironment(root,m);
+            if(Json.String(m,"renderer")=="vulkan")GpuEnvironment(root,m,renderer??"vulkan");
             return m;
         }
-        static Dictionary<string,object> GpuEnvironment(string root,Dictionary<string,object> manifest)
+        static Dictionary<string,object> GpuEnvironment(string root,Dictionary<string,object> manifest,string renderer="vulkan")
         {
+            Core.Require(GameSettings.Renderers.Contains(renderer),"Choose Vulkan or OpenGL.");
 #if LINUX
             // Linux uses the system loader and hardware ICD; never select a Mac driver.
             if(!LauncherPlatform.Checkout(root)){
@@ -89,27 +90,32 @@ namespace TimeSplitters.Launcher
             }
             return new Dictionary<string,object>();
 #else
-            if(!LauncherPlatform.Checkout(root))return PortableGpuEnvironment(root,manifest);
+            if(!LauncherPlatform.Checkout(root))return PortableGpuEnvironment(root,manifest,renderer);
             string python=Path.Combine(root,".venv/bin/python");
-            Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/build/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
+            Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/build/vulkan_sdk.py")),"This native build needs its pinned checkout SDK and verification helper.");
             var info=new ProcessStartInfo(python){UseShellExecute=false,RedirectStandardOutput=true,WorkingDirectory=root};
             // The helper needs driver metadata only, not source hashes or build logs.
-            var selection=new Dictionary<string,object>();
+            var selection=new Dictionary<string,object>{{"renderer",renderer}};
             if(manifest.TryGetValue("vulkan_driver",out var driver))selection["vulkan_driver"]=driver;
             info.ArgumentList.Add("-c");info.ArgumentList.Add("import pathlib,sys,json; sys.dont_write_bytecode=True; sys.path.insert(0,str(pathlib.Path(sys.argv[1])/'tools/build'))\ntry:\n import vulkan_sdk; print(json.dumps(vulkan_sdk.launch_environment(pathlib.Path(sys.argv[1]),json.loads(sys.argv[2]))))\nexcept Exception as error:\n print(str(error)); sys.exit(1)");info.ArgumentList.Add(root);info.ArgumentList.Add(Json.Encode(selection));
             return Json.Object(ReadGpuHelper(info));
 #endif
         }
-        internal static Dictionary<string,object> PortableGpuEnvironment(string root,Dictionary<string,object> manifest)
+        internal static Dictionary<string,object> PortableGpuEnvironment(string root,Dictionary<string,object> manifest,string renderer="vulkan")
         {
-            Core.Require(Json.String(manifest,"vulkan_driver")=="moltenvk","Unsupported packaged Vulkan driver.");
+            Core.Require(GameSettings.Renderers.Contains(renderer),"Choose Vulkan or OpenGL.");
+            bool vulkan=renderer=="vulkan";
+            if(vulkan)Core.Require(Json.String(manifest,"vulkan_driver")=="moltenvk","Unsupported packaged Vulkan driver.");
             Core.Require(manifest.TryGetValue("files",out var files)&&files is Dictionary<string,object>,"Packaged runtime hashes are missing.");
             var hashes=(Dictionary<string,object>)files;
             var required=new[]{"Bin/libvulkan.1.dylib","Bin/libMoltenVK.dylib","Bin/libdxcompiler.dylib","Support/Vulkan/MoltenVK_icd.json"};
-            foreach(var name in required.Concat(hashes.Keys.Where(n=>n.StartsWith("Bin/",StringComparison.Ordinal)&&n.EndsWith(".dylib",StringComparison.Ordinal))).Distinct()){
+            var libraries=hashes.Keys.Where(n=>n.StartsWith("Bin/",StringComparison.Ordinal)&&n.EndsWith(".dylib",StringComparison.Ordinal));
+            if(!vulkan)libraries=libraries.Where(n=>n!=required[0]&&n!=required[1]);
+            foreach(var name in (vulkan?required:new[]{required[2]}).Concat(libraries).Distinct()){
                 string path=Core.PathIn(root,name),expected=Json.String(hashes,name);
                 Core.Require(expected.Length==64&&File.Exists(path)&&Core.Hash(path)==expected,"Packaged Vulkan runtime is missing or changed: "+name);
             }
+            if(!vulkan)return new Dictionary<string,object>{{"DYLD_LIBRARY_PATH",Core.PathIn(root,"Bin")}};
             var icd=Json.Object(File.ReadAllText(Core.PathIn(root,required[3])));
             Core.Require(icd.TryGetValue("ICD",out var entry)&&entry is Dictionary<string,object> && Json.String((Dictionary<string,object>)entry,"library_path")=="../../Bin/libMoltenVK.dylib","Packaged Vulkan driver path is invalid.");
             return new Dictionary<string,object>{{"DYLD_LIBRARY_PATH",Core.PathIn(root,"Bin")},{"SDL_VULKAN_LIBRARY",Core.PathIn(root,required[0])},{"VK_DRIVER_FILES",Core.PathIn(root,required[3])},{"RECOMP_SHADER_CACHE","0"}};
@@ -140,12 +146,21 @@ namespace TimeSplitters.Launcher
         public static void Configure(ProcessStartInfo info,string root)
         {
             info.WorkingDirectory=root;
-            foreach(var key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())if(key.StartsWith("VK_")||key.StartsWith("SDL_VULKAN")||key.StartsWith("DYLD_"))info.EnvironmentVariables.Remove(key);
+            foreach(var key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())if(key.StartsWith("VK_")||key.StartsWith("SDL_VULKAN")||key.StartsWith("DYLD_")||key.StartsWith("TSFP_RESTART_VULKAN_"))info.EnvironmentVariables.Remove(key);
             string manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
             if(File.Exists(manifest)){
                 var build=Json.Object(File.ReadAllText(manifest));
-                if(Json.String(build,"renderer")=="vulkan")
-                    foreach(var pair in GpuEnvironment(root,build))info.EnvironmentVariables[pair.Key]=(string)pair.Value;
+                if(Json.String(build,"renderer")=="vulkan") {
+                    string renderer=info.EnvironmentVariables["RECOMP_D3D8_BACKEND"]??"vulkan";
+                    foreach(var pair in GpuEnvironment(root,build,renderer))info.EnvironmentVariables[pair.Key]=(string)pair.Value;
+#if !LINUX
+                    // Keep verified Vulkan loader settings dormant for an in-game restart.
+                    // A broken Vulkan installation must not prevent an explicit GL launch.
+                    try {foreach(var pair in GpuEnvironment(root,build,"vulkan"))
+                        info.EnvironmentVariables["TSFP_RESTART_VULKAN_"+pair.Key]=(string)pair.Value;}
+                    catch(Exception) { }
+#endif
+                }
             }
             string settings=LauncherPlatform.Checkout(root)?"private/native-settings":"Settings";
             info.EnvironmentVariables["XDG_CONFIG_HOME"]=Core.PathIn(root,settings+"/xdg-config");

@@ -1,0 +1,8 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -139,2 +139,5 @@
++extern void sub_00064EA0_gen(void);
++void sub_00064EA0(void)
++{ pc_network_bots_guest_minimum(sub_00064EA0_gen); }
+ extern void sub_000BB6C0_gen(void);
+ void sub_000BB6C0(void)

@@ -121,6 +121,21 @@ def test_validation_warning_is_distinct():
     sdk.require_clean_validation('validation on\n[VKVAL warning] optional capability')
 
 
+def test_explicit_opengl_uses_verified_compiler_path_with_invalid_vulkan_metadata(tmp_path,monkeypatch):
+    manifest={'renderer':'opengl','vulkan_driver':'unavailable'}
+    before=dict(manifest)
+    monkeypatch.setattr(sdk,'verify_install',lambda root:root/'sdk')
+    assert sdk.launch_environment(tmp_path,manifest)=={'DYLD_LIBRARY_PATH':str(tmp_path/'sdk/lib')}
+    assert manifest==before and not list(tmp_path.iterdir())
+
+
+def test_opengl_still_requires_verified_compiler_install(tmp_path,monkeypatch):
+    def missing(root):raise RuntimeError('Compiler installation is not verified')
+    monkeypatch.setattr(sdk,'verify_install',missing)
+    with pytest.raises(RuntimeError,match='Compiler installation'):
+        sdk.launch_environment(tmp_path,{'renderer':'opengl'})
+
+
 @pytest.mark.parametrize('manifest,override,expected', [
     ({},None,'kosmickrisp'),  # old binaries keep their original driver
     ({'vulkan_driver':'moltenvk'},None,'moltenvk'),
@@ -141,3 +156,12 @@ def test_invalid_manifest_driver_rejected_before_sdk_access(tmp_path,monkeypatch
     monkeypatch.setattr(sdk,'verify_install',unexpected)
     with pytest.raises(ValueError,match='Unknown pinned Vulkan driver'):
         sdk.launch_environment(tmp_path,{'vulkan_driver':invalid})
+
+
+def test_opengl_restart_metadata_does_not_activate_vulkan(tmp_path,monkeypatch):
+    monkeypatch.setattr(sdk,'verify_install',lambda root:root/'sdk')
+    env=sdk.launch_environment(tmp_path,{'renderer':'opengl','vulkan_driver':'moltenvk'})
+    assert not any(key.startswith(('VK_', 'SDL_VULKAN')) for key in env)
+    assert env['TSFP_RESTART_VULKAN_SDL_VULKAN_LIBRARY']==str(tmp_path/'sdk/lib/libvulkan.1.dylib')
+    assert env['TSFP_RESTART_VULKAN_VK_DRIVER_FILES']==str(tmp_path/'sdk/share/vulkan/icd.d/MoltenVK_icd.json')
+    assert not list(tmp_path.iterdir())

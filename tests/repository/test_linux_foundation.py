@@ -159,3 +159,119 @@ def test_sdk_versions_match_and_linux_archive_has_integrity_pin():
     assert spec['platform'] == 'Linux-x86_64'
     assert len(spec['sha256']) == 64 and spec['bytes'] > 0
     assert spec['url'].startswith('https://sdk.lunarg.com/')
+
+
+def linux_renderer_runner():
+    spec = importlib.util.spec_from_file_location(
+        'linux_rhi_gl_runner', ROOT / 'tools/testing/test-rhi-linux.py')
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    return runner
+
+
+def test_gl_driver_environment_is_child_only_and_clears_stale_controls():
+    runner = linux_renderer_runner()
+    parent = dict(GALLIUM_DRIVER='wrong', LIBGL_ALWAYS_SOFTWARE='1',
+                  MESA_LOADER_DRIVER_OVERRIDE='wrong', TSFP_TEST_GL41_VIEWS='1',
+                  MESA_D3D12_DEFAULT_ADAPTER_NAME='wrong', DISPLAY=':9',
+                  LD_LIBRARY_PATH='/pinned-sdk/lib', RECOMP_SAVE_DIR='/isolated/saves')
+    original = parent.copy()
+    env = runner.configure_gl_environment(parent, 'd3d12', 'NVIDIA')
+    assert parent == original
+    assert env['GALLIUM_DRIVER'] == 'd3d12'
+    assert env['MESA_D3D12_DEFAULT_ADAPTER_NAME'] == 'NVIDIA'
+    assert env['LD_LIBRARY_PATH'] == '/usr/lib/wsl/lib:/pinned-sdk/lib'
+    assert env['RECOMP_SAVE_DIR'] == '/isolated/saves' and env['DISPLAY'] == ':9'
+    assert 'LIBGL_ALWAYS_SOFTWARE' not in env
+    assert 'TSFP_TEST_GL41_VIEWS' not in env
+    env = runner.configure_gl_environment(parent, 'software', restricted=True)
+    assert env['GALLIUM_DRIVER'] == 'llvmpipe'
+    assert env['TSFP_TEST_GL41_VIEWS'] == '1'
+    assert 'MESA_D3D12_DEFAULT_ADAPTER_NAME' not in env
+    env = runner.configure_gl_environment(parent, 'system')
+    assert 'GALLIUM_DRIVER' not in env and 'MESA_LOADER_DRIVER_OVERRIDE' not in env
+
+
+def test_gl_receipt_requires_pixels_dispatch_cleanup_and_observed_driver():
+    runner = linux_renderer_runner()
+    markers = ['BACKEND: opengl', 'PASS: OpenGL typed null textures',
+        'PASS: shared mirror-once sampling beyond both texture edges',
+        'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
+        'PASS: packed BGRA vertex colors preserve shader channel ordering',
+               'PASS: OpenGL native main-thread dispatch',
+        'PASS: native GL owner dispatch progress observed',
+               'PASS: OpenGL worker/context recreation and repeated cleanup',
+               'D3D12 (NVIDIA)', 'PASS: OpenGL4.1 subset/']
+    output = '\n'.join(markers)
+    runner.require_gl_contract(output, 'd3d12', True)
+    for marker in markers:
+        with pytest.raises(RuntimeError):
+            runner.require_gl_contract(output.replace(marker, ''), 'd3d12', True)
+    with pytest.raises(RuntimeError):
+        runner.require_gl_contract(output + '\n[RHI] ERROR invalid resource', 'd3d12')
+    with pytest.raises(RuntimeError):
+        runner.require_gl_contract(output, 'software')
+    runner.require_gl_contract(output.replace('D3D12 (NVIDIA)', 'llvmpipe'), 'software')
+
+
+def test_native_recovery_faults_are_isolated_from_driver_and_settings(tmp_path):
+    runner = linux_renderer_runner()
+    parent = dict(VK_DRIVER_FILES='/installed/driver.json', VK_ICD_FILENAMES='/installed/driver.json',
+                  RECOMP_SAVE_DIR='/isolated/saves', RECOMP_DISPLAY_CONFIG='/isolated/runtime.ini',
+                  LD_LIBRARY_PATH='/pinned-sdk/lib', RECOMP_VK_VALIDATION='1')
+    original = parent.copy()
+    cases = dict(runner.recovery_cases(parent, tmp_path))
+    assert parent == original and len(cases) == 8
+    assert cases['vulkan-success']['VK_DRIVER_FILES'] == '/installed/driver.json'
+    assert cases['no-driver']['VK_DRIVER_FILES'] == str(tmp_path/'runtime/missing-driver.json')
+    assert cases['no-device']['VK_LOADER_VENDOR_ID_FILTER'] == '0xffff'
+    assert cases['both-fail']['LD_LIBRARY_PATH'].startswith(str(tmp_path/'dxc-unavailable') + ':')
+    assert cases['partial-fail']['TSFP_TEST_EMPTY_DRAWABLE'] == '1'
+    for mode, env in cases.items():
+        assert env['RECOMP_SAVE_DIR'] == parent['RECOMP_SAVE_DIR']
+        assert env['RECOMP_DISPLAY_CONFIG'] == parent['RECOMP_DISPLAY_CONFIG']
+        assert env['RECOMP_D3D8_BACKEND'] == 'vulkan'
+        assert ('TSFP_TEST_EXPECT_STARTUP_FAILURE' in env) == (mode in ('both-fail', 'partial-fail', 'no-core', 'no-s3tc', 'no-mirror-once'))
+    for mode,capability in [('no-core','core'),('no-s3tc','s3tc'),('no-mirror-once','mirror-once')]:
+        assert cases[mode]['TSFP_TEST_GL_MISSING_CAPABILITY'] == capability
+        assert cases[mode]['VK_DRIVER_FILES'] == str(tmp_path/'runtime/missing-driver.json')
+
+
+def test_native_recovery_receipt_rejects_failed_window_cleanup_or_continued_render(monkeypatch):
+    runner = linux_renderer_runner()
+    positive = '\n'.join(('BACKEND: opengl', 'PASS: OpenGL typed null textures',
+        'PASS: shared mirror-once sampling beyond both texture edges',
+        'PASS: shared BC1/BC2/BC3 sampled colors and alpha',
+        'PASS: packed BGRA vertex colors preserve shader channel ordering',
+        'PASS: OpenGL native main-thread dispatch',
+        'PASS: native GL owner dispatch progress observed',
+        'PASS: OpenGL worker/context recreation and repeated cleanup',
+        'D3D12 (NVIDIA)', 'startup recovery selected opengl',
+        'PASS: native automatic drawable replacement', 'PASS: shared RHI'))
+    runner.require_recovery_case('no-driver', positive, 'd3d12')
+    with pytest.raises(RuntimeError):
+        runner.require_recovery_case('no-device', positive.replace('PASS: native automatic drawable replacement', ''), 'd3d12')
+    failure = ('PASS: native startup failed with no renderer ready and repeated cleanup\n'
+               'Vulkan and OpenGL initialization failed\n'
+               'shared DXC shader compiler is unavailable')
+    runner.require_recovery_case('both-fail', failure, 'd3d12')
+    for extra in ('[PRESENT]', 'PASS: shared RHI', 'startup recovery selected opengl'):
+        with pytest.raises(RuntimeError):
+            runner.require_recovery_case('both-fail', failure + extra, 'd3d12')
+    with pytest.raises(RuntimeError):
+        runner.require_recovery_case('both-fail', failure.replace('shared DXC shader compiler is unavailable', ''), 'd3d12')
+    with pytest.raises(RuntimeError):
+        runner.require_recovery_case('partial-fail', failure, 'd3d12')
+    runner.require_recovery_case('partial-fail', failure + '\ndrawable target initialization failed\nlogical window retained', 'd3d12')
+    for mode,reason in [('no-core','OpenGL4.1 core'),('no-s3tc','BC1/BC2/BC3 S3TC'),('no-mirror-once','mirror-once sampler')]:
+        capability=failure+'\nrequired capability unavailable: '+reason
+        with pytest.raises(RuntimeError):
+            runner.require_recovery_case(mode, capability, 'd3d12')
+        runner.require_recovery_case(mode, capability+'\nPASS: OpenGL capability rejection cleanup and context recreation', 'd3d12')
+    validated = []
+    monkeypatch.setattr(runner, 'require_clean_validation', lambda output: validated.append(output))
+    primary = 'BACKEND: vulkan\nPASS: shared RHI'
+    runner.require_recovery_case('vulkan-success', primary, 'd3d12')
+    assert validated == [primary]
+    with pytest.raises(RuntimeError):
+        runner.require_recovery_case('vulkan-success', primary + '\nstartup recovery selected opengl', 'd3d12')

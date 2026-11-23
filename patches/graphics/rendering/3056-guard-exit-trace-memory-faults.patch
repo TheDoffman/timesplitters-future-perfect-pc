@@ -1,0 +1,41 @@
+--- a/src/kernel/exit_trace.c
++++ b/src/kernel/exit_trace.c
+@@ -69,7 +69,7 @@
+     }
+ }
+ 
+-static void report(const char *what, unsigned code)
++static void report_unchecked(const char *what, unsigned code)
+ {
+     void *frames[48];
+     USHORT n, i;
+@@ -131,6 +131,29 @@
+     }
+     fflush(stderr);
+     InterlockedExchange(&g_reporting, 0);
++}
++
++/* Tracing must never replace the requested exit with a diagnostic fault.
++ * CRT/driver teardown can leave stack/symbol data unavailable. Keep the guard
++ * around reporting only: exceptions in the game or real exit still propagate. */
++static void report(const char *what, unsigned code)
++{
++    /* ExitProcess is reached after CRT atexit callbacks and driver teardown.
++     * A successful exit needs only its status, not an unwind through modules
++     * whose shutdown has already started. Keep failure diagnostics below. */
++    if (code == 0) {
++        fprintf(stderr, "[EXIT] %s(0x00000000): normal exit; stack tracing skipped after teardown\n", what);
++        fflush(stderr);
++        return;
++    }
++    __try {
++        report_unchecked(what, code);
++    } __except(GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
++               EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
++        InterlockedExchange(&g_reporting, 0);
++        fprintf(stderr, "[EXIT] trace unavailable (access violation); preserving requested exit\n");
++        fflush(stderr);
++    }
+ }
+ 
+ static VOID WINAPI hook_ExitProcess(UINT code)

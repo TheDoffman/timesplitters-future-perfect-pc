@@ -18,6 +18,7 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
+import spirv_cross
 from bundle_online import COMPANION, repo_file
 import linux_vulkan_sdk
 import linux_ffmpeg
@@ -214,6 +215,7 @@ def main():
         if source.is_symlink():raise ValueError('Linked launcher member')
         if source.is_file():copy(source,stage,source.relative_to(args.launcher))
     copy(ROOT/'config/pc-controls.default.json',stage,'Settings/pc-controls.json')
+    gl_compiler = spirv_cross.verify(ROOT)
     copy(ROOT/'LICENSE',stage,'Licenses/Project.txt')
     for file in COMPANION:copy(repo_file(ROOT,'tools',file),stage,'Support/Online/'+file)
     copy(ROOT/'build/online-icon/multiplayer.png',stage,'Support/Online/multiplayer.png')
@@ -265,6 +267,9 @@ def main():
     for source in (upstream/'third_party/Vulkan-Headers/LICENSES').iterdir():
         if source.is_file():copy(source,stage,'Licenses/Vulkan-Headers-'+source.name)
     if (ROOT/'vendor/smaa/LICENSE.txt').is_file():copy(ROOT/'vendor/smaa/LICENSE.txt',stage,'Licenses/SMAA.txt')
+    copy(gl_compiler/'LICENSE',stage,'Licenses/SPIRV-Cross-OpenGL.txt')
+    copy(ROOT/'config/build/spirv-cross.json',stage,'Support/Graphics/spirv-cross-pin.json')
+    copy(gl_compiler/'receipt.json',stage,'Support/Graphics/spirv-cross-receipt.json')
     copy(ROOT/'assets/ui/input-icons/ATTRIBUTION.md',stage,'Licenses/Keyboard-mouse-icons.txt')
     for origin,name in [('assets/ui/fonts/Selawik-OFL.txt','Selawik-OFL.txt'),('assets/ui/fonts/Cousine-OFL.txt','Cousine-OFL.txt'),('vendor/stb/LICENSE','stb.txt')]:
         copy(ROOT/origin,stage,'Licenses/'+name)
@@ -289,6 +294,7 @@ def main():
     (stage/'README.txt').write_text('Linux x64 experimental support. Extract into a writable folder and run ./Launch.sh.\nImport your supported US Xbox files using the launcher. Game data is not included.\nRequires a Vulkan-capable system driver, system Wayland client/cursor/EGL runtimes (also on X11), and the build host glibc baseline (Ubuntu24.04).\nNo development checkout, system Python or Vulkan SDK is needed.\nFor a read-only game installation use ./Launch.sh --game --data /path/to/game.\nSource, runtime notices and exact build provenance are included. Native desktop and Steam Deck acceptance remain pending.\n')
     public_native={k:v for k,v in native.items() if k not in ('game_directory','configure_command','runtime_libraries','working_tree_changes')}
     manifest=dict(display_settings_version=native.get('display_settings_version',3),version=args.version,platform='linux-x64',renderer='vulkan',release_channel=release,source_commit=native['source_revision'],packaging_commit=run('git','rev-parse','HEAD'),
+        supported_renderers=native.get('supported_renderers',['vulkan']),
         launcher_version=launcher_manifest['version'],textures=optional_identity(ROOT) or dict(delivery='optional'),
         minimum_glibc=run('getconf','GNU_LIBC_VERSION').split()[-1],native_build=public_native,python=python,
         runtime_libraries=audit['components'],media=media_receipt['pin'],files={p.relative_to(stage).as_posix():digest(p) for p in stage.rglob('*') if p.is_file()})

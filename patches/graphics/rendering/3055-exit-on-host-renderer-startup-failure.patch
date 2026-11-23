@@ -1,0 +1,18 @@
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -713,6 +713,15 @@
+ #ifdef _WIN32
+         PostMessageA(hwnd, SHADOW_WM_DESTROY, 0, 0);
+ #endif
++#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
++        /* The console guest cannot recover a failed host renderer. Returning
++         * would let it run blind indefinitely, with no useful retry path. The
++         * RHI has already cleaned both failed startup attempts and logged why.
++         * Keep the historical legacy-Mac path separate. */
++        fprintf(stderr, "[HLE-D3D8] ERROR: host renderer initialization failed; exiting with status 2\n");
++        fflush(stderr);
++        exit(2);
++#endif
+         return;
+     }
+     /* Never wait for vertical blank here. The title paces its loader on the

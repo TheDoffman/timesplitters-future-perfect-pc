@@ -550,6 +550,9 @@ static void pc_network_bots_guest_frame(void (*original)(void))
     }
 #endif
     pc_network_bots_guest_frame_body(original);
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    pc_network_doors_frame();
+#endif
 #ifdef TSFP_ARCADE_MIGRATION
     pc_arcade_migration_frame(1);
 #endif

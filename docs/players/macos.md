@@ -94,6 +94,14 @@ it does not silently change renderer or overwrite an unknown installation.
 Existing binaries keep their renderer until rebuilt. Both launchers use the
 resolved renderer in `BUILD.json` and preserve personal settings.
 
+The next launcher offers **Settings > Graphics > Advanced > Renderer** with
+**Vulkan (Default)** and **OpenGL**. Save before launching; your choice is
+remembered. The installed game must advertise support for the selected renderer.
+Legacy Mac builds retain their existing OpenGL compatibility path. Native Mac
+acceptance for the new shared OpenGL renderer is pending; automatic recovery is
+disabled. Apple has deprecated OpenGL, so this is a compatibility option rather
+than a guarantee of support on future macOS versions.
+
 ```sh
 # First native setup and generation; reuses the existing private/game.
 python3 tools/build/build-native-mac.py --setup --generate --test

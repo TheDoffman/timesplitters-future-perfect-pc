@@ -1,15 +1,15 @@
 [Bob](weapon-bob.md), [Exit](pause-settings.md), [Turn](controls-options.md).
-[V-Sync](video-options.md); [229](gladiator-selection.md).
+[V-Sync](video-options.md); [229](gladiator-selection.md). [Doors](network-doors.md).
 
-[Wide HUD](ultrawide-player-markers.md).
+[GL/menu](opengl-recovery.md).
 [Pad](controller-deadzones.md), [Rollback](control-presets.md), [UI](main-menu-update.md).
 [Actors](network-actor-lifetime.md).
 [Tex](texture-preference.md); [arms](video-options.md).
 
-[Uplink](native-uplink.md#throw-impulse); [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
+[Uplink](native-uplink.md#throw-impulse); [IDs](online-player-identities.md). [Solo](native-multiplayer-menu.md#one-player-arcade-lobbies).
 [Network startup](network-performance.md): one-time config read, atomic dispatch;
-LAN enables explicitly, Online publishes connect/disconnect. No stale re-import.
-Shared Windows/Mac/Linux; fixture: `tests/network/network_eligibility.c`.
+LAN/Online enable dispatch explicitly; stale config is not re-imported.
+Shared; test: `tests/network/network_eligibility.c`.
 [Sun/visibility](fidelity-comparison.md): optional preset removed; normal settings restored.
 
 [Tools/Video](developer-tools-integration.md#settings).

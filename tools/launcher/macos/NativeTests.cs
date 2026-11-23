@@ -203,12 +203,11 @@ namespace TimeSplitters.Launcher
                 // An incomplete equal-version launcher must be replaced by the
                 // bundled app, reproducing the game-update replacement boundary.
                 File.AppendAllText(Core.PathIn(install,Core.AppPath),"old installed fixture");
-                string gameHelper=Core.PathIn(install,".launcher/mac-update-helper");
-                LauncherPlatform.CopyFile(Core.PathIn(install,Core.LauncherName),gameHelper);
-                File.SetUnixFileMode(gameHelper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
+                string gameHelperFolder;
                 using(var parent=Process.Start(new ProcessStartInfo("/bin/sleep","2"){UseShellExecute=false})){
-                    var start=new ProcessStartInfo(gameHelper){UseShellExecute=false};
-                    foreach(var arg in new[]{"--test-game-helper",install,parent.Id.ToString()})start.ArgumentList.Add(arg);
+                    var start=NativeStartup.PrepareGameHelper(install,parent.Id,probe:true);gameHelperFolder=Path.GetDirectoryName(start.FileName);
+                    foreach(string library in Directory.GetFiles(Path.GetDirectoryName(Environment.ProcessPath),"*.dylib"))
+                        Need(Core.Hash(library)==Core.Hash(Path.Combine(gameHelperFolder,Path.GetFileName(library))),"Copied helper UI library changed");
                     using(var child=Process.Start(start)){
                         Thread.Sleep(250);
                         Need(!parent.HasExited&&Core.InstalledVersion(install)=="v1.0.0","Game update did not wait for the old process");
@@ -216,6 +215,8 @@ namespace TimeSplitters.Launcher
                         Need(child.ExitCode==0,"Game-update helper failed");
                     }
                 }
+                Need(!Directory.Exists(gameHelperFolder),"Completed helper UI resources were retained");
+                Need(File.Exists(Core.PathIn(install,"update-installing-preview.png")),"Mac updater window did not render installation progress");
                 Need(Core.InstalledVersion(install)=="v1.1.0"&&SelfUpdate.Complete(install)&&BundleSignatureValid(install),"Game update did not replace the bundled launcher");
                 Need(File.Exists(Core.PathIn(install,"game-update-preview.png")),"Game update did not reopen the installed app");
                 Need(!Directory.Exists(Core.PathIn(install,".launcher/pending")),"Game update retained completed staging");

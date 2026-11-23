@@ -14,6 +14,7 @@ static uint32_t graphics_choice(int slot,const char *label,const char *const *ch
 }
 static void graphics_restart_labels(void)
 {
+    text_at(RENDERER_TEXT_BASE,"Renderer%s",staged_renderer!=running_renderer?" (Requires restart)":"");
     text_at(32,"MSAA%s",staged_msaa!=running_msaa?" (Requires restart)":"");
     text_at(37,"Supersampling%s",staged_supersampling!=running_supersampling?" (Requires restart)":"");
 }

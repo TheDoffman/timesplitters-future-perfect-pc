@@ -35,6 +35,7 @@ static int local_session_created,local_session_registered;
 static const unsigned char compatibility[32] = TSFP_NETWORK_COMPATIBILITY;
 static unsigned rejected;
 static void bot_reset(void);
+static void door_reset(void);
 #ifdef TSFP_ARCADE_MIGRATION
 static void arcade_reset(void);
 #endif
@@ -190,7 +191,7 @@ static void shutdown_locked(void)
 #ifdef TSFP_ARCADE_MIGRATION
     arcade_reset();
 #endif
-    bot_reset();developer_reset();
+    bot_reset();door_reset();developer_reset();
     memset(local_session_id,0,sizeof local_session_id);
     local_session_created=local_session_registered=0;
     memset(latency_peers,0,sizeof latency_peers);
@@ -482,6 +483,7 @@ int pc_network_bots_receive(unsigned slot,PcNetworkBotState *state)
     net_unlock(&network_lock);
     return fresh;
 }
+#include "pc_network_doors_transport.inc"
 int pc_network_sync_snapshot(int32_t values[PC_NETWORK_SYNC_FIELDS])
 {
     net_read_lock(&network_lock);
@@ -528,7 +530,7 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
             }
             if(ntohs(destination)!=s->port) continue;
             memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
-            if(developer_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER) || bot_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER)) continue;
+            if(developer_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER) || bot_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER) || door_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER)) continue;
             if(n-BRIDGE_HEADER>capacity) return (int)failure(WSAEMSGSIZE);
             memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
             sync_stats.packets++;
@@ -540,7 +542,7 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
             if(!rejected++) fprintf(stderr,"[PC-NET] Dropped incompatible/unframed peer traffic\n");
             continue;
         }
-        if(developer_control(&address,packet+HEADER,n-HEADER) || bot_control(&address,packet+HEADER,n-HEADER)) continue;
+        if(developer_control(&address,packet+HEADER,n-HEADER) || bot_control(&address,packet+HEADER,n-HEADER) || door_control(&address,packet+HEADER,n-HEADER)) continue;
         if(n-HEADER>capacity) return (int)failure(WSAEMSGSIZE);
         latency_probe(s,&address);
         if(received_logs++<12) fprintf(stderr,"[PC-NET] Receive %u <- %08x:%u, %d bytes\n",

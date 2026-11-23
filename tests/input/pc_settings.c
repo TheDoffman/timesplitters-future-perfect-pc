@@ -124,6 +124,7 @@ int main(int argc,char **argv)
         CHECK(current.keys[14][0]=='J' && current.keys[9][0]==VK_F23 && !current.keys[13][1]);
         CHECK(!current.keys[19][0] && current.keys[19][1]=='K');
         CHECK(pc_settings_menu_visible());
+        CHECK(pc_settings_renderer_read(1)==0);
         PcViewSettings view;pc_settings_view_read(&view);
         CHECK(view.hide_hud&&view.hide_watermark&&view.hide_viewmodel);
         PcDeveloperState restored_view;pc_developer_get(&restored_view);
@@ -141,7 +142,7 @@ int main(int argc,char **argv)
     snprintf(screenshot,sizeof screenshot,"%s\\settings-dialog.bmp",argv[2]);
     original=load(argv[1]); CHECK(original && original[0]=='{');
     f=fopen(path,"wb"); CHECK(f);
-    fputs("{\"developer_view\":{\"future_view_key\":42},\"retained\":{\"text\":\"escaped \\\" brace } [\",\"values\":[1,2]},",f);
+    fputs("{\"launcher\":{\"future_render_key\":42},\"developer_view\":{\"future_view_key\":42},\"retained\":{\"text\":\"escaped \\\" brace } [\",\"values\":[1,2]},",f);
     {
         char *mouse=strstr(original,"\"mouse\"");
         char *brace=mouse?strchr(mouse,'{'):NULL;
@@ -204,6 +205,18 @@ int main(int argc,char **argv)
         pc_settings_view_read(&restored);CHECK(restored.hide_hud);
         view=(PcViewSettings){0};CHECK(pc_settings_view_save(&view,error,sizeof error));
     }
+    CHECK(pc_settings_renderer_read(1)==1 && pc_settings_renderer_read(0)==0);
+    CHECK(pc_settings_renderer_save(1,error,sizeof error));
+    CHECK(pc_settings_renderer_read(0)==1);
+    saved=load(path);CHECK(saved&&strstr(saved,"\"renderer\":\"opengl\"")&&strstr(saved,"retained_mouse")&&strstr(saved,"future_render_key"));free(saved);
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
+    CHECK(!pc_settings_renderer_save(0,error,sizeof error));
+    CHECK(pc_settings_renderer_read(0)==1);
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+    saved=load(path);CHECK(saved&&strstr(saved,"\"renderer\":\"opengl\""));free(saved);
+    CHECK(pc_settings_renderer_save(0,error,sizeof error));
+    CHECK(pc_settings_renderer_read(1)==0);
+    CHECK(!pc_settings_renderer_save(2,error,sizeof error));
     owner=CreateWindowExA(0,"STATIC","PC settings integration test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner);
     CHECK(!pc_settings_menu_visible());

@@ -1,0 +1,9 @@
+{
+  "version": "vulkan-sdk-1.4.363.0",
+  "commit": "f11ba9f0b21ba8fc15153d50a2a1ae31ab1cf8f7",
+  "url": "https://codeload.github.com/KhronosGroup/SPIRV-Cross/tar.gz/f11ba9f0b21ba8fc15153d50a2a1ae31ab1cf8f7",
+  "bytes": 2027619,
+  "sha256": "92b0458889ed77eac9892b3be5a41e3cf716849fd90f39632e159e555abf3d03",
+  "source": "https://github.com/KhronosGroup/SPIRV-Cross/tree/vulkan-sdk-1.4.363.0",
+  "purpose": "Compile shared HLSL-derived SPIR-V to GLSL for OpenGL recovery"
+}

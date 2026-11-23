@@ -1,8 +1,7 @@
-"""Bounded real-game renderer acceptance through the unchanged Windows launcher.
+"""Bounded real-game renderer acceptance through the Windows launcher selector.
 
-Requires the normal native game and launcher builds, and the Test Lab fixture.
-No personal saves, settings or shader caches are used. Capture and measurement
-runs are separate; CPU samples are process CPU time, not GPU/display timing.
+Both Vulkan and OpenGL save the UI choice and invoke the actual LaunchGame path.
+All game data, saves and settings used by this runner are isolated test copies.
 """
 import argparse
 import csv
@@ -16,6 +15,7 @@ import re
 from pathlib import Path
 import shutil
 import statistics
+import struct
 import subprocess
 import sys
 import threading
@@ -59,9 +59,27 @@ def prepare_install(run):
         shutil.copyfile(ROOT / "tests/fixtures/pc-controls.json", controls)
     contained(ROOT, install / "Launch.ps1", "private/test-saves").write_text("# Isolated test marker; launcher starts the native EXE.\n")
     contained(ROOT, install / "BUILD.json", "private/test-saves").write_text(json.dumps(dict(
-        version="v0.8.0-dev", graphics_backends=["d3d11", "vulkan"],
-        graphics_default="vulkan", auto_display_resolution=True, display_settings_version=5)))
+        version="v0.8.0-dev", graphics_backends=["d3d11", "vulkan", "opengl"],
+        graphics_default="vulkan", supported_renderers=['vulkan','opengl'], auto_display_resolution=True, display_settings_version=5)))
     return install
+
+
+def preservation_snapshot(install):
+    # Synthetic installed custom assets, not an installed Enhanced-pack visual test.
+    directory=contained(ROOT,install/'Textures/Custom','private/test-saves')
+    directory.mkdir(parents=True,exist_ok=True)
+    sentinel=contained(ROOT,directory/'0123456789abcdef.dds','private/test-saves')
+    if not sentinel.exists():
+        words=[0]*32
+        for index,value in {0:0x20534444,1:124,2:0x81007,3:1,4:1,5:8,7:1,19:32,20:4,21:0x31545844,27:0x1000}.items():words[index]=value
+        sentinel.write_bytes(struct.pack('<32I',*words)+bytes(8))
+    return {str(p.relative_to(install)):digest(contained(ROOT,p,'private/test-saves'))
+            for p in directory.rglob('*') if p.is_file()}
+
+
+def preserved_files(install, before):
+    return all((p:=contained(ROOT,install/name,'private/test-saves')).is_file() and digest(p)==value
+               for name,value in before.items())
 
 
 def copy_saves(run, install):
@@ -120,14 +138,13 @@ def compile_capture():
 
 def compile_unavailable_dxc():
     from native_compiler import native_compiler
-    folder = ROOT / "build/renderer-validation"
-    folder.mkdir(parents=True, exist_ok=True)
-    compiler, env = native_compiler(folder)
-    output = folder / "unavailable-dxc.dll"
-    subprocess.run([compiler, "/nologo", "/LD",
-                    str(ROOT / "tests/launcher_lifecycle/UnavailableDxc.c"),
-                    "/Fe:" + str(output), "/Fo:" + str(folder / "unavailable-dxc.obj")],
-                   cwd=folder, env=env, check=True, timeout=60)
+    folder=ROOT/'build/renderer-validation'
+    folder.mkdir(parents=True,exist_ok=True)
+    compiler,env=native_compiler(folder)
+    output=folder/'dxc-unavailable.dll'
+    subprocess.run([compiler,'/nologo','/LD',str(ROOT/'tests/launcher_lifecycle/DxcUnavailable.c'),
+                    '/Fo:'+str(folder/'dxc-unavailable.obj'),'/link','/OUT:'+str(output),
+                    '/IMPLIB:'+str(folder/'dxc-unavailable.lib')],env=env,cwd=folder,check=True,timeout=60)
     return output
 
 
@@ -149,17 +166,20 @@ def measurements(samples, expected_scene=2):
 
 
 def effective_settings(text, config):
-    scene = re.search(r"\[GRAPHICS\] Scene (\d+)x(\d+), MSAA (\d+) requested / (\d+) active", text)
+    scenes = [tuple(map(int,row)) for row in re.findall(
+        r"\[GRAPHICS\] Scene (\d+)x(\d+), MSAA (\d+) requested / (\d+) active", text)]
     expected = (config["width"], config["height"], config["msaa"], config["msaa"])
     automatic = config["width"] == config["height"] == 1
-    observed = tuple(map(int, scene.groups())) if scene else None
-    checks = dict(scene_resolution_and_msaa=bool(observed) and
-                  ((observed[0] >= 640 and observed[1] >= 480 and observed[2:] == expected[2:])
-                   if automatic else observed == expected))
+    checks = dict(scene_resolution_and_msaa=bool(scenes) and all(
+        ((row[0]>=640 and row[1]>=480 and row[2:]==expected[2:]) if automatic else row==expected)
+        for row in scenes))
     if config["aa"] == 2:
         checks["smaa_enabled"] = "[SMAA] enabled:" in text and "[SMAA] unavailable" not in text
     else:
         checks["smaa_disabled"] = "[SMAA] enabled:" not in text
+    if config.get("ao",0):
+        checks["ambient_occlusion_applied"] = bool(re.search(
+            r"\[SSAO\] applied: backend=\S+ samples="+str(config["msaa"])+r" world=",text)) and "SSAO setup failed" not in text
     return checks
 
 
@@ -311,6 +331,23 @@ def wait_with_trace(process, destination, seconds):
             output.close()
 
 
+def recovery_checks(text, outcome):
+    checks = dict(
+        vulkan_failure_reason=('DXC is present but would not start' in text if outcome == 'both-fail' else 'vkCreateInstance failed' in text),
+        attempted_once=text.count('[RHI] Vulkan initialization failed; attempting OpenGL startup recovery') == 1,
+        no_d3d11='using d3d11' not in text and '[PRESENT] backend=d3d11' not in text,
+    )
+    if outcome == 'opengl':
+        checks.update(selected_once=text.count('[RHI] startup recovery selected opengl') == 1,
+                      no_terminal_failure='Vulkan and OpenGL initialization failed' not in text)
+    else:
+        checks.update(both_failed='[RHI] ERROR: Vulkan and OpenGL initialization failed; no renderer is ready' in text,
+                      compiler_reason='shared DXC shader compiler is unavailable' in text,
+                      no_present='[PRESENT]' not in text,
+                      not_selected='startup recovery selected' not in text)
+    return checks
+
+
 def run_case(executable, install, run, evidence, backend, phase, args):
     label = backend + "-" + phase
     destination = evidence / label
@@ -319,13 +356,21 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     if result_path.exists():
         raise ValueError("Evidence already exists; choose a fresh --label (no stale pass reuse)")
     copy_saves(run, install)
+    preserved=preservation_snapshot(install)
     config = dict(backend=backend, seconds=args.seconds, capture=args.capture,
                   width=args.width, height=args.height, msaa=args.msaa, aa=args.aa,
-                  anisotropy=args.anisotropy, fullscreen=args.fullscreen)
+                  anisotropy=args.anisotropy, ao=getattr(args,"ao",0), fullscreen=args.fullscreen)
+    recovery = getattr(args, "startup_recovery", None)
+    if recovery:
+        config.update(startup_recovery=recovery, expected_backend='opengl')
+        if recovery == 'both-fail':
+            # Remove only sandbox hardlinks, never source compiler DLLs.
+            for name in ('dxcompiler.dll', 'dxil.dll'):
+                path=contained(ROOT, install / 'Bin' / name, 'private/test-saves')
+                if path.exists():path.unlink()
+            shutil.copyfile(compile_unavailable_dxc(),install/'Bin/dxcompiler.dll')
     config["display_cycle"] = getattr(args, "display_cycle", False)
     config.update(scenario_options(getattr(args, "scenario_file", None), args.seconds))
-    if getattr(args,"unavailable_dxc",False):
-        config["expected_backend"] = "d3d11"
     if args.capture:
         config["capture_helper"] = str(executable.parent / "renderer-window-capture.exe")
     if getattr(args, "capture_times", None):
@@ -339,6 +384,10 @@ def run_case(executable, install, run, evidence, backend, phase, args):
         raise ValueError("Cold case requires a new, empty isolated cache")
     env = {key: value for key, value in os.environ.items() if not key.upper().startswith(("TSFP_", "RECOMP_"))}
     env.update(APPDATA=str(cache), LOCALAPPDATA=str(cache))
+    if recovery:
+        missing=str(destination / 'missing-driver.json')
+        env.update(VK_DRIVER_FILES=missing, VK_ICD_FILENAMES=missing)
+        if recovery == 'both-fail':env['PATH']=str(Path(os.environ['SystemRoot'])/'System32')
     started = time.monotonic()
     process = subprocess.Popen([str(executable), str(install), str(destination), str(config_path)],
                                cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -367,12 +416,17 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     native = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(native)
     text = (destination / (backend + ".err")).read_text(errors="replace")
+    result['installed_custom_assets_preserved']=preserved_files(install,preserved)
+    result['passed']=result['passed'] and result['installed_custom_assets_preserved']
+    if recovery:
+        result['startup_checks']=recovery_checks(text,recovery)
+        if recovery == 'both-fail':
+            result['passed']=result['passed'] and all(result['startup_checks'].values())
+            (destination / 'verified.json').write_text(json.dumps(result,indent=2)+'\n')
+            if not result['passed']:raise ValueError('Both-fail startup acceptance failed')
+            print(label,'PASS bounded both-fail startup, diagnostics and settings preservation',flush=True)
+            return result
     result["renderer_checks"] = native.renderer_checks(text, config.get("expected_backend",backend))
-    if getattr(args,"unavailable_dxc",False):
-        del result["renderer_checks"]["no_fallback"]
-        result["renderer_checks"]["expected_compiler_recovery"] = (
-            "DXC compiler (dxcompiler) was not found" in text and
-            "the vulkan renderer could not start; using d3d11" in text)
     result["present_checks"] = native.native_present_checks(text)
     result["effective_settings_checks"] = effective_settings(text, config)
     if config["display_cycle"]:
@@ -400,7 +454,8 @@ def run_case(executable, install, run, evidence, backend, phase, args):
     result["runner_seconds"] = time.monotonic() - started
     result["passed"] = (result["passed"] and all(result["renderer_checks"].values()) and
                         all(result["present_checks"].values()) and all(result["effective_settings_checks"].values()) and
-                        all(result.get("sustained", {}).get("checks", {}).values()))
+                        all(result.get("sustained", {}).get("checks", {}).values()) and
+                        all(result.get("startup_checks", {}).values()))
     (destination / "verified.json").write_text(json.dumps(result, indent=2) + "\n")
     if not result["passed"]:
         raise ValueError("Backend/presentation acceptance failed")
@@ -412,8 +467,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--label", help="Unique evidence/cache label; letters, numbers and hyphens")
     parser.add_argument("--compile-only", action="store_true", help="CI build check; no game data or GPU required")
-    parser.add_argument("--unavailable-dxc",action="store_true",help="Test-only compiler stub in disposable Bin; require saved Vulkan to recover to D3D11")
-    parser.add_argument("--backend", choices=("vulkan",), default="vulkan")
+    parser.add_argument("--backend", choices=("vulkan", "opengl"), default="vulkan",
+                        help="Vulkan: actual launcher; OpenGL: explicit developer StartInfo probe")
+    parser.add_argument('--startup-recovery',choices=('opengl','both-fail'),
+                        help='Actual Vulkan launcher with child-only missing-driver override; requires a developer accepted trial build')
     parser.add_argument("--warm", action="store_true", help="Repeat each cold case with its populated isolated cache")
     parser.add_argument("--repetitions", type=int, choices=(1, 2, 3), help="Matched runs per backend: cold followed by warm repetitions")
     parser.add_argument("--presentmon", action="store_true", help="Collect PID-filtered ETW display/submission timing with the pinned console")
@@ -429,6 +486,7 @@ def main():
     parser.add_argument("--msaa", type=int, choices=(1, 2, 4, 8), default=1)
     parser.add_argument("--aa", type=int, choices=(0, 1, 2), default=0, help="Off / FXAA / SMAA")
     parser.add_argument("--anisotropy", type=int, choices=(1, 2, 4, 8, 16), default=1)
+    parser.add_argument("--ao",type=int,choices=(0,1),default=0,help="Request and verify world ambient occlusion")
     args = parser.parse_args()
     if os.name != "nt":
         parser.error("Windows hardware runner")
@@ -437,8 +495,8 @@ def main():
         compile_capture()
         compile_unavailable_dxc()
         return 0
-    if args.unavailable_dxc and (args.backend!="vulkan" or args.warm or args.repetitions not in (None,1)):
-        parser.error("--unavailable-dxc requires one Vulkan cold case")
+    if args.startup_recovery and (args.backend != 'vulkan' or args.warm or args.repetitions):
+        parser.error('Recovery tests require a single cold actual Vulkan launcher case')
     if args.warm and args.repetitions:
         parser.error("Choose --warm or --repetitions, not both")
     if args.presentmon:
@@ -467,7 +525,7 @@ def main():
                   launcher_sha256=digest(ROOT / "build/launcher/Bin/TimeSplitters.App.exe"),
                   harness_sha256=digest(ROOT / "tests/launcher_lifecycle/RendererGameSmoke.cs"),
                   runner_sha256=digest(Path(__file__)),
-                  capture_enabled=args.capture, cases={})
+                  startup_recovery=args.startup_recovery, capture_enabled=args.capture, launch_route="launcher", cases={})
     if args.presentmon:
         report["presentmon_sha256"] = digest(pinned_presentmon())
         report["presentmon_version"] = json.loads((ROOT / "config/build/presentmon-windows.json").read_text())["version"]
@@ -485,15 +543,6 @@ def main():
         prepare_run(ROOT, run)
         prepared = True
         install = prepare_install(run)
-        if args.unavailable_dxc:
-            stub=compile_unavailable_dxc()
-            target=contained(ROOT,install / "Bin/dxcompiler.dll","private/test-saves")
-            if not target.exists() or not os.path.samefile(target,ROOT / "build/windows/Release/dxcompiler.dll"):
-                raise ValueError("Compiler test requires the managed sandbox DLL link")
-            target.unlink()  # Unlink only; never write through the build's hard link.
-            link_file(stub,target)
-            report["injected_dxc_sha256"] = digest(stub)
-            report["recovery_scope"] = "Valid test DLL without compiler entry point; original source/build DLLs preserved"
         executable = compile_harness()
         if args.capture:
             helper = compile_capture()
@@ -513,10 +562,6 @@ def main():
             try:
                 if prepared:
                     recycle_disks(ROOT, run)
-                    if args.unavailable_dxc and install is not None:
-                        stop_owned_game(install)
-                        link_file(ROOT / "build/windows/Release/dxcompiler.dll",
-                                  contained(ROOT,install / "Bin/dxcompiler.dll","private/test-saves"))
             except BaseException:
                 report["passed"] = False
                 raise

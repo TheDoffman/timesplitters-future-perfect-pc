@@ -63,6 +63,21 @@ static void pc_network_bots_guest_capacity(void (*original)(void))
 #endif
 }
 
+static void pc_network_bots_guest_minimum(void (*original)(void))
+{
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    const uint32_t caller=BOT_LOBBY_WORD(g_esp);
+    /* The lobby renderer, Start-button updater and Start callback share the
+       stock mode minimum. Leave offline setup and all other callers alone. */
+    const int arcade_minimum=(caller==0x00197371u || caller==0x00199EC2u || caller==0x001CC2DDu) &&
+        pc_network_bots_lobby_network() && !pc_story_network_player_limit();
+#endif
+    original();
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+    if(arcade_minimum)g_eax=1u;
+#endif
+}
+
 static void pc_network_bots_guest_start(void (*original)(void))
 {
 #if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)

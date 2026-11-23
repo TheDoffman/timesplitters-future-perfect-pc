@@ -191,6 +191,7 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
     monkeypatch.setattr(package.subprocess, 'check_output', lambda *args, **kwargs: b'')
     monkeypatch.setattr(package.subprocess, 'run', lambda *args, **kwargs: None)
     monkeypatch.setattr(package.vulkan_sdk, 'verify_install', lambda: sdk)
+    monkeypatch.setattr(package.spirv_cross, 'verify', lambda root: tmp_path/'gl-compiler')
     monkeypatch.setattr(package, 'prepare_licenses', lambda *args: None)
     def libraries(executable, stage, sdk):
         for name in ('libvulkan.1.dylib', 'libMoltenVK.dylib', 'libdxcompiler.dylib'):
@@ -219,5 +220,8 @@ def test_installed_package_keeps_language_capability(tmp_path, monkeypatch, supp
     assert manifest['display_settings_version'] == 5
     assert manifest['native_build'] == native
     assert 'Licenses/SMAA.txt' in manifest['files']
+    assert 'Licenses/SPIRV-Cross-OpenGL.txt' in manifest['files']
+    assert 'Support/Graphics/spirv-cross-pin.json' in manifest['files']
+    assert 'Support/Graphics/spirv-cross-receipt.json' in manifest['files']
     assert 'Licenses/Keyboard-mouse-icons.txt' in manifest['files']
     package.verify_payload(stage, manifest)

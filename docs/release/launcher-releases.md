@@ -1,10 +1,11 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher is **1.7.0**, adding live game logs under Tools & Logs,
-V-Sync and expanded video/developer settings, compact settings cards and background
-texture-update checks. These features justify a minor bump from public1.6.2.
-Publish through the three-host workflow after the version PR reaches main;
-verify all fifteen assets and versionless alias parity before publishing game0.7.0.
+The next Stable launcher is **1.7.1**, using the maintenance version explicitly
+selected by the user on 2026-11-23. It includes Vulkan/OpenGL selection and game
+update progress with reuse of unchanged runtime files. Publish through the
+three-host workflow after the version PR reaches main; verify all fifteen
+assets and versionless alias parity before publishing game **0.7.1**.
+Source preparation does not publish packages or replace native acceptance.
 
 Earlier Stable launcher **1.6.0** included shared
 audio/control settings, independent deadzones and texture/update-notice support.

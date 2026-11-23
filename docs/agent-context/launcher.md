@@ -1,15 +1,55 @@
-Launcher Vulkan default (2026-11-22): SettingsPage no longer creates or saves a
-GraphicsRenderer control. GameSettings ignores retired launcher.renderer values
-(including invalid types), preserving the unknown JSON member on unrelated saves.
-Windows StartInfo scrubs inherited overrides then requests Vulkan unconditionally;
-native hosts retain their verified manifest/driver routing without a Windows
-backend override. Automatic runtime startup recovery remains available.
-The shared UI regression checks removed controls, old-value preservation and
-child environment policy on each host. The Windows settings child checks Vulkan.
-RendererGameSmoke and test-launcher-renderers-windows.py now exercise only the
-Vulkan launcher default (including injected DXC startup recovery). Explicit D3D11
-comparisons remain available through test-rhi-windows.py and direct game runners.
-Historical paired launcher results are retained in windows-renderer-results.md.
+Release preparation (2026-11-23): the user selected game0.7.1 and launcher1.7.1
+for the merged main changes through e29f51d2, rather than the suggested minor
+increments. New renderer choices and update progress require the official
+three-host build/package gates. Published0.7.0/1.7.0 and historical previews
+remain immutable. This source bump is not a new runtime acceptance claim.
+
+Renderer restart metadata and shared preference: [in-game flow](opengl-recovery.md#in-game-renderer-restart).
+
+## Game update progress (issue #558)
+
+Shared update progress/reuse, copied UI dependencies, test routes and native
+acceptance: [details](game-update-progress.md).
+
+Native selector fixtures archive an active/unexpected session record only when
+its referenced processes are demonstrably no longer this owned installation.
+Live/unknown identities are refused; original records are retained in evidence.
+This resets interrupted test fixtures without changing production GameSessions
+recovery. Native parent/child identity tracking remains mandatory for Story reads.
+
+Native selector integration probe: test-linux-launcher-renderers.py stages an owned
+minimal installation under private/test-saves/native-linux/launcher-session. The
+opt-in NativeEndToEnd renderer plan opens the actual Settings page, switches from
+the opposite saved choice, saves, and passes StartInfo's selected backend intact
+to MonitorGame. Test environment cannot override RECOMP_D3D8_BACKEND. Existing
+Mac lifecycle checks remain strict. Linux selector reports window observation as
+unverified and requires selected-backend presents instead; this is lifecycle/
+routing coverage, not physical visibility or update-recovery approval. Original
+assets are read separately; this fixture is not release package relocation.
+Selector Save uses the actual Avalonia routed click (qualified to avoid the
+window Button helper name). Failure reports retain initial/running/final window
+states and rendering/persistence observations; minimize/restore assertions remain
+strict. Both selector cases run even if one returns a failed contract.
+
+Launcher renderer selector restored in development (2026-11-22): shared
+SettingsPage Graphics > Advanced offers Vulkan (Default) and OpenGL. GameSettings
+loads/saves launcher.renderer and sends the selected RECOMP_D3D8_BACKEND after
+scrubbing inherited overrides on every host. Retired D3D11/malformed values use
+the default. Legacy manifest renderer=gl retains OpenGL as its default. Unknown
+settings remain preserved. Save/Cancel/dirty-state and restart persistence have
+shared UI regressions; the Windows settings child checks both actual environments.
+New build/package supported_renderers receipts advertise compiled choices; old
+receipts allow only their primary backend. Unsupported selection remains saved
+but launch fails clearly with update/selection guidance. Native launch/--check preflight and Configure now follow the selected renderer.
+Mac common OpenGL validates DXC/other shared dylibs and sets its library path
+without Vulkan driver metadata/ICD/loader requirements; full installation Verify
+still checks the primary package. Checkout GL retains pinned SDK integrity checks
+for its shared compiler, but injects no Vulkan overrides. Legacy gl manifests
+keep their existing route. Native Mac execution remains unverified.
+Windows automatic recovery is now accepted; native gates remain0. See
+[selector and acceptance](opengl-recovery.md).
+RendererGameSmoke now selects/saves both choices through the actual UI and
+LaunchGame; game hardware acceptance remains separate from launcher unit checks.
 
 Stable game0.7.0 and launcher1.7.0 were published on2026-11-19 for Windows,
 Apple Silicon Mac and Linux. Game source is b1ca2c16; launcher source is merged

@@ -1,5 +1,11 @@
 # Windows controls and display settings
 
+## Renderer (current development build)
+
+Open **Video Options > Graphics > Advanced > Renderer** from Settings or the pause menu. Choose **Vulkan** or **OpenGL**. Vulkan remains the default.
+
+Choose **Apply** to save, then select **Later** or **Restart Now**, just like MSAA and supersampling. Later keeps the current renderer running. **Requires restart** stays beside Renderer until the selected backend is running. Back without applying discards the edit. The launcher uses the same saved preference.
+
 ## Supersampling (current development build)
 
 Open **Settings / Pause Options → Video Options → Graphics → Supersampling**,
