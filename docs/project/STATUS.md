@@ -1,3 +1,9 @@
+Mac native build and platform/input/renderer checks passed; its settings runner
+still expected the initial backup after a new three-save renderer round trip.
+Updated that test guard to require the immediately preceding OpenGL snapshot,
+unchanged other members, and final Vulkan preference; corruption controls cover
+wrong renderer and changed unrelated data. Production persistence is unchanged.
+
 ## 0.7.1 / 1.7.1 release validation (2026-11-23)
 
 Base main e29f51d2; requested maintenance versions include merged changes through

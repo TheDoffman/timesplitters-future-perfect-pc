@@ -1,5 +1,5 @@
-[GL/menu](opengl-recovery.md). [Updates](game-update-progress.md).
-CI fixtures/dependency ordering: [GL](opengl-recovery.md#publication-ci).
+[GL/menu](opengl-recovery.md). Mac self-test backup is the preceding renderer snapshot.
+[CI](opengl-recovery.md#publication-ci).
 
 [0.7 sync](network-sync-telemetry.md).
 

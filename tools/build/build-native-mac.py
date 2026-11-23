@@ -57,6 +57,21 @@ def run(*args, cwd=ROOT):
     subprocess.run([str(a) for a in args], cwd=cwd, check=True, env=environment)
 
 
+def verify_settings_backup(path, before, check):
+    backup_path = Path(str(path) + '.bak')
+    if check != '--settings-self-test':
+        assert backup_path.read_bytes() == before
+        return
+    # The settings self-test saves bindings, OpenGL, then Vulkan. The backup
+    # must be the immediately preceding OpenGL snapshot, not the initial file.
+    saved = json.loads(path.read_text())
+    backup = json.loads(backup_path.read_text())
+    assert saved['launcher']['renderer'] == 'vulkan'
+    assert backup['launcher']['renderer'] == 'opengl'
+    backup['launcher']['renderer'] = 'vulkan'
+    assert backup == saved
+
+
 def main():
     global UPSTREAM, PYTHON, CMAKE, NINJA, BUILD
     parser = argparse.ArgumentParser(description=__doc__)
@@ -211,7 +226,7 @@ def main():
                     saved = json.loads(control_path.read_text())
                     assert saved['keep_test_member'] == settings['keep_test_member']
                     assert saved['controllers'][1:] == settings['controllers'][1:]
-                    assert Path(str(control_path) + '.bak').read_bytes() == before
+                    verify_settings_backup(control_path, before, check)
         finally:
             print('Test disk cleanup:', recycle_test_disks(runtime_root, BUILD / 'path-tests'))
 
