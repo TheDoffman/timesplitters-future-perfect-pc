@@ -1,3 +1,26 @@
+Mac native build and platform/input/renderer checks passed; its settings runner
+still expected the initial backup after a new three-save renderer round trip.
+Updated that test guard to require the immediately preceding OpenGL snapshot,
+unchanged other members, and final Vulkan preference; corruption controls cover
+wrong renderer and changed unrelated data. Production persistence is unchanged.
+
+## 0.7.1 / 1.7.1 release validation (2026-11-23)
+
+Base main e29f51d2; requested maintenance versions include merged changes through
+PR591. Windows supported build/native checks passed. The isolated 120-second
+Vulkan Story run passed movement, firing, animation and pause/resume checks;
+the actual OpenGL launcher/Story harness passed. Linux release-media build and
+native launcher regressions passed; its isolated 300-second Story run completed.
+These configured-host checks do not establish full campaign, physical controller,
+Steam Deck or native Mac acceptance.
+
+Initial Windows full regression run stopped: inherited empty Git config values
+failed in fixture subprocesses, the C: volume tripped disk guards and two
+compiler fixtures exhausted heap. That run was not accepted as a release pass.
+The Linux package CLI also imported SPIRV-Cross before configuring grouped
+paths; moved that import and added direct CLI regressions for all packagers.
+Repeat full validation and exact packages on the final candidate before release.
+
 ## Publication integration of renderer and launcher updates (2026-11-22)
 
 User requested push to main. Merge07eccd39 retains current maind6f97154's issue558

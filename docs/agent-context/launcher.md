@@ -1,3 +1,9 @@
+Release preparation (2026-11-23): the user selected game0.7.1 and launcher1.7.1
+for the merged main changes through e29f51d2, rather than the suggested minor
+increments. New renderer choices and update progress require the official
+three-host build/package gates. Published0.7.0/1.7.0 and historical previews
+remain immutable. This source bump is not a new runtime acceptance claim.
+
 Renderer restart metadata and shared preference: [in-game flow](opengl-recovery.md#in-game-renderer-restart).
 
 ## Game update progress (issue #558)

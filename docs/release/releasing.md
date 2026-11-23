@@ -1,13 +1,12 @@
 # Game releases: Stable and named previews
 
-The next Stable release is **0.7.0**, bringing native online multiplayer menus,
-V-Sync, crosshair sizing and expanded settings to Windows, Apple Silicon Mac and
-Linux. These features justify a minor bump from Stable0.6.2. Publish independent
-launcher **1.7.0** first through the official three-host workflow, verify its
-fifteen assets, then prepare the game draft with all nine platform assets.
-The earlier integration-only instruction to keep VERSION0.6.2 is superseded by
-the user's new release request (2026-11-19). The accidental0.6.3-sun-fix.1 source
-value was not a Stable publication.
+The next Stable release is **0.7.1**, using the maintenance version explicitly
+selected by the user on 2026-11-23. It includes the merged renderer choices,
+controller Turn Speed extension, solo Arcade starts and gameplay fixes since
+0.7.0. Publish independent launcher **1.7.1** first through the official
+three-host workflow, verify its fifteen assets, then prepare the game draft
+with all nine platform assets. Source preparation is not publication or proof
+of complete platform/gameplay acceptance.
 
 [Discord release notifications](discord-announcements.md): Stable and previews post to release-updates; announcements is for team posts.
 

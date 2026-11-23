@@ -352,3 +352,21 @@ def test_disabling_validation_requires_explicit_profiling(monkeypatch,capsys):
         probe.main()
     assert stopped.value.code==2
     assert 'requires --profile-frames' in capsys.readouterr().err
+
+
+@pytest.mark.parametrize('corruption', [None, 'renderer', 'unknown-member'])
+def test_native_settings_backup_is_previous_renderer_snapshot(tmp_path, corruption):
+    path = tmp_path/'controls.json'
+    saved = {'launcher': {'renderer': 'vulkan'}, 'keep': {'value': 42}}
+    previous = {'launcher': {'renderer': 'opengl'}, 'keep': {'value': 42}}
+    if corruption == 'renderer':
+        previous['launcher']['renderer'] = 'vulkan'
+    if corruption == 'unknown-member':
+        previous['keep']['value'] = 0
+    path.write_text(json.dumps(saved))
+    Path(str(path)+'.bak').write_text(json.dumps(previous))
+    if corruption:
+        with pytest.raises(AssertionError):
+            builder.verify_settings_backup(path, b'initial settings', '--settings-self-test')
+    else:
+        builder.verify_settings_backup(path, b'initial settings', '--settings-self-test')

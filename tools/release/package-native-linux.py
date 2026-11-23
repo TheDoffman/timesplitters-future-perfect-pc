@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Prepare a relocatable Linux x64 package from verified binaries, without game data."""
 import argparse
-import spirv_cross
 import hashlib
 import json
 import os
@@ -19,6 +18,7 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from project_paths import configure
 configure()
+import spirv_cross
 from bundle_online import COMPANION, repo_file
 import linux_vulkan_sdk
 import linux_ffmpeg
