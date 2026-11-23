@@ -1328,6 +1328,35 @@ Windows build,12 rendering/HLE checks,21 context and3 patch-stack checks pass.
 Actual1280x720 Story pause/resume/reopen captures show moving glass with scene.
 Other hosts/split-screen pending; see docs/agent-context/pause-glass.md.
 
+One-player Arcade lobby starts (2026-11-22): source prepared on
+`fix/arcade-solo-lobby`, based on current main `d6f97154` in an isolated source
+worktree, preserving pending host-performance work. Shared lobby minimum query
+wrapper3040 enables one-player starts across Arcade game types in Community,
+Private Server and LAN. Stock renderer/button/Start use the same minimum; empty
+lobbies still fail the original count comparison. Capacity, host/map checks,
+teams, bots, scoring and round-end rules remain intact. No mini service update.
+
+Focused compiled checks12 pass:8 existing networking/fallback/bot checks plus
+4 original-US minimum/button/Start checks, including override-removal controls
+for Windows and native defines. They cover21 game-type IDs, all relevant
+frontend modes,0..3 players, transport/session/Story guards and both original
+map dispatch paths. Ubuntu24.04/WSL also compiles and executes the native
+original-routine fixture successfully; removing the override fails the original
+Start-button assertion there. Full patch application and repeated no-op
+application pass in the isolated runtime;
+patch-tracking checks25 pass and backlog integrity1 passes. A broader75-test
+historical sweep was interrupted after recording48 passes and exposing an old
+Mac input-fixture conflict: its synthetic historical stack must exclude the new
+wrapper, like its existing join/Story wrappers. The fixture now also asserts no
+old copy and exactly one installed copy after the full upgrade. The isolated
+corrected Mac-upgrade check passes1 test; no full75-test pass is claimed.
+Generated production C is not hand edited. Full game regeneration/build,
+in-game acceptance and installation remain pending. Physical Mac clang
+fixture transfer was blocked by ENOSPC before creating its validation folder;
+the mini reported approximately100MiB free on its228GiB data volume. Windows
+native-defined fixtures do not establish native Mac/Linux builds or gameplay.
+See [the shared contract](../agent-context/native-multiplayer-menu.md#one-player-arcade-lobbies).
+
 Control-preset rollback and high-FPS interaction repairs (2026-11-12,
 branch revert/control-presets; original base e7cb1016, reference c511f1e9 before
 PR528): removes Modern presets, profile button/axis seeding and repair,

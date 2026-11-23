@@ -206,6 +206,31 @@ int main(void)
         g_esp=16;pc_network_bots_guest_config(original);
         CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
     }
+    {
+        const uint32_t callers[]={0x197371u,0x199EC2u,0x1CC2DDu,0x2C76E3u,0x2C8336u,0x123456u};
+        for(unsigned c=0;c<sizeof callers/sizeof *callers;c++)
+        for(unsigned mode=0;mode<=14;mode++)
+        for(unsigned connected=0;connected<2;connected++)
+        for(unsigned transport=0;transport<2;transport++) {
+            int before=originals;
+            memory[4]=callers[c];memory[5]=19;memory[0x76b108/4]=connected;
+            memory[0x78ad2c/4]=mode;enabled=(int)transport;g_esp=16;
+            pc_network_bots_guest_minimum(original);
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+            unsigned changed=c<3 && mode>=11 && mode<=13 && connected && transport;
+#else
+            unsigned changed=0;
+#endif
+            CHECK(g_eax==(changed?1u:0x11223344u) && g_esp==20 && originals==before+1);
+            CHECK(memory[5]==19 && memory[0x76b108/4]==connected && memory[0x78ad2c/4]==mode);
+        }
+#if defined(_WIN32) || defined(TSFP_NATIVE_NETWORK)
+        story_player_limit=4;enabled=1;memory[4]=0x199EC2;memory[0x76b108/4]=1;
+        memory[0x78ad2c/4]=13;g_esp=16;pc_network_bots_guest_minimum(original);
+        CHECK(g_eax==0x11223344u && g_esp==20);story_player_limit=0;
+#endif
+        memset(memory,0,sizeof memory);enabled=1;
+    }
 #ifdef _WIN32
     {
         story_prepare_ok=1;

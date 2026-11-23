@@ -272,6 +272,7 @@
     "tests/network/test_online_host.py",
     "tests/network/test_network_identity.py",
     "tests/network/test_network_guest_dispatch.py",
+    "tests/network/test_arcade_solo_lobby.py",
     "tests/network/test_network_bot_results.py",
     "tests/network/test_network_movement_stats.py",
     "tests/network/test_network_motion_stats.py",

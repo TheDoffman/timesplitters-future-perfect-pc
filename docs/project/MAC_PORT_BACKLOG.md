@@ -11206,6 +11206,27 @@ checks pass; Ubuntu/WSL's POSIX persistence/failure fixture passes. These do not
 verify native Mac rendering. Remaining acceptance: native Mac and Linux builds,
 physical On/Off in frontend/pause, resize/fullscreen/context recovery, driver
 behavior, and timed gameplay/loading at each supported FPS target. See STATUS.
+## MAC-013 follow-up: one-player Arcade starts (2026-11-22)
+
+**Awaiting validation** on native Mac. Source prepared on
+`fix/arcade-solo-lobby`, based on main `d6f97154`: shared
+`pc_network_bots_guest_minimum` in `pc_network_bots_lobby.inc` and patch3040
+wrap the original minimum query for network lobby draw/button/Start callers.
+One human may start every Arcade game type without dummy peers or forced bots.
+Existing Story exclusion, capacity, empty-population and original launch checks
+remain. Windows, native Mac and Linux consume the same adapter and patch; no
+new OS adapter is required.
+
+Windows compiled guest tests and original-US Start fixtures pass, including the
+native define and failing override-removal control. Ubuntu24.04/WSL also runs
+the native original-routine fixture and rejects its removed-override control.
+Actual Mac clang validation
+was blocked before transfer by ENOSPC on the mini (about100MiB free). Remaining
+acceptance: regenerate/build on each host, one-player network lobby Start across
+game types with/without bots, normal gameplay/return, and native Mac/Linux play.
+See [STATUS](STATUS.md) and the
+[contract](../agent-context/native-multiplayer-menu.md#one-player-arcade-lobbies).
+
 ## Windows Vulkan build and comparison (2026-11-21)
 
 **Not applicable** for Mac adaptation. Source is on `feature/windows-vulkan`,

@@ -1,5 +1,32 @@
 # Native multiplayer menus
 
+## One-player Arcade lobbies
+
+`3040-arcade-solo-lobby.patch` wraps the stock mode minimum query `64EA0`.
+The shared `pc_network_bots_guest_minimum` adapter in
+`src/network/pc_network_bots_lobby.inc` lowers its result to one only for the
+network lobby renderer (`197371`), Start-button updater (`199EC2`) and Start
+callback (`1CC2DD`). An active transport/session and network frontend mode11..13
+are required. Community, separate Private Server and LAN use the same policy;
+the Story adapter's player limit excludes co-op from this Arcade change.
+
+The original query still executes once, preserving its stack/register contract.
+Other callers retain stock minima, including offline Arcade setup. No dummy
+peers, forced bots, altered human counts or team changes are introduced. Original
+Start logic still rejects an empty population, and existing capacity/map/host
+checks remain. Game-specific scoring and round-end rules are unchanged.
+
+`test_arcade_solo_lobby.py` lifts the actual supported US query, Start-button
+updater and Start callback. It executes all game-type IDs0..20, frontend modes,
+empty/one/two/three-player counts, transport/session guards, Story exclusion and
+both original map dispatch paths under Windows and native adapter defines.
+Removing the minimum override must fail both host fixtures. Existing compiled
+guest-dispatch coverage also checks the caller allowlist, unsupported native
+fallback and retained capacity rejection. A game rebuild/regeneration is needed
+for the new wrapper; there is no mini service/dashboard update.
+The historical Mac upgrade fixture excludes this wrapper from its old input
+stack and checks that the full upgrade installs exactly one copy.
+
 ## Browser Server RTT (2026-11-17)
 
 `online_client.Client.last_rtt_ms` records the latest successful HTTP exchange on
