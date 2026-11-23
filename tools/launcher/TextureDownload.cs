@@ -46,7 +46,7 @@ namespace TimeSplitters.Launcher
             // concurrent first requests can abort the pinned macOS .NET runtime.
             // The texture request itself remains optional and nonblocking.
             await initialCheck.ConfigureAwait(false);
-            _ = StartIfOptedIn();
+            var backgroundTextures = StartIfOptedIn();
         }
         public Task StartIfOptedIn()
         {lock(gate){if(disposed||automaticStarted||!TextureDownload.OptedIn(root))return Task.FromResult(false);automaticStarted=true;return CheckAsync();}}

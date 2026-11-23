@@ -1,5 +1,9 @@
 ## 2026-11-23 - Launcher restart crash
 
+Publication review replaces the discarded task assignment with the existing
+C#5-compatible local-variable form for Windows' Framework compiler. Startup
+ordering is unchanged; required Windows/Mac/Linux CI will validate the pushed head.
+
 Task branch codex/launcher-startup-crash from main000231fb3d7461ded91d78316b7c990871ebda08;
 Local source and build; unpublished. Original checkout pause branch6239ce95,
 its local STATUS edits and untracked files remain untouched. Installed launcher
