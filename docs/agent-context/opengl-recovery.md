@@ -1638,3 +1638,7 @@ settings/custom assets and clean exit. Game hash remains5cd6ba6d... because this
 second integration changes launcher source, not runtime graphics/gameplay.
 The existing Windows1/native0 acceptance decisions remain unchanged. Publication
 is now user-authorized; verify remote main after a non-forced fast-forward push.
+
+## Publication CI
+
+The launcher packaging fixture supplies synthetic DXC and SPIRV-Cross sources, pins and hash receipts to the real verifiers, and checks the compiler attribution/receipts and supported renderer list in the ZIP. Run `python -m pytest tests/launcher/package_launcher.py`. Mac GPU and Linux Vulkan CI install the pinned SPIRV-Cross source before configuring the production frontend, which now includes common OpenGL. Linux owner-wait and SDL guest-dispatch tests run after the RHI runner prepares and patches the runtime and initializes SDL headers; they cannot run in the initial source-only suite.
