@@ -9,6 +9,51 @@ namespace TimeSplitters.Launcher
 {
     public static class LinuxTests
     {
+        sealed class CaptureProgress : IProgress<string> {
+            public readonly List<string> Messages=new List<string>();
+            public Action<string> OnReport;
+            public void Report(string message) {Messages.Add(message);OnReport?.Invoke(message);}
+        }
+        static void UpdateHelper(string parentRoot) {
+            string root=Path.Combine(parentRoot,"update helper Ω");Directory.CreateDirectory(root);
+            LauncherPlatform.CopyFile(Environment.ProcessPath,Core.PathIn(root,Core.LauncherName));
+            string helper=Core.PathIn(root,".launcher/update-helper");Directory.CreateDirectory(Path.GetDirectoryName(helper));
+            LauncherPlatform.CopyFile(Environment.ProcessPath,helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
+            string saves=Core.PathIn(root,"Saves/keep");Directory.CreateDirectory(Path.GetDirectoryName(saves));File.WriteAllText(saves,"personal save");
+            LauncherRestartChecks.Stage(root,"v1.0.0");Core.InstallPending(root);
+            LauncherRestartChecks.Stage(root,"v1.1.0");
+            var start=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};
+            using(var parent=Process.Start(new ProcessStartInfo("/bin/sleep","5"){UseShellExecute=false})) {
+                foreach(var arg in new[]{"--test-game-helper",root,parent.Id.ToString()})start.ArgumentList.Add(arg);
+                using(var child=Process.Start(start)) {
+                    try {
+                        var deadline=Stopwatch.StartNew();string capture=Core.PathIn(root,"update-progress-preview.png");
+                        while(!File.Exists(capture) && !child.HasExited && deadline.ElapsedMilliseconds<4000)System.Threading.Thread.Sleep(50);
+                        Need(File.Exists(capture)&&!child.HasExited&&!parent.HasExited,"Updater did not remain visible while waiting for its parent");
+                        Need(child.WaitForExit(30000)&&child.ExitCode==0,"Visible update helper failed or timed out");
+                    } finally {if(!child.HasExited){child.Kill(true);child.WaitForExit();}}
+                }
+            }
+            Need(Core.InstalledVersion(root)=="v1.1.0" && !Directory.Exists(Core.PathIn(root,".launcher/pending")),"Visible helper did not install and clean up");
+            Need(File.ReadAllText(saves)=="personal save","Visible helper changed saves");
+            Need(File.Exists(Core.PathIn(root,"game-update-preview.png")),"Visible helper did not reopen the launcher");
+            string log=File.ReadAllText(Core.PathIn(root,".launcher/launcher.log"));
+            foreach(string phase in new[]{"Verifying staged files","Backing up saves","Backing up installed files","Installing files","Cleaning up installation files","Reopening the launcher"})Need(log.Contains("Update phase: "+phase),"Visible helper missing phase "+phase);
+            string evidence=Environment.GetEnvironmentVariable("TSFP_TEST_UPDATE_CAPTURE");
+            Need(File.Exists(Core.PathIn(root,"update-installing-preview.png")),"Installer reports did not reach the visible window");
+            if(!String.IsNullOrEmpty(evidence))File.Copy(Core.PathIn(root,"update-installing-preview.png"),evidence,true);
+            LauncherRestartChecks.Stage(root,"v1.2.0");
+            File.AppendAllText(Core.PathIn(root,".launcher/pending/payload/"+LauncherPlatform.GameBinary),"tampered");
+            var rejected=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};
+            foreach(var arg in new[]{"--test-game-helper",root,Int32.MaxValue.ToString()})rejected.ArgumentList.Add(arg);
+            using(var child=Process.Start(rejected)) {
+                try {Need(child.WaitForExit(30000)&&child.ExitCode==1,"Tampered helper update was accepted or hung");}
+                finally {if(!child.HasExited){child.Kill(true);child.WaitForExit();}}
+            }
+            Need(Core.InstalledVersion(root)=="v1.1.0" && File.ReadAllText(saves)=="personal save","Rejected helper update damaged installed files");
+            Need(File.ReadAllText(Core.PathIn(root,".launcher/last-result.txt")).StartsWith("Update failed:"),"Visible helper failure was not retained");
+            Console.WriteLine("PASS visible Linux game updater: parent wait, progress window, full install, cleanup, preservation and rendered launcher restart");
+        }
         static void Need(bool value,string message) { Core.Require(value,message); }
         static void Reject(Action action) { try { action(); } catch(InvalidDataException) { return; } throw new Exception("Expected rejection"); }
         public static int VerifyPackage(string archive,string version)
@@ -55,6 +100,7 @@ namespace TimeSplitters.Launcher
                     Console.WriteLine("PASS destination filesystem space checks, including nested paths and symlinks");
                 } finally {Directory.Delete(linked);}
                 LauncherRestartChecks.Run();
+                UpdateHelper(root);
                 LauncherTextureChecks.Run();
                 Need(LauncherPlatform.AssetSuffix=="linux-x64","Wrong release platform");
                 Directory.CreateDirectory(Path.Combine(root,".launcher"));
@@ -103,7 +149,16 @@ namespace TimeSplitters.Launcher
                     foreach(var pair in payload){var entry=zip.CreateEntry(pair.Key);using(var output=entry.Open())output.Write(pair.Value);using(var sha=System.Security.Cryptography.SHA256.Create())hashes[pair.Key]=Convert.ToHexString(sha.ComputeHash(pair.Value)).ToLowerInvariant();}
                     using(var writer=new StreamWriter(zip.CreateEntry("BUILD.json").Open()))writer.Write(Json.Encode(new{version="v9.0.0",files=hashes}));
                 }
-                var changes=Core.Unpack(archive,stage,"v9.0.0");
+                var extraction=new CaptureProgress();
+                var changes=Core.Unpack(archive,stage,"v9.0.0",default(System.Threading.CancellationToken),extraction);
+                Need(extraction.Messages.First()=="Checking the release archive" && extraction.Messages.Last()=="Extracting and checking files · 100%","Extraction progress did not span preparation");
+                using(var cancel=new System.Threading.CancellationTokenSource()) {
+                    bool cancelled=false;
+                    try { Core.Unpack(archive,stage+"-cancel","v9.0.0",cancel.Token,new CaptureProgress { OnReport=message=>{if(message.StartsWith("Extracting"))cancel.Cancel();} }); }
+                    catch(OperationCanceledException) { cancelled=true; }
+                    Need(cancelled,"Preparation did not honor cancellation");
+                    Need(!File.Exists(Path.Combine(root,"BUILD.json")),"Cancelled extraction changed the installation");
+                }
                 Need(changes.Any(c=>c.Name=="Launch.sh"),"Linux launch script not staged");
                 string personal=File.ReadAllText(Path.Combine(root,"Settings/pc-controls.json"));
                 Core.Apply(root,changes,null);

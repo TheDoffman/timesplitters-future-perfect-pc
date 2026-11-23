@@ -47,25 +47,29 @@ namespace TimeSplitters.Launcher
         {
             StartHelper(root,".launcher/mac-self-helper","--apply-self");
         }
-        public static void HandoffGame(string root,bool rollback=false)
+        public static async Task HandoffGame(string root,bool rollback=false)
         {
             Core.Require(!LauncherPlatform.Checkout(root),"Release updates cannot overwrite a developer checkout.");
             Core.Require(!Core.GameRunning(),"Close the game before changing the installed release.");
-            StartHelper(root,".launcher/mac-update-helper",rollback?"--rollback-game":"--apply-game");
+            ProcessStartInfo info;
+            using(var progress=new UpdateProgress(root)) {
+                progress.Report("Preparing the installer");
+                info=await Task.Run(()=>PrepareHelper(root,".launcher/mac-update-helper",rollback?"--rollback-game":"--apply-game"));
+            }
+            LaunchHelper(info);
         }
-        static void StartHelper(string root,string name,string action)
+        static void StartHelper(string root,string name,string action) { LaunchHelper(PrepareHelper(root,name,action)); }
+        static ProcessStartInfo PrepareHelper(string root,string name,string action)
         {
             string helper=Core.PathIn(root,name);Directory.CreateDirectory(Path.GetDirectoryName(helper));
             LauncherPlatform.CopyFile(Environment.ProcessPath,helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
-            var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add(action);info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());Process.Start(info);
+            var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add(action);info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());return info;
+        }
+        static void LaunchHelper(ProcessStartInfo info) {
+            Process.Start(info);
             HandingOff=true;((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).Shutdown();
         }
-        public static int ApplyGame(string root,int parent,bool rollback,bool probe=false)
-        {
-            try { return UpdateRestart.ApplyGame(root,parent,rollback,()=>Restart(root,probe,"game-update-preview.png")); }
-            catch(Exception e){LauncherLog.Write(root,e.ToString());return 1;}
-        }
-        static void Restart(string root,bool probe,string preview)
+        internal static void Restart(string root,bool probe,string preview)
         {
             if(probe){
                 var app=new ProcessStartInfo(Core.PathIn(root,Core.LauncherName)){UseShellExecute=false,WorkingDirectory=root};

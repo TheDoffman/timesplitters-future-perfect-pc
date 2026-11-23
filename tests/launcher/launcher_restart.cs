@@ -8,6 +8,11 @@ using TimeSplitters.Launcher;
 
 public static class LauncherRestartChecks
 {
+    sealed class Reports : IProgress<string> {
+        public readonly List<string> Messages = new List<string>();
+        public bool Throw;
+        public void Report(string message) { Messages.Add(message);if(Throw)throw new IOException("injected observer failure"); }
+    }
     static void Need(bool condition, string message) { if (!condition) throw new Exception(message); }
     static void Put(string root, string name, byte[] bytes)
     {
@@ -40,12 +45,48 @@ public static class LauncherRestartChecks
         foreach (string path in PersonalFiles)
             Need(File.ReadAllText(Core.PathIn(root, path)) == "personal " + path, "Personal file changed: " + path);
     }
+    static void ReuseChecks(string parent)
+    {
+        string root=Path.Combine(parent,"reuse");Directory.CreateDirectory(root);
+        var same=new Dictionary<string,byte[]> {
+            {"Support/reused.txt",Bytes("unchanged content")},
+            {"Support/repair.txt",Bytes("correct content")},
+            {LauncherPlatform.LaunchScript,Bytes("unchanged launch script")}
+        };
+        Stage(root,"v1.0.0",same);Core.InstallPending(root);
+        string reused=Core.PathIn(root,"Support/reused.txt"),repair=Core.PathIn(root,"Support/repair.txt");
+        var stamp=new DateTime(2001,1,1,0,0,0,DateTimeKind.Utc);File.SetLastWriteTimeUtc(reused,stamp);
+        File.WriteAllText(repair,"damaged installed content");
+#if MACOS || LINUX
+        string script=Core.PathIn(root,LauncherPlatform.LaunchScript);
+        File.SetUnixFileMode(script,UnixFileMode.UserRead|UnixFileMode.UserWrite);
+#endif
+        Stage(root,"v1.1.0",same);var progress=new Reports();Core.InstallPending(root,progress);
+        Need(File.GetLastWriteTimeUtc(reused)==stamp,"Identical file was rewritten");
+        Need(!File.Exists(Core.PathIn(root,".launcher/rollback/files/Support/reused.txt")),"Identical file was unnecessarily backed up");
+        Need(File.ReadAllText(repair)=="correct content","Damaged installed file was reused");
+        Need(File.ReadAllText(Core.PathIn(root,".launcher/rollback/files/Support/repair.txt"))=="damaged installed content","Changed target has no recovery copy");
+        Need(progress.Messages.Any(m=>m.StartsWith("Comparing installed files")),"Reuse comparison has no progress");
+#if MACOS || LINUX
+        Need((File.GetUnixFileMode(script)&UnixFileMode.UserExecute)!=0,"Reused launch script lost executable permissions");
+#endif
+        Core.Rollback(root);
+        Need(Core.InstalledVersion(root)=="v1.0.0" && File.ReadAllText(Core.PathIn(root,LauncherPlatform.GameBinary))=="game v1.0.0","Delta rollback did not restore old game/manifest");
+        Need(File.GetLastWriteTimeUtc(reused)==stamp && File.ReadAllText(reused)=="unchanged content","Delta rollback changed reused files");
+        Need(File.ReadAllText(repair)=="damaged installed content","Delta rollback did not restore the exact previous target bytes");
+        Stage(root,"v1.2.0",same);Put(root,".launcher/pending/payload/Support/reused.txt",Bytes("tampered staged file"));
+        bool rejected=false;try {Core.InstallPending(root);}catch(InvalidDataException){rejected=true;}
+        Need(rejected && Core.InstalledVersion(root)=="v1.0.0","Reuse bypassed staged-file verification");
+        Need(File.ReadAllText(reused)=="unchanged content","Rejected update changed reused data");
+        Console.WriteLine("PASS shared update reuse: identical files retain timestamps, damaged files repair, permissions recover, delta rollback and staged tampering remain verified");
+    }
     public static void Run()
     {
         string root = Path.Combine(AppContext.BaseDirectory, "tsfp restart " + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         try
         {
+            ReuseChecks(root);
             foreach (string path in PersonalFiles) Put(root, path, Bytes("personal " + path));
             Put(root, Core.LauncherName, Bytes("old launcher"));
             Stage(root, "v1.0.0"); Core.InstallPending(root);
@@ -57,22 +98,34 @@ public static class LauncherRestartChecks
                 Need(acquired.Wait(2000), "Restart happened before the installation lock was released");
                 Personal(root); restarts++;
             };
-            int result = UpdateRestart.ApplyGame(root, Int32.MaxValue, false, () => {
+            var reports = new Reports();
+            int result;
+            using(var progress = new UpdateProgress(root,reports))
+            result = UpdateRestart.ApplyGame(root, Int32.MaxValue, false, () => {
                 Need(Core.InstalledVersion(root) == "v1.1.0", "Restart preceded the completed update");
                 Need(File.ReadAllText(Core.PathIn(root, Core.LauncherName)) == "new launcher", "Old launcher reopened");
                 Need(!Directory.Exists(Core.PathIn(root, ".launcher/pending")), "Restart preceded staging cleanup");
+                Need(reports.Messages.Any(m=>m.StartsWith("Cleaning up installation files")),"Restart preceded progress cleanup phase");
                 restarted();
-            });
+            },null,progress);
+            foreach(string phase in new[]{"Waiting for the launcher", "Recovering interrupted work", "Verifying staged files", "Backing up saves", "Backing up installed files", "Installing files", "Cleaning up installation files", "Reopening the launcher"})
+                Need(reports.Messages.Any(m=>m.StartsWith(phase)),"Missing update progress: "+phase);
+            Need(File.ReadAllText(Core.PathIn(root,".launcher/launcher.log")).Contains("Update phase completed:"),"Update timings missing");
             Need(result == 0 && restarts == 1, "Successful update did not restart once");
             Console.WriteLine("PASS shared restart: verified update replaces the launcher before reopening and preserves personal files");
 
-            result = UpdateRestart.ApplyGame(root, Int32.MaxValue, true, restarted);
+            // Broken feedback must never prevent a restore or change its result.
+            reports.Throw=true;
+            result = UpdateRestart.ApplyGame(root, Int32.MaxValue, true, restarted,null,reports);
+            reports.Throw=false;reports.Messages.Clear();
             Need(result == 0 && restarts == 2 && Core.InstalledVersion(root) == "v1.0.0", "Restore did not reopen the previous game");
             Console.WriteLine("PASS shared restart: restore reopens only after the transaction and lock release");
 
             Stage(root, "v1.2.0");
             Put(root, ".launcher/pending/payload/" + LauncherPlatform.GameBinary, Bytes("tampered"));
-            result = UpdateRestart.ApplyGame(root, Int32.MaxValue, false, restarted);
+            result = UpdateRestart.ApplyGame(root, Int32.MaxValue, false, restarted,null,reports);
+            Need(reports.Messages.Any(m=>m.StartsWith("Update failed")),"Rejected update did not report failure progress");
+            Need(!reports.Messages.Any(m=>m.StartsWith("Installing files")),"Tampered update reached installation");
             Need(result == 1 && restarts == 3 && Core.InstalledVersion(root) == "v1.0.0", "Failed update changed the game or failed to reopen");
             Need(File.ReadAllText(Core.PathIn(root, ".launcher/last-result.txt")).StartsWith("Update failed:"), "Failure result missing");
             Need(Directory.Exists(Core.PathIn(root, ".launcher/pending")), "Failure discarded recovery evidence");

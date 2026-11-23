@@ -90,14 +90,33 @@ namespace TimeSplitters.Launcher
         public static void Log(string root, string text)
         { LauncherLog.Write(root, text); }
         static int Helper(string action, string root, int parent)
-        { return RunHelper(action, root, parent, true); }
-        internal static int RunHelper(string action, string root, int parent, bool relaunch)
+        {
+            var app = new Application();
+            var status = new TextBlock { Text = "Waiting for the launcher to close", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0,16,0,16) };
+            var panel = new StackPanel { Margin = new Thickness(28) };
+            panel.Children.Add(new TextBlock { Text = "Installing game update", FontSize = 24 });
+            panel.Children.Add(status);panel.Children.Add(new ProgressBar { IsIndeterminate = true, Height = 8 });
+            panel.Children.Add(new TextBlock { Text = "Keep this window open. The launcher will reopen when installation finishes.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0,16,0,0) });
+            var window = new Window { Title = "TimeSplitters · Updating", Width = 540, Height = 270, Content = panel, ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            bool finished = false, started = false;int result = 1;
+            window.Closing += (s,e) => { if(!finished)e.Cancel=true; };
+            window.ContentRendered += async (s,e) => {
+                if(started)return;started=true;
+                try {
+                    using(var progress=new UpdateProgress(root,new Progress<string>(message=>status.Text=message)))
+                        result=await Task.Run(()=>RunHelper(action,root,parent,true,progress));
+                } catch(Exception ex) { LauncherLog.Write(root,ex.ToString());MessageBox.Show(window,ex.Message,"TimeSplitters — Update failed"); }
+                finally { finished=true;window.Close(); }
+            };
+            app.Run(window);return result;
+        }
+        internal static int RunHelper(string action, string root, int parent, bool relaunch, IProgress<string> progress = null)
         {
             // This executable lives outside the replaceable payload. Parent exits first.
             return UpdateRestart.ApplyGame(root, parent, action == "--rollback",
                 () => { if (relaunch) AntivirusErrors.Start(LauncherPlatform.RestartInfo(root)); },
                 ex => { if (relaunch) MessageBox.Show((AntivirusErrors.Find(ex) == null ? ex.Message : RecoveryInfo.From(ex, false).Message) + "\n\nKeep the .launcher folder for recovery. Details: .launcher\\launcher.log",
-                    "TimeSplitters — Update failed", MessageBoxButton.OK, MessageBoxImage.Error); });
+                    "TimeSplitters — Update failed", MessageBoxButton.OK, MessageBoxImage.Error); }, progress);
         }
     }
 
@@ -864,7 +883,8 @@ namespace TimeSplitters.Launcher
                     Text("ReleaseTitle","Preparing "+release.Tag);
                     Text("ReleaseDescription","Verifying and preparing release files before installation.");
                     SetStatus("Verifying and preparing the release…");
-                    await Task.Run(()=>Core.Unpack(archive,Path.Combine(pending,"payload"),release.Tag,cancel.Token),cancel.Token);
+                    using(var preparation=new UpdateProgress(root,new Progress<string>(message=>{SetStatus(message);Text("TransferDetails",message);})))
+                        await Task.Run(()=>Core.Unpack(archive,Path.Combine(pending,"payload"),release.Tag,cancel.Token,preparation),cancel.Token);
                     cancel.Token.ThrowIfCancellationRequested();
                     GameChannels.Save(root,release.Channel);Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new {version=release.Tag,game_only=specific}));File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/game"));
                     Program.Log(root,"Prepared "+release.Tag+"; handing off to updater.");HandOff(false);

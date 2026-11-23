@@ -1,3 +1,23 @@
+Issue #558 performance follow-up (2026-11-22; local/uncommitted after `1f835403`):
+**Awaiting validation** on native Mac. Core.InstallPending compares actual installed
+bytes with verified staged hashes, retaining equal runtime files and journaling only
+replacements/removals plus BUILD.json. Windows and native Linux reuse/repair/rollback,
+tampered-stage and timestamp tests pass; the existing native Executable adapter restores
+execute bits on reused files. No new OS API or separate Mac implementation is needed.
+Validate real Mac release upgrade/rollback, preserved files, permissions, progress UI
+and storage timing on a Mac. Linux measured releases/caveats are in [STATUS](STATUS.md);
+WSL timings do not establish Mac or Steam Deck performance. Publication pending.
+
+Issue #558 game update progress (2026-11-19; local `investigate/linux-update-558`,
+base `1f835403`): **Awaiting validation** on native Mac. Optional progress in shared
+Core/SaveBackups/UpdateRestart is consumed by WPF and the shared Avalonia host.
+NativeUpdateWindow shows parent wait, verification/backups/install/cleanup/restart;
+NativeStartup prepares the copied helper asynchronously. No separate Mac policy
+or deferred adapter is needed. Linux WSL/Xvfb helper lifecycle and Windows launcher
+checks pass; Mac must verify copied-helper graphics/startup, close protection,
+ordinary and rejected-payload update, rollback and preserved storage routing on a
+Mac. See [STATUS](STATUS.md) for evidence and remaining acceptance limits.
+
 Background texture checks (2026-11-18, source90014bf6): shared TextureUpdateCheck model and SettingsPage handling work through thin WPF/Avalonia Ui.Post adapters. Linux cross-build passes. Native Mac/Linux startup, footer transitions, settings reuse, cancellation and offline visual acceptance remain awaiting validation; no new platform adapter is deferred.
 
 Compact settings follow-up (2026-11-18, source90014bf6): SettingsPage/SettingsTiles provide common compact cards, collapse and width-based layout on WPF and Avalonia. No OS adapter is needed; Linux cross-build passed. Native Mac/Linux window resizing, keyboard traversal, dropdowns and visual review remain awaiting validation. Settings persistence stays shared.

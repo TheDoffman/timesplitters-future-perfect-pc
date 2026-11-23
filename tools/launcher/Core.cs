@@ -164,9 +164,10 @@ namespace TimeSplitters.Launcher
 
         // This only extracts files named and hashed by BUILD.json. User directories
         // are rejected except the initial controls default, which is never replaced.
-        public static List<Change> Unpack(string archive, string destination, string expectedVersion, CancellationToken token = default(CancellationToken))
+        public static List<Change> Unpack(string archive, string destination, string expectedVersion, CancellationToken token = default(CancellationToken), IProgress<string> progress = null)
         {
             token.ThrowIfCancellationRequested();
+            UpdateProgress.Send(progress, "Checking the release archive");
             Require(!Directory.Exists(destination), "An extraction folder already exists.");
             using (var zip = ZipFile.OpenRead(archive))
             {
@@ -225,6 +226,8 @@ namespace TimeSplitters.Launcher
                 CheckSpace(spaceRoot, size * 2 + 128L * 1024 * 1024);
                 Directory.CreateDirectory(destination);
                 var changes = new List<Change>();
+                long extracted = 0, lastPercent = -1;
+                UpdateProgress.Count(progress, "Extracting and checking files", 0, size);
                 foreach (var pair in entries)
                 {
                     token.ThrowIfCancellationRequested();
@@ -233,12 +236,17 @@ namespace TimeSplitters.Launcher
                     AntivirusErrors.At(output, () => {
                         using (var input = pair.Item1.Open()) using (var file = new FileStream(output, FileMode.CreateNew, FileAccess.Write)) {
                             var buffer = new byte[65536]; int read;
-                            while ((read = input.Read(buffer,0,buffer.Length)) > 0) { token.ThrowIfCancellationRequested(); file.Write(buffer,0,read); }
+                            while ((read = input.Read(buffer,0,buffer.Length)) > 0) {
+                                token.ThrowIfCancellationRequested(); file.Write(buffer,0,read); extracted += read;
+                                long percent = size == 0 ? 100 : extracted * 100 / size;
+                                if (percent < 100 && percent != lastPercent) { lastPercent = percent; UpdateProgress.Count(progress, "Extracting and checking files", extracted, size); }
+                            }
                         }
                         if (pair.Item2 != "BUILD.json") Require(Hash(output).Equals(expected[pair.Item2], StringComparison.OrdinalIgnoreCase), "Package file checksum mismatch: " + pair.Item2);
                     });
                     changes.Add(new Change { Name = pair.Item2, Source = output });
                 }
+                UpdateProgress.Count(progress, "Extracting and checking files", size, size);
                 return changes;
             }
         }
@@ -277,8 +285,8 @@ namespace TimeSplitters.Launcher
             RemoveOwned(root, relative);
             return true;
         }
-        public static void Apply(string root, List<Change> changes, Action<int> beforeChange)
-        { ApplyScope(root, changes, beforeChange, false); }
+        public static void Apply(string root, List<Change> changes, Action<int> beforeChange, IProgress<string> progress = null)
+        { ApplyScope(root, changes, beforeChange, false, false, progress); }
         public static void ApplyLauncher(string root, List<Change> changes, Action<int> beforeChange)
         { ApplyScope(root, changes, beforeChange, true); }
         internal static void PromoteTransaction(string root, string relative, string rollback)
@@ -299,11 +307,11 @@ namespace TimeSplitters.Launcher
                 }
             }
         }
-        static void ApplyScope(string root, List<Change> changes, Action<int> beforeChange, bool launcher, bool repair = false)
+        static void ApplyScope(string root, List<Change> changes, Action<int> beforeChange, bool launcher, bool repair = false, IProgress<string> progress = null)
         {
             Require(!GameRunning(), "Close the game before updating or restoring a release.");
             RecoverScope(root, launcher, repair);
-            if(!launcher)SaveBackups.BeforeGameChange(root);
+            if(!launcher) { UpdateProgress.Send(progress, "Backing up saves"); SaveBackups.BeforeGameChange(root, progress); }
             string relative = launcher ? ".launcher/self-transaction" : repair ? ".launcher/repair-transaction" : ".launcher/transaction";
             string rollback = launcher ? ".launcher/self-rollback" : repair ? ".launcher/repair-rollback" : ".launcher/rollback";
             string transaction = PathIn(root, relative);
@@ -312,9 +320,12 @@ namespace TimeSplitters.Launcher
             var unique = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
             {
+                UpdateProgress.Count(progress, "Backing up installed files", 0, changes.Count);
+                int backedUp = 0;
                 // Complete all backups before writing any installed file.
                 foreach (var change in changes)
                 {
+                    UpdateProgress.Count(progress, "Backing up installed files", backedUp++, changes.Count);
                     Require(Mutable(change.Name) && (!launcher || LauncherFile(change.Name)) && unique.Add(change.Name), "Invalid or duplicate installation target.");
                     string target = PathIn(root, change.Name);
                     if (change.Name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) && File.Exists(target)) continue;
@@ -333,16 +344,22 @@ namespace TimeSplitters.Launcher
                     }
                     journal.Add(new Original { Name = change.Name, Existed = exists, RetiredTextureHash = change.RetiredTextureHash });
                 }
+                UpdateProgress.Count(progress, "Backing up installed files", changes.Count, changes.Count);
                 Write(Path.Combine(transaction, "journal.json"), Json.Encode(journal));
+                var byName = changes.ToDictionary(change => change.Name, StringComparer.OrdinalIgnoreCase);
                 int index = 0;
                 foreach (var item in journal)
                 {
-                    if (beforeChange != null) beforeChange(index++);
-                    var change = changes.First(c => c.Name == item.Name);
+                    UpdateProgress.Count(progress, "Installing files", index, journal.Count);
+                    if (beforeChange != null) beforeChange(index);
+                    index++;
+                    var change = byName[item.Name];
                     string target = PathIn(root, item.Name);
                     if (change.Source == null) { if (File.Exists(target)) File.Delete(target); }
                     else { Directory.CreateDirectory(Path.GetDirectoryName(target)); LauncherPlatform.CopyFile(change.Source, target); }
                 }
+                UpdateProgress.Count(progress, "Installing files", journal.Count, journal.Count);
+                UpdateProgress.Send(progress, "Cleaning up previous recovery files");
                 if (!launcher && Directory.Exists(PathIn(root, rollback))) CheckGameCleanupTree(PathIn(root, rollback), false);
                 RemoveOwned(root, rollback);
                 PromoteTransaction(root, relative, rollback);
@@ -351,6 +368,7 @@ namespace TimeSplitters.Launcher
             {
                 try
                 {
+                    UpdateProgress.Send(progress, "Restoring previous files after an installation failure");
                     if (File.Exists(Path.Combine(transaction, "journal.json"))) Restore(root, transaction, launcher);
                     if(repair)CheckGameCleanupTree(transaction,false);
                     RemoveOwned(root, relative);
@@ -545,7 +563,7 @@ namespace TimeSplitters.Launcher
             }
             if (obsolete) RemoveGameCache(root, ".launcher/pending");
         }
-        public static void Rollback(string root)
+        public static void Rollback(string root, IProgress<string> progress = null)
         {
             Require(CanRollback(root), "There is no previous installed release to restore.");
             string folder = PathIn(root, ".launcher/rollback");
@@ -553,7 +571,7 @@ namespace TimeSplitters.Launcher
             var changes = ReadJournal(folder).Where(i => !i.Name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) &&
                 (!independentLauncher || !LauncherFile(i.Name)))
                 .Select(i => new Change { Name = i.Name, Source = i.Existed ? PathIn(folder, "files/" + i.Name) : null }).ToList();
-            Apply(root, changes, null);
+            Apply(root, changes, null, progress);
         }
         internal static void AddRetiredTextures(string root, Dictionary<string, object> metadata, List<Change> changes)
         {
@@ -591,7 +609,7 @@ namespace TimeSplitters.Launcher
                 if (!custom) changes.AddRange(removals);
             }
         }
-        public static void InstallPending(string root)
+        public static void InstallPending(string root, IProgress<string> progress = null)
         {
             string pending = PathIn(root, ".launcher/pending");
             var release = Json.Object(File.ReadAllText(Path.Combine(pending, "release.json")));
@@ -604,6 +622,7 @@ namespace TimeSplitters.Launcher
             Require(Json.String(metadata, "version") == tag, "Staged version mismatch.");
             var hashes = (Dictionary<string, object>)metadata["files"];
             var changes = new List<Change>();
+            UpdateProgress.Send(progress, "Checking the installed launcher");
             string currentLauncher = SelfUpdate.InstalledVersion(root);
             string packagedLauncher = Json.String(metadata, "launcher_version");
             int launcherOrder = currentLauncher.Length > 0 && packagedLauncher.Length > 0
@@ -612,8 +631,10 @@ namespace TimeSplitters.Launcher
             // independent launcher, while allowing a broken equal version to repair.
             bool keepLauncher = repair || Json.Flag(release,"game_only") || (currentLauncher.Length > 0 && (packagedLauncher.Length == 0 ||
                 launcherOrder > 0 || (launcherOrder == 0 && SelfUpdate.Complete(root))));
+            int verified = 0;
             foreach (var pair in hashes)
             {
+                UpdateProgress.Count(progress, "Verifying staged files", verified++, hashes.Count);
                 Require(Allowed(pair.Key), "Protected staged file.");
                 string path = PathIn(payload, pair.Key);
                 Require(Hash(path).Equals(Convert.ToString(pair.Value), StringComparison.OrdinalIgnoreCase), "Staged file changed: " + pair.Key);
@@ -622,10 +643,12 @@ namespace TimeSplitters.Launcher
                         !Hash(PathIn(root,pair.Key)).Equals(Convert.ToString(pair.Value),StringComparison.OrdinalIgnoreCase)))))
                     changes.Add(new Change { Name = pair.Key, Source = path });
             }
+            UpdateProgress.Count(progress, "Verifying staged files", hashes.Count, hashes.Count);
             Require(hashes.ContainsKey(LauncherPlatform.GameBinary) && hashes.ContainsKey(LauncherPlatform.LaunchScript), "Staged runtime is incomplete.");
             // Remove only unchanged files explicitly owned by the old release.
             // These removals share the install journal and therefore roll back
             // normally if installation fails or the user restores the old game.
+            UpdateProgress.Send(progress, "Checking files from the previous release");
             string oldManifest = PathIn(root, "BUILD.json");
             if (!repair && File.Exists(oldManifest))
             {
@@ -644,9 +667,30 @@ namespace TimeSplitters.Launcher
                     }
                 }
             }
+            // Decide from the actual installed bytes, never just the old manifest.
+            // Unchanged files are neither overwritten nor backed up; the journal
+            // still covers every mutation, including the release manifest itself.
+            var changedFiles = new List<Change>();
+            int compared = 0, reused = 0; long reusedBytes = 0;
+            foreach (var change in changes)
+            {
+                UpdateProgress.Count(progress, "Comparing installed files", compared++, changes.Count);
+                string target = PathIn(root, change.Name);
+                if (change.Source != null && !PreserveGameFile(change.Name) && File.Exists(target) &&
+                    Hash(target).Equals(Convert.ToString(hashes[change.Name]), StringComparison.OrdinalIgnoreCase))
+                {
+                    LauncherPlatform.Executable(target);
+                    reused++; reusedBytes += new FileInfo(target).Length;
+                }
+                else changedFiles.Add(change);
+            }
+            UpdateProgress.Count(progress, "Comparing installed files", changes.Count, changes.Count);
+            LauncherLog.Write(root, "Update reused verified installed files: " + reused + " files, " + reusedBytes + " bytes; no backup/replacement needed.");
+            changes = changedFiles;
             AddRetiredTextures(root, metadata, changes);
             changes.Add(new Change { Name = "BUILD.json", Source = PathIn(payload, "BUILD.json") });
-            ApplyScope(root, changes, null, false, repair);
+            ApplyScope(root, changes, null, false, repair, progress);
+            UpdateProgress.Send(progress, "Cleaning up installation files");
             RemoveGameCache(root, ".launcher/pending");
         }
     }

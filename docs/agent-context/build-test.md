@@ -1,3 +1,5 @@
+[Update tests #558](launcher.md#game-update-progress-issue-558).
+
 [Sync telemetry](network-sync-telemetry.md).
 
 [Pads](controller-deadzones.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md).
@@ -1015,9 +1017,8 @@ Stage0235: [original pool imports and native surface retirement](kernel-pool.md)
 
 Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
 
-The0236 upgrade source checker reads UTF-8 explicitly: Windows cp1252 cannot
-decode existing bridge box-drawing comments. CI4cb4697c found this fixture-only
-error; native calendar source and the accepted game binary do not change.
+The0236 fixture reads UTF-8 for bridge box-drawing comments (CI4cb4697c);
+native calendar source and the accepted binary are unchanged.
 
 [Native multiplayer and crossplay validation](multiplayer-ui.md).
 
