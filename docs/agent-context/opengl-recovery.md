@@ -1642,3 +1642,5 @@ is now user-authorized; verify remote main after a non-forced fast-forward push.
 ## Publication CI
 
 The launcher packaging fixture supplies synthetic DXC and SPIRV-Cross sources, pins and hash receipts to the real verifiers, and checks the compiler attribution/receipts and supported renderer list in the ZIP. Run `python -m pytest tests/launcher/package_launcher.py`. Mac GPU and Linux Vulkan CI install the pinned SPIRV-Cross source before configuring the production frontend, which now includes common OpenGL. Linux owner-wait and SDL guest-dispatch tests run after the RHI runner prepares and patches the runtime and initializes SDL headers; they cannot run in the initial source-only suite.
+
+Native runtime matrix jobs also initialize pinned SDL headers before the compiler fixtures. The shared sampler-address fixture uses Vulkan core opaque white for border addressing because custom border colors are optional and unavailable on MoltenVK; GL/D3D11 retain the arbitrary blue-border assertion. No production sampler behavior changes. Failures print address mode, side, pixel and channel.

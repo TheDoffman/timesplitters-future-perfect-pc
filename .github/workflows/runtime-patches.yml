@@ -213,6 +213,9 @@ jobs:
                   if line.startswith(('capstone==', 'Pillow==', 'numpy==', 'cmake==', 'ninja==', 'pefile=='))]
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
+      - name: Initialize pinned SDL headers for native compiler fixtures
+        if: needs.plan.outputs.native == 'true'
+        run: git -C external/ts3FPrecomp submodule update --init --depth 1 third_party/SDL
       - name: Install pinned Online certificate dependencies
         if: needs.plan.outputs.native == 'true'
         run: python -m pip install -r requirements-release.txt

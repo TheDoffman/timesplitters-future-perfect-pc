@@ -115,13 +115,22 @@ static void rhi_sampler_address_test(RhiView *output)
     rhi_set_raster_state(raster);rhi_set_depth_state(depth,0);rhi_set_blend_state(blend,NULL,~0u);
     rhi_set_uniform_buffers(RHI_STAGE_PIXEL,0,1,&query);rhi_set_textures(0,1,&view);
     const unsigned expected[5][2]={{0,0},{1,1},{0,1},{2,2},{1,1}}; /* red, green, blue */
+    /* Custom Vulkan border colors are optional (absent on MoltenVK). Use
+     * core opaque white there; keep the arbitrary blue contract for GL/D3D11. */
+    int core_border=!strcmp(rhi_backend_name(),"vulkan");
     for(unsigned mode=1;mode<=5;mode++) {
         RhiSamplerDesc sd={0};sd.address_u=mode;sd.address_v=sd.address_w=RHI_ADDRESS_CLAMP;sd.compare=RHI_CMP_ALWAYS;sd.max_lod=1000;sd.max_anisotropy=1;sd.border[2]=sd.border[3]=1;
+        if(core_border)sd.border[0]=sd.border[1]=1;
         RhiSampler *sampler=rhi_sampler_create(&sd);CHECK(sampler);rhi_set_samplers(0,1,&sampler);
         for(unsigned side=0;side<2;side++) {
             float q[4]={side?1.25f:-.75f,0,0,0};rhi_buffer_update(query,q);rhi_draw(3,0);
             float pixels[64*64*4];CHECK(!rhi_image_readback(target,0,pixels,64*4*sizeof(float)));
-            for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<4;c++)CHECK(fabsf(pixels[i*4+c]-(float)(c==3 || c==expected[mode-1][side]))<.0001f);
+            for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<4;c++) {
+                float want=(float)(c==3 || (mode==4 && core_border) || c==expected[mode-1][side]);
+                if(fabsf(pixels[i*4+c]-want)>=.0001f)
+                    fprintf(stderr,"Sampler mode %u side %u pixel %u channel %u: %g expected %g\n",mode,side,i,c,pixels[i*4+c],want);
+                CHECK(fabsf(pixels[i*4+c]-want)<.0001f);
+            }
         }
         RhiSampler *none=NULL;rhi_set_samplers(0,1,&none);rhi_sampler_destroy(sampler);
     }
