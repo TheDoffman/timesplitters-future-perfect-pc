@@ -9,7 +9,9 @@ This prevents the next bridge from reusing stale startup2 and omitting discovery
 
 Windows production menu fixtures cover all four paths and removal controls.
 The isolated Windows Release build, identity verification and nine rebuilt
-built-in checks pass; actual native reconnect acceptance remains pending.
+built-in checks pass. Two actual Windows clients passed initial lobby join and
+two leave/host/reconnect role reversals without process restart on Diagnostics.
+This establishes Windows lobby reconnect only, not native Mac acceptance.
 Windows/Mac/Linux already share these menu callbacks and original constructors;
 no new OS adapter or wrapper is needed. Remaining acceptance: native Mac/Linux
 builds and actual failed-join -> join/create, lobby-leave -> join/create and

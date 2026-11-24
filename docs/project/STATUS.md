@@ -36,9 +36,16 @@ Identity seal/content verification and all nine rebuilt built-in checks pass.
 The local development-test update ZIP passes CRC and throwaway-install checks,
 including backup preservation and incompatible-baseline rejection. It includes
 no game data or private server files. Matching updated clients are required.
-Actual native reconnect playtest and installation await permission to close the
-running game. No push, service change or release has been performed; native
-Mac/Linux builds and gameplay acceptance remain pending.
+With user authorization the update was installed, preserving the previous four
+files in a private rollback backup. Two real Windows clients using that installed
+executable passed initial lobby join, then two leave -> host -> peer reconnect
+cycles, reversing host/guest roles in both directions without restarting either
+game. Discovery9999 reopened on the replacement bridge. Disposable saves and the
+Mac mini's separate Diagnostics service were used; owned test clients and that
+service were stopped afterward. This validates lobby reconnect; controlled
+20-second native join-timeout, gameplay migration and remote-device acceptance
+remain separate checks. No push, production service change or release has been
+performed; native Mac/Linux builds and gameplay acceptance remain pending.
 See [backend contract](../agent-context/multiplayer-exit.md#backend).
 
 ## 2026-11-24 - Launcher-only 1.7.2 preparation
