@@ -25,8 +25,20 @@ Production FOV/menu plus online-menu checks61 pass,2 Mac-only compile skips.
 Four return routes
 now check SDK cleanup, backend reset, directory leave and guest stack/state;
 individual route-removal controls also pass their required failing assertions.
-Results are retained in ignored logs/backend-*. No rebuilt game/native
-playtest, installation, push, service change or release has been performed.
+Results are retained in ignored logs/backend-*.
+
+Windows Release built from source cee6a57c using an isolated copy of the sealed
+release cache. All 3058 identity inputs were compared; only the intended menu
+implementation differed. Changed menu and identity consumers were recompiled;
+the original release cache and installed game remain untouched. New compatibility
+is a8028d3287fc7a0d0fe7b8d36e04c9caa1424052fc00667efd9bf0a9a5c562db.
+Identity seal/content verification and all nine rebuilt built-in checks pass.
+The local development-test update ZIP passes CRC and throwaway-install checks,
+including backup preservation and incompatible-baseline rejection. It includes
+no game data or private server files. Matching updated clients are required.
+Actual native reconnect playtest and installation await permission to close the
+running game. No push, service change or release has been performed; native
+Mac/Linux builds and gameplay acceptance remain pending.
 See [backend contract](../agent-context/multiplayer-exit.md#backend).
 
 ## 2026-11-24 - Launcher-only 1.7.2 preparation
