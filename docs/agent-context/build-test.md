@@ -1,6 +1,7 @@
-[Release prose gate](../release/release-notes.md); [GL/menu](opengl-recovery.md).
-Mac self-test backup is the preceding renderer snapshot.
-[CI](opengl-recovery.md#publication-ci).
+[Pacing](../development/renderer-frame-pacing-focused.md).
+[Release notes](../release/release-notes.md).
+Mac backup: prior renderer.
+[GL/CI](opengl-recovery.md#publication-ci).
 
 [0.7 sync](network-sync-telemetry.md).
 
