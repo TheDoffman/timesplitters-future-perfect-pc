@@ -1,5 +1,13 @@
 # Discord game release announcements
 
+For drafted game and launcher team posts, use the approved
+[emoji-free announcement layout](notes/ANNOUNCEMENT-TEMPLATE.md) and
+[writing rules](release-notes.md#approved-release-post-layout). Each topic pairs
+the player's previous problem with the corrected behavior, followed by update
+steps, version-specific links and a compatibility footer. Drafting a post does
+not authorize sending it; the automated game-only feed below keeps its existing
+routing and delivery rules.
+
 `.github/workflows/discord-release.yml` listens for published releases. It uses
 `tools/ci/discord-release.py` and the shared `release_channels.identity` policy:
 

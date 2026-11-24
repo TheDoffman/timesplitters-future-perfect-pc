@@ -1,6 +1,7 @@
 [Pacing](../development/renderer-frame-pacing-focused.md).
-[GL/menu](opengl-recovery.md). Mac self-test backs up the prior renderer.
-[CI](opengl-recovery.md#publication-ci).
+[Release notes](../release/release-notes.md).
+Mac backup: prior renderer.
+[GL/CI](opengl-recovery.md#publication-ci).
 
 [0.7 sync](network-sync-telemetry.md).
 

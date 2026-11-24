@@ -35,6 +35,7 @@ import sys
 import time
 from urllib.parse import urlsplit
 import zipfile
+from release_notes import read_release_notes
 
 ROOT = _layout_root
 TEXTURE_SPEC = importlib.util.spec_from_file_location('publish_textures', ROOT/'tools/textures/build_textures.py')
@@ -467,13 +468,7 @@ class Publisher:
         generated = json.loads(self.gh('api', '--method', 'POST', f'repos/{self.repo}/releases/generate-notes',
                                        '--input', '-', payload=payload)).get('body', '').strip()
         generated = self.game_pr_notes(generated)
-        extra_notes = ''
-        if self.notes_file:
-            if self.notes_file.stat().st_size>64*1024:
-                raise ValueError('Maintainer release notes must be at most 64 KiB.')
-            extra_notes = self.notes_file.read_text(encoding='utf-8').strip()
-            if '<!-- tsfp-release ' in extra_notes:
-                raise ValueError('Maintainer notes must not override channel metadata.')
+        extra_notes = read_release_notes(self.root, 'game', self.tag, self.notes_file)
         baseline = self.previous['tag_name'] if self.previous else 'the beginning of the project'
         channel_metadata = '<!-- tsfp-release '+json.dumps(self.channel, separators=(',', ':'))+' -->'
         stable_note = self.stable_base or 'No published Stable release is an ancestor of this build.'
@@ -495,7 +490,9 @@ This is an experimental PC port. Original US Xbox game files are required and ar
 
 {extra_notes}
 
-## Changes since {baseline}
+## Related pull requests since {baseline}
+
+The explanations above describe the released behavior; these links provide source history.
 
 {generated}
 
@@ -622,6 +619,8 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         self._verified_archive = identity
 
     def prepare(self):
+        # Fail before an expensive build, including resumed prepared packages.
+        read_release_notes(self.root, 'game', self.tag, self.notes_file)
         self.output.mkdir(parents=True, exist_ok=True)
         if self.plan.exists():
             prepared = json.loads(self.plan.read_text())
@@ -674,6 +673,9 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
             raise ValueError('The compatible launcher release must contain both Windows and Mac packages.')
 
     def publish(self, draft=False):
+        reviewed = read_release_notes(self.root, 'game', self.tag, self.notes_file)
+        if reviewed not in self.notes.read_text(encoding='utf-8'):
+            raise ValueError('Prepared notes are missing the reviewed release notes; inspect them before publishing.')
         self.validate_remote()
         plan = json.loads(self.plan.read_text())
         for path in (self.archive, self.checksum, self.metadata):

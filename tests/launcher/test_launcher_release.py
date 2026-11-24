@@ -16,7 +16,11 @@ ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('launcher_release', ROOT/'tools/release/launcher-release.py')
 release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
+from release_notes import read_release_notes, validate_release_notes
 SHA = 'a'*40
+REVIEWED_NOTES = ('## What changed\n\n### Clear update progress\n'
+                  '**Before:** Updates could appear stuck while files were unpacked.\n'
+                  '**Now:** Progress shows which step is running.\n')
 
 
 class FakeGitHub:
@@ -79,6 +83,11 @@ class LauncherReleaseTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.directory = Path(self.temp.name)
+        self.notes = self.directory/'docs/release/notes/launcher-v1.2.19.md'
+        self.notes.parent.mkdir(parents=True)
+        self.notes.write_text(REVIEWED_NOTES, encoding='utf-8')
+        self.notes.with_name('launcher-v1.2.19-rc.1.md').write_text(REVIEWED_NOTES, encoding='utf-8')
+        patch.object(release, 'ROOT', self.directory).start()
         self.plan = dict(schema=1, version='1.2.19', tag='launcher-v1.2.19', source_revision=SHA,
                          repository=release.REPOSITORY, publish=True, prerelease=False, default_branch='main')
         self.api = FakeGitHub()
@@ -165,6 +174,11 @@ class LauncherReleaseTests(unittest.TestCase):
         self.assertEqual(self.api.release['make_latest'], 'true')
         self.assertEqual(self.api.calls[-1][1].split('/')[-2:], ['issue-form-versions.yml', 'dispatches'])
         self.assertEqual(self.api.tag, SHA)
+        self.assertIn(REVIEWED_NOTES.strip(), self.api.release['body'])
+        self.assertLess(self.api.release['body'].index('## What changed'),
+                        self.api.release['body'].index('Mac v1.2.19 users:'))
+        self.assertLess(self.api.release['body'].index('## What changed'),
+                        self.api.release['body'].index('## Related launcher pull requests'))
         for platform in release.PLATFORMS:
             self.assertIn('/releases/download/launcher-v1.2.19/TimeSplitters-Launcher-v1.2.19-'+platform+'.zip)',
                           self.api.release['body'])
@@ -185,6 +199,43 @@ class LauncherReleaseTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             release.publish(self.directory, self.plan, self.api)
         self.assertEqual(self.api.calls, [])
+
+    def test_missing_or_title_only_notes_cannot_create_a_tag(self):
+        self.both()
+        for text in (None, '## What changed\n- Fix updates (#12)'):
+            if text is None:
+                self.notes.unlink()
+            else:
+                self.notes.write_text(text)
+            self.api.calls.clear()
+            with self.assertRaises(ValueError):
+                release.publish(self.directory, self.plan, self.api)
+            self.assertIsNone(self.api.tag)
+            self.assertTrue(all(c[0] == 'GET' for c in self.api.calls))
+
+    def test_owned_draft_without_reviewed_explanations_stays_unpublished(self):
+        self.both()
+        self.api.tag = SHA
+        self.api.release = dict(id=1, draft=True, target_commitish=SHA,
+                                body='<!-- launcher-release-source:'+SHA+' -->')
+        with self.assertRaisesRegex(ValueError, 'missing the reviewed release notes'):
+            release.publish(self.directory, self.plan, self.api)
+        self.assertTrue(self.api.release['draft'])
+        self.assertTrue(all(c[0] == 'GET' for c in self.api.calls))
+
+    def test_published_retry_does_not_require_reauthoring_old_notes(self):
+        self.both()
+        release.publish(self.directory, self.plan, self.api)
+        body = self.api.release['body']
+        self.notes.unlink()
+        release.publish(self.directory, self.plan, self.api)
+        self.assertEqual(self.api.release['body'], body)
+
+    def test_publish_dispatch_checks_notes_before_builds(self):
+        self.notes.unlink()
+        event = dict(inputs=dict(publish='true'), repository=dict(default_branch='main'))
+        with patch.object(release.subprocess, 'run'), self.assertRaisesRegex(ValueError, 'Write and review'):
+            release.plan_release(event, 'workflow_dispatch', 'refs/heads/main', SHA, release.REPOSITORY)
 
     def test_notes_use_previous_stable_launcher_across_paginated_mixed_history(self):
         self.api.history = [{'tag_name': 'v0.3.1-alpha.2'}]*100 + [
@@ -525,6 +576,37 @@ class LauncherReleaseTests(unittest.TestCase):
             link = 'https://github.com/'+release.REPOSITORY+'/releases/latest/download/TimeSplitters-Launcher-'+platform+'.zip'
             self.assertIn('href="'+link+'"><img src="docs/assets/download-'+icon+'-launcher.svg"', readme)
 
+
+
+class ReviewedNotesContractTests(unittest.TestCase):
+    def test_plain_language_unicode_and_optional_instructions_are_retained(self):
+        text = REVIEWED_NOTES + '**How to use it:** Open Settings → Graphics.\n'
+        self.assertEqual(validate_release_notes(text), text.strip())
+
+    def test_incomplete_or_placeholder_notes_are_rejected(self):
+        for text in ('- Fix controller issue (#7)', '## What changed\n- Launcher updates',
+                     '## What changed\n### Controls\n**Before:** Lost input.\n',
+                     '## What changed\n### Controls\n**Before:** \n**Now:** Input works.\n',
+                     REVIEWED_NOTES+'\n### Another fix\n**Now:** Works.\n',
+                     REVIEWED_NOTES+'\nTODO',
+                     '<!-- release-notes:template -->\n'+REVIEWED_NOTES,
+                     '<!-- '+REVIEWED_NOTES+' -->',
+                     '```markdown\n'+REVIEWED_NOTES+'```\n',
+                     REVIEWED_NOTES+'\n<!-- tsfp-release {} -->',
+                     REVIEWED_NOTES+'\n<!-- launcher-release-source:fake -->'):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                validate_release_notes(text)
+
+    def test_versioned_lookup_does_not_reuse_another_versions_notes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);path=root/'docs/release/notes/v0.8.0.md'
+            path.parent.mkdir(parents=True);path.write_text(REVIEWED_NOTES,encoding='utf-8')
+            self.assertEqual(read_release_notes(root,'game','v0.8.0'),REVIEWED_NOTES.strip())
+            with self.assertRaisesRegex(ValueError,'Write and review'):
+                read_release_notes(root,'game','v0.8.1')
+            with self.assertRaises(ValueError):read_release_notes(root,'game','../v0.8.0')
+            path.write_bytes(('## What changed\n'+'é'*40000).encode('utf-8'))
+            with self.assertRaisesRegex(ValueError,'64 KiB'):read_release_notes(root,'game','v0.8.0')
 
 if __name__ == '__main__':
     unittest.main()

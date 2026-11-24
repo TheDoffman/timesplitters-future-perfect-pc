@@ -43,6 +43,24 @@ Python compile/help and repository-context checks pass. Foreground acceptance
 requires completion of the Windows Security dialog; user notified. Runtime,
 defaults and Mac/Linux behavior are unchanged. Nothing published or pushed.
 
+## 2026-11-24 - Player-facing release explanations
+
+Publication tooling from main c70c3a4c now requires reviewed, versioned Before/Now
+notes for game and launcher releases. Launcher dispatch validates them before
+builds; game preparation checks before building/reusing packages. Publication
+refuses missing prose or an owned draft/prepared body that lost its reviewed
+explanation. Existing published launcher retries retain their original notes.
+The prose is shown above PR references; download, compatibility and provenance
+information remain. No runtime/OS adapter, binary, version or public release changed.
+
+Windows local offline checks: 194 publication tests and 21 subtests passed;
+the CI-style stdlib unittest route also passed 41 tests. Fixtures cover missing,
+title-only, empty, comment/code-only, placeholder and metadata-spoofing notes,
+exact-version selection, UTF-8, draft/public retry and refusal before tag creation.
+Repository context/link checks passed. Structural checks do not establish prose
+accuracy or completeness; source-range review remains required. No native game
+rebuild was needed for these publication-only changes.
+
 ## 2026-11-23 - Launcher restart crash
 
 Publication review replaces the discarded task assignment with the existing
