@@ -61,6 +61,7 @@ def main():
     parser.add_argument('--restart-probe',action='store_true',help='After opening/fire checks, test host-only level restart and fresh handoff on every peer')
     parser.add_argument('--friendly-probe',action='store_true',help='Aim P1/P2 at P3/P4 through ordinary mouse input and check native friendly targeting')
     parser.add_argument('--health-fade-probe',action='store_true',help='In Scotland, damage the guest with ordinary pistol input and check the native health HUD expires')
+    parser.add_argument('--objective-probe',action='store_true',help='Capture the initial objective popup on every owned Online Story view')
     parser.add_argument('--role-spawn-probe',action='store_true',help='Check first-mission character roles and original Splitscreen P1/P2 start selection on every peer')
     parser.add_argument('--checkpoint-probe',action='store_true',help='Walk ordinary inputs toward the first checkpoint; stop after checkpoint reload, never complete the level')
     parser.add_argument('--opening-view-probe',action='store_true',help='Check the native upside-down intro camera for every player in mission one')
@@ -79,6 +80,7 @@ def main():
     assert not args.opening_view_probe or (args.load_probe and args.mission==0 and args.skip_intro and args.presentation_probe)
     assert not args.friendly_probe or (args.load_probe and args.players==4 and not args.lobby_only)
     assert not args.health_fade_probe or (args.load_probe and args.mission==1 and args.players==2 and not args.lobby_only)
+    assert not args.objective_probe or (args.load_probe and args.mission==1 and not args.lobby_only)
     assert not args.role_spawn_probe or (args.load_probe and not args.lobby_only and args.mission==0)
     assert not args.combat_probe or (args.fire_probe and args.mission==0)
     assert not args.npc_observe_seconds or (args.load_probe and not args.lobby_only)
@@ -135,6 +137,7 @@ def main():
         if code:command+=['--lobby-code',code]
         if args.load_probe:command+=['--pair-load-probe']
         if args.presentation_probe:command+=['--story-presentation-probe']
+        if args.objective_probe:command+=['--watch-hud']
         output=(evidence_root/(role+'-runner.log')).open('wb');streams.append(output)
         child=subprocess.Popen(command,cwd=ROOT,stdout=output,stderr=subprocess.STDOUT,
             creationflags=subprocess.CREATE_NO_WINDOW)
@@ -301,6 +304,20 @@ def main():
                             s.get('network_phase')==15 and s.get('context_states')==[2]*args.players and
                             s.get('result_flags')==0 for s in states.values()) else None
                     result['first_gameplay_states']=wait_for(campaign_ready,'Campaign intro/load did not activate every player')
+                if args.objective_probe:
+                    for role in runs:append(role,label='objective-start',wait=.2,world_probe=True)
+                    objective_start=wait_for(lambda:{role:captured(role,'objective-start') for role in runs}
+                        if all(captured(role,'objective-start') for role in runs) else None,'Initial objective captures missing')
+                    result['objective_start']=objective_start
+                    # Host snapshots refresh once per second. The first capture
+                    # can precede delivery; require the visible notice below.
+                    for role in runs:append(role,label='objective-visible',wait=3,world_probe=True)
+                    visible=wait_for(lambda:{role:captured(role,'objective-visible') for role in runs}
+                        if all(captured(role,'objective-visible') for role in runs) else None,'Visible objective captures missing')
+                    result['objective_visible']=visible
+                    for role,state in visible.items():
+                        assert any(m['kind']==6 and m.get('objective_record') and m['timing'][0]>=0
+                                   for m in state.get('hud',[])),(role,'Queued objective did not reach its visible phase',state.get('hud'))
                 for role in runs:append(role,label='load-before',wait=8,world_probe=True)
                 before=wait_for(lambda:{role:captured(role,'load-before') for role in runs}
                     if all(captured(role,'load-before') for role in runs) else None,'Missing pre-movement captures')

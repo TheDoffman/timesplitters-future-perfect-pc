@@ -1,3 +1,45 @@
+## Guest on-screen objective notices (2026-11-23)
+
+Local/uncommitted on online-story-coop at fa5897ca6. Guest objective status
+replication previously queued a banner only when the local record changed.
+The first host snapshot can match a record already initialized by level setup,
+silently omitting the notice if no native banner was queued. A new Player2
+regression reproduces that omission before the correction and passes after it.
+The live two-player baseline did display the initial Scotland objective this
+time; it does not establish that every load reproduces the missing-notice case.
+Four-player live runs did reproduce lost guest notices: authenticated snapshots
+arrived, but pending notices were consumed at ticks3/4/7 during intro setup and
+their delayed HUD entries disappeared before display.
+
+The receiver now tracks first applied content independently of local record
+equality. Identity/kind/flags/state deduplicate periodic serial refreshes. A
+matching initial notice remains pending through suspended control/cinematics and
+uses original227430 when ready; an existing native kind6 entry for that record is
+retained. Delivery is acknowledged only in the visible timer phase outside a
+cinematic; discarded delayed entries are retried. Later status changes keep their
+native notices. Host authority, wire
+format, objective counters and the exclusion of Story VM callbacks are preserved.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433/MSBuild17.12.6, default Windows
+frontend (Vulkan off; Original60FPS; driver not queried), supported pinned US XBE
+validated. Release build/native smoke tests pass. Executable SHA256:
+89d6010b0d124e56c2e1750672152ea6d4dbfbcc4ce01deaadf4ad1165f82987.
+Affected suite:112 passed/2 Mac-host skips. The original-US dispatcher/HUD fixture
+tests each guest slot in parties2/3/4: initial matching state, later transitions,
+deferred control, intro-discard recovery, cinematic deferral, refresh/retry
+deduplication and existing native notices.
+Four-player Scotland current-menu acceptance passes on that exact build.
+All four owned HUDs reached positive elapsed phase for objective identity1;
+reviewed objective-visible.png on each client shows NEW OBJECTIVE / Infiltrate
+the castle. Native Online lobby/settings/mission selection and movement checks
+pass. All four runners exit0; locks and disposable partitions are recycled.
+This is opening-objective live acceptance, not a full-mission playthrough; later
+status transitions are covered by the original-US fixture.
+Logs: `logs/story-objective-{baseline,build,regressions,four}.log`;
+selected numeric evidence in `logs/story-objective-evidence.json`. Personal
+settings/saves and the canonical fixture are preserved. Native Mac/Linux Story
+transport and live validation remain unverified under MAC-013.
+
 ## Scotland guest health-bar expiry (2026-11-23)
 
 Local/uncommitted on online-story-coop at eb962bb82. A current-menu two-player

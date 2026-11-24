@@ -251,7 +251,11 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         return 0;
     }
     if(fn==sub_000653B0) {CHECK(count==1);++restart_calls;return 0;}
-    if(fn==sub_00227430) {CHECK(count==2 && args[1]==0);++objective_popups;return 0;}
+    if(fn==sub_00227430) {
+        CHECK(count==2 && args[1]==0);++objective_popups;
+        WORD_AT(0x7a6198)=6;WORD_AT(0x7a6198+0x164)=args[0];WORD_AT(0x7a6198+0x144)=0;
+        return 0;
+    }
     if(fn==sub_000FFDA0) {
         CHECK(count==6 && args[0]==0 && args[1]==2 && args[5]==65535);
         CHECK(WORD_AT(args[2])==WORD_AT(0x170000) && WORD_AT(args[3])==WORD_AT(0x170010));
@@ -1522,6 +1526,17 @@ int main(void)
         s.kind=0;s.match^=1;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
         CHECK(story_objectives_receive(0x31000,0x32000,0x1e,sizeof s));
         CHECK(story_objectives_pending[0].serial+1==s.serial);
+        /* Player2 owns local HUD0 online. Initial host state can already match
+           the loaded guest record; that still needs its first notification. */
+        story_objectives_reset();WORD_AT(0x7a6198)=0;s.match=story_npc_match();s.serial=1;
+        memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        WORD_AT(0x6004)=UINT32_MAX;WORD_AT(0x6000+0x1584+4)=0;WORD_AT(0x6000+0x1584+0x114)=2;
+        const unsigned first_notice=objective_popups;
+        CHECK(story_objectives_receive(0x31000,0x32000,0x1e,sizeof s));
+        story_objectives_frame();CHECK(objective_popups==first_notice+1);
+        s.serial++;memcpy((uint8_t *)memory+0x32000,&s,sizeof s);
+        CHECK(story_objectives_receive(0x31000,0x32000,0x1e,sizeof s));
+        story_objectives_frame();CHECK(objective_popups==first_notice+1);
         WORD_AT(0x78cec8)=0;WORD_AT(0x78cecc)=0;story_objectives_reset();
         WORD_AT(0x7bb1e8)=0x120000;WORD_AT(0x120004)=0x121000;
         WORD_AT(0x121000)=0x2f5520;WORD_AT(0x7bb1e0)=0x122000;

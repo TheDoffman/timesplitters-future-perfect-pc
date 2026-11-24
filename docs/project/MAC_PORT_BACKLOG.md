@@ -3492,6 +3492,18 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Guest objective notices (2026-11-23, uncommitted):** Shared
+  `src/network/pc_story_objectives.inc` now distinguishes the first received
+  objective from local record equality. Missing initial banners are queued
+  through the original local-HUD dispatcher, deferred through suspended control
+  and deduplicated against native pending notices and periodic host refreshes.
+  Host objective/VM authority and wire format stay unchanged. Windows build/
+  native tests and112 affected CPU checks pass (2 native Mac host skips);
+  four-player Scotland current-Online-menu objective banners are visually verified
+  on every owned HUD, with movement and clean shutdown in [STATUS](STATUS.md). Native
+  Mac/Linux Story transport and live acceptance remain **Not started**; this
+  uses the existing Windows Story capability and adds no new OS-specific policy.
+
 - **Guest health-bar expiry (2026-11-23, uncommitted):** Shared
   `src/network/pc_story_hud.inc` recovers the original HUD timer/segment update
   for locally owned guest humans missing the normal entity update path. It

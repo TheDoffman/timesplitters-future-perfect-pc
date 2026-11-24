@@ -970,3 +970,29 @@ def test_story_original_guest_health_fade(tmp_path):
     source=source.replace('/* ORIGINAL_HUD */',original).replace('/* ORIGINAL_HUD_CONSTANTS */',constants)
     source=source.replace('/* PRODUCTION_HUD */',(ROOT/'src/network/pc_story_hud.inc').read_text(encoding='utf-8'))
     assert 'PASS:' in compile_and_run(tmp_path,source)
+
+
+def test_story_original_guest_objective_notice(tmp_path):
+    from test_recomp_float_joins import compile_and_run, config, FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={0x227430:dict(name='sub_00227430',end=0x227497),
+                   0xd1c90:dict(name='sub_000D1C90',end=0xd1caf),
+                   0x148dc0:dict(name='sub_00148DC0',end=0x148ed2)}
+        translator=FunctionTranslator(image,functions)
+        prototypes='\n'.join(f'void {i["name"]}(void);' for i in functions.values())
+        original=prototypes+'\n'+'\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;'
+                            for a in (0x475d18,0x4760cc,0x47d5dc))
+    finally:
+        vars(config).update(previous)
+    source=(ROOT/'tests/network/story_objective_original.c').read_text(encoding='utf-8')
+    source=source.replace('/* ORIGINAL_OBJECTIVE */',original).replace('/* ORIGINAL_OBJECTIVE_CONSTANTS */',constants)
+    source=source.replace('/* PRODUCTION_OBJECTIVE */',(ROOT/'src/network/pc_story_objectives.inc').read_text(encoding='utf-8'))
+    assert 'PASS:' in compile_and_run(tmp_path,source)

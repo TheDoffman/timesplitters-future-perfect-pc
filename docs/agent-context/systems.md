@@ -33,7 +33,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-[HUD](story-campaign-lifecycle.md); [Story](systems-details.md); [exits/saves](multiplayer-exit.md).
+[Obj](story-campaign-lifecycle.md); [Story](systems-details.md); [exits/saves](multiplayer-exit.md).
 
 [Mech](mounted-mouse.md).
 

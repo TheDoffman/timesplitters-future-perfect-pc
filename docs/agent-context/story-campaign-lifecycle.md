@@ -19,6 +19,27 @@ Arcade, System Link and Local Story retain their original paths.
 
 ## Loading, completion and ownership
 
+Objective notices in `pc_story_objectives.inc` track the first applied host
+snapshot separately from the guest record's existing values. Setup can already
+load an active objective; equality is not evidence that its banner was shown.
+Cache identity/kind/flags/state, not the periodically refreshed packet serial.
+Keep notifications pending through suspended control and the global cinematic
+flag7DE45C bit02000000. A delayed queue entry can be erased by intro setup:
+acknowledge delivery only once its elapsed timer at+144 is nonnegative outside
+the cinematic; retry a discarded entry after control returns. For a matching first
+snapshot, retain an existing native kind6 queue entry referencing that record;
+otherwise call original227430 once when the owned context is ready. Actual
+status changes still request their normal notice. No VM callbacks are replayed.
+Original227430 maps context+4 to the local HUD, and148DC0 queues its kind6 entry
+in7A6160 + local_port*177Ch, sixteen slots of16Ch at+38h, record pointer+164h.
+Online P2/P3/P4 own local HUD0; never use their global actor slot as a HUD index.
+The original-US fixture executes both routines for each guest slot in parties
+2/3/4, covering first matching state, later transitions, deferred control,
+refresh/retry deduplication and native-already-queued notices. Existing runtime
+CI includes it through `test_quit_menu.py`. The current-menu four-player
+Scotland `--objective-probe` observes queue identity and the visible phase,
+then retains per-peer `objective-visible.png` for actual banner review.
+
 Story Coop Developer Tools use host-owned speed/audio/god/ammo values over
 the reliable class1E channel (`pc_story_tools.inc`). Guests retain only local
 camera/movement controls. Host checkpoint advance uses native capture followed

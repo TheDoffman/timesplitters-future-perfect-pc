@@ -421,7 +421,8 @@ def main():
             text=c.create_string_buffer(320)
             if not kernel.ReadProcessMemory(handle,address+4+0x10000,text,320,None):continue
             messages.append(dict(slot=slot,kind=kind,text=text.value.decode('latin-1'),
-                timing=floats(address+0x144,5)))
+                timing=floats(address+0x144,5),objective_record=word(address+0x164) if kind==6 else None,
+                objective_identity=short(word(address+0x164)) if kind==6 and word(address+0x164) else None))
         return messages
     def surface_snapshot():
         # Original allocator 0x127400 has exactly five 0xfc-byte slots. Do not

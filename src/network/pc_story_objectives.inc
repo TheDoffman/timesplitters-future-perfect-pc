@@ -10,6 +10,7 @@ typedef struct StoryObjective {
 #define STORY_OBJECTIVE_LIMIT 64u
 static StoryObjective story_objectives_pending[STORY_OBJECTIVE_LIMIT];
 static uint32_t story_objectives_seen[STORY_OBJECTIVE_LIMIT];
+static uint64_t story_objectives_applied[STORY_OBJECTIVE_LIMIT];
 static unsigned char story_objectives_popup[STORY_OBJECTIVE_LIMIT];
 static uint32_t story_objectives_match,story_objectives_tick,story_objectives_serial;
 static int story_objectives_published;
@@ -17,6 +18,7 @@ static void story_objectives_reset(void)
 {
     memset(story_objectives_pending,0,sizeof story_objectives_pending);
     memset(story_objectives_seen,0,sizeof story_objectives_seen);
+    memset(story_objectives_applied,0,sizeof story_objectives_applied);
     memset(story_objectives_popup,0,sizeof story_objectives_popup);
     story_objectives_match=0;story_objectives_serial=0;story_objectives_published=0;
 }
@@ -49,6 +51,26 @@ static int story_objectives_receive(uint32_t peer,uint32_t payload,uint32_t type
     if(p->serial && p->match==s.match && (int32_t)(s.serial-p->serial)<=0) return 1;
     *p=s;
     return 1;
+}
+static int story_objectives_queued(uint32_t record)
+{
+    int queued=0;
+    const uint32_t contexts=WORD_AT(0x7b0c48u);const unsigned humans=story_npc_humans();
+    if(!contexts || !guest_writable(contexts,humans*0x1584u))return 0;
+    for(unsigned i=0;i<humans;i++) {
+        const unsigned port=WORD_AT(contexts+i*0x1584u+4u);
+        if(port>=4u || WORD_AT(contexts+i*0x1584u+0x114u)!=2u)continue;
+        const uint32_t hud=0x7a6160u+port*0x177cu;
+        for(unsigned j=0;j<16u;j++) {
+            const uint32_t message=hud+0x38u+j*0x16cu;
+            if(WORD_AT(message)==6u && WORD_AT(message+0x164u)==record) {
+                float elapsed;memcpy(&elapsed,(const void *)((uintptr_t)(message+0x144u)+g_xbox_mem_offset),4u);
+                if(elapsed>=0.f)return 2; /* The banner reached its visible phase. */
+                queued=1;
+            }
+        }
+    }
+    return queued;
 }
 static void story_objectives_frame(void)
 {
@@ -87,6 +109,11 @@ static void story_objectives_frame(void)
         return;
     }
     if(role!=2u) return;
+    if(story_objectives_match!=match) {
+        memset(story_objectives_applied,0,sizeof story_objectives_applied);
+        memset(story_objectives_popup,0,sizeof story_objectives_popup);
+        story_objectives_match=match;
+    }
     GuestRegisters saved;save_registers(&saved);
     for(unsigned i=0;i<STORY_OBJECTIVE_LIMIT;i++) {
         const StoryObjective *s=&story_objectives_pending[i];
@@ -94,12 +121,20 @@ static void story_objectives_frame(void)
         uint8_t *r=(uint8_t *)((uintptr_t)(table+s->index*0x4cu)+g_xbox_mem_offset);
         uint16_t id;memcpy(&id,r,sizeof id);
         if(id!=s->identity || r[8]!=s->kind) continue;
-        if(r[11]!=s->state || r[10]!=s->flags) {
+        const int changed=r[11]!=s->state || r[10]!=s->flags;
+        const uint64_t status=((uint64_t)s->identity<<32)|s->kind|(s->flags<<8)|(s->state<<16);
+        if(changed) {
             if(r[11]==1u && s->state!=1u) ++WORD_AT(0x0075c134u+s->kind*4u);
             else if(r[11]!=1u && s->state==1u && WORD_AT(0x0075c134u+s->kind*4u))
                 --WORD_AT(0x0075c134u+s->kind*4u);
             r[10]=(uint8_t)s->flags;r[11]=(uint8_t)s->state;
-            story_objectives_popup[i]=(unsigned char)(s->state>=2u);
+        }
+        /* A level can load the same state before its first host snapshot.
+           That first observed objective still needs a notice. Snapshot serials
+           refresh periodically, so deduplicate by content, not serial number. */
+        if(story_objectives_applied[i]!=status) {
+            story_objectives_popup[i]=(unsigned char)(s->state>=2u?(changed?2u:1u):0u);
+            story_objectives_applied[i]=status;
         }
         /* A cinematic can temporarily refuse HUD messages. Keep this notification
            pending until the owning local context has control again. */
@@ -108,9 +143,15 @@ static void story_objectives_frame(void)
         if(contexts && guest_writable(contexts,story_npc_humans()*0x1584u))
             for(unsigned j=0;j<story_npc_humans();j++)
                 if(WORD_AT(contexts+j*0x1584u+4u)==0u && WORD_AT(contexts+j*0x1584u+0x114u)==2u) ready=1;
-        if(story_objectives_popup[i] && ready) {
-            guest_call(sub_00227430,2,table+s->index*0x4cu,0u);
-            story_objectives_popup[i]=0;
+        if(story_objectives_popup[i] && ready && !(WORD_AT(0x7de45cu)&0x02000000u)) {
+            const uint32_t record=table+s->index*0x4cu;
+            const int queued=story_objectives_queued(record);
+            if(story_objectives_popup[i]==2u || !queued) {
+                guest_call(sub_00227430,2,record,0u);
+                story_objectives_popup[i]=1;
+            } else if(queued==2)story_objectives_popup[i]=0;
+            /* Intro setup can discard a queued, delayed banner. A queue entry
+               alone is not delivery: retain it until it becomes visible. */
         }
     }
     restore_registers(&saved);
