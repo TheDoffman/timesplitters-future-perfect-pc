@@ -1,3 +1,45 @@
+## Scotland guest health-bar expiry (2026-11-23)
+
+Local/uncommitted on online-story-coop at eb962bb82. A current-menu two-player
+Scotland run reproduced the bug with ordinary host pistol input: guest health
+35 ->34.400009, but the native HUD timer remained exactly2.0 after four seconds
+and the health bar stayed visible. The original13A2C0 timer/segment update is
+called from A7870 only for eligible bodies in its update list. The new shared
+adapter supplements this HUD-only routine for locally owned guest humans
+missing that path, with canonical links, native-list suppression and a per-frame
+match/reload/scene guard. The guest-frame counter keeps fractional beta updates
+distinct within one60-Hz tick. It preserves health and native display timing.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433/MSBuild17.12.6, default Windows
+frontend (Vulkan off; Original60FPS; driver not queried), pinned supported US
+XBE validated. Release build and native build tests pass; executable SHA256
+57255048bce8e9636b989abcb34de3d26a886ef195ae7636ae6f9eed4af451f2.
+Original-US HUD CPU tests pass across all13 scenes and parties2/3/4, including
+expiry, later damage, each guest slot, native-listed bodies, fractional frames
+and pause/invalid ownership guards. The affected suite recorded103 passes/2 Mac
+host skips;8 settings fixture link failures needed an explicit native HUD mock.
+Their focused rerun passes8 cases/2 Mac skips, and the latest Story/HUD subset
+passes3 cases. There are no unresolved regression failures.
+
+Corrected two-player Scotland acceptance passes through native Story > Online
+menus and the production private HTTPS directory/UDP relay on loopback. Guest
+health drops35 ->34.400009 after ordinary pistol input; HUD timer then reaches
+0.666668 at the hit capture and -0.016665 after the four-second wait, with health
+unchanged. Hit/expired PNGs reviewed: the bars appear then disappear. The trace
+confirms the owned guest body is absent from the native HUD update list.
+Movement, firing, guest pause/resume and host restart pass on the first fix
+build bbcb003b50bc6a18083d69df1c93ad5cbf30c78cfae183a8eb15ffe4a8e12b43.
+The final frame-counter guard passes native build/CPU tests and exact-build
+Scotland health/movement acceptance. Final captures show timer0.700001 after
+the hit and -0.016665 after the wait, with health unchanged; both PNGs reviewed.
+All runners exited0, run locks cleared and disposable partition images were
+recycled. This is bounded mission-two testing, not full-campaign acceptance
+or native beta-rate live validation.
+Logs: `logs/story-health-{baseline,build,final-build,regressions,fov-regressions,fixed,final,exact-build}.log`;
+baseline timing retained in `logs/story-health-timing.json`. Personal
+settings/saves and the canonical Test Lab fixture are preserved. Mac/Linux
+Story transport and live acceptance remain unverified under MAC-013.
+
 ## Online Story co-op human targeting (2026-11-23)
 
 Local/uncommitted on online-story-coop at457d14059. Shared team1 was already

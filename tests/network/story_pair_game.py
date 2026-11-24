@@ -60,6 +60,7 @@ def main():
     parser.add_argument('--combat-probe',action='store_true',help='After firearm checks, walk an added guest forward and test host acceptance of a hit on a live enemy')
     parser.add_argument('--restart-probe',action='store_true',help='After opening/fire checks, test host-only level restart and fresh handoff on every peer')
     parser.add_argument('--friendly-probe',action='store_true',help='Aim P1/P2 at P3/P4 through ordinary mouse input and check native friendly targeting')
+    parser.add_argument('--health-fade-probe',action='store_true',help='In Scotland, damage the guest with ordinary pistol input and check the native health HUD expires')
     parser.add_argument('--role-spawn-probe',action='store_true',help='Check first-mission character roles and original Splitscreen P1/P2 start selection on every peer')
     parser.add_argument('--checkpoint-probe',action='store_true',help='Walk ordinary inputs toward the first checkpoint; stop after checkpoint reload, never complete the level')
     parser.add_argument('--opening-view-probe',action='store_true',help='Check the native upside-down intro camera for every player in mission one')
@@ -77,6 +78,7 @@ def main():
     assert not args.restart_probe or (args.fire_probe and not args.lobby_only)
     assert not args.opening_view_probe or (args.load_probe and args.mission==0 and args.skip_intro and args.presentation_probe)
     assert not args.friendly_probe or (args.load_probe and args.players==4 and not args.lobby_only)
+    assert not args.health_fade_probe or (args.load_probe and args.mission==1 and args.players==2 and not args.lobby_only)
     assert not args.role_spawn_probe or (args.load_probe and not args.lobby_only and args.mission==0)
     assert not args.combat_probe or (args.fire_probe and args.mission==0)
     assert not args.npc_observe_seconds or (args.load_probe and not args.lobby_only)
@@ -350,6 +352,42 @@ def main():
                 for role,s in before.items():
                     assert sum(a.get('local_port')==0 for a in s['actors'])==1,(role,'Expected one owned input context',s)
                     assert all(c.get('team')==1 for c in s.get('world',{}).get('characters',[]) if c.get('context')),(role,'Story humans lost their original shared team',s.get('world'))
+                if args.health_fade_probe:
+                    # Aim the host's real pistol at the guest, using the same
+                    # mouse path as the targeting/combat probes. Never write
+                    # health, timers or entity state from the test runner.
+                    current=before['host'];initial_look=current['local_player']['look']
+                    controls=read_json(runs['host']/'controls.json')['mouse'];sensitivity=controls['sensitivity']
+                    target=next(a for a in current['actors'] if a['slot']==owned_player_slot(before['guest']))
+                    point=list(target['position']);point[1]+=1.1
+                    local=current['local_player'];delta=[a-b for a,b in zip(point,local['position'])]
+                    yaw=math.degrees(math.atan2(delta[0],delta[2]));pitch=math.degrees(math.atan2(delta[1],math.hypot(delta[0],delta[2])))
+                    dx=round(math.remainder(local['look'][0]-yaw,360)/sensitivity)
+                    dy=round((local['look'][1]-pitch)/sensitivity)*(-1 if controls.get('invert_y') else 1)
+                    append('host',mouse=[dx,dy],label='health-aim',wait=1)
+                    wait_for(lambda:captured('host','health-aim'),'Health aim missing')
+                    initial_health=before['guest']['local_player']['health']
+                    result['health_fade']={'before':before['guest']}
+                    for attempt in range(6):
+                        label=f'health-hit-{attempt}'
+                        append('host',keys=[1],hold_seconds=.12,label=label,wait=.2)
+                        wait_for(lambda:captured('host',label),'Health shot missing')
+                        append('guest',label=label,wait=.2,world_probe=True)
+                        hit=wait_for(lambda:captured('guest',label),'Health hit capture missing')
+                        if hit['local_player']['health']<initial_health:break
+                    result['health_fade']['hit']=hit
+                    assert 0<hit['local_player']['health']<initial_health,('Guest did not receive a nonlethal ordinary hit',hit)
+                    assert hit['local_player']['health_hud']['timer']>0,('Damage did not display guest health',hit)
+                    append('guest',label='health-expired',wait=4,world_probe=True)
+                    expired=wait_for(lambda:captured('guest','health-expired'),'Health expiry capture missing')
+                    result['health_fade']['expired']=expired
+                    assert expired['local_player']['health']==hit['local_player']['health'],('Additional damage invalidated fade interval',hit,expired)
+                    assert expired['local_player']['health_hud']['timer']<=0,('Guest health HUD did not expire',hit['local_player'],expired['local_player'])
+                    local=captured('host',label)['local_player']
+                    dx=round(math.remainder(local['look'][0]-initial_look[0],360)/sensitivity)
+                    dy=round((local['look'][1]-initial_look[1])/sensitivity)*(-1 if controls.get('invert_y') else 1)
+                    append('host',mouse=[dx,dy],label='health-restore',wait=1)
+                    wait_for(lambda:captured('host','health-restore'),'Health view reset missing')
                 if args.friendly_probe:
                     result['friendly_targets']={}
                     for viewer in (0,1):

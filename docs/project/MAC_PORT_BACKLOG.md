@@ -3492,6 +3492,19 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Guest health-bar expiry (2026-11-23, uncommitted):** Shared
+  `src/network/pc_story_hud.inc` recovers the original HUD timer/segment update
+  for locally owned guest humans missing the normal entity update path. It
+  preserves health/damage and skips bodies already updated natively. Windows
+  Scotland reproduced a two-second timer remaining unchanged after four seconds.
+  Original-US CPU tests cover all13 scenes, parties2/3/4, native timing and
+  pause/ownership exclusions. Windows build/native tests and live two-player
+  Scotland health fade, movement, firing and restart pass; final build provenance
+  and scope are in [STATUS](STATUS.md). The change uses the
+  existing Windows Story capability; native Mac/Linux Story transport and live
+  validation remain **Not started**. No new OS adapter or duplicate HUD policy
+  is needed.
+
 - **Co-op human targeting friendliness (2026-11-23, uncommitted):**
   Shared `src/network/pc_story_load.inc` recognizes validated co-op human pairs
   through the native D6F00 friendly predicate (additive runtime patch3060).

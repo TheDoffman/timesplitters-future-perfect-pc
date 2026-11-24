@@ -946,3 +946,27 @@ def test_story_original_human_friendliness(tmp_path):
     source=source.replace('/* PRODUCTION_SCOPE */',scope).replace('/* PRODUCTION_FRIENDLY */',adapter)
     output=compile_and_run(tmp_path,source)
     assert 'PASS:' in output
+
+
+def test_story_original_guest_health_fade(tmp_path):
+    from test_recomp_float_joins import compile_and_run, config, FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={0x12c830:dict(name='sub_0012C830',end=0x12c8c7),
+                   0x13a2c0:dict(name='sub_0013A2C0',end=0x13a3fe)}
+        translator=FunctionTranslator(image,functions)
+        original='\n'.join(translator.translate_function(a,info) for a,info in functions.items())
+        addresses=[0x475c78,0x475d10,0x4785e0]+[a+i*20 for a in (0x4e6d80,0x4e6f28) for i in range(20)]
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x}u;' for a in addresses)
+    finally:
+        vars(config).update(previous)
+    source=(ROOT/'tests/network/story_hud_original.c').read_text(encoding='utf-8')
+    source=source.replace('/* ORIGINAL_HUD */',original).replace('/* ORIGINAL_HUD_CONSTANTS */',constants)
+    source=source.replace('/* PRODUCTION_HUD */',(ROOT/'src/network/pc_story_hud.inc').read_text(encoding='utf-8'))
+    assert 'PASS:' in compile_and_run(tmp_path,source)

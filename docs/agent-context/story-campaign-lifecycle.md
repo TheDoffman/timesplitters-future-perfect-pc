@@ -43,6 +43,29 @@ rules apply throughout the campaign. Guest rewards precede the waiting page.
 
 ## Authored starts and cameras
 
+Guest health HUD recovery lives in `pc_story_hud.inc`, called from the shared
+Story frame adapter. Original14D3A0 draws body+268's component while its float
+at+140 is positive. Original13A2C0 ages that timer and40 segment flash clocks,
+updates20 health/armor threshold states and starts a two-second display when
+they change. It never changes health. A7870's only13A2C0 call is in its first
+entity-list pass (head7B4CC0, next+0), gated by body+78==0; the other pass omits
+HUD aging. Do not force the bar hidden or subtract damage again to repair it.
+The adapter supplements this original update only for a validated locally owned
+guest human missing that native path. It scans the bounded update list once,
+skips bodies already eligible there, fails closed on invalid/cyclic lists, and
+deduplicates by guest frame/match/reload epoch/scene. The guest-frame counter
+7497B8 keeps fractional beta-rate updates distinct within one60-Hz tick. Reciprocal human
+context/body/actor links, active state and existing Story/cinematic/freeze
+guards apply. Host, NPCs, Local Story and Arcade retain native behavior.
+The original-US HUD fixture covers all13 scenes,2/3/4 humans, expiry and later
+damage, native-list suppression, duplicate/fractional frames and invalid/paused scopes.
+`story_pair_game.py --mission 1 --health-fade-probe --skip-intro` uses ordinary
+host pistol input and read-only guest health/HUD captures through current Online
+menus. Require damage to show the HUD, stable health through a four-second wait,
+and an expired timer; inspect hit/expired PNGs. Saves/settings remain isolated.
+Recycle obsolete command PNGs before a new pass: retained captures from earlier
+tests count toward the runner's48-image limit. Keep selected before/after proof.
+
 Human animation recovery in `story_human_pose_frame` is conditional on actual
 model-clock progress. The earlier Scotland investigation found missing callbacks
 and frozen clocks, but callback absence alone does not prove that a model is

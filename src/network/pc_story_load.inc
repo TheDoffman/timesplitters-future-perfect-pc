@@ -62,6 +62,7 @@ static void story_world_frame(void);
 static int story_world_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
 static int story_tools_receive(uint32_t peer,uint32_t payload,uint32_t type,uint32_t length);
 static void story_human_pose_frame(void);
+static void story_human_hud_frame(void);
 uint32_t pc_story_network_world_key(uint32_t entity);
 uint32_t pc_story_network_world_entity(uint32_t key);
 static int story_network_session(void)
@@ -740,6 +741,7 @@ void pc_story_network_frame(void (*original)(void))
 #ifdef _WIN32
     story_cine_frame();
     story_human_pose_frame();
+    story_human_hud_frame();
 #endif
 }
 
@@ -1117,3 +1119,4 @@ static void story_human_pose_frame(void)
     restore_registers(&saved);
 }
 #endif
+#include "pc_story_hud.inc"

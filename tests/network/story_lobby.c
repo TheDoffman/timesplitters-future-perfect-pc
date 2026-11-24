@@ -153,6 +153,7 @@ void sub_00079B70(void){CHECK(0);}
 void sub_000DAC30(void){marker=20;}void sub_000D7550(void){marker=21;}
 static unsigned human_pose_updates;
 void sub_0005FEB0(void){}
+void sub_0013A2C0(void){}
 void sub_000C1950(void){marker=54;}
 void sub_000B3630(void){marker=53;}
 void sub_000A9070(void){marker=22;}void sub_0015BCA0(void){marker=23;}

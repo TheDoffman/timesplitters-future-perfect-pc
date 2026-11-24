@@ -394,6 +394,11 @@ def main():
         if entity is not None and 0x80000000<=entity<0x84000000:
             health=floats(entity+0x1cc,1)
             if health is not None:result['health']=health[0]
+            hud=word(entity+0x268)
+            result['health_hud']=dict(pointer=hud,update_owner=word(entity+0x78),
+                timer=real(hud+0x140) if hud else None,
+                health_segments=[word(hud+i*4) for i in range(20)] if hud else [],
+                armor_segments=[word(hud+0x50+i*4) for i in range(20)] if hud else [])
         if actor is None or not 0x80000000<=actor<0x84000000:return result
         result['inventory_weapon']=word(actor+0x94)
         result['inventory_weapons']=[index for index,owned in enumerate(read_bytes(actor+0x54c,70) or b'') if owned]
