@@ -20,6 +20,9 @@ spec = importlib.util.spec_from_file_location('publish_release', Path(__file__).
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 HEAD, PREVIOUS = 'a'*40, 'b'*40
+REVIEWED_NOTES = ('## What changed\n\n### Joining an online match\n'
+                  '**Before:** A guest could be left waiting after accepting an invite.\n'
+                  '**Now:** Accepting an invite opens the matching lobby.\n')
 
 
 def link_fixture(link, target):
@@ -83,6 +86,8 @@ class FakePublisher(module.Publisher):
     def __init__(self, root):
         super().__init__(root)
         (root/'VERSION').write_text('0.2.0-beta.3')
+        self.notes_file = root/'reviewed-notes.md'
+        self.notes_file.write_text(REVIEWED_NOTES, encoding='utf-8')
         pack = root/'assets/textures'
         pack.mkdir(parents=True)
         words = [0]*32
@@ -197,10 +202,11 @@ def publication_calls(publisher):
 def test_prepare_then_publish_reuses_exact_package(publisher):
     publisher.preflight()
     publisher.prepare()
+    assert REVIEWED_NOTES.strip() in publisher.notes.read_text()
     assert not publication_calls(publisher)
     assert not publisher.stage.exists()
     notes = publisher.notes.read_text(encoding='utf-8')
-    assert 'Changes since v0.2.0-beta.2' in notes and '- Online multiplayer ([#12]' in notes
+    assert 'Related pull requests since v0.2.0-beta.2' in notes and '- Online multiplayer ([#12]' in notes
     assert 'What\u2019s Changed' not in notes and "What's Changed" not in notes
     assert 'Source changes' not in notes and 'Build and validation' not in notes
     assert not any(call[0] == 'git' and call[1][0] == 'log' for call in publisher.calls)
@@ -431,7 +437,7 @@ def test_newer_launcher_does_not_change_game_notes_baseline(publisher):
                                    published_at='2026-10-16T00:00:00Z'))
     publisher.preflight(); publisher.prepare()
     assert publisher.previous['tag_name'] == 'v0.2.0-beta.2'
-    assert 'Changes since v0.2.0-beta.2' in publisher.notes.read_text(encoding='utf-8')
+    assert 'Related pull requests since v0.2.0-beta.2' in publisher.notes.read_text(encoding='utf-8')
     # FakePublisher also asserts generate-notes receives the previous game tag.
 
 
@@ -771,7 +777,7 @@ def test_first_stable_notes_compare_against_latest_published_alpha(publisher):
     publisher.output.mkdir(parents=True)
     publisher.write_notes()  # Fake GitHub checks the explicit previous_tag_name.
     notes = publisher.notes.read_text()
-    assert '## Changes since v0.3.1-alpha.2' in notes
+    assert '## Related pull requests since v0.3.1-alpha.2' in notes
     assert '/compare/v0.3.1-alpha.2...v0.3.2' in notes
     assert ('git', ('rev-list', f'{PREVIOUS}..{HEAD}')) in publisher.calls
 
@@ -866,7 +872,7 @@ def test_preview_maintainer_notes_and_display_name_are_reviewable(publisher):
     publisher.channel_name='Story Co-op Preview'
     (publisher.root/'VERSION').write_text('0.5.0-story-coop.1')
     publisher.notes_file=publisher.root/'preview-notes.md'
-    publisher.notes_file.write_text('## Known issues\nTest peers must use the same game build.')
+    publisher.notes_file.write_text(REVIEWED_NOTES+'\n## Known issues\nTest peers must use the same game build.')
     publisher.preflight();publisher.output.mkdir(parents=True);publisher.write_notes()
     notes=publisher.notes.read_text()
     assert 'Story Co-op Preview' in notes and 'Test peers must use the same game build.' in notes
@@ -1122,3 +1128,29 @@ def test_preview_repair_does_not_publish_if_tag_changes_during_upload(publisher,
     publisher.preflight();publisher.prepare()
     with pytest.raises(ValueError,match='different commit'):publisher.publish()
     assert state['release']['draft']
+
+
+def test_missing_reviewed_notes_stop_game_before_building(publisher):
+    publisher.notes_file=None
+    publisher.preflight()
+    with pytest.raises(ValueError,match='Write and review'):
+        publisher.prepare()
+    assert publisher.builds==0 and not publisher.tag_created
+
+
+def test_game_defaults_to_exact_versioned_reviewed_notes(publisher):
+    publisher.notes_file=None
+    path=publisher.root/'docs/release/notes/v0.2.0-beta.3.md'
+    path.parent.mkdir(parents=True);path.write_text(REVIEWED_NOTES,encoding='utf-8')
+    publisher.preflight();publisher.prepare()
+    text=publisher.notes.read_text()
+    assert REVIEWED_NOTES.strip() in text
+    assert text.index('## What changed') < text.index('## Related pull requests')
+
+
+def test_game_cannot_upload_if_prepared_notes_lose_reviewed_explanation(publisher):
+    publisher.preflight();publisher.prepare()
+    publisher.notes.write_text('- Fixed issues (#12)')
+    with pytest.raises(ValueError,match='missing the reviewed release notes'):
+        publisher.publish()
+    assert not publisher.tag_created

@@ -23,6 +23,13 @@ platform's update manifest. Game releases remain independent. [Game Stable and n
 
 ## Publish an update
 
+Write and review `docs/release/notes/launcher-v<version>.md` with the version
+change, following the shared [release notes rules](release-notes.md). Explain
+the previous problem/limitation and the new behavior for each launcher change.
+The publishing workflow rejects missing or incomplete notes before building;
+publication also checks before creating a tag/draft. PR references follow the
+reviewed explanations. Validation-only builds do not require publication notes.
+
 1. Change `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs`, plus its
    assembly/file attributes, to a new unused version. Keep the attributes numeric
    (`X.Y.Z.0`); a preview may use `X.Y.Z-beta.1` for `Value`.
