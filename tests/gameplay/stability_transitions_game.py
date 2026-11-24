@@ -84,6 +84,7 @@ def main():
     parser.add_argument('--guest-one-cpu',type=int,choices=range(66),default=0,help='Windows guest affinity: 0 off, 1 automatic, 2-65 processor index plus two')
     parser.add_argument('--watch-guest-execution',action='store_true',help='Enable guest thread concurrency diagnostics in this isolated session')
     parser.add_argument('--fullscreen',action='store_true',help='Start this isolated session borderless on its monitor; actual client size is reported separately')
+    parser.add_argument('--require-foreground',action='store_true',help='Fail a command checkpoint if the owned game window is not foreground; use for player-facing pacing acceptance')
     parser.add_argument('--display-size',type=int,nargs=2,default=(1280,720),metavar=('WIDTH','HEIGHT'),help='Isolated render resolution; actual window state is reported separately')
     parser.add_argument('--fov',type=int,choices=range(40,101),default=55)
     parser.add_argument('--no-native-trace',action='store_true',help='Disable per-update CSV when measuring capture-free pacing')
@@ -224,6 +225,11 @@ def main():
             dict(keys=[87],hold_seconds=1,sample_hold=True,label='local-move',wait=2,world_probe=True),
             dict(keys=[83],hold_seconds=1,sample_hold=True,label='local-back',wait=2,world_probe=True),
             dict(keys=[1],hold_seconds=1,label='local-fire',wait=2,world_probe=True),dict(stop=True)]
+        if args.fullscreen:
+            # Opening borderless does not guarantee foreground ownership.
+            # Wait for startup before the focus action's minimize/restore;
+            # minimizing during Vulkan device creation gives a zero-size surface.
+            route.insert(1,dict(window='focus',wait=1))
         commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     env['TSFP_ONLINE_SETTINGS']=str(run/'online-settings.json')
     # Typed Story now supplies normal start behavior. Instrumentation must not
@@ -349,6 +355,7 @@ def main():
         assert result
         return result
     original=profiles();report=[];samples=[];threads=[];process=None;handle=None
+    foreground_checkpoint_seen=False
     motion_stop=threading.Event();motion_thread=None;motion_errors=[]
     kernel=c.WinDLL('kernel32',use_last_error=True)
     kernel.OpenProcess.restype=c.c_void_p
@@ -456,8 +463,26 @@ def main():
     def window_snapshot():
         rect=ui.w.RECT()
         readable=bool(user.GetClientRect(window,c.byref(rect)))
+        # Query the monitor containing this window, not Win32_VideoController's
+        # adapter-level rate (which can describe an inactive display).
+        class MonitorInfo(c.Structure):
+            _fields_=[('size',c.c_uint32),('monitor',ui.w.RECT),
+                ('work',ui.w.RECT),('flags',c.c_uint32),('device',c.c_wchar*32)]
+        user.MonitorFromWindow.argtypes=[c.c_void_p,c.c_uint32]
+        user.MonitorFromWindow.restype=c.c_void_p
+        user.GetMonitorInfoW.argtypes=[c.c_void_p,c.POINTER(MonitorInfo)]
+        user.EnumDisplaySettingsW.argtypes=[c.c_wchar_p,c.c_uint32,c.c_void_p]
+        monitor=MonitorInfo();monitor.size=c.sizeof(monitor)
+        display=None
+        if user.GetMonitorInfoW(user.MonitorFromWindow(window,2),c.byref(monitor)):
+            mode=c.create_string_buffer(220) # DEVMODEW, same layout as refresh_live.py
+            struct.pack_into('H',mode,68,220)
+            if user.EnumDisplaySettingsW(monitor.device,0xffffffff,mode):
+                width,height,flags,hz=struct.unpack_from('IIII',mode,172)
+                display=dict(device=monitor.device,width=width,height=height,refresh_hz=hz)
         return dict(visible=bool(user.IsWindowVisible(window)),minimized=bool(user.IsIconic(window)),
             foreground=user.GetForegroundWindow()==window,
+            active_display=display,
             client_size=[rect.right-rect.left,rect.bottom-rect.top] if readable else None)
     def world_snapshot():
         count=word(0x74C37C);characters=[]
@@ -896,6 +921,11 @@ def main():
                         (run/(command['label']+'-cpu.txt')).write_bytes(diagnostic)
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))
                 print(json.dumps(item),flush=True)
+                # The first checkpoint is readiness before the route's focus
+                # action. Require foreground for every later checkpoint.
+                if args.require_foreground and foreground_checkpoint_seen and not item['window']['foreground']:
+                    raise AssertionError('Foreground gameplay required, but the owned game window is unfocused; finish other dialogs before retrying')
+                foreground_checkpoint_seen=True
                 if 'expect_menu' in command or command.get('expect_story_difficulty'):
                     trace=(run/f'run{index}.err').read_text(errors='replace')
                     observed=re.findall(r'\[PC-STORY-UI\] descriptor=([0-9A-Fa-f]{8})',
