@@ -376,6 +376,7 @@ def main():
         entity=word(player+0x14)
         actor=word(entity+0x7c) if entity else None
         result=dict(player=player,position=floats(player+0xb4,3),look=floats(player+0x100,2),
+                    reticle_target=word(player+0xf84),
                     story_view=dict(state=word(player+0x114),saved_state=word(player+0x110),
                         port=word(player+4),view=word(player+8),firstperson_animation_mode=word(player+0x14f8),
                         camera_script=word(word(player+8)+0x26c) if word(player+8) else None,
@@ -524,7 +525,9 @@ def main():
                             position=list(struct.unpack_from('<3f',raw,offset+0x64)),health=health,max_health=maximum))
         for entry in characters:
             entity=entry['entity'];actor=word(entity+0x7c);model=word(entity+4)
+            kind=short(actor+0x48)
             entry.update(slot=word(actor+8),visibility_flags=word(actor+0x2c),kind=[short(actor+0x48),short(actor+0x4a)],
+                definition_flags=word(0x53c508+kind*20) if kind is not None and 0<=kind<256 else None,
                 team=word(actor+0x84),last_damage_tick=word(entity+0x1d4),
                 clip=word(model+0xd4) if model else None,
                 next_clip=word(model+0x12c) if model else None,

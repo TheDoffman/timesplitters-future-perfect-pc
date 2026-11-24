@@ -3492,6 +3492,20 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Co-op human targeting friendliness (2026-11-23, uncommitted):**
+  Shared `src/network/pc_story_load.inc` recognizes validated co-op human pairs
+  through the native D6F00 friendly predicate (additive runtime patch3060).
+  Story's original character-definition flag classified the selectable Private
+  Hicks/Jones as hostile despite shared team1. The adapter corrects humans only;
+  NPC definitions, Local Story and Arcade classification stay native. The shared
+  original-US D6F00/D00F0 fixture covers all13 missions and party sizes2/3/4.
+  Windows Release/native tests and four-player mission-one acceptance pass:
+  P1/P2 targeting P3/P4 stays neutral through current Online menus. Global
+  definition flags remain unchanged; roles, opening, firing and restart pass.
+  The hook uses the existing Windows Story capability; native Mac/Linux Story
+  transport and live acceptance remain **Not started** under MAC-013. No new
+  host-specific feature policy is added. See [STATUS](STATUS.md).
+
 - **Story human animation rate (2026-11-23, uncommitted):**
   The existing shared `src/network/pc_story_load.inc` recovery adapter now checks
   actual model clocks before adding animation time. Native progress or a single

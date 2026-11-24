@@ -852,6 +852,44 @@ static int story_human_team_scope(uint32_t actor)
 #endif
 
 #ifdef _WIN32
+static int story_human_friendly_context(uint32_t context)
+{
+    const uint32_t pool=WORD_AT(0x7b0c48u);const unsigned count=WORD_AT(0x790950u);
+    if(count<2u || count>4u || !pool || !guest_writable(context,0x118u))return 0;
+    const unsigned slot=WORD_AT(context);const uint32_t body=WORD_AT(context+0x14u);
+    if(slot>=count || context!=pool+slot*0x1584u || !guest_writable(body,0x154u) ||
+       WORD_AT(body+0x150u)!=context)return 0;
+    const uint32_t actor=WORD_AT(body+0x7cu);
+    return story_human_team_scope(actor) && WORD_AT(actor)==body && WORD_AT(actor+8u)==slot;
+}
+#endif
+/* Story D6F00 reads the character definition's friendly bit, ignoring team.
+   Selectable Hicks/Jones lack that bit. Recognize only linked co-op humans;
+   retain native classification for NPCs, other modes and incomplete bodies. */
+void pc_story_network_friendly(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t frame=g_esp;
+    if(guest_writable(frame,12u)) {
+        const uint32_t viewer=WORD_AT(frame+4u),target=WORD_AT(frame+8u);
+        const uint32_t body=guest_writable(target,0xea0u)?WORD_AT(target):0u;
+        const uint32_t context=guest_writable(body,0x154u)?WORD_AT(body+0x150u):0u;
+        if(story_human_friendly_context(viewer) && story_human_friendly_context(context) &&
+           WORD_AT(context+0x14u)==body && WORD_AT(body+0x7cu)==target) {
+            if(getenv("TSFP_STORY_TRACE") && WORD_AT(frame)==0x000d011cu) {
+                static unsigned observations[4][4];
+                const unsigned from=WORD_AT(viewer),to=WORD_AT(context);
+                if(observations[from][to]++<4u)fprintf(stderr,
+                    "[PC-STORY-FRIENDLY] viewer=%u target=%u caller=%08X friendly=1\n",from,to,WORD_AT(frame));
+            }
+            g_eax=1u;g_esp=frame+4u;return;
+        }
+    }
+#endif
+    original();
+}
+
+#ifdef _WIN32
 static void story_human_teams_frame(void)
 {
     const uint32_t contexts=WORD_AT(0x007B0C48u),actors=WORD_AT(0x007356D8u);

@@ -13,6 +13,7 @@ int pc_story_network_prepare(uint32_t address);
 void pc_story_network_activate(void);
 void pc_story_network_restart(void (*original)(void));
 void pc_story_network_team_init(void (*original)(void));
+void pc_story_network_friendly(void (*original)(void));
 void pc_story_network_pause_rows(void);
 void pc_story_network_pause_style(void);
 void pc_story_network_pause_layout(uint32_t menu);

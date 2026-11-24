@@ -59,6 +59,7 @@ def main():
     parser.add_argument('--fire-probe',action='store_true',help='Check owned firearms and ammunition consumption; save captures for interaction review')
     parser.add_argument('--combat-probe',action='store_true',help='After firearm checks, walk an added guest forward and test host acceptance of a hit on a live enemy')
     parser.add_argument('--restart-probe',action='store_true',help='After opening/fire checks, test host-only level restart and fresh handoff on every peer')
+    parser.add_argument('--friendly-probe',action='store_true',help='Aim P1/P2 at P3/P4 through ordinary mouse input and check native friendly targeting')
     parser.add_argument('--role-spawn-probe',action='store_true',help='Check first-mission character roles and original Splitscreen P1/P2 start selection on every peer')
     parser.add_argument('--checkpoint-probe',action='store_true',help='Walk ordinary inputs toward the first checkpoint; stop after checkpoint reload, never complete the level')
     parser.add_argument('--opening-view-probe',action='store_true',help='Check the native upside-down intro camera for every player in mission one')
@@ -75,6 +76,7 @@ def main():
     assert not args.checkpoint_probe or (args.fire_probe and args.mission==0 and not args.restart_probe)
     assert not args.restart_probe or (args.fire_probe and not args.lobby_only)
     assert not args.opening_view_probe or (args.load_probe and args.mission==0 and args.skip_intro and args.presentation_probe)
+    assert not args.friendly_probe or (args.load_probe and args.players==4 and not args.lobby_only)
     assert not args.role_spawn_probe or (args.load_probe and not args.lobby_only and args.mission==0)
     assert not args.combat_probe or (args.fire_probe and args.mission==0)
     assert not args.npc_observe_seconds or (args.load_probe and not args.lobby_only)
@@ -348,6 +350,33 @@ def main():
                 for role,s in before.items():
                     assert sum(a.get('local_port')==0 for a in s['actors'])==1,(role,'Expected one owned input context',s)
                     assert all(c.get('team')==1 for c in s.get('world',{}).get('characters',[]) if c.get('context')),(role,'Story humans lost their original shared team',s.get('world'))
+                if args.friendly_probe:
+                    result['friendly_targets']={}
+                    for viewer in (0,1):
+                        role=next(role for role in roles if owned_player_slot(before[role])==viewer)
+                        current=before[role];initial_look=current['local_player']['look']
+                        controls=read_json(runs[role]/'controls.json')['mouse'];sensitivity=controls['sensitivity']
+                        for target_slot in (2,3):
+                            for attempt in range(3):
+                                target=next(actor for actor in current['actors'] if actor['slot']==target_slot)
+                                point=list(target['position']);point[1]+=1.1
+                                local=current['local_player'];delta=[a-b for a,b in zip(point,local['position'])]
+                                yaw=math.degrees(math.atan2(delta[0],delta[2]));pitch=math.degrees(math.atan2(delta[1],math.hypot(delta[0],delta[2])))
+                                dx=round(math.remainder(local['look'][0]-yaw,360)/sensitivity)
+                                dy=round((local['look'][1]-pitch)/sensitivity)*(-1 if controls.get('invert_y') else 1)
+                                label=f'friendly-{viewer}-{target_slot}-{attempt}'
+                                append(role,mouse=[dx,dy],label=label,wait=1,world_probe=True)
+                                current=wait_for(lambda:captured(role,label),'Friendly aim capture missing')
+                                if current['local_player'].get('reticle_target')==target['entity']:break
+                            assert current['local_player'].get('reticle_target')==target['entity'],(role,'Reticle did not acquire intended teammate',target_slot,current['local_player'])
+                            trace=(runs[role]/'run0.err').read_text(errors='replace')
+                            assert f'[PC-STORY-FRIENDLY] viewer={viewer} target={target_slot} caller=000D011C friendly=1' in trace,(role,'Native reticle did not classify teammate as friendly',target_slot)
+                            result['friendly_targets'][f'{viewer}-{target_slot}']=current
+                        local=current['local_player'];dx=round(math.remainder(local['look'][0]-initial_look[0],360)/sensitivity)
+                        dy=round((local['look'][1]-initial_look[1])/sensitivity)*(-1 if controls.get('invert_y') else 1)
+                        label=f'friendly-restore-{viewer}'
+                        append(role,mouse=[dx,dy],label=label,wait=1)
+                        wait_for(lambda:captured(role,label),'Friendly aim reset missing')
                 # Local first-level reference shows W blocked against the initial
                 # wreck, while S produces real movement. Use the verified escape
                 # direction one owner at a time; keep real displacement checks.

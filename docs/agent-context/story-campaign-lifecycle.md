@@ -76,6 +76,28 @@ validated host/guest launch configs, restart and next-mission preparation all
 apply the same mapping while retaining joined ownership and other config data.
 P1 remains Cortez12 even where the original final mission selected variant116.
 
+Story's native friendly predicate D6F00 ignores actor team numbers in mode10.
+It tests bit8000 in the character definition selected by actor+48 (table53C508,
+stride20). Cortez and the authored sidekick carry that bit; selectable Private
+Hicks/Jones do not. Shared team1 therefore did not prevent the reticle's D00F0
+predicate from treating extra humans as hostile. Do not alter global character
+flags: an NPC can use the same definition and must retain authored behavior.
+Additive patch3060 wraps D6F00 through `pc_story_network_friendly`. It returns
+friendly only for two validated human contexts in typed Online Story: canonical
+context/actor slots, active party bounds, reciprocal body/actor/context links
+and the existing Story team scope must all match. All other arguments/modes
+use the original predicate. No model metadata, target selection, damage rules
+or color tables are rewritten. Original D00F0 then suppresses its hostile
+reticle indication naturally. Native Story transport remains under MAC-013.
+The original-US targeting fixture executes actual D6F00 and D00F0 code: it
+first reproduces hostile extras, then covers every human pair across13 missions,
+2/3/4 humans and both peer roles, preserving friendly/hostile NPCs (including an
+NPC with Private Hicks's definition), incomplete links, Local Story and Arcade
+team rules. Existing runtime CI runs this through `test_quit_menu.py`.
+The four-player runner's `--friendly-probe` uses ordinary mouse input to aim
+owned P1/P2 views at P3/P4, captures the native F84 target and checks bounded
+D011C reticle-caller traces. It restores the original look before movement.
+
 `pc_story_network_spawn_pad` asks original CF060 for local slot0 for P1 and
 local slot1 for every other online player. The temporary slot, cached-pad and
 random-map selector changes are restored before returning; player ownership,

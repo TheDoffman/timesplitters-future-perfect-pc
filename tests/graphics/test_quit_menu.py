@@ -917,3 +917,32 @@ def test_multiplayer_runtime_wrapper_dispatch(tmp_path, provider):
     assert built.returncode==0, built.stdout+built.stderr
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
     assert result.returncode==0, result.stdout+result.stderr
+
+
+def test_story_original_human_friendliness(tmp_path):
+    from test_recomp_float_joins import compile_and_run, config, FunctionTranslator
+    xbe=ROOT/'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported local US executable required')
+    image=xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    previous=dict(vars(config))
+    try:
+        config.configure_from_xbe(str(xbe))
+        functions={0xd6f00:dict(name='sub_000D6F00_gen',end=0xd6f51),
+                   0xd00f0:dict(name='sub_000D00F0_gen',end=0xd015a)}
+        translator=FunctionTranslator(image,functions)
+        native={a:translator.translate_function(a,info) for a,info in functions.items()}
+    finally:
+        vars(config).update(previous)
+    production=(ROOT/'src/network/pc_story_load.inc').read_text(encoding='utf-8')
+    scope=production[production.index('static int story_human_team_scope('):production.index('/* Story D6F00')]
+    scope=scope.replace('#endif','').replace('#ifdef _WIN32','')
+    adapter=production[production.index('void pc_story_network_friendly('):production.index('static void story_human_teams_frame(void)\n{')]
+    adapter=adapter[:adapter.rfind('#ifdef _WIN32')]
+    source=(ROOT/'tests/network/story_friendly_original.c').read_text(encoding='utf-8')
+    reticle=native[0xd00f0].replace('sub_000D6F00_gen','sub_000D6F00')
+    source=source.replace('/* ORIGINAL_FRIENDLY */',native[0xd6f00]).replace('/* ORIGINAL_RETICLE */',reticle)
+    source=source.replace('/* PRODUCTION_SCOPE */',scope).replace('/* PRODUCTION_FRIENDLY */',adapter)
+    output=compile_and_run(tmp_path,source)
+    assert 'PASS:' in output

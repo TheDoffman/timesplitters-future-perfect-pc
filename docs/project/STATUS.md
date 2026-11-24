@@ -1,3 +1,42 @@
+## Online Story co-op human targeting (2026-11-23)
+
+Local/uncommitted on online-story-coop at457d14059. Shared team1 was already
+assigned, but Story's native D6F00 friendly test instead reads a character-
+definition bit8000. The selectable Private Hicks/Jones definitions lack that
+bit. D00F0 therefore selected hostile reticle behavior for extra humans.
+A new scoped adapter recognizes linked co-op human pairs through the native
+friendly predicate; NPCs using those same models, authored friendly NPCs,
+Local Story, Arcade and incomplete bodies retain the original predicate.
+No global definition flags or reticle colors are changed. Runtime patch3060
+is additive; the complete local stack validates. The original-US fixture
+reproduces the failure and verifies the correction across13 missions, party
+sizes2/3/4 and both roles, preserving native NPC/Arcade behavior.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433/MSBuild17.12.6, default Windows
+frontend (Vulkan off; Original60FPS; driver not queried); supported US XBE
+validated. Complete patch validation, Release generation/build and native
+build tests pass. Final executable SHA256:
+766fc6b6dceaad40fcde1fbcbed1afd6a8c70c798db60e896b98637e77c01030.
+The regression suite recorded147 passes/2 skips and two failures: a timed-out
+negative room fixture and an outdated historical Mac patch subset. The room
+case passed on rerun; the historical subset now excludes the new dependent
+Story wrapper until full upgrade. All four focused cases pass. Evidence and
+local-directory checks also pass31 cases outside the restricted TLS sandbox.
+
+Four-player mission0/difficulty0 acceptance passes through current native
+Online menus and the production private HTTPS directory/UDP relay on loopback.
+Ordinary mouse input acquired P3/P4 from owned P1/P2 views; all four native
+D011C calls returned friendly. Reviewed aiming captures show neutral reticles.
+Live definition flags remain32768/32768/4/5 for Cortez/sidekick/Hicks/Jones,
+confirming no global flag mutation. Roles, adjacent starts, all-player inverted
+intro, handoff, movement, firing, guest pause and host restart pass. Evidence:
+`private/network-validation/story-four/pair-evidence.json`;
+`logs/story-friendly-{final-build,regressions,focused-regressions,four-player}.log`.
+This bounded first-mission run does not certify full-campaign behavior. All
+runners closed and disposable partition images were recycled. Personal
+settings/saves and the canonical Test Lab fixture are preserved. Native
+Mac/Linux Story remains unverified under MAC-013.
+
 ## Online Story human animation clock recovery (2026-11-23)
 
 Local/uncommitted on online-story-coop atbc13b72d9. The host and guest

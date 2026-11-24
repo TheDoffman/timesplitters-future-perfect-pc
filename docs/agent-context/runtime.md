@@ -1,5 +1,5 @@
 [Pad](controller-deadzones.md); [tools](developer-tools-integration.md).
-[3045 assets](story-campaign-lifecycle.md).
+[3060 allies](story-campaign-lifecycle.md).
 
 [Bob](weapon-bob.md);[Uplink](native-uplink.md).
 [UI](controls-options.md); [feed](../development/arcade-kill-feed.md).

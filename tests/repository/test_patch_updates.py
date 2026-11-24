@@ -33,6 +33,7 @@ STORY_PATCHES = (
     'story-extra-loadout',
     'story-handoff-authority',
     'story-human-teams',
+    'story-human-friendliness',
     'story-level-restart',
     'story-team-initialization',
     'story-checkpoints',
@@ -425,6 +426,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     assert 'pc_story_network_loadout_grant(sub_001BFCA0_gen)' in manual
     assert 'pc_story_network_handoff(sub_00218910_gen)' in manual
     assert 'pc_story_network_team(sub_000D7550_gen)' in manual
+    assert 'pc_story_network_friendly(sub_000D6F00_gen)' in manual
     assert 'pc_story_failure_trace(sub_000D50E0_gen,0x000D50E0u)' in manual
     assert installer.apply_patches(checkout, PATCHES) == []
 
