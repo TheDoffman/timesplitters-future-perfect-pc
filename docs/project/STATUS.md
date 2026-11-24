@@ -1,3 +1,17 @@
+## 2026-11-24 - Launcher-only 1.7.2 preparation
+
+User requested building/publishing only the launcher. From main fb6c3e1d,
+launcher1.7.2 packages the merged startup ordering mitigation (#595), console
+severity filtering (#594) and reviewed emoji-free release notes. Game VERSION
+remains0.7.1; no game build or publication is part of this task.
+
+Local Windows release build with pinned artwork and isolated updater/UI checks
+passed. Focused publication/startup tests:197 passed and21 subtests passed.
+These local tests precede the version commit; authoritative clean-source,
+three-platform packages and install/corruption/repair/preservation verification
+must pass the PR and official launcher release workflow. Main merge requires
+explicit user authorization. Nothing new has been published at this stage.
+
 ## 2026-11-24 - Focused Vulkan/D3D11 gameplay comparison
 
 [Focused results](../development/renderer-frame-pacing-focused.md) supersede the
