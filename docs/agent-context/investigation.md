@@ -1,3 +1,4 @@
+[Release authoring policy](../release/release-notes.md) applies to both publishers.
 V-Sync patch3040 follows the final config/render dependencies. The context index
 tail and historical patch-migration fixtures track that order; old SMAA-free
 inputs exclude V-Sync until their complete-stack upgrade.

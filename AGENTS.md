@@ -150,6 +150,10 @@ providers, perform handoffs or limit themselves to advisory work.
   logs/counts, file lists, implementation reports and platform checklists.
   Mention remaining limits only when they affect what users can expect.
   Keep the description current as the change evolves.
+- Before publishing a game or launcher, write and review versioned, player-facing
+  [release notes](docs/release/release-notes.md). Explain each issue/limitation and
+  the resulting behavior in plain Before/Now paragraphs; PR titles are references,
+  not release explanations. Include required steps, affected platforms and limits.
 - Keep fixed issues open until the version containing the fix is live/published
   (user instruction, 2026-10-29). A merged PR or local test build is not a
   published fix. Use non-closing issue references such as `Refs #128` in PRs;

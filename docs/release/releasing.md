@@ -172,6 +172,12 @@ package. Windows validation does not establish Mac runtime acceptance.
 
 ## Release notes and provenance
 
+Follow the shared [player-facing release notes rules](release-notes.md). Before
+preparation, commit `docs/release/notes/v<version>.md` with reviewed Before/Now
+explanations, or select an equally reviewed file with `-NotesFile`. A PR title
+list or a known-issues-only file cannot replace the explanation of the changes.
+Missing or incomplete notes stop preparation before a build or package reuse.
+
 Stable notes compare against the highest earlier published Stable game ancestor,
 even across minor versions. For the first Stable game release only, when no
 Stable game has been published, use the most recently published earlier game
@@ -182,7 +188,8 @@ Preview notes compare against the highest suitable ancestor in the same release
 series, falling back to an ancestor Stable release. Nonancestor commits cannot
 become a baseline. A maintenance branch still requires a published Stable ancestor.
 
-The publisher includes merged game-related PRs from the exact commit range.
+Below the reviewed explanations, the publisher links merged game-related PRs
+from the exact commit range as references.
 Launcher-only, documentation-only and release housekeeping PRs are excluded.
 Feature-branch work may not have a merged PR: use `-NotesFile` to supply reviewed
 Markdown describing the changes, known issues, test steps and compatibility.

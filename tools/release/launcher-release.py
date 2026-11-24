@@ -28,6 +28,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+from release_notes import read_release_notes
 
 ROOT = _layout_root
 REPOSITORY = 'TheDoffman/timesplitters-future-perfect-pc'
@@ -87,6 +88,7 @@ def plan_release(event, kind, ref, sha, repository):
         require(git('rev-parse', 'HEAD') == sha, 'Checkout does not match the requested release source.')
         subprocess.run(['git', 'fetch', '--no-tags', 'origin', default], cwd=ROOT, check=True)
         subprocess.run(['git', 'merge-base', '--is-ancestor', sha, 'FETCH_HEAD'], cwd=ROOT, check=True)
+        read_release_notes(ROOT, 'launcher', tag)
     return {'schema': 1, 'version': version, 'tag': tag, 'source_revision': sha,
             'repository': repository, 'publish': publish, 'prerelease': '-' in version,
             'default_branch': event.get('repository', {}).get('default_branch', 'main')}
@@ -286,7 +288,8 @@ def launcher_pr_notes(api, base, generated, previous, tag, sha):
         title = re.sub(r'([\\`*_[\]])', r'\\\1', title)
         rows.append(f'- {title} ([#{number}]({url}/pull/{number}))')
     changes = '\n'.join(rows) or 'No merged launcher-related pull requests in this release.'
-    return ("## Launcher changes\n\n"+changes+
+    return ("## Related launcher pull requests\n\n"
+            "The explanations above describe the released behavior; these links provide source history.\n\n"+changes+
             f'\n\n**Full source comparison** (includes game changes): {url}/compare/{previous}...{tag}')
 
 
@@ -335,6 +338,11 @@ def publish(directory, plan, api):
             match = VERSION.fullmatch(latest['tag_name'][10:])
             require(match and tuple(map(int, version.split('.'))) > tuple(map(int, match.groups()[:3])),
                     'A stable launcher release must be newer than the current Latest launcher.')
+    reviewed = None
+    if release is None or release['draft']:
+        reviewed = read_release_notes(ROOT, 'launcher', tag)
+        require(release is None or reviewed in release.get('body', ''),
+                'Existing draft is missing the reviewed release notes; inspect it before publishing.')
     if existing_sha is None:
         api.call('POST', base+'/git/refs', {'ref': 'refs/tags/'+tag, 'sha': sha})
     if release is None:
@@ -346,7 +354,7 @@ def publish(directory, plan, api):
                                                    ('Download Linux x64', 'linux-x64')])
         body = ('One launcher release for Windows x64, native Apple Silicon Mac and Linux x64. Download the ZIP for your platform; '
                 'existing launchers select their matching update automatically. Saves and settings are preserved.\n\n'
-                + links + '\n\n' +
+                + links + '\n\n' + reviewed + '\n\n' +
                 'Mac v1.2.19 users: manually replace the app and Support/Launcher/manifest.json with this release; '
                 'that older updater cannot install the newly sealed app bundle. Preserve game files, saves, settings and ISO.\n\n'
                 'The Mac app is ad-hoc signed; Developer ID signing/notarization and clean-machine installation '
