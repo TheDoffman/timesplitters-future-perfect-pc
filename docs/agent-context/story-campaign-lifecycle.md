@@ -74,10 +74,28 @@ local slot1 for every other online player. The temporary slot, cached-pad and
 random-map selector changes are restored before returning; player ownership,
 body creation, native authored starts and checkpoint lookup remain engine-owned.
 This replaces the former mission-one placement of all peers beside Cortez and
-the primary-pad fallback for extra players. It introduces no position offsets.
+the primary-pad fallback for extra players. P2 keeps that native start. P3/P4
+use private tokens7F02/7F03 and copy its32-byte record, offsetting world X by
+-1.25/+1.25 metres and world Z by+2 metres. This leaves the mission-one
+Hicks approach clear. Height, heading and metadata stay authored.
 Private rejoin tokens7F01..7F03 retain P2 pad metadata and the host's validated
 numeric rejoin pose; record/tag/index hooks never index ordinary pad tables with
 a private token. Local Story, Arcade and movies use their original paths.
+
+All players retain the first mission's native type27 hanging camera intro,
+including secondary humans (user correction2026-11-23). No upright secondary
+view composition, initial-look rewrite or opening viewmodel omission is applied.
+Native camera updates, rendering, animation callbacks and pistol handoff remain
+on their original paths. Spawn spacing above is independent of camera position.
+The bounded runner accepts `--presentation-probe --opening-view-probe --skip-intro`
+for mission0. Fresh early capture sidecars record camera type, animation time,
+eye/forward/up/target and human positions. The probe requires all four owned
+views to retain type27, advancing animation and inverted up vectors; later
+movement, firing and restart probes verify the handoff into ordinary gameplay.
+Movement inputs run in actual human-slot order. The role/start probe checks
+separated adjacent guest positions and native P1/P2 source selection.
+The bounded spawn trace reserves six observations per actual slot so repeated
+lookups for one human cannot consume another human's evidence.
 
 Camera tags, fades, inset views, active cue lifetime and rally positions use the
 shared numeric snapshot path. A fresh later mission must not wait for Time to

@@ -1,3 +1,36 @@
+## Online Story shared hanging intro and adjacent starts (2026-11-23)
+
+Local/uncommitted on online-story-coop at2137c4a84. Per the user's corrected
+request, all players retain the first mission's original upside-down type27
+camera intro. The upright secondary view override and its viewmodel omission
+were removed; native camera rendering, animation callbacks and pistol handoff
+run on their existing paths. Guest spawn placement remains unchanged: P2 uses
+the Splitscreen start, while P3/P4 inherit its metadata at world-X offsets
+-1.25/+1.25 metres and world-Z offset+2 metres. Validated rejoin poses stay exact.
+This arrangement leaves the mission-one Hicks approach clear; a straight row
+across P2 had blocked his approach during the preceding spacing test.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433/MSBuild17.12.6, default Windows
+frontend (Vulkan off; driver not queried). Supported US XBE hash validated.
+The supported Release build and bundled checks pass. SHA-256:
+e34a698b179304599527080ff30c002e3ae16a35978235b86805830eaa4d2e44.
+Regression suite:110 passed,2 platform-only skips. The four-player current-menu
+mission-one test passes: all owned views retain type27, advancing animation and
+inverted up vectors. All four opening-auto-600.png captures were reviewed and
+show the hanging intro. Character roles, adjacent starts, pistol handoff, owned
+movement, firing, guest pause and coordinated restart also pass. Early PNGs have
+fresh same-sample sidecars. Evidence: private/network-validation/story-four/
+pair-evidence.json; logs/story-shared-intro-build.log,
+logs/story-shared-intro-regressions.log and logs/story-shared-intro-four-player.log.
+All runner processes finished and disposable partition images were recycled.
+
+The menu route is Story > Online > Online > Matches Available > Start New
+Match/Create Lobby, or the listed host for guests. Tests use the production
+private HTTPS directory/UDP relay on isolated loopback endpoints and disposable
+Test Lab profiles/settings. Full campaign completion, physical cross-device/
+Internet acceptance and native Mac/Linux Story remain unverified (MAC-013).
+Personal saves/settings and the canonical fixture are preserved.
+
 ## Current Online Story test flow and launcher repair (2026-11-22)
 
 Local/uncommitted on online-story-coop at4d12949b6 plus the character/start work.

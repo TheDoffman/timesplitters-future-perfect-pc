@@ -595,6 +595,17 @@ void pc_story_network_start_record(void (*original)(void))
                 memcpy((void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),story_rejoin_position,12u);
                 memcpy((void *)((uintptr_t)(target+24u)+g_xbox_mem_offset),&story_rejoin_heading,4u);
             }
+            else if(pad>=0x7f02u) {
+                /* Keep P2's authored start and metadata. Extra humans stand
+                   1.25 metres either side and2 metres behind P2. Keep the
+                   approach in front clear for authored NPC interactions. */
+                float x;memcpy(&x,(const void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),4u);
+                x+=pad==0x7f02u?-1.25f:1.25f;
+                memcpy((void *)((uintptr_t)(target+12u)+g_xbox_mem_offset),&x,4u);
+                float z;memcpy(&z,(const void *)((uintptr_t)(target+20u)+g_xbox_mem_offset),4u);
+                z+=2.f;
+                memcpy((void *)((uintptr_t)(target+20u)+g_xbox_mem_offset),&z,4u);
+            }
             restore_registers(&saved);g_eax=target;g_esp=frame+4u;return;
         }
         /* A missing template must never index the stock table with7f01/2/3. */
@@ -653,14 +664,14 @@ void pc_story_network_spawn_pad(void (*original)(void))
             original();
             WORD_AT(context)=slot;WORD_AT(context+0x1504u)=cached;
             WORD_AT(0x006b988cu)=random;
-            if(story_rejoin_pose_valid && slot && WORD_AT(context+4u)==0u) {
+            if(g_eax!=UINT32_MAX && (slot>=2u || (story_rejoin_pose_valid && slot && WORD_AT(context+4u)==0u))) {
                 if(!story_extra_pad_storage) story_extra_pad_storage=xbox_HeapAlloc(96u,4u);
                 if(story_extra_pad_storage && guest_writable(story_extra_pad_storage,96u))
                     g_eax=0x7f00u+slot;
             }
             if(getenv("TSFP_STORY_TRACE")) {
-                static unsigned observations;
-                if(observations++<24u) fprintf(stderr,
+                static unsigned observations[4];
+                if(slot<4u && observations[slot]++<6u) fprintf(stderr,
                     "[PC-STORY-SPLITSCREEN-START] slot=%u local_role=%u pad=%08X rejoin=%u\n",
                     slot,slot?1u:0u,g_eax,(unsigned)story_rejoin_pose_valid);
             }

@@ -61,6 +61,7 @@ def main():
     parser.add_argument('--restart-probe',action='store_true',help='After opening/fire checks, test host-only level restart and fresh handoff on every peer')
     parser.add_argument('--role-spawn-probe',action='store_true',help='Check first-mission character roles and original Splitscreen P1/P2 start selection on every peer')
     parser.add_argument('--checkpoint-probe',action='store_true',help='Walk ordinary inputs toward the first checkpoint; stop after checkpoint reload, never complete the level')
+    parser.add_argument('--opening-view-probe',action='store_true',help='Check the native upside-down intro camera for every player in mission one')
     parser.add_argument('--presentation-probe',action='store_true',help='Retain five early-opening frames per peer for cinematic/black-screen review')
     parser.add_argument('--skip-intro',action='store_true',help='Diagnostic host skip after fresh intro captures; default lets the first-level intro finish naturally')
     parser.add_argument('--script-observe-seconds',type=int,default=0,choices=range(31),metavar='0..30',help='Passive diagnostic wait if a peer is script-suspended; does not replace failed startup evidence')
@@ -73,6 +74,7 @@ def main():
     assert not args.fire_probe or (args.load_probe and not args.lobby_only)
     assert not args.checkpoint_probe or (args.fire_probe and args.mission==0 and not args.restart_probe)
     assert not args.restart_probe or (args.fire_probe and not args.lobby_only)
+    assert not args.opening_view_probe or (args.load_probe and args.mission==0 and args.skip_intro and args.presentation_probe)
     assert not args.role_spawn_probe or (args.load_probe and not args.lobby_only and args.mission==0)
     assert not args.combat_probe or (args.fire_probe and args.mission==0)
     assert not args.npc_observe_seconds or (args.load_probe and not args.lobby_only)
@@ -257,6 +259,17 @@ def main():
                         return states if all(not s.get('flags',0)&0x20000000 and s.get('scene',101)<100 and
                                              s.get('network_phase')==15 for s in states.values()) else None
                     result['first_gameplay_states']=wait_for(gameplay_after_intro,'Host intro did not hand off every peer to gameplay')
+                    if args.opening_view_probe:
+                        views=wait_for(lambda:{role:read_json(run/'opening-auto-600.json') for role,run in runs.items()}
+                            if all(read_json(run/'opening-auto-600.json') for run in runs.values()) else None,'Missing early opening views')
+                        result['opening_views']=views
+                        primary_view=views['host']['local_player']['story_view']
+                        assert primary_view['camera_type']==27 and primary_view['camera_up'][1]<-.5,('Cortez opening reference not hanging',primary_view)
+                        for role,state in views.items():
+                            view=state['local_player']['story_view']
+                            assert view['camera_target']==view['body'],(role,'Opening view targets another human',view)
+                            assert view['camera_type']==27 and view['camera_animation_time']>.1,(role,'Opening lost its native animation camera',view)
+                            assert view['camera_up'][1]<-.5,(role,'Opening view is not upside down',view)
                     # Retain world identities/positions even if the scripted opening stalls.
                     for role in runs:
                         append(role,label='opening-world',wait=8,world_probe=True)
@@ -323,7 +336,11 @@ def main():
                         role_starts[role]=dict(characters=expected_characters,owned_slot=owned_slot,starts=starts)
                     observed={slot:{row['starts'][slot] for row in role_starts.values() if slot in row['starts']} for slot in range(args.players)}
                     assert all(len(pads)==1 for pads in observed.values()),('Peer start disagreement',observed)
-                    assert all(observed[slot]==observed[1] for slot in range(1,args.players)) and observed[0]!=observed[1],('Splitscreen starts',observed)
+                    assert observed[0]!=observed[1] and all(observed[slot]=={0x7f00+slot} for slot in range(2,args.players)),('Splitscreen and adjacent starts',observed)
+                    for role,s in before.items():
+                        secondary=[a['position'] for a in s['actors'][1:]]
+                        assert all(math.dist(secondary[i],secondary[j])>.9 for i in range(len(secondary)) for j in range(i)),(role,'Overlapping secondary starts',secondary)
+                        assert all(math.dist(secondary[0],p)<2.5 for p in secondary[1:]),(role,'Extra players not adjacent to P2',secondary)
                     result['roles_and_starts']=role_starts
                 if args.lobby_controls:
                     for role,s in before.items():
@@ -334,8 +351,11 @@ def main():
                 # Local first-level reference shows W blocked against the initial
                 # wreck, while S produces real movement. Use the verified escape
                 # direction one owner at a time; keep real displacement checks.
+                # Exercise owners in native slot order regardless of parallel
+                # admission order; keep displacement checks for every player.
                 result['movement_steps']={}
-                for role,key in zip(roles,[83]*len(roles) if args.mission==0 else [87,68,83,65]):
+                movement_roles=sorted(roles,key=lambda role:owned_player_slot(before[role]))
+                for role,key in zip(movement_roles,[83]*len(roles) if args.mission==0 else [87,68,83,65]):
                     append(role,keys=[key],hold_seconds=1,sample_hold=True,label='move-own-player',wait=2)
                     step=wait_for(lambda:captured(role,'move-own-player'),'Owned movement input not completed')
                     result['movement_steps'][role]=step

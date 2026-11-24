@@ -379,7 +379,13 @@ def main():
                     story_view=dict(state=word(player+0x114),saved_state=word(player+0x110),
                         port=word(player+4),view=word(player+8),firstperson_animation_mode=word(player+0x14f8),
                         camera_script=word(word(player+8)+0x26c) if word(player+8) else None,
-                        camera_flags=word(word(player+8)+0x21c) if word(player+8) else None),
+                        camera_flags=word(word(player+8)+0x21c) if word(player+8) else None,
+                        camera_target=word(word(player+8)+0x2a8) if word(player+8) else None,body=entity,
+                        camera_type=word(word(player+8)+0x218) if word(player+8) else None,
+                        camera_animation_time=real(word(player+8)+0xfd4) if word(player+8) else None,
+                        camera_eye=floats(word(player+8)+0x27c,3) if word(player+8) else None,
+                        camera_forward=floats(word(player+8)+0x334,3) if word(player+8) else None,
+                        camera_up=floats(word(player+8)+0x364,3) if word(player+8) else None),
                     hit_response=floats(player+0xf4,3),
                     equipped=[word(player+0x1b4),word(player+0x58c)],ammo=[])
         # Original actor damage updates entity+0x1cc (native_sniper_damage.c).
@@ -648,6 +654,9 @@ def main():
             **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}),
             **(dict(native_clock=native_clock_snapshot()) if args.watch_native_clock else {}))
     presentation_frames=set()
+    if args.story_presentation_probe:
+        for target in (60,300,600,900,1200):
+            (run/f'opening-auto-{target}.json').unlink(missing_ok=True)
     def sample():
         nonlocal next_sample
         elapsed=time.perf_counter()-start
@@ -666,6 +675,8 @@ def main():
                 for target in (60,300,600,900,1200):
                     if target<=tick<target+120 and target not in presentation_frames:
                         capture('opening-auto-'+str(target));presentation_frames.add(target)
+                        (run/f'opening-auto-{target}.json').write_text(json.dumps(dict(
+                            game_tick=tick,local_player=item.get('local_player'),actors=item.get('actors'))))
             next_sample=elapsed+(.1 if args.pair_load_probe and early_story else
                 .5 if args.pair_load_probe else 1)
     def wait_observed(seconds):

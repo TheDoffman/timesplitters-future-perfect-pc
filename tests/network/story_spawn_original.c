@@ -33,13 +33,15 @@ static int story_campaign_gameplay(void){return enabled;}
 static int guest_writable(uint32_t a,size_t n){return a>=0x1000 && a<0x800000 && n<=0x800000-a;}
 static uint32_t story_extra_pad_storage;
 static int story_rejoin_pose_valid;
-static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t alignment){(void)n;(void)alignment;assert(0);return 0;}
+static uint32_t xbox_HeapAlloc(uint32_t n,uint32_t alignment){assert(n==96 && alignment==4);return 0x50000;}
+static uint32_t native_pad;
+static void record_native_pad(void){sub_000CF060_gen();native_pad=g_eax;}
 /* PRODUCTION_SPAWN_ADAPTER */
 static uint32_t select_pad(unsigned slot,int online)
 {
     const uint32_t context=0x6000+slot*0x1584;
     g_esp=0x1800;MEM32(g_esp)=0x12345678;MEM32(g_esp+4)=context;
-    if(online)pc_story_network_spawn_pad(sub_000CF060_gen);
+    if(online)pc_story_network_spawn_pad(record_native_pad);
     else sub_000CF060_gen();
     assert(g_esp==0x1804 && MEM32(0x1800)==0x12345678);
     return g_eax;
@@ -67,7 +69,8 @@ int main(void)
             MEM32(0x790950)=count;MEM32(0x6b988c)=1;
             const uint32_t context=0x6000+slot*0x1584;
             MEM32(context+0x1504)=123;
-            assert(select_pad(slot,1)==(slot?p2:p1));
+            assert(select_pad(slot,1)==(slot>=2?0x7f00u+slot:slot?p2:p1));
+            assert(native_pad==(slot?p2:p1));
             assert(MEM32(context)==slot && MEM32(context+4)==0x55 &&
                    MEM32(context+0x1504)==123 && MEM32(0x6b988c)==1);
         }

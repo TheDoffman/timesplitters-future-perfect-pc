@@ -765,7 +765,7 @@ int main(void)
         CHECK(context_spawns==3); /* no retry after later remote inactivity */
 
         /* Missing extra authored start reuses original slot0 pad lookup,
-           without changing slot/ownership or replacing a valid network pad. */
+           without changing slot/ownership; a valid P2 pad supplies adjacent starts. */
         WORD_AT(0x79094c)=4;WORD_AT(0x790950)=4;const uint32_t extra=0x6000+3*0x1584;
         WORD_AT(extra)=3;WORD_AT(extra+4)=0x55;
         g_esp=0x1800;WORD_AT(g_esp+4)=extra;
@@ -773,7 +773,7 @@ int main(void)
         CHECK(g_eax==UINT32_MAX && g_esp==0x1804 && pad_fallbacks==0);
         CHECK(WORD_AT(extra)==3 && WORD_AT(extra+4)==0x55);
         pad_original_result=88;g_esp=0x1800;pc_story_network_spawn_pad(pad_original);
-        CHECK(g_eax==88 && pad_fallbacks==0);
+        CHECK(g_eax==0x7f03 && pad_fallbacks==0);
         pad_original_result=UINT32_MAX;WORD_AT(0x76b1a4)=12;
         g_esp=0x1800;pc_story_network_spawn_pad(pad_original);
         CHECK(g_eax==UINT32_MAX && pad_fallbacks==0);
@@ -994,14 +994,14 @@ int main(void)
                 WORD_AT(context)=slot;WORD_AT(context+4)=0x55;WORD_AT(context+0x1504)=0x1234;
                 WORD_AT(0x6b988c)=1;g_esp=0x1800;WORD_AT(g_esp+4)=context;
                 pc_story_network_spawn_pad(pad_original);
-                CHECK(g_eax==(checkpoint?9000u:8000u)+(slot?1u:0u) && g_esp==0x1804);
+                CHECK(g_eax==(slot>=2u?0x7f00u+slot:(checkpoint?9000u:8000u)+(slot?1u:0u)) && g_esp==0x1804);
                 CHECK(WORD_AT(context)==slot && WORD_AT(context+4)==0x55 &&
                       WORD_AT(context+0x1504)==0x1234 && WORD_AT(0x6b988c)==1);
             }
         }
         pad_local_contract=0;story_checkpoint=0;story_extra_pad_storage=0xa000;
-        /* Rejoin keeps its validated pose and uses P2's original pad metadata,
-           without adding a per-slot position offset. */
+        /* Initial extras inherit P2 metadata beside its unchanged start.
+           Rejoin below retains its exact validated pose for every guest. */
         const float position[3]={10.f,20.f,30.f};
         memset((uint8_t *)memory+0x78000,0x5a,32);
         memcpy((uint8_t *)memory+0x7800c,position,12);
@@ -1010,14 +1010,16 @@ int main(void)
             pc_story_network_start_record(frame_original);
             const uint32_t target=0xa000+(slot-1)*32;
             float p[3];memcpy(p,(uint8_t *)memory+target+12,12);
-            CHECK(g_eax==target && g_esp==0x1804 && p[0]==10.f &&
-                  p[1]==20.f && p[2]==30.f && WORD_AT(target+4)==0x5a5a5a5a);
+            CHECK(g_eax==target && g_esp==0x1804 && p[0]==10.f+(slot==2?-1.25f:slot==3?1.25f:0.f) &&
+                  p[1]==20.f && p[2]==30.f+(slot>=2?2.f:0.f) && WORD_AT(target+4)==0x5a5a5a5a);
         }
         story_rejoin_pose_valid=1;story_rejoin_position[0]=100.f;
         story_rejoin_position[1]=200.f;story_rejoin_position[2]=300.f;story_rejoin_heading=1.5f;
-        g_esp=0x1800;WORD_AT(g_esp+4)=0x7f01;pc_story_network_start_record(frame_original);
-        float joined_pad[4];memcpy(joined_pad,(uint8_t *)memory+0xa00c,sizeof joined_pad);
-        CHECK(joined_pad[0]==100.f && joined_pad[1]==200.f && joined_pad[2]==300.f && joined_pad[3]==1.5f);
+        for(unsigned slot=1;slot<4;slot++) {
+            g_esp=0x1800;WORD_AT(g_esp+4)=0x7f00+slot;pc_story_network_start_record(frame_original);
+            float joined_pad[4];memcpy(joined_pad,(uint8_t *)memory+0xa00c+(slot-1)*32,sizeof joined_pad);
+            CHECK(joined_pad[0]==100.f && joined_pad[1]==200.f && joined_pad[2]==300.f && joined_pad[3]==1.5f);
+        }
         story_rejoin_pose_valid=0;
         float original_x;memcpy(&original_x,(uint8_t *)memory+0x7800c,4);CHECK(original_x==10.f);
         g_esp=0x1800;WORD_AT(g_esp+4)=0x7f03;pc_story_network_start_tag(start_tag_original);

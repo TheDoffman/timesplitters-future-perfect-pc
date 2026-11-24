@@ -3492,6 +3492,16 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Adjacent starts and shared intro (2026-11-23, uncommitted):**
+  All Windows Online Story players retain the original upside-down intro camera.
+  The requested upright guest override was removed. Shared
+  `src/network/pc_story_load.inc` keeps P2's native start and places P3/P4 at
+  world-X offsets -1.25/+1.25 metres and world-Z offset+2 metres, leaving the
+  mission-one Hicks approach clear. Validated rejoin poses stay exact.
+  No new OS adapter or protocol change. Native Story transport/admission and
+  Mac/Linux live acceptance remain **Not started** under MAC-013; shared CPU
+  contracts do not establish native Story support. See [STATUS](STATUS.md).
+
 - **Story characters and Splitscreen starts (2026-11-21, uncommitted on online-story-coop):**
   Shared Story config now chooses Cortez, the original per-mission sidekick,
   Private Hicks and Private Jones. Existing native start wrappers use the original
