@@ -154,6 +154,10 @@ providers, perform handoffs or limit themselves to advisory work.
   [release notes](docs/release/release-notes.md). Explain each issue/limitation and
   the resulting behavior in plain Before/Now paragraphs; PR titles are references,
   not release explanations. Include required steps, affected platforms and limits.
+- All future game and launcher release posts and announcement drafts use the
+  approved [post layout](docs/release/notes/ANNOUNCEMENT-TEMPLATE.md): version
+  heading, brief summary, named problem/fix paragraphs, update steps, download
+  links and a compatibility footer. Use no emojis.
 - Keep fixed issues open until the version containing the fix is live/published
   (user instruction, 2026-10-29). A merged PR or local test build is not a
   published fix. Use non-closing issue references such as `Refs #128` in PRs;

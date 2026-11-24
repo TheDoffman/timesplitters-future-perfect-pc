@@ -1,8 +1,7 @@
-[Release notes](../release/release-notes.md): `release_notes.py` validates reviewed
-versioned Before/Now prose for game preparation and launcher publication/dispatch.
-Generated PR titles are references below it; published retries retain their notes.
-Contract and fail-before-tag tests run in `test_launcher_release.py` and
-`test_publish_release.py`; no launcher runtime/OS adapter changes.
+[Release notes](../release/release-notes.md): `release_notes.py` requires versioned
+Before/Now prose for game preparation and launcher dispatch/publication. All posts
+use the approved emoji-free layout; published retries retain their notes.
+Tests: `test_launcher_release.py`, `test_publish_release.py`; no OS adapter changes.
 
 [Cold startup network ordering and tests](launcher-startup.md). Both launcher
 hosts use shared TextureUpdateCheck.StartAfter; request ordering changes only.
