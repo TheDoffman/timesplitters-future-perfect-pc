@@ -6,11 +6,10 @@ Tests: `test_launcher_release.py`, `test_publish_release.py`; no OS adapter chan
 [Cold startup network ordering and tests](launcher-startup.md). Both launcher
 hosts use shared TextureUpdateCheck.StartAfter; request ordering changes only.
 
-Release preparation (2026-11-23): the user selected game0.7.1 and launcher1.7.1
-for the merged main changes through e29f51d2, rather than the suggested minor
-increments. New renderer choices and update progress require the official
-three-host build/package gates. Published0.7.0/1.7.0 and historical previews
-remain immutable. This source bump is not a new runtime acceptance claim.
+Launcher-only1.7.2 preparation (2026-11-24) follows published1.7.1: startup
+ordering and console severity fixes, with reviewed versioned emoji-free notes.
+Use the official three-host workflow and verify15 assets/aliases. Game0.7.1 is
+unchanged; no game build/publication. [Procedure](../release/launcher-releases.md).
 
 Renderer restart metadata and shared preference: [in-game flow](opengl-recovery.md#in-game-renderer-restart).
 

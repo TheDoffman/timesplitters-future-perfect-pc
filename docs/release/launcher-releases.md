@@ -1,10 +1,11 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher is **1.7.1**, using the maintenance version explicitly
-selected by the user on 2026-11-23. It includes Vulkan/OpenGL selection and game
-update progress with reuse of unchanged runtime files. Publish through the
-three-host workflow after the version PR reaches main; verify all fifteen
-assets and versionless alias parity before publishing game **0.7.1**.
+The next Stable launcher is **1.7.2**, a launcher-only maintenance update requested
+on 2026-11-24. It addresses the Mac startup crash after updates and console
+messages incorrectly shown as errors. The reviewed emoji-free notes are in
+`notes/launcher-v1.7.2.md`. Publish through the three-host workflow after the
+version PR reaches main, then verify all fifteen assets and versionless aliases.
+Game **0.7.1** remains unchanged; do not build or publish a game for this request.
 Source preparation does not publish packages or replace native acceptance.
 
 Earlier Stable launcher **1.6.0** included shared
