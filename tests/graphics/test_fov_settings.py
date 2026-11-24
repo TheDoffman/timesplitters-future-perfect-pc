@@ -27,7 +27,7 @@ def test_native_menu_callbacks_compile(tmp_path, source):
     assert result.returncode == 0, result.stdout + result.stderr
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows settings persistence adapter')
-@pytest.mark.parametrize("mutation", ["fixed", "original-controller-speed", "drain-other-menu", "original-system-link", "missing-lan-activation", "missing-browser-backend-init"])
+@pytest.mark.parametrize("mutation", ["fixed", "original-controller-speed", "drain-other-menu", "original-system-link", "missing-lan-activation", "missing-browser-backend-init", "missing-ending-backend-init", "missing-lobby-backend-init", "missing-autojoin-backend-init"])
 def test_fov_settings(tmp_path, mutation):
     compiler, environment = native_compiler(tmp_path)
     exe = tmp_path / 'fov.exe'
@@ -95,11 +95,16 @@ def test_fov_settings(tmp_path, mutation):
         fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
         source = tmp_path / 'fov_settings.c'
         source.write_text(fixture, encoding='utf-8')
-    if mutation == 'missing-browser-backend-init':
+    if mutation in ('missing-browser-backend-init','missing-ending-backend-init','missing-lobby-backend-init','missing-autojoin-backend-init'):
         adapter = (ROOT / 'src/interface/pc_multiplayer_menu.inc').read_text(encoding='utf-8')
-        needle = '    guest_call(sub_001CB950,1,WORD_AT(frame+4u));'
+        needle, replacement = {
+            'missing-browser-backend-init':('    guest_call(sub_001CB950,1,parent);',''),
+            'missing-ending-backend-init':('mp_retire_native_session(WORD_AT(0x7613e4u));pc_online_menu_leave();','guest_call(sub_001CC360,0);pc_online_menu_leave();'),
+            'missing-lobby-backend-init':('    mp_retire_native_session(WORD_AT(0x7613e4u));\n    if(mp_ui.source','    guest_call(sub_001CC360,0);\n    if(mp_ui.source'),
+            'missing-autojoin-backend-init':('            mp_connection_ended("The match host did not answer. You have returned to the match browser.");','            pc_online_menu_leave();'),
+        }[mutation]
         assert needle in adapter
-        (tmp_path / 'pc_multiplayer_menu.inc').write_text(adapter.replace(needle, ''), encoding='utf-8')
+        (tmp_path / 'pc_multiplayer_menu.inc').write_text(adapter.replace(needle, replacement), encoding='utf-8')
         menu = tmp_path / 'pc_display_menu.c'
         menu.write_text((ROOT / 'src/interface/pc_display_menu.c').read_text(encoding='utf-8'), encoding='utf-8')
         fixture = source.read_text(encoding='utf-8').replace('../src/interface/pc_display.c', (ROOT / 'src/interface/pc_display.c').as_posix()).replace('../src/interface/pc_display_menu.c', menu.as_posix())
@@ -118,7 +123,7 @@ def test_fov_settings(tmp_path, mutation):
     if mutation == 'missing-lan-activation':
         assert result.returncode != 0
         assert 'getenv("TSFP_NETWORK")' in result.stderr
-    elif mutation == 'missing-browser-backend-init':
+    elif mutation in ('missing-browser-backend-init','missing-ending-backend-init','missing-lobby-backend-init','missing-autojoin-backend-init'):
         assert result.returncode != 0
         assert 'native_backend_resets==1' in result.stderr
     elif mutation == 'drain-other-menu':

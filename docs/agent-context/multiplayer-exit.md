@@ -121,6 +121,29 @@ join. The earlier manual-Back beta tests are historical workaround evidence only
 See STATUS for current build provenance and platform acceptance limits.
 
 
+## Backend
+
+`mp_retire_native_session(parent)` in `pc_multiplayer_menu.inc` now performs the
+verified original cleanup1CC360 -> startup1CB950 sequence for every owned browser
+return: gameplay return, lobby Back and connection failure. The20-second native
+autojoin timeout also goes through `mp_connection_ended`, including the queued
+directory LEAVE acknowledgement before another admission. It previously dropped
+only the bridge, retaining closed native handles and startup stage2. Lobby Back
+and connection-error paths closed the SDK but likewise omitted startup.
+
+An installed0.7.1 Windows trace showed binds3000/1000/9999 on the first bridge,
+then only3000/1000 when hosting after a failed join. New joins were admitted by
+the service but could not discover the host and left after20seconds. Read-only
+observation confirmed the second host remained at startup stage2. The shared
+helper restarts through the stock constructor, without fabricating handles,
+peers or backend state. LAN retains its original asynchronous closing path;
+private directory ownership and authentication rules remain intact.
+
+The production FOV/menu fixture checks all four return routes, cleanup/startup/
+bridge-leave ordering, stage1, reset targets and guest stack preservation.
+Negative controls remove the helper initialization or each newly covered route
+and must fail. These compiled checks do not establish rebuilt native gameplay.
+
 The owned return factory must also preserve the replaced stock browser's backend
 initialization: after original1CC360 cleanup, call original1CB950(parent) before
 pc_online_menu_leave. A trace showed session0/object0 while startup76B12C stayed2;

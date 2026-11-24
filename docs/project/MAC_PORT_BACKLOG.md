@@ -1,3 +1,20 @@
+## MAC-013 follow-up: native backend after failed joins (2026-11-24)
+
+**Awaiting validation** on native Mac. Source prepared on
+`fix/online-lobby-backend-restart`, base3d8e3d0e0. The shared native multiplayer
+menu's `mp_retire_native_session` pairs original cleanup1CC360 with startup1CB950
+on connection failure, lobby leave and gameplay browser return. The20-second
+autojoin timeout uses the same route, instead of only dropping its relay bridge.
+This prevents the next bridge from reusing stale startup2 and omitting discovery.
+
+Windows production menu fixtures cover all four paths and removal controls.
+Windows/Mac/Linux already share these menu callbacks and original constructors;
+no new OS adapter or wrapper is needed. Remaining acceptance: native Mac/Linux
+builds and actual failed-join -> join/create, lobby-leave -> join/create and
+gameplay-return flows, alongside LAN close and private-server lifetime checks.
+Windows traces and source tests do not establish native Mac gameplay. See
+[STATUS](STATUS.md) and the [contract](../agent-context/multiplayer-exit.md#backend).
+
 ## MAC-021 follow-up: launcher restart crash (2026-11-23)
 
 **Implemented — native Mac validation recorded in STATUS; Windows/Linux host

@@ -1974,20 +1974,28 @@ int main(int argc,char **argv)
         clock_ms+=1001;mp_ui.source=2;native_multiplayer_match_metadata();CHECK(roster_publications==2);
         roster_fixture=0;
     }
-    { /* The owned browser must restore the stock backend startup contract. */
+    for(unsigned route=0;route<4;route++) { /* Every owned disconnect must restore discovery startup. */
         native_retire_fixture=online_poll_fixture=online_request_test=1;
         native_retire_calls=native_backend_resets=native_leave_calls=native_return_factories=0;
         online_poll_state.status=PC_OM_CONNECTED;
         mp_ui.storage=0x280000;mp_ui.source=0;mp_ui.mode=PC_ONLINE_ARCADE;
-        mp_ui.menu=mp_ui.pending=0;mp_native_passthrough=1;
-        WORD_AT(0x79094cu)=101;WORD_AT(0x76b108u)=0;WORD_AT(0x76b12cu)=2;
+        mp_ui.menu=mp_ui.pending=mp_ui.autojoin=mp_ui.host=0;mp_native_passthrough=1;
+        WORD_AT(0x79094cu)=101;WORD_AT(0x76b108u)=route?1:0;WORD_AT(0x76b12cu)=2;
         WORD_AT(0x7613e4u)=0x200000;g_esp=0x1f00;
         WORD_AT(g_esp)=0x123456;WORD_AT(g_esp+4u)=0x200000;WORD_AT(g_esp+8u)=0x4e99d4;
         const uint32_t frame=g_esp;
-        CHECK(native_multiplayer_return_menu(native_retire_factory));
+        if(route==0)CHECK(native_multiplayer_return_menu(native_retire_factory));
+        else if(route==1)mp_connection_ended("Fixture connection ended");
+        else if(route==2)mp_native_back();
+        else {
+            clock_ms=50000;mp_ui.poll_at=0;mp_ui.metadata_at=clock_ms+100000;
+            mp_ui.autojoin=2;mp_ui.connect_at=clock_ms-21000;WORD_AT(0x7ba26cu)=0;
+            native_multiplayer_tick();
+            CHECK(strstr(mp_ui.return_notice,"host did not answer"));
+        }
         CHECK(native_retire_calls==1 && native_backend_resets==1 && native_leave_calls==1);
-        CHECK(native_return_factories==1 && WORD_AT(0x76b12cu)==1 && WORD_AT(0x541cd4u)==0x541d50);
-        CHECK(g_esp==frame+4u && WORD_AT(frame+8u)==0x4e99d4);
+        CHECK(native_return_factories==(route==0) && WORD_AT(0x76b12cu)==1 && WORD_AT(0x541cd4u)==0x541d50);
+        CHECK(g_esp==frame+((route==0 || route==2)?4u:0u) && WORD_AT(frame+8u)==0x4e99d4);
         CHECK(!mp_native_passthrough && mp_ui.page==MP_BROWSER && online_request.action==PC_OM_LEAVE);
         native_retire_fixture=online_poll_fixture=online_request_test=0;
     }
@@ -2023,7 +2031,7 @@ int main(int argc,char **argv)
 void sub_001A4350(void){lan_closing_requests++;g_esp+=4;}
 STUB(sub_001A8CE0) STUB(sub_001A8EE0)
 
-void sub_001CC360(void){if(native_retire_fixture){CHECK(!WORD_AT(0x76b108u));native_retire_calls++;}g_esp+=4;}
+void sub_001CC360(void){if(native_retire_fixture){CHECK(!native_backend_resets && !native_leave_calls);WORD_AT(0x76b108u)=0;native_retire_calls++;}g_esp+=4;}
 void sub_001CB950(void){
  CHECK(native_retire_fixture && native_retire_calls==1 && !native_leave_calls);
  CHECK(WORD_AT(g_esp+4u)==WORD_AT(0x7613e4u));native_backend_resets++;
