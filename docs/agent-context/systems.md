@@ -33,7 +33,7 @@ PC bar: [state](interaction-input.md#pc-settings-bar-visibility).
 
 [Clicks](interaction-input.md#fresh-weapon-clicks-434).
 
-[Story](systems-details.md). [Rejoin](multiplayer-exit.md).
+[Story](systems-details.md). [Rejoin](multiplayer-exit.md#backend).
 
 [Mech](mounted-mouse.md).
 

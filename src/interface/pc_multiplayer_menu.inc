@@ -697,11 +697,18 @@ static uint32_t mp_leaf(void)
     }
     return guest_writable(menu,0x23cu)?menu:0;
 }
+static void mp_retire_native_session(uint32_t parent)
+{
+    guest_call(sub_001CC360,0);
+    /* Closing the SDK leaves its ready stage behind. Re-enter the original
+       browser startup contract before another bridge can reuse that stage. */
+    guest_call(sub_001CB950,1,parent);
+}
 static void mp_connection_ended(const char *reason)
 {
     GuestRegisters saved;save_registers(&saved);
     snprintf(mp_ui.return_notice,sizeof mp_ui.return_notice,"%s",reason);
-    guest_call(sub_001CC360,0);pc_online_menu_leave();mp_native_passthrough=0;
+    mp_retire_native_session(WORD_AT(0x7613e4u));pc_online_menu_leave();mp_native_passthrough=0;
     mp_ui.pending=mp_ui.autojoin=0;mp_show(MP_BROWSER);
     if(pc_online_menu_active())mp_request(PC_OM_LEAVE);
     restore_registers(&saved);
@@ -805,8 +812,7 @@ static void native_multiplayer_tick(void)
             }
         }
         if(mp_ui.autojoin && GetTickCount64()>mp_ui.connect_at+20000u) {
-            mp_ui.autojoin=0;pc_online_menu_leave();mp_native_passthrough=0;
-            mp_show(MP_BROWSER);snprintf(mp_ui.notice,sizeof mp_ui.notice,"The match host did not answer. Refresh and try again.");mp_rebuild();
+            mp_connection_ended("The match host did not answer. You have returned to the match browser.");
         }
     }
     restore_registers(&saved);
@@ -825,7 +831,7 @@ static void mp_native_back(void)
     /* The stock Back callbacks open a modal before committing native leave.
        This action already leaves our owned lobby: retire its native session,
        then wait for the directory leave ACK before browsing again. */
-    guest_call(sub_001CC360,0);
+    mp_retire_native_session(WORD_AT(0x7613e4u));
     if(mp_ui.source==2u)mp_show(MP_NETWORK);
     else if(pc_online_menu_active()){pc_online_menu_leave();mp_ui.pending=0;mp_show(MP_BROWSER);mp_request(PC_OM_LEAVE);}
     restore_registers(&saved);g_esp+=4u;
@@ -859,12 +865,7 @@ static int native_multiplayer_return_menu(void (*original)(void))
     const PcOnlineMenuState *state=pc_online_menu_poll();
     snprintf(mp_ui.return_notice,sizeof mp_ui.return_notice,"%s",state->status==PC_OM_ERROR?state->message:
         "The host closed the lobby or the connection ended. You have returned to the match browser.");
-    guest_call(sub_001CC360,0);
-    /* Replacing the stock browser must retain its backend-startup contract.
-       The old SDK is closed, but its ready stage survives. Reset that stage
-       through the original constructor helper so the next bridge admission
-       recreates discovery instead of reusing closed native socket handles. */
-    guest_call(sub_001CB950,1,WORD_AT(frame+4u));
+    mp_retire_native_session(WORD_AT(frame+4u));
     pc_online_menu_leave();mp_native_passthrough=0;mp_ui.autojoin=0;
     mp_ui.page=MP_BROWSER;mp_ui.parent=WORD_AT(frame+4u);mp_ui.pending=0;
     restore_registers(&saved);WORD_AT(frame+8u)=mp_descriptor(MP_BROWSER);original();WORD_AT(frame+8u)=descriptor;

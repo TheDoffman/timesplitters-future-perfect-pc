@@ -1,3 +1,53 @@
+## 2026-11-24 - Restart the native backend after failed joins and lobby leave
+
+Source prepared on `fix/online-lobby-backend-restart`, based on main3d8e3d0e0.
+Installed0.7.1 process51416 showed discovery9999 opening for its
+first bridge, then only3000/1000 reopening for a later hosted lobby. The service
+admitted newcomers, but their native joins ended after approximately20seconds;
+the user confirmed the in-game host-did-not-answer timeout. Read-only observation
+showed native host/session1, lobby phase11, scene101 and startup stage2.
+
+Shared `mp_retire_native_session` now preserves the stock cleanup1CC360 ->
+startup1CB950 contract on connection failure and lobby Back as well as gameplay
+return. Autojoin timeout uses the same connection-ended route and queues LEAVE
+before the browser admits another connection. Existing LAN close and private
+directory lifetime behavior remain. No native handles, synthetic peers, longer
+leases or authentication exceptions are introduced. No new runtime wrapper.
+
+The quoted403s at13:59:50–51EST followed peer4's native-progress/readiness timeout
+in MP Test Lobby Event. Two PUTs and one DELETE arrived after retirement; these
+were not initial admission failures. Three earlier post-migration in-progress
+joins also ended before gameplay; their first failure's underlying cause still
+needs paired-client evidence. The backend-reset fix addresses the independently
+confirmed repeat-connection failure; it does not prove those earlier joins fixed.
+
+Production FOV/menu plus online-menu checks61 pass,2 Mac-only compile skips.
+Four return routes
+now check SDK cleanup, backend reset, directory leave and guest stack/state;
+individual route-removal controls also pass their required failing assertions.
+Results are retained in ignored logs/backend-*.
+
+Windows Release built from source cee6a57c using an isolated copy of the sealed
+release cache. All 3058 identity inputs were compared; only the intended menu
+implementation differed. Changed menu and identity consumers were recompiled;
+the original release cache and installed game remain untouched. New compatibility
+is a8028d3287fc7a0d0fe7b8d36e04c9caa1424052fc00667efd9bf0a9a5c562db.
+Identity seal/content verification and all nine rebuilt built-in checks pass.
+The local development-test update ZIP passes CRC and throwaway-install checks,
+including backup preservation and incompatible-baseline rejection. It includes
+no game data or private server files. Matching updated clients are required.
+With user authorization the update was installed, preserving the previous four
+files in a private rollback backup. Two real Windows clients using that installed
+executable passed initial lobby join, then two leave -> host -> peer reconnect
+cycles, reversing host/guest roles in both directions without restarting either
+game. Discovery9999 reopened on the replacement bridge. Disposable saves and the
+Mac mini's separate Diagnostics service were used; owned test clients and that
+service were stopped afterward. This validates lobby reconnect; controlled
+20-second native join-timeout, gameplay migration and remote-device acceptance
+remain separate checks. No push, production service change or release has been
+performed; native Mac/Linux builds and gameplay acceptance remain pending.
+See [backend contract](../agent-context/multiplayer-exit.md#backend).
+
 ## 2026-11-24 - Launcher-only 1.7.2 preparation
 
 User requested building/publishing only the launcher. From main fb6c3e1d,
