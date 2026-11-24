@@ -43,23 +43,30 @@ rules apply throughout the campaign. Guest rewards precede the waiting page.
 
 ## Authored starts and cameras
 
-Human model animation advancement is repaired in `story_human_pose_frame`.
-The paired Scotland recording showed moving player contexts with stationary
-model clocks; the isolated observer confirmed normal game delta/playback rate
-but empty body model callbacks on both peers. Registering a render callback
-alone did not advance their clocks. For fully linked live humans in ordinary
-state2 without an authored callback, advance the model once after the original
-game update and cinematic adapter. Use5FEB0, the original advancing wrapper
-through5FDC0, so authored freeze flags retain their existing path. No callback,
-clip selection or native controller is replaced.
-Existing callbacks, scripted/cinematic contexts, frozen/dead actors, departed
-players and non-Story sessions remain untouched. A fresh/restarted/rejoined
-body receives the same update without recreating its actor or inventory.
-
-The campaign CPU matrix covers all13 mission scenes,2/3/4 humans and both roles,
-preserved authored callbacks and frozen/cinematic exclusions.
-The original-US contract verifies the advancing wrapper and native freeze gate.
-STATUS records bounded live evidence separately from full mission acceptance.
+Human animation recovery in `story_human_pose_frame` is conditional on actual
+model-clock progress. The earlier Scotland investigation found missing callbacks
+and frozen clocks, but callback absence alone does not prove that a model is
+stalled. A mission-one host/guest trace showed native rendering advancing the
+clock by1/60 second and the old fallback adding another1/60 each update.
+The adapter now compares primary/next clip times, clip identities and loop cycle
+with its last completed observation, including any fallback advance. Native
+progress resets the stall count; a single held update is allowed. Only two
+successive unchanged observations enable one5FEB0 advance per update. This
+preserves native30Hz held frames and recovers continuously frozen models after
+a short observation window. No playback speed, clip selection or callback is
+changed. The original5FDC0 freeze/cinematic path remains authoritative.
+Clock history is local per human and bound to body/model, match, reload epoch
+and scene. Invalid/frozen/scripted contexts clear their history; global
+cinematic/pause/non-Story exclusions clear all history. Restart/rejoin or a
+replaced model must establish fresh observations. Bounded optional
+`TSFP_STORY_TRACE` records previous/observed/post-fallback clock values and
+whether recovery ran (at most16 rows per slot/process).
+The campaign CPU matrix covers all13 missions,2/3/4 humans and both roles:
+clock progress, intermittent held updates, sustained stalls and continued
+recovery, next-channel progress, loop changes, reload/model identity, authored
+callbacks and frozen/cinematic exclusions. The original-US contract verifies
+the advancing wrapper and freeze gate. STATUS records live timing evidence
+separately from full mission acceptance.
 
 Online roles are fixed by `story_player_character` in `pc_story_lobby.inc`:
 slot0 is Cortez12, slot1 is this mission's original Splitscreen sidekick from
@@ -94,6 +101,9 @@ views to retain type27, advancing animation and inverted up vectors; later
 movement, firing and restart probes verify the handoff into ordinary gameplay.
 Movement inputs run in actual human-slot order. The role/start probe checks
 separated adjacent guest positions and native P1/P2 source selection.
+The handoff ammo probe compares pre-movement snapshots; later native Story
+grants/pickups may legitimately change one owner's ammunition. Firing consumes
+from each owner's post-movement ammo baseline.
 The bounded spawn trace reserves six observations per actual slot so repeated
 lookups for one human cannot consume another human's evidence.
 

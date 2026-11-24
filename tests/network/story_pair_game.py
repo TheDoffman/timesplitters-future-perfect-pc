@@ -383,11 +383,15 @@ def main():
                             value[1]+=slot['loaded']
                         return sum(sum(value) for value in kinds.values()) if kinds else None
                     if args.mission==0:
-                        for role,s in after.items():
+                        # Compare the handoff before movement: native Story
+                        # grants/pickups along the route may change one player's
+                        # ammo afterward. Firing below uses each owner's actual
+                        # post-movement ammunition as its baseline.
+                        for role,s in before.items():
                             local=s.get('local_player') or {}
                             assert local.get('equipped',[None,None])[1]==14,(role,'Opening firearm handoff incomplete',local)
                             assert ammo_total(local) is not None,(role,'Opening ammunition unavailable',local)
-                            assert ammo_total(local)==ammo_total(after['host'].get('local_player')),(role,'Opening handoff duplicated or lost ammunition',local)
+                            assert ammo_total(local)==ammo_total(before['host'].get('local_player')),(role,'Opening handoff duplicated or lost ammunition',local)
                     for role in runs:
                         # Mouse 1 is the common input model's default primary
                         # fire binding, delivered through the isolated state file.

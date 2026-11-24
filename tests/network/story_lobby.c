@@ -334,7 +334,12 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
         WORD_AT(actor+0x48)=12u|(12u<<16);++npc_ctor_calls;return 0x72000;
     }
     if(fn==sub_000D7550){CHECK(count==2);WORD_AT(args[0]+0x84)=args[1];return 0;}
-    if(fn==sub_0005FEB0){CHECK(count==1 && !WORD_AT(args[0]+0x15c));++human_pose_updates;return 0;}
+    if(fn==sub_0005FEB0){
+        CHECK(count==1 && !WORD_AT(args[0]+0x15c));++human_pose_updates;
+        const uint32_t model=WORD_AT(args[0]+4);float time;
+        memcpy(&time,(uint8_t *)memory+model+0xdc,4);time+=1.f/60.f;
+        memcpy((uint8_t *)memory+model+0xdc,&time,4);return 0;
+    }
     if(fn==sub_002402B0){CHECK(count==2);WORD_AT(args[1]+0x60)=args[0];return 0;}
     if(fn==sub_0015BCA0) {
         CHECK(count==1);const unsigned n=WORD_AT(0x74c37c);

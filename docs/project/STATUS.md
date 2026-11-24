@@ -1,3 +1,51 @@
+## Online Story human animation clock recovery (2026-11-23)
+
+Local/uncommitted on online-story-coop atbc13b72d9. The host and guest
+mission-one trace reproduced doubled world-model animation time: native
+rendering added0.016667 seconds between updates and the unconditional fallback
+added another0.016667 seconds, with playback speed1. The fallback now watches
+primary/next clip clocks and loop identity, allowing an ordinary held update
+before recovering a sustained stall. Native progress suppresses the extra
+advance. Body/model, match, reload epoch and scene bind local history. Existing
+pause, cinematic, authored callback and freeze exclusions remain in force.
+The shared CPU campaign matrix checks both native progress and frozen-model
+recovery across13 missions,2/3/4 humans and host/guest roles; both fixture builds
+pass. No intro camera, spawn placement, playback-speed setting or protocol is
+changed.
+
+Windows11 x64, Python3.14.2, MSVC14.42.34433/MSBuild17.12.6, default Windows
+frontend (Vulkan off; Original60FPS; driver not queried), supported US XBE
+validated. Baseline
+current-Online-menu two-player mission-one test passed; bounded clock traces
+identified the duplicated advancement. Supported Release build and bundled checks pass; executable SHA-256:
+e70189ec8a3eb32163df3370c00bb91b036152ca652cfe9caf875d2f07ab8823.
+Regression suite:110 passed,2 platform-only skips. Four-client timing traces
+after the opening show all four human models at1.00002x clock rate on every
+peer (13-16 samples per human), with no extra fallback advance. Baseline was
+1.99998x. A first live run passed roles/spawns, intro, handoff and movement, but
+the post-movement ammo assertion encountered an additional nativeC0407 grant;
+all pre-movement handoff counts were128. The probe now compares handoff ammo
+before movement and firing consumption against each owner's post-movement
+baseline. The final four-player first-mission test passes intro orientation,
+character roles/adjacent starts, native pistol handoff, movement, firing, guest
+pause and coordinated restart. Two-player second-mission acceptance also passes
+through the current Online menus: world clocks that actually stall invoke
+recovery, yielding1.00002x median progression on both humans/peers (16 samples
+each,14 recovery calls). Movement, authored firearm delivery and firing pass;
+selected host/guest load-after.png captures were reviewed. The final
+model-replacement/reload CPU fixture expansion also passes both host defines.
+Logs: logs/story-animation-baseline-two.log,
+logs/story-animation-investigation-build.log, logs/story-animation-timing.json,
+logs/story-animation-fix-build.log, logs/story-animation-regressions.log,
+logs/story-animation-four-player.log and logs/story-animation-second-mission.log.
+Evidence: private/network-validation/story-four/pair-evidence.json and
+private/network-validation/story-load-pair/pair-evidence.json. All runners have
+finished and disposable partition images were recycled.
+Personal
+settings/saves and the canonical Test Lab fixture are preserved. Full campaign,
+physical Internet/cross-device acceptance and native Mac/Linux Story remain
+unverified (MAC-013).
+
 ## Online Story shared hanging intro and adjacent starts (2026-11-23)
 
 Local/uncommitted on online-story-coop at2137c4a84. Per the user's corrected

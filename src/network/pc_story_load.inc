@@ -1015,11 +1015,24 @@ void pc_story_network_character_remove(void (*original)(void))
 #include "pc_story_tools.inc"
 #ifdef _WIN32
 extern void sub_0005FEB0(void);
+typedef struct StoryHumanPoseClock {
+    uint32_t body,model,match,epoch,scene,state[5];
+    unsigned stalled;
+} StoryHumanPoseClock;
+static StoryHumanPoseClock story_human_pose_clocks[4];
+static void story_human_pose_clock(uint32_t model,uint32_t state[5])
+{
+    /* Primary/next clip clocks and loop identity, excluding render-only flags. */
+    static const uint32_t offsets[5]={0xd4u,0xdcu,0x124u,0x12cu,0x134u};
+    for(unsigned i=0;i<5u;i++)state[i]=WORD_AT(model+offsets[i]);
+}
 static void story_human_pose_frame(void)
 {
     if(!story_campaign_gameplay() || WORD_AT(0x7de30cu)!=7u ||
        story_cine_state.active || (WORD_AT(0x7de45cu)&0x02000000u) ||
-       (int32_t)WORD_AT(0x7497b4u)>0)return;
+       (int32_t)WORD_AT(0x7497b4u)>0) {
+        memset(story_human_pose_clocks,0,sizeof story_human_pose_clocks);return;
+    }
     const unsigned count=WORD_AT(0x790950u);
     const uint32_t contexts=WORD_AT(0x7b0c48u),actors=WORD_AT(0x7356d8u);
     if(count<2u || count>4u || count!=story_npc_humans() || !contexts || !actors ||
@@ -1032,13 +1045,36 @@ static void story_human_pose_frame(void)
            WORD_AT(context)!=slot || WORD_AT(context+0x114u)!=2u || (WORD_AT(context+0xcu)&0x8000u) ||
            WORD_AT(actor+0x10u)!=2u || (WORD_AT(actor+0x2cu)&4u) ||
            !guest_writable(body,0x160u) || WORD_AT(body+0x7cu)!=actor || WORD_AT(body+0x150u)!=context ||
-           (WORD_AT(body+0x28u)&0x80000000u) || WORD_AT(body+0x15cu))continue;
+           (WORD_AT(body+0x28u)&0x80000000u) || WORD_AT(body+0x15cu)) {
+            memset(&story_human_pose_clocks[slot],0,sizeof story_human_pose_clocks[slot]);continue;
+        }
         const uint32_t model=WORD_AT(body+4u);
-        if(!model || !guest_writable(model,0x200u))continue;
-        /* Render-time evaluation is frozen. Supply the missing simulation
-           advance once per game update, retaining native clips/locomotion and
-           the original freeze/cinematic adapter; no callback is replaced. */
-        guest_call(sub_0005FEB0,1,body);
+        if(!model || !guest_writable(model,0x200u)) {
+            memset(&story_human_pose_clocks[slot],0,sizeof story_human_pose_clocks[slot]);continue;
+        }
+        StoryHumanPoseClock *clock=&story_human_pose_clocks[slot];
+        const uint32_t match=story_npc_match(),scene=WORD_AT(0x79094cu);
+        uint32_t state[5];story_human_pose_clock(model,state);
+        const int same=clock->body==body && clock->model==model && clock->match==match &&
+            clock->epoch==story_reload_epoch && clock->scene==scene;
+        float previous,observed,after;memcpy(&previous,clock->state+1,4u);memcpy(&observed,state+1,4u);
+        /* Native rendering can advance a human even without its +15C callback.
+           Compare with our last completed observation, including any fallback
+           advance. Allow a held frame before recovering a genuinely stalled
+           model; do not add time to an already advancing native animation. */
+        if(!same || memcmp(clock->state,state,sizeof state))clock->stalled=0;
+        else if(clock->stalled<2u)++clock->stalled;
+        const int advance=clock->stalled>=2u;
+        if(advance)guest_call(sub_0005FEB0,1,body);
+        clock->body=body;clock->model=model;clock->match=match;
+        clock->epoch=story_reload_epoch;clock->scene=scene;
+        story_human_pose_clock(model,clock->state);memcpy(&after,clock->state+1,4u);
+        if(getenv("TSFP_STORY_TRACE")) {
+            static unsigned observations[4];
+            if(observations[slot]++<16u)fprintf(stderr,
+                "[PC-STORY-ANIMATION] slot=%u tick=%u model=%08X clip=%u previous=%.6f observed=%.6f after=%.6f fallback=%u stalled=%u\n",
+                slot,WORD_AT(0x7de318u),model,state[0],previous,observed,after,(unsigned)advance,clock->stalled);
+        }
     }
     restore_registers(&saved);
 }

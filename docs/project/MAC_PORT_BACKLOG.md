@@ -3492,6 +3492,16 @@ validation. This version bump alone is not publication evidence.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Story human animation rate (2026-11-23, uncommitted):**
+  The existing shared `src/network/pc_story_load.inc` recovery adapter now checks
+  actual model clocks before adding animation time. Native progress or a single
+  held update suppresses recovery; continuously stalled models still advance
+  through the original freeze-aware routine. This removes the doubled player
+  animation rate observed on Windows mission one without changing playback
+  speed. Shared CPU contracts cover all13 missions and2/3/4 humans. No new OS
+  capability or adapter is required; native Story transport and Mac/Linux live
+  acceptance remain **Not started** under MAC-013. See [STATUS](STATUS.md).
+
 - **Adjacent starts and shared intro (2026-11-23, uncommitted):**
   All Windows Online Story players retain the original upside-down intro camera.
   The requested upright guest override was removed. Shared

@@ -231,29 +231,55 @@ static void campaign_human_animation_matrix(void)
         WORD_AT(0x79094c)=scenes[mission];WORD_AT(0x7de458)=0x80008;WORD_AT(0x7de45c)=0;
         WORD_AT(0x790950)=count;((uint8_t *)memory)[0x7de400]=(uint8_t)count;
         WORD_AT(0x7b0c48)=0x6000;WORD_AT(0x7356d8)=0x50000;
+        memset(story_human_pose_clocks,0,sizeof story_human_pose_clocks);
         for(unsigned slot=0;slot<count;slot++) {
             const uint32_t context=0x6000+slot*0x1584,actor=0x50000+slot*0xea0,body=0x74000+slot*0x800;
             WORD_AT(context)=slot;WORD_AT(context+0x14)=body;WORD_AT(context+0x114)=2;WORD_AT(context+0xc)=0;
             WORD_AT(actor)=body;WORD_AT(actor+8)=slot;WORD_AT(actor+0x10)=2;WORD_AT(actor+0x84)=1;
             WORD_AT(body+0x150)=context;WORD_AT(body+0x7c)=actor;WORD_AT(body+0x28)=0;
             WORD_AT(body+4)=0x100000+slot*0x400;WORD_AT(body+0x15c)=0;
+            memset((uint8_t *)memory+WORD_AT(body+4),0,0x200);
         }
         story_cine_state.active=0;WORD_AT(0x7497b4)=0;
         const unsigned before=human_pose_updates;g_esp=0x1800;
-        story_human_pose_frame();CHECK(human_pose_updates==before+count && g_esp==0x1800);
+        story_human_pose_frame();CHECK(human_pose_updates==before && g_esp==0x1800);
+        story_human_pose_frame();CHECK(human_pose_updates==before); /* one held frame is normal */
+        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+        story_human_pose_frame();CHECK(human_pose_updates==before+2*count); /* sustained stall: one advance per update */
+        for(unsigned slot=0;slot<count;slot++)WORD_AT(0x100000+slot*0x400+0xdc)=0x3f800000;
+        story_human_pose_frame();CHECK(human_pose_updates==before+2*count); /* native/render advance */
+        story_human_pose_frame();CHECK(human_pose_updates==before+2*count); /* intermittent held update */
+        for(unsigned slot=0;slot<count;slot++)WORD_AT(0x100000+slot*0x400+0xdc)=0x40000000;
+        story_human_pose_frame();CHECK(human_pose_updates==before+2*count);
+        for(unsigned slot=0;slot<count;slot++)WORD_AT(0x100000+slot*0x400+0x134)=0x3f000000;
+        story_human_pose_frame();CHECK(human_pose_updates==before+2*count); /* blend/next channel advances */
+        for(unsigned slot=0;slot<count;slot++)++WORD_AT(0x100000+slot*0x400+0x124);
+        story_human_pose_frame();CHECK(human_pose_updates==before+2*count); /* wrapped primary clock */
+        ++story_reload_epoch;story_human_pose_frame();CHECK(human_pose_updates==before+2*count);
+        story_human_pose_frame();CHECK(human_pose_updates==before+2*count);
+        story_human_pose_frame();CHECK(human_pose_updates==before+3*count);
+        --story_reload_epoch;
+        for(unsigned slot=0;slot<count;slot++) {
+            const uint32_t body=0x74000+slot*0x800,model=0x110000+slot*0x400;
+            WORD_AT(body+4)=model;memset((uint8_t *)memory+model,0,0x200);
+        }
+        story_human_pose_frame();CHECK(human_pose_updates==before+3*count);
+        story_human_pose_frame();CHECK(human_pose_updates==before+3*count);
+        story_human_pose_frame();CHECK(human_pose_updates==before+4*count); /* replacement model warms its own history */
+        const unsigned expected=human_pose_updates;
         for(unsigned slot=0;slot<count;slot++) {
             CHECK(!WORD_AT(0x74000+slot*0x800+0x15c));
             WORD_AT(0x74000+slot*0x800+0x15c)=0x379ae0;
         }
-        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+        story_human_pose_frame();CHECK(human_pose_updates==expected);
         WORD_AT(0x7415c)=0x379ae0;WORD_AT(0x7495c)=0;WORD_AT(0x7698)=256;
-        story_human_pose_frame();CHECK(WORD_AT(0x7415c)==0x379ae0 && human_pose_updates==before+count);
+        story_human_pose_frame();CHECK(WORD_AT(0x7415c)==0x379ae0 && human_pose_updates==expected);
         WORD_AT(0x7698)=2;WORD_AT(0x7de45c)=0x02000000;
-        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+        story_human_pose_frame();CHECK(human_pose_updates==expected);
         WORD_AT(0x7de45c)=0;WORD_AT(0x50000+0xea0+0x2c)=4;
-        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+        story_human_pose_frame();CHECK(human_pose_updates==expected);
         WORD_AT(0x50000+0xea0+0x2c)=0;online_mode=PC_ONLINE_ARCADE;
-        story_human_pose_frame();CHECK(human_pose_updates==before+count);
+        story_human_pose_frame();CHECK(human_pose_updates==expected);
     }
 }
 #endif
