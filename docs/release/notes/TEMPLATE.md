@@ -1,5 +1,8 @@
 <!-- release-notes:template -->
 <!-- Copy to the exact game/launcher tag filename, complete it, then remove these comments. -->
+<!-- Use no emojis. Use ANNOUNCEMENT-TEMPLATE.md when drafting the player announcement. -->
+TODO: one short sentence summarizing the update's benefits for players.
+
 ## What changed
 
 ### TODO: short heading describing the player's benefit

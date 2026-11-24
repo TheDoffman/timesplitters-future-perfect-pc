@@ -11,6 +11,32 @@ Use the exact tag, including any preview suffix. Game `-NotesFile` can select
 another reviewed file with the same format. The launcher workflow reads the
 versioned file from its exact source commit. It needs no AI service or API key.
 
+## Approved release post layout
+
+The user approved this layout on 2026-11-24 for all future game and launcher
+release posts and announcement drafts, with **no emojis**. Follow the
+[announcement template](notes/ANNOUNCEMENT-TEMPLATE.md):
+
+1. A clear title naming the game and/or launcher versions being announced.
+2. One short sentence summarizing the update's benefits.
+3. Clearly named topics, each explaining the previous problem or limitation
+   immediately followed by what works now, in everyday language.
+4. Simple **How to update** instructions using the release's actual channel.
+5. Direct download/full-notes links for the versions being announced.
+6. A short footer with supported platforms and important compatibility limits.
+
+Use plain bold headings without decorative symbols. Keep technical PR references
+and validation records out of the announcement's main text. For a single-product
+release, name and link only that product; do not imply another version was just
+published. Use verified requirements and release status, rather than reusing old
+version numbers, saying "today" automatically, or claiming untested support.
+
+GitHub publishers supply standard version, download, compatibility and provenance
+blocks around the reviewed change explanations. Keep the Before/Now fields below
+for those validated source files. In a drafted announcement, combine each pair
+into a short problem-and-fix paragraph as in the approved example. The no-emoji
+rule applies to both forms and is part of human review.
+
 ## Explain the problem and the result
 
 Under `## What changed`, give each player-facing change a short `###` heading:
