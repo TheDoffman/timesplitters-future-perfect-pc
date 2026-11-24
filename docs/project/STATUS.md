@@ -1,3 +1,48 @@
+## 2026-11-24 - Focused Vulkan/D3D11 gameplay comparison
+
+[Focused results](../development/renderer-frame-pacing-focused.md) supersede the
+pending-focus state below. The user completed the dialog; active DISPLAY1 is
+3440x1440 at144Hz, and every measured checkpoint is foreground. The scene
+render target remains1280x720. Actual renderer logs and full owned ETW coverage
+are verified for the clean matched cases, using the same frozen game binary.
+
+Corrected-route Story144 API p99/max: Vulkan8.126/10.219ms,
+D3D11 7.824/9.936ms, neither >25ms. Ten-bot Original60: Vulkan first run
+max58.384ms (three API gaps >25ms), clean repeat30.877ms (one); D3D11
+max20.989ms (none). The58ms Vulkan frame has0.217ms Present duration and
+4.177ms GPU busy; its cause remains unassigned. The separate CPU/texture
+diagnostic did not reproduce submission hitches (max17.962ms); displayed gaps
+remain, up to29.506ms. No production optimization or root-cause claim follows.
+
+Harness startup focus now waits until after initial readiness; the former
+immediate minimize/restore raced Vulkan initialization and triggered OpenGL
+recovery in an excluded attempt. Foreground acceptance exempts initial
+readiness only, then checks each later command checkpoint. Python compile,
+live focus/backend/scene checks and context validation pass. Owned game/ETW
+processes and synthetic disks are cleaned up; personal files are preserved.
+No runtime/default changes. The user subsequently requested publication of the
+investigation and test-harness safeguards to main.
+
+## 2026-11-23 - Vulkan presentation-pacing follow-up
+
+Local investigation on `investigate/renderer-frame-pacing`, base `c70c3a4c`.
+[Measurements and limits](../development/renderer-frame-pacing-follow-up.md)
+compare one frozen Windows binary on Vulkan and D3D11. The active display is
+1920x1080 at60Hz; the earlier adapter query's144Hz did not describe the active
+screen. All timing runs were unfocused while Windows Security held foreground.
+Fullscreen background native144 tests remove D3D11's windowed60 submission
+limit; neither backend shows >25ms frames in those Story windows. This is not
+foreground or physical144Hz acceptance, and no renderer optimization is claimed.
+
+The Windows stability runner records the owned window's current monitor mode,
+uses its existing focus action for fullscreen Story, and offers
+`--require-foreground` to reject unfocused command checkpoints. A live guarded
+probe correctly rejects the unavailable focus, retains the60Hz/window evidence,
+closes its owned game, recycles its synthetic disks and preserves profile bytes.
+Python compile/help and repository-context checks pass. Foreground acceptance
+requires completion of the Windows Security dialog; user notified. Runtime,
+defaults and Mac/Linux behavior are unchanged. Nothing published or pushed.
+
 ## 2026-11-23 - Launcher restart crash
 
 Publication review replaces the discarded task assignment with the existing
