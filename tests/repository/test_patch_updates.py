@@ -186,7 +186,7 @@ def test_upgrade_native_checkpoint_preserves_fixed_default(checkout, tmp_path):
     prior=tmp_path/'native-prior-patches'
     prior.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2815-arcade-marker-name-layout.patch','2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
@@ -262,9 +262,9 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in installer.active_patch_paths(PATCHES):
-        if patch.name in RENDERER_STARTUP_PATCHES or patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '2810-arcade-player-name-anchor.patch', '3001-host-visibility-queries.patch'):
+        if patch.name in RENDERER_STARTUP_PATCHES or patch.name in ('2730-pause-glass-texture-copy.patch','2731-pause-glass-placement.patch', '2810-arcade-player-name-anchor.patch', '2815-arcade-marker-name-layout.patch', '3001-host-visibility-queries.patch'):
             continue  # Requires the complete graphics stack installed by the upgrade.
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2815-arcade-marker-name-layout.patch','2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
@@ -401,7 +401,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     for patch in installer.active_patch_paths(PATCHES):
         if patch.name in RENDERER_STARTUP_PATCHES:
             continue  # Missing common graphics dependencies arrive in the complete upgrade.
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch','3040-arcade-solo-lobby.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2815-arcade-marker-name-layout.patch','2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch','3010-present-frame-capture.patch','3020-arcade-join-contexts.patch','3030-native-story-browser-preview.patch','3040-arcade-solo-lobby.patch'):
             continue  # Historical inputs predate Tools/presets and capture/join/solo wrappers; full upgrades include all.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
@@ -436,6 +436,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     assert 'pc_network_bots_guest_minimum' not in manual.read_text()
     assert installer.apply_patches(checkout, PATCHES)
+    assert 'pc_display_actor_name(pc_actor_name_original);' in manual.read_text()
+    assert 'two_d_vertical_anchor()' in (checkout / 'src/d3d/d3d8_device.c').read_text()
     assert_current_renderer_startup_installed(checkout)
     assert_current_calendar_installed(checkout)
     assert_current_pause_glass_installed(checkout)
@@ -468,7 +470,7 @@ def texture_branch_patches(tmp_path):
     patches = tmp_path / 'texture-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2815-arcade-marker-name-layout.patch','2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
@@ -489,7 +491,7 @@ def main_branch_patches(tmp_path):
     patches = tmp_path / 'main-patches'
     patches.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2815-arcade-marker-name-layout.patch','2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if (prefix.isdigit() and 2495 <= int(prefix) <= 2518) or patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):
@@ -764,7 +766,7 @@ def test_graphics_branch_round_trip_preserves_local_edits(checkout, tmp_path, cr
     baseline = tmp_path / 'without-graphics'
     baseline.mkdir()
     for patch in installer.active_patch_paths(PATCHES):
-        if '-developer-tools-' in patch.name or patch.name in ('2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
+        if '-developer-tools-' in patch.name or patch.name in ('2815-arcade-marker-name-layout.patch','2940-modern-control-presets.patch','2950-controller-deadzones.patch','2955-native-explicit-controller-prompts.patch','2960-keyboard-gameplay-independence.patch','2965-independent-keyboard-actions.patch','2970-active-player-pad-sharing.patch','2990-rollback-control-presets.patch'):
             continue  # Historical inputs predate Tools/preset dependencies; complete upgrades include both.
         prefix = patch.name.split('-', 1)[0]
         if patch.name in ('3040-vsync-settings.patch', '2600-msaa-scaled-shared-depth.patch', '2605-native-projectile-families.patch', '2610-native-shared-effect-depth.patch', '2725-inclusive-portal-scissors.patch', '2730-pause-glass-texture-copy.patch', '2731-pause-glass-placement.patch', '3001-host-visibility-queries.patch'):

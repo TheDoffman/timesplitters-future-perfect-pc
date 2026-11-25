@@ -1,3 +1,52 @@
+## MAC-013 follow-up: named skull aspect ratios (2026-11-25)
+
+**Awaiting validation** on native Mac/Linux. Shared pc_display_actor_name and
+pc_ui_actor_icon_shape fit text and mirrored halves around their actor's
+projected centre. Patch2815 extends the existing41E30 outlined-label wrapper
+without replacing prompt/read scopes. PcUiWorldAnchor carries projected Y for
+the named-label tag; RHI viewport/scissor and native GL use it on tall displays.
+No platform-specific gameplay policy is introduced.29 layout/scope checks,
+18 display-shape cases,685872 dimension/name cases and six actual Windows D3D11
+renders pass; historical upgrade and runtime selection13 pass. Full updated game
+generation/build, named gameplay and physical Mac/Linux visual checks remain
+pending. See [STATUS](STATUS.md) and the
+[contract](../agent-context/ultrawide-player-markers.md).
+
+## MAC-013 follow-up: team skull halves (2026-11-24)
+
+**Awaiting validation** on native Mac/Linux. Issue603 reports the split skull on
+Linux; the user also confirmed Windows. The Windows isolated team-match capture
+reproduces separated skull halves. Shared pc_display_ui.inc now fits the left
+and right textures around their common projected edge using
+pc_ui_actor_icon_shape in pc_ui_layout.h. No OS adapter or runtime wrapper is
+needed. Windows layout tests cover seven aspect ratios, independent actors,
+culled halves, UV/colour and stack restoration, plus a failing old-fit control.
+The isolated Windows Release build passes identity verification; the Classic
+1920x1080/120FPS team-match capture shows joined skull halves. Native Mac/Linux
+visual acceptance remains pending; see [STATUS](STATUS.md) and
+[contract](../agent-context/ultrawide-player-markers.md).
+
+## MAC-013 follow-up: native backend after failed joins (2026-11-24)
+
+**Awaiting validation** on native Mac. Source prepared on
+`fix/online-lobby-backend-restart`, base3d8e3d0e0. The shared native multiplayer
+menu's `mp_retire_native_session` pairs original cleanup1CC360 with startup1CB950
+on connection failure, lobby leave and gameplay browser return. The20-second
+autojoin timeout uses the same route, instead of only dropping its relay bridge.
+This prevents the next bridge from reusing stale startup2 and omitting discovery.
+
+Windows production menu fixtures cover all four paths and removal controls.
+The isolated Windows Release build, identity verification and nine rebuilt
+built-in checks pass. Two actual Windows clients passed initial lobby join and
+two leave/host/reconnect role reversals without process restart on Diagnostics.
+This establishes Windows lobby reconnect only, not native Mac acceptance.
+Windows/Mac/Linux already share these menu callbacks and original constructors;
+no new OS adapter or wrapper is needed. Remaining acceptance: native Mac/Linux
+builds and actual failed-join -> join/create, lobby-leave -> join/create and
+gameplay-return flows, alongside LAN close and private-server lifetime checks.
+Windows traces and source tests do not establish native Mac gameplay. See
+[STATUS](STATUS.md) and the [contract](../agent-context/multiplayer-exit.md#backend).
+
 ## MAC-021 follow-up: launcher restart crash (2026-11-23)
 
 **Implemented — native Mac validation recorded in STATUS; Windows/Linux host
