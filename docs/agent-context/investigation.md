@@ -1,3 +1,4 @@
+[604 renderer investigation](uplink-color.md).
 Named-marker patch2815 extends the final Developer Tools outlined-label wrapper
 and RHI viewport, so the loader places it last. The repository-context order
 assertion checks that dependency explicitly. Keep patch bytes LF before index

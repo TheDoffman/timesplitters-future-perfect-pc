@@ -22,7 +22,8 @@ def test_offscreen_copy_rectangles(tmp_path,mutation):
     start=record.index('typedef struct { IDirect3DTexture8 *dst, *source;')
     replay=record[start:record.index('HRESULT host_CopyBackBufferToTexture(',start)]
     start=record.index('HRESULT host_CopyTextureRectToTexture(')
-    replay+=record[start:record.index('HRESULT host_CopyTextureRegionScaled(',start)]
+    end=record.index('HRESULT host_CopyTextureRegionScaled(',start)
+    replay+=record[start:record.index('\n}\n',end)+3]
     fixture=(ROOT/'tests/graphics/offscreen_copy.c').read_text()
     fixture=fixture.replace('/* RECORDING */',replay)
     start=source.index('HLE_EXPORT(D3DDevice_CopyRects)')
@@ -48,16 +49,24 @@ def test_offscreen_copy_rectangles(tmp_path,mutation):
         assert result.returncode==0,result.stdout+result.stderr
 
 
-@pytest.mark.skipif(sys.platform not in ('win32', 'darwin'),
-                    reason='HLE renderer is compiled on Windows and macOS')
-@pytest.mark.parametrize('mutation', ['none', 'stale-copy', 'first-hit', 'last-hit'])
+@pytest.mark.skipif(sys.platform not in ('win32', 'darwin', 'linux'),
+                    reason='Requires a supported desktop native compiler')
+@pytest.mark.parametrize('mutation', ['none', 'stale-copy', 'first-hit', 'last-hit', 'deferred-stale'])
 @pytest.mark.parametrize('common_renderer', [False, True] if sys.platform == 'darwin' else [True],
                          ids=lambda common: 'rhi' if common else 'legacy-gl')
 def test_framebuffer_sampling_passes(tmp_path, mutation, common_renderer):
     compiler, environment = native_compiler(tmp_path)
     source = ROOT / 'external/ts3FPrecomp/src'
-    includes = [source, ROOT / 'src', *(source / name for name in ('d3d', 'hle', 'kernel', 'config', 'platform'))]
-    if mutation != 'none':
+    hle=(source/'hle/hle_d3d8.c').read_text()
+    start=hle.index('static int draw_covers_target(')
+    coverage=hle[start:hle.index('void hle_d3d8_framebuffer_drawn(void);',start)]
+    if mutation=='deferred-stale':
+        coverage=coverage.replace('(!hle_d3d8_defer_recording() && !hle_d3d8_framebuffer_needs_refresh())',
+                                  '!hle_d3d8_framebuffer_needs_refresh()')
+    (tmp_path/'framebuffer_draw_coverage.h').write_text(
+        'static unsigned g_target_width=640,g_target_height=480;\n'+coverage)
+    includes = [tmp_path, source, ROOT / 'src', *(source / name for name in ('d3d', 'hle', 'kernel', 'config', 'platform'))]
+    if mutation not in ('none','deferred-stale'):
         # Prove the fixture detects stale copies and incorrect alias selection.
         original = (source / 'hle/hle_d3d8_texture.c').read_text()
         replacements = {
@@ -84,11 +93,13 @@ def test_framebuffer_sampling_passes(tmp_path, mutation, common_renderer):
         command += [str(fixture), '/Fe:' + str(exe), '/Fo:' + str(tmp_path / 'test.obj'),
                     '/link', '/OPT:REF']
     else:
-        command = [compiler, '-std=gnu11', '-O2', '-Wl,-dead_strip']
+        command = [compiler, '-std=gnu11', '-O2']
+        command += ['-Wl,-dead_strip'] if sys.platform=='darwin' else ['-ffunction-sections','-fdata-sections','-Wl,--gc-sections']
         if common_renderer:
             command += ['-DTSFP_RHI_RENDERER=1']
         command += ['-I' + str(path) for path in includes]
         command += [str(fixture), '-o', str(exe)]
+        if sys.platform=='linux':command += ['-lm']
     result = subprocess.run(command, cwd=tmp_path, env=environment,
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -97,7 +108,8 @@ def test_framebuffer_sampling_passes(tmp_path, mutation, common_renderer):
         assert result.returncode != 0, f'Regression did not detect {mutation}'
         expected = {'stale-copy': 'copies == 2 && sampled == 20',
                     'first-hit': 'actual_fb == expected_fb',
-                    'last-hit': 'bound_host_entry(host, &actual_fb) == expected'}
+                    'last-hit': 'bound_host_entry(host, &actual_fb) == expected',
+                    'deferred-stale': 'scene==25 && sampled==50'}
         assert expected[mutation] in result.stderr
     else:
         assert result.returncode == 0, result.stdout + result.stderr

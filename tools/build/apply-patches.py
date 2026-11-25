@@ -362,6 +362,13 @@ def patch_records(paths):
         paths.remove(vsync)
         paths.append(vsync)
 
+    # Uplink composition extends the final shared CopyRects/Clear and copy queue.
+    for name in ('3061-temporal-uplink-map.patch', '3060-frame-buffer-textures.patch',
+                 '3062-permanent-color-grade.patch'):
+        late_patch = by_name.get(name)
+        if late_patch:
+            paths.remove(late_patch)
+            paths.append(late_patch)
     # Actor-name fitting extends the final outlined-label wrapper and viewport.
     actor_names = by_name.get('2815-arcade-marker-name-layout.patch')
     if actor_names:

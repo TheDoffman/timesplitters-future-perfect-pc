@@ -305,16 +305,8 @@ then applies the entire current recursive stack before updating runtime files.
 Find its ledger with `git -C external/ts3FPrecomp rev-parse --absolute-git-dir`:
 `tsfp-patches.json` lives THERE, not in root `.git` or the build folder.
 
-The Temporal Uplink map (#53) uses two `D3DDevice_CopyRects` calls in one
-frame: a 640Ãƒâ€”480 screen snapshot before a clear, then a 128Ãƒâ€”128 map texture
-copy after that clear. The shared HLE hook in `hle_d3d8.c` retains the first
-host texture for that frame and copies guest region (176,0)Ã¢â‚¬â€œ(312,181) into
-the second texture. `d3d8_screencopy.c` performs the scaled GPU texture copy
-on RHI; `src/native/gl_screen_copy.inc` supplies the native GL adapter. The
-production RHI fixture in `tests/support/rhi_screen_copy.h` checks that the saved
-image survives a clear. Reproduce visually with Scotland the Brave's Uplink
-map mode; inspect the hologram rather than a replay-only frame, since replay
-captures do not serialize host screen copies.
+The shared Uplink map, framebuffer refresh and permanent color grade use the
+late3061/3060/3062 patches. See [contracts and checks](uplink-color.md).
 A conflict "during unwind" means current runtime/recorded stack diverge; it
 does not establish a bad new patch. Preserve edits and investigate the named
 hunk; never delete the ledger, reset the runtime or remove dependency patches.

@@ -1,3 +1,25 @@
+## MAC-013 follow-up: permanent color correction and Uplink (#604, 2026-11-25)
+
+**Awaiting validation** for native mission gameplay. Shared3061/3060 fixes preserve
+the composed Uplink map and framebuffer refresh/hold behavior. Shared3062 now
+applies a permanent fixed grade only at final output; Picture controls and
+the settings model were removed. Native GL retains its region-copy adapter.
+**Deferred platform exception:** permanent grading is absent from the legacy
+Mac `--renderer gl` path (also selected on older supported macOS). Its
+`src/native/gl_display.inc` presents a renderbuffer through `glBlitFramebuffer`,
+not the common `d3d8_display.c` resolve shader. It needs a texture-backed final
+resolve adapter and shader mapping to the shared grading policy; copying the
+feature into an independent Mac policy would violate the shared contract.
+Keep existing GL presentation unchanged until that adapter is implemented.
+Acceptance must cover real GL pixels for the fixed curve, alpha, neutral
+intermediate passes, one-time final grading, resize and restored GL state.
+PR608 contains the common renderer fix; this legacy adapter is not implemented.
+Native Apple M4/macOS27.0.1 renderer checks now pass the copy/color contracts
+under KosmicKrisp and MoltenVK, with10 HLE fixture passes. The full KosmicKrisp
+suite passes; the wider MoltenVK suite fails an occlusion-query readiness
+assertion outside the completed copy/color checks. Linux/WSL software Vulkan
+passes the full common suite and6 HLE cases. See STATUS.md for snapshot/hash
+evidence and the driver limit. These are renderer checks, not mission gameplay.
 ## MAC-013 follow-up: named skull aspect ratios (2026-11-25)
 
 **Awaiting validation** on native Mac/Linux. Shared pc_display_actor_name and

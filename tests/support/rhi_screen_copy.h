@@ -172,6 +172,30 @@ static void rhi_screen_copy_test(RhiView *restore_target) {
         copy_surface->lpVtbl->Release(copy_surface);
         source_surface->lpVtbl->Release(source_surface);
         rhi_view_destroy(offscreen_rtv);rhi_view_destroy(offscreen_srv);rhi_image_destroy(offscreen);
+        /* Copy a placed map region into part of the snapshot, without losing
+         * the other texels or the active output/viewport. */
+        RECT map_source={4,2,12,10},map_dest={2,1,6,5};
+        rhi_clear_color(dest,black);
+        CHECK(xbox_D3D8CopyBackBufferRegionScaled(texture,&map_source,&map_dest)==S_OK);
+        CHECK(rhi_image_readback(((D3D8Texture *)texture)->image,0,pixels,8*4)==0);
+        /* The source was cleared black earlier; untouched and copied texels
+         * are black. A one-pixel bright line below checks actual coverage. */
+        for(unsigned i=0;i<8*6;i++)CHECK(!pixels[i*4]&&!pixels[i*4+1]&&!pixels[i*4+2]);
+        memset(source,0,sizeof source);
+        for(unsigned i=0;i<copy_width*copy_height;i++)source[i*4+3]=255;
+        for(unsigned y=0;y<copy_height;y++) {
+            unsigned at=(y*copy_width+1)*4;
+            source[at]=source[at+1]=source[at+2]=255;
+        }
+        rhi_image_update(copy_scene,0,NULL,source,copy_width*4,copy_width*copy_height*4);
+        RECT whole_scene={0,0,16,12},one_pixel={2,1,3,2};
+        CHECK(xbox_D3D8CopyBackBufferRegionScaled(texture,&whole_scene,&one_pixel)==S_OK);
+        CHECK(rhi_image_readback(((D3D8Texture *)texture)->image,0,pixels,8*4)==0);
+        CHECK(pixels[(1*8+2)*4]==255 && pixels[(1*8+2)*4+1]==255 && pixels[(1*8+2)*4+2]==255);
+        CHECK(!pixels[0] && !pixels[1] && !pixels[2]);
+        RECT invalid={0,0,17,12};
+        CHECK(xbox_D3D8CopyBackBufferRegionScaled(texture,&invalid,&map_dest)==E_INVALIDARG);
+        CHECK(xbox_D3D8CopyBackBufferRegionScaled(texture,NULL,&map_dest)==E_INVALIDARG);
         CHECK(xbox_D3D8CopyBackBufferToTexture(NULL)==E_INVALIDARG);
         CHECK(d3d8_CopyTextureView(texture,NULL)==E_INVALIDARG);
         if(scale==1)rhi_surface_preservation_test(restore_target);
