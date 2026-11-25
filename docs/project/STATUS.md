@@ -258,6 +258,29 @@ preservation. Linux retains the existing Avalonia interface; this is not evidenc
 of redesigned native visual parity. Mac execution, native presentation adaptation,
 physical DPI/keyboard acceptance and broader gameplay remain release gates.
 See the launcher context guide and native backlog. No release is requested.
+## 2026-11-25 - Mission computer confirmation investigation (#605)
+
+Local fix/605-computer-icons started from mainb6408a4ef and is based on current
+main55535a8ea before PR submission. Original US code reproduces rejected confirmation
+with an additional held input and with a positive zero-whole interval before
+the authored terminal update. The shared candidate scopes button masking to
+3700EC and fractional inhibition preservation to370461/76C288.
+
+All151 Windows timing/terminal-input tests pass, including an actual original-
+code controller confirmation fixture, independent failing mutations, remapped
+buttons, four local slots and the alternate input table,60–240FPS, quarter speed,
+irregular nominal60 cadence, pause/resume and ABI/clock preservation. Linux/WSL
+Ubuntu24.04 executes the same fixture and mutations under GCC and Clang, passing.
+Native Mac Clang also compiles and executes the same fixture and both mutations.
+Evidence: logs/605-timing-final.log, logs/605-linux-confirm.json and
+logs/605-mac-confirm.log. The complete Windows Release build and isolated
+post-build checks pass on main55535a8ea plus this change, with verified generation,
+sealed executable and matching crash symbols (logs/605-build.log). Native full
+game builds, physical controllers and the live What Lies Below mission remain unverified;
+the reporter's exact60FPS failure has not been independently established. No
+personal settings/saves were used. #605 remains open pending acceptance/publication.
+See [contract](../agent-context/terminal-confirmation.md).
+
 ## 2026-11-25 - Permanent color correction and Uplink (#604)
 
 Source prepared on fix/604-uplink-framebuffer from b3083d68f; main373b79016

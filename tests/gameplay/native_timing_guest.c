@@ -15,6 +15,7 @@ static uint32_t g_eax;
 static uint32_t g_ebp;
 void sub_000C54A0(void) { assert(!"unexpected walk collision in clock fixture"); }
 void sub_000C4700(void) { assert(!"unexpected walk sweep in clock fixture"); }
+void sub_00042760(void) { assert(!"unexpected terminal input in clock fixture"); }
 #if defined(_MSC_VER)
 #define RECOMP_MANUAL_TLS __declspec(thread)
 #else

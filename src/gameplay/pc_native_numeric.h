@@ -49,6 +49,7 @@ static inline int pc_native_skip_input_hints(void)
 #include "pc_native_statistics_guest.h"
 #include "pc_native_trap_guest.h"
 #include "pc_native_wind_clock.h"
+#include "pc_terminal_confirm.h"
 #undef RECOMP_AFTER_STORE32
 #define RECOMP_AFTER_STORE32(site,address) \
     do { PC_GPU_ACK_AFTER_STORE32(site,address); \
@@ -120,7 +121,8 @@ extern uint32_t pc_native_demo_dispatch_mode(uint32_t value);
  * values. Smooth only the audited mesh/strip distortion absolute-time reads.
  * Discrete counters and every other absolute-time consumer remain original. */
 #define RECOMP_STORE_GLOBAL_U32(site,address,value) \
-    ((site)==0x3C308u && (address)==0x4C0454u ? pc_game_language_store((site),(address),(uint32_t)(value)) : \
+    ((site)==0x370461u && (address)==0x76C288u ? pc_terminal_confirm_latch((uint32_t)(value)) : \
+     (site)==0x3C308u && (address)==0x4C0454u ? pc_game_language_store((site),(address),(uint32_t)(value)) : \
      (site)==0x42535u && (address)==0x6B94C0u ? pc_native_demo_cursor_reset((uint32_t)(value)) : \
      (address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
 /* Select TRAP's coupled fractional kicks/travel and contact clock together.
@@ -697,7 +699,8 @@ extern void pc_native_walk_collision(void),pc_native_walk_sweep(void);
     ((site)==0x172114u ? pc_native_physics_solver : \
     ((site)==0x1715A0u || (site)==0x170E51u) ? pc_native_physics_random : (function))
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    ((site)==0x370424u ? pc_native_terminal_lines : \
+    ((site)==0x3700ECu ? pc_terminal_confirm_buttons : \
+    (site)==0x370424u ? pc_native_terminal_lines : \
     ((site)==0x3721EEu || (site)==0x3766B0u) ? pc_native_terminal_password : \
     (site)==0xF28F4u ? pc_native_ballistic_finish : \
     (site)==0xF0C9Au ? pc_native_scripted_steer : \

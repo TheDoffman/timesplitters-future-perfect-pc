@@ -1,3 +1,4 @@
+[605](terminal-confirmation.md).
 [Bob](weapon-bob.md), [Exit](pause-settings.md), [Turn](controls-options.md).
 [V-Sync](video-options.md); [229](gladiator-selection.md). [Doors](network-doors.md).
 
