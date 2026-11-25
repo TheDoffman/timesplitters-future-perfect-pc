@@ -1652,6 +1652,43 @@ def test_original_terminal_text(tmp_path):
         vars(config).update(previous)
 
 
+def test_original_terminal_confirmation(tmp_path):
+    """Actual terminal dispatcher and held-mask reader, with controller remapping."""
+    import hashlib
+    import struct
+    from test_recomp_float_joins import config, FunctionTranslator, compile_and_run
+    from guest_constants import absolute_data_words
+    path=ROOT/'private/game/default.xbe'
+    if not path.is_file():
+        pytest.skip('Supported US XBE required for terminal confirmation')
+    previous=dict(vars(config))
+    try:
+        image=path.read_bytes()
+        assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+        config.configure_from_xbe(str(path))
+        ranges=[(0x370490,0x370528),(0x3700d0,0x370489),(0x42760,0x427ac)]
+        functions={a:dict(name=f'sub_{a:08X}',end=b+1) for a,b in ranges}
+        t=FunctionTranslator(image,functions)
+        code='\n'.join('void '+f['name']+'(void);' for f in functions.values())+'\n'
+        code+='\n'.join(t.translate_function(a,f) for a,f in functions.items())
+        source=(ROOT/'tests/gameplay/terminal_confirm.c').read_text()
+        defined=set(re.findall(r'void (sub_[0-9A-F]+)\(void\)',source+code))
+        calls=set(re.findall(r'RECOMP_DIRECT_CALLEE_AT\([^,]+, (sub_[0-9A-F]+)\)',code))
+        calls.update(re.findall(r'\b(sub_[0-9A-F]+)\(\);',code))
+        services='\n'.join(f'void {n}(void){{fprintf(stderr,"UNEXPECTED {n}\\n");abort();}}' for n in sorted(calls-defined))
+        addresses=set(absolute_data_words(image,ranges,config.va_to_file_offset))
+        constants='\n'.join(f'MEM32(0x{a:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(a))[0]:08x};' for a in sorted(addresses))
+        source=source.replace('/* POLICY */',f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT/"src/gameplay/pc_native_numeric.h").as_posix()}"')
+        source=source.replace('/* CODE */',code).replace('/* SERVICES */',services).replace('/* CONSTANTS */',constants)
+        print(compile_and_run(tmp_path,source))
+        exe=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
+        for mutation,message in [('buttons','unrelated held input'),('latch','fractional update')]:
+            broken=subprocess.run([str(exe),mutation],capture_output=True,text=True,timeout=15)
+            assert broken.returncode==1 and message in broken.stderr,broken.stdout+broken.stderr
+    finally:
+        vars(config).update(previous)
+
+
 def test_original_boss_mines(tmp_path):
     """Original Crow mine pool lifecycle and containing damage update."""
     import struct

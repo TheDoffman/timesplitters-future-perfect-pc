@@ -1,3 +1,18 @@
+## MAC-001 follow-up: mission computer confirmation (#605, 2026-11-25)
+
+**Implemented locally; CPU fixture verified on native Mac.** Shared terminal input
+normalizes only the original3700EC result to the operator's configured confirm
+mask. The370461 inhibition store preserves pending input on positive native
+fractional updates; original timing and pause remain unchanged. Sources:
+pc_terminal_confirm.h, pc_terminal_confirm_guest.h, pc_native_numeric.h and
+pc_native_timing_guest.inc. No launcher or OS input adapter changes are needed.
+Windows151 timing/terminal cases pass; the original-code confirmation fixture
+and independent removal controls pass Linux/WSL with GCC and Clang and native
+Mac with Clang. The full Windows build and isolated post-build checks pass.
+Native full game builds, physical controller and live mission acceptance remain
+pending. Publication remains pending. See STATUS.md and
+[contract](../agent-context/terminal-confirmation.md).
+
 ## SteamOS handheld launcher (2026-11-25)
 
 **Implemented locally; physical Steam Deck acceptance pending.** Gaming/Desktop
