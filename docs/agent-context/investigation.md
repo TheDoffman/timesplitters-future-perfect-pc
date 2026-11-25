@@ -1,3 +1,9 @@
+[604 renderer investigation](uplink-color.md).
+Named-marker patch2815 extends the final Developer Tools outlined-label wrapper
+and RHI viewport, so the loader places it last. The repository-context order
+assertion checks that dependency explicitly. Keep patch bytes LF before index
+refresh; retained Windows CRLF bytes hash differently from a clean Linux copy.
+
 [Release authoring policy](../release/release-notes.md) applies to both publishers.
 User-approved announcement layout is mandatory for future game/launcher posts;
 headings and text use no emojis. The guide/template preserve this writing preference.

@@ -31,6 +31,10 @@ def test_outlined_label_scope(tmp_path, platform, break_scope, panel):
     wrapper = re.search(r'void sub_00041E30\(void\)\n\{.*?\n\}', manual, re.S)
     assert wrapper, 'Apply the complete patch stack before testing'
     body = wrapper.group()
+    helper = re.search(r'static void pc_actor_name_original\(void\)\n\{[^\n]*\}', manual)
+    if helper:
+        body = ('#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)\n'
+                +helper.group()+'\n#endif\n'+body)
     if break_scope and not panel:
         body = body.replace('pc_prompts_layout_begin();', '').replace('pc_prompts_layout_end();', '')
     panel_body = ''

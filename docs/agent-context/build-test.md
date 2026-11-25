@@ -1,14 +1,15 @@
 [Tests](launcher-appearance.md)
-
+[GPU](uplink-color.md).
 [Pacing](../development/renderer-frame-pacing-focused.md).
 [Backend](multiplayer-exit.md#backend).
-[Release notes](../release/release-notes.md).
-Mac backup: prior renderer.
-[GL/CI](opengl-recovery.md#publication-ci).
+[Release](../release/release-notes.md).
+Mac: fallback.
+[Scope](ultrawide-player-markers.md).
+[GL](opengl-recovery.md#publication-ci).
 
-[0.7 sync](network-sync-telemetry.md).
+[Sync](network-sync-telemetry.md).
 
-[Turn Speed](controls-options.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md#one-player-arcade-lobbies).
+[Turn](controls-options.md). [IDs](online-player-identities.md). [UI](native-multiplayer-menu.md#one-player-arcade-lobbies).
 [Actors](network-actor-lifetime.md).
 [Rollback](control-presets.md); [Tex](texture-preference.md).
 [JIP](arcade-join-in-progress.md); [Routes](online-client-boundary.md).
@@ -51,7 +52,7 @@ execution. This is synthetic hit-testing, not physical Retina/scene acceptance.
 WSL driver patch direction/repeat/rejection checks use actual GNU patch in
 `test_linux_foundation.py`; see [driver setup](../development/wsl-vulkan.md).
 
-Release webhooks target #release-updates; #announcements holds team posts.
+Release webhooks: #release-updates; team posts: #announcements.
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
@@ -81,7 +82,7 @@ fixtures cover 60/120/180/240; cleanup selects only the active save root.
 Upload-copy/sanitizer/GPU contracts run in CI; see [Linux](linux-game.md) and
 [launcher checks](launcher.md).
 
-Windows passes `config/build/windows-game.manifest` as `TSFP_GAME_MANIFEST`;
+Windows: `TSFP_GAME_MANIFEST=config/build/windows-game.manifest`;
 patch 2130 attaches it only to the game. CMake merges system DPI awareness,
 UAC/common-controls before network sealing. `test_window_theme.py` uses isolated
 manifest/no-manifest probes to inspect embedded XML and actual process DPI.

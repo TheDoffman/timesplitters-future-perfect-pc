@@ -206,6 +206,7 @@
     "tests/compiler/test_recomp_vehicle_joins.py",
     "tests/compiler/test_recomp_generation.py",
     "tests/graphics/test_framebuffer_sampling.py",
+    "tests/graphics/test_color_grade.py",
     "tests/gameplay/test_model_transform.py",
     "tests/compiler/test_gpr_refs.py",
     "tests/graphics/test_zero_base_indices.py",

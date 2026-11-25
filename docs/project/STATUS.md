@@ -258,6 +258,128 @@ preservation. Linux retains the existing Avalonia interface; this is not evidenc
 of redesigned native visual parity. Mac execution, native presentation adaptation,
 physical DPI/keyboard acceptance and broader gameplay remain release gates.
 See the launcher context guide and native backlog. No release is requested.
+## 2026-11-25 - Permanent color correction and Uplink (#604)
+
+Source prepared on fix/604-uplink-framebuffer from b3083d68f; main373b79016
+was integrated before PR submission; main201986577 was integrated afterward.
+The combined Windows regression run passes77 cases. Regeneration, the full
+Windows game build, post-build checks and symbol sealing pass on697ad8339.
+PR608 CI exposed a missing scaled-copy stub in the prediction-target harness;
+the corrected harness now exercises all five copy operations, including the
+new destination-scaled copy. All five baseline/mutation cases pass locally.
+Review additionally found that deferred draws checked bindings during recording,
+before queued texture binds executed. Coverage remains captured from the draw,
+but refresh decisions, target switches and draw epochs now execute in replay
+order. The production HLE fixture passes7 cases, including a mutation restoring
+the stale binding check and a queued two-pass tint/target-switch regression.
+Per user instruction, removed Picture menus, sliders, persistence model and
+get/set API. The former Console-style preset is now permanent (+1 brightness,
+109% contrast,112% saturation, unchanged gamma). The shared final-output shader
+applies it once, leaving native-HUD intermediates neutral. Existing preview
+INI files are ignored and preserved. Framebuffer and Uplink fixes remain.
+
+Earlier Windows Vulkan live testing confirmed Uplink contours/position marker;
+D3D11, Vulkan and OpenGL recovery copy fixtures passed. The previous migration
+matrix covered all38 cases (37 full-run passes plus a stable rerun of one case
+invalidated by a concurrent patch edit). After removal, permanent-grade/menu
+fixtures pass (15 passed,2 platform skips); color/context/fresh-and-repeated
+patch checks pass (23 passed). The final Windows build and post-checks pass,
+with matching crash symbols and verified generation. Live Windows Vulkan at
+1720x720 confirms no Picture entry, colors unaffected by an old zero-saturation
+INI, and visible Uplink contours/position marker under the permanent grade.
+The old INI remains unchanged. Evidence: logs/604-permanent-menu.png and the
+604-permanent session capture; no personal saves/settings were used.
+Native checks on local Git snapshot61218a4a050e502ff72b39a41d8e93d7961c3048
+(same3060/3061/3062 patch hashes as the Windows candidate):
+
+- Mac: Apple M4, macOS27.0.1, SDK1.4.363.0. The HLE fixture passes10 cases
+  across common RHI and legacy-GL compilation. Real GPU copy and permanent-grade
+  pixels pass with KosmicKrisp and MoltenVK. The entire common RHI suite passes
+  KosmicKrisp. MoltenVK's wider suite fails rhi_visibility.h:45 waiting for an
+  occlusion result after readback; it is not a full-suite pass, and the cause
+  has not been assigned to #604. Color acceptance runs before visibility so
+  its result remains independently observable. No query behavior was changed.
+- Linux: Ubuntu24.04/WSL2 x64, Mesa lavapipe/llvmpipe LLVM20.1.2, SDK1.4.363.0.
+  The HLE fixture passes6 cases; the full common Vulkan GPU suite passes with
+  validation enabled, including copy preservation and the permanent grade.
+  This is software Vulkan evidence, not physical Steam Deck/RADV acceptance.
+
+Receipts in logs/604-platform-results.json include executable hashes, matching
+patch hashes and separate full-suite/feature outcomes. Source was synchronized
+through private local Git snapshot bundles before the feature commit. Independent checkouts preserve existing
+native work and use verified, read-only SDK/dependency sources. Mac's first
+temporary Desktop checkout was dehydrated by iCloud; final acceptance used a
+.nosync checkout. No game assets or personal settings/saves were used.
+Full native game builds, mission gameplay and exact console color parity
+remain unverified by these checks.
+Review confirmed the legacy Mac GL renderer bypasses the common resolve shader:
+its native_scene_present uses an ungraded renderbuffer blit. Permanent color
+grading on that legacy path is not implemented or verified; the required final
+resolve adapter and acceptance checks are explicitly deferred in MAC_PORT_BACKLOG.
+Keep #604 open until published. See [contracts](../agent-context/uplink-color.md).
+## 2026-11-25 - Fit named skull markers as one projected label
+
+The all-aspect audit found that the previous closed-skull correction was
+insufficient for names: the name still followed ordinary centred HUD fitting,
+while its two halves retained independently supplied world positions. Shared
+pc_display_actor_name now scopes the original outlined label at13CE13; both
+halves recover the actor centre from the native measured name width at frame+60
+(hex). Text and the opening between the halves use the same aspect scale.
+Patch2815 extends the existing41E30 wrapper, preserving its Developer Tools and
+prompt/read scopes. It runs after those prerequisites. RHI viewport/scissor and
+the legacy GL adapter preserve projected X/Y for each named actor. Original4:3,
+split/partial views, unrelated text and the objective marker's X-only tag remain.
+
+Validation:29 production-layout/text-scope checks pass. These include18 display
+shapes (4:3,5:4,3:2,16:10,16:9,ultrawide,square,portrait and odd window sizes),
+685872 sampled dimension/name/position combinations, mirrored halves, independent
+actors, five text passes, restoration and negative controls for the former
+midpoint fit and missing projected-Y correction. Six real asset-free D3D11
+renders at640x480,1280x1024,1920x1080,1920x1200,3440x1440 and5120x1440 verify
+name position and physical-pixel proportions away from screen centre. The native
+HUD partial-view renderer check also passes. Historical controls-stack upgrade
+and runtime suite-selection checks:13 pass. The complete patch stack applied
+successfully to the isolated runtime, and repository context/diff checks pass.
+
+These validate shared policy, compiled wrapper paths and the Windows renderer,
+not every monitor or physical Mac/Linux gameplay. A new full game generation,
+build and named-player gameplay run are pending for this follow-up; the prior
+closed-skull executable is not evidence for the new name scope. The installed
+game and other running builds were not changed. No publication or main merge.
+See [contract](../agent-context/ultrawide-player-markers.md).
+
+## 2026-11-24 - Keep the two team skull halves joined
+
+Named-marker follow-up: the user identified the name-between-halves case. The
+original13CDA9/13CF9C text-width operations deliberately give the halves different
+inner edges. The current correction preserves those per-call edges rather than
+caching one centre. Added named fixtures cover three widths, two actor positions
+and seven aspect ratios; all13 layout checks pass. The previous visual acceptance
+covered the closed skull, not full named-marker text alignment. The current
+live game view contained no player label; named visual acceptance is pending.
+
+Issue603 reports split team skulls on Linux0.7.1; the user confirmed Windows
+and Classic textures. An isolated Windows team-match capture reproduced the gap
+with Enhanced textures as well. The original A8 half-skull sprites are intact.
+US13C560 draws mirrored halves through1BA70 at13CF7A/13D04E. Both calls use
+the same projected X as their third argument; the second reverses its X bounds
+to mirror the image. The old aspect correction fitted each half about its own
+midpoint, opening a gap. Shared pc_ui_actor_icon_shape now anchors both draws
+to that common argument, without retaining actor state or changing UV/colour.
+
+The first local candidate assumed ordered right-half bounds; visual comparison
+exposed that incorrect assumption. The corrected production fixture now uses
+the actual reversed-X ABI. All13 UI-layout checks pass, including seven aspect
+ratios, consecutive actors, lone halves, original/split-view fallbacks, argument
+restoration, and a negative control that fails with the former midpoint fit.
+Isolated Windows Release and executable identity checks pass. The corrected
+Classic-texture Windows120FPS/1920x1080 team-match run shows complete joined red
+skulls (private skull-team-fixed-v2/skull-7.png and skull-10.png), compared with
+the split captured before the correction. All3058 build
+identity inputs compared with the sealed release cache differ only in the two
+new UI files and the previously tested lobby-reconnect include. Native Mac/Linux
+visual acceptance remains pending. No new game version has been published.
+See [marker contract](../agent-context/ultrawide-player-markers.md).
 
 ## 2026-11-24 - Restart the native backend after failed joins and lobby leave
 

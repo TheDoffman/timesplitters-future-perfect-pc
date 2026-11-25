@@ -88,6 +88,55 @@ checked. Physical Retina/monitor hotplug and real pointer/keyboard acceptance on
 multiple hardware displays remain distinct from automated layout evidence. No
 installed Mac launcher, game, settings, saves or dashboard service is replaced.
 See [STATUS](STATUS.md) and [adapter contract](../agent-context/launcher-appearance.md).
+## MAC-013 follow-up: permanent color correction and Uplink (#604, 2026-11-25)
+
+**Awaiting validation** for native mission gameplay. Shared3061/3060 fixes preserve
+the composed Uplink map and framebuffer refresh/hold behavior. Shared3062 now
+applies a permanent fixed grade only at final output; Picture controls and
+the settings model were removed. Native GL retains its region-copy adapter.
+**Deferred platform exception:** permanent grading is absent from the legacy
+Mac `--renderer gl` path (also selected on older supported macOS). Its
+`src/native/gl_display.inc` presents a renderbuffer through `glBlitFramebuffer`,
+not the common `d3d8_display.c` resolve shader. It needs a texture-backed final
+resolve adapter and shader mapping to the shared grading policy; copying the
+feature into an independent Mac policy would violate the shared contract.
+Keep existing GL presentation unchanged until that adapter is implemented.
+Acceptance must cover real GL pixels for the fixed curve, alpha, neutral
+intermediate passes, one-time final grading, resize and restored GL state.
+PR608 contains the common renderer fix; this legacy adapter is not implemented.
+Native Apple M4/macOS27.0.1 renderer checks now pass the copy/color contracts
+under KosmicKrisp and MoltenVK, with10 HLE fixture passes. The full KosmicKrisp
+suite passes; the wider MoltenVK suite fails an occlusion-query readiness
+assertion outside the completed copy/color checks. Linux/WSL software Vulkan
+passes the full common suite and6 HLE cases. See STATUS.md for snapshot/hash
+evidence and the driver limit. These are renderer checks, not mission gameplay.
+## MAC-013 follow-up: named skull aspect ratios (2026-11-25)
+
+**Awaiting validation** on native Mac/Linux. Shared pc_display_actor_name and
+pc_ui_actor_icon_shape fit text and mirrored halves around their actor's
+projected centre. Patch2815 extends the existing41E30 outlined-label wrapper
+without replacing prompt/read scopes. PcUiWorldAnchor carries projected Y for
+the named-label tag; RHI viewport/scissor and native GL use it on tall displays.
+No platform-specific gameplay policy is introduced.29 layout/scope checks,
+18 display-shape cases,685872 dimension/name cases and six actual Windows D3D11
+renders pass; historical upgrade and runtime selection13 pass. Full updated game
+generation/build, named gameplay and physical Mac/Linux visual checks remain
+pending. See [STATUS](STATUS.md) and the
+[contract](../agent-context/ultrawide-player-markers.md).
+
+## MAC-013 follow-up: team skull halves (2026-11-24)
+
+**Awaiting validation** on native Mac/Linux. Issue603 reports the split skull on
+Linux; the user also confirmed Windows. The Windows isolated team-match capture
+reproduces separated skull halves. Shared pc_display_ui.inc now fits the left
+and right textures around their common projected edge using
+pc_ui_actor_icon_shape in pc_ui_layout.h. No OS adapter or runtime wrapper is
+needed. Windows layout tests cover seven aspect ratios, independent actors,
+culled halves, UV/colour and stack restoration, plus a failing old-fit control.
+The isolated Windows Release build passes identity verification; the Classic
+1920x1080/120FPS team-match capture shows joined skull halves. Native Mac/Linux
+visual acceptance remains pending; see [STATUS](STATUS.md) and
+[contract](../agent-context/ultrawide-player-markers.md).
 
 ## MAC-013 follow-up: native backend after failed joins (2026-11-24)
 

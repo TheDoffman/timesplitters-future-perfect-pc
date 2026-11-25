@@ -30,7 +30,7 @@ extensions. Keep the original patch bytes and loader dependency together.
 Validation routes: `test_framebuffer_sampling.py` exercises actual HLE routing
 and rendered-source identity, `tests/support/rhi_screen_copy.h` checks real GPU
 pixels through `test_rhi_menu_sampling.py` (Windows WARP) and the native RHI
-runner, and `test_prediction_targets.py` verifies all four copy replay operations
+runner, and `test_prediction_targets.py` verifies all five copy replay operations
 respect prediction. Repository context/patch-stack tests cover migration/order.
 
 Local Windows executable is built using the existing runtime checkout based on
