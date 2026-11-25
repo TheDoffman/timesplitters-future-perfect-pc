@@ -1,5 +1,5 @@
 [GL gate](opengl-recovery.md).
-[Wide HUD](ultrawide-player-markers.md).
+[Name fit](ultrawide-player-markers.md).
 [MP](native-multiplayer-menu.md).
 
 [Bob](weapon-bob.md);[Uplink](native-uplink.md).

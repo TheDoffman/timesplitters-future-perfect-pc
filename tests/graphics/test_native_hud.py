@@ -143,6 +143,47 @@ def test_native_hud_partial_view_fallback(replay, tmp_path):
     assert image.size == (128,128), 'Partial views must retain the supersampled scene'
 
 
+@pytest.mark.parametrize('width,height',[(640,480),(1280,1024),(1920,1080),(1920,1200),(3440,1440),(5120,1440)])
+def test_projected_name_keeps_world_position(replay,tmp_path,width,height):
+    chunks=[]
+    def chunk(kind,payload=b''):
+        chunks.append(struct.pack('<II',kind,len(payload))+payload+b'\0'*(-len(payload)%4))
+    def words(kind,*values):chunk(kind,struct.pack('<'+'I'*len(values),*values))
+    chunk(1);chunk(2,struct.pack('<IIIfI',0,3,0xff000000,1,0))
+    chunk(6,struct.pack('<4I2f',0,0,640,480,0,1))
+    for key,value in ((7,0),(14,0),(22,1),(27,0),(15,0),(52,0),(137,0)):words(3,key,value)
+    for key,value in ((1,2),(2,0),(4,2),(5,0)):words(4,0,key,value)
+    words(8,0x44);words(19,0)
+    for cx,cy in ((128,120),(512,360)):
+        words(28,2,0x13ce13)
+        points=((cx-50,cy-10),(cx+50,cy-10),(cx-50,cy+10),
+                (cx-50,cy+10),(cx+50,cy-10),(cx+50,cy+10))
+        vertices=b''.join(struct.pack('<4fI',x,y,0,1,0xffffffff) for x,y in points)
+        chunk(9,struct.pack('<4I',4,2,20,len(vertices))+vertices)
+        words(28,0,0)
+    (tmp_path/'frame.d3dcap').write_bytes(struct.pack('<8s6I',b'XBRD3D8',8,32,1,640,480,len(chunks))+b''.join(chunks))
+    (tmp_path/'display.ini').write_text(f'TSFP_DISPLAY_V2 {width} {height} 80\n')
+    (tmp_path/'pc-graphics.ini').write_text('TSFP_GRAPHICS_V2 1 0 1 0 0 0\n')
+    exe,compiler_env=replay
+    env={k:v for k,v in compiler_env.items() if not k.startswith(('RECOMP_','TSFP_'))}
+    env.update(TSFP_DISPLAY_CONFIG=str(tmp_path/'display.ini'),RECOMP_INPUT_CONFIG=str(tmp_path/'controls.json'),
+               RECOMP_SAVE_DIR=str(tmp_path/'saves'),APPDATA=str(tmp_path/'appdata'),RECOMP_SHADER_CACHE='0')
+    run=subprocess.run([str(exe),str(tmp_path/'frame.d3dcap'),'--out',str(tmp_path/'label-'),
+                        '--loops','1','--dump-every','--backend','d3d11'],cwd=tmp_path,env=env,capture_output=True,text=True,timeout=45)
+    assert run.returncode==0,run.stdout+run.stderr
+    image=Image.open(tmp_path/'label-000.bmp').convert('RGB')
+    assert image.size==(width,height)
+    scale=min(width/640,height/480)
+    for cx,cy in ((128,120),(512,360)):
+        px,py=cx*width/640,cy*height/480
+        region=image.crop((int(px-60*scale),int(py-20*scale),int(px+60*scale),int(py+20*scale)))
+        mask=region.point(lambda value:255 if value>240 else 0).convert('L')
+        bounds=mask.getbbox();assert bounds,'Projected label disappeared'
+        x1,y1,x2,y2=bounds
+        assert abs((x1+x2)/2-60*scale)<2 and abs((y1+y2)/2-20*scale)<2
+        assert abs(x2-x1-100*scale)<2 and abs(y2-y1-20*scale)<2
+
+
 @pytest.mark.parametrize('samples,stencil_value',[(1,0xa5),(4,0x5a)])
 def test_native_hud_stencil_history(replay,tmp_path,samples,stencil_value):
     image, _ = render(replay,tmp_path/'stencil',3,samples,stencil_after=True,stencil_value=stencil_value)

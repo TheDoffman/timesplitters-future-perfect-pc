@@ -35,8 +35,11 @@ static PcUiWorldAnchor g_2d_world_anchor;
 /* PRODUCTION */
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL: line %d %s\n",__LINE__,#x);return 1;}}while(0)
 int main(void){
- const unsigned sizes[][2]={{640,480},{1280,1024},{1920,1080},{1920,1200},{3440,1440},{5120,1440},{7680,4320}};
- for(unsigned i=0;i<7;i++)for(int anchor=2;anchor<=4;anchor++){
+ const unsigned sizes[][2]={{640,480},{1280,1024},{1920,1080},{1920,1200},{3440,1440},{5120,1440},{7680,4320},
+  {720,480},{1280,800},{2560,1080},{3840,1080},{5760,1080},{1080,1080},{1080,1920},
+  {1200,1600},{1024,1280},{1001,733},{3441,1441}};
+ const unsigned size_count=sizeof sizes/sizeof sizes[0];
+ for(unsigned i=0;i<size_count;i++)for(int anchor=2;anchor<=4;anchor++){
   float w=sizes[i][0],h=sizes[i][1],scale=fminf(w/640,h/480);
   g_device_state.width=sizes[i][0];g_device_state.height=sizes[i][1];
   g_device_state.viewport=(D3DVIEWPORT8){0,0,640,480,0,1};g_2d_anchor=anchor;
@@ -54,7 +57,7 @@ int main(void){
  /* Captured crane clip: 639/479 must cover the full physical right/bottom.
     Unrelated tags and partial clips must keep their original bounds. */
  g_2d_squeeze=0;g_2d_placement=1;g_2d_tag=0x137010;
- for(unsigned i=0;i<7;i++)for(unsigned inclusive=0;inclusive<2;inclusive++){
+ for(unsigned i=0;i<size_count;i++)for(unsigned inclusive=0;inclusive<2;inclusive++){
   g_device_state.width=sizes[i][0];g_device_state.height=sizes[i][1];
   g_scissor=(RhiRect){0,0,inclusive?639:640,inclusive?479:480};
   RhiRect stored=g_scissor,clip;CHECK(d3d8_GetScissor(&clip));
@@ -68,7 +71,7 @@ int main(void){
  }
  /* The marker centre stays at its world-projected pixel while both axes
     use the same pixel scale. Labels retain the outline anchor. */
- for(unsigned i=0;i<7;i++)for(int position=0;position<=10;position++)
+ for(unsigned i=0;i<size_count;i++)for(int position=0;position<=10;position++)
  for(unsigned half_width=4;half_width<=64;half_width*=4) {
   float centre=64.f*position,vertices[]={centre-half_width,centre+half_width};
   float label[]={centre+15,centre+22};
@@ -98,11 +101,42 @@ int main(void){
  float invalid[]={NAN,10};
  CHECK(!pc_ui_world_draw(&g_2d_world_anchor,invalid,4,2,0,640));
  CHECK(!g_2d_world_anchor.ready);
+ /* Named skulls: execute the real viewport and scissor, then compare the
+    rendered name bounds with both CPU-fitted half sprites in output pixels.
+    Include names away from both screen centres and tall output. */
+ for(unsigned i=0;i<size_count;i++)for(unsigned pos=0;pos<3;pos++)
+ for(unsigned name_width=8;name_width<=128;name_width*=4) {
+  float cx=pos==0?80.f:pos==1?320.f:560.f,cy=pos==0?70.f:pos==1?240.f:410.f;
+  float left=cx-name_width*.5f,right=cx+name_width*.5f;
+  float label[]={left,cy-10,right,cy-10,left,cy+10,right,cy+10};
+  g_device_state.width=sizes[i][0];g_device_state.height=sizes[i][1];
+  g_device_state.viewport=(D3DVIEWPORT8){0,0,640,480,0,1};
+  xbox_D3D8SetTwoDPlacement(2,0x13ce13);
+  CHECK(pc_ui_world_draw(&g_2d_world_anchor,label,8,4,0,640));
+  CHECK(g_2d_world_anchor.vertical);
+  g_2d_squeeze=1;apply_host_viewport();
+  CHECK(fabsf(actual.x+cx*actual.width/640-cx*sizes[i][0]/640)<.002f);
+  CHECK(fabsf(actual.y+cy*actual.height/480-cy*sizes[i][1]/480)<.002f);
+  CHECK(fabsf(actual.width/640-actual.height/480)<.001f);
+  for(unsigned half=0;half<2;half++) {
+   float edge=half?right:left,xy[]={edge+(half?12:-12),cy-18,edge,cy+18};
+   pc_ui_actor_icon_shape(xy,pc_display_hud_scale(),(float)name_width,half);
+   CHECK(fabsf(xy[2]*sizes[i][0]/640-(actual.x+edge*actual.width/640))<.002f);
+   CHECK(fabsf((xy[1]+xy[3])*.5f*sizes[i][1]/480-(actual.y+cy*actual.height/480))<.002f);
+  }
+  g_scissor=(RhiRect){(int)left,(int)(cy-10),(int)right-1,(int)(cy+10)-1};
+  RhiRect clip;CHECK(d3d8_GetScissor(&clip));
+  CHECK(fabsf(clip.left-(actual.x+left*actual.width/640))<1.1f);
+  CHECK(fabsf(clip.top-(actual.y+(cy-10)*actual.height/480))<1.1f);
+  float next[]={600-cx,480-cy,620-cx,490-cy};
+  CHECK(!pc_ui_world_draw(&g_2d_world_anchor,next,8,2,0,640));
+  CHECK(fabsf(g_2d_world_anchor.x-cx/640)<.0001f);
+ }
  {
   int placement=g_2d_placement,anchor=g_2d_anchor;uint32_t tag=g_2d_tag;
   xbox_D3D8SetTwoDPlacement(TSFP_NATIVE_HUD_BEGIN,TSFP_NATIVE_HUD_TAG);
   xbox_D3D8SetTwoDPlacement(TSFP_NATIVE_HUD_END,TSFP_NATIVE_HUD_TAG);
   CHECK(hud_begins==1 && g_2d_placement==placement && g_2d_anchor==anchor && g_2d_tag==tag);
  }
- puts("PASS: production viewport/scissor agreement at seven ratios and every anchor");return 0;
+ puts("PASS: production viewport/scissor and named skulls at 18 ratios");return 0;
 }

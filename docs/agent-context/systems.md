@@ -7,9 +7,10 @@
 [Tex](texture-preference.md); [arms](video-options.md).
 
 [Uplink](native-uplink.md#throw-impulse); [IDs](online-player-identities.md). [Solo](native-multiplayer-menu.md#one-player-arcade-lobbies).
-[Network startup](network-performance.md): one-time config read, atomic dispatch;
-LAN/Online enable dispatch explicitly; stale config is not re-imported.
-Shared; test: `tests/network/network_eligibility.c`.
+[Network](network-performance.md): read config once; atomic dispatch.
+LAN/Online opt in; stale config stays out.
+Shared test: `tests/network/network_eligibility.c`.
+[Labels](ultrawide-player-markers.md).
 [Sun/visibility](fidelity-comparison.md): optional preset removed; normal settings restored.
 
 [Tools/Video](developer-tools-integration.md#settings).
