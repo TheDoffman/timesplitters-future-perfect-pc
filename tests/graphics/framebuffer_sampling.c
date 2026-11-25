@@ -6,6 +6,7 @@
 static DWORD test_tick_count(void) { return 0; }
 #define GetTickCount test_tick_count
 #include "hle/hle_d3d8_texture.c"
+#include "framebuffer_draw_coverage.h"
 #undef GetTickCount
 #include <assert.h>
 #include "framebuffer_surface_stubs.h"
@@ -27,8 +28,22 @@ UINT d3d8_format_bpp(D3DFORMAT format) { return 32; }
 BOOL d3d8_format_is_compressed(D3DFORMAT format) { return FALSE; }
 UINT d3d8_row_pitch(D3DFORMAT format, UINT width) { return width * 4; }
 void d3d8_base_set_palette(IDirect3DBaseTexture8 *texture, UINT palette) {}
-int hle_d3d8_defer_recording(void) { return 0; }
-void hle_d3d8_defer_op(void (*fn)(const void *), const void *arg, size_t size) { assert(0); }
+static int recording;
+static struct { void (*fn)(const void *); unsigned char args[64]; } queue[32];
+static unsigned queued;
+int hle_d3d8_defer_recording(void) { return recording; }
+void hle_d3d8_defer_op(void (*fn)(const void *), const void *arg, size_t size)
+{
+    assert(queued<32 && size<=64);
+    queue[queued].fn=fn;memcpy(queue[queued++].args,arg,size);
+}
+static void drain(void)
+{
+    recording=0;
+    for(unsigned i=0;i<queued;i++)queue[i].fn(queue[i].args);
+    queued=0;
+}
+void hle_d3d8_defer_flush(void) { drain(); }
 IDirect3DDevice8 *hle_d3d8_shadow_device(void) { return &device; }
 int hle_d3d8_is_framebuffer(uint32_t phys) { return phys == 0x204000 || phys == 0x205000; }
 void hle_d3d8_note_stage_texels(uint32_t stage, uint32_t phys) {}
@@ -71,6 +86,15 @@ static void bind_screen(unsigned stage, uint32_t va)
 {
     shadow_set_texture(stage, va);
     assert(g_bound[stage] == &fake_texture);
+}
+
+static void paint_half(const void *unused) { scene=sampled/2; }
+static void record_tint(void)
+{
+    float quad[4][2]={{0,0},{640,0},{0,480},{640,480}};
+    hle_d3d8_framebuffer_prepare_draw(draw_covers_target(quad,sizeof quad[0],4));
+    unsigned dummy=0;hle_d3d8_defer_op(paint_half,&dummy,sizeof dummy);
+    hle_d3d8_framebuffer_drawn();
 }
 
 /* Cache aliases may disagree about framebuffer status. Compare both outputs
@@ -197,6 +221,23 @@ int main(void)
     assert(g_textures[0].framebuffer_epoch==epoch);
     fail_copy=0;hle_d3d8_framebuffer_refresh_bound();
     assert(sampled==5 && g_textures[0].framebuffer_epoch==g_fb_epoch);
+    /* Bindings start unbound when recording; replay must sample each preceding
+     * tint output, not the previous frame's binding or one initial snapshot. */
+    shadow_set_texture(0,0);shadow_set_texture(2,0);
+    scene=100;before=copies;g_fb_target=0x204000;
+    unsigned long prior_epoch=g_fb_epoch;uint32_t prior_target=g_fb_target;
+    recording=1;
+    hle_d3d8_framebuffer_target(0x205000);
+    uint32_t bind[2]={0,va};hle_d3d8_defer_op(op_set_texture,bind,sizeof bind);
+    record_tint();record_tint();
+    assert(copies==before && g_fb_epoch==prior_epoch && g_fb_target==prior_target);
+    drain();
+    assert(scene==25 && sampled==50 && copies==before+2);
+    assert(g_fb_epoch==prior_epoch+2);
+    assert(g_fb_target==0x205000);
+    /* Partial glow taps deliberately retain the bind snapshot. */
+    float partial[4][2]={{0,0},{320,0},{0,240},{320,240}};
+    assert(!draw_covers_target(partial,sizeof partial[0],4));
     puts("PASS: framebuffer sampling passes, stable taps, frame zero and retry");
     return 0;
 }

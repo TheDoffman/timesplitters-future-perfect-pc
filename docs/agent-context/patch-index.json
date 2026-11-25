@@ -4060,7 +4060,7 @@
     {
       "name": "3060-frame-buffer-textures.patch",
       "path": "patches/graphics/rendering/3060-frame-buffer-textures.patch",
-      "sha256": "de8f9278423e1ed7689cdd547bf0f7d6785431f2d1550f2243f4d640ecccef3e",
+      "sha256": "aeb64c91327e1a2ad306790980ac30f20521edf8729b071821e886f7633d45d8",
       "targets": [
         "src/hle/hle_d3d8.c",
         "src/hle/hle_d3d8_record.c",

@@ -13,12 +13,13 @@
  int hle_d3d8_is_framebuffer(uint32_t phys)
  {
      int i;
-@@ -1037,6 +1043,35 @@
+@@ -1037,6 +1043,36 @@
  static unsigned long g_inline_begin_max, g_inline_vdata_max;
  /* From hle_d3d8_texture.c: stage 0 holds the title's own frame. */
  int hle_d3d8_stage0_is_framebuffer(void);
 +void hle_d3d8_framebuffer_refresh_bound(void);
 +int hle_d3d8_framebuffer_needs_refresh(void);
++void hle_d3d8_framebuffer_prepare_draw(int whole);
 +/* whether a draw covers the whole render target, from its
 + * vertices' screen positions (pretransformed or screen-space program
 + * vertices start with x, y in the title's pixels). Only such a pass maps the
@@ -31,7 +32,7 @@
 +    float lo_x = 1e30f, hi_x = -1e30f, lo_y = 1e30f, hi_y = -1e30f;
 +    uint32_t i;
 +    if (!verts || stride < 8 || !count || count > 64 || !g_target_width || !g_target_height ||
-+        !hle_d3d8_framebuffer_needs_refresh())
++        (!hle_d3d8_defer_recording() && !hle_d3d8_framebuffer_needs_refresh()))
 +        return 0;
 +    for (i = 0; i < count; i++) {
 +        float p[2];
@@ -49,7 +50,7 @@
  /* From hle_d3d8_texture.c: re-read each stage's guest palette, as the Xbox
   * does at every draw, and re-bake a P8 texture drawn under a new one. */
  void hle_d3d8_sync_palettes(IDirect3DDevice8 *dev);
-@@ -4199,6 +4234,8 @@
+@@ -4199,6 +4235,8 @@
          }
      }
  
@@ -58,15 +59,14 @@
      if (zs) {
          int own;
  
-@@ -5002,6 +5039,8 @@
-         g_draws_primitive++;
-         return;
+@@ -5023,6 +5061,7 @@
+         memcpy(loop + (size_t)count * host_stride, verts, host_stride);
+         verts = loop;
      }
-+    if (draw_covers_target(verts, stride, count))
-+        hle_d3d8_framebuffer_refresh_bound();
-     expanded = shadow_expand_vertices(verts, count, &host_stride,
-                                       from_buffer ? g_draw_first : NO_FIRST_VERTEX,
-                                       &failed);
++    hle_d3d8_framebuffer_prepare_draw(draw_covers_target(verts, host_stride, count));
+     hr = host_DrawPrimitiveUP(g_shadow, pt, prims, verts, host_stride);
+     free(loop);
+     free(expanded);
 @@ -5032,8 +5071,10 @@
          g_draws_vb++;
      else
@@ -79,16 +79,15 @@
  }
  
  /* The host half of every indexed draw. `count` counts indices, always 16-bit
-@@ -5130,6 +5171,8 @@
+@@ -5130,6 +5171,7 @@
          g_draws_failed++;
          return;
      }
-+    if (draw_covers_target(verts, stride, vertices))
-+        hle_d3d8_framebuffer_refresh_bound();
++    hle_d3d8_framebuffer_prepare_draw(draw_covers_target(verts, stride, vertices));
      hr = host_DrawIndexedPrimitiveUP(
          g_shadow, pt, 0, vertices, prims, list ? list : idx, D3DFMT_INDEX16,
          expanded ? expanded : verts, host_stride);
-@@ -5141,8 +5184,10 @@
+@@ -5141,8 +5183,10 @@
          g_draws_indexed_vb++;
      else
          g_draws_indexed_up++;
@@ -162,7 +161,7 @@
              e->checked_swap = now;
              framebuffer_probe(e, now);
          }
-@@ -851,12 +877,70 @@
+@@ -851,12 +877,80 @@
   * behind here. This counts it, so the question has a number. */
  static unsigned long g_changed_after_draw, g_frames_changed_after_draw;
  
@@ -193,12 +192,22 @@
 + * finished frame, and during the next frame a texture over B is the graded
 + * one. Textures over the buffer being drawn follow it (copied at bind, and
 + * again before a draw if anything was drawn since). */
++void hle_d3d8_framebuffer_target(uint32_t phys);
++static void op_framebuffer_target(const void *arg)
++{
++    hle_d3d8_framebuffer_target(*(const uint32_t *)arg);
++}
++
 +void hle_d3d8_framebuffer_target(uint32_t phys)
 +{
 +    unsigned long now = hle_d3d8_shadow_swaps();
 +    uint32_t left = g_fb_target;
 +    int i;
 +
++    if (hle_d3d8_defer_recording()) {
++        hle_d3d8_defer_op(op_framebuffer_target, &phys, sizeof phys);
++        return;
++    }
 +    if (!phys || !fb_refresh_enabled())
 +        return;
 +    g_fb_target = phys;
@@ -233,7 +242,7 @@
  
      /* RECOMP_HLE_D3D8_TEX_AFTER_DRAW=1. It hashes every texture the frame
       * used a second time, for a count, and was a fifth of Outrun 2's main
-@@ -1518,6 +1602,61 @@
+@@ -1518,6 +1612,89 @@
   * That is what its full-screen passes do and what nothing else does, so it
   * identifies them without having to match a shader hash or a vertex count.
   * hle_d3d8.c uses it for RECOMP_HLE_D3D8_SKIP_FULLSCREEN. */
@@ -249,9 +258,37 @@
 + * change on the Xbox (hle_d3d8_framebuffer_target). Refreshing that one
 + * between passes fed each pass into the next and flashed white in cutscenes.
 + * RECOMP_HLE_D3D8_FB_REFRESH=0 turns this off (fb_refresh_enabled). */
++static void op_framebuffer_drawn(const void *arg)
++{
++    (void)arg;
++    g_fb_epoch++;
++}
 +void hle_d3d8_framebuffer_drawn(void)
 +{
-+    g_fb_epoch++;
++    if (hle_d3d8_defer_recording()) {
++        uint32_t unused=0;
++        hle_d3d8_defer_op(op_framebuffer_drawn, &unused, sizeof unused);
++        return;
++    }
++    op_framebuffer_drawn(NULL);
++}
++
++void hle_d3d8_framebuffer_refresh_bound(void);
++static void op_framebuffer_prepare(const void *arg)
++{
++    (void)arg;
++    hle_d3d8_framebuffer_refresh_bound();
++}
++/* Geometry is classified while its guest state is current; bindings and
++ * epochs are evaluated only when this draw reaches the GPU sequence. */
++void hle_d3d8_framebuffer_prepare_draw(int whole)
++{
++    if (!whole) return;
++    if (hle_d3d8_defer_recording()) {
++        hle_d3d8_defer_op(op_framebuffer_prepare, &whole, sizeof whole);
++        return;
++    }
++    op_framebuffer_prepare(NULL);
 +}
 +
 +/* Cheap hot-path guard: ordinary world geometry never scans its vertices. */

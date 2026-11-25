@@ -7,6 +7,11 @@ Windows game build, post-build checks and symbol sealing pass on697ad8339.
 PR608 CI exposed a missing scaled-copy stub in the prediction-target harness;
 the corrected harness now exercises all five copy operations, including the
 new destination-scaled copy. All five baseline/mutation cases pass locally.
+Review additionally found that deferred draws checked bindings during recording,
+before queued texture binds executed. Coverage remains captured from the draw,
+but refresh decisions, target switches and draw epochs now execute in replay
+order. The production HLE fixture passes7 cases, including a mutation restoring
+the stale binding check and a queued two-pass tint/target-switch regression.
 Per user instruction, removed Picture menus, sliders, persistence model and
 get/set API. The former Console-style preset is now permanent (+1 brightness,
 109% contrast,112% saturation, unchanged gamma). The shared final-output shader

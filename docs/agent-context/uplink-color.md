@@ -26,6 +26,10 @@ Do not refresh partial glare/blur passes: repeated feedback amplifies their
 legacy4:3 placement into bright rectangles. A cheap bound-texture guard and
 64-vertex cap avoid scanning world meshes. RECOMP_HLE_D3D8_FB_REFRESH=0 is a
 diagnostic legacy comparison, not a player preference.
+With deferred rendering, geometry coverage is classified while recording;
+binding-dependent refresh, physical framebuffer switches and draw epochs run
+in queue order at replay, alongside texture binds. Recording must not inspect
+the previous frame's bindings to decide whether a queued pass needs a copy.
 
 ## Permanent color grade
 
@@ -61,6 +65,10 @@ Menu fixtures now check the original Graphics row order with no Picture entry.
 The prediction-target fixture covers all five copy replay operations, including
 the destination-scaled framebuffer copy, and checks that prediction cannot
 write them into shared effect images.
+The HLE fixture also records a target switch, previously unbound texture and
+two consecutive tint passes, then checks that replay samples each prior output
+and leaves bookkeeping untouched during recording. Restoring the recording-time
+binding check must fail this regression; partial blur taps remain stable.
 Native checks on snapshot61218a4a: Mac Apple M4 passes10 HLE cases; copy/grade
 pixels pass under KosmicKrisp and MoltenVK. Full KosmicKrisp passes; full MoltenVK
 fails the separate visibility-query readiness assertion. Linux/WSL software
