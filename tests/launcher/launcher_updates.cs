@@ -180,6 +180,8 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--versions") return LauncherVersionChecks.Run();
         if (args.Length == 1 && args[0] == "--startup") return LauncherStartupChecks.Run();
         if (args.Length == 1 && args[0] == "--news") return LauncherNewsChecks.Run();
+        if (args.Length == 1 && (args[0] == "--play-state" || args[0] == "--play-state-hold")) return LauncherPlayStateChecks.Main(args[0]=="--play-state"?new string[0]:args);
+        if (args.Length == 1 && args[0] == "--appearance") return LauncherAppearanceChecks.Run();
         if (args.Length == 1 && args[0] == "--shared-ui") return LauncherSharedUiChecks.Run();
         if (args.Length == 1 && args[0] == "--textures") return LauncherTextureChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();

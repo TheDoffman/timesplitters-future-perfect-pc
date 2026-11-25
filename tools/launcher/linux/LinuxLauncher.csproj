@@ -6,6 +6,7 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile><AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(AppearanceSource)" Condition="'$(AppearanceSource)' != ''" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
     <Compile Include="*.cs;../macos/*.cs" Exclude="../macos/NativeTests.cs" />

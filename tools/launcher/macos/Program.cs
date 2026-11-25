@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -30,9 +30,9 @@ namespace TimeSplitters.Launcher
 #if MACOS
             if(args.Length==1 && args[0]=="--test-storage")return MacStorageTests.Run();
 #endif
-            if(args.Length==3 && args[0]=="--test-self-helper")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]),true);
-            if(args.Length==3 && args[0]=="--apply-self")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]));
-            if(args.Length==3 && NativeUpdateWindow.IsHelper(args)) {
+            if(NativeStartup.HelperArguments(args) && args[0]=="--test-self-helper")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]),true);
+            if(NativeStartup.HelperArguments(args) && args[0]=="--apply-self")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]));
+            if(NativeUpdateWindow.IsHelper(args)) {
                 Root=Path.GetFullPath(args[1]); Int32.Parse(args[2]);
                 try { return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args); }
                 finally { NativeStartup.CleanupGameHelper(Root,Environment.ProcessPath); }
@@ -140,6 +140,9 @@ Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance)
                 if(screen==null)return;
                 var area=LauncherClientArea(new Size(screen.WorkingArea.Width/screen.Scaling,
                                                      screen.WorkingArea.Height/screen.Scaling));
+#if LINUX
+                if(LinuxHandheld.Profile.Enabled){var bounds=LinuxHandheld.Profile.GamingMode?screen.Bounds:screen.WorkingArea;area=new Size(Math.Max(1,Math.Min(1280,bounds.Width/screen.Scaling-(LinuxHandheld.Profile.GamingMode?0:24))),Math.Max(1,Math.Min(800,bounds.Height/screen.Scaling-(LinuxHandheld.Profile.GamingMode?0:40))));}
+#endif
                 window.MinWidth=Math.Min(640,area.Width);window.MinHeight=Math.Min(400,area.Height);
                 window.Width=area.Width;window.Height=area.Height;resize();
             };

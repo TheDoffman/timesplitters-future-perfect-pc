@@ -1,3 +1,5 @@
+[Tests](launcher-appearance.md)
+
 [Pacing](../development/renderer-frame-pacing-focused.md).
 [Backend](multiplayer-exit.md#backend).
 [Release notes](../release/release-notes.md).
@@ -49,7 +51,7 @@ execution. This is synthetic hit-testing, not physical Retina/scene acceptance.
 WSL driver patch direction/repeat/rejection checks use actual GNU patch in
 `test_linux_foundation.py`; see [driver setup](../development/wsl-vulkan.md).
 
-Discord release webhooks target #release-updates; #announcements holds team posts.
+Release webhooks target #release-updates; #announcements holds team posts.
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 

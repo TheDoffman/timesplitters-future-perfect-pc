@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -55,6 +55,7 @@ namespace TimeSplitters.Launcher
                         if(!preview) TexturePack.Recover(root);
                         var app = new Application();
                         var ui = new LauncherWindow(root, preview);
+                        if(!preview)new LauncherAppearance(ui);
                         if (preview)
                         {
                             if (settingsPreview) ui.ShowSettings(audioPreview?3:discordPreview?2:graphicsPreview?1:0);
@@ -92,12 +93,10 @@ namespace TimeSplitters.Launcher
         static int Helper(string action, string root, int parent)
         {
             var app = new Application();
-            var status = new TextBlock { Text = "Waiting for the launcher to close", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0,16,0,16) };
-            var panel = new StackPanel { Margin = new Thickness(28) };
-            panel.Children.Add(new TextBlock { Text = "Installing game update", FontSize = 24 });
-            panel.Children.Add(status);panel.Children.Add(new ProgressBar { IsIndeterminate = true, Height = 8 });
-            panel.Children.Add(new TextBlock { Text = "Keep this window open. The launcher will reopen when installation finishes.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0,16,0,0) });
-            var window = new Window { Title = "TimeSplitters · Updating", Width = 540, Height = 270, Content = panel, ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            var page=new UpdateWindowPage(action=="--rollback"?"Restoring previous game":"Installing game update","Waiting for the launcher to close","Keep this window open. The launcher will reopen when installation finishes.");
+            var status=page.Status;
+            var window=new Window {Title="TimeSplitters · Updating",Width=620,Height=360,Content=page.View,Background=page.View.Background,Foreground=Brushes.White,ResizeMode=ResizeMode.NoResize,WindowStartupLocation=WindowStartupLocation.CenterScreen};
+            WindowTheme.Attach(window,()=>true);
             bool finished = false, started = false;int result = 1;
             window.Closing += (s,e) => { if(!finished)e.Cancel=true; };
             window.ContentRendered += async (s,e) => {
@@ -120,7 +119,7 @@ namespace TimeSplitters.Launcher
         }
     }
 
-    public sealed class LauncherWindow
+    public sealed partial class LauncherWindow
     {
         public readonly Window Window;
         readonly string root;
@@ -163,11 +162,11 @@ namespace TimeSplitters.Launcher
         string SelectedGameChannel { get { return channelPicker.Selected; } }
         bool PreviewChannel { get { return SelectedGameChannel!="stable"; } }
         void SetChannels(Release[] releases,string selected)
-        {channelPicker.SetReleases(releases,selected);}
+        {AppearanceCatalog=releases;channelPicker.SetReleases(releases,selected);if(Appearance!=null)Appearance.RefreshState();}
         string NewsGameVersion { get { return installed.Length>0?installed:gameInstalled?"Unversioned":""; } }
         TextureUpdateCheck textureUpdatesState;bool closed;
         void TextureCheckChanged(){if(closed)return;var label=Find<TextBlock>("TextureUpdateStatus");label.Text=textureUpdatesState.Status;label.ToolTip=textureUpdatesState.Details;label.Visibility=label.Text.Length>0?Visibility.Visible:Visibility.Collapsed;if(settings!=null)settings.RefreshTextureCheck();}
-        public void SetStatus(string value) { Text("StatusText", value); }
+        public void SetStatus(string value) { Text("StatusText", value);if(Appearance!=null)Appearance.RefreshState(); }
         public LauncherWindow(string path, bool preview)
             : this(path,preview,new ReleaseClient()) { }
         internal LauncherWindow(string path,bool preview,ReleaseClient releases)
@@ -420,6 +419,7 @@ namespace TimeSplitters.Launcher
                 Button(name).Background=selected?new SolidColorBrush(Color.FromRgb(29,58,85)):Brushes.Transparent;
                 Button(name).Foreground=new SolidColorBrush(selected?Color.FromRgb(134,205,255):Color.FromRgb(223,233,242));
             }
+            if(Appearance!=null)Appearance.SynchronizeNavigation();
         }
         public async void ShowNews()
         {
@@ -691,8 +691,10 @@ namespace TimeSplitters.Launcher
         }
         internal void SetHomePrimaryAction(string name)
         {
+            AppearancePrimary=name;
             foreach(string action in new[]{"PlayButton","UpdateButton","ImportButton","OpenDataButton","RetryButton"})
                 if(action==name)PageTheme.Primary(Button(action));else PageTheme.Secondary(Button(action));
+            if(Appearance!=null)Appearance.RefreshState();
         }
         internal void ShowUpdateState(UpdatePresentationState state)
         {
@@ -747,7 +749,7 @@ namespace TimeSplitters.Launcher
             Text("DataLabel", validData ? "●  Verified US Xbox data" : dataExists ? "○  Data needs attention" : "○  ISO required");
             SetGameDataPresentation(validData,dataExists);
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
-            Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
+            Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning(root);
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
             Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("SavesNav").IsEnabled = !busy;
             Button("RepairNav").IsEnabled = !busy || gameMonitoring;
@@ -788,7 +790,7 @@ namespace TimeSplitters.Launcher
                 {
                     string selected=SelectedGameChannel;
                     var catalog=await client.ReadGameCatalog(timeout.Token);
-                    SetChannels(catalog,selected);available=GameChannels.Select(catalog,selected);
+                    AppearanceOffline=false;SetChannels(catalog,selected);available=GameChannels.Select(catalog,selected);
                     GameUpdateNotice.Publish(root,available,selected);
                     if (available == null)
                     {
@@ -806,8 +808,8 @@ namespace TimeSplitters.Launcher
                         SetStatus(newer ? "Release available. Select " + (gameInstalled ? "Update" : "Install") + " to download and verify." : "Ready.");
                     }
                 }
-                catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) { Text("ReleaseTitle", "Release check timed out."); Text("ReleaseDescription", "Your installed game is available offline. Check again when connected."); ShowRecovery(new TimeoutException("Release check timed out."),Check,false); } }
-                catch (Exception ex) { Text("ReleaseTitle", "Update check failed."); Text("ReleaseDescription", "Your installed game is available offline. Try checking again later."); Fail(ex);ShowRecovery(ex,Check,false); }
+                catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) { AppearanceOffline=true;Text("ReleaseTitle", "Release check timed out."); Text("ReleaseDescription", "Your installed game is available offline. Check again when connected."); ShowRecovery(new TimeoutException("Release check timed out."),Check,false); } }
+                catch (Exception ex) { AppearanceOffline=true;Text("ReleaseTitle", "Update check failed."); Text("ReleaseDescription", "Your installed game is available offline. Try checking again later."); Fail(ex);ShowRecovery(ex,Check,false); }
             }
             checking = false; Refresh();
         }
@@ -1042,7 +1044,7 @@ namespace TimeSplitters.Launcher
             try
             {
                 Core.Require(validData && gameInstalled, "Install the release and import the supported US Xbox data first.");
-                Core.Require(!Core.GameRunning(), "The game is already running.");
+                Core.Require(!Core.GameRunning(root), "The game is already running.");
                 await LaunchGame();
             }
             catch (Exception ex) { Fail(ex); }

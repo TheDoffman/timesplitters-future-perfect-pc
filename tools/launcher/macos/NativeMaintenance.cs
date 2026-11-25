@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -9,12 +9,14 @@ namespace TimeSplitters.Launcher
     {
         readonly MaintenancePage repair=new MaintenancePage(false,true),diagnostics=new MaintenancePage(true,true);
         readonly MaintenanceArea area;
+        internal MaintenanceArea Area=>area;
+        internal string SelectedPage=>area.Tabs.SelectedIndex==2?"Console":area.Tabs.SelectedIndex==1?"Diagnostics":"Repair";
         public Control View { get { return area.View; } }
         readonly NativeWindow owner;readonly string root;VerificationResult game,launcher;bool running;
         public NativeMaintenance(string root,NativeWindow owner,ConsolePage console)
         {
             this.root=root;this.owner=owner;area=new MaintenanceArea(repair,diagnostics,console);
-            area.Selected+=value=>{if(value)Run(Refresh);};
+            area.Selected+=value=>{owner.AppearanceMaintenanceChanged();if(value)Run(Refresh);};
             repair.VerifyGame.Click+=(s,e)=>Run(()=>Verify(false));repair.VerifyLauncher.Click+=(s,e)=>Run(()=>Verify(true));
             repair.RepairGame.Click+=(s,e)=>Run(()=>Repair(false));repair.RepairLauncher.Click+=(s,e)=>Run(()=>Repair(true));
             repair.OpenFiles.Click+=(s,e)=>NativeHost.Open(root);
@@ -45,6 +47,17 @@ namespace TimeSplitters.Launcher
         async Task Repair(bool self){if(await owner.Confirm("Repair "+(self?"launcher":"game")+"?","Restore files from the exact installed release. Saves, settings and the previous game rollback are preserved.")){await owner.Maintain(token=>owner.Repair(self,token));Status("Repair completed.");}}
         Task Refresh(){diagnostics.Report.Text=InstallationMaintenance.Report(root,game,launcher,NativeHost.Graphics());Status("Diagnostics ready. Nothing was uploaded.");return Task.CompletedTask;}
         async Task Issue(bool enhancement){await Refresh();var draft=DiagnosticIssueDraft.Create(enhancement,diagnostics.Report.Text);if(owner.Clipboard!=null)await owner.Clipboard.SetTextAsync(draft.ClipboardText);NativeHost.Open(draft.Url);}
-        async Task Export(){string latest=CrashReports.Latest(root);Core.Require(latest!=null,"No completed game report found.");var file=await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions{Title="Save game report — review before sharing",SuggestedFileName=latest+".zip",FileTypeChoices=new[]{new FilePickerFileType("ZIP archive"){Patterns=new[]{"*.zip"}}}});string path=file?.TryGetLocalPath();if(path==null)return;CrashReports.Export(root,latest,path);NativeHost.Open(Path.GetDirectoryName(path));Status("Game report exported locally. Nothing was uploaded.");}
+        async Task Export(){string latest=CrashReports.Latest(root);Core.Require(latest!=null,"No completed game report found.");string path;
+#if LINUX
+            if(owner.HandheldActive){string folder=await owner.PickHandheldFolder("Choose where to save the report");if(folder==null)return;path=Path.Combine(folder,Path.GetFileName(latest)+".zip");if(File.Exists(path)&&!await owner.Confirm("Replace exported report?","A report with this name already exists. Replace this exported ZIP?"))return;}
+            else
+#endif
+            {var file=await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions{Title="Save game report — review before sharing",SuggestedFileName=latest+".zip",FileTypeChoices=new[]{new FilePickerFileType("ZIP archive"){Patterns=new[]{"*.zip"}}}});path=file?.TryGetLocalPath();}
+            if(path==null)return;CrashReports.Export(root,latest,path);
+#if LINUX
+            if(!owner.HandheldActive)
+#endif
+            NativeHost.Open(Path.GetDirectoryName(path));Status("Game report exported locally. Nothing was uploaded.");}
+
     }
 }

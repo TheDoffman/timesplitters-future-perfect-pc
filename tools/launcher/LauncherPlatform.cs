@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -32,6 +32,7 @@ namespace TimeSplitters.Launcher
 #if LINUX
             var linux = new ProcessStartInfo(Core.PathIn(root, LauncherBinary)) { UseShellExecute = false, WorkingDirectory = root };
             foreach (var arg in new[] { "--skip-self-update", "--root", root }) linux.ArgumentList.Add(arg);
+            foreach(var option in new[]{"--deck","--gaming-mode","--desktop-mode"})if(Array.IndexOf(Program.Arguments??Array.Empty<string>(),option)>=0)linux.ArgumentList.Add(option);
             return linux;
 #else
             var info = new ProcessStartInfo("/usr/bin/open") { UseShellExecute = false, WorkingDirectory = root };
@@ -48,7 +49,7 @@ namespace TimeSplitters.Launcher
         public const string UpdateManifest = "launcher-update-linux-x64.json";
         public const string GameBinary = "Bin/futureperfect_recomp", LaunchScript = "Launch.sh";
         public const string LauncherBinary = "TimeSplitters.Launcher", LauncherApplication = "Support/Launcher/application.json";
-        public static bool LauncherResource(string name) { return name.StartsWith("Support/Launcher/Licenses/",StringComparison.Ordinal) && name.EndsWith(".txt",StringComparison.Ordinal); }
+        public static bool LauncherResource(string name) { return name=="Support/Launcher/SteamDeck.txt" || name.StartsWith("Support/Launcher/Licenses/",StringComparison.Ordinal) && name.EndsWith(".txt",StringComparison.Ordinal); }
         public static string SessionLog(string tag) { return "logs/native-play.err"; }
         public static bool Checkout(string root) { return File.Exists(Path.Combine(root,"tools/build/build-native-linux.py")); }
         public static string GamePath(string root) { return Checkout(root)?"build/linux/game/futureperfect_recomp":GameBinary; }
