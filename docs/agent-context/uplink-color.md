@@ -41,6 +41,9 @@ Keep their ignore rule to protect any existing personal preview settings.
 The shared resolve shader applies the fixed grade exactly once at final
 swapchain output. Native-HUD intermediate resolves remain neutral; SMAA grades
 its final color input once before filtering. No render-thread file access.
+The legacy Mac GL renderer uses a framebuffer blit instead of this resolve;
+its permanent-grade adapter is deferred in MAC_PORT_BACKLOG.md. This limit does
+not apply to the common RHI OpenGL recovery backend, which uses the resolve.
 
 ## Validation
 

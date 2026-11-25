@@ -47,6 +47,10 @@ temporary Desktop checkout was dehydrated by iCloud; final acceptance used a
 .nosync checkout. No game assets or personal settings/saves were used.
 Full native game builds, mission gameplay and exact console color parity
 remain unverified by these checks.
+Review confirmed the legacy Mac GL renderer bypasses the common resolve shader:
+its native_scene_present uses an ungraded renderbuffer blit. Permanent color
+grading on that legacy path is not implemented or verified; the required final
+resolve adapter and acceptance checks are explicitly deferred in MAC_PORT_BACKLOG.
 Keep #604 open until published. See [contracts](../agent-context/uplink-color.md).
 ## 2026-11-25 - Fit named skull markers as one projected label
 
