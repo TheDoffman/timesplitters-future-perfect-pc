@@ -51,3 +51,12 @@ release notes for the complete redesign, and run the normal three-host workflow
 on the reviewed merged revision. Follow launcher-releases.md. Public asset hashes
 and update discovery are post-publication checks. Physical Deck testing remains
 explicitly deferred until after release at the owner's request.
+
+## CI publication-verifier follow-up
+
+The initial three-host PR run passed Windows and Mac, and Linux native tests,
+but Linux release stamping rejected the new Support/Launcher/SteamDeck.txt guide.
+The publication allowlist now includes that exact Linux-owned path, matching the
+installer. A real ZIP verifier regression accepts the guide and rejects nearby
+unowned filenames. Targeted publication tests:42 passed,23 subtests. Required PR
+validation is rerun before merge; no package publication is performed here.

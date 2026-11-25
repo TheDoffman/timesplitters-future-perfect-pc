@@ -1,3 +1,10 @@
+## Publication package policy (2026-11-25)
+
+launcher-release.py now permits the exact owned Linux SteamDeck.txt guide, matching
+the updater/resource policy. CI caught the publication verifier's missing entry
+after native install/repair checks passed. The regression verifies the real ZIP
+manifest/checksum path accepts the guide and rejects neighboring unowned names.
+
 ## Release-readiness wording (2026-11-25)
 
 The handheld Home header and Deck help explicitly say SteamOS support is experimental, as does the packaged player guide. Physical acceptance remains deferred; do not infer hardware support from automated runs.

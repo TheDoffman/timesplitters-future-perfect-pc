@@ -108,7 +108,8 @@ def allowed_file(name, platform):
     if platform == 'windows-x64':
         return name in ('TimeSplitters Launcher.exe', 'Bin/TimeSplitters.App.exe')
     if platform == 'linux-x64':
-        return name in ('TimeSplitters.Launcher', 'Support/Launcher/application.json') or (
+        return name in ('TimeSplitters.Launcher', 'Support/Launcher/application.json',
+                        'Support/Launcher/SteamDeck.txt') or (
             name.startswith('Support/Launcher/Licenses/') and name.endswith('.txt'))
     prefix = 'TimeSplitters Launcher.app/Contents/'
     return name in (prefix+'Info.plist', prefix+'MacOS/TimeSplitters.Launcher',

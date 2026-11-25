@@ -153,6 +153,14 @@ class LauncherReleaseTests(unittest.TestCase):
                                 size=archive.stat().st_size, sha256=checksum))
         return archive
 
+    def test_linux_package_accepts_only_the_owned_deck_guide(self):
+        self.package('linux-x64', extra={'Support/Launcher/SteamDeck.txt': b'Experimental SteamOS support'})
+        release.verify_package(self.directory, self.plan, 'linux-x64')
+        for name in ('Support/Launcher/Other.txt', 'Support/Launcher/SteamDeck.txt.exe'):
+            self.package('linux-x64', extra={name: b'not owned'})
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, 'Unexpected launcher payload'):
+                release.verify_package(self.directory, self.plan, 'linux-x64')
+
     def test_linux_package_rejects_missing_execute_permissions_and_game_data(self):
         self.package('linux-x64', executable=False)
         with self.assertRaisesRegex(ValueError, 'permissions'):
