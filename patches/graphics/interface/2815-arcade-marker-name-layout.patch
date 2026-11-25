@@ -1,0 +1,58 @@
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -427,6 +427,17 @@
+     return 1.f;
+ }
+ 
++/* A named actor label keeps its projected Y on tall output too. */
++static float two_d_vertical_anchor(void)
++{
++#ifdef TSFP_PC_DISPLAY
++    if(g_2d_squeeze && !g_cur_rt && g_2d_world_anchor.active &&
++       g_2d_world_anchor.ready && g_2d_world_anchor.vertical)
++        return g_2d_world_anchor.y;
++#endif
++    return .5f;
++}
++
+ /* Put the scene on the back buffer, immediately before presenting it.
+  * Nothing to do while unscaled: the scene target is the back buffer, and
+  * this is the one call that has to stay free in that case. */
+@@ -527,7 +538,7 @@
+         int32_t bounds[4];
+         two_d_squeeze(&k,&cx);
+         pc_guest_scissor(clip,sx,sy,k,two_d_vertical_scale(),cx,
+-                         g_device_state.height*.5,bounds);
++                         g_device_state.height*two_d_vertical_anchor(),bounds);
+         out->left=bounds[0];out->top=bounds[1];
+         out->right=bounds[2];out->bottom=bounds[3];
+     }
+@@ -1830,7 +1841,7 @@
+         hv.width *= k;
+     }
+ 
+-    { float ky=two_d_vertical_scale(),cy=g_device_state.height*.5f;
++    { float ky=two_d_vertical_scale(),cy=g_device_state.height*two_d_vertical_anchor();
+       hv.y=cy+(hv.y-cy)*ky;hv.height*=ky; }
+     rhi_set_viewports(1, &hv);
+ }
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1296,12 +1296,16 @@
+ /* US outlined label: four outline passes and the foreground draw use the
+  * same text/stack mappings synchronously. Discard read facts at return. */
+ extern void sub_00041E30_gen(void);
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++static void pc_actor_name_original(void)
++{ pc_developer_lobby_text(sub_00041E30_gen); }
++#endif
+ void sub_00041E30(void)
+ {
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_PROMPTS)
+     pc_prompts_layout_begin();
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+-    pc_developer_lobby_text(sub_00041E30_gen);
++    pc_display_actor_name(pc_actor_name_original);
+ #else
+     sub_00041E30_gen();
+ #endif

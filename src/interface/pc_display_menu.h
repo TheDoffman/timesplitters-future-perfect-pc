@@ -97,6 +97,7 @@ void pc_display_ui(void (*original)(void),uint32_t tag);
 void pc_display_scope(void (*original)(void),uint32_t tag);
 int pc_display_scope_mask(void (*original)(void));
 void pc_display_aim_primitive(void (*original)(void),unsigned kind);
+void pc_display_actor_name(void (*original)(void));
 void pc_display_aim_panel(void (*original)(void),uint32_t tag);
 void pc_display_effect_scope(void (*original)(void));
 void pc_display_weapon_effect(void (*original)(void),unsigned kind);

@@ -4,7 +4,7 @@
 static GLuint native_scene_fbo,native_scene_color,native_scene_depth;
 static unsigned native_scene_w,native_scene_h;
 static int native_scene_active=1;
-static float native_hud_k=1,native_hud_ky=1,native_hud_anchor=.5f;
+static float native_hud_k=1,native_hud_ky=1,native_hud_anchor=.5f,native_hud_anchor_y=.5f;
 static int native_placement;
 static uint32_t native_placement_tag;
 static PcUiWorldAnchor native_world_anchor;
@@ -16,7 +16,7 @@ static void native_viewport(void) {
     double x=v->X*sx,width=v->Width*sx;
     if(native_scene_active){double anchor=native_scene_w*native_hud_anchor;x=anchor+(x-anchor)*native_hud_k;width*=native_hud_k;}
     double y=v->Y*sy,height=v->Height*sy;
-    if(native_scene_active){double cy=native_scene_h*.5;y=cy+(y-cy)*native_hud_ky;height*=native_hud_ky;}
+    if(native_scene_active){double cy=native_scene_h*native_hud_anchor_y;y=cy+(y-cy)*native_hud_ky;height*=native_hud_ky;}
     glViewport((GLint)x,(GLint)(native_target_height*sy-y-height),(GLsizei)width,(GLsizei)height);
 }
 static int native_scene_resize(unsigned w,unsigned h) {

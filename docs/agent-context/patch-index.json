@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "bd4c305caf503cbb2a0febdc630bf0d194501eb58942b9333e9e1d442797ad6d",
+  "loaderSha256": "e41ec41bf34c1371c24f5d8e841465cdab8bd8ce415a41f1f05bcdf60201120b",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -4073,6 +4073,15 @@
       "sha256": "b7a70487693426b38914df5216bf2424a7512b89f5d6e97932e2dd111f1dc356",
       "targets": [
         "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "2815-arcade-marker-name-layout.patch",
+      "path": "patches/graphics/interface/2815-arcade-marker-name-layout.patch",
+      "sha256": "1f651e6ccd8d4f37a57210dc4b7a9bddad29f04037f9fd545eb7f66888a84769",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     }
   ]
