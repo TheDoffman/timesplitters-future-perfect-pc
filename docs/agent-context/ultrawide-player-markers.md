@@ -38,9 +38,11 @@ uses the same shared policy. Tall output retains projected Y instead of pulling
 the name toward screen centre. Existing objective-tag142D10 X-only behavior,
 unrelated text, partial views and split-screen retain their prior behavior.
 
-The historical controls-only upgrade fixture defers patch 2810 until its
-graphics prerequisites are installed, then verifies the player-name hook in
-the full upgrade. It does not omit the hook from current runtime validation.
+Historical controls/Mac/native/texture/graphics snapshots defer2815 alongside
+its later Developer Tools and viewport prerequisites. The complete upgrade
+installs it; the Mac transition explicitly checks both the outlined-name wrapper
+and projected-Y viewport helper. The controls fixture also defers2810 until its
+graphics prerequisites arrive. Current runtime validation includes both hooks.
 
 Validation: tests/graphics/test_ui_layout.py executes the production adapter
 with deferred batch spies, seven aspect ratios (including 3440x1440 and 5120x1440),

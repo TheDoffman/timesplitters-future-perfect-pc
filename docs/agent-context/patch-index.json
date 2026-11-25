@@ -4048,10 +4048,10 @@
     {
       "name": "2815-arcade-marker-name-layout.patch",
       "path": "patches/graphics/interface/2815-arcade-marker-name-layout.patch",
-      "sha256": "6a8ed1ec5a08e485f5caf910fe0d3bbce990e527b0425cda5fa0fabf9e9972a3",
+      "sha256": "1f651e6ccd8d4f37a57210dc4b7a9bddad29f04037f9fd545eb7f66888a84769",
       "targets": [
-        "src/d3d/d3d8_device.c\r",
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "src/d3d/d3d8_device.c",
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     }
   ]
