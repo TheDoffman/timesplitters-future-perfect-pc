@@ -1,7 +1,12 @@
 ## 2026-11-25 - Permanent color correction and Uplink (#604)
 
 Source prepared on fix/604-uplink-framebuffer from b3083d68f; main373b79016
-was integrated before PR submission.
+was integrated before PR submission; main201986577 was integrated afterward.
+The combined Windows regression run passes77 cases. Regeneration, the full
+Windows game build, post-build checks and symbol sealing pass on697ad8339.
+PR608 CI exposed a missing scaled-copy stub in the prediction-target harness;
+the corrected harness now exercises all five copy operations, including the
+new destination-scaled copy. All five baseline/mutation cases pass locally.
 Per user instruction, removed Picture menus, sliders, persistence model and
 get/set API. The former Console-style preset is now permanent (+1 brightness,
 109% contrast,112% saturation, unchanged gamma). The shared final-output shader

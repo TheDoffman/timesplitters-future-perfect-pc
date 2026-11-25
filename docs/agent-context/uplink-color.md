@@ -55,6 +55,9 @@ fixture with native section garbage collection rather than Mac linker flags.
 A contradictory preview
 INI is present during the test and must have no effect or be modified.
 Menu fixtures now check the original Graphics row order with no Picture entry.
+The prediction-target fixture covers all five copy replay operations, including
+the destination-scaled framebuffer copy, and checks that prediction cannot
+write them into shared effect images.
 Native checks on snapshot61218a4a: Mac Apple M4 passes10 HLE cases; copy/grade
 pixels pass under KosmicKrisp and MoltenVK. Full KosmicKrisp passes; full MoltenVK
 fails the separate visibility-query readiness assertion. Linux/WSL software
