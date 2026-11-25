@@ -11,6 +11,11 @@ through sub_0001BA70 at return PCs 13CF7A and 13D04E. These are the left and
 right skull halves. Their third argument is the common projected actor centre;
 the second draw reverses X bounds to mirror its texture. pc_ui_actor_icon_shape
 fits both halves about that shared argument, preserving the reversal.
+When a name is visible, the guest deliberately separates the inner edges:
+13CDA9 stores the measured text's left edge, and13CF9C advances it by its width
+before the other half. Each primitive retains its own supplied inner edge;
+there is no cached centre that closes this intentional name opening. The
+closed-skull visual run does not establish name/text alignment acceptance.
 Fitting each half about its own midpoint separated them on wide displays (#603).
 The primitive adapter uses STRETCH placement for emission. XY arguments are
 floats at stack+4..+16; UVs and colours
@@ -32,7 +37,8 @@ with deferred batch spies, seven aspect ratios (including 3440x1440 and 5120x144
 two independently positioned actors, both icon calls, unchanged UV/colour words,
 Crosshair Size 150%, local-name text passes, restoration, and split/partial-view
 fallbacks. Half textures must meet at the same projected edge, including lone
-halves and consecutive actors. The old midpoint-fit negative control must fail.
+halves and consecutive actors. Named cases cover three text widths and preserve
+the guest's intentional opening. The old midpoint-fit negative control must fail.
 The same suite checks production viewport/scissor math. These are
 Windows-compiled regression checks, not visual gameplay acceptance on all hosts.
 

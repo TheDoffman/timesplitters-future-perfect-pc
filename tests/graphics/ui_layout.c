@@ -222,6 +222,27 @@ static void test_actor_icons(void)
         CHECK(fabsf(fabsf(aim_seen[2]-aim_seen[0])-12*sx)<.001f);
         CHECK(fabsf(aim_seen[3]-aim_seen[1]-36*sy)<.001f);
     }
+    /* A visible name opens the original marker: 13CDA9 stores the text's
+       left edge, then 13CF9C advances it by its measured width for the other
+       half. Do not force these distinct inner edges onto one cached centre.
+       Exercise different name widths, actors and individually culled halves. */
+    const float name_widths[]={8.f,64.f,180.f};
+    for(unsigned r=0;r<7;r++)for(unsigned n=0;n<3;n++)for(int actor=0;actor<2;actor++) {
+        hud_scale=4.f*sizes[r][1]/(3.f*sizes[r][0]);wide=hud_scale!=1.f;
+        float cx=actor?540.f:100.f,cy=actor?280.f:160.f,inner[2];
+        for(unsigned c=0;c<2;c++) {
+            float edge=cx+(c?.5f:-.5f)*name_widths[n];
+            float xy[]={edge+(c?12.f:-12.f),cy-18.f,edge,cy+18.f};
+            g_esp=0;stack[0]=callers[c];memcpy(stack+1,xy,sizeof xy);
+            uint32_t saved[32];memcpy(saved,stack,sizeof saved);
+            aim_points=2;aim_offset=4;crosshair_size=150;
+            ui_place(2,99);pc_display_aim_primitive(aim_draw,2);sub_00022FF0();
+            CHECK(!memcmp(saved,stack,sizeof saved) && g_esp==4);
+            inner[c]=aim_seen[2];
+            CHECK(fabsf(inner[c]-edge)<.001f);
+        }
+        CHECK(fabsf(inner[1]-inner[0]-name_widths[n])<.001f);
+    }
     /* The local name is a HUD widget, not an actor projection. Preserve all
        of its queued text passes and the previous placement on return. */
     for(unsigned r=0;r<7;r++)for(int split=1;split<=2;split++) {

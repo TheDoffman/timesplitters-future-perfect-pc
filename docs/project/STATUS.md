@@ -1,5 +1,13 @@
 ## 2026-11-24 - Keep the two team skull halves joined
 
+Named-marker follow-up: the user identified the name-between-halves case. The
+original13CDA9/13CF9C text-width operations deliberately give the halves different
+inner edges. The current correction preserves those per-call edges rather than
+caching one centre. Added named fixtures cover three widths, two actor positions
+and seven aspect ratios; all13 layout checks pass. The previous visual acceptance
+covered the closed skull, not full named-marker text alignment. The current
+live game view contained no player label; named visual acceptance is pending.
+
 Issue603 reports split team skulls on Linux0.7.1; the user confirmed Windows
 and Classic textures. An isolated Windows team-match capture reproduced the gap
 with Enhanced textures as well. The original A8 half-skull sprites are intact.
