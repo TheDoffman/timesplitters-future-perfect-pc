@@ -19,7 +19,7 @@ namespace TimeSplitters.Launcher
         public NativeStartup(string root,string[] args,Func<CancellationToken,Task> check=null,Action launch=null,Action viewLogs=null,bool preview=false)
         {
             NativeApplication.ApplyWindowIcon(this);this.root=root;this.args=args;checkOverride=check;launchOverride=launch;logsOverride=viewLogs;
-            Title="TimeSplitters · Launcher update";Width=620;Height=360;CanResize=false;WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#0B1420");
+            FontFamily=Ui.Serif;Title="TimeSplitters · Launcher update";Width=620;Height=360;CanResize=false;WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#0B1420");
             page=new UpdateWindowPage("Checking launcher updates…","Looking for a new launcher version.","LAUNCHER v"+LauncherVersion.Value);status=page.Status;
             retry=page.AddAction("Retry update",async()=>await Start());retry.IsVisible=false;
             logs=page.AddAction("View logs",()=>{try{if(logsOverride!=null)logsOverride();else NativeHost.Open(Core.PathIn(root,".launcher"));}catch(Exception ex){status.Text+="\nCould not open logs: "+ex.Message;}});logs.IsVisible=false;

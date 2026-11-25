@@ -13,7 +13,7 @@ namespace TimeSplitters.Launcher
         public ReleaseNotesMarkdown(Action<string> openLink=null){this.openLink=openLink;IsReadOnly=true;IsDocumentEnabled=true;Background=Brushes.Transparent;Foreground=PageTheme.Brush("#CCDCE8");BorderThickness=new Thickness(0);Padding=new Thickness(0);FontSize=12;VerticalScrollBarVisibility=ScrollBarVisibility.Auto;HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled;SetMarkdown("");}
         public static bool TryLink(string value,out Uri uri){return ReleaseNotesDocument.TryLink(value,out uri);}
         public void SetMarkdown(string source){
-            var document=new FlowDocument{PagePadding=new Thickness(0),FontFamily=new FontFamily("Segoe UI"),FontSize=12,Foreground=Foreground};
+            var document=new FlowDocument{PagePadding=new Thickness(0),FontFamily=Ui.Serif,FontSize=12,Foreground=Foreground};
             System.Windows.Documents.List list=null;int group=-1;
             foreach(var b in ReleaseNotesDocument.Parse(source)){
                 var p=new Paragraph{Margin=new Thickness(0,0,0,10),LineHeight=20};

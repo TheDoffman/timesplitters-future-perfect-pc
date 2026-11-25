@@ -54,7 +54,7 @@ def generate(source,destination):
    elif key in ('StartPoint','EndPoint'):element.set(key,','.join(str(float(n)*100)+'%' for n in value.split(',')))
    elif key=='MinHeight' and value.startswith('{Binding'):element.set(key,'360')
    elif key=='StrokeDashArray':element.set(key,value.replace(' ',','))
-   elif key=='FontFamily':element.set(key,'Menlo' if value=='Consolas' else 'Arial')
+   elif key=='FontFamily':element.set(key,'Georgia, Liberation Serif, DejaVu Serif' if value=='Georgia' else 'Menlo' if value=='Consolas' else 'Arial')
    elif value=='WINDOWS x64':element.set(key,'macOS ARM64')
    elif value=='NATIVE PC PORT':element.set(key,'NATIVE MAC PORT')
  ET.indent(root)

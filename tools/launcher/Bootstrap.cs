@@ -143,7 +143,7 @@ namespace TimeSplitters.Launcher
             Window = (Window)XamlReader.Parse(@"<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='TimeSplitters — Starting'
                 Width='620' Height='360' ResizeMode='NoResize' WindowStartupLocation='CenterScreen'
-                Background='#0B1420' Foreground='#E4EDF5' FontFamily='Segoe UI' ShowInTaskbar='True'>
+                Background='#0B1420' Foreground='#E4EDF5' FontFamily='Georgia' ShowInTaskbar='True'>
                 <Window.Resources>
                   <Style TargetType='Button'>
                     <Setter Property='Background' Value='#1B2C3E'/><Setter Property='Foreground' Value='#E4EDF5'/>

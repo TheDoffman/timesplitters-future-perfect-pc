@@ -1,3 +1,28 @@
+## Serif typography preview (2026-11-25)
+
+The local serif-typography branch changes launcher inheritance from Segoe UI to
+Georgia, including the artwork fallback labels. Shared Ui.Serif supplies Georgia
+on WPF and Georgia/Liberation Serif/DejaVu Serif fallbacks on Avalonia. Native
+layout generation preserves that serif stack instead of substituting Arial.
+Startup, updater and confirmation windows plus Windows release-note prose follow
+the same type treatment. Console/report/code text retains explicit monospace;
+Windows title-bar glyphs keep Segoe UI. Play uses18px on both presentation hosts.
+
+This is a local visual revision, with no launcher version or game-setting change.
+Use normal Windows/native build checks and the existing density/page-size render
+matrix to check wrapping, navigation and action visibility. The original embedded
+TimeSplitters artwork and palette are unchanged. No font binary is redistributed.
+
+Windows full -Test passes70.59s; Linux68 shared UI groups and60 page/size checks
+pass, including the handheld serif render. Font/layout propagation Python checks
+pass6 tests. Home and settings previews are local visualization artifacts. Mac
+compiled normally, but SDK ThirdPartyNotices.txt copying blocked in fcopyfile/read;
+completion uses the identical94355-byte SDK notice from the checksum-verified
+previous local ZIP, then the original signing/manifest/test/package tail. This
+recovery is confined to generated build output; no SDK or installed app was changed.
+Recovered Mac signing/package/tests complete successfully (66 shared UI groups);
+Mac also passes60 native page/size appearance renders.
+
 ## Release-readiness and mouse focus correction (2026-11-25)
 
 Both Launcher.xaml's window button style and PageTheme.xaml's page buttons had

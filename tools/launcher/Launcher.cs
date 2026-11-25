@@ -95,7 +95,7 @@ namespace TimeSplitters.Launcher
             var app = new Application();
             var page=new UpdateWindowPage(action=="--rollback"?"Restoring previous game":"Installing game update","Waiting for the launcher to close","Keep this window open. The launcher will reopen when installation finishes.");
             var status=page.Status;
-            var window=new Window {Title="TimeSplitters · Updating",Width=620,Height=360,Content=page.View,Background=page.View.Background,Foreground=Brushes.White,ResizeMode=ResizeMode.NoResize,WindowStartupLocation=WindowStartupLocation.CenterScreen};
+            var window=new Window {Title="TimeSplitters · Updating",FontFamily=Ui.Serif,Width=620,Height=360,Content=page.View,Background=page.View.Background,Foreground=Brushes.White,ResizeMode=ResizeMode.NoResize,WindowStartupLocation=WindowStartupLocation.CenterScreen};
             WindowTheme.Attach(window,()=>true);
             bool finished = false, started = false;int result = 1;
             window.Closing += (s,e) => { if(!finished)e.Cancel=true; };
