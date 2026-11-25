@@ -260,7 +260,7 @@ namespace TimeSplitters.Launcher
         Window MessageDialog(string title,string text,bool confirmation)
         {
             var dialog=new Window{Title=title,Width=Math.Min(480,Math.Max(280,ClientSize.Width-24)),SizeToContent=SizeToContent.Height,CanResize=false,
-                WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=PageTheme.Brush("#102031"),FontFamily=new FontFamily("Arial")};
+                WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=PageTheme.Brush("#102031"),FontFamily=Ui.Serif};
             // Owned windows have a separate style scope. Load the same translated
             // button templates used by the shared pages instead of Fluent defaults.
             Ui.Theme(dialog);

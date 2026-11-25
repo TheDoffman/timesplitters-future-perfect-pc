@@ -1,4 +1,4 @@
-[Appearance, release-readiness and package policy](launcher-appearance.md): shared UI adapters, mouse/keyboard focus, native package preservation checks and experimental SteamOS labels.
+[Appearance, typography and package policy](launcher-appearance.md): shared UI adapters, mouse/keyboard focus, native package preservation checks and experimental SteamOS labels.
 
 [Release notes](../release/release-notes.md): `release_notes.py` requires versioned
 Before/Now prose for game preparation and launcher dispatch/publication. All posts
