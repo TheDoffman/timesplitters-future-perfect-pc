@@ -56,6 +56,27 @@ def test_guest_placement_hooks():
     assert 'if(FP_MEM32(g_esp)==0x0013BA9Cu)pc_display_health_side();' in manual
 
 
+def test_split_skull_regression_control(tmp_path):
+    """The old per-half midpoint fit must fail the shared-edge assertions."""
+    compiler, environment = native_compiler(tmp_path)
+    adapter = (ROOT/'src/interface/pc_display_ui.inc').read_text()
+    needle = 'pc_ui_actor_icon_shape(xy,pc_display_hud_scale())'
+    assert adapter.count(needle) == 1
+    adapter = adapter.replace(needle, 'pc_ui_aim_shape(xy,points,pc_display_hud_scale())')
+    fixture = (ROOT/'tests/graphics/ui_layout.c').read_text()
+    source = tmp_path/'split-skull-control.c'
+    source.write_text(fixture.replace('#include "pc_display_ui.inc"', adapter))
+    exe = tmp_path/('control.exe' if os.name=='nt' else 'control')
+    if os.name=='nt':
+        command=[compiler,'/nologo','/std:c11','/O2','/I'+str(ROOT/'src'),str(source),'/Fe:'+str(exe),'/Fo:'+str(tmp_path/'control.obj')]
+    else:
+        command=[compiler,'-std=c11','-O2','-I'+str(ROOT/'src'),str(source),'-lm','-o',str(exe)]
+    compiled=subprocess.run(command,cwd=tmp_path,env=environment,capture_output=True,text=True)
+    assert compiled.returncode==0,compiled.stdout+compiled.stderr
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    assert result.returncode!=0 and 'aim_seen[2]-cx' in result.stderr,result.stdout+result.stderr
+
+
 @pytest.mark.parametrize("fixture_name", ["ui_viewport", "ui_screen_effects", "world_projected_effects"])
 def test_production_viewport_and_scissor(tmp_path, fixture_name):
     source=(ROOT/'external/ts3FPrecomp/src/d3d/d3d8_device.c').read_text()

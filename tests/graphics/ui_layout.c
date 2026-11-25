@@ -202,12 +202,13 @@ static void test_actor_icons(void)
     const unsigned sizes[][2]={{640,480},{1280,1024},{1920,1080},{1920,1200},
         {3440,1440},{5120,1440},{7680,4320}};
     const uint32_t callers[]={0x13cf7a,0x13d04e};
-    /* Two different actors in one frame must keep independent projected
-       centres. Crosshair Size must not resize character markers. */
+    /* Each actor's skull is two half textures meeting at cx. Preserve the
+       join even when a half is submitted alone, and across different actors.
+       Crosshair Size must not resize character markers. */
     for(unsigned r=0;r<7;r++)for(unsigned c=0;c<2;c++)for(int actor=0;actor<2;actor++) {
         hud_scale=4.f*sizes[r][1]/(3.f*sizes[r][0]);wide=hud_scale!=1.f;
         float cx=actor?540.f:100.f,cy=actor?280.f:160.f;
-        float xy[]={cx-12,cy-18,cx+12,cy+18};
+        float xy[]={c?cx+12:cx-12,cy-18,cx,cy+18};
         g_esp=0;stack[0]=callers[c];memcpy(stack+1,xy,sizeof xy);
         for(unsigned i=5;i<13;i++)stack[i]=0x12345678+i; /* UVs and colours. */
         uint32_t saved[32];memcpy(saved,stack,sizeof saved);
@@ -215,10 +216,10 @@ static void test_actor_icons(void)
         ui_place(2,99);pc_display_aim_primitive(aim_draw,2);sub_00022FF0();
         CHECK(g_esp==4 && !memcmp(saved,stack,sizeof saved));
         CHECK(placement==2 && tag==99 && aim_anchor==(wide?1:2));
-        CHECK(fabsf((aim_seen[0]+aim_seen[2])*.5f-cx)<.001f);
+        CHECK(fabsf(aim_seen[2]-cx)<.001f);
         CHECK(fabsf((aim_seen[1]+aim_seen[3])*.5f-cy)<.001f);
         float sx=wide?pc_ui_scale_x(hud_scale):1.f,sy=wide?pc_ui_scale_y(hud_scale):1.f;
-        CHECK(fabsf(aim_seen[2]-aim_seen[0]-24*sx)<.001f);
+        CHECK(fabsf(fabsf(aim_seen[2]-aim_seen[0])-12*sx)<.001f);
         CHECK(fabsf(aim_seen[3]-aim_seen[1]-36*sy)<.001f);
     }
     /* The local name is a HUD widget, not an actor projection. Preserve all

@@ -441,9 +441,9 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
         switch(caller) {
         case 0x00135BB4u:case 0x00135C5Au:case 0x00135CA7u:anchor=3;matched=1;break;
         case 0x00135CF6u:case 0x00135D58u:case 0x00135D95u:anchor=4;matched=1;break;
-        /* sub_0013C560 projects each actor before emitting these two icon
-           rectangles. Fit each rectangle about its own projected midpoint;
-           never pull its position into the centered 4:3 HUD canvas. */
+        /* sub_0013C560 emits two mirrored skull halves. Both rectangles'
+           third argument is their shared projected edge; the right half's
+           X bounds are reversed to mirror its texture. */
         case 0x0013CF7Au:case 0x0013D04Eu:actor_icon=1;matched=1;break;
         }
     }
@@ -454,7 +454,8 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
     for(unsigned i=0;i<points*2;i++)saved[i]=WORD_AT(frame+offset+i*4);
     memcpy(xy,saved,points*2*sizeof(float));
     if(kind!=2 || actor_icon) {
-        pc_ui_aim_shape(xy,points,pc_display_hud_scale());
+        if(actor_icon)pc_ui_actor_icon_shape(xy,pc_display_hud_scale());
+        else pc_ui_aim_shape(xy,points,pc_display_hud_scale());
         if(!actor_icon)pc_ui_aim_size(xy,points,pc_display_crosshair_size()*.01f);
         for(unsigned i=0;i<points*2;i++)memcpy(&WORD_AT(frame+offset+i*4),&xy[i],4);
     }

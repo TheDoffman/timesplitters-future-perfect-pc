@@ -1,3 +1,28 @@
+## 2026-11-24 - Keep the two team skull halves joined
+
+Issue603 reports split team skulls on Linux0.7.1; the user confirmed Windows
+and Classic textures. An isolated Windows team-match capture reproduced the gap
+with Enhanced textures as well. The original A8 half-skull sprites are intact.
+US13C560 draws mirrored halves through1BA70 at13CF7A/13D04E. Both calls use
+the same projected X as their third argument; the second reverses its X bounds
+to mirror the image. The old aspect correction fitted each half about its own
+midpoint, opening a gap. Shared pc_ui_actor_icon_shape now anchors both draws
+to that common argument, without retaining actor state or changing UV/colour.
+
+The first local candidate assumed ordered right-half bounds; visual comparison
+exposed that incorrect assumption. The corrected production fixture now uses
+the actual reversed-X ABI. All13 UI-layout checks pass, including seven aspect
+ratios, consecutive actors, lone halves, original/split-view fallbacks, argument
+restoration, and a negative control that fails with the former midpoint fit.
+Isolated Windows Release and executable identity checks pass. The corrected
+Classic-texture Windows120FPS/1920x1080 team-match run shows complete joined red
+skulls (private skull-team-fixed-v2/skull-7.png and skull-10.png), compared with
+the split captured before the correction. All3058 build
+identity inputs compared with the sealed release cache differ only in the two
+new UI files and the previously tested lobby-reconnect include. Native Mac/Linux
+visual acceptance remains pending. No new game version has been published.
+See [marker contract](../agent-context/ultrawide-player-markers.md).
+
 ## 2026-11-24 - Restart the native backend after failed joins and lobby leave
 
 Source prepared on `fix/online-lobby-backend-restart`, based on main3d8e3d0e0.

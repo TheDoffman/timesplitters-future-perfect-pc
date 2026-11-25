@@ -144,4 +144,18 @@ static void pc_ui_aim_shape(float *xy,unsigned points,float ratio)
         xy[i*2+1]=cy+(xy[i*2+1]-cy)*sy;
     }
 }
+/* The team skull is two adjacent textures. Scaling each half about its own
+ * midpoint opens a gap; retain their common projected edge instead. Both
+ * calls end at that edge; the right half has reversed X bounds for mirroring.
+ * Culled halves and later actors need no cache. */
+static void pc_ui_actor_icon_shape(float xy[4],float ratio)
+{
+    if(!(ratio>0.f))return;
+    float cx=xy[2],cy=(xy[1]+xy[3])*.5f;
+    float sx=pc_ui_scale_x(ratio),sy=pc_ui_scale_y(ratio);
+    for(unsigned i=0;i<2;i++) {
+        xy[i*2]=cx+(xy[i*2]-cx)*sx;
+        xy[i*2+1]=cy+(xy[i*2+1]-cy)*sy;
+    }
+}
 #endif

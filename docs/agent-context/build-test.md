@@ -1,7 +1,8 @@
 [Pacing](../development/renderer-frame-pacing-focused.md).
 [Backend](multiplayer-exit.md#backend).
 [Release notes](../release/release-notes.md).
-Mac backup: prior renderer.
+Mac: prior renderer.
+[Skulls](ultrawide-player-markers.md).
 [GL/CI](opengl-recovery.md#publication-ci).
 
 [0.7 sync](network-sync-telemetry.md).

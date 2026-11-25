@@ -1,3 +1,17 @@
+## MAC-013 follow-up: team skull halves (2026-11-24)
+
+**Awaiting validation** on native Mac/Linux. Issue603 reports the split skull on
+Linux; the user also confirmed Windows. The Windows isolated team-match capture
+reproduces separated skull halves. Shared pc_display_ui.inc now fits the left
+and right textures around their common projected edge using
+pc_ui_actor_icon_shape in pc_ui_layout.h. No OS adapter or runtime wrapper is
+needed. Windows layout tests cover seven aspect ratios, independent actors,
+culled halves, UV/colour and stack restoration, plus a failing old-fit control.
+The isolated Windows Release build passes identity verification; the Classic
+1920x1080/120FPS team-match capture shows joined skull halves. Native Mac/Linux
+visual acceptance remains pending; see [STATUS](STATUS.md) and
+[contract](../agent-context/ultrawide-player-markers.md).
+
 ## MAC-013 follow-up: native backend after failed joins (2026-11-24)
 
 **Awaiting validation** on native Mac. Source prepared on
