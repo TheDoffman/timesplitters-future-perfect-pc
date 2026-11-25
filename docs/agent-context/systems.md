@@ -17,8 +17,7 @@ Shared; test: `tests/network/network_eligibility.c`.
 [Uplink](native-uplink.md);[projectile motion/beam damage](native-projectiles.md).
 [Input](controls-options.md).
 
-[Icons](controls-options.md).
-[Display](video-options.md).
+[604](uplink-color.md).
 [Tabs](../development/graphics-options.md).
 [exFAT](host-storage.md)
 # [Aim](hud-sizing.md)

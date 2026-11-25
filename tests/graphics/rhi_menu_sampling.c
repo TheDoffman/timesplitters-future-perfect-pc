@@ -60,6 +60,7 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
 #include "rhi_screen_copy.h"
 #include "msaa_scaled_target.h"
 #include "rhi_state_cache.h"
+#include "color_grade_pixels.h"
 #include "rhi_compatibility.h"
 #include "rhi_vertex_streams.h"
 #include "rhi_gl41_views.h"
@@ -417,6 +418,7 @@ int main(void) {
     rhi_depth_state_destroy(depth);rhi_blend_state_destroy(blend);
     if(!limited){test_msaa_resolve();test_msaa_subresources();test_msaa_color_surface();
         test_msaa_targets();test_msaa_shared_depth();test_msaa_scaled_target();}
+    rhi_color_grade_pixels();
     test_visibility_queries();
     rhi_device_destroy();
 #if defined(TSFP_WINDOWS_RHI_TEST) || defined(TSFP_NATIVE_GL_TEST)

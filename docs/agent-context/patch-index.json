@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "de19b96d8dada3564ffb0908bf62be9f5e822cdf0a2d81f93eefe7c99962a758",
+  "loaderSha256": "bd4c305caf503cbb2a0febdc630bf0d194501eb58942b9333e9e1d442797ad6d",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -4043,6 +4043,36 @@
         "src/config/recomp_config.h",
         "src/d3d/d3d8_device.c",
         "src/d3d/d3d8_gl.c"
+      ]
+    },
+    {
+      "name": "3061-temporal-uplink-map.patch",
+      "path": "patches/graphics/interface/3061-temporal-uplink-map.patch",
+      "sha256": "b453bd027e522aaf2717c5f69817fead58af046d99ab9bd9d16e10c592c9b1c5",
+      "targets": [
+        "src/d3d/d3d8_screencopy.c",
+        "src/d3d/d3d8_xbox.h",
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_record.h"
+      ]
+    },
+    {
+      "name": "3060-frame-buffer-textures.patch",
+      "path": "patches/graphics/rendering/3060-frame-buffer-textures.patch",
+      "sha256": "de8f9278423e1ed7689cdd547bf0f7d6785431f2d1550f2243f4d640ecccef3e",
+      "targets": [
+        "src/hle/hle_d3d8.c",
+        "src/hle/hle_d3d8_record.c",
+        "src/hle/hle_d3d8_texture.c"
+      ]
+    },
+    {
+      "name": "3062-permanent-color-grade.patch",
+      "path": "patches/graphics/rendering/3062-permanent-color-grade.patch",
+      "sha256": "b7a70487693426b38914df5216bf2424a7512b89f5d6e97932e2dd111f1dc356",
+      "targets": [
+        "src/d3d/d3d8_display.c"
       ]
     }
   ]

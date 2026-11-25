@@ -43,6 +43,12 @@ this requirement.
 
 ## Current implementation
 
+The shared renderer permanently applies the Console-style color grade:
+brightness +1, contrast 109%, saturation 112%, gamma unchanged. It also restores
+framebuffer sampling and the Uplink's composed map hologram. Picture controls
+were removed at the user's request; existing preview INI files are ignored and
+preserved. See [contracts and validation](../agent-context/uplink-color.md).
+
 Settings cleanup (`feature/graphics-settings-cleanup`, based on unmerged graphics
 options at `627b05bd`): launcher and game expose one Off/FXAA/SMAA selector.
 The launcher maps it to existing files through `GameSettings.PostAntiAliasing`.

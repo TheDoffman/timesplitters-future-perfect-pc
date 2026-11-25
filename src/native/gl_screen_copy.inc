@@ -2,7 +2,8 @@
 /* Copy the current host scene, not the window's previous presentation. Keep
  * guest rectangle coordinates even when the scene uses a larger target. */
 static unsigned long native_screen_copies;
-static HRESULT native_copy_screen(IDirect3DTexture8 *dst, const RECT *src, const POINT *at)
+static HRESULT native_copy_screen(IDirect3DTexture8 *dst, const RECT *src, const POINT *at,
+                                  const RECT *scaled_destination)
 {
     NATIVE_GL_SCOPE;
     if(!dst || dst->lpVtbl!=&g_tex_vtbl || !native_scene_fbo)return D3DERR_INVALIDCALL;
@@ -12,7 +13,14 @@ static HRESULT native_copy_screen(IDirect3DTexture8 *dst, const RECT *src, const
         return E_NOTIMPL;
     int64_t left=0,top=0,right=g.backbuf_w,bottom=g.backbuf_h;
     int64_t x=0,y=0,w=t->width,h=t->height;
-    if(src) {
+    if(src && scaled_destination) {
+        left=src->left;top=src->top;right=src->right;bottom=src->bottom;
+        x=scaled_destination->left;y=scaled_destination->top;
+        w=(int64_t)scaled_destination->right-x;h=(int64_t)scaled_destination->bottom-y;
+        if(left<0 || top<0 || right<=left || bottom<=top || right>g.backbuf_w ||
+           bottom>g.backbuf_h || x<0 || y<0 || w<=0 || h<=0 || x+w>t->width || y+h>t->height)
+            return E_INVALIDARG;
+    } else if(src) {
         left=src->left;top=src->top;right=src->right;bottom=src->bottom;
         x=at?at->x:0;y=at?at->y:0;
         TsfpScreenCopyRect clipped;
@@ -33,7 +41,7 @@ static HRESULT native_copy_screen(IDirect3DTexture8 *dst, const RECT *src, const
     HRESULT result=E_FAIL;
     if(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE) {
         glBindFramebuffer(GL_READ_FRAMEBUFFER,native_scene_fbo);glDisable(GL_SCISSOR_TEST);
-        int flip=src?t->flipped:1;
+        int flip=scaled_destination?1:src?t->flipped:1;
         int dy0=flip?(int)t->height-y-h:y+h,dy1=flip?(int)t->height-y:y;
         double sx=(double)native_scene_w/g.backbuf_w,sy=(double)native_scene_h/g.backbuf_h;
         glBlitFramebuffer((int)(left*sx),(int)((g.backbuf_h-bottom)*sy),
@@ -48,8 +56,10 @@ static HRESULT native_copy_screen(IDirect3DTexture8 *dst, const RECT *src, const
     glBindTexture(GL_TEXTURE_2D,binding);glDeleteFramebuffers(1,&fbo);
     return result;
 }
-HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst) {return native_copy_screen(dst,NULL,NULL);}
-HRESULT xbox_D3D8CopyBackBufferRectToTexture(IDirect3DTexture8 *dst,const RECT *src,const POINT *at) {return native_copy_screen(dst,src,at);}
+HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst) {return native_copy_screen(dst,NULL,NULL,NULL);}
+HRESULT xbox_D3D8CopyBackBufferRectToTexture(IDirect3DTexture8 *dst,const RECT *src,const POINT *at) {return native_copy_screen(dst,src,at,NULL);}
+HRESULT xbox_D3D8CopyBackBufferRegionScaled(IDirect3DTexture8 *dst,const RECT *src,const RECT *destination)
+{if(!src || !destination)return E_INVALIDARG;return native_copy_screen(dst,src,NULL,destination);}
 HRESULT xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
                                          IDirect3DTexture8 *src,const RECT *region)
 {
@@ -80,10 +90,8 @@ HRESULT xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
         glDisable(GL_SCISSOR_TEST);
         /* The saved full-frame copy has the same guest coordinate system as
          * its source; scale its region into the small Uplink display. */
-        int x0=region->left*(int)s->width/(int)g.backbuf_w;
-        int x1=region->right*(int)s->width/(int)g.backbuf_w;
-        int y0=region->top*(int)s->height/(int)g.backbuf_h;
-        int y1=region->bottom*(int)s->height/(int)g.backbuf_h;
+        int x0=region->left,x1=region->right;
+        int y0=region->top,y1=region->bottom;
         int sy0=s->flipped?(int)s->height-y1:y1;
         int sy1=s->flipped?(int)s->height-y0:y0;
         glBlitFramebuffer(x0,sy0,x1,sy1,0,(int)d->height,(int)d->width,0,

@@ -1,0 +1,310 @@
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -554,6 +554,12 @@
+     }
+ }
+ 
++/* tells hle_d3d8_texture.c which frame buffer the title draws
++ * into. Future Perfect draws its frame into one and grades it into the other
++ * in its Swap callback, so it is taken from the render target, not from the
++ * device's back buffer pointer. */
++void hle_d3d8_framebuffer_target(uint32_t phys);   /* hle_d3d8_texture.c */
++
+ int hle_d3d8_is_framebuffer(uint32_t phys)
+ {
+     int i;
+@@ -1037,6 +1043,35 @@
+ static unsigned long g_inline_begin_max, g_inline_vdata_max;
+ /* From hle_d3d8_texture.c: stage 0 holds the title's own frame. */
+ int hle_d3d8_stage0_is_framebuffer(void);
++void hle_d3d8_framebuffer_refresh_bound(void);
++int hle_d3d8_framebuffer_needs_refresh(void);
++/* whether a draw covers the whole render target, from its
++ * vertices' screen positions (pretransformed or screen-space program
++ * vertices start with x, y in the title's pixels). Only such a pass maps the
++ * frame copy onto the frame one to one in a widened picture; a pass over
++ * part of the screen is placed in the 4:3 box while the copy holds the whole
++ * widened frame, so reading its own output back compounded the mismatch
++ * into a white box (Future Perfect's sun-glare blur, four jittered passes). */
++static int draw_covers_target(const void *verts, uint32_t stride, uint32_t count)
++{
++    float lo_x = 1e30f, hi_x = -1e30f, lo_y = 1e30f, hi_y = -1e30f;
++    uint32_t i;
++    if (!verts || stride < 8 || !count || count > 64 || !g_target_width || !g_target_height ||
++        !hle_d3d8_framebuffer_needs_refresh())
++        return 0;
++    for (i = 0; i < count; i++) {
++        float p[2];
++        memcpy(p, (const uint8_t *)verts + (size_t)i * stride, sizeof p);
++        if (p[0] < lo_x) lo_x = p[0];
++        if (p[0] > hi_x) hi_x = p[0];
++        if (p[1] < lo_y) lo_y = p[1];
++        if (p[1] > hi_y) hi_y = p[1];
++    }
++    return lo_x <= (float)g_target_width * 0.02f && hi_x >= (float)g_target_width * 0.98f &&
++           lo_y <= (float)g_target_height * 0.02f && hi_y >= (float)g_target_height * 0.98f &&
++           hi_x <= (float)g_target_width * 1.05f && hi_y <= (float)g_target_height * 1.05f;
++}
++void hle_d3d8_framebuffer_drawn(void);
+ /* From hle_d3d8_texture.c: re-read each stage's guest palette, as the Xbox
+  * does at every draw, and re-bake a P8 texture drawn under a new one. */
+ void hle_d3d8_sync_palettes(IDirect3DDevice8 *dev);
+@@ -4199,6 +4234,8 @@
+         }
+     }
+ 
++    if (rt && kind == 0)                 /* see hle_d3d8_framebuffer_target */
++        hle_d3d8_framebuffer_target(HLE_MEM32(rt + 4) & 0x0FFFFFFFu);
+     if (zs) {
+         int own;
+ 
+@@ -5002,6 +5039,8 @@
+         g_draws_primitive++;
+         return;
+     }
++    if (draw_covers_target(verts, stride, count))
++        hle_d3d8_framebuffer_refresh_bound();
+     expanded = shadow_expand_vertices(verts, count, &host_stride,
+                                       from_buffer ? g_draw_first : NO_FIRST_VERTEX,
+                                       &failed);
+@@ -5032,8 +5071,10 @@
+         g_draws_vb++;
+     else
+         g_draws_up++;
+-    if (SUCCEEDED(hr))
++    if (SUCCEEDED(hr)) {
+         note_draw_sampled_movie();
++        hle_d3d8_framebuffer_drawn();
++    }
+ }
+ 
+ /* The host half of every indexed draw. `count` counts indices, always 16-bit
+@@ -5130,6 +5171,8 @@
+         g_draws_failed++;
+         return;
+     }
++    if (draw_covers_target(verts, stride, vertices))
++        hle_d3d8_framebuffer_refresh_bound();
+     hr = host_DrawIndexedPrimitiveUP(
+         g_shadow, pt, 0, vertices, prims, list ? list : idx, D3DFMT_INDEX16,
+         expanded ? expanded : verts, host_stride);
+@@ -5141,8 +5184,10 @@
+         g_draws_indexed_vb++;
+     else
+         g_draws_indexed_up++;
+-    if (SUCCEEDED(hr))
++    if (SUCCEEDED(hr)) {
+         note_draw_sampled_movie();
++        hle_d3d8_framebuffer_drawn();
++    }
+ }
+ #endif /* _WIN32 */
+ 
+--- a/src/hle/hle_d3d8_texture.c
++++ b/src/hle/hle_d3d8_texture.c
+@@ -85,6 +85,19 @@
+ unsigned long hle_d3d8_shadow_swaps(void);
+ /* Whether these texels are the frame buffer's -- see hle_d3d8.c. */
+ int hle_d3d8_is_framebuffer(uint32_t phys);
++static int fb_refresh_enabled(void);
++/* Diagnosis: RECOMP_HLE_D3D8_FB_PARTS=refresh or =hold limits the
++ * experiment to one of its two halves. */
++static int fb_part(const char *name)
++{
++    static int mask=-1;
++    if(mask<0) {
++        const char *v=getenv("RECOMP_HLE_D3D8_FB_PARTS");
++        mask=(!v || !*v)?3:(strstr(v,"refresh")?1:0)|(strstr(v,"hold")?2:0);
++    }
++    return mask & (!strcmp(name,"refresh")?1:2);
++}
++static uint32_t g_fb_target;               /* see hle_d3d8_framebuffer_target */
+ /* From hle_d3d8.c: where the texels of the texture bound to a stage live, so
+  * a draw can tell whether it samples the playing movie. */
+ void hle_d3d8_note_stage_texels(uint32_t stage, uint32_t phys);
+@@ -119,6 +132,8 @@
+      * host's finished frame and is refreshed every frame it is bound. */
+     int                framebuffer;
+     int                framebuffer_copy_valid;
++    unsigned long      framebuffer_epoch;   /* g_fb_epoch at the copy */
++    int                held;                /* holds its buffer's last frame */
+     /* P8: the host texture holds the texels expanded through a palette, and
+      * this is the checksum of that palette (0: not known, bake again). */
+     int                p8;
+@@ -129,6 +144,9 @@
+ static int           g_texture_count;
+ static IDirect3DTexture8 *g_bound[MAX_STAGES];
+ static texture_entry *g_bound_entry[MAX_STAGES];
++/* counts draws, so a frame-buffer copy knows whether anything has
++ * been drawn since it was taken (hle_d3d8_framebuffer_refresh_bound). */
++static unsigned long g_fb_epoch;
+ 
+ /* Each stage's palette: where the guest keeps it (physical, 0 for none) and
+  * the checksum of what the host stage palette holds (0: not known). */
+@@ -595,12 +613,20 @@
+     e->format = format;
+     e->size = size;
+     e->used_swap = now;
++    /* a texture over a buffer the title is not drawing into keeps
++     * that buffer's last frame (hle_d3d8_framebuffer_target). */
++    if (fb_refresh_enabled() && e->held &&
++        (e->data & 0x0FFFFFFFu) != g_fb_target) {
++        e->framebuffer_copy_valid = 1;
++        return e->host;
++    }
+     /* Keep one snapshot for consecutive taps of a screen effect. Rebinding
+      * after other textures starts a new pass, which must see intervening
+      * geometry even within the same frame (Khallos Express's final glow). */
+     if (!e->framebuffer_copy_valid || e->checked_swap != now) {
+         e->framebuffer_copy_valid = SUCCEEDED(host_CopyBackBufferToTexture(e->host));
+         if (e->framebuffer_copy_valid) {
++            e->framebuffer_epoch = g_fb_epoch;
+             e->checked_swap = now;
+             framebuffer_probe(e, now);
+         }
+@@ -851,12 +877,70 @@
+  * behind here. This counts it, so the question has a number. */
+ static unsigned long g_changed_after_draw, g_frames_changed_after_draw;
+ 
++/* frame-buffer textures as the Xbox shows them (default);
++ * RECOMP_HLE_D3D8_FB_REFRESH=0 keeps upstream's one copy per bind. */
++static int fb_refresh_enabled(void)
++{
++    static int enabled = -1;
++    if (enabled < 0) {
++        const char *v = getenv("RECOMP_HLE_D3D8_FB_REFRESH");
++        /* Partial glow/blur taps retain their stable snapshot. */
++        enabled = !(v && v[0] == '0');
++        fprintf(stderr, "[HLE-D3D8] frame-buffer textures %s\n", enabled
++                ? "as on the Xbox: whole-screen passes see the frame being drawn, other "
++                  "buffers hold their last frame (RECOMP_HLE_D3D8_FB_REFRESH=0: one copy per bind)"
++                : "keep one copy per bind (RECOMP_HLE_D3D8_FB_REFRESH=0)");
++        fflush(stderr);
++    }
++    return enabled;
++}
++
++/* the title moves from drawing into one frame buffer to another.
++ * Future Perfect draws its frame into A and, in its Swap callback, grades A
++ * into B; the next frame starts drawing into A again. A texture over the
++ * buffer it leaves then holds that buffer's finished content -- the host
++ * frame at that moment -- until the title draws into that buffer again, as
++ * the Xbox's memory would. So during the callback a texture over A is the
++ * finished frame, and during the next frame a texture over B is the graded
++ * one. Textures over the buffer being drawn follow it (copied at bind, and
++ * again before a draw if anything was drawn since). */
++void hle_d3d8_framebuffer_target(uint32_t phys)
++{
++    unsigned long now = hle_d3d8_shadow_swaps();
++    uint32_t left = g_fb_target;
++    int i;
++
++    if (!phys || !fb_refresh_enabled())
++        return;
++    g_fb_target = phys;
++    if (!fb_part("hold"))
++        return;
++    for (i = 0; i < g_texture_count; i++) {
++        texture_entry *e = &g_textures[i];
++        uint32_t d = e->data & 0x0FFFFFFFu;
++        if (!e->host || !e->framebuffer)
++            continue;
++        if (d == phys) {
++            e->held = 0;                  /* being drawn again: follow it */
++            continue;
++        }
++        if (d != left || left == phys || e->used_swap + 2 < now)
++            continue;
++        if (SUCCEEDED(host_CopyBackBufferToTexture(e->host))) {
++            e->framebuffer_copy_valid = 1;
++            e->held = 1;
++            e->framebuffer_epoch = g_fb_epoch;
++        }
++    }
++}
++
+ void hle_d3d8_texture_frame_end(void)
+ {
+     unsigned long now = hle_d3d8_shadow_swaps();
+     texture_layout t;
+     int i, any = 0;
+     static int on = -1;
++
+ 
+     /* RECOMP_HLE_D3D8_TEX_AFTER_DRAW=1. It hashes every texture the frame
+      * used a second time, for a count, and was a fifth of Outrun 2's main
+@@ -1518,6 +1602,61 @@
+  * That is what its full-screen passes do and what nothing else does, so it
+  * identifies them without having to match a shader hash or a vertex count.
+  * hle_d3d8.c uses it for RECOMP_HLE_D3D8_SKIP_FULLSCREEN. */
++/* on the Xbox a texture over the frame buffer *is* the frame
++ * buffer, so every draw that samples it sees everything drawn before it. The
++ * host keeps a copy instead, taken when the texture is bound. A title that
++ * leaves the texture bound across several passes (TimeSplitters: Future
++ * Perfect tints its frame blue, then adds a glow of the tinted frame) would
++ * read the frame from before the first pass. Before each draw, a bound copy
++ * that predates the last draw is taken again -- only for a texture over the
++ * frame buffer being drawn (g_fb_target). A texture over the other
++ * frame buffer holds that buffer's last frame, which this frame's draws never
++ * change on the Xbox (hle_d3d8_framebuffer_target). Refreshing that one
++ * between passes fed each pass into the next and flashed white in cutscenes.
++ * RECOMP_HLE_D3D8_FB_REFRESH=0 turns this off (fb_refresh_enabled). */
++void hle_d3d8_framebuffer_drawn(void)
++{
++    g_fb_epoch++;
++}
++
++/* Cheap hot-path guard: ordinary world geometry never scans its vertices. */
++int hle_d3d8_framebuffer_needs_refresh(void)
++{
++    if(!g_fb_target || !fb_refresh_enabled() || !fb_part("refresh"))return 0;
++    for(unsigned s=0;s<MAX_STAGES;s++) {
++        texture_entry *e=g_bound_entry[s];
++        if(e && e->framebuffer && e->host && e->framebuffer_copy_valid &&
++           e->framebuffer_epoch!=g_fb_epoch && (e->data&0x0fffffffu)==g_fb_target)return 1;
++    }
++    return 0;
++}
++
++void hle_d3d8_framebuffer_refresh_bound(void)
++{
++#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
++    uint32_t back;
++    int s;
++
++    if (!fb_refresh_enabled() || !fb_part("refresh"))
++        return;
++    back = g_fb_target;
++    for (s = 0; s < MAX_STAGES; s++) {
++        texture_entry *e = g_bound_entry[s];
++        if (!e || !e->framebuffer || !e->host || !e->framebuffer_copy_valid ||
++            e->framebuffer_epoch == g_fb_epoch)
++            continue;
++        if (!back || (e->data & 0x0FFFFFFFu) != back)
++            continue;                    /* another buffer's frame: leave it */
++        if (hle_d3d8_trace_on())
++            fprintf(stderr, "[TRACE swap %lu] frame-buffer texture 0x%08X (data 0x%08X) on stage %d "
++                    "copied again before a draw (frame buffer 0x%08X)\n", hle_d3d8_shadow_swaps(),
++                    e->va, e->data, s, back);
++        if (SUCCEEDED(host_CopyBackBufferToTexture(e->host)))
++            e->framebuffer_epoch = g_fb_epoch;
++    }
++#endif
++}
++
+ int hle_d3d8_stage0_is_framebuffer(void)
+ {
+ #if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -2004,6 +2004,10 @@
+ 
+ HRESULT host_CopyBackBufferToTexture(IDirect3DTexture8 *dst)
+ {
++    if(hle_d3d8_defer_recording()) {
++        dq_screen_copy p;memset(&p,0,sizeof p);p.dst=dst;
++        hle_d3d8_defer_op(op_screen_copy,&p,sizeof p);return S_OK;
++    }
+     if (hle_d3d8_interp_rec) {
+         dq_screen_copy p;
+         memset(&p, 0, sizeof p);

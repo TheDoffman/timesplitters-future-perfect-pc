@@ -1,3 +1,4 @@
+[604 renderer investigation](uplink-color.md).
 [Release authoring policy](../release/release-notes.md) applies to both publishers.
 User-approved announcement layout is mandatory for future game/launcher posts;
 headings and text use no emojis. The guide/template preserve this writing preference.

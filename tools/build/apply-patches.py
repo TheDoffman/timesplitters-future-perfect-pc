@@ -362,6 +362,14 @@ def patch_records(paths):
         paths.remove(vsync)
         paths.append(vsync)
 
+    # Uplink composition extends the final shared CopyRects/Clear and copy queue.
+    for name in ('3061-temporal-uplink-map.patch', '3060-frame-buffer-textures.patch',
+                 '3062-permanent-color-grade.patch'):
+        late_patch = by_name.get(name)
+        if late_patch:
+            paths.remove(late_patch)
+            paths.append(late_patch)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

@@ -1,3 +1,4 @@
+[GPU](uplink-color.md).
 [Pacing](../development/renderer-frame-pacing-focused.md).
 [Backend](multiplayer-exit.md#backend).
 [Release notes](../release/release-notes.md).

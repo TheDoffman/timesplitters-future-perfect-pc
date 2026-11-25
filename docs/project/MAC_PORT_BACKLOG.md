@@ -1,3 +1,16 @@
+## MAC-013 follow-up: permanent color correction and Uplink (#604, 2026-11-25)
+
+**Awaiting validation** for native mission gameplay. Shared3061/3060 fixes preserve
+the composed Uplink map and framebuffer refresh/hold behavior. Shared3062 now
+applies a permanent fixed grade only at final output; Picture controls and
+the settings model were removed. Native GL retains its region-copy adapter.
+Native Apple M4/macOS27.0.1 renderer checks now pass the copy/color contracts
+under KosmicKrisp and MoltenVK, with10 HLE fixture passes. The full KosmicKrisp
+suite passes; the wider MoltenVK suite fails an occlusion-query readiness
+assertion outside the completed copy/color checks. Linux/WSL software Vulkan
+passes the full common suite and6 HLE cases. See STATUS.md for snapshot/hash
+evidence and the driver limit. These are renderer checks, not mission gameplay.
+
 ## MAC-013 follow-up: native backend after failed joins (2026-11-24)
 
 **Awaiting validation** on native Mac. Source prepared on

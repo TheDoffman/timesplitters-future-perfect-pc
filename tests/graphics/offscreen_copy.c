@@ -31,9 +31,18 @@ static void hle_d3d8_defer_op(void (*op)(const void *),const void *p,size_t n)
 static void hle_d3d8_interp_op(void (*op)(const void *),const void *p,size_t n)
 {(void)op;assert(n<=sizeof snapshot);memcpy(snapshot,p,n);}
 static HRESULT host_CopyTextureRectToTexture(IDirect3DTexture8 *,IDirect3DTexture8 *,const RECT *,const POINT *);
-static HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *d,IDirect3DTexture8 *s,const RECT *r){(void)d;(void)s;(void)r;assert(0);return 0;}
+static HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *,IDirect3DTexture8 *,const RECT *);
+static int scaled_texture_copies;
+static RECT scaled_texture_region;
+static HRESULT xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *d,IDirect3DTexture8 *s,const RECT *r)
+{assert(d==&target_texture && s==&source_texture);scaled_texture_copies++;scaled_texture_region=*r;return S_OK;}
 static HRESULT host_CopyBackBufferRectToTexture(IDirect3DTexture8 *d,const RECT *r,const POINT *p){(void)d;(void)r;(void)p;assert(0);return 0;}
 static HRESULT host_CopyBackBufferToTexture(IDirect3DTexture8 *d){(void)d;assert(0);return 0;}
+static HRESULT host_CopyBackBufferRegionScaled(IDirect3DTexture8 *,const RECT *,const RECT *);
+static int region_copies;
+static RECT region_from,region_to;
+static HRESULT xbox_D3D8CopyBackBufferRegionScaled(IDirect3DTexture8 *d,const RECT *r,const RECT *to)
+{assert(d==&target_texture);region_copies++;region_from=*r;region_to=*to;return S_OK;}
 /* RECORDING */
 /* PRODUCTION */
 static uint32_t args[5],g_backbuffer_va=0x900,g_shadow_width=640,g_shadow_height=480;
@@ -53,6 +62,20 @@ static void (*const hle_original_D3DDevice_CopyRects)(void)=native_copy;
 /* WRAPPER */
 int main(void)
 {
+    /* The map capture executes in queue order and owns both rectangle values. */
+    RECT from={212,0,314,181},to={128,0,309,181};
+    recording=1;
+    assert(host_CopyBackBufferRegionScaled(&target_texture,&from,&to)==S_OK);
+    assert(region_copies==0 && ((dq_screen_copy *)queued)->has_rect==4);
+    from.left=999;to.left=999;recording=0;op_screen_copy(queued);
+    assert(region_copies==1 && region_from.left==212 && region_to.left==128);
+    /* The saved corner must also reach the handheld only after queued draws. */
+    RECT corner={0,0,128,128};recording=1;
+    assert(host_CopyTextureRegionScaled(&target_texture,&source_texture,&corner)==S_OK);
+    assert(scaled_texture_copies==0 && ((dq_screen_copy *)queued)->has_rect==2);
+    corner.right=99;recording=0;op_screen_copy(queued);
+    assert(scaled_texture_copies==1 && scaled_texture_region.right==128);
+    deferred=0;
     /* Native pause takes a 160x120 subrectangle into a 256x256 picture. */
     HLE_MEM32(64)=320;HLE_MEM32(68)=240;HLE_MEM32(72)=480;HLE_MEM32(76)=360;
     HLE_MEM32(128)=0;HLE_MEM32(132)=0;

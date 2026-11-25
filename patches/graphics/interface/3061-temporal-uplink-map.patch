@@ -1,0 +1,382 @@
+--- a/src/d3d/d3d8_screencopy.c
++++ b/src/d3d/d3d8_screencopy.c
+@@ -43,10 +43,11 @@
+ /* Source pixel = destination pixel * scale + offset. Scale is one when the
+  * sizes agree, which they do whenever a title reads back its whole screen;
+  * the offset places a rectangle (xbox_D3D8CopyBackBufferRectToTexture). */
+-typedef struct { float scale_x, scale_y, off_x, off_y; } ScreenCopyConstants;
++typedef struct { float scale_x, scale_y, off_x, off_y;
++                 float taps_x, taps_y, filter, pad; } ScreenCopyConstants;   /* taps, filter */
+ 
+ static const char kSource[] =
+-    "cbuffer ScreenCopy : register(b7) { float4 scale; };\n"
++    "cbuffer ScreenCopy : register(b7) { float4 scale; float4 taps; };\n"
+     "struct VSOut { float4 pos : SV_Position; };\n"
+     "VSOut vs_main(uint id : SV_VertexID) {\n"
+     "    float2 c = float2((id << 1) & 2, id & 2);\n"   /* one oversized triangle */
+@@ -56,8 +57,19 @@
+     "}\n"
+     "Texture2D<float4> screen : register(t9);\n"
+     "float4 ps_main(VSOut i) : SV_Target {\n"
+-    "    int2 p = int2(i.pos.xy * scale.xy + scale.zw);\n"
+-    "    return screen.Load(int3(p, 0));\n"
++    "    if (taps.z < 0.5) {\n"
++    "        int2 p = int2(i.pos.xy * scale.xy + scale.zw);\n"
++    "        return screen.Load(int3(p, 0));\n"
++    "    }\n"
++    /* a large shrink (the Uplink map, taps.z 1) keeps the brightest
++     * source pixel under each destination pixel, so thin map lines survive. */
++    "    float2 start = (i.pos.xy - 0.5) * scale.xy + scale.zw;\n"
++    "    float2 stride = scale.xy / taps.xy;\n"
++    "    float4 best = 0;\n"
++    "    [loop] for (int y = 0; y < (int)taps.y; y++)\n"
++    "    [loop] for (int x = 0; x < (int)taps.x; x++)\n"
++    "        best = max(best, screen.Load(int3(int2(start + (float2(x, y) + 0.5) * stride), 0)));\n"
++    "    return best;\n"
+     "}\n";
+ 
+ static void fail(const char *what)
+@@ -191,11 +203,11 @@
+  * pixels, to the same size at `at` in the texture -- CopyRects does not
+  * scale. */
+ static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at,
+-                               RhiView *source, const RECT *scaled_region, UINT source_w, UINT source_h);
++                               RhiView *source, const RECT *scaled_region, UINT source_w, UINT source_h, const RECT *scaled_dest, int line_filter);
+ 
+ HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst)
+ {
+-    return copy_to_texture(dst, NULL, NULL, NULL, NULL, 0, 0);
++    return copy_to_texture(dst, NULL, NULL, NULL, NULL, 0, 0, NULL, 0);
+ }
+ 
+ HRESULT xbox_D3D8CopyTextureRectToTexture(IDirect3DTexture8 *dst,
+@@ -204,7 +216,7 @@
+     D3D8Texture *texture=(D3D8Texture *)src;
+     if (!texture || !texture->srv || !rect || src==dst) return E_INVALIDARG;
+     POINT origin={rect->left,rect->top};
+-    return copy_to_texture(dst,rect,at?at:&origin,texture->srv,NULL,texture->width,texture->height);
++    return copy_to_texture(dst,rect,at?at:&origin,texture->srv,NULL,texture->width,texture->height, NULL, 0);
+ }
+ 
+ HRESULT xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+@@ -219,13 +231,42 @@
+     physical.right=(LONG)((double)region->right*desc.width/texture->width);
+     physical.top=(LONG)((double)region->top*desc.height/texture->height);
+     physical.bottom=(LONG)((double)region->bottom*desc.height/texture->height);
+-    return copy_to_texture(dst, NULL, NULL, texture->srv, &physical,texture->width,texture->height);
++    return copy_to_texture(dst, NULL, NULL, texture->srv, &physical,texture->width,texture->height, NULL, 0);
++}
++
++/* where a scaled copy lands in the destination, in the title's
++ * pixels of that texture; NULL = all of it. Set only for the call below. */
++/* Destination geometry is copied by value in the deferred command. */
++
++/* the back buffer's `src` (the title's pixels) into `dst_rect` of
++ * the texture (its title pixels), scaled to fit. The Uplink map's copies use
++ * it to read a 2D drawing where the widescreen squeeze put it. */
++HRESULT xbox_D3D8CopyBackBufferRegionScaled(IDirect3DTexture8 *dst, const RECT *src,
++                                            const RECT *dst_rect)
++{
++    UINT back_w = d3d8_GetBackBufferWidth(), back_h = d3d8_GetBackBufferHeight();
++    UINT guest_w = d3d8_GetGuestWidth(), guest_h = d3d8_GetGuestHeight();
++    RECT physical;
++    HRESULT hr;
++    D3D8Texture *target = (D3D8Texture *)dst;
++    if (!target || !src || !dst_rect || !guest_w || !guest_h || !back_w || !back_h ||
++        src->left < 0 || src->top < 0 || src->right <= src->left || src->bottom <= src->top ||
++        (UINT)src->right > guest_w || (UINT)src->bottom > guest_h ||
++        dst_rect->left < 0 || dst_rect->top < 0 || dst_rect->right <= dst_rect->left ||
++        dst_rect->bottom <= dst_rect->top || (UINT)dst_rect->right > target->width ||
++        (UINT)dst_rect->bottom > target->height) return E_INVALIDARG;
++    physical.left = (LONG)((double)src->left * back_w / guest_w);
++    physical.right = (LONG)((double)src->right * back_w / guest_w);
++    physical.top = (LONG)((double)src->top * back_h / guest_h);
++    physical.bottom = (LONG)((double)src->bottom * back_h / guest_h);
++    hr = copy_to_texture(dst, NULL, NULL, NULL, &physical, 0, 0, dst_rect, 1);
++    return hr;
+ }
+ 
+ HRESULT xbox_D3D8CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *src,
+                                              const POINT *at)
+ {
+-    return copy_to_texture(dst, src, at, NULL, NULL, 0, 0);
++    return copy_to_texture(dst, src, at, NULL, NULL, 0, 0, NULL, 0);
+ }
+ 
+ /* Snapshot an offscreen colour image before a draw samples its own target.
+@@ -233,11 +274,11 @@
+ HRESULT d3d8_CopyTextureView(IDirect3DTexture8 *dst, RhiView *source)
+ {
+     if (!source) return E_INVALIDARG;
+-    return copy_to_texture(dst, NULL, NULL, source, NULL, 0, 0);
++    return copy_to_texture(dst, NULL, NULL, source, NULL, 0, 0, NULL, 0);
+ }
+ 
+ static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at,
+-                               RhiView *source, const RECT *scaled_region, UINT source_w, UINT source_h)
++                               RhiView *source, const RECT *scaled_region, UINT source_w, UINT source_h, const RECT *scaled_dest, int line_filter)
+ {
+     D3D8Texture *tex = (D3D8Texture *)dst;
+     RhiImage *dst_image;
+@@ -295,11 +336,31 @@
+     c.scale_x = dst_w ? (float)back_w / (float)dst_w : 1.0f;
+     c.scale_y = dst_h ? (float)back_h / (float)dst_h : 1.0f;
+     c.off_x = c.off_y = 0.0f;
++    c.taps_x = c.taps_y = 1.0f;
++    c.filter = c.pad = 0.0f;
+     if (scaled_region) {
+         c.scale_x = dst_w ? (float)(scaled_region->right - scaled_region->left) / dst_w : 1.0f;
+         c.scale_y = dst_h ? (float)(scaled_region->bottom - scaled_region->top) / dst_h : 1.0f;
+         c.off_x = (float)scaled_region->left;
+         c.off_y = (float)scaled_region->top;
++        if (scaled_dest) {   /* into part of the texture */
++            float dx = (float)dst_w / tex->width, dy = (float)dst_h / tex->height;
++            vp.x = (float)scaled_dest->left * dx;
++            vp.y = (float)scaled_dest->top * dy;
++            vp.width = (float)(scaled_dest->right - scaled_dest->left) * dx;
++            vp.height = (float)(scaled_dest->bottom - scaled_dest->top) * dy;
++            c.scale_x = vp.width > 0 ? (float)(scaled_region->right - scaled_region->left) / vp.width : 1.0f;
++            c.scale_y = vp.height > 0 ? (float)(scaled_region->bottom - scaled_region->top) / vp.height : 1.0f;
++            c.off_x = (float)scaled_region->left - vp.x * c.scale_x;
++            c.off_y = (float)scaled_region->top - vp.y * c.scale_y;
++        }
++        /* every source pixel under each destination pixel (at most
++         * 16 a side), brightest kept. Only this scaled copy (the Uplink map). */
++        c.taps_x = c.scale_x > 1.0f ? (float)(int)(c.scale_x + 0.999f) : 1.0f;
++        c.taps_y = c.scale_y > 1.0f ? (float)(int)(c.scale_y + 0.999f) : 1.0f;
++        if (c.taps_x > 16.0f) c.taps_x = 16.0f;
++        if (c.taps_y > 16.0f) c.taps_y = 16.0f;
++        c.filter = line_filter && (c.taps_x > 1.0f || c.taps_y > 1.0f) ? 1.0f : 0.0f;
+     }
+     if (src) {
+         /* The rectangle is in the title's pixels and the frame may be
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -1268,6 +1268,10 @@
+ HRESULT xbox_D3D8CopyTextureRectToTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src, const RECT *rect, const POINT *at);
+ HRESULT       xbox_D3D8CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+                                                IDirect3DTexture8 *src, const RECT *region);
++/* Shared renderer: the back buffer's `src` (title pixels)
++   into `dst_rect` of the texture, scaled (d3d8_screencopy.c). */
++HRESULT       xbox_D3D8CopyBackBufferRegionScaled(IDirect3DTexture8 *dst, const RECT *src,
++                                                  const RECT *dst_rect);
+ /* The same for one of CopyRects' rectangles: `src` in the title's own
+    pixels, copied to the same size at `at` in the texture (NULL: its
+    corner), as CopyRects does -- it does not scale. A title draws a small
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -63,7 +63,7 @@
+  */
+ #include "platform/xbox_winnt.h"
+ #include <stdio.h>
+-#ifdef TSFP_PC_CONTROLS
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
+ #include "pc_display.h"
+ #endif
+ #include <stdlib.h>
+@@ -1965,6 +1965,64 @@
+ #endif
+ }
+ 
++/* where an area of a 2D draw, named in the title's pixels
++ * (sw x sh), lands after the widescreen squeeze, in the same pixels. Mirrors
++ * two_d_squeeze and two_d_vertical_scale in d3d8_device.c, centred:
++ * k = 4h / 3w. Future Perfect draws its Uplink map as 2D and copies it back
++ * by the rectangle it drew to; #365's fixed 176,0-312,181 was this at
++ * 16:9 only. */
++static void uplink_placed(const RECT *in, UINT sw, UINT sh, RECT *out)
++{
++    float x0 = (float)in->left, y0 = (float)in->top;
++    float x1 = (float)in->right, y1 = (float)in->bottom;
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    if (pc_display_wide_now()) {
++        float k = pc_display_hud_scale(), cx = (float)sw * 0.5f;
++        float cy = (float)sh * 0.5f, ky = k > 1.0f ? 1.0f / k : 1.0f;
++        if (k > 1.0f) k = 1.0f;
++        x0 = cx + (x0 - cx) * k;  x1 = cx + (x1 - cx) * k;
++        y0 = cy + (y0 - cy) * ky; y1 = cy + (y1 - cy) * ky;
++    }
++#else
++    (void)sw; (void)sh;
++#endif
++    out->left = (LONG)(x0 + 0.5f);
++    out->top = (LONG)(y0 + 0.5f);
++    out->right = (LONG)(x1 + 0.5f);
++    out->bottom = (LONG)(y1 + 0.5f);
++}
++
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++/* Future Perfect's Uplink map keeps its handheld picture in two
++ * frame buffers' worth of state the host has only one of. Per frame: draw
++ * the map, copy it (snapshot), compose the handheld picture in the top left
++ * 128x128 from the snapshot and glow textures, then clear (on the Xbox, the
++ * other frame buffer), then copy that corner into the handheld texture. Here
++ * both buffers are one image, so the clear wiped the corner before the copy
++ * and the hologram came out empty (#365 pasted the bare snapshot in
++ * instead: a plain square). So the corner is saved (g_uplink_corner, a
++ * 128x128 texture of our own) just before the first clear after the
++ * snapshot, and the corner copy then takes it from there. Drawing only. */
++static IDirect3DTexture8 *g_uplink_corner;           /* the saved corner */
++static unsigned long g_uplink_snapshot_swap = ~0ul;  /* frame of the last snapshot */
++static unsigned long g_uplink_sequence, g_uplink_saved_sequence;     /* frame the corner was saved */
++static void uplink_save_corner(void)
++{
++    RECT corner = { 0, 0, 128, 128 }, placed;
++    if (!g_uplink_sequence || g_uplink_snapshot_swap != g_shadow_swaps || g_uplink_saved_sequence == g_uplink_sequence)
++        return;
++    if (!g_uplink_corner &&
++        FAILED(host_CreateTexture(g_shadow, 128, 128, 1, D3DUSAGE_RENDERTARGET,
++                                  D3DFMT_LIN_A8R8G8B8, D3DPOOL_DEFAULT, &g_uplink_corner)))
++        g_uplink_corner = NULL;
++    if (!g_uplink_corner)
++        return;
++    uplink_placed(&corner, 640, 480, &placed);
++    if (SUCCEEDED(host_CopyBackBufferRegionScaled(g_uplink_corner, &placed, &corner)))
++        g_uplink_saved_sequence = g_uplink_sequence;
++}
++#endif
++
+ /* HRESULT D3DDevice_Clear(DWORD Count, const D3DRECT *pRects, DWORD Flags,
+  *     D3DCOLOR Color, float Z, DWORD Stencil)                               */
+ HLE_EXPORT(D3DDevice_Clear)
+@@ -1988,6 +2046,10 @@
+             fprintf(stderr, "[HLE-D3D8] shadow Clear: flags 0x%08X color 0x%08X "
+                     "z %g stencil %u\n", flags, color, z, stencil);
+         DWORD host_flags = xbox_clear_flags_to_host(flags);
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++        if (host_flags & D3DCLEAR_TARGET)
++            uplink_save_corner();   /* see uplink_save_corner */
++#endif
+         if (SUCCEEDED(host_Clear(g_shadow, 0, NULL, host_flags, color, z, stencil)))
+             shadow_depth_cleared(host_flags, z, stencil);
+         g_shadow_clears++;
+@@ -4497,6 +4559,55 @@
+                     r.bottom = (LONG)HLE_MEM32(rects_va + i * 16 + 12);
+                     p.x = points_va ? (LONG)HLE_MEM32(points_va + i * 8 + 0) : r.left;
+                     p.y = points_va ? (LONG)HLE_MEM32(points_va + i * 8 + 4) : r.top;
++                    /* Future Perfect's Uplink map. The title draws the map
++                     * (2D) at 128,0-309,181, copies that into a full-screen texture,
++                     * clears, composes the handheld picture from it in the top left
++                     * 128x128 (the map scaled down, then glow passes that give the
++                     * hologram its shape), and copies that corner into the handheld.
++                     * In widescreen every one of those 2D draws is squeezed toward the
++                     * middle, so both copies read where the squeeze put the drawing
++                     * (uplink_placed) and write where the title expects it, scaled. */
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++                    int uplink_handheld = count == 1 && sw == 640 && sh == 480 &&
++                                          dw == 128 && dh == 128 &&
++                                          r.left == 0 && r.top == 0 && r.right == 128 &&
++                                          r.bottom == 128 && p.x == 0 && p.y == 0;
++                    int uplink_snapshot = count == 1 && sw == 640 && sh == 480 &&
++                                          dw == 640 && dh == 480 &&
++                                          r.left == 128 && r.top == 0 && r.right == 309 &&
++                                          r.bottom == 181 && p.x == 128 && p.y == 0;
++                    if (uplink_handheld || uplink_snapshot) {
++                        RECT placed, to;
++                        uplink_placed(&r, sw, sh, &placed);
++                        to.left = p.x;
++                        to.top = p.y;
++                        to.right = p.x + (r.right - r.left);
++                        to.bottom = p.y + (r.bottom - r.top);
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++                        if (uplink_snapshot) {
++                            g_uplink_snapshot_swap = g_shadow_swaps;
++                            if (!++g_uplink_sequence) ++g_uplink_sequence;
++                            g_uplink_saved_sequence = 0;
++                        }
++                        if (uplink_handheld && g_uplink_snapshot_swap == g_shadow_swaps && g_uplink_saved_sequence == g_uplink_sequence) {
++                            /* saved before the clear (uplink_save_corner) */
++                            RECT whole = { 0, 0, 128, 128 };
++                            if (SUCCEEDED(host_CopyTextureRegionScaled(tex, g_uplink_corner, &whole)))
++                                from_screen++;
++                        } else
++#endif
++                        if (SUCCEEDED(host_CopyBackBufferRegionScaled(tex, &placed, &to)))
++                            from_screen++;
++                        {
++                            static int said;
++                            if (said++ < 2)
++                                fprintf(stderr, "[HLE-D3D8] Uplink map: title's %ld,%ld-%ld,%ld read at "
++                                        "%ld,%ld-%ld,%ld\n", (long)r.left, (long)r.top, (long)r.right,
++                                        (long)r.bottom, (long)placed.left, (long)placed.top,
++                                        (long)placed.right, (long)placed.bottom);
++                        }
++                    } else
++#endif
+                     if (SUCCEEDED(host_CopyBackBufferRectToTexture(tex, &r, &p)))
+                         from_screen++;
+                     if (said_rect++ < 4)
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1979,7 +1979,7 @@
+ 
+ /* ----------------------------------------------------------- screen copies */
+ 
+-typedef struct { IDirect3DTexture8 *dst, *source; int has_rect; RECT src; POINT at; } dq_screen_copy;
++typedef struct { IDirect3DTexture8 *dst, *source; int has_rect; RECT src, destination; POINT at; } dq_screen_copy;
+ 
+ static void op_screen_copy(const void *arg)
+ {
+@@ -1990,7 +1990,9 @@
+     if (hle_d3d8_interp_predicting) return;
+ #endif
+ 
+-    if (p->has_rect == 3)
++    if (p->has_rect == 4)
++        host_CopyBackBufferRegionScaled(p->dst, &p->src, &p->destination);
++    else if (p->has_rect == 3)
+         host_CopyTextureRectToTexture(p->dst,p->source,&p->src,&p->at);
+     else if (p->has_rect == 2)
+         host_CopyTextureRegionScaled(p->dst, p->source, &p->src);
+@@ -2053,19 +2055,30 @@
+     return xbox_D3D8CopyTextureRectToTexture(dst,src,rect,at);
+ }
+ 
++HRESULT host_CopyBackBufferRegionScaled(IDirect3DTexture8 *dst,
++    const RECT *src, const RECT *destination)
++{
++    if (!dst || !src || !destination) return E_INVALIDARG;
++    dq_screen_copy p;
++    memset(&p,0,sizeof p);p.dst=dst;p.has_rect=4;p.src=*src;p.destination=*destination;
++    if (hle_d3d8_defer_recording()) {
++        hle_d3d8_defer_op(op_screen_copy,&p,sizeof p);return S_OK;
++    }
++    if (hle_d3d8_interp_rec) hle_d3d8_interp_op(op_screen_copy,&p,sizeof p);
++    return xbox_D3D8CopyBackBufferRegionScaled(dst,src,destination);
++}
++
+ HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+                                      IDirect3DTexture8 *src, const RECT *region)
+ {
+-    if (hle_d3d8_interp_rec && region) {
+-        dq_screen_copy p;
+-        memset(&p, 0, sizeof p);
+-        p.dst = dst;
+-        p.source = src;
+-        p.has_rect = 2;
+-        p.src = *region;
+-        hle_d3d8_interp_op(op_screen_copy, &p, sizeof p);
+-    }
+-    return xbox_D3D8CopyTextureRegionScaled(dst, src, region);
++    if (!dst || !src || !region) return E_INVALIDARG;
++    dq_screen_copy p;
++    memset(&p,0,sizeof p);p.dst=dst;p.source=src;p.has_rect=2;p.src=*region;
++    if (hle_d3d8_defer_recording()) {
++        hle_d3d8_defer_op(op_screen_copy,&p,sizeof p);return S_OK;
++    }
++    if (hle_d3d8_interp_rec) hle_d3d8_interp_op(op_screen_copy,&p,sizeof p);
++    return xbox_D3D8CopyTextureRegionScaled(dst,src,region);
+ }
+ 
+ /* --------------------------------------------- the frame-start state, kept
+--- a/src/hle/hle_d3d8_record.h
++++ b/src/hle/hle_d3d8_record.h
+@@ -142,6 +142,8 @@
+ HRESULT host_CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *src,
+                                          const POINT *at);
+ HRESULT host_CopyTextureRectToTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src, const RECT *rect, const POINT *at);
++HRESULT host_CopyBackBufferRegionScaled(IDirect3DTexture8 *dst,
++    const RECT *src, const RECT *destination);
+ HRESULT host_CopyTextureRegionScaled(IDirect3DTexture8 *dst,
+                                      IDirect3DTexture8 *src, const RECT *region);
+ 

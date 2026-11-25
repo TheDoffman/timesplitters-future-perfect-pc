@@ -1,0 +1,74 @@
+--- a/src/d3d/d3d8_display.c
++++ b/src/d3d/d3d8_display.c
+@@ -242,10 +242,12 @@
+ typedef struct {
+     float origin_x, origin_y, ratio_x, ratio_y;
+     float texel_x, texel_y, inv_taps, pad;
++    /* Apply the permanent grade only at final presentation (16-byte alignment). */
++    float grade, grade_pad[3];
+ } ResolveConstants;
+ 
+ static const char kSource[] =
+-    "cbuffer Resolve : register(b7) { float4 p; float4 q; };\n"
++    "cbuffer Resolve : register(b7) { float4 p; float4 q; float4 r; };\n"
+     "struct VSOut { float4 pos : SV_Position; };\n"
+     "VSOut vs_main(uint id : SV_VertexID) {\n"
+     "    float2 c = float2((id << 1) & 2, id & 2);\n"   /* one oversized triangle */
+@@ -265,7 +267,17 @@
+     "                       (base + (float2(x, y) + 0.5) * step) * q.xy, 0);\n"
+     "    return sum * q.z;\n"
+     "}\n"
+-    TSFP_FXAA_RESOLVE_HLSL;
++    "#define ps_main ps_resolve\n"          /* permanent color grade */
++    TSFP_FXAA_RESOLVE_HLSL
++    "#undef ps_main\n"
++    "float4 ps_main(VSOut i) : SV_Target {\n"
++    "    float4 c = ps_resolve(i);\n"
++    "    if (r.x == 0) return c;\n"
++    "    float3 v = (c.rgb - 0.5) * 1.09 + 0.51;\n"
++    "    float l = dot(v, float3(0.299, 0.587, 0.114));\n"
++    "    v = saturate(lerp(float3(l, l, l), v, 1.12));\n"
++    "    return float4(v, c.a);\n"
++    "}\n";
+ 
+ static struct {
+     RhiShader      *vs;
+@@ -381,7 +393,7 @@
+ #include "graphics/pc_smaa.inc"
+ 
+ static HRESULT display_resolve_original(RhiView *scene, UINT scene_w, UINT scene_h,
+-                             RhiView *out, D3D8DisplayFit fit,int edge)
++                             RhiView *out, D3D8DisplayFit fit,int edge,int grade)
+ {
+     RhiOutputState saved;
+     RhiViewport vp;
+@@ -414,6 +426,8 @@
+         c.texel_y = 1.0f / (float)scene_h;
+         c.inv_taps = 1.0f / (float)(taps * taps);
+         c.pad = (float)edge;
++        c.grade=grade?1.f:0.f;
++        c.grade_pad[0]=c.grade_pad[1]=c.grade_pad[2]=0.f;
+         memcpy(mapped, &c, sizeof c);
+         rhi_buffer_unmap(g.cb);
+     }
+@@ -461,17 +475,17 @@
+         return E_INVALIDARG;
+     if (pc_smaa_prepare(fit.w, fit.h)) {
+         D3D8DisplayFit local = { 0, 0, fit.w, fit.h };
+-        HRESULT hr = display_resolve_original(scene, scene_w, scene_h, smaa.color.rtv, local,0);
++        HRESULT hr = display_resolve_original(scene, scene_w, scene_h, smaa.color.rtv, local,0,out==rhi_swapchain_view());
+         if (FAILED(hr)) return hr;
+         pc_smaa_apply(out, fit);
+         return S_OK;
+     }
+-    return display_resolve_original(scene, scene_w, scene_h, out, fit,pc_smaa_enabled()?0:pc_graphics_get().edge_smoothing);
++    return display_resolve_original(scene, scene_w, scene_h, out, fit,pc_smaa_enabled()?0:pc_graphics_get().edge_smoothing,out==rhi_swapchain_view());
+ }
+ 
+ /* Completed HUD presentation bypasses both world post-AA methods. */
+ HRESULT d3d8_display_copy(RhiView *scene,UINT w,UINT h,RhiView *out,D3D8DisplayFit fit)
+-{ return display_resolve_original(scene,w,h,out,fit,0); }
++{ return display_resolve_original(scene,w,h,out,fit,0,out==rhi_swapchain_view()); }
+ 
+ void d3d8_display_shutdown(void)
+ {

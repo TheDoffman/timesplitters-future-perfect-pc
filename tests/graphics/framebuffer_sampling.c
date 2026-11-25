@@ -174,6 +174,29 @@ int main(void)
     HLE_MEM32(va+12)++;assert(!hle_d3d8_rendered_texture(va));HLE_MEM32(va+12)--;
     HLE_MEM32(va+16)++;assert(!hle_d3d8_rendered_texture(va));HLE_MEM32(va+16)--;
     assert(hle_d3d8_rendered_texture(va)==g_textures[0].host);
+    /* Whole-frame tint passes see preceding output even without a rebind. */
+    g_fb_target=0x205000;g_bound_entry[0]=g_bound_entry[2];
+    scene=100;hle_d3d8_framebuffer_drawn();unsigned before=copies;
+    hle_d3d8_framebuffer_refresh_bound();
+    assert(copies==before+1 && sampled==100);
+    scene=50;hle_d3d8_framebuffer_drawn();
+    hle_d3d8_framebuffer_refresh_bound();
+    assert(copies==before+2 && sampled==50);
+    /* The same entry bound twice still needs only one refresh per epoch. */
+    hle_d3d8_framebuffer_refresh_bound();assert(copies==before+2);
+    /* Switching buffers preserves the completed image from the old buffer. */
+    scene=75;hle_d3d8_framebuffer_target(0x204000);before=copies;
+    assert(g_textures[0].held && sampled==75);
+    scene=5;shadow_set_texture(2,0);bind_screen(2,va);
+    hle_d3d8_framebuffer_drawn();hle_d3d8_framebuffer_refresh_bound();
+    assert(copies==before && sampled==75);
+    hle_d3d8_framebuffer_target(0x205000);
+    assert(!g_textures[0].held);
+    fail_copy=1;unsigned long epoch=g_textures[0].framebuffer_epoch;
+    hle_d3d8_framebuffer_refresh_bound();
+    assert(g_textures[0].framebuffer_epoch==epoch);
+    fail_copy=0;hle_d3d8_framebuffer_refresh_bound();
+    assert(sampled==5 && g_textures[0].framebuffer_epoch==g_fb_epoch);
     puts("PASS: framebuffer sampling passes, stable taps, frame zero and retry");
     return 0;
 }
