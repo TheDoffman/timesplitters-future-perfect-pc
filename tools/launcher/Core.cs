@@ -151,6 +151,26 @@ namespace TimeSplitters.Launcher
             foreach (var process in Process.GetProcessesByName("futureperfect_recomp")) { process.Dispose(); return true; }
             return false;
         }
+        // UI/launch eligibility belongs to this installation. Keep the global
+        // overload for the existing conservative update/recovery guards.
+        public static bool GameRunning(string root)
+        {
+            string expected=Path.GetFullPath(PathIn(root,LauncherPlatform.GamePath(root)));
+            var processes=Process.GetProcessesByName("futureperfect_recomp");
+            try {
+                foreach(var process in processes) {
+                    try {
+                        if(process.HasExited)continue;
+                        string executable=process.MainModule.FileName;
+                        if(String.IsNullOrEmpty(executable))return true;
+                        if(String.Equals(expected,Path.GetFullPath(executable),Path.DirectorySeparatorChar=='\\'?StringComparison.OrdinalIgnoreCase:StringComparison.Ordinal))return true;
+                    }catch(InvalidOperationException){}catch(ArgumentException){}
+                    catch(System.ComponentModel.Win32Exception){return true;}
+                    catch(NotSupportedException){return true;}
+                }
+                return false;
+            } finally {foreach(var process in processes)process.Dispose();}
+        }
         public static string MutexName(string root)
         {
             using (var sha = SHA256.Create())

@@ -9,7 +9,13 @@
     <LinearGradientBrush x:Key="PlayChrome" StartPoint="0,0" EndPoint="0,1">
       <GradientStop Color="#C3E5FC" Offset="0"/><GradientStop Color="#96CFF2" Offset="1"/>
     </LinearGradientBrush>
+    <Style x:Key="NavigationFocus" TargetType="Control">
+      <Setter Property="Template"><Setter.Value><ControlTemplate>
+        <Border BorderBrush="#A7D9FA" BorderThickness="2" Margin="-3" IsHitTestVisible="False"/>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
     <Style TargetType="Button">
+      <Setter Property="FocusVisualStyle" Value="{StaticResource NavigationFocus}"/>
       <Setter Property="Background" Value="#1B2C3E"/><Setter Property="Foreground" Value="#DFE9F2"/>
       <Setter Property="BorderBrush" Value="#3B5268"/><Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="16,11"/><Setter Property="Cursor" Value="Hand"/>
@@ -21,7 +27,6 @@
         </Border>
         <ControlTemplate.Triggers>
           <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Face" Property="Opacity" Value="0.8"/></Trigger>
-          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Face" Property="BorderBrush" Value="#FFFFFF"/></Trigger>
           <Trigger Property="IsPressed" Value="True"><Setter TargetName="Face" Property="Opacity" Value="0.6"/></Trigger>
           <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Face" Property="Opacity" Value="0.38"/></Trigger>
         </ControlTemplate.Triggers>

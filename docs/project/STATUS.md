@@ -1,3 +1,263 @@
+## 2026-11-25 - Local release-readiness pass and mouse focus fix
+
+Removed white pointer-focus boxes from both WPF button themes while retaining
+keyboard-only blue adorners, native focus-visible cues and Deck controller focus.
+Refreshed the working preview; actual tools-tab mouse selection and keyboard Tab
+were visually checked. SteamOS Home/help/player guide now say experimental.
+
+Windows full -Test passes in68.24s, including116 core,28 download/recovery,
+15 startup recovery,54 settings and20 maintenance checks. Shared UI groups are
+Windows63/Mac66/Linux68. Python launcher suite passes296 tests with5 skips and
+52 subtests. Mac/Linux each pass60 appearance page/size checks. Both native
+package/helper lifecycles pass; added Settings/Data/unknown-file sentinels survive
+self-repair alongside saves/BUILD. Sources remain local and uncommitted.
+
+[Readiness report](../release/launcher-redesign-readiness.md) separates synthetic
+installer/package checks, earlier Windows real-data testing, and unverified native
+fresh real-data/gameplay and physical Deck acceptance. No release was published.
+
+## 2026-11-25 - SteamOS launcher adaptation (physical acceptance pending)
+
+Implemented Steam Deck Gaming Mode fullscreen and Desktop Mode window placement,
+44px actions and readable handheld text, standard SDL controller navigation with
+focus outline, inline keyboard/key capture and file/SD-card browsing for imports,
+saves and report export. Added Deck help and a packaged player guide. Input pauses
+when inactive/in game and requires neutral after focus/reconnect/resume. Helpers
+preserve allowlisted mode flags; Gaming Mode keeps fullscreen during hang recovery.
+Existing game settings, Steam Input configuration, saves and source work are kept.
+
+Windows full launcher -Test passes (59.88s); Mac66 and Linux68 shared UI groups pass.
+Linux Deck-profile appearance validation passes60 page/size checks, including
+settings drafts, Playing state and navigation. Package corruption/repair/helper
+restart checks pass with the new owned SteamDeck.txt guide. Synthetic Avalonia
+checks cover actual button dispatch, inline folder selection/cancel and keyboard
+draft/apply/cancel. 1280x800 Home, tools, settings and tour renders are local evidence.
+
+No physical Deck is connected. Built-in/Steam Input behavior, Gamescope child-game
+focus/return, Steam overlay, suspend/resume, real SD-card import/saves and docked
+outputs remain hardware acceptance work. The Linux game's glibc/driver baseline
+is unchanged; these launcher results do not establish game compatibility or Deck
+Verified status. Scope is SteamOS Gaming and Desktop modes, not Deck Windows.
+See players/steam-deck-launcher.md and agent-context/launcher-deck.md. All changes
+remain local on the existing unmerged redesign branch.
+
+## 2026-11-25 - Launcher review fixes and real first-install acceptance
+
+Fixed same-session overview replay after completed setup. Replaced divergent
+native/Windows channel menus with shared GameVersionMenuPage: track explanations,
+installed markers, current/selected comparison, busy/offline guards and exact
+confirmation callbacks. Actual catalog check success/failure drives the offline
+state; failed native checks disable stale Update actions. Native launcher update
+failures remain visible with Retry, View logs and explicit installed-launcher
+fallback; retries use fresh cancellation sources and launch only once.
+
+Windows full -Test passes (74.79s;61 shared UI groups). Mac64/Linux65 shared UI
+groups pass including new replay/menu/recovery coverage. Both native platforms
+pass60 page/size appearance checks; Mac signed package/helper/game update and
+Linux package corruption/repair/helper restart preserve personal files. Fixed an
+invalid preserved BUILD.json failure exposed by the Linux package probe.
+
+Real Windows fresh-tour journey passed using the new launcher: downloaded stable
+v0.7.1, verified/copied helper installation, restarted into setup step2, imported
+supported extracted game data through the picker, completed all six optional
+tour cards, launched the real game and rendered its startup screen. Playing was
+gray/disabled during the session and Play returned enabled after a clean exit0.
+Both source/import XBE hashes match the supported release;409 pak/xmv asset files
+match paths and lengths. No claim of campaign playtesting or native real-data
+fresh install. Evidence: ignored build/integration-notes/fresh-install-journey.json
+and selected screenshots. Existing installations/settings/saves remain preserved.
+
+Automatic approval review blocked removing the redundant fresh-tour/Data test
+copy (reason: blocked by policy); it remains, with no alternate deletion attempt.
+The usual working preview and native ZIPs are refreshed with launcher-owned files
+only. Sources remain local and uncommitted; nothing is published.
+
+## 2026-11-25 - Launcher and installer update window theme
+
+Matched the launcher update-check/download and copied game installer windows to
+the new dark blue launcher design: compact branding/divider, larger restrained
+heading, scrollable status, thin blue progress and aligned rectangular actions.
+The shared UpdateWindowPage supplies Windows installer and native startup/helper
+content; WPF bootstrap retains its existing named recovery controls with an even
+recovery row and full-width installed-launcher button. Native startup uses the
+same transfer phase summaries as Windows. Update/cancel/timeout/recovery/restart
+logic remains unchanged.
+
+Windows full -Test passes (69.43s), including all15 startup recovery checks for
+long paths/errors and visible actions. Native Mac61/Linux62 shared UI groups
+pass; Linux package/helper installation, corruption rejection, repair, restart
+and personal-file preservation pass. WPF splash rendered and visually reviewed.
+Launcher-owned local preview files and native packages refreshed separately.
+No game download, source publication or installed Mac-app replacement.
+
+## 2026-11-25 - Optional launcher tour after setup
+
+The ready-to-play setup card now offers Show me around above the existing
+Settings/Finish/Play row. It opens all six launcher overview steps without
+launching the game or closing the overlay. Back/Next, six-step progress and
+returning-player copy are restored; host refreshes cannot reset the overview.
+The pending setup marker is cleared without prematurely dismissing the tour.
+
+Windows full -Test passes (72.54s;59 shared UI groups); native Mac61/Linux62
+shared UI groups pass. New shared coverage checks incomplete-setup guards,
+all six steps, Back, no host commands/close and marker cleanup. Existing direct
+Play/Settings/Finish tests remain passing. Changes remain local and uncommitted;
+launcher-only previews and native packages are refreshed separately.
+
+## 2026-11-25 - Guided setup for new launcher users
+
+Incomplete installations now get an actionable three-stage setup guide instead
+of six informational cards. It installs/checks using existing commands, offers
+ISO or extracted-folder import, and ends with explicit Settings/Finish/Play.
+Actual installation and validated-data state determine the next stage; cancel,
+pause and failure do not count as success. A setupPending marker survives the
+installer restart and preserves existing preferences. Returning installations
+keep their six-card tour; existing game data is never replaced by this guide.
+
+Windows full -Test passes (72.57s;58 shared UI groups), native Mac60/Linux61
+shared UI groups pass. Linux package corruption/repair/helper restart and personal
+file preservation pass. Shared contracts cover explicit action dispatch, both
+import choices, cancellation/failure, readiness/restart, future markers and inert
+rendering. Full real-data import/download is not repeated: the adapters reuse
+existing tested installers/importers. Preview launcher-owned files and native
+packages are refreshed separately; sources remain local and uncommitted.
+
+## 2026-11-25 - Friendlier launcher tour descriptions
+
+Rewrote the shared invitation and six tour cards around practical uses: starting
+a session, trying builds, installation tasks, personal settings, protecting saves,
+troubleshooting and finding news/help. Kept essential setup, compatibility and
+save/cancel guidance; removed narration about tab spacing and collapsed sections.
+No behavior, spotlight, persistence or revision change. Windows full -Test passes
+(73.13s), Mac59/Linux60 native shared UI groups pass. Changes remain local and
+uncommitted; existing work and installations are preserved.
+
+## 2026-11-25 - Tutorial targets keep their normal brightness
+
+The tutorial now cuts a transparent opening in the dark scrim over its real
+highlighted control. It no longer disables the home parent, avoiding the extra
+gray tint that affected Play, version selection and links. A transparent input
+shield and focus cycle continue to block background interaction, while normal
+busy/game/data eligibility remains in force. WPF/native home motion remains
+paused during the tour. No copied control or image substitute is used.
+
+Windows full -Test passes (72.08s); native Mac59/Linux60 shared UI groups pass,
+including the new spotlight geometry check. Linux package repair/restart and
+preservation pass. A native screenshot confirms a fully bright Play button with
+the remaining launcher dimmed. The working Windows preview is updated separately;
+source remains local and uncommitted, with existing installs and work preserved.
+
+## 2026-11-25 - Launcher guided tour
+
+The local redesigned launcher now offers a short first-use/returning-user tour.
+It has six optional steps, Back/Next/Skip, real home-control outlines and a replay
+link in Launcher tools. An installed game with original data gets the returning
+introduction; new setups receive installation/import guidance. Automatic offers
+wait for an active, idle Home screen. The card blocks background actions, stops
+home motion and supports Escape and keyboard focus cycling.
+
+Copy, progression and the revisioned opt-out live once in LauncherTutorialPage.cs
+for Windows/Mac/Linux. Only `.launcher/tutorial.json` is written on explicit
+skip/completion. Existing settings, games and saves are preserved. Future markers
+are not overwritten; preview renderers write no tutorial preference. Closing an
+unfinished tour with the app offers it again next time; it can always be replayed.
+
+The final Windows -Test build passes (67.99s), including both new shared tour
+checks and existing Play, updates, settings, saves, downloads, crash and session
+coverage. Native Mac58/Linux59 shared UI groups pass; Linux package install,
+corruption rejection, repair/restart and preservation also pass. Welcome and
+version-step cards were inspected on native Mac, including the real selector
+outline; Linux100/125/150/175/200% compact tour renders check the shared card.
+Windows interactive checks confirmed automatic returning-user invitation, the
+Play/version outlines, Escape/Skip restoring Play and the Tools replay entry.
+The test-created dismissal was reset so the preview retains its first-use offer.
+Windows preview and final local packages are prepared separately;
+original installed launchers and unrelated work remain untouched. All source is
+local/uncommitted on feature/launcher-redesign; nothing is published.
+
+## 2026-11-24 - Restore ready Play after a game exits
+
+The local preview could retain the native button's disabled value after an
+external game exited, and process-name-only detection included unrelated test
+copies. Play now observes executable identity for its own installation and
+refreshes native eligibility on the existing appearance timer. Launch performs
+the same scoped guard. Cached game/data validation and busy locks remain active;
+the global updater/recovery guards are unchanged. Both presentation hosts use
+the fix. Existing user/test processes and personal data are preserved.
+
+The focused Windows --play-state check passes with two inert processes in
+separate folders: only its own copy shows Playing, exit restores Play, unrelated
+copies remain alive, and busy/invalid-data states remain disabled. The attempted
+full Windows updater suite refused to run while a separate solo-lobby test game
+was active; that global guard behaved as designed. This process was left alone.
+Native Mac56 shared UI groups and its60-view/size checks pass. Linux57 shared
+UI groups and package install/corruption/repair/restart/preservation pass. Python
+launcher checks report296 passed,5 skipped and52 subtests. The separate D: preview
+was rebuilt with only verified launcher-owned files replaced. Changes remain local and uncommitted; no publication.
+
+## 2026-11-24 - Native launcher appearance and scaling
+
+The approved local launcher redesign now has a shared Avalonia presentation for
+Mac and Linux, with canonical minimal settings/tools helpers translated at build
+time. The native host retains original update/repair, settings, saves, process,
+news and game-storage commands. Sources remain uncommitted on the existing local
+feature/launcher-redesign branch; nothing is merged or published.
+
+Windows sizing was fixed to fit smaller high-DPI work areas using a down-only
+viewport. Its final -Test build passed, including actual page-navigation checks
+and35 density/work-area renders at100/125/150/175/200%. Those simulate logical work
+areas/backing density; no Windows display setting was changed. Native Mac builds,
+signing and56 shared UI groups pass; native Linux builds,57 shared UI groups,
+install/corruption/repair/preservation and copied-helper restart checks pass.
+Python launcher checks:296 passed,5 skipped,52 subtests. Repository context and
+source checks are required before delivery.
+
+The separate Mac checkout is based on the same b3083d68f and the matching root
+AGENTS.md. Its60 renders use the actual Mac display scale1x. Linux's X11 acceptance
+matrix records actual1/1.25/1.5/1.75/2 scaling across15 views and four client sizes.
+Tests retain all native settings controls, preserve drafts through Back, keep
+reports closed, align navigation and actions, block Playing/version changes and
+advance/cancel a real animation clock. Screenshots were visually reviewed for
+home, settings, Installation, Diagnostics, Console and tracks; the duplicated
+native Installation hero/card layout was removed after review. Native immutable
+XAML brushes are recognized by the adapter; rehosted Installation text contrast
+is explicitly checked. Mac package verification also passes update parent-wait,
+restart/rendering, signatures and personal-file preservation.
+
+Mac output: isolated ~/tsfp-launcher-redesign-20261124/build/macos-launcher.
+Linux output: isolated /root/tsfp-launcher-redesign-20261124/build/linux-launcher
+in WSL. The separate D: Windows working launcher receives the verified sizing
+fix; original installations, personal saves/settings, Mac service and unrelated
+source work remain untouched. Physical Retina/monitor switching and broader
+hardware keyboard/pointer acceptance remain unverified; automated rendering is
+not a substitute for those device-specific checks. See native backlog and
+launcher-appearance.md for exact test routes and presentation boundaries.
+
+## 2026-11-24 - Isolated working launcher redesign
+
+Local, uncommitted branch `feature/launcher-redesign` on main
+b3083d68f integrates the approved TimeSplitters artwork and redesigned Windows
+shell with the existing launcher1.7.2 workflows. The original dirty development
+checkout, visual prototype and installed launcher are preserved. The disposable
+working installation is on D: under CodexBuilds/TSFP-launcher-redesign/working;
+no files were published or merged. Game data was copied read-only from the user's
+verified original Data directory, without copying their settings or saves.
+
+Real Install fetched game0.7.1, verified and applied it through the copied updater
+helper, restarted, and preserved the independent1.7.2 application hash. Actual
+Play reached the game main menu; the launcher showed disabled Playing and locked
+version switching while its native process monitor was active. Fixture UI tests
+exercise checksum failure/Retry, offline recovery, original settings Save/draft,
+actual backup/restore with pre-restore preservation, verification, and a clean
+process/session/Console lifecycle using an inert probe.
+
+Windows launcher/package regression suites pass; Python launcher suite reports
+296 passed,5 skipped and52 subtests. Linux build/shared UI/package checks pass,
+including corruption rejection, repair, copied-helper restart/rendering and
+preservation. Linux retains the existing Avalonia interface; this is not evidence
+of redesigned native visual parity. Mac execution, native presentation adaptation,
+physical DPI/keyboard acceptance and broader gameplay remain release gates.
+See the launcher context guide and native backlog. No release is requested.
 ## 2026-11-25 - Permanent color correction and Uplink (#604)
 
 Source prepared on fix/604-uplink-framebuffer from b3083d68f; main373b79016

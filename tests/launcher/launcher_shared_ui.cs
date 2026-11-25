@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -68,6 +68,101 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("tutorial spotlight leaves its live target clear and dims the rest",()=>{
+                var shade=new TutorialShade();shade.SetSpotlight(new Rect(10,20,100,40));var mask=shade.Mask(new Size(300,200));
+                Need(!mask.FillContains(new Point(60,40)),"Highlighted control is still covered by the scrim");Need(mask.FillContains(new Point(200,100)),"Background lost its dimming");
+                shade.SetSpotlight(null);Need(shade.Mask(new Size(300,200)).FillContains(new Point(60,40)),"Welcome screen retained a stale spotlight");
+            });
+            Test("launcher tour covers new and returning users, skips once, replays and preserves personal files",()=>{
+                string folder=Path.Combine(root,"tutorial");Directory.CreateDirectory(folder);string personal=Core.PathIn(folder,"Settings/personal.txt");Directory.CreateDirectory(Path.GetDirectoryName(personal));File.WriteAllText(personal,"keep my settings");
+                var page=new LauncherTutorialPage(folder,false);Need(page.ShouldOffer,"First-time tour was not offered");int closed=0;page.Closed+=()=>closed++;page.Open();Need(page.IsOpen&&page.Index==0,"Tour did not start at the invitation");
+                Click(page.Next);Need(page.Index==1&&page.Target=="play","First step did not identify Play");Click(page.Back);Need(page.Index==0,"Tour Back did not work");Click(page.Skip);Need(!page.IsOpen&&closed==1&&!page.ShouldOffer,"Skip did not close exactly once");
+                var replay=new LauncherTutorialPage(folder,true);Need(!replay.ShouldOffer,"Skipped tour was offered again");replay.Open();Need(Find<TextBlock>(replay.View,"TutorialTitle").Text.Contains("Familiar"),"Returning-user introduction was lost");
+                for(int index=0;index<LauncherTutorialPage.StepCount;index++)Click(replay.Next);Need(replay.Index==LauncherTutorialPage.StepCount&&replay.IsOpen,"Tour missed a step");Click(replay.Next);Need(!replay.IsOpen&&!new LauncherTutorialPage(folder,false).ShouldOffer,"Completion did not persist");
+                Need(File.ReadAllText(personal)=="keep my settings","Tutorial changed personal settings");
+                string preview=Path.Combine(root,"tutorial-render");Directory.CreateDirectory(preview);var render=new LauncherTutorialPage(preview,false,false);render.Open();render.Dismiss();Need(!File.Exists(Core.PathIn(preview,".launcher/tutorial.json")),"Render-only tutorial wrote a preference");
+            });
+            Test("guided setup follows installed state, resumes handoff and only requests explicit actions",()=>{
+                string folder=Path.Combine(root,"guided-setup");Directory.CreateDirectory(folder);var page=new LauncherTutorialPage(folder,false);var requests=new List<string>();page.SetupRequested+=requests.Add;
+                page.UpdateSetup(false,false,false,true,"Release available");page.Open();Need(page.IsSetup&&page.Index==0,"New player did not get setup invitation");
+                Click(page.Next);Need(page.Index==1&&requests.Count==0,"Beginning setup started a download automatically");Click(page.Next);Need(requests.SequenceEqual(new[]{"install"}),"Install did not use its explicit action");
+                var resumed=new LauncherTutorialPage(folder,false);resumed.UpdateSetup(true,false,false,false,"Install finished");resumed.Open();Need(resumed.IsSetup&&resumed.Index==2,"Installer handoff lost setup or repeated welcome");
+                resumed.SetupRequested+=requests.Add;Click(resumed.Next);Click(resumed.Back);Need(requests.Skip(1).SequenceEqual(new[]{"iso","folder"}),"Data sources did not route separately");Need(resumed.Index==2,"Cancelled picker advanced setup");
+                resumed.UpdateSetup(true,false,false,false,"Wrong game version");Need(resumed.Index==2,"Import failure claimed success");
+                resumed.UpdateSetup(true,false,true,false,"Existing data needs attention");Need(Convert.ToString(resumed.Next.Content)=="Review data"&&!resumed.Back.IsEnabled,"Existing data was offered destructive reimport");
+                resumed.UpdateSetup(true,true,true,false,"Ready");Need(resumed.Index==3&&requests.Count==3,"Readiness launched game without asking");
+                var afterRestart=new LauncherTutorialPage(folder,true);afterRestart.UpdateSetup(true,true,true,false,"Ready");afterRestart.Open();Need(afterRestart.IsSetup&&afterRestart.Index==3,"Ready setup marker was ignored after restart");
+                afterRestart.SetupRequested+=requests.Add;Click(afterRestart.Next);Need(!afterRestart.IsOpen&&requests.Last()=="play","Explicit Play did not complete setup");Need(!new LauncherTutorialPage(folder,true).ShouldOffer,"Finished setup was offered again");
+                var replaySetup=new LauncherTutorialPage(folder,false);replaySetup.Open();Click(replaySetup.Next);var resumedReplay=new LauncherTutorialPage(folder,false);Need(resumedReplay.ShouldOffer,"Restart lost setup started after a previous dismissal");
+                var preview=new LauncherTutorialPage(Path.Combine(root,"guided-preview"),false,false);int previewActions=0;preview.SetupRequested+=action=>previewActions++;preview.UpdateSetup(true,false,false,false,"");preview.PreviewStep(2);Need(preview.Index==2&&previewActions==0&&!File.Exists(Core.PathIn(root,"guided-preview/.launcher/tutorial.json")),"Setup render invoked an action or persisted state");
+                string futureFolder=Path.Combine(root,"guided-future");Directory.CreateDirectory(futureFolder);string futurePath=Core.PathIn(futureFolder,".launcher/tutorial.json");string future=Json.Encode(new{schema=2,revision=900,custom="keep"});Core.Write(futurePath,future);var old=new LauncherTutorialPage(futureFolder,false);old.Open();Click(old.Next);Need(File.ReadAllText(futurePath)==future,"Setup start overwrote a future preference");
+            });
+            Test("ready setup offers an optional complete launcher tour without starting the game",()=>{
+                string folder=Path.Combine(root,"setup-explore");var page=new LauncherTutorialPage(folder,false);int commands=0,closed=0;page.SetupRequested+=action=>commands++;page.Closed+=()=>closed++;
+                page.UpdateSetup(false,false,false,true,"");page.Open();Click(page.Explore);Need(page.IsSetup&&page.Index==0,"Explore bypassed incomplete setup");
+                Click(page.Next);Click(page.Explore);Need(page.IsSetup&&page.Index==1,"Explore skipped installation");
+                page.UpdateSetup(true,true,true,false,"Ready");Need(page.Index==3,"Ready step missing");Click(page.Explore);
+                Need(page.IsOpen&&!page.IsSetup&&page.Index==1&&commands==0&&closed==0,"Explore closed setup or launched a command");
+                Need(Find<TextBlock>(page.View,"TutorialTitle").Text=="Jump back into the game","Explore kept the new-install instructions");
+                page.UpdateSetup(true,true,true,false,"Ready");Need(page.Index==1,"Host refresh reset the optional tour");
+                for(int step=2;step<=LauncherTutorialPage.StepCount;step++){Click(page.Next);Need(page.Index==step,"Optional tour skipped a launcher area");}
+                Click(page.Back);Need(page.Index==5&&Convert.ToString(page.Back.Content)=="Back","Setup Settings action leaked into tour Back");Click(page.Next);Click(page.Next);
+                Need(!page.IsOpen&&closed==1&&commands==0&&!new LauncherTutorialPage(folder,true).ShouldOffer,"Optional tour failed to finish without launching");
+                var marker=Json.Object(File.ReadAllText(Core.PathIn(folder,".launcher/tutorial.json")));Need(Object.Equals(marker["setupPending"],false),"Finished overview retained pending setup");
+            });
+            Test("handheld mode distinguishes SteamOS desktop, gaming and explicit overrides",()=>{
+                Func<string,string> desktop=name=>name=="SteamDeck"?"1":name=="XDG_CURRENT_DESKTOP"?"KDE":null;
+                var deck=HandheldProfile.Resolve(new string[0],desktop,"Jupiter");Need(deck.Enabled&&!deck.GamingMode,"Desktop mode was forced fullscreen");
+                var gaming=HandheldProfile.Resolve(new string[0],name=>name=="XDG_CURRENT_DESKTOP"?"gamescope":null,"");Need(gaming.Enabled&&gaming.GamingMode,"Gaming session was not detected");
+                Need(!HandheldProfile.Resolve(new string[0],name=>null,"Other PC").Enabled,"Ordinary Linux desktop got Deck layout");
+                Need(HandheldProfile.Forward(new[]{"--deck","--root","folder","--desktop-mode"}).SequenceEqual(new[]{"--deck","--desktop-mode"}),"Restart options lost or included unrelated arguments");
+                Need(!HandheldProfile.HelperArguments(new[]{"--apply-game","root","123","--unknown"})&&!HandheldProfile.HelperArguments(new[]{"--apply-game","root","123","--deck","--deck"})&&HandheldProfile.HelperArguments(new[]{"--apply-game","root","123","--deck","--gaming-mode"}),"Helper accepted unknown/duplicate options or lost Deck options");
+                Need(HandheldProfile.Resolve(new[]{"--deck"},name=>null,"").Enabled,"Handheld preview override missing");
+                Need(!HandheldProfile.Resolve(new[]{"--desktop-mode"},name=>"gamescope","Galileo").GamingMode,"Desktop override ignored");
+            });
+            Test("handheld input gates held buttons, repeats navigation and resets after losing focus",()=>{
+                var pad=new HandheldPadState();Need(pad.Read(1,0,0,0,true,0)==PadCommand.None,"Held A activated a new window");pad.Read(0,0,0,0,true,1);
+                Need(pad.Read(1,0,0,0,true,2)==PadCommand.Accept&&pad.Read(1,0,0,0,true,3)==PadCommand.None,"A repeated or failed");pad.Read(0,0,0,0,true,4);
+                Need(pad.Read(0,0,-20000,0,true,5)==PadCommand.Up&&pad.Read(0,0,-20000,0,true,200)==PadCommand.None&&pad.Read(0,0,-20000,0,true,400)==PadCommand.Up,"Stick repeat was uncontrolled");
+                pad.Read(0,0,0,0,false,450);Need(pad.Read(1,0,0,0,true,500)==PadCommand.None,"Returning from game reused held A");pad.Read(0,0,0,0,true,501);Need(pad.Read(2,0,0,0,true,502)==PadCommand.Back,"B did not recover after neutral");
+            });
+#if LINUX
+            Test("Deck controller actions and inline pickers retain real UI commands",()=>{
+                string folder=Path.Combine(root,"deck-picker");Directory.CreateDirectory(folder);File.WriteAllText(Path.Combine(folder,"default.xbe"),"test");Directory.CreateDirectory(Path.Combine(folder,"pak"));Directory.CreateDirectory(Path.Combine(folder,"xmv"));
+                var body=new StackPanel();int clicks=0;var first=new Button{Content="First",MinHeight=44};var second=new Button{Content="Second",MinHeight=44};second.Click+=(s,e)=>clicks++;body.Children.Add(first);body.Children.Add(second);
+                var window=new Window {Width=1280,Height=800,Content=body};var controls=new DeckControls(window,folder,()=>body,()=>true,()=>{});
+                try{window.Show();window.UpdateLayout();first.Focus();controls.Handle(PadCommand.Next);controls.Handle(PadCommand.Accept);Need(clicks==1,"A did not invoke the focused real button");
+                    var pick=controls.PickGameData(true,folder);window.UpdateLayout();controls.Handle(PadCommand.Back);Need(pick.IsCompleted&&pick.Result==null,"B did not cancel the inline picker");
+                    var input=new TextBox {Text="draft"};body.Children.Add(input);window.UpdateLayout();input.Focus();controls.Handle(PadCommand.Keyboard);window.UpdateLayout();var overlay=(Control)window.Content;
+                    Click(All(overlay).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="a"));Need(input.Text=="draft","Keyboard changed the draft before Done");Click(All(overlay).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Done"));Need(input.Text=="drafta","Keyboard failed to apply text");
+                    input.Focus();controls.Handle(PadCommand.Keyboard);window.UpdateLayout();controls.Handle(PadCommand.Back);Need(input.Text=="drafta","Keyboard cancellation altered the field");
+                    var choose=controls.PickFolder("Save folder",folder);window.UpdateLayout();Click(All((Control)window.Content).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Use this folder"));Need(choose.IsCompleted&&choose.Result==folder,"Inline save-folder selection failed");
+                    var selected=controls.PickGameData(true,folder);window.UpdateLayout();Click(All((Control)window.Content).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Use this folder"));Need(selected.IsCompleted&&selected.Result==folder,"Extracted-data picker ignored a complete folder");
+                }finally{controls.Dispose();window.Close();}
+            });
+#endif
+            Test("same-session replay after setup opens the overview",()=>{
+                var page=new LauncherTutorialPage(Path.Combine(root,"setup-replay"),false,false);page.UpdateSetup(true,true,true,false,"Ready");page.Open();Click(page.Next);Click(page.Skip);page.Open();Need(!page.IsSetup&&page.Index==0,"Replay returned to setup after Finish");Click(page.Next);Need(Find<TextBlock>(page.View,"TutorialTitle").Text=="Jump back into the game","Replay kept install instructions");
+            });
+            Test("shared version menu keeps comparison, markers and offline guards",()=>{
+                var stable=new Release {Tag="v1.0.0",Channel="stable"};var beta=new Release {Tag="v1.1.0-beta.1",Channel="beta"};var menu=new GameVersionMenuPage();Release selected=null;menu.Selected+=value=>selected=value;
+                menu.Update(new[]{stable,beta},stable,false,false);menu.ShowPreview();Need(All(menu.View).OfType<TextBlock>().Any(t=>t.Text.Contains("online multiplayer")),"Track explanation missing");menu.Select("beta");Need(All(menu.View).OfType<TextBlock>().Any(t=>t.Text=="CURRENT")&&All(menu.View).OfType<TextBlock>().Any(t=>t.Text=="SELECTED"),"Comparison missing");
+                menu.Update(new[]{stable,beta},stable,false,true);Need(!menu.IsOpen,"Offline retained a stale confirmation");menu.Confirm();Need(selected==null,"Stale selection installed offline");menu.ShowMain();Need(All(menu.View).OfType<TextBlock>().Any(t=>t.Text.Contains("Offline")),"Offline state missing");menu.Select("beta");menu.Confirm();Need(selected==null,"Offline changed versions");
+                menu.Update(new[]{stable,beta},stable,false,false);menu.ShowMain();Need(All(menu.View).OfType<TextBlock>().Any(t=>t.Text.Contains("INSTALLED")),"Installed marker missing");menu.Select("stable");menu.Confirm();Need(selected==null,"Current version reinstalled");menu.Select("beta");menu.Confirm();Need(selected==beta&&!menu.IsOpen,"Selection did not reach host");
+            });
+#if MACOS || LINUX
+            Test("native update failure offers retry, logs and explicit fallback",()=>{
+                string folder=Path.Combine(root,"startup-recovery");Directory.CreateDirectory(folder);int attempts=0,launches=0,logs=0;
+                var window=new NativeStartup(folder,new string[0],token=>{attempts++;if(attempts==1)throw new IOException("Synthetic download failure");return System.Threading.Tasks.Task.CompletedTask;},()=>launches++,()=>logs++,true);
+                window.Start().GetAwaiter().GetResult();var body=(Control)window.Content;var retry=All(body).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Retry update");Need(retry.IsVisible&&launches==0,"Failure silently opened launcher");Click(All(body).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="View logs"));Need(logs==1,"Logs action missing");Click(retry);Need(attempts==2&&launches==1,"Retry failed");
+                var fallback=new NativeStartup(folder,new string[0],token=>{throw new IOException("Offline");},()=>launches++,null,true);fallback.Start().GetAwaiter().GetResult();Click(All((Control)fallback.Content).OfType<Button>().Single(b=>Convert.ToString(b.Content)=="Open installed launcher"));Need(launches==2,"Explicit fallback failed");
+            });
+#endif
+            Test("launcher tour preserves newer preferences and reoffers an older layout revision",()=>{
+                string folder=Path.Combine(root,"tutorial-version");string path=Core.PathIn(folder,".launcher/tutorial.json");Core.Write(path,Json.Encode(new{schema=1,revision=0,custom="keep"}));
+                var older=new LauncherTutorialPage(folder,true);Need(older.ShouldOffer,"Older tour revision hid a new layout");older.Open();older.Dismiss();Need(Json.String(Json.Object(File.ReadAllText(path)),"custom")=="keep","Tutorial discarded unknown preference fields");
+                string future=Json.Encode(new{schema=2,revision=900,custom="future"});File.WriteAllText(path,future);var newer=new LauncherTutorialPage(folder,true);Need(!newer.ShouldOffer,"Older launcher offered over a newer preference");newer.Open();newer.Dismiss();Need(File.ReadAllText(path)==future,"Replay overwrote a newer preference");
+            });
             Test("renderer selection persists, cancels and overrides inherited backend on every host",()=>{
                 string folder=Path.Combine(root,"renderer");Directory.CreateDirectory(folder);
                 var initial=GameSettings.Load(folder,null);Need(initial.Renderer=="vulkan","New default changed");initial.Save();

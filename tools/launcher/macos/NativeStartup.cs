@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -12,36 +12,60 @@ namespace TimeSplitters.Launcher
     public sealed class NativeStartup:Window
     {
         internal static bool HandingOff;
-        readonly CancellationTokenSource stop=new CancellationTokenSource();readonly TextBlock status;
-        readonly string root;readonly string[] args;bool handedOff;
-        public NativeStartup(string root,string[] args)
+        CancellationTokenSource stop;readonly TextBlock status;
+        readonly UpdateWindowPage page;readonly Button open,retry,logs;
+        readonly string root;readonly string[] args;bool handedOff,running,openRequested;
+        readonly Func<CancellationToken,Task> checkOverride;readonly Action launchOverride,logsOverride;
+        public NativeStartup(string root,string[] args,Func<CancellationToken,Task> check=null,Action launch=null,Action viewLogs=null,bool preview=false)
         {
-            NativeApplication.ApplyWindowIcon(this);
-            this.root=root;this.args=args;Title="TimeSplitters · Future Perfect";Width=540;Height=300;CanResize=false;WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#0B1420");
-            var panel=new StackPanel{Margin=new Thickness(28),Spacing=14};panel.Children.Add(NativeWindow.Text("TIMESPLITTERS",30));panel.Children.Add(NativeWindow.Text("FUTURE PERFECT",18));
-            status=NativeWindow.Text("Checking for launcher updates…",13);panel.Children.Add(status);panel.Children.Add(NativeWindow.Button("Open installed launcher",()=>stop.Cancel()));Content=panel;
-            Opened+=async(s,e)=>await Start();Closed+=(s,e)=>{if(!handedOff)stop.Cancel();};
+            NativeApplication.ApplyWindowIcon(this);this.root=root;this.args=args;checkOverride=check;launchOverride=launch;logsOverride=viewLogs;
+            Title="TimeSplitters · Launcher update";Width=620;Height=360;CanResize=false;WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#0B1420");
+            page=new UpdateWindowPage("Checking launcher updates…","Looking for a new launcher version.","LAUNCHER v"+LauncherVersion.Value);status=page.Status;
+            retry=page.AddAction("Retry update",async()=>await Start());retry.IsVisible=false;
+            logs=page.AddAction("View logs",()=>{try{if(logsOverride!=null)logsOverride();else NativeHost.Open(Core.PathIn(root,".launcher"));}catch(Exception ex){status.Text+="\nCould not open logs: "+ex.Message;}});logs.IsVisible=false;
+            open=page.AddAction("Open installed launcher",()=>{openRequested=true;if(running)stop.Cancel();else OpenInstalled();},true);Content=page.View;
+#if LINUX
+            if(!preview&&LinuxHandheld.Profile.Enabled){new DeckControls(this,root,()=>page.View,()=>true,()=>{openRequested=true;if(running)stop.Cancel();else OpenInstalled();});Opened+=(s,e)=>LinuxHandheld.Style(page.View);}
+#endif
+            if(!preview)Opened+=async(s,e)=>await Start();Closed+=(s,e)=>{if(!handedOff&&stop!=null)stop.Cancel();};
         }
-        async Task Start()
+        internal async Task Start()
         {
-            try{
-                // Developer output and source checkouts never replace themselves.
-                if(!LauncherPlatform.Checkout(root) && SelfUpdate.Complete(root) && !Array.Exists(args,a=>a=="--skip-self-update")){
-                    using(var client=new ReleaseClient()){
-                        var release=await SelfUpdate.CheckWithTimeout(client,SelfUpdate.PreviewChannel(root),TimeSpan.FromSeconds(8),stop.Token);
-                        if(release!=null && GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(LauncherVersion.Value))>0){
-                            using(var deadline=CancellationTokenSource.CreateLinkedTokenSource(stop.Token)){
-                                deadline.CancelAfter(TimeSpan.FromMinutes(2));status.Text="Downloading launcher "+release.Tag+"…";
-                                if(await SelfUpdate.Prepare(root,release,client,new Progress<double>(n=>status.Text="Updating launcher · "+n.ToString("0")+"%"),deadline.Token)){
-                                    handedOff=true;Handoff(root);return;
-                                }
-                            }
-                        }
+            if(running||handedOff)return;running=true;openRequested=false;stop?.Dispose();stop=new CancellationTokenSource();
+            page.Actions.Columns=1;retry.IsVisible=logs.IsVisible=false;page.Progress.IsIndeterminate=true;page.Progress.Value=0;page.Heading.Text="Checking launcher updates…";status.Text="Looking for a new launcher version.";
+            try{if(checkOverride!=null)await checkOverride(stop.Token);else await CheckUpdate();}
+            catch(Exception ex){
+                if(!stop.IsCancellationRequested){handedOff=false;LauncherLog.Write(root,"Startup update failed: "+ex);page.Heading.Text="Launcher update couldn’t finish";status.Text=ex is TimeoutException||ex is OperationCanceledException?"The update timed out. Check your connection and retry, or open your installed launcher.":ex.Message;
+                    page.Note.Text="Your installed launcher and game files are kept. Retry, view the logs, or continue with the installed launcher.";
+                    page.Progress.IsIndeterminate=false;page.Progress.Value=0;page.Actions.Columns=3;retry.IsVisible=logs.IsVisible=true;Height=420;retry.Focus();return;}
+            }finally{running=false;}
+            if(!handedOff&&(IsVisible||launchOverride!=null))OpenInstalled();
+        }
+        void OpenInstalled(){if(handedOff)return;try{if(launchOverride!=null)launchOverride();else{var desktop=(IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;var window=new NativeWindow(root,args);desktop.MainWindow=window;window.Show();}handedOff=true;Close();}catch(Exception ex){page.Heading.Text="Couldn’t open the launcher";status.Text=ex.Message;page.Progress.IsIndeterminate=false;}}
+        async Task CheckUpdate()
+        {
+            if(LauncherPlatform.Checkout(root)||!SelfUpdate.Complete(root)||Array.Exists(args,a=>a=="--skip-self-update"))return;
+            using(var client=new ReleaseClient()){
+                var release=await SelfUpdate.CheckWithTimeout(client,SelfUpdate.PreviewChannel(root),TimeSpan.FromSeconds(8),stop.Token);
+                if(release!=null&&GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(LauncherVersion.Value))>0){
+                    using(var deadline=CancellationTokenSource.CreateLinkedTokenSource(stop.Token)){
+                        deadline.CancelAfter(TimeSpan.FromMinutes(2));page.Heading.Text="Updating launcher…";status.Text="Preparing launcher "+release.Tag+"…";
+                        if(await SelfUpdate.Prepare(root,release,client,new TransferProgress(value=>{page.Progress.IsIndeterminate=value.Phase=="Verifying"||value.Phase=="Preparing";page.Progress.Value=value.Percent;status.Text="Launcher "+release.Tag+" · "+value.Summary;}),deadline.Token)){Handoff(root);handedOff=true;}
                     }
                 }
-            }catch(Exception ex){LauncherLog.Write(root,"Startup update fallback: "+ex.Message);}
-            if(!IsVisible)return;handedOff=true;var desktop=(IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;
-            var window=new NativeWindow(root,args);desktop.MainWindow=window;window.Show();Close();
+            }
+        }
+        internal static bool HelperArguments(string[] args){
+#if LINUX
+            return HandheldProfile.HelperArguments(args);
+#else
+            return args.Length==3;
+#endif
+        }
+        static void ForwardHandheld(ProcessStartInfo info){
+#if LINUX
+            foreach(var option in HandheldProfile.Forward(Program.Arguments))info.ArgumentList.Add(option);
+#endif
         }
         public static void Handoff(string root)
         {
@@ -63,7 +87,7 @@ namespace TimeSplitters.Launcher
         {
             string helper=Core.PathIn(root,name);Directory.CreateDirectory(Path.GetDirectoryName(helper));
             LauncherPlatform.CopyFile(Environment.ProcessPath,helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
-            var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add(action);info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());return info;
+            var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add(action);info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());ForwardHandheld(info);return info;
         }
         internal static ProcessStartInfo PrepareGameHelper(string root,int parent,bool rollback=false,bool probe=false) {
             string relative=".launcher/game-helper-"+Guid.NewGuid().ToString("N");
@@ -80,7 +104,7 @@ namespace TimeSplitters.Launcher
                 }
 #endif
                 var info=new ProcessStartInfo(executable){UseShellExecute=false,WorkingDirectory=root};
-                foreach(string arg in new[]{probe?"--test-game-helper":rollback?"--rollback-game":"--apply-game",root,parent.ToString()})info.ArgumentList.Add(arg);
+                foreach(string arg in new[]{probe?"--test-game-helper":rollback?"--rollback-game":"--apply-game",root,parent.ToString()})info.ArgumentList.Add(arg);ForwardHandheld(info);
                 return info;
             } catch { CleanupGameHelper(root,executable);throw; }
         }

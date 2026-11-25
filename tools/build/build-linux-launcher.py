@@ -64,6 +64,9 @@ def main():
     spec = importlib.util.spec_from_file_location('layout', ROOT / 'tools/launcher/macos/generate_layout.py')
     layout = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(layout)
+    spec = importlib.util.spec_from_file_location('appearance', ROOT / 'tools/launcher/macos/generate_appearance.py')
+    appearance = importlib.util.module_from_spec(spec); spec.loader.exec_module(appearance)
+    appearance.generate(ROOT / 'tools/launcher/appearance', layout_dir / 'NativeMinimal.cs')
     layout.generate(ROOT / 'tools/launcher/Launcher.xaml', layout_dir / 'NativeWindow.axaml')
     for theme in ('PageTheme', 'TabsTheme'):
         layout.generate_theme(ROOT / f'tools/launcher/{theme}.xaml', layout_dir / f'{theme}.axaml')
@@ -74,7 +77,7 @@ def main():
                     '-p:IncludeNativeLibrariesForSelfExtract=true', '-p:EnableCompressionInSingleFile=true',
                     '-p:DebugType=None', '-p:DebugSymbols=false',
                     f'-p:BaseIntermediateOutputPath={output}/obj/', f'-p:BaseOutputPath={output}/bin/',
-                    f'-p:LayoutDir={layout_dir}', f'-p:ArtworkDir={args.artwork_dir.resolve()}',
+                    f'-p:LayoutDir={layout_dir}', f'-p:AppearanceSource={layout_dir}/NativeMinimal.cs', f'-p:ArtworkDir={args.artwork_dir.resolve()}',
                     '-o', str(publish)], check=True, cwd=ROOT, env=env)
     package = output / 'package'
     package.mkdir(exist_ok=True)
@@ -101,14 +104,15 @@ def main():
             for notice in (Path(base) / metadata.get('path', '')).glob('*.txt'):
                 if any(word in notice.name.lower() for word in ('license', 'notice', 'copying')):
                     shutil.copyfile(notice, licenses / (name.replace('/', '-') + '-' + notice.name))
+    shutil.copyfile(ROOT / 'docs/players/steam-deck-launcher.md', support / 'SteamDeck.txt')
     (support / 'application.json').write_text(json.dumps({'platform': 'linux-x64', 'version': version}) + '\n')
     files = {p.relative_to(package).as_posix(): digest(p) for p in package.rglob('*') if p.is_file() and p.name != 'manifest.json'}
     manifest = support / 'manifest.json'
     manifest.write_text(json.dumps({'schema': 1, 'version': version, 'files': files}, indent=2) + '\n')
-    sources = [ROOT / 'tools/build/build-linux-launcher.py', ROOT / 'config/build/linux-launcher-sdk.json',
+    sources = [ROOT / 'docs/players/steam-deck-launcher.md', ROOT / 'tools/build/build-linux-launcher.py', ROOT / 'config/build/linux-launcher-sdk.json',
                *sorted((ROOT / 'tools/launcher').rglob('*.cs')), *sorted((ROOT / 'tools/launcher').glob('*.xaml')),
                ROOT / 'tools/launcher/linux/LinuxLauncher.csproj', ROOT / 'tools/launcher/linux/packages.lock.json',
-               ROOT / 'tools/launcher/macos/generate_layout.py']
+               ROOT / 'tools/launcher/macos/generate_layout.py', ROOT / 'tools/launcher/macos/generate_appearance.py']
     receipt = {'source_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                'working_tree_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                'source_sha256': {p.relative_to(ROOT).as_posix(): digest(p) for p in sources},

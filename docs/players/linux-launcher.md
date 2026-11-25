@@ -47,7 +47,15 @@ startup uses the system Vulkan driver; inherited Mac/software-driver overrides
 are cleared. Desktop mode choices include common presets, Auto and any saved
 custom mode. Automatic desktop refresh switching is unavailable.
 
-## Steam Deck in Desktop Mode
+## Steam Deck: Gaming Mode and Desktop Mode
+
+The redesigned launcher adds a handheld layout, controller focus, built-in text
+keyboard and in-window file selection. See the [Steam Deck launcher guide](steam-deck-launcher.md)
+for setup, controls, SD cards and the remaining physical-device acceptance checks.
+Gaming Mode is fullscreen; Desktop Mode keeps normal window placement. The
+native Linux download does not use Proton.
+
+### Desktop controls
 
 When opening the launcher directly from the desktop, switch the Deck controls
 to Gamepad mode by holding the Menu button (≡, beside Y) for about three

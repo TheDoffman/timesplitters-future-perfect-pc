@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -24,20 +24,20 @@ namespace TimeSplitters.Launcher
         readonly Stopwatch watch = Stopwatch.StartNew();
         bool finished;
         public static bool IsHelper(string[] args) {
-            return args.Length == 3 && (args[0] == "--apply-game" || args[0] == "--rollback-game" || args[0] == "--test-game-helper");
+            return NativeStartup.HelperArguments(args) && (args[0] == "--apply-game" || args[0] == "--rollback-game" || args[0] == "--test-game-helper");
         }
         public NativeUpdateWindow(string root, string[] args) {
             this.root = root; this.args = args;
             NativeApplication.ApplyWindowIcon(this);
-            Title = "TimeSplitters · Updating"; Width = 540; Height = 320; CanResize = false;
-            WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = Brush.Parse("#0B1420");
-            var panel = new StackPanel { Margin = new Thickness(28), Spacing = 16 };
-            panel.Children.Add(NativeWindow.Text(args[0] == "--rollback-game" ? "Restoring previous game" : "Installing game update", 24));
-            status = NativeWindow.Text("Waiting for the launcher to close", 15); panel.Children.Add(status);
-            progressBar = new ProgressBar { IsIndeterminate = true, Height = 8 };panel.Children.Add(progressBar);
-            elapsed = NativeWindow.Text("Keep this window open. The launcher will reopen when installation finishes."); panel.Children.Add(elapsed);
-            close = NativeWindow.Button("Close", () => ((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).Shutdown(1));
-            close.IsVisible = false; panel.Children.Add(close); Content = panel;
+            Title="TimeSplitters · Updating";Width=620;Height=360;CanResize=false;
+            WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#0B1420");
+            var page=new UpdateWindowPage(args[0]=="--rollback-game"?"Restoring previous game":"Installing game update","Waiting for the launcher to close","Keep this window open. The launcher will reopen when installation finishes.");
+            status=page.Status;elapsed=page.Note;progressBar=page.Progress;
+            close=page.AddAction("Close",()=>((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).Shutdown(1));
+            close.IsVisible=false;Content=page.View;
+#if LINUX
+            if(LinuxHandheld.Profile.Enabled){new DeckControls(this,root,()=>page.View,()=>finished,()=>{if(finished)Close();});Opened+=(s,e)=>LinuxHandheld.Style(page.View);}
+#endif
             Closing += (s,e) => { if (!finished) e.Cancel = true; };
             Closed += (s,e) => timer.Stop();
             timer.Tick += (s,e) => elapsed.Text = "Working · " + (int)watch.Elapsed.TotalSeconds + " s elapsed. The launcher will reopen when finished.";

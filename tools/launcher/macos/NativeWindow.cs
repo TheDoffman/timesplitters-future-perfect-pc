@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,6 +17,13 @@ namespace TimeSplitters.Launcher
 {
     public sealed partial class NativeWindow:Window
     {
+#if LINUX
+        DeckControls deckControls;
+        internal bool HandheldActive=>deckControls!=null;
+        internal string HandheldInputHint=>deckControls?.InputHint;
+        internal void ShowHandheldHelp(){deckControls?.Help();}
+        internal Task<string> PickHandheldFolder(string title)=>deckControls.PickFolder(title);
+#endif
         readonly string root;readonly bool render;readonly string[] args;
         readonly ReleaseClient client=new ReleaseClient();
         CancellationTokenSource operation;Release latest;bool busy,gameRunning;int checkRevision;SettingsPage settings;SavesPage savesPage;
@@ -25,7 +32,7 @@ namespace TimeSplitters.Launcher
         public NativeWindow(string root,string[] args)
         {
             this.root=root;this.args=args;render=args.Any(a=>a.StartsWith("--render-"));
-            AvaloniaXamlLoader.Load(this);NativeApplication.ApplyWindowIcon(this);NativeApplication.FitLauncher(this);Artwork();
+            AvaloniaXamlLoader.Load(this);NativeApplication.ApplyWindowIcon(this);Artwork();
             Find<ContentControl>("GameChannelPickerHost").Content=channelPicker.View;
             channelPicker.SetReleases(Array.Empty<Release>(),GameChannels.Read(root),GameChannels.ReadPreviewTrack(root));
             Label("LauncherVersionLabel","LAUNCHER "+LauncherVersion.Value+"  /  "+LauncherPlatform.HostName);
@@ -54,6 +61,10 @@ namespace TimeSplitters.Launcher
             if(render)SetChannels(new[]{new Release {Tag="v0.4.0-story-coop.1",Channel="story-coop",ChannelName="Story Co-op Preview"}},"story-coop");
             else SetChannels(Array.Empty<Release>(),GameChannels.Read(root));
             channelPicker.Changed+=()=>{if(render)return;GameChannels.Save(root,SelectedGameChannel,channelPicker.LastPreview);Run(Check);};
+            appearance=new NativeAppearance(this);NativeApplication.FitLauncher(this);appearance.Remember();
+#if LINUX
+            if(LinuxHandheld.Profile.Enabled&&!render)deckControls=new DeckControls(this,root,()=>appearance.HandheldScope,()=>!gameRunning,()=>appearance.HandheldBack());
+#endif
             Opened+=async(s,e)=>{try{
                 if(args.Contains("--test-session")){await TestSession();return;}
                 if(render){Refresh();await Render();return;}
@@ -62,7 +73,7 @@ namespace TimeSplitters.Launcher
                 foreach(var name in new[]{".launcher/mac-self-helper",".launcher/mac-update-helper"})try{File.Delete(Core.PathIn(root,name));}catch(IOException){}
                 await textureUpdatesState.StartAfter(Check());string result=Core.PathIn(root,".launcher/last-result.txt");if(File.Exists(result)){Status(File.ReadAllText(result));File.Delete(result);}
                 issuesTimer=new DispatcherTimer{Interval=TimeSpan.FromMinutes(5)};issuesTimer.Tick+=(a,b)=>{if(Find<ContentControl>("NewsHost").IsVisible && WindowState!=WindowState.Minimized && !busy)Run(()=>newsPage.RefreshIssues());};issuesTimer.Start();
-            }catch(Exception ex){Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
+            }catch(Exception ex){if(render){Console.Error.WriteLine(ex);((Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).Shutdown(1);return;}Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
             Activated+=(s,e)=>{if(newsPage!=null&&Find<Control>("NewsHost").IsVisible&&!busy)Run(newsPage.RefreshIssuesIfDue);};
             Closing+=(s,e)=>{if(!NativeStartup.HandingOff && (busy || gameRunning)){e.Cancel=true;Status("Wait for the operation or game to finish before closing the launcher.");}};
             Closed+=(s,e)=>{closed=true;textureUpdatesState.Dispose();consolePage?.Dispose();issuesTimer?.Stop();newsPage?.Dispose();operation?.Cancel();installationLock?.Dispose();client.Dispose();};
@@ -70,13 +81,19 @@ namespace TimeSplitters.Launcher
         T Find<T>(string name) where T:Control { return this.FindControl<T>(name)??throw new InvalidOperationException("Missing launcher control: "+name); }
         void Click(string name,Action action){Find<Button>(name).Click+=(s,e)=>{try{action();}catch(Exception ex){Status(ex.Message);}};}
         void Label(string name,string value){Find<TextBlock>(name).Text=value;}
-        void Status(string message){Label("StatusText",message);if(!render)LauncherLog.Write(root,message);}
+        void Status(string message){Label("StatusText",message);if(!render)LauncherLog.Write(root,message);appearance?.Refresh();}
         internal bool GameRunning { get { return gameRunning; } }
+        internal bool AppearanceGameRunning {get{return gameRunning||Core.GameRunning(root);}}
+        internal void AppearanceRefreshPlayAvailability(bool running){
+            bool installed=File.Exists(Core.PathIn(root,LauncherPlatform.GamePath(root)));
+            bool data=File.Exists(Core.PathIn(root,LauncherPlatform.Data(root)+"/default.xbe"));
+            Find<Button>("PlayButton").IsEnabled=(installed&&data||render)&&!busy&&!running;
+        }
         readonly GameChannelPickerPage channelPicker=new GameChannelPickerPage();
         string SelectedGameChannel=>channelPicker.Selected;
         bool Preview=>SelectedGameChannel!="stable";
         void SetChannels(Release[] releases,string selected)
-        {channelPicker.SetReleases(releases,selected);}
+        {appearanceCatalog=releases;channelPicker.SetReleases(releases,selected);appearance?.Refresh();}
         TextureUpdateCheck textureUpdatesState;bool closed;
         void TextureCheckChanged(){if(closed)return;var label=Find<TextBlock>("TextureUpdateStatus");label.Text=textureUpdatesState.Status;ToolTip.SetTip(label,textureUpdatesState.Details);label.IsVisible=label.Text.Length>0;settings?.RefreshTextureCheck();}
         ConsolePage consolePage;
@@ -84,7 +101,7 @@ namespace TimeSplitters.Launcher
         void Page(string name){
             if(name!="SettingsHost"&&settings!=null)settings.DismissPrompt();
             foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost"),("SavesNav","SavesHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
-            foreach(var p in new[]{"CommandCenter","NewsHost","SettingsHost","MaintenanceHost","VersionsHost","SavesHost"})Find<Control>(p).IsVisible=p==name;}
+            foreach(var p in new[]{"CommandCenter","NewsHost","SettingsHost","MaintenanceHost","VersionsHost","SavesHost"})Find<Control>(p).IsVisible=p==name;appearance?.Page(name);}
         void OpenFolder(string name){var path=Core.PathIn(root,name);if(!Directory.Exists(path)){Status("This folder has not been created yet.");return;}NativeHost.Open(path);}
         void Artwork()
         {
@@ -102,7 +119,7 @@ namespace TimeSplitters.Launcher
             Label("InstalledLabel",render?"LOCAL BUILD":NativeHost.Version(root));
             Label("ReadyTitle",gameRunning?"Game running":installed||render?(data||render?"Ready to play":"Set up game data"):"Install game");
             Label("ReadyDescription",gameRunning?"The launcher will return when the game closes.":installed||render?"Your "+LauncherPlatform.HostName+" game is ready. Adjust settings before you play.":"Install a "+LauncherPlatform.HostName+" release, then import your US Xbox game data.");
-            Find<Button>("PlayButton").IsEnabled=(installed&&data||render)&&!busy&&!gameRunning;
+            AppearanceRefreshPlayAvailability(AppearanceGameRunning);
             Label("DataLabel",data||render?"✓  Game data installed":"○  ISO required");
             Label("GameDataHint",data?"Your local game files are kept between updates.":"Import your supported US Xbox ISO or extracted game folder.");
             Find<Control>("ImportActions").IsVisible=!data&&!render;Find<Button>("OpenDataButton").IsVisible=data||render;Find<Expander>("GameDataExpander").IsExpanded=!data&&!render;
@@ -110,15 +127,17 @@ namespace TimeSplitters.Launcher
             channelPicker.SetEnabled(!busy&&!gameRunning);
             Find<Button>("RollbackButton").IsEnabled=!busy&&!gameRunning&&!LauncherPlatform.Checkout(root)&&Core.CanRollback(root);
             Label("ChannelBadge", Preview?"\u25cf  PREVIEW CHANNEL":"\u25cf  STABLE CHANNEL");
+            appearance?.Refresh();
             if(render){Label("ReleaseTitle",LauncherPlatform.HostName+" launcher");Label("ReleaseDescription","Preview layout · "+LauncherPlatform.HostName+" releases appear here when published.");Label("UpdateStateLabel",LauncherPlatform.HostName+" PREVIEW");Status("Preview only · no game launched, network requests or personal files changed.");}
         }
         async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
+        bool appearanceOffline;
         async Task Check()
         {
             if(busy)return;int revision=++checkRevision;string channel=SelectedGameChannel;Label("ReleaseTitle","Checking for updates…");
             GameUpdateNotice.Publish(root,null,channel);
             using(var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(8))){try{
-                var catalog=await client.ReadGameCatalog(timeout.Token);if(revision!=checkRevision)return;SetChannels(catalog,channel);latest=GameChannels.Select(catalog,channel);
+                var catalog=await client.ReadGameCatalog(timeout.Token);if(revision!=checkRevision)return;appearanceOffline=false;SetChannels(catalog,channel);latest=GameChannels.Select(catalog,channel);
                 GameUpdateNotice.Publish(root,latest,channel);
                 Label("ReleaseTitle",latest==null?"No "+LauncherPlatform.HostName+" release available":"Available: "+latest.Tag);
                 Label("ReleaseDescription",latest==null?"No compatible "+LauncherPlatform.HostName+" package is published on this channel. Your local build remains available.":ReleaseNews.Availability(Core.InstalledVersion(root),latest,false));
@@ -127,15 +146,15 @@ namespace TimeSplitters.Launcher
                 Find<Button>("UpdateButton").Content=latest!=null && latest.Channel!=GameChannels.Installed(root)?"Switch game channel":String.IsNullOrEmpty(Core.InstalledVersion(root))?"Install release":"Update release";
                 Label("UpdateStateLabel",latest==null?LauncherPlatform.HostName:"CHECKED");
                 Status(LauncherPlatform.Checkout(root)?"Development build · published updates install into a separate portable installation.":"Update check complete.");
-            }catch(Exception e){Label("ReleaseTitle","Couldn't check updates");Label("ReleaseDescription","Your installed game remains available. "+e.Message);}}
+            }catch(Exception e){appearanceOffline=true;Find<Button>("UpdateButton").IsEnabled=false;Label("ReleaseTitle","Couldn't check updates");Label("ReleaseDescription","Your installed game remains available. "+e.Message);}}
             Refresh();
         }
         async Task Play()
         {
             if(busy||gameRunning)return;
-            Core.Require(!Core.GameRunning(),"Close the running game before starting another session.");
+            Core.Require(!Core.GameRunning(root),"Close the running game before starting another session.");
             await Task.Run(()=>{NativeHost.CheckData(root);NativeHost.CheckBuild(root,GameSettings.Load(root,null).Renderer);});
-            Core.Require(!Core.GameRunning(),"The game is already running.");
+            Core.Require(!Core.GameRunning(root),"The game is already running.");
             NativeHost.Prepare(root);var info=GameSettings.StartInfo(root);
             await MonitorGame(info,root);
         }
@@ -147,9 +166,20 @@ namespace TimeSplitters.Launcher
             info.Environment["TSFP_CAPTURE_SESSION"]=id??"";
             try{process=Process.Start(info);}catch{if(id!=null)GameSessions.CancelLaunch(sessionRoot,id);throw;}
             try{if(id!=null)GameSessions.Started(sessionRoot,id,process);}catch(Exception e){LauncherLog.Write(sessionRoot,"Session start observation: "+e.Message);}
-            gameRunning=true;Refresh();WindowState=WindowState.Minimized;
+            gameRunning=true;Refresh();
+#if LINUX
+            if(!LinuxHandheld.Profile.GamingMode)WindowState=WindowState.Minimized;
+#else
+            WindowState=WindowState.Minimized;
+#endif
             try{Directory.CreateDirectory(Core.PathIn(sessionRoot,"logs"));var stdout=NativeHost.Drain(process.StandardOutput.BaseStream,Core.PathIn(sessionRoot,"logs/native-play.out"));var stderr=NativeHost.Drain(process.StandardError.BaseStream,Core.PathIn(sessionRoot,"logs/native-play.err"));
-                while(!process.HasExited){if(!lastWindowObserved)lastWindowObserved=NativeHost.GameWindowReady(process.Id);await Task.Delay(500);string report=CrashReports.Latest(sessionRoot);if(report!=null && report!=previous && CrashReports.IsHang(sessionRoot,report)){previous=report;CrashReports.Trim(sessionRoot,report);WindowState=WindowState.Normal;Maintenance(true);Status("The game may be stalled. A local hang report is available; the game is still running.");}}
+                while(!process.HasExited){if(!lastWindowObserved)lastWindowObserved=NativeHost.GameWindowReady(process.Id);await Task.Delay(500);string report=CrashReports.Latest(sessionRoot);if(report!=null && report!=previous && CrashReports.IsHang(sessionRoot,report)){previous=report;CrashReports.Trim(sessionRoot,report);
+#if LINUX
+                    WindowState=LinuxHandheld.Profile.GamingMode?WindowState.FullScreen:WindowState.Normal;
+#else
+                    WindowState=WindowState.Normal;
+#endif
+                    Maintenance(true);Status("The game may be stalled. A local hang report is available; the game is still running.");}}
                 await process.WaitForExitAsync();await Task.WhenAll(stdout,stderr);try{if(id!=null)GameSessions.Complete(sessionRoot,id,process);}catch(Exception e){LauncherLog.Write(sessionRoot,"Session completion deferred: "+e.GetType().Name);}int exit=process.ExitCode;
                 if(!LauncherPlatform.Checkout(sessionRoot))await Task.Run(()=>Core.FinishGameSession(sessionRoot,observedBuild,lastWindowObserved,exit));string latestReport=CrashReports.Latest(sessionRoot);if(latestReport!=null)CrashReports.Trim(sessionRoot,latestReport);
                 Status(exit==0?"Game closed.":"Game closed unexpectedly. Open Diagnostics to review its local report.");if(exit!=0||latestReport!=previous)Maintenance(true);return exit;
@@ -159,6 +189,10 @@ namespace TimeSplitters.Launcher
         async Task Import(bool folder)
         {
             string source;
+#if LINUX
+            if(deckControls!=null)source=await deckControls.PickGameData(folder);
+            else
+#endif
             if(folder){var picked=await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions{Title="Choose extracted US Xbox game files",AllowMultiple=false});source=picked.FirstOrDefault()?.TryGetLocalPath();}
             else{var picked=await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions{Title="Choose your US Xbox ISO",AllowMultiple=false,FileTypeFilter=new[]{new FilePickerFileType("Xbox ISO"){Patterns=new[]{"*.iso"}}}});source=picked.FirstOrDefault()?.TryGetLocalPath();}
             if(source==null||busy||gameRunning)return;busy=true;Refresh();Status("Importing game data…");
@@ -183,7 +217,11 @@ namespace TimeSplitters.Launcher
             }finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){Find<ProgressBar>("UpdateProgress").IsIndeterminate=false;Find<Button>("PauseDownloadButton").Content="Pause download";busy=false;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}}
         }
         async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","The launcher restarts after restoring the previous game. Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{await NativeStartup.HandoffGame(root,true);}finally{if(!NativeStartup.HandingOff){busy=false;Refresh();}}}}
-        void ShowSaves(){if(busy||gameRunning||(!render&&Core.GameRunning())){Status("Close the game before managing saves.");return;}if(savesPage==null){savesPage=new SavesPage(root,render,installationLock!=null);savesPage.OpenFolder+=OpenFolder;savesPage.OpenSaveLocation+=path=>{Directory.CreateDirectory(path);NativeHost.Open(path);};savesPage.PickSaveFolder=async()=>{var picked=await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions {Title="Choose TimeSplitters save folder",AllowMultiple=false});return picked.FirstOrDefault()?.TryGetLocalPath();};savesPage.BusyChanged+=value=>{busy=value;Refresh();};Find<ContentControl>("SavesHost").Content=savesPage.View;}savesPage.Reload();Page("SavesHost");}
+        void ShowSaves(){if(busy||gameRunning||(!render&&Core.GameRunning())){Status("Close the game before managing saves.");return;}if(savesPage==null){savesPage=new SavesPage(root,render,installationLock!=null);savesPage.OpenFolder+=OpenFolder;savesPage.OpenSaveLocation+=path=>{Directory.CreateDirectory(path);NativeHost.Open(path);};savesPage.PickSaveFolder=async()=>{
+#if LINUX
+                if(deckControls!=null)return await deckControls.PickFolder("Choose your save folder");
+#endif
+                var picked=await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions {Title="Choose TimeSplitters save folder",AllowMultiple=false});return picked.FirstOrDefault()?.TryGetLocalPath();};savesPage.BusyChanged+=value=>{busy=value;Refresh();};Find<ContentControl>("SavesHost").Content=savesPage.View;}savesPage.Reload();Page("SavesHost");}
         void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render,textureUpdatesState);settings.TextureBusyChanged+=value=>{busy=value;Refresh();};settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
         async Task News()
         {
@@ -238,12 +276,16 @@ namespace TimeSplitters.Launcher
             var accept=new Button{Content=confirmation?"Continue":"Close",MinWidth=100};
             accept.Click+=(s,e)=>dialog.Close(true);PageTheme.Primary(accept);actions.Children.Add(accept);
             panel.Children.Add(actions);dialog.Content=new Border{Background=dialog.Background,Child=panel};
+#if LINUX
+            if(LinuxHandheld.Profile.Enabled){dialog.Opened+=(s,e)=>LinuxHandheld.Style((Control)dialog.Content);new DeckControls(dialog,root,()=>dialog.Content as Control,()=>true,()=>dialog.Close(false));}
+#endif
             return dialog;
         }
         public Task<bool> Confirm(string title,string text)=>MessageDialog(title,text,true).ShowDialog<bool>(this);
         async Task Render()
         {
             string mode=args.First(a=>a.StartsWith("--render-"));int at=Array.IndexOf(args,mode);string output=args[at+1];
+            if(mode=="--render-appearance-check"){await appearance.Validate(output);Close();return;}
             if(mode.Contains("confirm")||mode.Contains("alert")){
                 string message="This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved. Back up saves before testing; save and network compatibility can vary.";
                 if(mode.Contains("long"))message+="\n\n"+string.Join("\n\n",Enumerable.Repeat("Matching files will be updated. Other files are kept. You can cancel before installation begins.",8));
@@ -258,6 +300,7 @@ namespace TimeSplitters.Launcher
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
             if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>SelectedGameChannel);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
             if(mode.Contains("console"))ShowConsole();
+            if(mode.Contains("tutorial")){int step=0;for(int i=1;i<=LauncherTutorialPage.StepCount;i++)if(mode.Contains("step"+i))step=i;appearance.PreviewTutorial(step);}
             if(mode.Contains("game-data"))Find<Expander>("GameDataExpander").IsExpanded=true;
             if(mode.Contains("download")){
                 var snapshot=new TransferSnapshot{Phase="Downloading",Bytes=(long)(22.2*1048576),Total=(long)(84.5*1048576),BytesPerSecond=1.7*1048576};
