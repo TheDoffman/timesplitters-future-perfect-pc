@@ -53,7 +53,9 @@ viewport/scissor checks compare text and skull edges at18 display shapes,
 including square, portrait and unusual window sizes. A685872-case sampled
 dimension sweep checks physical-pixel size, centres and name openings. Controls
 restore the former midpoint fit or omit projected Y; both must fail. The existing
-outlined-text scope fixture checks the new wrapper on PC/native macro paths.
+outlined-text scope fixture checks the new wrapper on PC/native macro paths,
+retaining the helper's PC-controls/native-display guard. Prompts-only builds
+must not compile the display helper as an unused static function under -Werror.
 Six asset-free D3D11 renders verify actual name position and pixel size at640x480,
 1280x1024,1920x1080,1920x1200,3440x1440 and5120x1440. These are Windows renderer
 and shared-policy checks, not physical Mac/Linux or every-monitor acceptance.

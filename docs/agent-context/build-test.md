@@ -2,7 +2,7 @@
 [Backend](multiplayer-exit.md#backend).
 [Release notes](../release/release-notes.md).
 Mac: prior renderer.
-[Order](ultrawide-player-markers.md).
+[Scope](ultrawide-player-markers.md).
 [GL/CI](opengl-recovery.md#publication-ci).
 
 [0.7 sync](network-sync-telemetry.md).
