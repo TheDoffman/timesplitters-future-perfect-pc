@@ -1,3 +1,17 @@
+## MAC-013 follow-up: named skull aspect ratios (2026-11-25)
+
+**Awaiting validation** on native Mac/Linux. Shared pc_display_actor_name and
+pc_ui_actor_icon_shape fit text and mirrored halves around their actor's
+projected centre. Patch2815 extends the existing41E30 outlined-label wrapper
+without replacing prompt/read scopes. PcUiWorldAnchor carries projected Y for
+the named-label tag; RHI viewport/scissor and native GL use it on tall displays.
+No platform-specific gameplay policy is introduced.29 layout/scope checks,
+18 display-shape cases,685872 dimension/name cases and six actual Windows D3D11
+renders pass; historical upgrade and runtime selection13 pass. Full updated game
+generation/build, named gameplay and physical Mac/Linux visual checks remain
+pending. See [STATUS](STATUS.md) and the
+[contract](../agent-context/ultrawide-player-markers.md).
+
 ## MAC-013 follow-up: team skull halves (2026-11-24)
 
 **Awaiting validation** on native Mac/Linux. Issue603 reports the split skull on

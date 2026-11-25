@@ -209,7 +209,7 @@ static void test_actor_icons(void)
         hud_scale=4.f*sizes[r][1]/(3.f*sizes[r][0]);wide=hud_scale!=1.f;
         float cx=actor?540.f:100.f,cy=actor?280.f:160.f;
         float xy[]={c?cx+12:cx-12,cy-18,cx,cy+18};
-        g_esp=0;stack[0]=callers[c];memcpy(stack+1,xy,sizeof xy);
+        g_esp=0;stack[0]=callers[c];memcpy(stack+1,xy,sizeof xy);stack[24]=0;
         for(unsigned i=5;i<13;i++)stack[i]=0x12345678+i; /* UVs and colours. */
         uint32_t saved[32];memcpy(saved,stack,sizeof saved);
         aim_points=2;aim_offset=4;crosshair_size=150;
@@ -234,14 +234,16 @@ static void test_actor_icons(void)
             float edge=cx+(c?.5f:-.5f)*name_widths[n];
             float xy[]={edge+(c?12.f:-12.f),cy-18.f,edge,cy+18.f};
             g_esp=0;stack[0]=callers[c];memcpy(stack+1,xy,sizeof xy);
+            memcpy(stack+24,&name_widths[n],4);
             uint32_t saved[32];memcpy(saved,stack,sizeof saved);
             aim_points=2;aim_offset=4;crosshair_size=150;
             ui_place(2,99);pc_display_aim_primitive(aim_draw,2);sub_00022FF0();
             CHECK(!memcmp(saved,stack,sizeof saved) && g_esp==4);
             inner[c]=aim_seen[2];
-            CHECK(fabsf(inner[c]-edge)<.001f);
+            float sx=wide?pc_ui_scale_x(hud_scale):1.f;
+            CHECK(fabsf(inner[c]-(cx+(edge-cx)*sx))<.001f);
         }
-        CHECK(fabsf(inner[1]-inner[0]-name_widths[n])<.001f);
+        CHECK(fabsf(inner[1]-inner[0]-name_widths[n]*(wide?pc_ui_scale_x(hud_scale):1.f))<.001f);
     }
     /* The local name is a HUD widget, not an actor projection. Preserve all
        of its queued text passes and the previous placement on return. */
@@ -265,6 +267,30 @@ static void test_actor_icons(void)
     }
     players=1;view[0]=0;ui_place(0,0);draw_count=selection_count=0;
 }
+static int expected_name_placement;
+static void actor_name_draw(void)
+{
+    CHECK(placement==expected_name_placement);
+    if(placement==2)CHECK(tag==0x13ce13);
+    for(unsigned pass=0;pass<5;pass++){pending=1;sub_00022FF0();}
+    g_esp+=4;
+}
+static void test_actor_names(void)
+{
+    for(unsigned tall=0;tall<2;tall++)for(unsigned guard=0;guard<5;guard++) {
+        hud_scale=tall?16.f/9.f:.75f;wide=guard!=4;players=guard==1?2:1;
+        view[0]=guard==2?320:0;g_esp=0;stack[0]=guard==3?0x13ce14:0x13ce13;
+        ui_place(3,99);pending=1;int first=draw_count;
+        expected_name_placement=guard==0?2:3;
+        uint32_t saved[32];memcpy(saved,stack,sizeof saved);
+        pc_display_actor_name(actor_name_draw);
+        CHECK(drawn[first]==3 && g_esp==4 && placement==3 && tag==99);
+        CHECK(!memcmp(saved,stack,sizeof saved));
+        CHECK(draw_count==first+5+(guard==0));
+        for(unsigned pass=0;pass<5;pass++)CHECK(drawn[first+(guard==0)+pass]==expected_name_placement);
+    }
+    players=1;view[0]=0;wide=1;hud_scale=.75f;ui_place(0,0);draw_count=selection_count=0;
+}
 static void nested_video_text(void)
 {
     float x;memcpy(&x,&font_xy[0],4);CHECK(fabsf(x-.65f)<.00001f);
@@ -275,6 +301,7 @@ int main(void)
 {
     test_aim_overlays();
     test_actor_icons();
+    test_actor_names();
     {
         float initial[2]={1,1};memcpy(font_xy,initial,sizeof initial);
         owned_video=1;g_esp=0;stack[1]=0x1000;stack[2]=0x2000;

@@ -164,7 +164,7 @@ static void native_place_draw(const void *vertices,UINT stride,UINT count) {
         }
         if(!found)pos=-1;
     } else if(d3d8_fvf_transformed(g.current_fvf))pos=0;
-    float k=1,ky=1,anchor=.5f;
+    float k=1,ky=1,anchor=.5f,anchor_y=.5f;
     if(native_scene_active && pos>=0 && pc_display_wide_now() && offset+8<=stride && count) {
         float left=INFINITY,right=-INFINITY;
         for(UINT i=0;i<count;i++){
@@ -178,11 +178,12 @@ static void native_place_draw(const void *vertices,UINT stride,UINT count) {
            (native_placement==XBOX_D3D8_2D_AUTO && left<=1 && right>=g.backbuf_w-1)){k=1;ky=1;}
         pc_ui_world_draw(&native_world_anchor,vertices,stride,count,offset,(float)g.backbuf_w);
         if(native_world_anchor.active && native_world_anchor.ready)anchor=native_world_anchor.x;
+        if(native_world_anchor.active && native_world_anchor.ready && native_world_anchor.vertical)anchor_y=native_world_anchor.y;
         if(native_placement==XBOX_D3D8_2D_LEFT)anchor=0;
         if(native_placement==XBOX_D3D8_2D_RIGHT)anchor=1;
         if(native_placement==XBOX_D3D8_2D_SIDE)anchor=pc_ui_side_anchor(left,right,(float)g.backbuf_w);
     }
-    if(k!=native_hud_k || ky!=native_hud_ky || anchor!=native_hud_anchor){native_hud_ky=ky;native_hud_k=k;native_hud_anchor=anchor;native_viewport();}
+    if(k!=native_hud_k || ky!=native_hud_ky || anchor!=native_hud_anchor || anchor_y!=native_hud_anchor_y){native_hud_ky=ky;native_hud_k=k;native_hud_anchor=anchor;native_hud_anchor_y=anchor_y;native_viewport();}
 }
 
 void d3d8_combiners_set_float_constant(unsigned bank,unsigned stage,const float *value)

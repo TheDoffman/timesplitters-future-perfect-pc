@@ -1,3 +1,34 @@
+## 2026-11-25 - Fit named skull markers as one projected label
+
+The all-aspect audit found that the previous closed-skull correction was
+insufficient for names: the name still followed ordinary centred HUD fitting,
+while its two halves retained independently supplied world positions. Shared
+pc_display_actor_name now scopes the original outlined label at13CE13; both
+halves recover the actor centre from the native measured name width at frame+60
+(hex). Text and the opening between the halves use the same aspect scale.
+Patch2815 extends the existing41E30 wrapper, preserving its Developer Tools and
+prompt/read scopes. It runs after those prerequisites. RHI viewport/scissor and
+the legacy GL adapter preserve projected X/Y for each named actor. Original4:3,
+split/partial views, unrelated text and the objective marker's X-only tag remain.
+
+Validation:29 production-layout/text-scope checks pass. These include18 display
+shapes (4:3,5:4,3:2,16:10,16:9,ultrawide,square,portrait and odd window sizes),
+685872 sampled dimension/name/position combinations, mirrored halves, independent
+actors, five text passes, restoration and negative controls for the former
+midpoint fit and missing projected-Y correction. Six real asset-free D3D11
+renders at640x480,1280x1024,1920x1080,1920x1200,3440x1440 and5120x1440 verify
+name position and physical-pixel proportions away from screen centre. The native
+HUD partial-view renderer check also passes. Historical controls-stack upgrade
+and runtime suite-selection checks:13 pass. The complete patch stack applied
+successfully to the isolated runtime, and repository context/diff checks pass.
+
+These validate shared policy, compiled wrapper paths and the Windows renderer,
+not every monitor or physical Mac/Linux gameplay. A new full game generation,
+build and named-player gameplay run are pending for this follow-up; the prior
+closed-skull executable is not evidence for the new name scope. The installed
+game and other running builds were not changed. No publication or main merge.
+See [contract](../agent-context/ultrawide-player-markers.md).
+
 ## 2026-11-24 - Keep the two team skull halves joined
 
 Named-marker follow-up: the user identified the name-between-halves case. The

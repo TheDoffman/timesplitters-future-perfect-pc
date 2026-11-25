@@ -8,7 +8,7 @@ import subprocess
 import pytest
 from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[2]
-@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects", "transition_overlay", "title_matte", "flash_overlay", "crane_overlay", "settings_panel"])
+@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects", "transition_overlay", "title_matte", "flash_overlay", "crane_overlay", "settings_panel", "actor_marker_layout"])
 def test_ui_layout(tmp_path,fixture):
     compiler,environment=native_compiler(tmp_path)
     exe=tmp_path/('ui.exe' if os.name=='nt' else 'ui')
@@ -54,13 +54,14 @@ def test_guest_placement_hooks():
     assert 'pc_display_video_menu_font(sub_00076810_gen);' in manual
     assert 'pc_display_health(sub_0013AB60_gen);' in manual
     assert 'if(FP_MEM32(g_esp)==0x0013BA9Cu)pc_display_health_side();' in manual
+    assert 'pc_display_actor_name(pc_actor_name_original);' in manual
 
 
 def test_split_skull_regression_control(tmp_path):
     """The old per-half midpoint fit must fail the shared-edge assertions."""
     compiler, environment = native_compiler(tmp_path)
     adapter = (ROOT/'src/interface/pc_display_ui.inc').read_text()
-    needle = 'pc_ui_actor_icon_shape(xy,pc_display_hud_scale())'
+    needle = 'pc_ui_actor_icon_shape(xy,pc_display_hud_scale(),name_width,caller==0x0013D04Eu)'
     assert adapter.count(needle) == 1
     adapter = adapter.replace(needle, 'pc_ui_aim_shape(xy,points,pc_display_hud_scale())')
     fixture = (ROOT/'tests/graphics/ui_layout.c').read_text()
@@ -77,8 +78,8 @@ def test_split_skull_regression_control(tmp_path):
     assert result.returncode!=0 and 'aim_seen[2]-cx' in result.stderr,result.stdout+result.stderr
 
 
-@pytest.mark.parametrize("fixture_name", ["ui_viewport", "ui_screen_effects", "world_projected_effects"])
-def test_production_viewport_and_scissor(tmp_path, fixture_name):
+@pytest.mark.parametrize("fixture_name,broken", [("ui_viewport",False),("ui_viewport",True),("ui_screen_effects",False),("world_projected_effects",False)])
+def test_production_viewport_and_scissor(tmp_path, fixture_name, broken):
     source=(ROOT/'external/ts3FPrecomp/src/d3d/d3d8_device.c').read_text()
     def body(signature):
         start=source.index(signature+'\n{');end=source.index('{',start);depth=1;end+=1
@@ -88,6 +89,7 @@ def test_production_viewport_and_scissor(tmp_path, fixture_name):
     signatures=(
         'static BOOL two_d_squeeze(float *k_out, float *cx_out)',
         'static float two_d_vertical_scale(void)',
+        'static float two_d_vertical_anchor(void)',
         'BOOL d3d8_GetScissor(RhiRect *out)',
         'static void apply_host_viewport(void)',
         'void xbox_D3D8SetTwoDPlacement(int placement, uint32_t tag)')
@@ -98,6 +100,9 @@ def test_production_viewport_and_scissor(tmp_path, fixture_name):
     elif fixture_name=='world_projected_effects':
         signatures=('void d3d8_place_2d_draw(const void *vertices, UINT stride, UINT count)',)
     implementations='\n'.join(body(name) for name in signatures)
+    if broken:
+        assert 'return g_2d_world_anchor.y;' in implementations
+        implementations=implementations.replace('return g_2d_world_anchor.y;','return .5f;')
     fixture=(repo_file(ROOT, 'tests', f'{fixture_name}.c')).read_text().replace('/* PRODUCTION */',implementations)
     path=tmp_path/'viewport.c';path.write_text(fixture)
     compiler,environment=native_compiler(tmp_path);exe=tmp_path/('viewport.exe' if os.name=='nt' else 'viewport')
@@ -107,4 +112,7 @@ def test_production_viewport_and_scissor(tmp_path, fixture_name):
     compiled=subprocess.run(command,cwd=tmp_path,env=environment,capture_output=True,text=True)
     assert compiled.returncode==0,compiled.stdout+compiled.stderr
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
-    assert result.returncode==0,result.stdout+result.stderr
+    if broken:
+        assert result.returncode!=0 and 'actual.y+cy' in result.stderr,result.stdout+result.stderr
+    else:
+        assert result.returncode==0,result.stdout+result.stderr

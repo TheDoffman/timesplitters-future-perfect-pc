@@ -362,6 +362,12 @@ def patch_records(paths):
         paths.remove(vsync)
         paths.append(vsync)
 
+    # Actor-name fitting extends the final outlined-label wrapper and viewport.
+    actor_names = by_name.get('2815-arcade-marker-name-layout.patch')
+    if actor_names:
+        paths.remove(actor_names)
+        paths.append(actor_names)
+
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

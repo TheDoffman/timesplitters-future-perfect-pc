@@ -24,23 +24,33 @@ static float pc_ui_caption_y(float y,float height,float bottom,float top)
 /* One projected marker consists of an outline followed by separate labels.
  * Its first draw contains the complete outline. Fit every subsequent draw
  * around that same world-screen centre, never each label's own centre. */
-typedef struct PcUiWorldAnchor { int active,ready; float x; } PcUiWorldAnchor;
+typedef struct PcUiWorldAnchor { int active,ready,vertical; float x,y; } PcUiWorldAnchor;
 static void pc_ui_world_begin(PcUiWorldAnchor *a,int placement,uint32_t tag)
 {
-    a->active=placement==2 && tag==0x00142D10u;a->ready=0;a->x=.5f;
+    a->vertical=tag==0x0013CE13u;
+    a->active=placement==2 && (tag==0x00142D10u || a->vertical);
+    a->ready=0;a->x=a->y=.5f;
 }
 static int pc_ui_world_draw(PcUiWorldAnchor *a,const void *vertices,unsigned stride,
                            unsigned count,unsigned offset,float width)
 {
     if(!a->active || a->ready || !vertices || !count || stride<4 ||
        offset>stride-4 || !(width>0))return 0;
-    float lo=INFINITY,hi=-INFINITY;
+    if(a->vertical && (stride<8 || offset>stride-8))return 0;
+    float lo=INFINITY,hi=-INFINITY,top=INFINITY,bottom=-INFINITY;
     for(unsigned i=0;i<count;i++) {
         float x;memcpy(&x,(const unsigned char *)vertices+(size_t)i*stride+offset,4);
         if(!isfinite(x))return 0;
         if(x<lo)lo=x;if(x>hi)hi=x;
+        if(a->vertical) {
+            float y;memcpy(&y,(const unsigned char *)vertices+(size_t)i*stride+offset+4,4);
+            if(!isfinite(y))return 0;
+            if(y<top)top=y;if(y>bottom)bottom=y;
+        }
     }
-    a->x=(lo*.5f+hi*.5f)/width;a->ready=1;return 1;
+    a->x=(lo*.5f+hi*.5f)/width;
+    if(a->vertical)a->y=(top*.5f+bottom*.5f)/480.f;
+    a->ready=1;return 1;
 }
 /* The crane vignette's full-canvas Xbox clip uses inclusive last pixels.
  * Normalize its alternate full-canvas spelling to inclusive guest bounds.
@@ -144,14 +154,15 @@ static void pc_ui_aim_shape(float *xy,unsigned points,float ratio)
         xy[i*2+1]=cy+(xy[i*2+1]-cy)*sy;
     }
 }
-/* The team skull is two adjacent textures. Scaling each half about its own
- * midpoint opens a gap; retain their common projected edge instead. Both
- * calls end at that edge; the right half has reversed X bounds for mirroring.
+/* Fit the skull and its optional name around one projected centre. The native
+ * inner edge lies half a measured name width to either side. Without a name
+ * both edges meet. The right half reverses X bounds to mirror its texture.
  * Culled halves and later actors need no cache. */
-static void pc_ui_actor_icon_shape(float xy[4],float ratio)
+static void pc_ui_actor_icon_shape(float xy[4],float ratio,float name_width,int right_half)
 {
     if(!(ratio>0.f))return;
-    float cx=xy[2],cy=(xy[1]+xy[3])*.5f;
+    if(!isfinite(name_width) || name_width<0.f)name_width=0.f;
+    float cx=xy[2]+(right_half?-.5f:.5f)*name_width,cy=(xy[1]+xy[3])*.5f;
     float sx=pc_ui_scale_x(ratio),sy=pc_ui_scale_y(ratio);
     for(unsigned i=0;i<2;i++) {
         xy[i*2]=cx+(xy[i*2]-cx)*sx;
