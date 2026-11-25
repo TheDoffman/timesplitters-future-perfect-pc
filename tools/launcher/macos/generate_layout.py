@@ -13,6 +13,7 @@ ET.register_namespace('',A);ET.register_namespace('x',X)
 def local(tag):return tag.rsplit('}',1)[-1]
 def generate(source,destination):
  root=ET.parse(source).getroot();root.set('{'+X+'}Class','TimeSplitters.Launcher.NativeWindow')
+ navigation_focus=root.find(".//{"+W+"}Style[@{"+X+"}Key='NavigationFocus']//{"+W+"}Border")
  styles=ET.Element('{'+A+'}Window.Styles')
  ET.SubElement(styles,'{'+A+'}StyleInclude',{'Source':'/PageTheme.axaml'})
  for resource in list(root.find('{'+W+'}Window.Resources')):
@@ -20,12 +21,15 @@ def generate(source,destination):
   key=resource.attrib.get('{'+X+'}Key');target=resource.attrib['TargetType']
   style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':target+('.'+key if key else '')})
   for setter in resource:
-   if setter.attrib.get('Property') in ('Template','StrokeLineJoin','StrokeEndLineCap'):continue
+   if setter.attrib.get('Property') in ('Template','FocusVisualStyle','StrokeLineJoin','StrokeEndLineCap'):continue
    if 'Value' not in setter.attrib:continue
    if setter.attrib['Property'] in ('StrokeStartLineCap','StrokeEndLineCap'):setter.set('Property','StrokeLineCap')
    if setter.attrib['Property']=='Stroke':setter.set('Value','#B4C7D8')
    style.append(setter)
   if target=='Button':
+   if navigation_focus is not None:
+    focus_style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':target+('.'+key if key else '')+':focus-visible /template/ Border#Face'})
+    ET.SubElement(focus_style,'{'+A+'}Setter',{'Property':'BorderBrush','Value':navigation_focus.attrib['BorderBrush']})
    template=resource.find('.//{'+W+'}ControlTemplate')
    if template is not None:
     converted=template_styles(styles,template,target+('.'+key if key else ''))
@@ -58,10 +62,10 @@ def generate(source,destination):
 def simple_theme(source,destination):
  root=ET.parse(source).getroot();styles=ET.Element('{'+A+'}Styles')
  for resource in root:
-  if local(resource.tag)!='Style':continue
+  if local(resource.tag)!='Style' or '{'+X+'}Key' in resource.attrib:continue
   target=resource.attrib['TargetType'];style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':target})
   for setter in resource:
-   if 'Value' not in setter.attrib or setter.attrib.get('Property') in ('Template','ScrollViewer.HorizontalScrollBarVisibility','ScrollViewer.VerticalScrollBarVisibility'):continue
+   if 'Value' not in setter.attrib or setter.attrib.get('Property') in ('Template','FocusVisualStyle','ScrollViewer.HorizontalScrollBarVisibility','ScrollViewer.VerticalScrollBarVisibility'):continue
    ET.SubElement(style,'{'+A+'}Setter',dict(setter.attrib))
  ET.indent(styles);Path(destination).write_text(ET.tostring(styles,encoding='unicode')+'\n',encoding='utf-8')
 
@@ -107,6 +111,11 @@ def generate_theme(source,destination):
  for source_style in source_root:
   target=source_style.attrib.get('TargetType')
   if target=='Button':
+   # WPF's keyboard-only focus adorner maps to native :focus-visible.
+   focus=source_root.find(".//{"+W+"}Style[@{"+X+"}Key='NavigationFocus']//{"+W+"}Border")
+   if focus is not None:
+    style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':'Button:focus-visible /template/ Border#Face'})
+    ET.SubElement(style,'{'+A+'}Setter',{'Property':'BorderBrush','Value':focus.attrib['BorderBrush']})
    template=source_style.find('.//{'+W+'}ControlTemplate')
    converted=template_styles(styles,template,'Button')
    style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':'Button'})

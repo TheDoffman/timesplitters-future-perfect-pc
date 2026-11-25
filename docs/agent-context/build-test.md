@@ -1,3 +1,4 @@
+[Tests](launcher-appearance.md)
 [GPU](uplink-color.md).
 [Pacing](../development/renderer-frame-pacing-focused.md).
 [Backend](multiplayer-exit.md#backend).
@@ -51,7 +52,7 @@ execution. This is synthetic hit-testing, not physical Retina/scene acceptance.
 WSL driver patch direction/repeat/rejection checks use actual GNU patch in
 `test_linux_foundation.py`; see [driver setup](../development/wsl-vulkan.md).
 
-Discord release webhooks target #release-updates; #announcements holds team posts.
+Release webhooks: #release-updates; team posts: #announcements.
 
 PC Settings bar: [persistence checks](interaction-input.md#pc-settings-bar-visibility).
 
@@ -81,7 +82,7 @@ fixtures cover 60/120/180/240; cleanup selects only the active save root.
 Upload-copy/sanitizer/GPU contracts run in CI; see [Linux](linux-game.md) and
 [launcher checks](launcher.md).
 
-Windows passes `config/build/windows-game.manifest` as `TSFP_GAME_MANIFEST`;
+Windows: `TSFP_GAME_MANIFEST=config/build/windows-game.manifest`;
 patch 2130 attaches it only to the game. CMake merges system DPI awareness,
 UAC/common-controls before network sealing. `test_window_theme.py` uses isolated
 manifest/no-manifest probes to inspect embedded XML and actual process DPI.

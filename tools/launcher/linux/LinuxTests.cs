@@ -62,6 +62,8 @@ namespace TimeSplitters.Launcher
                 string install=Path.Combine(root,"installation with spaces");Directory.CreateDirectory(install);
                 Directory.CreateDirectory(Path.Combine(install,"Saves"));File.WriteAllText(Path.Combine(install,"Saves/keep"),"preserved");
                 File.WriteAllText(Path.Combine(install,"BUILD.json"),"preserved game metadata");
+                var personal=new System.Collections.Generic.Dictionary<string,string>{{"Settings/pc-controls.json","personal bindings"},{"Data/keep","original game data"},{"custom.txt","unknown user file"}};
+                foreach(var item in personal){string path=Core.PathIn(install,item.Key);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,item.Value);}
                 var changes=SelfUpdate.Unpack(archive,Path.Combine(root,"payload"),version);
                 Core.ApplyLauncher(install,changes,null);Need(SelfUpdate.Complete(install),"Installed package failed verification");
                 string app=Core.PathIn(install,Core.AppPath);File.AppendAllText(app,"corruption");Need(!SelfUpdate.Complete(install),"Corrupt launcher accepted");
@@ -76,6 +78,7 @@ namespace TimeSplitters.Launcher
                 }
                 Need(SelfUpdate.Complete(install)&&File.Exists(Path.Combine(install,"self-update-preview.png")),"Repaired launcher did not restart and render");
                 Need(File.ReadAllText(Path.Combine(install,"Saves/keep"))=="preserved"&&File.ReadAllText(Path.Combine(install,"BUILD.json"))=="preserved game metadata","Self update changed game/user files");
+                foreach(var item in personal)Need(File.ReadAllText(Core.PathIn(install,item.Key))==item.Value,"Self update changed "+item.Key);
                 Console.WriteLine("Linux package installed, corruption rejected, repaired through copied helper and restarted/rendered; saves and game metadata preserved.");return 0;
             } catch(Exception error) { Console.Error.WriteLine(error);return 1; }
             finally { Directory.Delete(root,true); }

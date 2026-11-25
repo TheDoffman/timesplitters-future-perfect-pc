@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -47,8 +47,8 @@ namespace TimeSplitters.Launcher
                         {
                             var visual = (Grid)startup.Window.Content;
                             visual.Background = startup.Window.Background;
-                            visual.Measure(new Size(544, 270)); visual.Arrange(new Rect(0, 0, 544, 270)); visual.UpdateLayout();
-                            var bitmap = new RenderTargetBitmap(544, 270, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
+                            visual.Measure(new Size(620, 330)); visual.Arrange(new Rect(0, 0, 620, 330)); visual.UpdateLayout();
+                            var bitmap = new RenderTargetBitmap(620, 330, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
                             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
                             using (var output = File.Create(args[1])) encoder.Save(output);
                             return 0;
@@ -142,15 +142,15 @@ namespace TimeSplitters.Launcher
             openDirectory = openFolder ?? (directory => { Process.Start(new ProcessStartInfo(directory) {UseShellExecute=true}); });
             Window = (Window)XamlReader.Parse(@"<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='TimeSplitters — Starting'
-                Width='560' Height='310' ResizeMode='NoResize' WindowStartupLocation='CenterScreen'
-                Background='#101E2D' Foreground='#E4EDF5' FontFamily='Segoe UI' ShowInTaskbar='True'>
+                Width='620' Height='360' ResizeMode='NoResize' WindowStartupLocation='CenterScreen'
+                Background='#0B1420' Foreground='#E4EDF5' FontFamily='Segoe UI' ShowInTaskbar='True'>
                 <Window.Resources>
                   <Style TargetType='Button'>
                     <Setter Property='Background' Value='#1B2C3E'/><Setter Property='Foreground' Value='#E4EDF5'/>
-                    <Setter Property='BorderBrush' Value='#506C86'/><Setter Property='Padding' Value='10,7'/>
+                    <Setter Property='BorderBrush' Value='#405D76'/><Setter Property='Padding' Value='10,7'/>
                     <Setter Property='VerticalAlignment' Value='Center'/><Setter Property='Cursor' Value='Hand'/>
                     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Button'>
-                      <Border x:Name='Face' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='1' CornerRadius='3' Padding='{TemplateBinding Padding}'>
+                      <Border x:Name='Face' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='1' CornerRadius='0' Padding='{TemplateBinding Padding}'>
                         <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
                       </Border>
                       <ControlTemplate.Triggers>
@@ -161,20 +161,24 @@ namespace TimeSplitters.Launcher
                     </ControlTemplate></Setter.Value></Setter>
                   </Style>
                 </Window.Resources>
-                <Grid Margin='26,22'>
-                  <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
-                  <TextBlock Text='TIMESPLITTERS  /  FUTURE PERFECT' FontFamily='Bahnschrift' FontWeight='Bold' FontSize='14' Foreground='#86CDFF'/>
-                  <TextBlock x:Name='Heading' Grid.Row='1' Text='Checking launcher updates…' FontSize='21' FontWeight='SemiBold' Margin='0,18,0,0'/>
-                  <ScrollViewer x:Name='StatusScroll' Grid.Row='2' MaxHeight='240' VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled' Margin='0,7,0,15'><TextBlock x:Name='Status' Text='Checking GitHub Releases.' FontSize='12' Foreground='#A4B8CA' TextWrapping='Wrap'/></ScrollViewer>
+                <Grid Background='#0B1420'><Grid Margin='28,24'>
+                  <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/></Grid.RowDefinitions>
+                  <Border BorderBrush='#2D455C' BorderThickness='0,0,0,1' Padding='0,0,0,14'><TextBlock Text='TIMESPLITTERS  /  FUTURE PERFECT' FontSize='11' Foreground='#A7D9FA'/></Border>
+                  <TextBlock x:Name='Heading' Grid.Row='1' Text='Checking launcher updates…' FontSize='25' FontWeight='Normal' Margin='0,20,0,0'/>
+                  <ScrollViewer x:Name='StatusScroll' Grid.Row='2' MaxHeight='240' VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled' Margin='0,7,0,15'><TextBlock x:Name='Status' Text='Checking GitHub Releases.' FontSize='13' Foreground='#B4C7D8' TextWrapping='Wrap'/></ScrollViewer>
                   <ProgressBar x:Name='Progress' Grid.Row='3' Height='3' IsIndeterminate='True' Background='#30485F' Foreground='#86CDFF' BorderThickness='0'/>
-                  <DockPanel Grid.Row='4' Margin='0,15,0,0' VerticalAlignment='Bottom' LastChildFill='False'>
-                    <StackPanel DockPanel.Dock='Left' Orientation='Horizontal'><Button x:Name='Retry' Content='Retry update' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6' Margin='0,0,8,0'/><Button x:Name='Folder' Content='Open launcher folder' Visibility='Collapsed' Padding='8,6' Margin='0,0,8,0'/><Button x:Name='Logs' Content='View logs' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6'/></StackPanel>
-                    <TextBlock x:Name='Version' DockPanel.Dock='Left' Foreground='#8CA6BE' FontSize='10' VerticalAlignment='Center'/>
-                    <Button x:Name='Continue' DockPanel.Dock='Right' Content='Open installed launcher' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Padding='10,6' FontSize='11' Cursor='Hand'/>
-                  </DockPanel>
-                </Grid>
+                  <StackPanel Grid.Row='4' Margin='0,18,0,0'>
+                    <TextBlock x:Name='Version' Foreground='#8CA6BE' FontSize='10' Margin='0,0,0,10'/>
+                    <UniformGrid Columns='3'>
+                      <Button x:Name='Retry' Content='Retry update' Visibility='Collapsed' MinHeight='38' Margin='0,0,4,0'/>
+                      <Button x:Name='Folder' Content='Open launcher folder' Visibility='Collapsed' MinHeight='38' Margin='4,0'/>
+                      <Button x:Name='Logs' Content='View logs' Visibility='Collapsed' MinHeight='38' Margin='4,0,0,0'/>
+                    </UniformGrid>
+                    <Button x:Name='Continue' Content='Open installed launcher' Background='#A7D9FA' Foreground='#091C2C' BorderBrush='#D6EDFF' MinHeight='38' HorizontalAlignment='Stretch' Margin='0,10,0,0'/>
+                  </StackPanel>
+                </Grid></Grid>
               </Window>");
-            WindowTheme.Attach(Window);
+            WindowTheme.Attach(Window,()=>true);
             ((TextBlock)Window.FindName("Version")).Text = "LAUNCHER v" + LauncherVersion.Value;
             using (var icon = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher.ico"))
                 Window.Icon = BitmapFrame.Create(icon, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);

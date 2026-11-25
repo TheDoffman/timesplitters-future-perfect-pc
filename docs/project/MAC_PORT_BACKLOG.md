@@ -1,3 +1,93 @@
+## SteamOS handheld launcher (2026-11-25)
+
+**Implemented locally; physical Steam Deck acceptance pending.** Gaming/Desktop
+layout and controller/touch navigation adapters share existing launcher commands;
+inline text/file workflows avoid external desktop dialogs. Tests and 1280x800
+renders are recorded in STATUS. Do not promote WSL/synthetic input results to
+hardware support: built-in controls, Gamescope launch/return, Steam overlay,
+suspend/resume, SD cards and docked output need a physical Deck. Existing native
+game glibc/driver requirements remain a separate gate. See
+[the Deck guide](../players/steam-deck-launcher.md) for setup and acceptance.
+
+## Launcher review repairs (2026-11-25)
+
+**Implemented — common picker and tour corrections, native recovery acceptance.**
+GameVersionMenuPage owns track explanations, installed state, version comparison
+and offline/busy confirmation guards on WPF and Avalonia. NativeStartup now keeps
+failed updates visible with Retry, View logs and explicit installed-launcher
+fallback; injected checks cover failure/retry/logs/continue without network.
+Native package restart checks also cover malformed preserved game metadata in the
+picker adapter. Windows fresh-install end-to-end and native evidence are recorded
+in STATUS. Full native fresh real-data installation remains distinct from the
+Windows live walkthrough and native package/helper regressions. No installed Mac
+app was replaced; all current source work remains local and uncommitted.
+
+## Launcher update-window theme follow-up (2026-11-25)
+
+**Implemented — shared update presentation and native startup/helper adapters.**
+UpdateWindowPage.cs supplies the same palette, brand divider, scrollable status,
+progress and actions on WPF game-helper and native startup/game-helper windows.
+Windows bootstrap keeps its independent recovery handlers with matching styling.
+Native startup now presents TransferProgress phases and detail; cancellation,
+timeout, helper handoff and fallback are unchanged. Native package/helper and
+host check results are recorded in STATUS. No installed Mac app is replaced.
+Local source remains uncommitted.
+
+## Optional overview after launcher setup (2026-11-25)
+
+**Implemented — shared WPF/Avalonia page, no new host action.**
+Setup completion offers Show me around above Settings/Finish/Play. The shared
+handler enters all six overview cards, preserves normal Back/Next and never
+starts the game. Mac/Linux consume exactly the same transition and layout.
+Host validation is recorded in STATUS. Sources remain local and uncommitted.
+
+## Guided launcher setup follow-up (2026-11-25)
+
+**Implemented — shared WPF/Avalonia setup progression with native command adapters.**
+New-player setup dispatches existing Install/Check, ISO/folder import and Play;
+readiness and failures drive progression, while setupPending survives installer
+handoff. Native cached CheckData validation avoids claiming readiness from XBE
+presence alone. Returning-player tour and existing data remain preserved. Shared
+regressions exercise pending-marker restart, separate import routes, cancellation,
+failure, explicit launch and inert preview. Host results are recorded in STATUS;
+actual first-time full-data import is not repeated for this adapter change.
+Local source remains uncommitted; installed apps on the Mac are unchanged.
+
+## Launcher tutorial follow-up (2026-11-25)
+
+**Implemented — shared WPF/Avalonia tutorial and native host checks.**
+LauncherTutorialPage.cs owns progression, copy and revisioned dismissal; native
+NativeAppearance positions the card and highlights actual controls, with Escape,
+focus cycling and Launcher tools replay. Render-only routes cannot write the
+preference. Native Mac58/Linux59 shared groups cover skip/completion/replay,
+returning users and future-marker/personal-file preservation. Native screenshots
+and Linux scaled compact rendering are recorded in STATUS. No second Mac model,
+settings migration or installed-app replacement. Source remains uncommitted.
+
+## Launcher redesigned presentation (2026-11-24)
+
+**Implemented — native Mac/Linux build, regression and visual scaling checks
+recorded in STATUS.** Local uncommitted `feature/launcher-redesign`,
+baseb3083d68f. NativeAppearance.cs/NativeMotion.cs provide the Avalonia adapter;
+NativeWindow/NativeMaintenance retain the original native commands and policies.
+The generate_appearance.py framework translation reuses the approved Windows
+MinimalSettings/MinimalTools/Restyle layout source and the same settings controls.
+Both host scripts compile generated helpers into their independent packages.
+
+Home links, compact version selection, equal tools/settings categories, quiet
+reports, aligned actions, empty states, page fades, home animation, Playing lock
+and bounded window placement are implemented. Mac reduced-motion preference and
+native high contrast suppress decorative motion. Linux uses the existing Avalonia
+work-area fit; Windows now fits small high-DPI work areas without cutting content.
+
+Native host regression suites and signed Mac/Linux packages are tested in isolated
+folders. Mac render checks run on its available1x display; Linux exercises actual
+X11 scale factors100/125/150/175/200%,15 views and four sizes. Settings controls and
+draft retention, disabled Playing/channel selection and animation cancellation are
+checked. Physical Retina/monitor hotplug and real pointer/keyboard acceptance on
+multiple hardware displays remain distinct from automated layout evidence. No
+installed Mac launcher, game, settings, saves or dashboard service is replaced.
+See [STATUS](STATUS.md) and [adapter contract](../agent-context/launcher-appearance.md).
 ## MAC-013 follow-up: permanent color correction and Uplink (#604, 2026-11-25)
 
 **Awaiting validation** for native mission gameplay. Shared3061/3060 fixes preserve

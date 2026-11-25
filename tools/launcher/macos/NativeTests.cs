@@ -172,7 +172,10 @@ namespace TimeSplitters.Launcher
         {
             string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
             try {
-                var changes=SelfUpdate.Unpack(archive,Path.Combine(test,"payload"),version);string install=Path.Combine(test,"install");Directory.CreateDirectory(install);Write(install,"BUILD.json","preserved game metadata");Write(install,"Saves/keep","preserved save");Core.ApplyLauncher(install,changes,null);Need(SelfUpdate.Complete(install),"Packaged app did not verify after installation");
+                var changes=SelfUpdate.Unpack(archive,Path.Combine(test,"payload"),version);string install=Path.Combine(test,"install");Directory.CreateDirectory(install);Write(install,"BUILD.json","preserved game metadata");Write(install,"Saves/keep","preserved save");
+                var personal=new System.Collections.Generic.Dictionary<string,string>{{"Settings/pc-controls.json","personal bindings"},{"Data/keep","original game data"},{"custom.txt","unknown user file"}};
+                foreach(var item in personal)Write(install,item.Key,item.Value);
+                Core.ApplyLauncher(install,changes,null);Need(SelfUpdate.Complete(install),"Packaged app did not verify after installation");
                 Need(NativeInstallation.ValidateFolder(install, Environment.ProcessPath) == install, "Packaged installation cannot be selected from translocation recovery");
                 Need(BundleSignatureValid(install),"Installed app bundle signature is invalid");
                 string managed=Path.Combine(test,"Application Support Ω","TimeSplitters");
@@ -194,6 +197,7 @@ namespace TimeSplitters.Launcher
                 Need(SelfUpdate.Complete(install),"Self repair did not restore the modified bundle");Need(File.Exists(Core.PathIn(install,"self-update-preview.png")),"Updated app did not open and render");Need(!Directory.Exists(pending),"Completed staging retained");
                 Need(BundleSignatureValid(install),"Self repair did not restore the app bundle signature");
                 Need(File.ReadAllText(Path.Combine(install,"Saves/keep"))=="preserved save"&&File.ReadAllText(Path.Combine(install,"BUILD.json"))=="preserved game metadata","Package touched personal/game files");
+                foreach(var item in personal)Need(File.ReadAllText(Core.PathIn(install,item.Key))==item.Value,"Self update changed "+item.Key);
                 Console.WriteLine("Packaged Mac app installed, repaired through a copied helper, restarted and rendered; game metadata and saves preserved.");
 
                 Core.Apply(install,Core.Unpack(Archive(test,"v1.0.0"),Path.Combine(test,"initial-game"),"v1.0.0"),null);

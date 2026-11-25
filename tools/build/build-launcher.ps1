@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
 .SYNOPSIS
 Build the standalone Windows launcher using the .NET Framework compiler in Windows.
@@ -90,6 +90,7 @@ $cachedFiles = @('TimeSplitters Launcher.exe', 'Bin/TimeSplitters.App.exe', 'Sup
 $cacheInputs = @($PSCommandPath, (Join-Path $PSScriptRoot 'launcher-cache.ps1'),
     (Join-Path $project 'tools/release/ImportGame.cs'), (Join-Path $project 'config/pc-controls.default.json'),
     (Join-Path $project 'src/interface/pc_display_modes.inc'), (Join-Path $project 'config/build/launcher-artwork.json'))
+$cacheInputs += @(Get-ChildItem -LiteralPath (Join-Path $source 'appearance') -Filter '*.cs' -File | ForEach-Object { $_.FullName })
 $cacheInputs += @(Get-ChildItem -LiteralPath $source -File | ForEach-Object { $_.FullName })
 $cacheInputs += @(Get-ChildItem -LiteralPath (Join-Path $project 'tests/launcher') -Filter '*.cs' -File | ForEach-Object { $_.FullName })
 foreach ($name in ($references + @('csc.exe', 'csc.exe.config', 'clr.dll', 'mscorlib.dll', 'System.Drawing.dll', 'System.Xml.dll', 'System.Configuration.dll',
@@ -136,6 +137,8 @@ $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Program',
 $arguments += $bannerArguments
 $settingsSources = @((Join-Path $source 'Ui.cs'), (Join-Path $source 'GameSessions.cs'), (Join-Path $source 'CrashReports.cs'), (Join-Path $source 'PageTheme.cs'), (Join-Path $source 'ReleaseNotesMarkdown.cs'), (Join-Path $source 'ReleaseNotesDocument.cs'), (Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
 # Every shared page is compiled for both hosts; add new pages beside these sources.
+$settingsSources += @((Join-Path $source 'LauncherAppearance.cs'),(Join-Path $source 'LauncherAppearanceBridge.cs'))
+$settingsSources += @(Get-ChildItem -LiteralPath (Join-Path $source 'appearance') -Filter '*.cs' -File | ForEach-Object { $_.FullName })
 $settingsSources += @(Get-ChildItem -LiteralPath $source -Filter '*Page.cs' | ForEach-Object { $_.FullName })
 $defaultControls = @(('/resource:' + (Join-Path $source 'PageTheme.xaml') + ',PageTheme.xaml'),
     ('/resource:' + (Join-Path $source 'TabsTheme.xaml') + ',TabsTheme.xaml'), ('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),
@@ -179,10 +182,15 @@ if ($Test) {
     $testArgs += @((Join-Path $project 'tests\launcher\launcher_sessions.cs'), (Join-Path $project 'tests\launcher\launcher_shared_ui.cs'), (Join-Path $project 'tests\launcher\launcher_saves.cs'), (Join-Path $project 'tests\launcher\launcher_restart.cs'), (Join-Path $project 'tests\launcher\launcher_textures.cs'))
     $testArgs += @(('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml'),
         ('/resource:' + (Join-Path $Output 'launcher.ico') + ',launcher.ico')) + $bannerArguments + $logoArguments
+    $testArgs += @((Join-Path $project 'tests/launcher/launcher_appearance.cs'), (Join-Path $project 'tests/launcher/launcher_play_state.cs'))
     & $compiler @testArgs
     if ($LASTEXITCODE -ne 0) { throw 'Launcher test compilation failed.' }
     & (Join-Path $Output 'launcher-tests.exe')
     if ($LASTEXITCODE -ne 0) { throw 'Launcher regression tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --play-state
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher Play-state checks failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --appearance
+    if ($LASTEXITCODE -ne 0) { throw 'Working launcher appearance tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --shared-ui
     if ($LASTEXITCODE -ne 0) { throw 'Shared launcher UI tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --textures
