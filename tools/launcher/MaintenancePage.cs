@@ -80,7 +80,7 @@ namespace TimeSplitters.Launcher
             var heading=PageTheme.Header(diagnostics?"SUPPORT CENTER":"INSTALLATION CARE",diagnostics?"System & Reports":"Repair / Verify",
                 diagnostics?"Review your system report and prepare a GitHub issue.":"Check your installation. Restore release files when something needs attention.");if(!embedded)View.Children.Add(heading);
             Report=new TextBox { Name=diagnostics?"DiagnosticsReport":"VerificationReport",IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,VerticalContentAlignment=VerticalAlignment.Top,
-                Background=Brush("#0B1826"),BorderThickness=new Thickness(0),FontFamily=Ui.Monospace,FontSize=12,Padding=new Thickness(12) };
+                Background=Brush("#08182B"),BorderThickness=new Thickness(0),FontFamily=Ui.Monospace,FontSize=12,Padding=new Thickness(12) };
             Ui.ScrollBars(Report);
             Report.Text=diagnostics?"Collecting diagnostics…":"No verification results yet. Choose Verify files to check the game or launcher.";
             if(diagnostics) {
@@ -111,7 +111,7 @@ namespace TimeSplitters.Launcher
                     var badge=PageTheme.Badge("Not checked",StatusTone.Neutral);
                     DockPanel.SetDock(badge,Dock.Right);top.Children.Add(badge);
                     var icon=new Border { Width=36,Height=36,Background=Brush("#1D3A54"),CornerRadius=new CornerRadius(6),HorizontalAlignment=HorizontalAlignment.Left,
-                        Child=new TextBlock { Text=i==0?"◇":"◈",FontSize=21,Foreground=Brush("#A7D9FA"),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center } };
+                        Child=new TextBlock { Text=i==0?"◇":"◈",FontSize=21,Foreground=Brush("#85D4FF"),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center } };
                     top.Children.Add(icon);content.Children.Add(top);
                     var cardTitle=Text(i==0?"Game installation":"Launcher",19);cardTitle.FontWeight=FontWeights.SemiBold;content.Children.Add(cardTitle);
                     var summary=PageTheme.Text("Ready for a file check",12,"#A9BDD0");summary.Margin=new Thickness(0,8,0,0);summary.MinHeight=36;content.Children.Add(summary);
@@ -140,7 +140,7 @@ namespace TimeSplitters.Launcher
             ViewLogs=Button("View logs ↗","MaintenanceLogs");ViewLogs.Margin=new Thickness(14,0,0,0);Ui.Tip(ViewLogs,"Open the local launcher log folder.");
             DockPanel.SetDock(ViewLogs,Dock.Right);bottom.Children.Add(ViewLogs);
             status=PageTheme.Text(diagnostics?"Filtered report only. Review the details before submitting on GitHub.":"Verification works offline · Repair requires internet and a closed game",11,"#9EB4C8");status.VerticalAlignment=VerticalAlignment.Center;bottom.Children.Add(status);footer.Children.Add(bottom);
-            progress=new ProgressBar { Minimum=0,Maximum=100,Height=3,Margin=new Thickness(0,12,0,0),Foreground=Brush("#86CDFF"),Background=Brush("#253D54"),BorderThickness=new Thickness(0) };
+            progress=new ProgressBar { Minimum=0,Maximum=100,Height=3,Margin=new Thickness(0,12,0,0),Foreground=Brush("#65C7FF"),Background=Brush("#204566"),BorderThickness=new Thickness(0) };
             footer.Children.Add(progress);Ui.Show(progress,false);
         }
         static void Result(TextBlock summary,Border badge,VerificationResult result)

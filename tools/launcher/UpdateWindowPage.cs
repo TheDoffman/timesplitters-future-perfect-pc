@@ -23,12 +23,12 @@ namespace TimeSplitters.Launcher
         public readonly UniformGrid Actions=new UniformGrid {Rows=1,Columns=1};
         public UpdateWindowPage(string heading,string status,string note)
         {
-            Ui.Theme(View);View.Background=Ui.Brush("#0B1420");
+            Ui.Theme(View);View.Background=Ui.Brush("#071321");
             var frame=new DockPanel {Margin=new Thickness(28,24,28,24)};View.Children.Add(frame);
-            var brand=new Border {BorderBrush=Ui.Brush("#2D455C"),BorderThickness=new Thickness(0,0,0,1),Padding=new Thickness(0,0,0,14),Child=PageTheme.Text("TIMESPLITTERS  /  FUTURE PERFECT",11,"#A7D9FA")};DockPanel.SetDock(brand,Dock.Top);frame.Children.Add(brand);
+            var brand=new Border {BorderBrush=Ui.Brush("#294E70"),BorderThickness=new Thickness(0,0,0,1),Padding=new Thickness(0,0,0,14),Child=PageTheme.Text("TIMESPLITTERS  /  FUTURE PERFECT",11,"#85D4FF")};DockPanel.SetDock(brand,Dock.Top);frame.Children.Add(brand);
             var title=new StackPanel {Margin=new Thickness(0,20,0,16)};Heading=PageTheme.Text(heading,25);title.Children.Add(Heading);DockPanel.SetDock(title,Dock.Top);frame.Children.Add(title);
             var footer=new StackPanel();DockPanel.SetDock(footer,Dock.Bottom);frame.Children.Add(footer);
-            Progress=new ProgressBar {Height=3,Minimum=0,Maximum=100,IsIndeterminate=true,Foreground=Ui.Brush("#86CDFF"),Background=Ui.Brush("#253D54")};footer.Children.Add(Progress);
+            Progress=new ProgressBar {Height=3,Minimum=0,Maximum=100,IsIndeterminate=true,Foreground=Ui.Brush("#65C7FF"),Background=Ui.Brush("#204566")};footer.Children.Add(Progress);
             Note=PageTheme.Text(note,12,"#9FB5C9");Note.Margin=new Thickness(0,16,0,0);footer.Children.Add(Note);
             Actions.Margin=new Thickness(0,16,0,0);footer.Children.Add(Actions);
             Status=PageTheme.Text(status,13,"#D5E2ED");

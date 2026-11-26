@@ -25,7 +25,7 @@ namespace TimeSplitters.Launcher
         {
             this.source=source;this.selected=selected;this.args=args;
             Title="TimeSplitters · Game storage";Width=620;MaxHeight=720;SizeToContent=SizeToContent.Height;CanResize=false;
-            WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#0B1420");
+            WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#071321");
             var panel=new StackPanel { Margin=new Thickness(28),Spacing=14 };
             panel.Children.Add(NativeWindow.Text("CHOOSE YOUR GAME FOLDER",22));
             panel.Children.Add(NativeWindow.Text("Keep your game, saves, settings, textures and logs separate from the app. You can then move or replace the app without moving your progress.",15));

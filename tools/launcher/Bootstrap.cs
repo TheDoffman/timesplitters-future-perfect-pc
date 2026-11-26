@@ -143,11 +143,11 @@ namespace TimeSplitters.Launcher
             Window = (Window)XamlReader.Parse(@"<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='TimeSplitters — Starting'
                 Width='620' Height='360' ResizeMode='NoResize' WindowStartupLocation='CenterScreen'
-                Background='#0B1420' Foreground='#E4EDF5' FontFamily='Georgia' ShowInTaskbar='True'>
+                Background='#071321' Foreground='#E4EDF5' FontFamily='Georgia' ShowInTaskbar='True'>
                 <Window.Resources>
                   <Style TargetType='Button'>
                     <Setter Property='Background' Value='#1B2C3E'/><Setter Property='Foreground' Value='#E4EDF5'/>
-                    <Setter Property='BorderBrush' Value='#405D76'/><Setter Property='Padding' Value='10,7'/>
+                    <Setter Property='BorderBrush' Value='#4779A0'/><Setter Property='Padding' Value='10,7'/>
                     <Setter Property='VerticalAlignment' Value='Center'/><Setter Property='Cursor' Value='Hand'/>
                     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Button'>
                       <Border x:Name='Face' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='1' CornerRadius='0' Padding='{TemplateBinding Padding}'>
@@ -161,12 +161,12 @@ namespace TimeSplitters.Launcher
                     </ControlTemplate></Setter.Value></Setter>
                   </Style>
                 </Window.Resources>
-                <Grid Background='#0B1420'><Grid Margin='28,24'>
+                <Grid Background='#071321'><Grid Margin='28,24'>
                   <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/></Grid.RowDefinitions>
-                  <Border BorderBrush='#2D455C' BorderThickness='0,0,0,1' Padding='0,0,0,14'><TextBlock Text='TIMESPLITTERS  /  FUTURE PERFECT' FontSize='11' Foreground='#A7D9FA'/></Border>
+                  <Border BorderBrush='#294E70' BorderThickness='0,0,0,1' Padding='0,0,0,14'><TextBlock Text='TIMESPLITTERS  /  FUTURE PERFECT' FontSize='11' Foreground='#85D4FF'/></Border>
                   <TextBlock x:Name='Heading' Grid.Row='1' Text='Checking launcher updates…' FontSize='25' FontWeight='Normal' Margin='0,20,0,0'/>
                   <ScrollViewer x:Name='StatusScroll' Grid.Row='2' MaxHeight='240' VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled' Margin='0,7,0,15'><TextBlock x:Name='Status' Text='Checking GitHub Releases.' FontSize='13' Foreground='#B4C7D8' TextWrapping='Wrap'/></ScrollViewer>
-                  <ProgressBar x:Name='Progress' Grid.Row='3' Height='3' IsIndeterminate='True' Background='#30485F' Foreground='#86CDFF' BorderThickness='0'/>
+                  <ProgressBar x:Name='Progress' Grid.Row='3' Height='3' IsIndeterminate='True' Background='#30485F' Foreground='#65C7FF' BorderThickness='0'/>
                   <StackPanel Grid.Row='4' Margin='0,18,0,0'>
                     <TextBlock x:Name='Version' Foreground='#8CA6BE' FontSize='10' Margin='0,0,0,10'/>
                     <UniformGrid Columns='3'>
@@ -174,7 +174,7 @@ namespace TimeSplitters.Launcher
                       <Button x:Name='Folder' Content='Open launcher folder' Visibility='Collapsed' MinHeight='38' Margin='4,0'/>
                       <Button x:Name='Logs' Content='View logs' Visibility='Collapsed' MinHeight='38' Margin='4,0,0,0'/>
                     </UniformGrid>
-                    <Button x:Name='Continue' Content='Open installed launcher' Background='#A7D9FA' Foreground='#091C2C' BorderBrush='#D6EDFF' MinHeight='38' HorizontalAlignment='Stretch' Margin='0,10,0,0'/>
+                    <Button x:Name='Continue' Content='Open installed launcher' Background='#85D4FF' Foreground='#091C2C' BorderBrush='#D6EDFF' MinHeight='38' HorizontalAlignment='Stretch' Margin='0,10,0,0'/>
                   </StackPanel>
                 </Grid></Grid>
               </Window>");

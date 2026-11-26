@@ -30,7 +30,7 @@ namespace TimeSplitters.Launcher
         readonly Border confirmation;CancellationTokenSource stop;
         public SavesPage(string root,bool preview,bool installationLockHeld=false)
         {
-            this.root=root;this.preview=preview;this.installationLockHeld=installationLockHeld;View.Margin=new Thickness(30,24,30,18);View.Background=PageTheme.Brush("#0B1420");Ui.Theme(View);
+            this.root=root;this.preview=preview;this.installationLockHeld=installationLockHeld;View.Margin=new Thickness(30,24,30,18);View.Background=PageTheme.Brush("#071321");Ui.Theme(View);
             var dock=new DockPanel();View.Children.Add(dock);
             var footer=new DockPanel {Margin=new Thickness(0,14,0,0)};DockPanel.SetDock(footer,Dock.Bottom);dock.Children.Add(footer);
             Cancel=Button("Cancel operation","CancelSaveOperation");DockPanel.SetDock(Cancel,Dock.Right);footer.Children.Add(Cancel);Ui.Show(Cancel,false);
@@ -56,7 +56,7 @@ namespace TimeSplitters.Launcher
             PageTheme.Details(body,"About backups & storage",
                 PageTheme.Text("Backups remain on this computer until you remove them. Empty virtual-disk regions are omitted, so logical size may exceed storage used.",12),
                 PageTheme.Text("Automatic backups run before game updates and restores. Game files, settings and your ISO are kept.",12)).Name="SaveStorageDetails";
-            confirmation=new Border {Background=PageTheme.Brush("#122233"),BorderBrush=PageTheme.Brush("#86CDFF"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(7),Padding=new Thickness(28)};
+            confirmation=new Border {Background=PageTheme.Brush("#10243B"),BorderBrush=PageTheme.Brush("#65C7FF"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(7),Padding=new Thickness(28)};
             View.Children.Add(confirmation);Ui.Show(confirmation,false);
             Choices.SelectionChanged+=(s,e)=>Select();Refresh.Click+=(s,e)=>Reload();
             Backup.Click+=async(s,e)=>await Run(async token=> {

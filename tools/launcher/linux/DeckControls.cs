@@ -44,7 +44,7 @@ namespace TimeSplitters.Launcher
             this.window=window;this.root=root;this.scope=scope;this.enabled=enabled;this.back=back;
             var content=(Control)window.Content;window.Content=null;host=new Grid();host.Children.Add(content);window.Content=host;
             overlay=new Border {Background=PageTheme.Brush("#FA0B1420"),IsVisible=false,Padding=new Thickness(24)};host.Children.Add(overlay);
-            outline=new Border {BorderBrush=PageTheme.Brush("#A7D9FA"),BorderThickness=new Thickness(2),IsHitTestVisible=false,IsVisible=false,HorizontalAlignment=HorizontalAlignment.Left,VerticalAlignment=VerticalAlignment.Top};host.Children.Add(outline);
+            outline=new Border {BorderBrush=PageTheme.Brush("#85D4FF"),BorderThickness=new Thickness(2),IsHitTestVisible=false,IsVisible=false,HorizontalAlignment=HorizontalAlignment.Left,VerticalAlignment=VerticalAlignment.Top};host.Children.Add(outline);
             timer.Tick+=(s,e)=>Poll();window.Opened+=(s,e)=>{LinuxHandheld.Window(window);timer.Start();};window.Closed+=(s,e)=>Dispose();
             window.LayoutUpdated+=(s,e)=>{LinuxHandheld.Style(host);if(gamepadFocus)FocusOutline();};
             window.AddHandler(InputElement.PointerPressedEvent,(s,e)=>{gamepadFocus=false;outline.IsVisible=false;},RoutingStrategies.Tunnel);

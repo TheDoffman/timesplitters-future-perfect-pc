@@ -42,7 +42,7 @@ def generate(source,destination):
   style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':selector})
   for key,value in values.items():ET.SubElement(style,'{'+A+'}Setter',{'Property':key,'Value':value})
  root.insert(1,styles)
- root.find('{'+W+'}Grid').set('Background','#0B1420')
+ root.find('{'+W+'}Grid').set('Background','#071321')
  for element in root.iter():
   if element.tag.startswith('{'+W+'}'):element.tag='{'+A+'}'+local(element.tag)
   for key,value in list(element.attrib.items()):

@@ -81,7 +81,7 @@ namespace TimeSplitters.Launcher
             Title = "TimeSplitters · Choose installation folder";
             Width = 600; SizeToContent = SizeToContent.Height; CanResize = false;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            Background = Brush.Parse("#0B1420");
+            Background = Brush.Parse("#071321");
             var panel = new StackPanel { Margin = new Thickness(28), Spacing = 12 };
             panel.Children.Add(NativeWindow.Text("CHOOSE YOUR LAUNCHER FOLDER", 22));
             panel.Children.Add(NativeWindow.Text(NativeInstallation.Guidance, 15));

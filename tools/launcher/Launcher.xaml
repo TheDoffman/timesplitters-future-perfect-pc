@@ -1,17 +1,17 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="TimeSplitters · Future Perfect" Width="1152" Height="772" MinWidth="1000" MinHeight="720"
-        WindowStartupLocation="CenterScreen" Background="#0B1420" Foreground="#E4EDF5" FontFamily="Georgia"
+        WindowStartupLocation="CenterScreen" Background="#071321" Foreground="#E4EDF5" FontFamily="Georgia"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
   <Window.Resources>
     <SolidColorBrush x:Key="Muted" Color="#B4C7D8"/>
-    <SolidColorBrush x:Key="Accent" Color="#86CDFF"/>
+    <SolidColorBrush x:Key="Accent" Color="#65C7FF"/>
     <LinearGradientBrush x:Key="PlayChrome" StartPoint="0,0" EndPoint="0,1">
       <GradientStop Color="#C3E5FC" Offset="0"/><GradientStop Color="#96CFF2" Offset="1"/>
     </LinearGradientBrush>
     <Style x:Key="NavigationFocus" TargetType="Control">
       <Setter Property="Template"><Setter.Value><ControlTemplate>
-        <Border BorderBrush="#A7D9FA" BorderThickness="2" Margin="-3" IsHitTestVisible="False"/>
+        <Border BorderBrush="#85D4FF" BorderThickness="2" Margin="-3" IsHitTestVisible="False"/>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="Button">
@@ -67,12 +67,12 @@
           </StackPanel>
           <StackPanel x:Name="SidebarBrandFallback">
             <TextBlock Text="TIMESPLITTERS" FontFamily="Georgia" FontWeight="Bold" FontSize="16"/>
-            <TextBlock Text="FUTURE PERFECT" FontSize="11" Foreground="#86CDFF" Margin="0,4,0,0"/>
+            <TextBlock Text="FUTURE PERFECT" FontSize="11" Foreground="#65C7FF" Margin="0,4,0,0"/>
           </StackPanel>
         </StackPanel>
         <StackPanel Grid.Row="2">
           <TextBlock Text="NAVIGATION" Style="{StaticResource Label}" Margin="12,0,0,10"/>
-          <Button x:Name="HomeNav" Style="{StaticResource Nav}" Background="#1D3A55" Foreground="#86CDFF" ToolTip="Game, release updates and setup" AutomationProperties.Name="Home">
+          <Button x:Name="HomeNav" Style="{StaticResource Nav}" Background="#1D3A55" Foreground="#65C7FF" ToolTip="Game, release updates and setup" AutomationProperties.Name="Home">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
               <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M3,11 L12,3 L21,11 M5,10 L5,21 L10,21 L10,15 L14,15 L14,21 L19,21 L19,10"/></Canvas></Viewbox>
@@ -148,20 +148,20 @@
             <Path Stroke="#36536E" StrokeThickness="1" Data="M0,40 L390,40 M0,85 L390,85 M0,130 L390,130 M0,175 L390,175 M0,220 L390,220 M45,0 L45,264 M100,0 L100,264 M155,0 L155,264 M210,0 L210,264 M265,0 L265,264 M320,0 L320,264 M375,0 L375,264" Opacity="0.5"/>
             <Ellipse Canvas.Left="89" Canvas.Top="-59" Width="365" Height="365" Stroke="#4C6C89" StrokeThickness="1"/>
             <Ellipse Canvas.Left="113" Canvas.Top="-35" Width="317" Height="317" Stroke="#8EC7EF" StrokeThickness="2" StrokeDashArray="18 2 1 3"/>
-            <Ellipse Canvas.Left="137" Canvas.Top="-11" Width="269" Height="269" Stroke="#86CDFF" StrokeThickness="1" Opacity="0.75"/>
+            <Ellipse Canvas.Left="137" Canvas.Top="-11" Width="269" Height="269" Stroke="#65C7FF" StrokeThickness="1" Opacity="0.75"/>
             <Ellipse Canvas.Left="155" Canvas.Top="7" Width="233" Height="233" Stroke="#6386A2" StrokeThickness="12" StrokeDashArray="0.12 1.8"/>
             <Ellipse Canvas.Left="172" Canvas.Top="24" Width="199" Height="199" Stroke="#577F9F" StrokeThickness="1"/>
             <Ellipse Canvas.Left="190" Canvas.Top="42" Width="163" Height="163">
               <Ellipse.Fill><RadialGradientBrush><GradientStop Color="#638EAD"/><GradientStop Color="#244D70" Offset="0.55"/><GradientStop Color="#0D1C2B" Offset="1"/></RadialGradientBrush></Ellipse.Fill>
             </Ellipse>
-            <Path Stroke="#86CDFF" StrokeThickness="1.5" Data="M271,22 L271,69 M271,177 L271,224 M170,123 L217,123 M325,123 L372,123 M253,123 L289,123 M271,105 L271,141"/>
+            <Path Stroke="#65C7FF" StrokeThickness="1.5" Data="M271,22 L271,69 M271,177 L271,224 M170,123 L217,123 M325,123 L372,123 M253,123 L289,123 M271,105 L271,141"/>
             <Path Fill="#132A3D" Stroke="#B5CADB" StrokeThickness="1" Data="M243,124 L255,93 L254,74 L262,61 L276,60 L287,71 L284,94 L300,105 L304,127 L322,146 L315,154 L289,137 L290,178 L302,221 L282,224 L267,185 L260,223 L240,221 L247,174 L246,143 L220,154 L214,145 Z"/>
           </Canvas>
           <StackPanel Margin="28,25,0,20" Width="435" HorizontalAlignment="Left">
             <TextBlock Text="TIMESPLITTERS" FontFamily="Georgia" FontWeight="Bold" FontStyle="Italic" FontSize="43" Margin="-3,10,0,0">
               <TextBlock.Foreground><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#F0F8FF"/><GradientStop Color="#C5D4E1" Offset="0.48"/><GradientStop Color="#7F97AE" Offset="0.52"/><GradientStop Color="#E1EBF4" Offset="1"/></LinearGradientBrush></TextBlock.Foreground>
             </TextBlock>
-            <TextBlock Text="F U T U R E   P E R F E C T" FontFamily="Georgia" FontWeight="Bold" FontSize="20" Foreground="#86CDFF" Margin="0,-1,0,0"/>
+            <TextBlock Text="F U T U R E   P E R F E C T" FontFamily="Georgia" FontWeight="Bold" FontSize="20" Foreground="#65C7FF" Margin="0,-1,0,0"/>
             <StackPanel Orientation="Horizontal" Margin="0,19,0,0">
               <Border BorderBrush="#46637D" BorderThickness="1" Padding="8,4" CornerRadius="2"><TextBlock Text="WINDOWS x64" FontSize="10" Foreground="#CAD9E6"/></Border>
               <Border BorderBrush="#46637D" BorderThickness="1" Padding="8,4" CornerRadius="2" Margin="7,0,0,0"><TextBlock Text="NATIVE PC PORT" FontSize="10" Foreground="#CAD9E6"/></Border>
@@ -186,7 +186,7 @@
                      AutomationProperties.Name="TimeSplitters Future Perfect"/>
               <StackPanel x:Name="HeroTitleFallback" VerticalAlignment="Center">
                 <TextBlock Text="TIMESPLITTERS" FontFamily="Georgia" FontWeight="Bold" FontStyle="Italic" FontSize="29" Foreground="#E4EDF5"/>
-                <TextBlock Text="FUTURE PERFECT" FontFamily="Georgia" FontSize="18" Foreground="#A7D9FA" Margin="0,7,0,0"/>
+                <TextBlock Text="FUTURE PERFECT" FontFamily="Georgia" FontSize="18" Foreground="#85D4FF" Margin="0,7,0,0"/>
               </StackPanel>
             </Grid>
           </Grid>
@@ -231,13 +231,13 @@
             </Border>
           </Grid>
         </Border>
-        <Border Grid.Column="2" Background="#102031" BorderBrush="#2D455C" BorderThickness="1" CornerRadius="7" Padding="20,16">
+        <Border Grid.Column="2" Background="#102031" BorderBrush="#294E70" BorderThickness="1" CornerRadius="7" Padding="20,16">
           <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto" MinHeight="42"/><RowDefinition Height="Auto" MinHeight="108"/><RowDefinition Height="Auto" MinHeight="72"/><RowDefinition Height="Auto" MinHeight="80"/></Grid.RowDefinitions>
             <DockPanel>
               <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                <Viewbox Width="16" Height="16" Margin="0,0,7,0"><Canvas Width="24" Height="24"><Path x:Name="UpdateStateIcon" Stroke="#A7D9FA" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/></Canvas></Viewbox>
-                <TextBlock x:Name="UpdateStateLabel" FontSize="11" Foreground="#A7D9FA" VerticalAlignment="Center"/>
+                <Viewbox Width="16" Height="16" Margin="0,0,7,0"><Canvas Width="24" Height="24"><Path x:Name="UpdateStateIcon" Stroke="#85D4FF" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/></Canvas></Viewbox>
+                <TextBlock x:Name="UpdateStateLabel" FontSize="11" Foreground="#85D4FF" VerticalAlignment="Center"/>
               </StackPanel>
               <TextBlock Text="UPDATES" Style="{StaticResource Label}"/>
             </DockPanel>
@@ -245,8 +245,8 @@
             <StackPanel Grid.Row="2" Margin="0,7,0,14">
               <TextBlock x:Name="ReleaseDescription" Text="Game releases from GitHub." FontSize="13" Foreground="#B4C7D8"/>
               <WrapPanel Margin="0,10,0,0">
-                <Button x:Name="GameVersionsButton" Content="Game versions" Margin="0,0,18,0" Padding="0,4" BorderThickness="0" Background="Transparent" Foreground="#A7D9FA" FontSize="13" ToolTip="Install a specific published game release for comparisons and bug reproduction"/>
-                <Button x:Name="ReleaseNotesButton" Content="What's new" Padding="0,4" Background="Transparent" BorderThickness="0" Foreground="#A7D9FA" FontSize="13"/>
+                <Button x:Name="GameVersionsButton" Content="Game versions" Margin="0,0,18,0" Padding="0,4" BorderThickness="0" Background="Transparent" Foreground="#85D4FF" FontSize="13" ToolTip="Install a specific published game release for comparisons and bug reproduction"/>
+                <Button x:Name="ReleaseNotesButton" Content="What's new" Padding="0,4" Background="Transparent" BorderThickness="0" Foreground="#85D4FF" FontSize="13"/>
               </WrapPanel>
             </StackPanel>
             <StackPanel Grid.Row="3">
@@ -254,8 +254,8 @@
                 <ContentControl x:Name="GameChannelPickerHost"/>
                 <TextBlock Text="Updates preserve saves and settings." Foreground="#B4C7D8" FontSize="11"/>
               </StackPanel>
-              <TextBlock x:Name="TransferDetails" Visibility="Collapsed" FontSize="13" Foreground="#A7D9FA" Margin="0,10,0,8"/>
-              <ProgressBar x:Name="UpdateProgress" Minimum="0" Maximum="100" Height="3" Margin="0,0,0,6" Background="#253D54" Foreground="#A7D9FA" Visibility="Hidden" BorderThickness="0" AutomationProperties.Name="Release update progress"/>
+              <TextBlock x:Name="TransferDetails" Visibility="Collapsed" FontSize="13" Foreground="#85D4FF" Margin="0,10,0,8"/>
+              <ProgressBar x:Name="UpdateProgress" Minimum="0" Maximum="100" Height="3" Margin="0,0,0,6" Background="#204566" Foreground="#85D4FF" Visibility="Hidden" BorderThickness="0" AutomationProperties.Name="Release update progress"/>
             </StackPanel>
             <Grid x:Name="UpdateActions" Grid.Row="4" Margin="0,10,0,0" VerticalAlignment="Top"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/></Grid.ColumnDefinitions>
               <Button x:Name="UpdateButton" Content="Install release" IsEnabled="False" Padding="8,10"/>
@@ -265,8 +265,8 @@
             <StackPanel x:Name="RecoveryActions" Grid.Row="4" Margin="0,10,0,0" Visibility="Collapsed">
               <Button x:Name="RetryButton" Content="Retry" Padding="7,10"/>
               <WrapPanel Margin="0,5,0,0">
-                <Button x:Name="RecoveryRepairButton" Content="Repair / Verify" Padding="0,4" BorderThickness="0" Background="Transparent" Foreground="#A7D9FA" Margin="0,0,16,0"/>
-                <Button x:Name="RecoveryLogsButton" Content="View logs ↗" Padding="0,4" BorderThickness="0" Background="Transparent" Foreground="#A7D9FA"/>
+                <Button x:Name="RecoveryRepairButton" Content="Repair / Verify" Padding="0,4" BorderThickness="0" Background="Transparent" Foreground="#85D4FF" Margin="0,0,16,0"/>
+                <Button x:Name="RecoveryLogsButton" Content="View logs ↗" Padding="0,4" BorderThickness="0" Background="Transparent" Foreground="#85D4FF"/>
               </WrapPanel>
             </StackPanel>
           </Grid>
@@ -283,7 +283,7 @@
             <Button x:Name="LogsButton" Content="View logs ↗" FontSize="11" Foreground="#A5BDD1" Margin="14,0,0,0" Padding="0" BorderThickness="0" Background="Transparent"/>
           </StackPanel>
         </Grid>
-        <ProgressBar x:Name="OperationProgress" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Background="#253D54" Foreground="#86CDFF" BorderThickness="0" Height="3"/>
+        <ProgressBar x:Name="OperationProgress" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Background="#204566" Foreground="#65C7FF" BorderThickness="0" Height="3"/>
       </Grid>
     </Grid>
     <ContentControl x:Name="NewsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
@@ -292,8 +292,8 @@
     <ContentControl x:Name="SettingsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="SavesHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
-    <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#2C435A" BorderThickness="0,1,0,0" Background="#0D1926" Padding="20,0">
-      <DockPanel><TextBlock x:Name="TextureUpdateStatus" DockPanel.Dock="Right" FontSize="11" Foreground="#86CDFF" VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed"/><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="10" Foreground="#A9BDD0" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     US XBOX GAME DATA REQUIRED" FontSize="10" Foreground="#A9BDD0" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
+    <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#295277" BorderThickness="0,1,0,0" Background="#0D1926" Padding="20,0">
+      <DockPanel><TextBlock x:Name="TextureUpdateStatus" DockPanel.Dock="Right" FontSize="11" Foreground="#65C7FF" VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed"/><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="10" Foreground="#A9BDD0" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     US XBOX GAME DATA REQUIRED" FontSize="10" Foreground="#A9BDD0" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
     </Border>
   </Grid>
 </Window>
