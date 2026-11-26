@@ -69,3 +69,22 @@ or recovery, reproduce the pattern with independently varied RTT, jitter, loss,
 reordering, burst delivery and local frame stalls. Existing constant-delay runs
 are not physical-WAN or jitter/loss acceptance. Never infer that these counters
 identify the historical corrupted weapon-record producer.
+
+## Vehicle acceptance and the current Online route
+
+`TSFP_ONLINE_TEST_COMMAND` makes `online_activate` in
+`src/interface/pc_display_menu.c` bypass the native multiplayer browser. The
+default `test-online-bot-motion.py` route uses an isolated v2 directory and
+direct UDP. Its gameplay observations do not validate the current Community
+menu, v3 room coordination or relay delivery. Current-service acceptance must
+identify the actual native menu path and the service-advertised transport;
+directory HTTP RTT is still not gameplay latency.
+
+The supported US Siberia jeep is class `0x400000`. Its rigid-body serialization
+uses original `35B990`/`35BB10`, with local-driver admission through `177CE0`.
+`35DB60` and `35BD70` traverse the `7A20C0` list. The separate class
+`0x10000000`, registry `78B720` and `358A90`/`358BF0` message44 path are not
+evidence about this jeep. A read-only vehicle probe must validate the physics
+handle, entity class and driver ownership, and require actual travel. A seated
+player against a pillar is not a moving-driver acceptance case. Asynchronous
+body/position reads do not establish packet arrival cadence or rendered pacing.

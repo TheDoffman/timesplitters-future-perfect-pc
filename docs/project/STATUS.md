@@ -47189,3 +47189,55 @@ Manual in-game visual/restart acceptance was not completed: the computer-use Jav
 ## Renderer option alignment (2026-11-23)
 
 User confirmed Renderer should match the other advanced options, superseding immediate Apply & Restart. Plain Renderer/Vulkan/OpenGL labels, the existing Requires restart suffix, standard Apply and Later / Restart Now are now shared with MSAA/supersampling. Saved versus running renderer state is separate; Later retains the selection across menu reopen without nagging. Focused Windows menu/process tests pass9 with2 native-only skips. Supported Windows Build passes all mandatory checks and matching crash symbols (logs/renderer-option-alignment-build.log). Supported Linux game/MMIO build passes; actual GTK settings read/save/reload retains unknown launcher properties. Linux focused checks pass3 with8 Windows-only skips. Actual isolated Linux game capture confirms Vulkan/OpenGL choices, the Requires restart suffix and the plain Apply button at640x480; images are ignored under build/renderer-menu-preview/aligned-menu.png. The bounded session ended before the dialog capture: Apply/Later/reopen/Restart Now behavior is verified by the production menu callback fixture, not claimed as a completed live process round trip. Native Mac runtime acceptance remains pending.
+
+
+## 2026-11-25: Issue #332 Siberia vehicle reproduction
+
+Investigation on `fix/332-siberia-vehicle-sync`, source baseline `9df2e580c`.
+Windows x64 tested the verified #605 executable
+`a1c845e52af5bbc3c95f9929fff67295aac53815e67e47237cdbc430a0f94cf2`,
+with supported-US-XBE/game-content verification and isolated saves, controls
+and display files. No engine fix was made or published. Issue #332 remains open.
+
+The initial legacy test flag bypassed the current native multiplayer browser
+and used a local v2/direct fixture. Additional runs used the actual native Online browser, Invite Only
+admission and current community v3 relay. Service listings confirmed two
+players, relay transport, active Siberia (scene 53), and the owned companions
+ran with `--native`. No private/community service source was imported.
+
+The original jeep is class `0x400000`; the separately investigated
+class `0x10000000` registry/message44 path was not its replication path.
+See the vehicle acceptance section in the network-sync telemetry guide.
+
+| Connection and settings (host/guest) | Driver | Driver travel | Maximum async peer-position gap |
+| --- | --- | ---: | ---: |
+| Local direct, Original60/Original60 | Guest | 64.489 | 0.199 |
+| Local direct, native120/native240 target | Host | 28.094 | 0.114 |
+| Local direct, native120/native240 target | Guest | 25.861 | 0.139 |
+| Current community relay, Original60/Original60 | Host | 28.300 | 0.493 |
+| Current community relay, Original60/Original60 | Guest | 28.288 | 0.426 |
+
+Distances are game-world units. The first direct window lasted 10 seconds;
+the other windows lasted 4 seconds, including 2 seconds of held throttle.
+Both current-community driving roles had a held-throttle 95th-percentile
+position gap near 0.197 units. Native host updates averaged about 120/s,
+while the guest targeted 240 but averaged 180-188/s with both games running;
+this is not sustained 240 FPS acceptance. The readings are asynchronous local
+process body/position observations, not exact packet-arrival timestamps,
+completed-frame, GPU/scanout or visual smoothness measurements.
+
+These bounded routes did not show large position divergence. They do not
+establish a cause for the old v0.3.2 report or prove it resolved. No old-release
+comparison, injected jitter/loss, two-physical-host WAN, sustained 240 or
+Mac/Linux gameplay acceptance was performed. A stationary host in a jeep
+against a bridge pillar was rejected as driving evidence; failed navigation
+and menu-only runs also do not count. Personal settings/saves and unrelated
+game processes were preserved.
+
+Existing cadence checks passed: `tests/gameplay/test_native_timing.py -k
+native_network_cadence` (3 passed, 146 deselected), including its causal
+mutation controls. No new behavior or platform adapter was introduced.
+Ignored receipts: `logs/332-measurements.json`, `logs/332-cadence-tests.log`,
+`logs/online-bots-issue332-community9/community-route.json` and
+`logs/online-bots-issue332-community11/community-route.json`. The exploratory
+probe scripts are ignored and are not maintained acceptance tooling.
