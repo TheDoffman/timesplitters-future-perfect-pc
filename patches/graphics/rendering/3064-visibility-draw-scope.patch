@@ -1,0 +1,42 @@
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -1299,7 +1299,9 @@
+ 
+     rhi_set_topology(topology);
+     stage0_probe();
++    visibility_guest_draw_begin();
+     rhi_draw(vertex_count, StartVertex);
++    visibility_guest_draw_end();
+     return S_OK;
+ }
+ 
+@@ -1321,7 +1323,9 @@
+ 
+     rhi_set_topology(topology);
+     stage0_probe();
++    visibility_guest_draw_begin();
+     rhi_draw_indexed(index_count, StartIndex, (int32_t)g_cur_ib_base_vertex);
++    visibility_guest_draw_end();
+     return S_OK;
+ }
+ 
+@@ -1402,7 +1406,9 @@
+ 
+     rhi_set_topology(topology);
+     stage0_probe();
++    visibility_guest_draw_begin();
+     rhi_draw(vertex_count, 0);
++    visibility_guest_draw_end();
+ 
+     /* Restore previous VB binding if any */
+     if (g_cur_vb) {
+@@ -1456,7 +1462,9 @@
+ 
+     rhi_set_topology(topology);
+     stage0_probe();
++    visibility_guest_draw_begin();
+     rhi_draw_indexed(index_count, 0, 0);
++    visibility_guest_draw_end();
+ 
+     /* Restore previous bindings */
+     if (g_cur_vb) {

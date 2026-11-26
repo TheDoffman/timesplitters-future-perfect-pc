@@ -1037,4 +1037,6 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 [RTL](guest-stack-trace.md), [host policy](execution-host.md), [context](context-execution.md).
 Mac omits2620/2625; Story uses production guards.
 
-[PR check names and advisory summary](release-speed.md#pr-feedback-scheduling).
+[PR](release-speed.md).
+
+Coronas: [tests](hud-sizing.md#world-light-coronas).

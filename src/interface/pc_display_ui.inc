@@ -441,6 +441,14 @@ void pc_display_actor_name(void (*original)(void))
 void pc_display_aim_primitive(void (*original)(void),unsigned kind)
 {
     uint32_t frame=g_esp,caller=WORD_AT(frame),offset=4,points=2;
+    /* US sub_00017810 draws world-light coronas in projected screen pixels.
+     * Close lights can extend far beyond the viewport; they are not HUD art.
+     * Preserve both coloured and neutral glow layers, including their size,
+     * UVs and alpha. Flush each layer before restoring the enclosing scope. */
+    if(kind==0 && (caller==0x00017941u || caller==0x000179BCu) && aim_full_view()) {
+        int old=ui_placement;uint32_t old_tag=ui_tag;
+        ui_place(1,caller);original();ui_place(old,old_tag);return;
+    }
     int anchor=1,matched=0,actor_icon=0;
     if(kind==2) menu_character_quad();
     if(kind==0) {

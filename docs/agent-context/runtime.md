@@ -4,7 +4,7 @@
 
 [Bob](weapon-bob.md);[Uplink](native-uplink.md).
 [UI](controls-options.md); [feed](../development/arcade-kill-feed.md).
-[Sun](fidelity-comparison.md); [Aim](hud-sizing.md).
+[Sun/query scopes3064](fidelity-comparison.md); [Aim](hud-sizing.md).
 [Depth](native-effect-depth.md).
 [Linux](linux-game.md); [MSAA](smaa.md).
 [MP hooks](multiplayer-exit.md)

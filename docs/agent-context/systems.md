@@ -399,11 +399,12 @@ over the actor's projected bounds. In a full widescreen view it uses full-view
 placement, with deferred draws flushed before restoring the surrounding UI
 placement. Guest coordinates, UVs/tint and the five preceding blur passes stay
 unchanged. The separate humanoid ghost composite retains its existing guarded
-call site. Original 4:3 and split-view paths keep their existing behavior.
-`tests/graphics/test_ghost_actor_overlay.py` covers placement, deferred batches, ABI,
-both platform wrappers and a local supported-US-routine check; see build/test
-for test prerequisites. Windows scene confirmation is recorded in `docs/project/STATUS.md`;
+call site. 4:3/split views are unchanged.
+`test_ghost_actor_overlay.py` covers placement, deferred batches, ABI,
+both host wrappers and the supported US routine (see build/test prerequisites). Windows scene confirmation is recorded in `docs/project/STATUS.md`;
 native Mac visual validation remains pending under MAC-036.
+
+World coronas: [placement](hud-sizing.md#world-light-coronas).
 
 ## State and data boundaries
 
