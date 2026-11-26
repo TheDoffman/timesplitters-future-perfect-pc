@@ -1,3 +1,16 @@
+## Launcher coordinated colors (2026-11-25)
+
+**Implemented locally; native UI verified.** On task base9df2e580c, shared themes,
+pages and existing WPF/Avalonia adapters now use deeper navy surfaces and richer
+blue actions/focus. No new platform behavior or duplicated settings model.
+Original artwork and Georgia/native serif fallbacks remain. Mac66/Linux68 UI
+groups and60 page/size renders each pass; Mac build/signing and Linux package
+preservation pass. Windows compiles/renders and passes scoped Play/focus checks;
+full updater/shared/appearance suites are blocked by unrelated running games,
+with the unchanged serif build reproducing the appearance failure. Physical Deck,
+Retina/multi-monitor and Mac package lifecycle were not rerun. Source remains
+local/uncommitted; see STATUS.md and launcher-appearance.md for measured scope.
+
 ## MAC-001 follow-up: mission computer confirmation (#605, 2026-11-25)
 
 **Implemented locally; CPU fixture verified on native Mac.** Shared terminal input

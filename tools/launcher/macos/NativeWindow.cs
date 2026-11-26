@@ -100,7 +100,7 @@ namespace TimeSplitters.Launcher
         void ShowConsole(){Maintenance();maintenance.SelectConsole();}
         void Page(string name){
             if(name!="SettingsHost"&&settings!=null)settings.DismissPrompt();
-            foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost"),("SavesNav","SavesHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
+            foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost"),("SavesNav","SavesHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#65C7FF":"#DFE9F2");}
             foreach(var p in new[]{"CommandCenter","NewsHost","SettingsHost","MaintenanceHost","VersionsHost","SavesHost"})Find<Control>(p).IsVisible=p==name;appearance?.Page(name);}
         void OpenFolder(string name){var path=Core.PathIn(root,name);if(!Directory.Exists(path)){Status("This folder has not been created yet.");return;}NativeHost.Open(path);}
         void Artwork()

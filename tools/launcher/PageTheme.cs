@@ -26,7 +26,7 @@ namespace TimeSplitters.Launcher
         public static TextBlock Text(string text,int size,string color="#E4EDF5")
         { return new TextBlock { Text=text,FontSize=size,Foreground=Brush(color),TextWrapping=TextWrapping.Wrap }; }
         public static Border Card(UIElement child)
-        { return new Border { Background=Brush("#122233"),BorderBrush=Brush("#2D455C"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(7),Padding=new Thickness(16),Child=child }; }
+        { return new Border { Background=Brush("#10243B"),BorderBrush=Brush("#294E70"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(7),Padding=new Thickness(16),Child=child }; }
         public static StackPanel Section(Panel parent,string title,string description)
         {
             var body=new StackPanel();var heading=Text(title,17);heading.FontWeight=FontWeights.SemiBold;body.Children.Add(heading);
@@ -43,10 +43,10 @@ namespace TimeSplitters.Launcher
         public static StackPanel Header(string category,string title,string description)
         {
             var header=new StackPanel {Margin=new Thickness(0,0,0,10)};
-            var eyebrow=Text(category,11,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;header.Children.Add(eyebrow);
+            var eyebrow=Text(category,11,"#65C7FF");eyebrow.FontWeight=FontWeights.SemiBold;header.Children.Add(eyebrow);
             var heading=Text(title,28);heading.FontWeight=FontWeights.SemiBold;heading.Margin=new Thickness(0,5,0,7);header.Children.Add(heading);
             header.Children.Add(Text(description,13,"#AFC3D5"));
-            header.Children.Add(new Border {Height=1,Background=Brush("#2D455C"),Margin=new Thickness(0,16,0,12)});
+            header.Children.Add(new Border {Height=1,Background=Brush("#294E70"),Margin=new Thickness(0,16,0,12)});
             return header;
         }
         public static Border Badge(string label,StatusTone tone=StatusTone.Info)
@@ -59,13 +59,13 @@ namespace TimeSplitters.Launcher
         {
             var text=(TextBlock)badge.Child;text.Text=label;
             string ink=tone==StatusTone.Success?"#A6E6D5":tone==StatusTone.Warning?"#FFDAA6":tone==StatusTone.Info?"#B4DFFF":"#B9CAD9";
-            text.Foreground=Brush(ink);badge.Background=Brush(tone==StatusTone.Success?"#173D3B":tone==StatusTone.Warning?"#423322":tone==StatusTone.Info?"#1B3852":"#213245");
-            badge.BorderBrush=Brush(tone==StatusTone.Success?"#3D7069":tone==StatusTone.Warning?"#806441":tone==StatusTone.Info?"#3B6281":"#40556B");
+            text.Foreground=Brush(ink);badge.Background=Brush(tone==StatusTone.Success?"#173D3B":tone==StatusTone.Warning?"#423322":tone==StatusTone.Info?"#143E62":"#213245");
+            badge.BorderBrush=Brush(tone==StatusTone.Success?"#3D7069":tone==StatusTone.Warning?"#806441":tone==StatusTone.Info?"#3476A5":"#40556B");
         }
         public static void Primary(Button button)
-        { button.Background=Brush("#A7D9FA");button.Foreground=Brush("#0B2337");button.BorderBrush=Brush("#D6EBFA"); }
+        { button.Background=Brush("#85D4FF");button.Foreground=Brush("#06223B");button.BorderBrush=Brush("#C8ECFF"); }
         public static void Secondary(Button button)
-        { button.Background=Brush("#1C3349");button.Foreground=Brush("#DFEAF4");button.BorderBrush=Brush("#405D76"); }
+        { button.Background=Brush("#173A59");button.Foreground=Brush("#DFEAF4");button.BorderBrush=Brush("#4779A0"); }
 #if !MACOS && !LINUX
         public static ResourceDictionary Tabs() { return Ui.LoadTheme("TabsTheme.xaml"); }
 #endif

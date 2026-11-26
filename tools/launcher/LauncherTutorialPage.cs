@@ -70,10 +70,10 @@ namespace TimeSplitters.Launcher
             this.root=root;this.returning=returning;this.persist=persist;
             try{var data=Read();setupPending=data.ContainsKey("setupPending")&&Object.Equals(data["setupPending"],true);}catch(Exception){}
             setup=!returning||setupPending;
-            View=new Border {Name="LauncherTutorialCard",MaxWidth=460,Padding=new Thickness(24),Background=Ui.Brush("#101E2D"),BorderBrush=Ui.Brush("#405D76"),BorderThickness=new Thickness(1),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center};Ui.Theme(View);
+            View=new Border {Name="LauncherTutorialCard",MaxWidth=460,Padding=new Thickness(24),Background=Ui.Brush("#101E2D"),BorderBrush=Ui.Brush("#4779A0"),BorderThickness=new Thickness(1),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center};Ui.Theme(View);
             var frame=new DockPanel();View.Child=frame;
             var footer=new StackPanel {Margin=new Thickness(0,20,0,0)};DockPanel.SetDock(footer,Dock.Bottom);frame.Children.Add(footer);
-            progress=new ProgressBar {Minimum=0,Maximum=StepCount,Height=3,Foreground=Ui.Brush("#86CDFF"),Background=Ui.Brush("#253D54"),Margin=new Thickness(0,0,0,18)};footer.Children.Add(progress);
+            progress=new ProgressBar {Minimum=0,Maximum=StepCount,Height=3,Foreground=Ui.Brush("#65C7FF"),Background=Ui.Brush("#204566"),Margin=new Thickness(0,0,0,18)};footer.Children.Add(progress);
             Explore=Action("Show me around","TutorialExplore");Explore.Margin=new Thickness(3,0,3,10);footer.Children.Add(Explore);
             Explore.Click+=(s,e)=>{
                 if(!IsOpen||!setup||Index!=3||!ready)return;
@@ -85,10 +85,10 @@ namespace TimeSplitters.Launcher
             Skip.Click+=(s,e)=>Dismiss();Next.Click+=(s,e)=>{
                 if(setup){if(Index==0){setupPending=true;SavePreference(false);Index=SetupIndex;Render();}else if(Index==3){Dismiss();if(SetupRequested!=null)SetupRequested("play");}else RequestSetup(Index==1?"install":dataPresent?"review":"iso");}
                 else if(Index==StepCount)Dismiss();else{Index++;Render();}};
-            var body=new StackPanel();eyebrow=PageTheme.Text("",10,"#86CDFF");eyebrow.Margin=new Thickness(0,0,0,12);body.Children.Add(eyebrow);
+            var body=new StackPanel();eyebrow=PageTheme.Text("",10,"#65C7FF");eyebrow.Margin=new Thickness(0,0,0,12);body.Children.Add(eyebrow);
             heading=PageTheme.Text("",25);heading.Name="TutorialTitle";heading.Margin=new Thickness(0,0,0,16);body.Children.Add(heading);
             description=PageTheme.Text("",14,"#D5E2ED");description.Margin=new Thickness(0,0,0,18);body.Children.Add(description);
-            location=PageTheme.Text("",11,"#A7D9FA");location.Margin=new Thickness(0,0,0,12);body.Children.Add(location);
+            location=PageTheme.Text("",11,"#85D4FF");location.Margin=new Thickness(0,0,0,12);body.Children.Add(location);
             note=PageTheme.Text("",11,"#9FB5C9");body.Children.Add(note);
             frame.Children.Add(new ScrollViewer {Content=body,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled});
             AutomationProperties.SetName(View,"Launcher guided tour");Render();

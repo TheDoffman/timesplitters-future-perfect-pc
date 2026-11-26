@@ -700,7 +700,7 @@ namespace TimeSplitters.Launcher
         {
             if(updatePresentation==state)return;
             updatePresentation=state;
-            string label,icon,color="#A7D9FA";
+            string label,icon,color="#85D4FF";
             switch(state) {
                 case UpdatePresentationState.Checking:label="CHECKING";icon="M15,15 L21,21 M18,10 A8,8 0 1 1 2,10 A8,8 0 1 1 18,10";break;
                 case UpdatePresentationState.Ready:label="UP TO DATE";icon="M4,12 L9,17 L20,6";color="#A4DDCC";break;

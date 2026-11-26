@@ -7,11 +7,11 @@
       <Grid Background='Transparent' Margin='0,0,20,0'>
         <ContentPresenter ContentSource='Header' RecognizesAccessKey='True' Margin='{TemplateBinding Padding}'
                           TextElement.FontSize='13' TextElement.FontWeight='SemiBold' HorizontalAlignment='Center' VerticalAlignment='Center'/>
-        <Border x:Name='Line' Height='2' VerticalAlignment='Bottom' Background='#A7D9FA' Visibility='Collapsed'/>
+        <Border x:Name='Line' Height='2' VerticalAlignment='Bottom' Background='#85D4FF' Visibility='Collapsed'/>
       </Grid>
       <ControlTemplate.Triggers>
         <Trigger Property='IsSelected' Value='True'><Setter Property='Foreground' Value='#E4EDF5'/><Setter TargetName='Line' Property='Visibility' Value='Visible'/></Trigger>
-        <Trigger Property='IsMouseOver' Value='True'><Setter Property='Foreground' Value='#A7D9FA'/></Trigger>
+        <Trigger Property='IsMouseOver' Value='True'><Setter Property='Foreground' Value='#85D4FF'/></Trigger>
         <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter TargetName='Line' Property='Visibility' Value='Visible'/><Setter TargetName='Line' Property='Background' Value='#FFFFFF'/></Trigger>
         <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
       </ControlTemplate.Triggers>
@@ -21,7 +21,7 @@
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabControl'>
       <Grid KeyboardNavigation.TabNavigation='Local'>
         <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
-        <Border BorderBrush='#2D455C' BorderThickness='0,0,0,1' Margin='0,0,0,12'>
+        <Border BorderBrush='#294E70' BorderThickness='0,0,0,1' Margin='0,0,0,12'>
           <TabPanel IsItemsHost='True' KeyboardNavigation.TabIndex='1' Panel.ZIndex='1'/>
         </Border>
         <ContentPresenter Grid.Row='1' x:Name='PART_SelectedContentHost' ContentSource='SelectedContent'/>

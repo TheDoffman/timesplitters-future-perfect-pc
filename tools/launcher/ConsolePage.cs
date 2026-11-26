@@ -109,7 +109,7 @@ namespace TimeSplitters.Launcher
             follow=new CheckBox {Content="Auto-scroll",Name="ConsoleFollow",IsChecked=true,VerticalAlignment=VerticalAlignment.Center};
             actions.Children.Add(pause);actions.Children.Add(clear);actions.Children.Add(errors);actions.Children.Add(follow);
             Output=new TextBox {Name="GameConsoleOutput",IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,FontFamily=Ui.Monospace,FontSize=12,
-                Background=Ui.Brush("#0B1826"),Foreground=Ui.Brush("#C7D9E8"),BorderThickness=new Thickness(0),Padding=new Thickness(14),VerticalContentAlignment=VerticalAlignment.Top};
+                Background=Ui.Brush("#08182B"),Foreground=Ui.Brush("#C7D9E8"),BorderThickness=new Thickness(0),Padding=new Thickness(14),VerticalContentAlignment=VerticalAlignment.Top};
             Ui.ScrollBars(Output);var card=PageTheme.Card(Output);card.Padding=new Thickness(0);Grid.SetRow(card,2);View.Children.Add(card);
             status=PageTheme.Text("Waiting for a game launched from this launcher.",12,"#9EB4C8");status.Margin=new Thickness(0,12,0,0);Grid.SetRow(status,3);View.Children.Add(status);
             pause.Click+=(s,e)=>{paused=!paused;pause.Content=paused?"Resume":"Pause";status.Text=paused?"Display paused. Game logs continue to be saved.":tail.Status;};

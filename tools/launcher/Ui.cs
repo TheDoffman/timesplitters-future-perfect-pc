@@ -64,7 +64,7 @@ namespace TimeSplitters.Launcher
         }
         public static void Link(TextBlock view,string label,string url,Action<string> open)
         {
-            var link=new Button { Content=label,Padding=new Thickness(0),Margin=new Thickness(0),MinHeight=0,Background=Avalonia.Media.Brushes.Transparent,BorderThickness=new Thickness(0),Foreground=Brush("#A7D9FA") };
+            var link=new Button { Content=label,Padding=new Thickness(0),Margin=new Thickness(0),MinHeight=0,Background=Avalonia.Media.Brushes.Transparent,BorderThickness=new Thickness(0),Foreground=Brush("#85D4FF") };
             Tip(link,url);link.Click+=(s,e)=> { if(open!=null)open(url); };view.Inlines.Add(new InlineUIContainer(link));
         }
         public static void ForwardWheel(ReleaseNotesMarkdown notes,ScrollViewer parent)
@@ -96,7 +96,7 @@ namespace TimeSplitters.Launcher
             area.PreviewMouseWheel+=(s,e)=> { e.Handled=true;accept(e.Delta>0?GameSettings.WheelUpKey:GameSettings.WheelDownKey); };
         }
         public static void Link(TextBlock view,string label,string url,Action<string> open)
-        { var link=new Hyperlink(new Run(label)){NavigateUri=new Uri(url),ToolTip=url,Foreground=Brush("#A7D9FA")};link.RequestNavigate+=(s,e)=>{e.Handled=true;if(open!=null)open(url);};view.Inlines.Add(link); }
+        { var link=new Hyperlink(new Run(label)){NavigateUri=new Uri(url),ToolTip=url,Foreground=Brush("#85D4FF")};link.RequestNavigate+=(s,e)=>{e.Handled=true;if(open!=null)open(url);};view.Inlines.Add(link); }
         public static void ForwardWheel(ReleaseNotesMarkdown notes,ScrollViewer parent)
         { notes.PreviewMouseWheel+=(s,e)=>{double step=SystemParameters.WheelScrollLines<0?parent.ViewportHeight:SystemParameters.WheelScrollLines*20;parent.ScrollToVerticalOffset(parent.VerticalOffset-e.Delta/120.0*step);e.Handled=true;}; }
 #endif

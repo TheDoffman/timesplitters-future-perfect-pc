@@ -3,13 +3,13 @@
   <!-- WPF shows FocusVisualStyle for keyboard navigation, not pointer clicks. -->
   <Style x:Key='NavigationFocus' TargetType='Control'>
     <Setter Property='Template'><Setter.Value><ControlTemplate>
-      <Border BorderBrush='#A7D9FA' BorderThickness='2' Margin='-3' IsHitTestVisible='False'/>
+      <Border BorderBrush='#85D4FF' BorderThickness='2' Margin='-3' IsHitTestVisible='False'/>
     </ControlTemplate></Setter.Value></Setter>
   </Style>
   <Style TargetType='Button'>
     <Setter Property='FocusVisualStyle' Value='{StaticResource NavigationFocus}'/>
-    <Setter Property='Background' Value='#1C3349'/><Setter Property='Foreground' Value='#DFEAF4'/>
-    <Setter Property='BorderBrush' Value='#405D76'/><Setter Property='BorderThickness' Value='1'/>
+    <Setter Property='Background' Value='#173A59'/><Setter Property='Foreground' Value='#DFEAF4'/>
+    <Setter Property='BorderBrush' Value='#4779A0'/><Setter Property='BorderThickness' Value='1'/>
     <Setter Property='Padding' Value='14,9'/><Setter Property='MinHeight' Value='38'/>
     <Setter Property='FontSize' Value='13'/><Setter Property='FontWeight' Value='SemiBold'/><Setter Property='Cursor' Value='Hand'/>
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Button'>
@@ -25,9 +25,9 @@
     </ControlTemplate></Setter.Value></Setter>
   </Style>
   <Style TargetType='TextBox'>
-    <Setter Property='Background' Value='#0B1826'/><Setter Property='Foreground' Value='#E4EDF5'/>
-    <Setter Property='CaretBrush' Value='#A7D9FA'/><Setter Property='SelectionBrush' Value='#365F80'/>
-    <Setter Property='BorderBrush' Value='#3D5971'/><Setter Property='BorderThickness' Value='1'/>
+    <Setter Property='Background' Value='#08182B'/><Setter Property='Foreground' Value='#E4EDF5'/>
+    <Setter Property='CaretBrush' Value='#85D4FF'/><Setter Property='SelectionBrush' Value='#286C9C'/>
+    <Setter Property='BorderBrush' Value='#39658C'/><Setter Property='BorderThickness' Value='1'/>
     <Setter Property='Padding' Value='10,8'/><Setter Property='MinHeight' Value='36'/>
     <Setter Property='VerticalContentAlignment' Value='Center'/>
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TextBox'>
@@ -36,7 +36,7 @@
         <ScrollViewer x:Name='PART_ContentHost'/>
       </Border>
       <ControlTemplate.Triggers>
-        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#A7D9FA'/></Trigger>
+        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#85D4FF'/></Trigger>
         <Trigger Property='IsEnabled' Value='False'><Setter TargetName='Face' Property='Opacity' Value='0.4'/></Trigger>
       </ControlTemplate.Triggers>
     </ControlTemplate></Setter.Value></Setter>
@@ -46,14 +46,14 @@
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='ComboBoxItem'>
       <Border x:Name='Face' Background='Transparent' Padding='{TemplateBinding Padding}'><ContentPresenter/></Border>
       <ControlTemplate.Triggers>
-        <Trigger Property='IsSelected' Value='True'><Setter TargetName='Face' Property='Background' Value='#294C69'/></Trigger>
-        <Trigger Property='IsHighlighted' Value='True'><Setter TargetName='Face' Property='Background' Value='#365F80'/></Trigger>
+        <Trigger Property='IsSelected' Value='True'><Setter TargetName='Face' Property='Background' Value='#20567F'/></Trigger>
+        <Trigger Property='IsHighlighted' Value='True'><Setter TargetName='Face' Property='Background' Value='#286C9C'/></Trigger>
       </ControlTemplate.Triggers>
     </ControlTemplate></Setter.Value></Setter>
   </Style>
   <Style TargetType='ComboBox'>
-    <Setter Property='Background' Value='#0B1826'/><Setter Property='Foreground' Value='#E4EDF5'/>
-    <Setter Property='BorderBrush' Value='#3D5971'/><Setter Property='BorderThickness' Value='1'/>
+    <Setter Property='Background' Value='#08182B'/><Setter Property='Foreground' Value='#E4EDF5'/>
+    <Setter Property='BorderBrush' Value='#39658C'/><Setter Property='BorderThickness' Value='1'/>
     <Setter Property='Padding' Value='10,8'/><Setter Property='MinHeight' Value='38'/>
     <Setter Property='ScrollViewer.HorizontalScrollBarVisibility' Value='Disabled'/>
     <Setter Property='ScrollViewer.VerticalScrollBarVisibility' Value='Auto'/>
@@ -63,9 +63,9 @@
           <ToggleButton.Template><ControlTemplate TargetType='ToggleButton'>
             <Border x:Name='Face' Background='{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}'
                     BorderBrush='{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}' BorderThickness='1' CornerRadius='0'>
-              <Path Data='M0,0 L4,4 L8,0' Stroke='#A7D9FA' StrokeThickness='1.5' HorizontalAlignment='Right' VerticalAlignment='Center' Margin='0,0,12,0'/>
+              <Path Data='M0,0 L4,4 L8,0' Stroke='#85D4FF' StrokeThickness='1.5' HorizontalAlignment='Right' VerticalAlignment='Center' Margin='0,0,12,0'/>
             </Border>
-            <ControlTemplate.Triggers><Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#A7D9FA'/></Trigger></ControlTemplate.Triggers>
+            <ControlTemplate.Triggers><Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#85D4FF'/></Trigger></ControlTemplate.Triggers>
           </ControlTemplate></ToggleButton.Template>
         </ToggleButton>
         <ContentPresenter Content='{TemplateBinding SelectionBoxItem}' ContentTemplate='{TemplateBinding SelectionBoxItemTemplate}'
@@ -78,7 +78,7 @@
         </Popup>
       </Grid>
       <ControlTemplate.Triggers>
-        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter Property='BorderBrush' Value='#A7D9FA'/></Trigger>
+        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter Property='BorderBrush' Value='#85D4FF'/></Trigger>
         <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
       </ControlTemplate.Triggers>
     </ControlTemplate></Setter.Value></Setter>
@@ -87,21 +87,21 @@
     <Setter Property='Foreground' Value='#DFEAF4'/><Setter Property='Cursor' Value='Hand'/>
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='CheckBox'>
       <Grid Background='Transparent'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions>
-        <Border x:Name='Face' Width='18' Height='18' Background='#0B1826' BorderBrush='#55738E' BorderThickness='1' CornerRadius='0' VerticalAlignment='Center'>
-          <Path x:Name='Tick' Data='M0,4 L3,7 L9,0' Stroke='#0B2337' StrokeThickness='2' HorizontalAlignment='Center' VerticalAlignment='Center' Visibility='Collapsed'/>
+        <Border x:Name='Face' Width='18' Height='18' Background='#08182B' BorderBrush='#55738E' BorderThickness='1' CornerRadius='0' VerticalAlignment='Center'>
+          <Path x:Name='Tick' Data='M0,4 L3,7 L9,0' Stroke='#06223B' StrokeThickness='2' HorizontalAlignment='Center' VerticalAlignment='Center' Visibility='Collapsed'/>
         </Border>
         <ContentPresenter Grid.Column='1' Margin='10,0,0,0' VerticalAlignment='Center' RecognizesAccessKey='True'/>
       </Grid>
       <ControlTemplate.Triggers>
-        <Trigger Property='IsChecked' Value='True'><Setter TargetName='Face' Property='Background' Value='#A7D9FA'/><Setter TargetName='Tick' Property='Visibility' Value='Visible'/></Trigger>
+        <Trigger Property='IsChecked' Value='True'><Setter TargetName='Face' Property='Background' Value='#85D4FF'/><Setter TargetName='Tick' Property='Visibility' Value='Visible'/></Trigger>
         <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#E4EDF5'/></Trigger>
-        <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#A7D9FA'/><Setter TargetName='Face' Property='BorderThickness' Value='2'/></Trigger>
+        <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#85D4FF'/><Setter TargetName='Face' Property='BorderThickness' Value='2'/></Trigger>
         <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
       </ControlTemplate.Triggers>
     </ControlTemplate></Setter.Value></Setter>
   </Style>
   <Style TargetType='ScrollBar'>
-    <Setter Property='Width' Value='10'/><Setter Property='Background' Value='#0B1826'/>
+    <Setter Property='Width' Value='10'/><Setter Property='Background' Value='#08182B'/>
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='ScrollBar'>
       <Grid Background='{TemplateBinding Background}'>
         <Track x:Name='PART_Track' Orientation='{TemplateBinding Orientation}' IsDirectionReversed='True'>
@@ -120,14 +120,14 @@
           <ToggleButton.Template><ControlTemplate TargetType='ToggleButton'>
             <Border x:Name='Face' Background='Transparent' BorderBrush='Transparent' BorderThickness='1' Padding='0,3'>
               <Grid><Grid.ColumnDefinitions><ColumnDefinition Width='22'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions>
-                <Path x:Name='Chevron' Data='M0,0 L4,4 L0,8' Stroke='#A7D9FA' StrokeThickness='1.5'
+                <Path x:Name='Chevron' Data='M0,0 L4,4 L0,8' Stroke='#85D4FF' StrokeThickness='1.5'
                       HorizontalAlignment='Left' VerticalAlignment='Center' RenderTransformOrigin='0.5,0.5'/>
                 <ContentPresenter Grid.Column='1' Content='{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}' RecognizesAccessKey='True'/>
               </Grid>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property='IsChecked' Value='True'><Setter TargetName='Chevron' Property='RenderTransform'><Setter.Value><RotateTransform Angle='90'/></Setter.Value></Setter></Trigger>
-              <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#A7D9FA'/></Trigger>
+              <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#85D4FF'/></Trigger>
               <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='Background' Value='#1D354A'/></Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate></ToggleButton.Template>
@@ -143,7 +143,7 @@
       <Grid Background='Transparent'>
         <Track x:Name='PART_Track' Orientation='Horizontal' Minimum='{TemplateBinding Minimum}' Maximum='{TemplateBinding Maximum}'
                Value='{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}'>
-          <Track.DecreaseRepeatButton><RepeatButton Command='Slider.DecreaseLarge' Focusable='False'><RepeatButton.Template><ControlTemplate TargetType='RepeatButton'><Border Height='3' Background='#86CDFF' VerticalAlignment='Center'/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+          <Track.DecreaseRepeatButton><RepeatButton Command='Slider.DecreaseLarge' Focusable='False'><RepeatButton.Template><ControlTemplate TargetType='RepeatButton'><Border Height='3' Background='#65C7FF' VerticalAlignment='Center'/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
           <Track.Thumb><Thumb Width='14' Height='18'><Thumb.Template><ControlTemplate TargetType='Thumb'>
             <Border x:Name='Grip' Background='#B6DFF9' BorderBrush='#DCEFFF' BorderThickness='1' CornerRadius='0'/>
             <ControlTemplate.Triggers><Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Grip' Property='Background' Value='#FFFFFF'/></Trigger></ControlTemplate.Triggers>

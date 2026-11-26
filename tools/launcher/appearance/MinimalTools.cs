@@ -16,10 +16,10 @@ public static class MinimalTools
     static readonly System.Runtime.CompilerServices.ConditionalWeakTable<DependencyObject,object> polished=new System.Runtime.CompilerServices.ConditionalWeakTable<DependencyObject,object>();
     static Brush Ink(string color){return (Brush)new BrushConverter().ConvertFromString(color);}
     static IEnumerable<DependencyObject> Tree(DependencyObject root){yield return root;foreach(var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>().ToArray())foreach(var item in Tree(child))yield return item;}
-    static void Link(Button button){button.Background=Brushes.Transparent;button.BorderThickness=new Thickness(0,0,0,1);button.BorderBrush=Brushes.Transparent;button.Foreground=Ink("#A7D9FA");button.Padding=new Thickness(0,6,0,6);button.MinHeight=30;}
+    static void Link(Button button){button.Background=Brushes.Transparent;button.BorderThickness=new Thickness(0,0,0,1);button.BorderBrush=Brushes.Transparent;button.Foreground=Ink("#85D4FF");button.Padding=new Thickness(0,6,0,6);button.MinHeight=30;}
     static void SizeAction(Button button){
         button.HorizontalAlignment=HorizontalAlignment.Stretch;button.ClearValue(FrameworkElement.WidthProperty);button.MinWidth=0;button.MinHeight=38;button.Margin=new Thickness(4,0,4,0);button.Padding=new Thickness(8,9,8,9);
-        if(button.Background==Brushes.Transparent){button.Background=Ink("#1C3349");button.BorderBrush=Ink("#405D76");button.BorderThickness=new Thickness(1);button.Foreground=Ink("#DFEAF4");}
+        if(button.Background==Brushes.Transparent){button.Background=Ink("#173A59");button.BorderBrush=Ink("#4779A0");button.BorderThickness=new Thickness(1);button.Foreground=Ink("#DFEAF4");}
     }
     public static void AlignButtonRows(DependencyObject root){
         foreach(var panel in Tree(root).OfType<WrapPanel>().Where(p=>p.Children.Count>=2 && p.Children.OfType<Button>().Count()==p.Children.Count).ToArray()){
@@ -36,7 +36,7 @@ public static class MinimalTools
         var controls=new HashSet<Control>(Tree(root).OfType<Control>());
         foreach(var border in Tree(root).OfType<Border>().ToArray()){
             var fill=border.Background as SolidColorBrush;
-            if(fill==null || fill.Color!=((SolidColorBrush)Ink("#122233")).Color)continue;
+            if(fill==null || fill.Color!=((SolidColorBrush)Ink("#10243B")).Color)continue;
             if(border.Child is TextBox){border.Padding=new Thickness(0);border.Background=Ink("#0E1D2C");border.BorderThickness=new Thickness(1);continue;}
             if(!(border.Child is Panel) && !(border.Child is Expander))continue;
             border.Background=Brushes.Transparent;border.Padding=new Thickness(0,12,0,16);border.Margin=new Thickness(0,0,0,8);border.BorderThickness=new Thickness(0,0,0,1);

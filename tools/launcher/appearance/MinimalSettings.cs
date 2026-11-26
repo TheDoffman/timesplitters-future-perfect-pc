@@ -51,7 +51,7 @@ public sealed class MinimalSettings
         var overlay=Private<Border>(page,"overlay");
         Action syncModal=()=>frame.IsEnabled=overlay.Visibility!=Visibility.Visible;
         System.ComponentModel.DependencyPropertyDescriptor.FromProperty(UIElement.VisibilityProperty,typeof(Border)).AddValueChanged(overlay,(s,e)=>syncModal());syncModal();
-        var toolsButton=new Button {Content="←  Back to Launcher tools",FontSize=11,MinHeight=38,Background=B("#1C3349"),BorderBrush=B("#405D76"),BorderThickness=new Thickness(1),Foreground=B("#DFEAF4"),Padding=new Thickness(12,9,12,9),HorizontalContentAlignment=HorizontalAlignment.Center,Margin=new Thickness(0,0,20,0),ToolTip="Return to Launcher tools. Your unsaved settings stay in this session."};
+        var toolsButton=new Button {Content="←  Back to Launcher tools",FontSize=11,MinHeight=38,Background=B("#173A59"),BorderBrush=B("#4779A0"),BorderThickness=new Thickness(1),Foreground=B("#DFEAF4"),Padding=new Thickness(12,9,12,9),HorizontalContentAlignment=HorizontalAlignment.Center,Margin=new Thickness(0,0,20,0),ToolTip="Return to Launcher tools. Your unsaved settings stay in this session."};
         System.Windows.Automation.AutomationProperties.SetName(toolsButton,"Back to Launcher tools");
         toolsButton.Click+=(s,e)=>tools();
         var choices=new UniformGrid {Rows=1,Columns=7};frame.Children.Add(choices);
@@ -73,7 +73,7 @@ public sealed class MinimalSettings
         var retained=new HashSet<Control>(Tree(page.View).OfType<Control>());
         if(originalControls.Any(c=>!retained.Contains(c)))throw new InvalidOperationException("A settings control was detached during layout changes.");
     }
-    void Refresh(){if(heading==null)return;heading.Text=names.ContainsKey(tabs.SelectedIndex)?names[tabs.SelectedIndex]:"Settings";for(int i=0;i<categoryViews.Count;i++)categoryViews[i].Visibility=i==tabs.SelectedIndex?Visibility.Visible:Visibility.Collapsed;foreach(var button in categories){bool active=(int)button.Tag==tabs.SelectedIndex;button.Background=Brushes.Transparent;button.Foreground=active?B("#86CDFF"):B("#B4C7D8");button.BorderBrush=active?B("#A7D9FA"):B("#2D455C");button.BorderThickness=new Thickness(0,0,0,active?2:1);}}
+    void Refresh(){if(heading==null)return;heading.Text=names.ContainsKey(tabs.SelectedIndex)?names[tabs.SelectedIndex]:"Settings";for(int i=0;i<categoryViews.Count;i++)categoryViews[i].Visibility=i==tabs.SelectedIndex?Visibility.Visible:Visibility.Collapsed;foreach(var button in categories){bool active=(int)button.Tag==tabs.SelectedIndex;button.Background=Brushes.Transparent;button.Foreground=active?B("#65C7FF"):B("#B4C7D8");button.BorderBrush=active?B("#85D4FF"):B("#294E70");button.BorderThickness=new Thickness(0,0,0,active?2:1);}}
     static void Simplify(DependencyObject root){
         foreach(var element in Tree(root).ToArray()){
             var text=element as TextBlock;
@@ -90,7 +90,7 @@ public sealed class MinimalSettings
             if(border==null || !(border.Child is StackPanel))continue;
             var body=(StackPanel)border.Child;var title=body.Children.OfType<TextBlock>().FirstOrDefault();
             var fill=border.Background as SolidColorBrush;
-            if(fill==null || fill.Color!=((SolidColorBrush)B("#122233")).Color)continue;
+            if(fill==null || fill.Color!=((SolidColorBrush)B("#10243B")).Color)continue;
             border.Background=Brushes.Transparent;border.BorderThickness=new Thickness(0,0,0,1);border.BorderBrush=B("#263C50");border.Padding=new Thickness(0,12,0,18);border.Margin=new Thickness(0,0,0,8);
             if(title==null)continue;
             title.FontSize=13;title.FontWeight=FontWeights.SemiBold;title.Foreground=B("#B9D0E2");title.Margin=new Thickness(0,0,0,12);

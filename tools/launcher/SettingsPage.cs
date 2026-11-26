@@ -145,7 +145,7 @@ namespace TimeSplitters.Launcher
             if(textureUpdatesState==null)this.textureUpdatesState.Changed+=()=>Ui.Post(RefreshTextureCheck);
             string inherited = Ui.InheritedSettings(preview);
             model=GameSettings.Load(root, inherited);
-            View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
+            View=new Grid { Background=PageTheme.Brush("#071321"), Margin=new Thickness(30,24,30,18) };
             Ui.Resources(View,resources);
             Ui.Theme(View);
             Ui.Tabs(View);
@@ -157,7 +157,7 @@ namespace TimeSplitters.Launcher
             foreach(var item in heading.Children){var text=item as TextBlock;if(text!=null&&text.FontSize==28){text.FontSize=24;text.Margin=new Thickness(0,3,0,4);}var rule=item as Border;if(rule!=null)rule.Margin=new Thickness(0,10,0,6);}
             DockPanel.SetDock(heading,Dock.Top);layout.Children.Add(heading);
             var footer=new DockPanel { LastChildFill=true };
-            footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,10,0,0),Child=footer };
+            footerBorder=new Border { BorderBrush=PageTheme.Brush("#294E70"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,10,0,0),Child=footer };
             DockPanel.SetDock(footerBorder,Dock.Bottom);layout.Children.Add(footerBorder);
             var actions=new StackPanel { Orientation=Orientation.Horizontal, VerticalAlignment=VerticalAlignment.Center };
             DockPanel.SetDock(actions,Dock.Right);footer.Children.Add(actions);
@@ -223,7 +223,7 @@ namespace TimeSplitters.Launcher
                 for (int j=0;j<GameSettings.BindingSlots;j++)
                 {
                     row.ColumnDefinitions.Add(new ColumnDefinition());
-                    int action=i,slot=j;var button=Button("");button.FontSize=11;button.MinHeight=32;button.Padding=new Thickness(5,7,5,7);button.Margin=new Thickness(3);button.Background=PageTheme.Brush("#122233");button.BorderBrush=PageTheme.Brush("#365069");Ui.Tip(button,GameSettings.Labels[i]+", binding "+(j+1));
+                    int action=i,slot=j;var button=Button("");button.FontSize=11;button.MinHeight=32;button.Padding=new Thickness(5,7,5,7);button.Margin=new Thickness(3);button.Background=PageTheme.Brush("#10243B");button.BorderBrush=PageTheme.Brush("#365069");Ui.Tip(button,GameSettings.Labels[i]+", binding "+(j+1));
                     button.Click+=(s,e)=>Capture(action,slot);Grid.SetColumn(button,j+1);row.Children.Add(button);bindingButtons[i,j]=button;
                 }
                 bindings.Children.Add(row);

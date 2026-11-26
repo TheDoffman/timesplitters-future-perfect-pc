@@ -30,7 +30,7 @@ namespace TimeSplitters.Launcher
             this.root = root; this.args = args;
             NativeApplication.ApplyWindowIcon(this);
             FontFamily=Ui.Serif;Title="TimeSplitters · Updating";Width=620;Height=360;CanResize=false;
-            WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#0B1420");
+            WindowStartupLocation=WindowStartupLocation.CenterScreen;Background=Brush.Parse("#071321");
             var page=new UpdateWindowPage(args[0]=="--rollback-game"?"Restoring previous game":"Installing game update","Waiting for the launcher to close","Keep this window open. The launcher will reopen when installation finishes.");
             status=page.Status;elapsed=page.Note;progressBar=page.Progress;
             close=page.AddAction("Close",()=>((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).Shutdown(1));

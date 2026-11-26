@@ -1,3 +1,34 @@
+## 2026-11-25 - Launcher color coordination (local)
+
+Uncommitted presentation change on feature/launcher-color-coordination, based on
+9df2e580c. Richer navy surfaces and brighter blue actions coordinate with the
+recent permanent game grade; original embedded artwork, serif typography,
+layout, commands and player settings remain intact. No release/version change.
+
+Windows x64 .NET Framework4.8 compiles with required original artwork into
+D:/CodexBuilds/TSFP-launcher-redesign/color-validation. The full -Test stops at
+the global game-running update guard: two unrelated TS Uplink604 game processes
+were observed and preserved. Windows shared UI reaches the save-location guard;
+appearance passes pointer/keyboard focus then cannot complete Install/recovery.
+The unchanged serif-validation executable reproduces the same appearance failure.
+Installation-scoped --play-state passes;3 Python shared-layout propagation checks
+pass. Actual WPF Home/settings/tour/update/940x640 previews were inspected under
+.codex/visualizations/2026/11/25/launcher-colors. Fixture Home data is synthetic;
+no real installation/download or personal preference changes occur in renders.
+
+Linux/WSL Ubuntu24.04 x64, pinned .NET8 and Avalonia11.3.22: build/test/package
+passes,68 shared UI groups and60 page/size renders at actual1x pass, including
+animation cancellation and settings drafts. Package install/corruption rejection,
+repair/restart and preservation pass. SteamOS Gaming Mode1280x800 preview is
+rendered; no physical Deck is tested. Mac ARM64/macOS27.0.1, pinned .NET8 and
+Avalonia11.3.22: color-only transfer first checked all30 pre-change source files
+against task base, preserving other fixture modifications. Build/ad-hoc signing,
+66 shared UI groups and60 page/size renders at1x pass. No Mac package lifecycle
+rerun or physical Retina/multi-monitor check. Native logs are build/color-{ui,
+layout,mac}.log in the existing isolated fixture; Windows/WSL logs are local
+build/integration-notes/color-*.log. Full Windows regressions remain pending an
+idle game environment. No push, merge, installed-app replacement or publication.
+
 ## 2026-11-25 - Local release-readiness pass and mouse focus fix
 
 Removed white pointer-focus boxes from both WPF button themes while retaining

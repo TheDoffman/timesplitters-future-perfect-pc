@@ -16,7 +16,7 @@ public sealed class GameChannelMenu
     static Brush B(string value){return (Brush)new BrushConverter().ConvertFromString(value);}
     public GameChannelMenu(Window window,Grid stage,TextBlock text,GameChannelPickerPage native,Action browse,Action<Release> confirm,Release current){
         label=text;installed=current;var parent=(Panel)label.Parent;parent.Children.Remove(label);
-        entry=new Button {Content=label,Padding=new Thickness(4,2,4,2),Margin=new Thickness(0),MinHeight=24,Background=Brushes.Transparent,BorderThickness=new Thickness(0),Foreground=B("#A7D9FA"),HorizontalAlignment=HorizontalAlignment.Right,Cursor=Cursors.Hand};
+        entry=new Button {Content=label,Padding=new Thickness(4,2,4,2),Margin=new Thickness(0),MinHeight=24,Background=Brushes.Transparent,BorderThickness=new Thickness(0),Foreground=B("#85D4FF"),HorizontalAlignment=HorizontalAlignment.Right,Cursor=Cursors.Hand};
         label.FontSize=11;label.MaxWidth=252;label.TextWrapping=TextWrapping.NoWrap;label.TextTrimming=TextTrimming.CharacterEllipsis;parent.Children.Add(entry);
         System.Windows.Automation.AutomationProperties.SetName(entry,"Game channel and version");entry.Click+=(s,e)=>{if(IsOpen)Close();else ShowMain();};
         panel=new Border {Child=new ScrollViewer {Content=page.View,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled},Width=360,MaxHeight=470,Padding=new Thickness(16),Background=B("#101E2D"),BorderBrush=B("#3B5268"),BorderThickness=new Thickness(1),Margin=new Thickness(0,0,28,128),HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Bottom,Visibility=Visibility.Collapsed};

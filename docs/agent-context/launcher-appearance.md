@@ -1,3 +1,24 @@
+## Coordinated color treatment (2026-11-25)
+
+The launcher retains its navy/blue identity while echoing the game's permanent
+contrast/saturation treatment documented in uplink-color.md. This is an art
+direction choice, not the game's numeric shader curve applied to UI or artwork.
+Shell #071321 and input #08182B deepen the foundation; secondary #173A59,
+accent #65C7FF and primary/focus #85D4FF make actions clearer. Primary ink is
+#06223B. Existing light text, semantic success/warning colors, disabled gray
+Playing state, artwork bytes/opacity, serif fonts, geometry and commands stay
+unchanged. Shared PageTheme/XAML/pages remain canonical; native adapters and the
+layout generator use the corresponding colors, including startup/update dialogs,
+release-note links, tutorial spotlight and Deck focus.
+
+Windows builds and renders Home/settings/tour/updater/940x640. Keyboard-focus and
+installation-specific Play checks pass. Full Windows updater/shared/appearance
+suites are blocked by unrelated running game sessions; the unchanged serif build
+reproduces the same appearance failure. Do not stop those sessions for this task.
+Mac66/Linux68 shared UI groups and60 page/size renders per native host pass;
+Linux package/helper preservation checks pass. No physical Deck acceptance or
+release publication. See STATUS.md for exact scope and receipts.
+
 ## Serif typography preview (2026-11-25)
 
 The local serif-typography branch changes launcher inheritance from Segoe UI to

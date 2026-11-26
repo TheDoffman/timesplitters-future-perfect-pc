@@ -56,18 +56,18 @@ namespace TimeSplitters.Launcher
             View.Children.Add(header);
             var body=new StackPanel();scroll=new ScrollViewer {Content=body,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled};Grid.SetRow(scroll,1);View.Children.Add(scroll);
             var summary=PageTheme.Section(body,"Version overview","");
-            channel=PageTheme.Text("",11,"#86CDFF");channel.Margin=new Thickness(0,8,0,14);summary.Children.Add(channel);
+            channel=PageTheme.Text("",11,"#65C7FF");channel.Margin=new Thickness(0,8,0,14);summary.Children.Add(channel);
             var versions=new Grid();versions.ColumnDefinitions.Add(new ColumnDefinition());versions.ColumnDefinitions.Add(new ColumnDefinition());summary.Children.Add(versions);
             var installed=new StackPanel();installed.Children.Add(PageTheme.Text("INSTALLED",10,"#9EB4C8"));installedLabel=PageTheme.Text("",21);installed.Children.Add(installedLabel);versions.Children.Add(installed);
             var available=new StackPanel();available.Children.Add(PageTheme.Text("AVAILABLE",10,"#9EB4C8"));availableLabel=PageTheme.Text("Not checked",21);available.Children.Add(availableLabel);Grid.SetColumn(available,1);versions.Children.Add(available);
             releaseBadge=PageTheme.Badge("Not checked",StatusTone.Neutral);releaseBadge.Margin=new Thickness(0,14,0,0);summary.Children.Add(releaseBadge);
             availability=PageTheme.Text("Refresh to check published releases.",12,"#B4C9DA");availability.Margin=new Thickness(0,14,0,0);summary.Children.Add(availability);
             var notes=PageTheme.Section(body,"What this release changes","");
-            title=PageTheme.Text("Release notes",18,"#A7D9FA");title.Margin=new Thickness(0,12,0,4);notes.Children.Add(title);
+            title=PageTheme.Text("Release notes",18,"#85D4FF");title.Margin=new Thickness(0,12,0,4);notes.Children.Add(title);
             published=PageTheme.Text("",11,"#9EB4C8");published.Margin=new Thickness(0,0,0,14);notes.Children.Add(published);notes.Children.Add(changes);
             notes.Children.Add(publishedIssues);
             var known=PageTheme.Section(body,"Known issues","Current open GitHub reports labeled bug, across all versions.");
-            issuesCount=PageTheme.Text("Not checked",13,"#A7D9FA");known.Children.Add(issuesCount);
+            issuesCount=PageTheme.Text("Not checked",13,"#85D4FF");known.Children.Add(issuesCount);
             issues.Margin=new Thickness(0,10,0,0);known.Children.Add(issues);
             issuesStatus=PageTheme.Text("Open this page to check the bug tracker.",12,"#B4C7D8");issuesStatus.Margin=new Thickness(0,8,0,8);known.Children.Add(issuesStatus);
             var issueActions=new WrapPanel();known.Children.Add(issueActions);
@@ -133,7 +133,7 @@ namespace TimeSplitters.Launcher
         }
         void Render()
         {
-            GameTab.Background=PageTheme.Brush(launcher?"#1C3349":"#294C69");LauncherTab.Background=PageTheme.Brush(launcher?"#294C69":"#1C3349");
+            GameTab.Background=PageTheme.Brush(launcher?"#173A59":"#20567F");LauncherTab.Background=PageTheme.Brush(launcher?"#20567F":"#173A59");
             AutomationProperties.SetHelpText(GameTab,launcher?"Show game releases":"Selected: game releases");AutomationProperties.SetHelpText(LauncherTab,launcher?"Selected: launcher releases":"Show launcher releases");
             string version=launcher?installedLauncher:installedGame;installedLabel.Text=String.IsNullOrEmpty(version)?"Not installed":version;
             Release latest=news==null?null:(launcher?news.Launcher:news.Game);
@@ -160,10 +160,10 @@ namespace TimeSplitters.Launcher
             Paint(changes,text.Changes,selected==null?"Refresh notes or select another release. Unpublished or unavailable versions may have no release notes.":"No change notes were published for this release.");
             publishedIssues.Children.Clear();
             if(!String.IsNullOrWhiteSpace(text.KnownIssues)) {
-                var label=PageTheme.Text("Limitations published with this release",13,"#A7D9FA");label.Margin=new Thickness(0,14,0,8);publishedIssues.Children.Add(label);
+                var label=PageTheme.Text("Limitations published with this release",13,"#85D4FF");label.Margin=new Thickness(0,14,0,8);publishedIssues.Children.Add(label);
                 var content=new StackPanel();publishedIssues.Children.Add(content);Paint(content,text.KnownIssues,"");
             }
-            if(text.Shortened)changes.Children.Add(PageTheme.Text("Notes shortened for display. View the complete release on GitHub.",12,"#A7D9FA"));
+            if(text.Shortened)changes.Children.Add(PageTheme.Text("Notes shortened for display. View the complete release on GitHub.",12,"#85D4FF"));
         }
         void Paint(Panel panel,string text,string empty)
         {
