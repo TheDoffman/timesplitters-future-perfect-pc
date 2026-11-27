@@ -180,3 +180,5 @@ The Linux-only protected-page test also cross-compiles the existing ARM64 fixtur
 The rolling DXC mirror removed build -1; its archived bytes retain the original donor SHA256. Build -2 requires GLIBC_2.43 and cannot replace it against this sysroot (GLIBC_2.41). The pin uses the archived -1 and HTTPS.
 
 ARM64 setup also installs/verifies the shared SPIRV-Cross pin required by current main's OpenGL backend. Both Vulkan and OpenGL compile; the receipt records both, matching x64 source policy.
+
+Steam Runtime 4 omits GTK3 development files. `config/build/linux-arm64-gtk.json` pins the Debian 13 ARM64 GTK/AT-SPI/epoxy build overlay by package URL/version/SHA256. Setup uses dpkg-deb extraction into the private sysroot only, without host installation or maintainer scripts. The target still needs compatible distro runtime libraries.

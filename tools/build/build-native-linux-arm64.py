@@ -68,6 +68,7 @@ def setup(jobs):
         SYSROOT.mkdir(parents=True, exist_ok=True)
         subprocess.run(["tar", "-xzf", str(archive), "-C", str(SYSROOT)], check=True)
     install_dxc()
+    install_gtk()
     media(jobs)
 
 
@@ -80,6 +81,20 @@ def install_dxc():
     # the verified small package also restores its matching library and headers.
     with tarfile.open(archive) as bundle:
         bundle.extractall(DXC, filter="data")
+
+
+def install_gtk():
+    """Add pinned target headers/libraries missing from Valve's SDK sysroot.
+
+    Extract data only: never install these packages into the host or execute
+    package maintainer scripts. The target OS supplies runtime dependencies.
+    """
+    spec = json.loads((ROOT / "config/build/linux-arm64-gtk.json").read_text())
+    for package in spec["packages"]:
+        archive = download(package["url"], ROOT / "external/linux-arm64-debs" / package["url"].rsplit("/", 1)[-1])
+        if sha256(archive) != package["sha256"]:
+            raise SystemExit("arm64 GTK package differs from the pinned checksum: " + package["name"])
+        run("dpkg-deb", "--extract", archive, SYSROOT)
 
 
 def media(jobs):
@@ -118,7 +133,7 @@ def build(args):
         raise SystemExit("Missing/unsupported US Xbox executable")
     if not (game / "pak").is_dir() or not (game / "xmv").is_dir():
         raise SystemExit("Game folder must contain pak and xmv")
-    for tool in ("clang", "clang++", "ld.lld", "cmake", "ninja", "make", "pkg-config"):
+    for tool in ("clang", "clang++", "ld.lld", "cmake", "ninja", "make", "pkg-config", "dpkg-deb"):
         if shutil.which(tool) is None:
             raise SystemExit(f"{tool} is required on PATH")
     spirv_cross.setup(ROOT) if args.setup else spirv_cross.verify(ROOT)

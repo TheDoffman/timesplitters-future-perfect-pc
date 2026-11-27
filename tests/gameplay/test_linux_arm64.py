@@ -106,6 +106,14 @@ def test_existing_dxc_headers_do_not_bypass_package_verification(tmp_path, monke
     assert header.read_text() == 'previous package'
 
 
+def test_gtk_package_mismatch_never_extracts_into_sysroot(tmp_path, monkeypatch):
+    module = builder()
+    archive = tmp_path / 'gtk.deb'; archive.write_bytes(b'corrupt package')
+    monkeypatch.setattr(module, 'download', lambda *args: archive)
+    monkeypatch.setattr(module, 'run', lambda *args, **kwargs: pytest.fail('unverified package extraction'))
+    with pytest.raises(SystemExit, match='GTK package.*checksum'): module.install_gtk()
+
+
 def test_wrong_host_rejected_before_setup(tmp_path, monkeypatch):
     module = builder()
     monkeypatch.setattr(module.platform, 'system', lambda: 'Windows')
