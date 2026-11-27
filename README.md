@@ -11,11 +11,32 @@
 
 Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
-<p>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip"><img src="docs/assets/download-linux-launcher.svg" alt="Download the latest Linux launcher (x64)" width="280" height="52"></a>
-</p>
+Choose your platform to download the launcher.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="33%">
+      <h3>Windows</h3>
+      <p>Windows 10/11 &middot; x64</p>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the Windows x64 launcher" width="240" height="45"></a>
+      <p><sub>Launcher ZIP</sub></p>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <h3>macOS</h3>
+      <p>Apple Silicon &middot; M1 or newer</p>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the macOS Apple Silicon launcher" width="240" height="45"></a>
+      <p><sub>Launcher ZIP</sub></p>
+    </td>
+    <td align="center" valign="top" width="34%">
+      <h3>Linux</h3>
+      <p>Linux &middot; x64</p>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip"><img src="docs/assets/download-linux-launcher.svg" alt="Download the Linux x64 launcher" width="240" height="45"></a>
+      <p><sub>Launcher ZIP</sub></p>
+      <hr>
+      <p><a href="docs/development/linux.md#linux-arm64-developer-build"><strong>ARM64 &middot; Build from source</strong></a><br><sub>Experimental &middot; No package yet</sub></p>
+    </td>
+  </tr>
+</table>
 
 <sub>Direct ZIP downloads of the latest stable launcher &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
 
