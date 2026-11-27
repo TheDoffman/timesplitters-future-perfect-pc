@@ -18,7 +18,7 @@ void *tsfp_guest_mmio_alias(void *host, size_t bytes)
 {
     uintptr_t va = (uintptr_t)host - (uintptr_t)g_xbox_mem_offset;
     if (va == 0xfd000100u && bytes == 4) return &interrupt;
-    if (va >= 0xfd600000u && va + bytes <= 0xfd604000u) return device + va - 0xfd600000u;
+    if (va >= 0xfd600000u && va + bytes <= 0xfd604000u) return device + (va - 0xfd600000u);
     return NULL;
 }
 uint64_t mcpx_apu_mmio_read(MCPXAPUState *d, uint64_t a, unsigned s)

@@ -184,3 +184,5 @@ ARM64 setup also installs/verifies the shared SPIRV-Cross pin required by curren
 Steam Runtime 4 omits GTK3 development files. `config/build/linux-arm64-gtk.json` pins the Debian 13 ARM64 GTK/AT-SPI/epoxy build overlay by package URL/version/SHA256. Setup uses dpkg-deb extraction into the private sysroot only, without host installation or maintainer scripts. The target still needs compatible distro runtime libraries.
 
 The portable ARM64 regression file is also registered in runtime-suites.json so Windows and Mac PR shards run it alongside the Linux foundation job. The corrupt-sysroot fixture supplies a sufficient free-space observation to isolate checksum rejection from CI disk availability.
+
+The portable MMIO fixture computes the bounded device-array offset before pointer addition. This keeps intermediate pointers inside the array under UBSan; production adapter code is unchanged. Clang sanitizer acceptance is part of the normal compiler fixture path.
