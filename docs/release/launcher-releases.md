@@ -1,12 +1,12 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher is **1.7.2**, a launcher-only maintenance update requested
-on 2026-11-24. It addresses the Mac startup crash after updates and console
-messages incorrectly shown as errors. The reviewed emoji-free notes are in
-`notes/launcher-v1.7.2.md`. Publish through the three-host workflow after the
-version PR reaches main, then verify all fifteen assets and versionless aliases.
-Game **0.7.1** remains unchanged; do not build or publish a game for this request.
-Source preparation does not publish packages or replace native acceptance.
+The next Stable launcher is **2.0.0**, the redesigned-launcher milestone selected
+by the user on 2026-11-27. Reviewed emoji-free notes are in
+`notes/launcher-v2.0.0.md`. Publish through the four-platform workflow after the
+version PR reaches main, then verify all22 assets, including versionless aliases
+and the Linux installer/checksum. Game **0.7.2** is prepared independently for
+Windows x64, Mac ARM64 and Linux x64. Source preparation does not publish packages
+or replace native acceptance. Published1.7.2 remains immutable.
 
 Earlier Stable launcher **1.6.0** included shared
 audio/control settings, independent deadzones and texture/update-notice support.

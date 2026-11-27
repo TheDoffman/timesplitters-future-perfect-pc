@@ -1,3 +1,15 @@
+## 2026-11-27 - Game 0.7.2 and launcher 2.0.0 release preparation
+
+User selected maintenance game0.7.2 and launcher2.0.0 as the redesigned-launcher
+milestone. Basecb5633a82147d6387aee96369ffc34fc83f55152 includes PR618/619.
+Versioned player-facing notes describe fixes since game0.7.1/launcher1.7.2,
+including the ARM64 source-only game limitation and experimental SteamOS scope.
+No new binaries, native acceptance or publication are established by this source
+preparation. Launcher requires four matching native CI packages and22 verified
+assets; game requires clean-source three-host builds, isolated gameplay and
+installer/preservation checks and nine verified public assets. Main merge still
+requires explicit user authorization for the concrete release PR.
+
 ## 2026-11-27 - Linux launcher CPU selection and single installer (implemented; publication pending)
 
 Follow-up branch feature/linux-launcher-architecture starts at main merge
