@@ -1,7 +1,7 @@
 # Automatic launcher compatibility checks
 
 `Launcher compatibility checks` validates launcher changes on Windows x64,
-native Mac ARM64 and Linux x64. It uses standard GitHub-hosted runners, which are free for this
+native Mac ARM64 and native Linux x64/ARM64. It uses standard GitHub-hosted runners, which are free for this
 public repository. No OpenAI API key, API credits or third-party AI service is
 required. The prior paid review/proposal workflow has been replaced.
 

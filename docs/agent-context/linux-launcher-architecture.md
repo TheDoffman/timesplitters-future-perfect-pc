@@ -36,5 +36,6 @@ release selection, corruption and CLI handoff without network/executing download
 LinuxTests covers both mappings, wrong CPU/metadata rejection, first install,
 idempotence, lock contention, repair and personal-file preservation with the real
 package. test_launcher_release.py covers the four-platform publication contract.
+The shared UI breadcrumb group checks Mac and both Linux native crash summaries.
 No version bump/public release is implied by preparing this feature. Keep README
 downloads on existing live assets until a new unused version is actually published.
