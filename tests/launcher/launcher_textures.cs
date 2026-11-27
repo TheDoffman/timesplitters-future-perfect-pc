@@ -308,7 +308,7 @@ public static class LauncherTextureChecks
             Test("native checkout installs to private pack and rejects source symlinks",()=>{
                 string r=root(),source=root();
 #if LINUX
-                Put(Path.Combine(r,"tools","build","build-native-linux.py"),new byte[]{1});
+                Put(Path.Combine(r,LauncherPlatform.NativeBuildScript),new byte[]{1});
 #else
                 Put(Path.Combine(r,"tools","play-native-mac.py"),new byte[]{1});
 #endif

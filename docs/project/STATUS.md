@@ -26,7 +26,10 @@ correct ARM64 package, repeated install and personal-file preservation. This is
 emulated CPU/installation evidence, not native desktop or GPU acceptance.
 A source --check attempt is blocked by the existing private/game symlink (the
 launcher deliberately rejects linked installation paths); the fixture remains.
-Native ARM64, Windows and Mac CI for PR #619 are pending. Physical ARM64
+PR #619 run46055962762 at86b840690 passes Windows, Mac and Linux x64 launcher
+builds/tests/packages. Native ARM64 builds and passes updater checks, then exposes
+an x64-only marker in the shared texture checkout fixture. That fixture now uses
+NativeBuildScript; complete ARM64 UI/package acceptance is pending the rerun. Physical ARM64
 Linux gameplay/GPU and Steam Deck acceptance remain unverified.
 
 ## 2026-11-27 - Native Linux ARM64 integration (local)

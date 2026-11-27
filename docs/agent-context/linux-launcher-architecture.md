@@ -32,6 +32,9 @@ source/checksum. Four packages and their aliases plus the one installer/checksum
 produce 22 release assets, all verified before publication. Linux ARM game and
 launcher packages remain separate artifacts behind one installer entry point.
 
+The shared texture fixture uses NativeBuildScript when creating a fake Linux
+checkout, so ARM64 exercises private-pack routing rather than an installed root.
+
 Tests: tests/launcher/test_linux_installer.py covers bootstrap architecture,
 release selection, corruption and CLI handoff without network/executing downloads;
 LinuxTests covers both mappings, wrong CPU/metadata rejection, first install,
