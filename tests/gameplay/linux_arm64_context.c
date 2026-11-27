@@ -1,14 +1,22 @@
 /* Execute the production decoder, Linux register adapter and device policy.
  * Only the host context layout and writable-alias provider are fixtures. */
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #ifdef _MSC_VER
 #include <intrin.h>
 #define __ATOMIC_SEQ_CST 0
 #define __atomic_fetch_and(p,v,order) _InterlockedAnd((volatile long *)(p),(long)(v))
 #define __atomic_fetch_or(p,v,order) _InterlockedOr((volatile long *)(p),(long)(v))
 #endif
+/* Darwin's standard headers declare its own signal/context types. Keep the
+ * simulated Linux ABI names private after all real standard headers load. */
+#define siginfo_t TSFPTestSiginfo
+#define mcontext_t TSFPTestMcontext
+#define ucontext_t TSFPTestUcontext
 #include "mmio_linux_arm64.c"
-#include <stdio.h>
-#include <stdlib.h>
 
 ptrdiff_t g_xbox_mem_offset = 0x100000000ull;
 MCPXAPUState *g_apu_state;

@@ -186,3 +186,5 @@ Steam Runtime 4 omits GTK3 development files. `config/build/linux-arm64-gtk.json
 The portable ARM64 regression file is also registered in runtime-suites.json so Windows and Mac PR shards run it alongside the Linux foundation job. The corrupt-sysroot fixture supplies a sufficient free-space observation to isolate checksum rejection from CI disk availability.
 
 The portable MMIO fixture computes the bounded device-array offset before pointer addition. This keeps intermediate pointers inside the array under UBSan; production adapter code is unchanged. Clang sanitizer acceptance is part of the normal compiler fixture path.
+
+The simulated Linux context typedefs use fixture-private names after real standard headers load. Darwin stdlib includes native signal/context declarations; these remain separate from the simulated Linux ABI so the same production-adapter fixture compiles on Mac.
