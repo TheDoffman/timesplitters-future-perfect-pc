@@ -174,3 +174,7 @@ Stage0236: [original absolute-time codec and guest calendar imports](kernel-time
 The0236 fixture reads UTF-8 for bridge box-drawing comments (CI4cb4697c);
 native calendar source and the accepted binary are unchanged.
 
+
+The Linux-only protected-page test also cross-compiles the existing ARM64 fixture with the actual arena/alias services and Linux ucontext, then runs under qemu-aarch64 when available. It skips without native ARM64 or that explicit tool pair. The portable context test still runs on MSVC. DXC setup always verifies/replays the pinned package even if old headers exist.
+
+The rolling DXC mirror removed build -1; its archived bytes retain the original donor SHA256. Build -2 requires GLIBC_2.43 and cannot replace it against this sysroot (GLIBC_2.41). The pin uses the archived -1 and HTTPS.

@@ -93,6 +93,17 @@ def test_corrupt_sysroot_stops_before_extraction(tmp_path, monkeypatch):
     with pytest.raises(SystemExit, match='checksum'): module.setup(2)
 
 
+def test_existing_dxc_headers_do_not_bypass_package_verification(tmp_path, monkeypatch):
+    module = builder()
+    monkeypatch.setattr(module, 'DXC', tmp_path)
+    header = tmp_path / 'usr/include/dxc/dxcapi.h'
+    header.parent.mkdir(parents=True); header.write_text('previous package')
+    archive = tmp_path / module.DXC_PIN['package']; archive.write_bytes(b'corrupt download')
+    monkeypatch.setattr(module, 'download', lambda *args: archive)
+    with pytest.raises(SystemExit, match='checksum'): module.install_dxc()
+    assert header.read_text() == 'previous package'
+
+
 def test_wrong_host_rejected_before_setup(tmp_path, monkeypatch):
     module = builder()
     monkeypatch.setattr(module.platform, 'system', lambda: 'Windows')

@@ -72,12 +72,11 @@ def setup(jobs):
 
 def install_dxc():
     """Unpacks the pinned DXC library and headers."""
-    if (DXC / "usr/include/dxc/dxcapi.h").is_file():
-        return
-    # The mirror serves plain HTTP; the checksum is what authenticates it.
     archive = download(DXC_PIN["url"], DXC / DXC_PIN["package"])
     if sha256(archive) != DXC_PIN["sha256"]:
         raise SystemExit("arm64 DXC package differs from the pinned checksum")
+    # Do not adopt an older install merely because its headers exist. Replaying
+    # the verified small package also restores its matching library and headers.
     with tarfile.open(archive) as bundle:
         bundle.extractall(DXC, filter="data")
 
