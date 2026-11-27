@@ -178,3 +178,5 @@ native calendar source and the accepted binary are unchanged.
 The Linux-only protected-page test also cross-compiles the existing ARM64 fixture with the actual arena/alias services and Linux ucontext, then runs under qemu-aarch64 when available. It skips without native ARM64 or that explicit tool pair. The portable context test still runs on MSVC. DXC setup always verifies/replays the pinned package even if old headers exist.
 
 The rolling DXC mirror removed build -1; its archived bytes retain the original donor SHA256. Build -2 requires GLIBC_2.43 and cannot replace it against this sysroot (GLIBC_2.41). The pin uses the archived -1 and HTTPS.
+
+ARM64 setup also installs/verifies the shared SPIRV-Cross pin required by current main's OpenGL backend. Both Vulkan and OpenGL compile; the receipt records both, matching x64 source policy.

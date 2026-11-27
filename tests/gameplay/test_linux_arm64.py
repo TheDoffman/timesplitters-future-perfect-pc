@@ -60,6 +60,8 @@ def test_fresh_and_incremental_build_apply_ledger_before_configure(tmp_path, mon
     generated.mkdir(parents=True)
     calls = []
     monkeypatch.setattr(module, 'setup', lambda jobs: calls.append('dependencies'))
+    monkeypatch.setattr(module.spirv_cross, 'setup', lambda root: None)
+    monkeypatch.setattr(module.spirv_cross, 'verify', lambda root: None)
     monkeypatch.setattr(module.shutil, 'which', lambda name: '/tools/' + name)
     def output(args, **kwargs):
         if args[-1] == 'HEAD' and '-C' in args:

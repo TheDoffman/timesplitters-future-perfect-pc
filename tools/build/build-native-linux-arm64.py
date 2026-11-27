@@ -24,6 +24,7 @@ from project_paths import configure  # noqa: E402
 
 configure()
 from vulkan_sdk import sha256  # noqa: E402
+import spirv_cross  # noqa: E402
 
 RUNTIME_VERSION = "4.0.20261021.265997"
 SYSROOT_ARCHIVE = "com.valvesoftware.SteamRuntime.Sdk-arm64-steamrt4-sysroot.tar.gz"
@@ -120,6 +121,7 @@ def build(args):
     for tool in ("clang", "clang++", "ld.lld", "cmake", "ninja", "make", "pkg-config"):
         if shutil.which(tool) is None:
             raise SystemExit(f"{tool} is required on PATH")
+    spirv_cross.setup(ROOT) if args.setup else spirv_cross.verify(ROOT)
     if args.setup:
         setup(args.jobs)
     if not (SYSROOT / "usr/include/stdio.h").is_file() or not (DXC / "usr/lib/libdxcompiler.so").is_file():
@@ -178,7 +180,8 @@ def build(args):
     sources = [p for area in ("src", "patches", "vendor/smaa") for p in (ROOT / area).rglob("*")
                if p.is_file() and "legacy" not in p.relative_to(ROOT).parts]
     manifest = dict(
-        display_settings_version=5, platform="linux-arm64", renderer="vulkan", build_type="Debug",
+        display_settings_version=5, platform="linux-arm64", renderer="vulkan",
+        supported_renderers=["vulkan", "opengl"], build_type="Debug",
         host_optimization="optimized", host_debug_flags="-O2 -g", assertions_enabled=True,
         source_revision=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         working_tree_changes=subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True),
