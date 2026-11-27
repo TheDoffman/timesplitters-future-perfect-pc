@@ -3,7 +3,7 @@
 Integrated DCKcode's [discussion #615](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/615)
 contribution e01fe553a8d1f031f12d54dea344a42bcca8a518 on base 5f459a959,
 branch feature/linux-arm64. Functional build revision: c0b1a826da9e2b761d95e3d6ebffa150cc9c5bd4.
-No release, push or main merge performed.
+Local validation was performed before integration; this change does not publish a release.
 
 Linux ARM64 now has Linux ucontext fault recovery through the shared ARM64
 MMIO decoder/device policy, correct crash registers/platform metadata and a

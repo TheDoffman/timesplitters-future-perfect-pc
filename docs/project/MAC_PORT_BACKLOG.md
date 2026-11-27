@@ -9,7 +9,7 @@ tests pass (ARM64 under QEMU). Portable MSVC and Linux host/crash/patch/context
 tests pass. Native Mac build/gameplay and physical ARM64 Linux acceptance were
 not performed. The 150-second x64 Story gameplay regression passes with both pause/resume
 cycles confirmed, reviewed captures and zero Vulkan validation errors; see
-STATUS.md for exact provenance. Local only; no ARM64 launcher/package
+STATUS.md for exact provenance. Validated locally; no ARM64 launcher/package
 or release has been published.
 
 ## Mansion lighting/query contamination (2026-11-26)

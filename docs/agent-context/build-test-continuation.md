@@ -182,3 +182,5 @@ The rolling DXC mirror removed build -1; its archived bytes retain the original 
 ARM64 setup also installs/verifies the shared SPIRV-Cross pin required by current main's OpenGL backend. Both Vulkan and OpenGL compile; the receipt records both, matching x64 source policy.
 
 Steam Runtime 4 omits GTK3 development files. `config/build/linux-arm64-gtk.json` pins the Debian 13 ARM64 GTK/AT-SPI/epoxy build overlay by package URL/version/SHA256. Setup uses dpkg-deb extraction into the private sysroot only, without host installation or maintainer scripts. The target still needs compatible distro runtime libraries.
+
+The portable ARM64 regression file is also registered in runtime-suites.json so Windows and Mac PR shards run it alongside the Linux foundation job. The corrupt-sysroot fixture supplies a sufficient free-space observation to isolate checksum rejection from CI disk availability.

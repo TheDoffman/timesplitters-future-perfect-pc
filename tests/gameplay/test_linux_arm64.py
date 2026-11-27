@@ -89,6 +89,8 @@ def test_fresh_and_incremental_build_apply_ledger_before_configure(tmp_path, mon
 
 def test_corrupt_sysroot_stops_before_extraction(tmp_path, monkeypatch):
     module = builder()
+    from types import SimpleNamespace
+    monkeypatch.setattr(module.shutil, 'disk_usage', lambda path: SimpleNamespace(free=16 * 1024**3))
     archive = tmp_path / 'sysroot.tar.gz'; archive.write_bytes(b'corrupt archive')
     monkeypatch.setattr(module, 'download', lambda *args: archive)
     monkeypatch.setattr(module, 'install_dxc', lambda: pytest.fail('corrupt archive accepted'))
