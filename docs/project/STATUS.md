@@ -10,6 +10,22 @@ assets; game requires clean-source three-host builds, isolated gameplay and
 installer/preservation checks and nine verified public assets. Main merge still
 requires explicit user authorization for the concrete release PR.
 
+Initial clean candidate3c37 passes four native launcher CI packages/22-asset
+verification, Mac native build and120s Story (6900 guest presents, no failed
+presents/validation errors), Mac package install/preservation, Linux native build,
+package fresh/upgrade preservation and360s Story (13500 guest presents, two
+pause/resume cycles), and clean-userspace package checks/68 launcher UI groups.
+Windows compilation succeeds, but the controls fixture fails at its first mouse
+assertion: cold SDL setup ages the injected event110ms beyond the100ms production
+stale-input bound. The same failure persists with isolated default configuration;
+personal settings are not its cause. The fixture now completes device/settings
+discovery before queueing timed replay. Build also routes native test runtime,
+display, input and saves into disposable settings and restores caller environment.
+Production input and every assertion stay
+unchanged. Fresh source receipts/packages and release gates remain required after
+this fixture correction; earlier artifacts are not relabeled. Personal settings,
+saves and optional packs are untouched. Publishing remains pending.
+
 ## 2026-11-27 - Linux launcher CPU selection and single installer (implemented; publication pending)
 
 Follow-up branch feature/linux-launcher-architecture starts at main merge

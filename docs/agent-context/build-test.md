@@ -46,7 +46,7 @@ Exit: `test_online_menu.py`, `test_quit_menu.py`, `test_fov_settings.py`;
 native `--test`/`--online-self-test`. Clang Story fixtures use the Windows guest
 adapter with the real host trap; hexadecimal additions need token boundaries.
 
-Next: launcher2.0.0 four-platform checks/22 assets; game0.7.2 three-host packages.
+[Release and native test isolation](build-test-continuation.md#native-build-isolation-and-replay).
 Game gates: clean source, native/package/preservation, matching multiplayer IDs,9 hashes.
 SPIRV-Cross covers package CLI imports; hardware/full-campaign acceptance is separate.
 The Mac packager derives ZIP names, member roots and BUILD sidecars from the
