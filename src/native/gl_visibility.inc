@@ -1,4 +1,5 @@
 #include "graphics/visibility_queries.h"
+#include "graphics/visibility_draw_scope.h"
 typedef struct NativeVisibility {GLuint id;int active,ended;} NativeVisibility;
 static TsfpVisibilityQueries native_visibility;
 static void *native_visibility_create(void *host) {
@@ -24,7 +25,13 @@ static int native_visibility_result(void *host,void *query,uint64_t *pixels) {
     glGetQueryObjectuiv(q->id,GL_QUERY_RESULT_AVAILABLE,&ready);if(!ready)return 0;
     glGetQueryObjectui64v(q->id,GL_QUERY_RESULT,&count);*pixels=count;return 1;
 }
-static const TsfpVisibilityOps native_visibility_ops={NULL,native_visibility_create,native_visibility_destroy,native_visibility_begin,native_visibility_end,native_visibility_result};
+static const TsfpVisibilityOps native_visibility_raw_ops={NULL,native_visibility_create,native_visibility_destroy,native_visibility_begin,native_visibility_end,native_visibility_result};
+static TsfpVisibilityDrawScope native_visibility_draws={NULL,&native_visibility_raw_ops};
+static const TsfpVisibilityOps native_visibility_ops={&native_visibility_draws,
+    tsfp_visibility_draw_create,tsfp_visibility_draw_destroy,
+    tsfp_visibility_draw_query_begin,tsfp_visibility_draw_query_end,tsfp_visibility_draw_result};
+static void native_visibility_guest_draw_begin(void){tsfp_visibility_draw_begin(&native_visibility_draws);}
+static void native_visibility_guest_draw_end(void){tsfp_visibility_draw_end(&native_visibility_draws);}
 int xbox_D3D8VisibilityBegin(void) {
     NATIVE_GL_SCOPE;
     double scale=native_scene_active && g.backbuf_w && g.backbuf_h

@@ -1,4 +1,10 @@
 /* Asset-free exact-sample acceptance, shared by native GPU fixtures. */
+#include "graphics/visibility_draw_scope.h"
+static void *query_scope_create(void *h){(void)h;return rhi_occlusion_create();}
+static void query_scope_destroy(void *h,void *q){(void)h;rhi_occlusion_destroy(q);}
+static int query_scope_begin(void *h,void *q){(void)h;return rhi_occlusion_begin(q);}
+static int query_scope_end(void *h,void *q){(void)h;return rhi_occlusion_end(q);}
+static int query_scope_result(void *h,void *q,uint64_t *n){(void)h;return rhi_occlusion_result(q,n);}
 static void test_visibility_queries(void) {
     RhiShader *vs=shader(RHI_STAGE_VERTEX,
         "float4 main(uint id:SV_VertexID):SV_POSITION {return float4(id==2?3.0:-1.0,id==1?3.0:-1.0,.5,1);}","vs_5_0");
@@ -45,6 +51,25 @@ static void test_visibility_queries(void) {
             CHECK(rhi_occlusion_result(q,&result)==1);
             CHECK(result==(uint64_t)(mode==0?0:mode==2?2048:mode==3?8192:4096)*samples);
         }
+        /* Real host-generated fullscreen work must not contribute to a title's
+         * geometry query, even though it uses the same renderer/device. */
+        const TsfpVisibilityOps ops={NULL,query_scope_create,query_scope_destroy,
+            query_scope_begin,query_scope_end,query_scope_result};
+        TsfpVisibilityDrawScope scope={NULL,&ops};
+        void *compound=tsfp_visibility_draw_create(&scope);CHECK(compound);
+        rhi_clear_depth(ds,RHI_CLEAR_DEPTH,.75f,0);
+        rhi_set_shader(RHI_STAGE_PIXEL,solid);
+        CHECK(tsfp_visibility_draw_query_begin(&scope,compound));
+        rhi_draw(3,0); /* host feedback/resolve work before the guest draw */
+        tsfp_visibility_draw_begin(&scope);rhi_draw(3,0);tsfp_visibility_draw_end(&scope);
+        rhi_draw(3,0); /* unrelated host work after the guest draw */
+        CHECK(tsfp_visibility_draw_query_end(&scope,compound));
+        if(samples>1)CHECK(rhi_image_resolve_subresource(color,0,read,0)==0);
+        unsigned char scope_pixels[64*64*4];
+        CHECK(rhi_image_readback(samples>1?read:color,0,scope_pixels,64*4)==0);
+        CHECK(tsfp_visibility_draw_result(&scope,compound,&result)==1);
+        CHECK(result==(uint64_t)4096*samples);
+        tsfp_visibility_draw_destroy(&scope,compound);
         rhi_occlusion_destroy(q);rhi_set_render_target(NULL,NULL);
         rhi_view_destroy(ds);rhi_image_destroy(z);rhi_view_destroy(rt);rhi_image_destroy(color);rhi_image_destroy(read);
     }

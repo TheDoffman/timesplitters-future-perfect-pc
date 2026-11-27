@@ -1,3 +1,44 @@
+## 2026-11-26 - Mansion lighting and rectangle repair (local)
+
+On investigate/mansion-white-rectangles, base eec4cb2bf, for
+[the Discord graphics report](https://discord.com/channels/1566295768489263136/1574677960408170548).
+Windows v0.7.1 and retained605/604 reproduce the pale4:3 rectangle and severe
+washout in What Lies Below with Temporal Uplink36 at Original60 and native180.
+Ghost Gun pickup is unnecessary; returning to revolver clears the reproduction.
+
+The cause is native occlusion queries counting renderer-internal feedback draws
+alongside the guest's50-point visibility geometry. Measured result1,024,170 should
+be170; original light code then produces intensity45734 instead of14 and corona
+halfsize8865 instead of7, also corrupting RGB through high intensity bits. Radius,
+FOV and light metadata remain constant across weapons. Host-call replay isolates
+the first tint to the two US17810 corona layers (17941/179BC).
+
+Shared visibility_draw_scope.h now segments logical queries around actual guest
+draws only, after renderer preparation, preserving asynchronous exact sums and
+existing target/MSAA normalization. Late patch3064 applies the RHI adapter across
+all four draw entry points; legacy GL uses the same helper. Exact corona callers
+also use full-view placement with deferred flush/restoration. No clamp, authored
+light change, permanent-grade change, personal setting or private asset change.
+Diagnostic Original60 Vulkan gameplay restores170/intensity14/halfsize7 and removes
+both washout and rectangle. Temporary diagnostic wrappers are removed for final build.
+
+Windows GPU RHI Vulkan and D3D11 pass the real query-scope1/4-sample test (only one
+of three fullscreen triangles counts), ordinary visibility/depth/cutout/reuse tests
+and existing framebuffer/permanent-grade checks. Native Darwin arm64 Clang and
+Linux GCC/Clang each pass5 actual-adapter/removal-control/legacy-GL CPU cases.
+Final non-diagnostic MSVC Release build passes (SHA256
+f134e919a65bdba0b8cc88561e385c8284d814d92f985a1937665d3ca35197cf).
+57 graphics/placement/visibility/backlog regressions and46 focused patch-tracking/
+context checks pass, with5 optional local
+capture cases skipped. Final non-diagnostic What Lies Below runs pass on Vulkan
+Original60, Vulkan native180 and D3D11 Original60: clean Uplink and revolver return,
+completed visibility170, clean exit and unchanged fixture profiles/signatures.
+Each uses isolated Classic textures,1280x720/FOV55, background/minimized rendering;
+these are correctness captures, not foreground/performance acceptance.
+Native Mac/Linux mission acceptance, other reported weapons/black boxes and all
+encounters remain unverified. No normal install, push, merge, release or Discord
+message/closure has been performed for this fix.
+
 ## 2026-11-25 - Launcher color coordination (local)
 
 Uncommitted presentation change on feature/launcher-color-coordination, based on

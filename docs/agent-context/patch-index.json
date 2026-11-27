@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "e41ec41bf34c1371c24f5d8e841465cdab8bd8ce415a41f1f05bcdf60201120b",
+  "loaderSha256": "ba50a65d14f67202824e25dd6015c720eaf4fc1d6c01f01ed485d83c9e160fb8",
   "patches": [
     {
       "name": "0010-dsound-audio-timing.patch",
@@ -4073,6 +4073,14 @@
       "sha256": "b7a70487693426b38914df5216bf2424a7512b89f5d6e97932e2dd111f1dc356",
       "targets": [
         "src/d3d/d3d8_display.c"
+      ]
+    },
+    {
+      "name": "3064-visibility-draw-scope.patch",
+      "path": "patches/graphics/rendering/3064-visibility-draw-scope.patch",
+      "sha256": "ae886d3f9fe1fccb2ff339e8762aed53f9808cbbc379d6a5e8a824f4e00f5ac6",
+      "targets": [
+        "src/d3d/d3d8_device.c"
       ]
     },
     {

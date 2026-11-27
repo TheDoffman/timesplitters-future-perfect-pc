@@ -39,3 +39,21 @@ Isolated prompt rendering probes may set TSFP_TEST_PROMPT_DEVICE=controller or
 keyboard only with TSFP_PC_INPUT_STATE or TSFP_NATIVE_TEST_KEYS. This selects
 glyph rendering without changing bindings or normal last-device state; ordinary
 launches ignore it. pc_prompts.c retains controller-diagram override precedence.
+
+## World-light coronas
+
+World-light coronas (Discord mansion rectangle report, November26) use the
+existing `pc_display_aim_primitive` float-rectangle hook. Exact US callers17941
+and179BC in17810 select full-view placement before each coloured/neutral layer,
+then flush and restore the enclosing scope. These are projected world glows;
+near lights can exceed the canvas and must not inherit the centered HUD viewport.
+Keep original size, UVs, colour and intensity; this scope does not normalize GPU
+visibility samples or alter light attenuation. Original4:3 and split views retain
+the existing path. See [query scopes](fidelity-comparison.md#guest-draw-query-scopes-mansion-lighting-november26)
+for the separate visibility contamination repair and STATUS for live acceptance.
+
+`test_ui_layout.py` includes `corona_overlay.c`: both original corona call sites,
+ordinary/oversized bounds, aspect ratios, guest ABI/UV/colour preservation,
+deferred flush/restoration and unrelated/split-view guards. Removal controls
+reject old placement, missing flush and missing restoration. These CPU fixtures
+verify the placement boundary; real mission captures establish visible coverage.

@@ -362,9 +362,9 @@ def patch_records(paths):
         paths.remove(vsync)
         paths.append(vsync)
 
-    # Uplink composition extends the final shared CopyRects/Clear and copy queue.
+    # Uplink composition and query draw scopes extend the final device/copy queue.
     for name in ('3061-temporal-uplink-map.patch', '3060-frame-buffer-textures.patch',
-                 '3062-permanent-color-grade.patch'):
+                 '3062-permanent-color-grade.patch', '3064-visibility-draw-scope.patch'):
         late_patch = by_name.get(name)
         if late_patch:
             paths.remove(late_patch)

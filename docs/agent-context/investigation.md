@@ -535,3 +535,8 @@ Git-indexed patch map after staging their final bytes.
 Template parity follow-up: additive0261 follows0260 and retains the canonical
 register alias optimization from9ee19013 in old runtime consumers. Historical
 subsets omit it with0260; complete migrations install it. See [batch/header contracts](compiler-batching.md).
+
+Visibility patch3064 extends the late device tail after3062. The repository-context
+exact-order fixture now includes it (109 entries before the final marker patch).
+Stage the intended patch before refreshing; focused patch tracking/context tests
+and actual full apply/generation/build are separate from historical upgrade suites.

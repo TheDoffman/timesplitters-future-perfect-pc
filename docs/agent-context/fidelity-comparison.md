@@ -7,6 +7,35 @@ their normal behavior. The independent sun/glow and allocation fixes remain.
 Historical preset captures below establish the repair's original evidence,
 not a feature still present in the current build. New checks use normal settings.
 
+## Guest draw query scopes (mansion lighting, November26)
+
+A title visibility query must count guest geometry only. Device preparation can
+run feedback/snapshot draws with stale fullscreen state; counting those made
+What Lies Below's Temporal Uplink light return1,024,170 pixels instead of170.
+The original light code converted that to intensity45734 instead of14 and
+corona halfsize8865 instead of7. High intensity bits also contaminated RGB.
+This was host query contamination, not authored attenuation or FOV metadata.
+
+`visibility_draw_scope.h` splits one logical query into at most64 reusable native
+segments, beginning/ending only around submitted guest geometry. It sums exact
+samples asynchronously; empty scopes are zero, capacity/overflow/native failure
+is an error, and pending/error preserves the caller's output. The existing
+visibility cache and target/MSAA normalization remain authoritative. Reset releases
+all segments before device destruction. No brightness/size clamp is introduced.
+`visibility_rhi_device.inc` supplies RHI callbacks; shared late patch3064 brackets
+all four D3D8 draw submissions after feedback/shader/state preparation. Legacy
+`gl_visibility.inc` and renderer_gl.c use the same policy around actual GL draws.
+
+`test_visibility_queries.py` compiles the actual RHI adapter with host feedback
+spies: old scope, missing begin and missing end controls must fail. It covers
+multi-draw preparation, asynchronous readiness, cached/empty answers, capacity
+and cleanup. `rhi_visibility.h` also submits host triangles before/after one
+counted triangle at samples1/4 and requires4096*samples, not12288*samples.
+Native Mac Clang and Linux GCC/Clang pass the portable scope/removal/GL adapter
+fixtures. These CPU checks do not certify native Mac/Linux gameplay. Live Windows
+mission captures and final build acceptance are recorded in STATUS. Corona
+placement separately uses [full-view scopes](hud-sizing.md#world-light-coronas).
+
 ## Visibility repair (Windows runtime acceptance passed)
 
 Patch3001 preserves original SDK Begin3D4250 and End3D42F0 bodies as `_gen`
@@ -41,8 +70,8 @@ Asset-free WARP fixtures pass wall0, visible samples, alpha cutouts, multiple
 draws, reuse and MSAA1/4. A native manager fixture covers pending/error/zero,
 cache/ID reuse, abandoned work, capacity, normalization and teardown. Guest
 callback tests preserve original stack/HRESULT and reject timestamp/invalid
-writes. Vulkan source compiles with pinned headers; real Vulkan/GL/Mac execution
-remains pending. Windows immediate and deferred140s mission runs both return
+writes. The original acceptance used pinned Vulkan headers; subsequent Windows Vulkan
+GPU scope checks are recorded above. Native Mac gameplay remains pending. Windows immediate and deferred140s mission runs both return
 50 samples with the sun visible and0 behind the cave roof. An additional
 stationary run waits for tutorial panels to finish and shows the authored
 bright white/yellow sun and glow. All seven preference files remain unchanged.

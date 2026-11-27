@@ -23,17 +23,21 @@ static void glGetQueryObjectui64v(GLuint id,GLuint key,GLuint64 *value){assert(i
 #include "native/gl_visibility.inc"
 int main(void) {
     uint32_t pixels=77;
-    assert(xbox_D3D8VisibilityBegin());assert(active);xbox_D3D8VisibilityEnd(0,1);assert(!active);
+    assert(xbox_D3D8VisibilityBegin());assert(!active);
+    native_visibility_guest_draw_begin();assert(active);native_visibility_guest_draw_end();
+    xbox_D3D8VisibilityEnd(0,1);assert(!active);
     assert(!xbox_D3D8VisibilityResult(0,&pixels) && pixels==77);
     available=1;fake_samples=400;
     assert(xbox_D3D8VisibilityResult(0,&pixels)==1 && pixels==100);
     native_scene_active=0;
-    assert(xbox_D3D8VisibilityBegin());xbox_D3D8VisibilityEnd(1,1);fake_samples=40;
+    assert(xbox_D3D8VisibilityBegin());
+    native_visibility_guest_draw_begin();native_visibility_guest_draw_end();
+    xbox_D3D8VisibilityEnd(1,1);fake_samples=40;
     assert(xbox_D3D8VisibilityResult(1,&pixels)==1 && pixels==40);
     assert(xbox_D3D8VisibilityBegin());xbox_D3D8VisibilityEnd(2,1);fake_samples=0;
     assert(xbox_D3D8VisibilityResult(2,&pixels)==1 && !pixels);
     assert(created==1 && scope_calls>=9);
-    assert(xbox_D3D8VisibilityBegin());assert(active);
+    assert(xbox_D3D8VisibilityBegin());native_visibility_guest_draw_begin();assert(active);
     {NATIVE_GL_SCOPE;native_visibility_reset();}
     assert(!active && created==deleted);
     puts("production GL visibility API, context entry, pending/zero and area scaling passed");return 0;

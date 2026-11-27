@@ -1,11 +1,18 @@
 #include "graphics/visibility_queries.h"
+#include "graphics/visibility_draw_scope.h"
 static TsfpVisibilityQueries device_visibility;
 static void *visibility_create(void *host){(void)host;return rhi_occlusion_create();}
 static void visibility_destroy(void *host,void *q){(void)host;rhi_occlusion_destroy(q);}
 static int visibility_begin(void *host,void *q){(void)host;return rhi_occlusion_begin(q);}
 static int visibility_end(void *host,void *q){(void)host;return rhi_occlusion_end(q);}
 static int visibility_result(void *host,void *q,uint64_t *pixels){(void)host;return rhi_occlusion_result(q,pixels);}
-static const TsfpVisibilityOps device_visibility_ops={NULL,visibility_create,visibility_destroy,visibility_begin,visibility_end,visibility_result};
+static const TsfpVisibilityOps device_visibility_native_ops={NULL,visibility_create,visibility_destroy,visibility_begin,visibility_end,visibility_result};
+static TsfpVisibilityDrawScope device_visibility_draws={NULL,&device_visibility_native_ops};
+static const TsfpVisibilityOps device_visibility_ops={&device_visibility_draws,
+    tsfp_visibility_draw_create,tsfp_visibility_draw_destroy,
+    tsfp_visibility_draw_query_begin,tsfp_visibility_draw_query_end,tsfp_visibility_draw_result};
+static void visibility_guest_draw_begin(void){tsfp_visibility_draw_begin(&device_visibility_draws);}
+static void visibility_guest_draw_end(void){tsfp_visibility_draw_end(&device_visibility_draws);}
 int xbox_D3D8VisibilityBegin(void) {
     D3D8Surface *surface=g_cur_rt?g_cur_rt:g_device_state.scene_surface;
     RhiView *view=surface?d3d8_surface_draw_view(surface):NULL;

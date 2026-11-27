@@ -8,7 +8,22 @@ import subprocess
 import pytest
 from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[2]
-@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects", "transition_overlay", "title_matte", "flash_overlay", "crane_overlay", "settings_panel", "actor_marker_layout"])
+
+@pytest.mark.parametrize('mutation', ['none', 'old-placement', 'no-flush', 'no-restore'])
+def test_corona_placement_controls(tmp_path, mutation):
+    from test_cutscene_letterbox import compile_and_run
+    adapter=(ROOT/'src/interface/pc_display_ui.inc').read_text()
+    if mutation=='old-placement':
+        adapter=adapter.replace('caller==0x00017941u || caller==0x000179BCu', 'caller==0xFFFFFFFFu')
+    elif mutation=='no-flush':
+        adapter=adapter.replace('guest_call(sub_00022FF0,0);', '')
+    elif mutation=='no-restore':
+        adapter=adapter.replace('original();ui_place(old,old_tag);return;', 'original();return;')
+    harness=(ROOT/'tests/graphics/ui_layout.c').read_text().replace('#include "pc_display_ui.inc"',adapter)
+    source=(ROOT/'tests/graphics/corona_overlay.c').read_text().replace('#include "ui_layout.c"',harness)
+    compile_and_run(tmp_path,source,fails=mutation!='none')
+
+@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects", "transition_overlay", "title_matte", "flash_overlay", "corona_overlay", "crane_overlay", "settings_panel", "actor_marker_layout"])
 def test_ui_layout(tmp_path,fixture):
     compiler,environment=native_compiler(tmp_path)
     exe=tmp_path/('ui.exe' if os.name=='nt' else 'ui')

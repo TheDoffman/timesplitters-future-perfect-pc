@@ -983,8 +983,14 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
         for(UINT q=0;q<prim_count;q++){GLuint v=q*4;GLuint quad[6]={v,v+1,v+2,v,v+2,v+3};memcpy(indices+q*6,quad,sizeof quad);}
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,g.stream_ibo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,(size_t)prim_count*6*sizeof *indices,indices,GL_STREAM_DRAW);
-        glDrawElements(GL_TRIANGLES,prim_count*6,GL_UNSIGNED_INT,0);free(indices);
-    } else glDrawArrays(mode, 0, (GLsizei)vcount);
+        native_visibility_guest_draw_begin();
+        glDrawElements(GL_TRIANGLES,prim_count*6,GL_UNSIGNED_INT,0);
+        native_visibility_guest_draw_end();free(indices);
+    } else {
+        native_visibility_guest_draw_begin();
+        glDrawArrays(mode, 0, (GLsizei)vcount);
+        native_visibility_guest_draw_end();
+    }
     native_trace("draw",converted,vcount);
     free(converted);
     return D3D_OK;
@@ -1021,7 +1027,9 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
     if(converted)native_shader_attribs();
     if(gpu)native_gpu_attribs(stride);
     apply_render_states();
+    native_visibility_guest_draw_begin();
     glDrawElements(mode, (GLsizei)icount, itype, 0);
+    native_visibility_guest_draw_end();
     native_trace("indexed",converted,nv);
     free(converted);
     return D3D_OK;

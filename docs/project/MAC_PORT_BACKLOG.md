@@ -1,3 +1,22 @@
+## Mansion lighting/query contamination (2026-11-26)
+
+**Shared fix implemented locally; native Mac CPU checks passed.** Host feedback
+and copy draws polluted guest visibility counts, inflating a world glow from
+intensity14 to45734. Shared visibility_draw_scope.h segments queries around actual
+guest draws after preparation, summing exact asynchronous native results. Both
+RHI (shared patch3064) and legacy GL adapters use this policy. Exact US17941/179BC
+corona layers also use full-view placement with deferred flush/restoration.
+Original geometry, colour, attenuation, normalization and personal settings remain.
+
+Native Darwin arm64 Clang passes the actual production adapter, all three causal
+removal controls and legacy GL adapter (5 cases); Linux GCC/Clang each pass the
+same cases. Windows diagnostic Original60 restores visibility170/intensity14; final non-probe
+Vulkan Original60/native180 and D3D11 Original60 mission runs remove both washout
+and rectangle, preserve fixture profiles and exit cleanly. Windows GPU fixtures
+also pass exact query scope sums at samples1/4. See STATUS for build provenance.
+Native Mac/Linux mission acceptance remains unverified; portable source checks do
+not establish it. Local source only; no release published.
+
 ## Launcher coordinated colors (2026-11-25)
 
 **Implemented locally; native UI verified.** On task base9df2e580c, shared themes,
