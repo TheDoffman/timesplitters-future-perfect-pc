@@ -989,6 +989,8 @@ expansion is excluded from Draft() and keeps pending values. The tab is Controls
 Shared UI checks cover defaults, presentation-only toggling, readouts and per-player
 persistence. Save/conflict handling and game-side deadzone behavior are unchanged.
 
+[Linux installer/CPU](linux-launcher-architecture.md).
+
 ## Windows graphics packaging
 
 `tools/release/package-release.py` requires a Vulkan-enabled Windows CMake cache

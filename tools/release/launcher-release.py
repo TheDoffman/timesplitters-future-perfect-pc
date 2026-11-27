@@ -32,7 +32,8 @@ from release_notes import read_release_notes
 
 ROOT = _layout_root
 REPOSITORY = 'TheDoffman/timesplitters-future-perfect-pc'
-PLATFORMS = ('windows-x64', 'macos-arm64', 'linux-x64')
+PLATFORMS = ('windows-x64', 'macos-arm64', 'linux-x64', 'linux-arm64')
+LINUX_INSTALLER = 'TimeSplitters-Install-Linux.sh'
 VERSION = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?\Z')
 
 
@@ -100,14 +101,17 @@ def manifest_name(platform):
 
 def package_names(version, platform):
     archive = f'TimeSplitters-Launcher-v{version}-{platform}.zip'
-    return [archive, archive + '.sha256', manifest_name(platform),
-            'launcher-build-' + platform + '.json']
+    names = [archive, archive + '.sha256', manifest_name(platform),
+             'launcher-build-' + platform + '.json']
+    if platform == 'linux-x64':
+        names.extend([LINUX_INSTALLER, LINUX_INSTALLER + '.sha256'])
+    return names
 
 
 def allowed_file(name, platform):
     if platform == 'windows-x64':
         return name in ('TimeSplitters Launcher.exe', 'Bin/TimeSplitters.App.exe')
-    if platform == 'linux-x64':
+    if platform in ('linux-x64', 'linux-arm64'):
         return name in ('TimeSplitters.Launcher', 'Support/Launcher/application.json',
                         'Support/Launcher/SteamDeck.txt') or (
             name.startswith('Support/Launcher/Licenses/') and name.endswith('.txt'))
@@ -150,18 +154,31 @@ def verify_package(directory, plan, platform):
                     else {'TimeSplitters Launcher.app/Contents/Info.plist',
                           'TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources',
                           'TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher'})
-        if platform == 'linux-x64':
+        if platform in ('linux-x64', 'linux-arm64'):
             required = {'TimeSplitters.Launcher', 'Support/Launcher/application.json'}
         require(required <= set(files), 'Missing launcher entry point.')
         for name, expected in files.items():
             require(allowed_file(name, platform), 'Unexpected launcher payload: ' + name)
             require(hashlib.sha256(package.read(name)).hexdigest() == expected, 'Installed file hash mismatch.')
-        if platform == 'linux-x64':
+        if platform in ('linux-x64', 'linux-arm64'):
             executable = package.getinfo('TimeSplitters.Launcher')
             require(executable.external_attr >> 16 & 0o111, 'Linux executable permissions are missing.')
+            application = json.loads(package.read('Support/Launcher/application.json'))
+            require(application == {'platform': platform, 'version': plan['version'], 'installer_protocol': 1},
+                    'Linux launcher architecture or installer protocol mismatch.')
+            header = package.read(executable)[:20]
+            machine = 183 if platform == 'linux-arm64' else 62
+            require(len(header) == 20 and header[:6] == b'\x7fELF\x02\x01' and
+                    int.from_bytes(header[18:20], 'little') == machine, 'Linux launcher ELF architecture mismatch.')
         if platform == 'macos-arm64':
             executable = package.getinfo('TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher')
             require(executable.external_attr >> 16 & 0o111, 'Mac app executable permissions are missing.')
+    if platform == 'linux-x64':
+        installer = directory / LINUX_INSTALLER
+        require(installer.read_bytes() == (ROOT / 'tools/launcher/linux/Install-Linux.sh').read_bytes(),
+                'Linux installer differs from the tested source.')
+        require((directory / (LINUX_INSTALLER + '.sha256')).read_text().split() == [digest(installer), LINUX_INSTALLER],
+                'Linux installer checksum mismatch.')
     return archive
 
 
@@ -247,10 +264,10 @@ def publication_assets(directory, plan):
 def launcher_release_path(path):
     """Launcher payload/build inputs, excluding game runtime and housekeeping."""
     return path.startswith('tools/launcher/') or path in {
-        'tools/build/build-launcher.ps1', 'tools/build/build-mac-launcher.py',
+        'tools/build/build-launcher.ps1', 'tools/build/build-mac-launcher.py', 'tools/build/build-linux-launcher.py',
         'tools/build/launcher-cache.ps1',
         'tools/build/fetch-launcher-art.ps1', 'config/build/launcher-artwork.json',
-        'config/build/mac-launcher-sdk.json', 'config/pc-controls.default.json'}
+        'config/build/mac-launcher-sdk.json', 'config/build/linux-launcher-sdk.json', 'config/pc-controls.default.json'}
 
 
 def launcher_pr_notes(api, base, generated, previous, tag, sha):
@@ -351,11 +368,14 @@ def publish(directory, plan, api):
         download = 'https://github.com/'+REPOSITORY+'/releases/download/'+tag+'/'
         links = ' · '.join('['+label+']('+download+package_names(version, platform)[0]+')'
                            for label, platform in [('Download Windows x64', 'windows-x64'),
-                                                   ('Download Mac (Apple Silicon)', 'macos-arm64'),
-                                                   ('Download Linux x64', 'linux-x64')])
-        body = ('One launcher release for Windows x64, native Apple Silicon Mac and Linux x64. Download the ZIP for your platform; '
-                'existing launchers select their matching update automatically. Saves and settings are preserved.\n\n'
-                + links + '\n\n' + reviewed + '\n\n' +
+                                                   ('Download Mac (Apple Silicon)', 'macos-arm64')])
+        links += ' · [Install on Linux](' + download + LINUX_INSTALLER + ')'
+        manual = 'Manual Linux ZIPs: ' + ' · '.join('['+label+']('+download+package_names(version, target)[0]+')'
+                                                  for label, target in [('x64', 'linux-x64'), ('ARM64', 'linux-arm64')])
+        body = ('One launcher release for Windows x64, native Apple Silicon Mac and Linux x64/ARM64. '
+                'The Linux installer automatically chooses the native architecture; existing launchers select their matching update automatically. '
+                'Saves and settings are preserved.\n\n'
+                + links + '\n\n' + manual + '\n\n' + reviewed + '\n\n' +
                 'Mac v1.2.19 users: manually replace the app and Support/Launcher/manifest.json with this release; '
                 'that older updater cannot install the newly sealed app bundle. Preserve game files, saves, settings and ISO.\n\n'
                 'The Mac app is ad-hoc signed; Developer ID signing/notarization and clean-machine installation '

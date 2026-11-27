@@ -43,17 +43,32 @@ namespace TimeSplitters.Launcher
         }
         public static bool IsCloudPlaceholder(string path) { return false; }
 #if LINUX
-        public const string AssetSuffix = "linux-x64", HostName = "Linux x64", LockFile = ".launcher/linux.lock";
+        internal static string LinuxSuffixFor(System.Runtime.InteropServices.Architecture architecture)
+        {
+            if(architecture==System.Runtime.InteropServices.Architecture.X64)return "linux-x64";
+            if(architecture==System.Runtime.InteropServices.Architecture.Arm64)return "linux-arm64";
+            throw new PlatformNotSupportedException("The Linux launcher requires an x64 or ARM64 operating system.");
+        }
+        public static readonly string AssetSuffix = LinuxSuffixFor(System.Runtime.InteropServices.RuntimeInformation.OSArchitecture);
+        public static readonly string HostName = AssetSuffix=="linux-arm64"?"Linux ARM64":"Linux x64";
+        public const string LockFile = ".launcher/linux.lock";
         public const int LauncherArchiveLimit = 256*1024*1024, LauncherExpandedLimit = 512*1024*1024, LauncherFileLimit = 4096, LauncherManifestLimit = 1024*1024;
         public const string DisplaySettingsLocation = "your desktop's Display settings";
-        public const string UpdateManifest = "launcher-update-linux-x64.json";
+        public static readonly string UpdateManifest = "launcher-update-"+AssetSuffix+".json";
         public const string GameBinary = "Bin/futureperfect_recomp", LaunchScript = "Launch.sh";
         public const string LauncherBinary = "TimeSplitters.Launcher", LauncherApplication = "Support/Launcher/application.json";
         public static bool LauncherResource(string name) { return name=="Support/Launcher/SteamDeck.txt" || name.StartsWith("Support/Launcher/Licenses/",StringComparison.Ordinal) && name.EndsWith(".txt",StringComparison.Ordinal); }
         public static string SessionLog(string tag) { return "logs/native-play.err"; }
-        public static bool Checkout(string root) { return File.Exists(Path.Combine(root,"tools/build/build-native-linux.py")); }
-        public static string GamePath(string root) { return Checkout(root)?"build/linux/game/futureperfect_recomp":GameBinary; }
-        public static string ManifestPath(string root) { return Checkout(root)?"build/linux/game/BUILD.json":"BUILD.json"; }
+        public static string NativeBuildScript { get { return AssetSuffix=="linux-arm64"?"tools/build/build-native-linux-arm64.py":"tools/build/build-native-linux.py"; } }
+        public static string NativeBuildDirectory { get { return AssetSuffix=="linux-arm64"?"build/linux-arm64/game":"build/linux/game"; } }
+        internal static bool LinuxElfMatches(byte[] header,string platform)
+        {
+            int machine=platform=="linux-x64"?62:platform=="linux-arm64"?183:-1;
+            return machine>=0 && header!=null && header.Length>=20 && header[0]==127 && header[1]==69 && header[2]==76 && header[3]==70 && header[4]==2 && header[5]==1 && header[18]==machine && header[19]==0;
+        }
+        public static bool Checkout(string root) { return File.Exists(Path.Combine(root,NativeBuildScript)); }
+        public static string GamePath(string root) { return Checkout(root)?NativeBuildDirectory+"/futureperfect_recomp":GameBinary; }
+        public static string ManifestPath(string root) { return Checkout(root)?NativeBuildDirectory+"/BUILD.json":"BUILD.json"; }
 #else
         public const string HostName = "macOS ARM64", LockFile = ".launcher/mac.lock";
         public const string AssetSuffix = "macos-arm64";

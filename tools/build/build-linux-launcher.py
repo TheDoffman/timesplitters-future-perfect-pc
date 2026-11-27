@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build/package the Linux x64 launcher using the shared Avalonia UI and policy."""
+"""Build/package the native Linux launcher using the shared Avalonia UI and policy."""
 import argparse
 import hashlib
 import importlib.util
@@ -25,16 +25,26 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dotnet', type=Path)
     parser.add_argument('--install-sdk', action='store_true')
-    parser.add_argument('--output', type=Path, default=ROOT / 'build/linux-launcher')
+    parser.add_argument('--architecture', choices=('x64', 'arm64'), help='Target CPU (default: native host)')
+    parser.add_argument('--output', type=Path)
     parser.add_argument('--artwork-dir', type=Path, default=ROOT / 'private/launcher-art')
     parser.add_argument('--require-artwork', action='store_true')
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--package', action='store_true')
     args = parser.parse_args()
-    if platform.system() != 'Linux' or platform.machine() not in ('x86_64', 'AMD64'):
-        parser.error('Build and test on Linux x64 (including Ubuntu under WSL).')
+    host = {'x86_64': 'x64', 'amd64': 'x64', 'aarch64': 'arm64', 'arm64': 'arm64'}.get(platform.machine().lower())
+    if platform.system() != 'Linux' or host is None:
+        parser.error('Build on Linux x64 or ARM64.')
+    target = args.architecture or host
+    if args.test and target != host:
+        parser.error('--test runs native executables; test this package on its matching architecture.')
+    asset_suffix = 'linux-' + target
     pin = json.loads((ROOT / 'config/build/linux-launcher-sdk.json').read_text())
-    sdk = (args.dotnet or ROOT / 'external/dotnet-linux/dotnet').resolve()
+    if host == 'arm64':
+        pin = dict(version=pin['version'], **pin['arm64'])
+    else:
+        pin = {key: pin[key] for key in ('version', 'url', 'sha512')}
+    sdk = (args.dotnet or ROOT / ('external/dotnet-linux-arm64' if host == 'arm64' else 'external/dotnet-linux') / 'dotnet').resolve()
     if args.install_sdk and not sdk.exists():
         sdk.parent.mkdir(parents=True, exist_ok=True)
         archive = sdk.parent / 'sdk.tar.gz'
@@ -54,7 +64,7 @@ def main():
         for name in ('launcher-banner.png', 'launcher-logo.png', 'launcher-backdrop.png', 'launcher.ico'):
             if not (args.artwork_dir / name).is_file():
                 raise SystemExit('Required artwork missing: ' + name)
-    output = args.output.resolve()
+    output = (args.output or ROOT / ('build/linux-arm64-launcher' if target == 'arm64' else 'build/linux-launcher')).resolve()
     if output == ROOT or ROOT in output.parents and not output.is_relative_to(ROOT / 'build'):
         raise SystemExit('Use a dedicated build output directory.')
     output.mkdir(parents=True, exist_ok=True)
@@ -72,7 +82,7 @@ def main():
         layout.generate_theme(ROOT / f'tools/launcher/{theme}.xaml', layout_dir / f'{theme}.axaml')
     publish = output / 'publish'
     subprocess.run([str(sdk), 'publish', str(ROOT / 'tools/launcher/linux/LinuxLauncher.csproj'),
-                    '-c', 'Release', '-r', 'linux-x64', '--self-contained', 'true',
+                    '-c', 'Release', '-r', asset_suffix, '--self-contained', 'true',
                     '-p:RestoreLockedMode=true', '-p:PublishSingleFile=true',
                     '-p:IncludeNativeLibrariesForSelfExtract=true', '-p:EnableCompressionInSingleFile=true',
                     '-p:DebugType=None', '-p:DebugSymbols=false',
@@ -105,25 +115,30 @@ def main():
                 if any(word in notice.name.lower() for word in ('license', 'notice', 'copying')):
                     shutil.copyfile(notice, licenses / (name.replace('/', '-') + '-' + notice.name))
     shutil.copyfile(ROOT / 'docs/players/steam-deck-launcher.md', support / 'SteamDeck.txt')
-    (support / 'application.json').write_text(json.dumps({'platform': 'linux-x64', 'version': version}) + '\n')
+    (support / 'application.json').write_text(json.dumps({'platform': asset_suffix, 'version': version, 'installer_protocol': 1}) + '\n')
     files = {p.relative_to(package).as_posix(): digest(p) for p in package.rglob('*') if p.is_file() and p.name != 'manifest.json'}
     manifest = support / 'manifest.json'
     manifest.write_text(json.dumps({'schema': 1, 'version': version, 'files': files}, indent=2) + '\n')
     sources = [ROOT / 'docs/players/steam-deck-launcher.md', ROOT / 'tools/build/build-linux-launcher.py', ROOT / 'config/build/linux-launcher-sdk.json',
                *sorted((ROOT / 'tools/launcher').rglob('*.cs')), *sorted((ROOT / 'tools/launcher').glob('*.xaml')),
                ROOT / 'tools/launcher/linux/LinuxLauncher.csproj', ROOT / 'tools/launcher/linux/packages.lock.json',
-               ROOT / 'tools/launcher/macos/generate_layout.py', ROOT / 'tools/launcher/macos/generate_appearance.py']
+               ROOT / 'tools/launcher/macos/generate_layout.py', ROOT / 'tools/launcher/macos/generate_appearance.py',
+               ROOT / 'tools/launcher/linux/Install-Linux.sh']
     receipt = {'source_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                'working_tree_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                'source_sha256': {p.relative_to(ROOT).as_posix(): digest(p) for p in sources},
-               'sdk': pin, 'files': files}
+               'sdk': pin, 'platform': asset_suffix, 'files': files}
     (output / 'BUILD-launcher.json').write_text(json.dumps(receipt, indent=2) + '\n')
     if args.test:
         env['TSFP_TEST_REQUIRE_ICON'] = '1' if (args.artwork_dir / 'launcher.ico').is_file() else '0'
         for mode in ('--test', '--test-ui'):
             subprocess.run([str(binary), mode], check=True, cwd=ROOT, env=env)
     if args.package:
-        archive = output / f'TimeSplitters-Launcher-v{version}-linux-x64.zip'
+        installer = output / 'TimeSplitters-Install-Linux.sh'
+        shutil.copyfile(ROOT / 'tools/launcher/linux/Install-Linux.sh', installer)
+        installer.chmod(0o755)
+        installer.with_suffix('.sh.sha256').write_text(digest(installer) + '  ' + installer.name + '\n')
+        archive = output / f'TimeSplitters-Launcher-v{version}-{asset_suffix}.zip'
         with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as zip:
             for name in [*files, 'Support/Launcher/manifest.json']:
                 zip.write(package / name, name)
@@ -131,7 +146,7 @@ def main():
         archive.with_suffix('.zip.sha256').write_text(f'{checksum}  {archive.name}\n')
         if args.test:
             subprocess.run([str(binary), '--verify-package', str(archive), version], check=True, cwd=ROOT, env=env)
-        (output / 'launcher-update-linux-x64.json').write_text(json.dumps({
+        (output / ('launcher-update-' + asset_suffix + '.json')).write_text(json.dumps({
             'schema': 1, 'version': version, 'asset_name': archive.name,
             'size': archive.stat().st_size, 'sha256': checksum}, indent=2) + '\n')
     print(binary)

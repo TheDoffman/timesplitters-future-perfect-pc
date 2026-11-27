@@ -1037,3 +1037,5 @@ Mac omits2620/2625; Story uses production guards.
 Coronas: [tests](hud-sizing.md#world-light-coronas).
 
 [Linux ARM64 build/tests](build-test-continuation.md#linux-arm64).
+
+[Linux installer and CPU selection](linux-launcher-architecture.md).

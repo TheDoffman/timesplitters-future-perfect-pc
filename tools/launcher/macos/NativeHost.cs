@@ -69,7 +69,9 @@ namespace TimeSplitters.Launcher
             if(expected.Length==0 && m.TryGetValue("files",out var files) && files is Dictionary<string,object> map)expected=Json.String(map,LauncherPlatform.GameBinary);
             Core.Require(expected.Length==64 && Core.Hash(exe)==expected,"Native executable differs from its build manifest. Rebuild or repair before playing.");
 #if LINUX
-            using(var stream=File.OpenRead(exe)) { var header=new byte[20];Core.Require(stream.Read(header,0,20)==20 && header[0]==0x7f && header[1]==(byte)'E' && header[2]==(byte)'L' && header[3]==(byte)'F' && header[4]==2 && header[5]==1 && header[18]==62 && header[19]==0,"This launcher requires a Linux x64 ELF game executable."); }
+            using(var stream=File.OpenRead(exe)) { var header=new byte[20];Core.Require(stream.Read(header,0,20)==20 && LauncherPlatform.LinuxElfMatches(header,LauncherPlatform.AssetSuffix),"This launcher requires a "+LauncherPlatform.HostName+" ELF game executable. Install the matching native release."); }
+            string declaredPlatform=Json.String(m,"platform");
+            Core.Require(declaredPlatform.Length==0 || declaredPlatform==LauncherPlatform.AssetSuffix,"The installed game manifest belongs to a different Linux architecture. Install the matching native release.");
 #else
             using(var stream=File.OpenRead(exe)){var header=new byte[8];Core.Require(stream.Read(header,0,8)==8 && BitConverter.ToUInt32(header,0)==0xfeedfacf && BitConverter.ToUInt32(header,4)==0x0100000c,"This launcher requires a native Apple Silicon game executable.");}
 #endif

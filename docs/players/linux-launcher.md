@@ -1,6 +1,6 @@
 # Linux launcher
 
-The Linux x64 launcher uses the same interface, settings, game-data importer,
+The Linux launcher uses the same interface, settings, game-data importer,
 save management and verified update transactions as Windows and Mac. It runs
 natively; Wine, Python and a system .NET installation are not needed to run the
 self-contained launcher download. Ubuntu 24.04 x64 with an X11 desktop is the
@@ -34,8 +34,10 @@ install `libwayland-client0`, `libwayland-cursor0` and `libwayland-egl1`.
 These are normal desktop runtime libraries; a Wayland desktop session is not
 required. This keeps newer Mesa drivers compatible with the package.
 
-The launcher offers only published `linux-x64` game packages on the selected
-channel. A launcher ZIP contains no game runtime or original game data. Until a
+The next launcher automatically chooses published `linux-x64` or `linux-arm64`
+game packages for the computer on the selected channel. It also uses the matching
+architecture for launcher updates and never substitutes another CPU build.
+A launcher ZIP contains no game runtime or original game data. Until a
 matching Linux game release is published, the launcher reports that none is
 available. A source build can be used through the checkout workflow below.
 Windows and Mac runtime ZIPs cannot be installed as Linux updates.
@@ -46,6 +48,32 @@ saves and imported data remain in the installation folder across updates. Game
 startup uses the system Vulkan driver; inherited Mac/software-driver overrides
 are cleared. Desktop mode choices include common presets, Auto and any saved
 custom mode. Automatic desktop refresh switching is unavailable.
+
+## Upcoming single Linux installer
+
+The architecture-aware installer is source preparation and has not been released.
+Once a new launcher version containing it is published, download
+`TimeSplitters-Install-Linux.sh` and run:
+
+```sh
+sh ./TimeSplitters-Install-Linux.sh
+```
+
+It requires Python 3 for installation, detects x64 or ARM64, verifies and installs
+only the matching self-contained launcher, then opens the existing launcher UI.
+Python is not needed to run the installed launcher. The default folder is
+`~/.local/share/TimeSplitters` (or `$XDG_DATA_HOME/TimeSplitters`). Use
+`--install-dir "/path/to/TimeSplitters"` for another writable folder, or
+`--no-launch` to install without opening the window. Running it again leaves a
+complete current installation alone and repairs damaged launcher files while
+preserving game data, saves and settings. A newer installed version is not
+downgraded. The existing ZIP installation above remains available.
+
+ARM64 needs a published ARM64 launcher and game package plus compatible desktop
+libraries and a Vulkan driver. Neither emulation tests nor an installer establish
+physical ARM64 GPU/gameplay support. Older published launchers without the
+installer command cannot be installed by this new bootstrap; it reports that
+limitation before running them.
 
 ## Steam Deck: Gaming Mode and Desktop Mode
 
@@ -90,7 +118,8 @@ launcher artwork, supply `--artwork-dir <folder>` containing `launcher-banner.pn
 `launcher-backdrop.png` and `launcher-logo.png`; `--require-artwork` makes those
 files mandatory for release builds.
 
-The checkout launcher uses `build/linux/game/futureperfect_recomp` and its
+The checkout launcher uses `build/linux/game/futureperfect_recomp` on x64 or
+`build/linux-arm64/game/futureperfect_recomp` on ARM64, and its
 `BUILD.json`, `private/game`, existing `config` preferences, `private/saves` and
 `private/native-settings`. Importing extracted files copies them into
 `private/game`; it does not select an external data directory in place. Avoid

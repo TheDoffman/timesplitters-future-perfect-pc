@@ -1,3 +1,45 @@
+## 2026-11-27 - Linux launcher CPU selection and single installer (implemented; publication pending)
+
+Follow-up branch feature/linux-launcher-architecture starts at main merge
+84e0bf271 (PR #618, discussion #615). That integration passed all 22 selected
+CI checks before merge. Its broad local Linux preflight still exposes ten
+unchanged desktop fixture assumptions (clock_gettime feature macro, Windows
+CMake path and Mach-O linker flags); those are not a passing full Linux preflight.
+
+The current launcher now selects native x64/ARM64 game and self-update assets,
+checks ELF/manifest architecture and uses the matching checkout build path.
+One Linux installer detects the CPU, verifies the matching package, then uses
+the existing launcher's lock/recovery/install transaction. CI adds a native
+Linux ARM64 launcher runner alongside x64, Windows and Mac. Version 1.7.2 is
+unchanged; no new release or README installer download has been published.
+
+Windows bootstrap/release/compatibility/CI/context checks pass: 184 tests and
+54 subtests (test-only GIT_CONFIG_COUNT=0 avoids the desktop environment's empty
+Git config values disappearing in Windows Python subprocesses). Native Linux
+x64 launcher adapters, 68 shared UI groups, package install/repair/restart and
+automatic-installer idempotence/lock/personal-file checks pass under Xvfb.
+The ARM64 launcher cross-publishes successfully with the locked runtime graph.
+The real x64 bootstrap hands the actual package to the native installer CLI,
+installs and repeats without rewriting the executable or a personal fixture.
+The actual ARM64 installer CLI also passes under QEMU with the target sysroot:
+correct ARM64 package, repeated install and personal-file preservation. This is
+emulated CPU/installation evidence, not native desktop or GPU acceptance.
+A source --check attempt is blocked by the existing private/game symlink (the
+launcher deliberately rejects linked installation paths); the fixture remains.
+PR #619 run46056835145 atd349c7dac passes native Windows x64, Mac ARM64,
+Linux x64 and Linux ARM64 launcher builds/tests/packages and complete release
+verification from the same revision. Both Linux hosts pass 24 bootstrap cases,
+20 texture installer cases, 68 shared UI groups, real package installation,
+repeated install/repair/lock/personal-file checks, copied helper recovery and
+rendered launcher restart. The first ARM64 run exposed an x64-only checkout
+marker in the shared texture fixture; NativeBuildScript now supplies its native
+marker without weakening the private-pack assertion. All 22 publication assets
+verify; this validation run publishes nothing. All 23 selected CI checks,
+including the broader Windows/Mac runtime and patch suites, Linux/Mac GPU
+contracts and PR validation gate, pass on that revision. The following commit
+only records these observed results and wraps player documentation. Physical ARM64
+Linux gameplay/GPU and Steam Deck acceptance remain unverified.
+
 ## 2026-11-27 - Native Linux ARM64 integration (local)
 
 Integrated DCKcode's [discussion #615](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/615)

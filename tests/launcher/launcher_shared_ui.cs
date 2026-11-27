@@ -1061,6 +1061,11 @@ public static class LauncherSharedUiChecks
                 string name="crash-20261024-120000000-0000000001-123456";
                 string report=CrashReports.Folder(folder,name);Directory.CreateDirectory(report);
                 File.WriteAllText(Path.Combine(report,"capture.lock"),"");
+                foreach(string platform in new[]{"macos-arm64","linux-x64","linux-arm64"}) {
+                    File.WriteAllText(Path.Combine(report,"report.json"),Json.Encode(new{schema=1,kind="unhandled_exception",platform=platform,signal=11,native_capture_saved=true,executable_sha256=new string('a',64)}));
+                    string summary=CrashReports.Summary(folder);
+                    Need(summary.Contains("Fatal native signal 11") && summary.Contains("Native context: saved"),"Native crash platform was not recognized: "+platform);
+                }
                 File.WriteAllText(Path.Combine(report,"report.json"),"{\"schema\":1,\"kind\":\"suspected_hang\"}");
                 File.WriteAllText(Path.Combine(report,"breadcrumbs.txt"),"1 0 scene-id 4\n");
                 File.WriteAllText(Path.Combine(report,"private-file"),"private");
