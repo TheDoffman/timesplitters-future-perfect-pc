@@ -1,6 +1,6 @@
 ## Linux launcher architecture and installer (2026-11-27)
 
-**Implemented locally; host validation pending.** On main base84e0bf271 after
+**Implemented; native launcher CI verified.** On main base84e0bf271 after
 PR #618, tools/launcher/LauncherPlatform.cs selects Linux x64/ARM64 for game
 assets, self-updates and checkout paths; NativeHost checks both ELF CPU and
 manifest platform. LinuxInstaller.cs reuses the shared verified installation
@@ -8,9 +8,13 @@ transaction for Install-Linux.sh rather than adding another updater policy.
 Windows and Mac continue using their existing platform adapters and UI; neither
 needs a new architecture picker or Linux bootstrap. The publication verifier
 now requires four tested packages plus one Linux installer (22 assets).
-Native Windows/Mac shared launcher checks, native Linux ARM64 CI and physical
-ARM64/Deck acceptance are pending. No release/version bump is included. See
-STATUS.md for results and limits; source remains on the follow-up task branch.
+PR #619 run46056835145 atd349c7dac passes all four native launcher hosts and
+complete package verification. ARM64 and x64 Linux each pass bootstrap, native
+adapter, texture, shared UI and real installer/repair/restart checks. Windows
+and Mac retain their native adapter/UI coverage; no Mac-specific implementation
+is needed. Physical ARM64 game/GPU and Deck acceptance remain pending. No release
+or version bump is included. See STATUS.md for evidence; source remains on the
+follow-up task branch.
 
 ## Native Linux ARM64 contribution (#615, 2026-11-27)
 

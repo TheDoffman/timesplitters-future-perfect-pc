@@ -36,7 +36,8 @@ required. This keeps newer Mesa drivers compatible with the package.
 
 The next launcher automatically chooses published `linux-x64` or `linux-arm64`
 game packages for the computer on the selected channel. It also uses the matching
-architecture for launcher updates and never substitutes another CPU build. A launcher ZIP contains no game runtime or original game data. Until a
+architecture for launcher updates and never substitutes another CPU build.
+A launcher ZIP contains no game runtime or original game data. Until a
 matching Linux game release is published, the launcher reports that none is
 available. A source build can be used through the checkout workflow below.
 Windows and Mac runtime ZIPs cannot be installed as Linux updates.

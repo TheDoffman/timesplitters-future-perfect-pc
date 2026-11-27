@@ -1,4 +1,4 @@
-## 2026-11-27 - Linux launcher CPU selection and single installer (in progress)
+## 2026-11-27 - Linux launcher CPU selection and single installer (implemented; publication pending)
 
 Follow-up branch feature/linux-launcher-architecture starts at main merge
 84e0bf271 (PR #618, discussion #615). That integration passed all 22 selected
@@ -26,10 +26,18 @@ correct ARM64 package, repeated install and personal-file preservation. This is
 emulated CPU/installation evidence, not native desktop or GPU acceptance.
 A source --check attempt is blocked by the existing private/game symlink (the
 launcher deliberately rejects linked installation paths); the fixture remains.
-PR #619 run46055962762 at86b840690 passes Windows, Mac and Linux x64 launcher
-builds/tests/packages. Native ARM64 builds and passes updater checks, then exposes
-an x64-only marker in the shared texture checkout fixture. That fixture now uses
-NativeBuildScript; complete ARM64 UI/package acceptance is pending the rerun. Physical ARM64
+PR #619 run46056835145 atd349c7dac passes native Windows x64, Mac ARM64,
+Linux x64 and Linux ARM64 launcher builds/tests/packages and complete release
+verification from the same revision. Both Linux hosts pass 24 bootstrap cases,
+20 texture installer cases, 68 shared UI groups, real package installation,
+repeated install/repair/lock/personal-file checks, copied helper recovery and
+rendered launcher restart. The first ARM64 run exposed an x64-only checkout
+marker in the shared texture fixture; NativeBuildScript now supplies its native
+marker without weakening the private-pack assertion. All 22 publication assets
+verify; this validation run publishes nothing. All 23 selected CI checks,
+including the broader Windows/Mac runtime and patch suites, Linux/Mac GPU
+contracts and PR validation gate, pass on that revision. The following commit
+only records these observed results and wraps player documentation. Physical ARM64
 Linux gameplay/GPU and Steam Deck acceptance remain unverified.
 
 ## 2026-11-27 - Native Linux ARM64 integration (local)
