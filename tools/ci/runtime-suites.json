@@ -317,6 +317,7 @@
     "tests/diagnostics/test_exit_trace_guard.py"
   ],
   "release": [
+    "tests/launcher/test_linux_installer.py",
     "tests/launcher/test_publish_release.py",
     "tests/diagnostics/test_crash_symbols.py",
     "tests/launcher/test_native_mac_package.py",

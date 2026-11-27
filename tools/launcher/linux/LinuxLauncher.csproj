@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType><TargetFramework>net8.0</TargetFramework><RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <OutputType>WinExe</OutputType><TargetFramework>net8.0</TargetFramework><RuntimeIdentifiers>linux-x64;linux-arm64</RuntimeIdentifiers>
     <AssemblyName>TimeSplitters.Launcher</AssemblyName><DefineConstants>$(DefineConstants);LINUX</DefineConstants>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo><PublishSingleFile>true</PublishSingleFile><SelfContained>true</SelfContained><EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile><AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>

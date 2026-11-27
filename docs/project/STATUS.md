@@ -1,3 +1,22 @@
+## 2026-11-27 - Linux launcher CPU selection and single installer (in progress)
+
+Follow-up branch feature/linux-launcher-architecture starts at main merge
+84e0bf271 (PR #618, discussion #615). That integration passed all 22 selected
+CI checks before merge. Its broad local Linux preflight still exposes ten
+unchanged desktop fixture assumptions (clock_gettime feature macro, Windows
+CMake path and Mach-O linker flags); those are not a passing full Linux preflight.
+
+The current launcher now selects native x64/ARM64 game and self-update assets,
+checks ELF/manifest architecture and uses the matching checkout build path.
+One Linux installer detects the CPU, verifies the matching package, then uses
+the existing launcher's lock/recovery/install transaction. CI adds a native
+Linux ARM64 launcher runner alongside x64, Windows and Mac. Version 1.7.2 is
+unchanged; no new release or README installer download has been published.
+
+Bootstrap/release Python tests pass locally (66 tests plus 23 subtests).
+Native launcher/package checks and cross-host CI are pending. Physical ARM64
+Linux gameplay/GPU and Steam Deck acceptance remain unverified.
+
 ## 2026-11-27 - Native Linux ARM64 integration (local)
 
 Integrated DCKcode's [discussion #615](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/615)

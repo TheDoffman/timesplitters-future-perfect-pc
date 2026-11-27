@@ -64,6 +64,19 @@ namespace TimeSplitters.Launcher
                 File.WriteAllText(Path.Combine(install,"BUILD.json"),"preserved game metadata");
                 var personal=new System.Collections.Generic.Dictionary<string,string>{{"Settings/pc-controls.json","personal bindings"},{"Data/keep","original game data"},{"custom.txt","unknown user file"}};
                 foreach(var item in personal){string path=Core.PathIn(install,item.Key);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,item.Value);}
+                string fresh=Path.Combine(root,"automatic installer Ω");Directory.CreateDirectory(fresh);
+                foreach(var item in personal){string path=Core.PathIn(fresh,item.Key);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,item.Value);}
+                Need(LinuxInstaller.Install(fresh,archive,version)&&SelfUpdate.Complete(fresh),"Automatic installer did not install a verified native package");
+                string native=Core.PathIn(fresh,LauncherPlatform.LauncherBinary);DateTime before=File.GetLastWriteTimeUtc(native);
+                Need(!LinuxInstaller.Install(fresh,archive,version)&&File.GetLastWriteTimeUtc(native)==before,"Repeated installer rewrote an already verified launcher");
+                foreach(var item in personal)Need(File.ReadAllText(Core.PathIn(fresh,item.Key))==item.Value,"Automatic installer changed personal file "+item.Key);
+                using(var guard=LauncherPlatform.AcquireUpdateLock(fresh)){
+                    bool locked=false;try{LinuxInstaller.Install(fresh,archive,version);}catch(IOException){locked=true;}
+                    Need(locked,"Automatic installer ignored an active launcher lock");
+                }
+                File.AppendAllText(Core.PathIn(fresh,LauncherPlatform.LauncherApplication),"corrupt");
+                Need(LinuxInstaller.Install(fresh,archive,version)&&SelfUpdate.Complete(fresh),"Automatic installer did not repair a damaged launcher");
+                Console.WriteLine("PASS automatic installer: native package, repeated install, repair, lock and personal-file preservation");
                 var changes=SelfUpdate.Unpack(archive,Path.Combine(root,"payload"),version);
                 Core.ApplyLauncher(install,changes,null);Need(SelfUpdate.Complete(install),"Installed package failed verification");
                 string app=Core.PathIn(install,Core.AppPath);File.AppendAllText(app,"corruption");Need(!SelfUpdate.Complete(install),"Corrupt launcher accepted");
@@ -104,7 +117,20 @@ namespace TimeSplitters.Launcher
                 LauncherRestartChecks.Run();
                 UpdateHelper(root);
                 LauncherTextureChecks.Run();
-                Need(LauncherPlatform.AssetSuffix=="linux-x64","Wrong release platform");
+                Need(LauncherPlatform.LinuxSuffixFor(System.Runtime.InteropServices.Architecture.X64)=="linux-x64","x64 platform selection failed");
+                Need(LauncherPlatform.LinuxSuffixFor(System.Runtime.InteropServices.Architecture.Arm64)=="linux-arm64","ARM64 platform selection failed");
+                bool unsupported=false;try{LauncherPlatform.LinuxSuffixFor(System.Runtime.InteropServices.Architecture.Arm);}catch(PlatformNotSupportedException){unsupported=true;}
+                Need(unsupported,"Unsupported CPU fell back to an unrelated download");
+                Need(LauncherPlatform.AssetSuffix==LauncherPlatform.LinuxSuffixFor(System.Runtime.InteropServices.RuntimeInformation.OSArchitecture),"Wrong native release platform");
+                Need(LauncherPlatform.UpdateManifest=="launcher-update-"+LauncherPlatform.AssetSuffix+".json","Self-update architecture selection failed");
+                int machine=LauncherPlatform.AssetSuffix=="linux-arm64"?183:62,otherMachine=machine==183?62:183;
+                string nativeFolder=LauncherPlatform.NativeBuildDirectory,buildScript=LauncherPlatform.NativeBuildScript;
+                foreach(string target in new[]{"linux-x64","linux-arm64"}){
+                    byte[] header=new byte[20];header[0]=127;header[1]=69;header[2]=76;header[3]=70;header[4]=2;header[5]=1;header[18]=(byte)(target=="linux-arm64"?183:62);
+                    Need(LauncherPlatform.LinuxElfMatches(header,target),"Matching ELF architecture rejected");
+                    Need(!LauncherPlatform.LinuxElfMatches(header,target=="linux-arm64"?"linux-x64":"linux-arm64"),"Wrong ELF architecture admitted");
+                    header[5]=2;Need(!LauncherPlatform.LinuxElfMatches(header,target),"Wrong-endian ELF admitted");
+                }
                 Directory.CreateDirectory(Path.Combine(root,".launcher"));
                 using(var held=LauncherPlatform.AcquireUpdateLock(root)) {
                     bool blocked=false;try { using(var second=LauncherPlatform.AcquireUpdateLock(root)) {} } catch(IOException) { blocked=true; }
@@ -113,23 +139,25 @@ namespace TimeSplitters.Launcher
                 }
                 Need(Program.FindRoot(new[]{"--root",root})==root,"Explicit installation root lost");
                 Directory.CreateDirectory(Path.Combine(root,"tools/build"));
-                File.WriteAllText(Path.Combine(root,"tools/build/build-native-linux.py"),"fixture");
-                Need(LauncherPlatform.Checkout(root)&&LauncherPlatform.GamePath(root)=="build/linux/game/futureperfect_recomp","Checkout routing failed");
+                File.WriteAllText(Path.Combine(root,buildScript),"fixture");
+                Need(LauncherPlatform.Checkout(root)&&LauncherPlatform.GamePath(root)==nativeFolder+"/futureperfect_recomp","Checkout routing failed");
                 Need(Program.FindRoot(Array.Empty<string>(),Path.Combine(root,"build/linux-launcher/package"))==root,"Checkout discovery failed");
                 NativeHost.Prepare(root);
                 var info=GameSettings.StartInfo(root);
-                Need(info.FileName==Path.Combine(root,"build/linux/game/futureperfect_recomp"),"Wrong game target");
+                Need(info.FileName==Path.Combine(root,nativeFolder,"futureperfect_recomp"),"Wrong game target");
                 Need(info.Environment["RECOMP_SAVE_DIR"]==Path.Combine(root,"private/saves"),"Wrong save target");
                 Need(info.Environment["TSFP_DISPLAY_CONFIG"]==Path.Combine(root,"config/pc-display.ini"),"Wrong display target");
                 Need(!info.Environment.ContainsKey("VK_DRIVER_FILES")&&!info.Environment.ContainsKey("DYLD_LIBRARY_PATH"),"Foreign driver override leaked");
                 Need(!Directory.Exists(Path.Combine(root,"Settings")),"Created installed settings in source checkout");
-                string game=Path.Combine(root,"build/linux/game/futureperfect_recomp");Directory.CreateDirectory(Path.GetDirectoryName(game));
-                byte[] elf=new byte[64];elf[0]=127;elf[1]=69;elf[2]=76;elf[3]=70;elf[4]=2;elf[5]=1;elf[18]=62;File.WriteAllBytes(game,elf);
-                Action manifest=()=>File.WriteAllText(Path.Combine(root,"build/linux/game/BUILD.json"),Json.Encode(new{executable_sha256=Core.Hash(game),renderer="vulkan"}));
+                string game=Path.Combine(root,nativeFolder,"futureperfect_recomp");Directory.CreateDirectory(Path.GetDirectoryName(game));
+                byte[] elf=new byte[64];elf[0]=127;elf[1]=69;elf[2]=76;elf[3]=70;elf[4]=2;elf[5]=1;elf[18]=(byte)machine;File.WriteAllBytes(game,elf);
+                Action manifest=()=>File.WriteAllText(Path.Combine(root,nativeFolder,"BUILD.json"),Json.Encode(new{executable_sha256=Core.Hash(game),renderer="vulkan",platform=LauncherPlatform.AssetSuffix}));
                 manifest();NativeHost.CheckBuild(root);
-                elf[18]=183;File.WriteAllBytes(game,elf);manifest();Reject(()=>NativeHost.CheckBuild(root));
-                elf[18]=62;File.WriteAllBytes(game,elf);manifest();
-                File.Delete(Path.Combine(root,"tools/build/build-native-linux.py"));
+                elf[18]=(byte)otherMachine;File.WriteAllBytes(game,elf);manifest();Reject(()=>NativeHost.CheckBuild(root));
+                elf[18]=(byte)machine;File.WriteAllBytes(game,elf);manifest();
+                File.WriteAllText(Path.Combine(root,nativeFolder,"BUILD.json"),Json.Encode(new{executable_sha256=Core.Hash(game),platform=LauncherPlatform.AssetSuffix=="linux-arm64"?"linux-x64":"linux-arm64"}));
+                Reject(()=>NativeHost.CheckBuild(root));manifest();
+                File.Delete(Path.Combine(root,buildScript));
                 NativeHost.Prepare(root);info=GameSettings.StartInfo(root);
                 Need(info.FileName==Path.Combine(root,"Bin/futureperfect_recomp")&&info.Environment["RECOMP_SAVE_DIR"]==Path.Combine(root,"Saves"),"Installed routing failed");
                 Need(Core.Allowed("Launch.sh")&&Core.Allowed("Bin/libSDL3.so.0")&&!Core.Allowed("Bin/unmanaged.sh"),"Runtime package allowlist failed");

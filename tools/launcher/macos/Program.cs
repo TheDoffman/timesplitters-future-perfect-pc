@@ -27,6 +27,9 @@ namespace TimeSplitters.Launcher
         [STAThread] public static int Main(string[] args)
         {
             Arguments=args;
+#if LINUX
+            if(args.Length>0 && args[0]=="--install-launcher")return LinuxInstaller.Run(args);
+#endif
 #if MACOS
             if(args.Length==1 && args[0]=="--test-storage")return MacStorageTests.Run();
 #endif

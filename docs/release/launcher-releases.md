@@ -22,6 +22,23 @@ It publishes all three packages in one GitHub release only after all three hosts
 launcher regressions and package checks. Each installed launcher selects its own
 platform's update manifest. Game releases remain independent. [Game Stable and named preview channels](releasing.md) do not control launcher self-updates. Publish stable launcher 1.3.0+ before publishing games using the new channel strategy.
 
+## Pending Linux installer release
+
+The architecture-aware change extends the workflow to four packages: Windows
+x64, Mac ARM64, Linux x64 and Linux ARM64, tested on matching native runners.
+One `TimeSplitters-Install-Linux.sh` download chooses the Linux CPU and opens the
+current launcher after verified installation. The release also keeps both Linux
+ZIPs for manual installation. Four sets of versioned package/checksum/update/
+build metadata, four ZIP aliases and the installer/checksum total **22 assets**.
+All must verify before publication. The fifteen-asset records above describe
+historical three-platform releases.
+
+This feature does not bump or republish 1.7.2. Choose a new unused version and
+review its player-facing release notes before publishing. Change the README
+Linux download to the installer only after that release and its asset are live.
+An ARM64 launcher can only offer ARM64 game releases that have actually been
+published; it cannot make an x64 runtime compatible with ARM64.
+
 ## Publish an update
 
 Write and review `docs/release/notes/launcher-v<version>.md` with the version
