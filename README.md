@@ -51,7 +51,7 @@ all three platforms. Update the launcher and game before playing together.
 
 ## <img src="docs/assets/icon-play.svg" alt="" width="24" height="24"> Start playing
 
-Windows, Mac and Linux use the same installation steps:
+Windows, Mac and Linux x64 use the same installation steps:
 
 | Step | Installation |
 | :---: | --- |
@@ -112,6 +112,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | **Windows 10/11 x64** | [Vulkan rendering and startup troubleshooting](docs/players/windows-vulkan.md), keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
 | **Mac (Apple Silicon)** | Native launcher, game and experimental Online/LAN multiplayer. Intel Macs are unsupported. The app is not notarized; see [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution), [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
 | **Linux x64 (experimental)** | Native launcher and portable SDL/Vulkan game package, with experimental Online/LAN multiplayer. Package, isolated gameplay and X11/Wayland renderer checks pass under Ubuntu/WSL. Physical desktop GPU/Wayland, controller and Steam Deck acceptance remain pending. See the [Linux launcher guide](docs/players/linux-launcher.md) and [acceptance limits](docs/development/linux-acceptance.md). |
+| **Linux ARM64 (developer build)** | Native game cross-build available [from source](docs/development/linux.md#linux-arm64-developer-build). The full build and MMIO tests under emulation pass; physical ARM64 handheld gameplay and performance remain unverified. No ARM64 launcher or release package is available. |
 
 <a name="pc-features"></a>
 
@@ -230,6 +231,8 @@ Report security vulnerabilities privately using the [security policy](SECURITY.m
 
 The project statically recompiles the Xbox executable into native code; it does
 not recover the original C/C++ source. The pinned runtime source is bundled with its credits and licenses, and the [independent tooling replacement](docs/development/independent-runtime.md) is in progress. See [bundled runtime source](docs/development/building.md#bundled-runtime-source) for setup verification and remaining dependencies.
+
+The Linux ARM64 port was contributed by [DCKcode in discussion #615](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/615).
 
 Original project code and documentation are licensed under **GPL-3.0-only**,
 except where stated otherwise. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
