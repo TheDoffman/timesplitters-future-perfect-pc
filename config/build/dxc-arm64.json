@@ -1,0 +1,7 @@
+{
+  "version": "1.10.2605.37-1",
+  "package": "directx-shader-compiler-1.10.2605.37-1-aarch64.pkg.tar.xz",
+  "url": "https://pkgmirror.sametimetomorrow.net/aarch64/packages/d/directx-shader-compiler/directx-shader-compiler-1.10.2605.37-1-aarch64.pkg.tar.xz",
+  "sha256": "9cffa86913bb901f96c62ccb9d112a1fa402cca6053897a7c3186fd106b0f585",
+  "provenance": "Arch Linux ARM extra/directx-shader-compiler, an aarch64 build of DXC 1.10.2605. DXC 1.8.2403 rejects the title's chained swizzles; this build and the x86 SDK's DXC 1.9.2609 compile them. Archived original package, matching the contributor checksum; rebuild -2 requires GLIBC_2.43, newer than the Steam Runtime 4 sysroot (2.41)."
+}

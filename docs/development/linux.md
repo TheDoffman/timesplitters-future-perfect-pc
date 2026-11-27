@@ -228,3 +228,14 @@ not a performance guarantee. It resets only its disposable timing preference,
 checks the observed startup mode, and records child CPU seconds. Validation
 runs remain the default; `--performance` is separately labeled validation-off
 measurement. Keep personal preferences and the shared fixture unchanged.
+
+## Linux ARM64 developer build
+
+The port contributed by [DCKcode in discussion #615](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/615) supports an ARM64 Linux target through the shared Vulkan/SDL runtime. On a Linux build host with Python 3.12+, clang, clang++, lld, make, pkg-config, dpkg-deb and the shared Python requirements installed:
+
+```sh
+CC=clang CXX=clang++ .venv-linux/bin/python tools/build/build-native-linux-arm64.py \
+  --game-dir /path/to/existing/game --setup --generate --jobs 2
+```
+
+Setup downloads the pinned Steam Runtime 4 ARM64 sysroot and DXC, adds a checksummed Debian 13 GTK development overlay and cross-builds the pinned decoder-only FFmpeg. These packages are extracted only into the build sysroot; the ARM64 target needs its own compatible GTK/SDL audio/graphics runtime dependencies. Allow at least 8 GiB free. Later builds omit --setup/--generate when the verified guest output and dependencies already exist. Output is build/linux-arm64/game/futureperfect_recomp plus BUILD.json and tsfp_native_mmio_test. Execute the latter on ARM64 to check protected MMIO recovery. The x64 test runner and release packager remain x64 tools; no ARM64 installer/package is supplied. Physical handheld controls, GPU/driver behavior and performance require separate acceptance; a successful cross-build is not a gameplay test.

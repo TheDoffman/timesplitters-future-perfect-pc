@@ -164,3 +164,27 @@ Physics: [checks](build-test-details.md#guest-physical-state-regression).
 GPU asserts stay on; AO logs scene/pixel failures.
 
 Local-player tests: controls-options.md.
+
+Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
+
+The0236 fixture reads UTF-8 for bridge box-drawing comments (CI4cb4697c);
+native calendar source and the accepted binary are unchanged.
+
+## Linux ARM64
+
+Linux ARM64: `tools/build/build-native-linux-arm64.py` cross-builds using the pinned Steam Runtime 4 sysroot, ARM64 DXC and decoder-only FFmpeg. Setup prepares the runtime before revision checks; all builds apply the complete patch ledger. pkg-config searches only target dependencies. `tests/gameplay/test_linux_arm64.py` executes the Linux register adapter/device policy and checks fresh/incremental orchestration and checksum rejection. Native ARM64 execution is separate from cross compilation. See [Linux integration](linux-game.md).
+
+
+The Linux-only protected-page test also cross-compiles the existing ARM64 fixture with the actual arena/alias services and Linux ucontext, then runs under qemu-aarch64 when available. It skips without native ARM64 or that explicit tool pair. The portable context test still runs on MSVC. DXC setup always verifies/replays the pinned package even if old headers exist.
+
+The rolling DXC mirror removed build -1; its archived bytes retain the original donor SHA256. Build -2 requires GLIBC_2.43 and cannot replace it against this sysroot (GLIBC_2.41). The pin uses the archived -1 and HTTPS.
+
+ARM64 setup also installs/verifies the shared SPIRV-Cross pin required by current main's OpenGL backend. Both Vulkan and OpenGL compile; the receipt records both, matching x64 source policy.
+
+Steam Runtime 4 omits GTK3 development files. `config/build/linux-arm64-gtk.json` pins the Debian 13 ARM64 GTK/AT-SPI/epoxy build overlay by package URL/version/SHA256. Setup uses dpkg-deb extraction into the private sysroot only, without host installation or maintainer scripts. The target still needs compatible distro runtime libraries.
+
+The portable ARM64 regression file is also registered in runtime-suites.json so Windows and Mac PR shards run it alongside the Linux foundation job. The corrupt-sysroot fixture supplies a sufficient free-space observation to isolate checksum rejection from CI disk availability.
+
+The portable MMIO fixture computes the bounded device-array offset before pointer addition. This keeps intermediate pointers inside the array under UBSan; production adapter code is unchanged. Clang sanitizer acceptance is part of the normal compiler fixture path.
+
+The simulated Linux context typedefs use fixture-private names after real standard headers load. Darwin stdlib includes native signal/context declarations; these remain separate from the simulated Linux ABI so the same production-adapter fixture compiles on Mac.

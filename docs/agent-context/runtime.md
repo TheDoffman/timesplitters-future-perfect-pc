@@ -1014,3 +1014,5 @@ visibility and objective logic remain guest-owned (Refs #338).
 RTL: [arithmetic/memory](guest-memory-ops.md), [strings](guest-stack-trace.md); [host policy](execution-host.md).
 
 2350: controls-options.md.
+
+Patch2413 extends final Linux CMake CPU selection to aarch64/arm64 and retains x64 MMIO tests while adding the existing ARM64 protected-page fixture on Linux. It follows2412 in the effective ledger. Decoder/device policy remains shared with macOS; see [Linux ARM64](linux-game.md#linux-arm64).

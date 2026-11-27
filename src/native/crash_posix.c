@@ -9,7 +9,13 @@
 #define TSFP_NATIVE_PLATFORM "macos-arm64"
 #define TSFP_NATIVE_SYSTEM "Mac"
 #else
+#if defined(__aarch64__)
+#define TSFP_NATIVE_PLATFORM "linux-arm64"
+#define TSFP_NATIVE_CPU "arm64"
+#else
 #define TSFP_NATIVE_PLATFORM "linux-x64"
+#define TSFP_NATIVE_CPU "x64"
+#endif
 #define TSFP_NATIVE_SYSTEM "Linux"
 #endif
 #include "../diagnostics/pc_hang_policy.h"
@@ -197,9 +203,13 @@ static void report(Capture *c,int hang){
             char pid[20];snprintf(pid,sizeof pid,"%d",c->pid);char *sample[]={"/usr/bin/sample",pid,"1","1",NULL};tool(sample,fileno(out));
         }
 #else
-        fprintf(out,"Native Linux x64 register context\nSignal: %d\nFault address: 0x%llx\nPC: 0x%llx SP: 0x%llx\n",
+        fprintf(out,"Native Linux " TSFP_NATIVE_CPU " register context\nSignal: %d\nFault address: 0x%llx\nPC: 0x%llx SP: 0x%llx\n",
             c->signal,(unsigned long long)c->address,(unsigned long long)c->pc,(unsigned long long)c->sp);
+#ifdef __aarch64__
+        for(int i=0;i<31;i++)fprintf(out,"x%d = 0x%016llx\n",i,(unsigned long long)c->registers[i]);
+#else
         for(int i=0;i<23;i++)fprintf(out,"greg%d = 0x%016llx\n",i,(unsigned long long)c->registers[i]);
+#endif
         fprintf(out,"Xbox eax ecx edx esp ebx esi edi ebp:");for(int i=0;i<8;i++)fprintf(out," %08x",c->guest[i]);fputc('\n',out);
         if(!hang){char pc[24];snprintf(pc,sizeof pc,"0x%llx",(unsigned long long)c->pc);
             char *args[]={"/usr/bin/addr2line","-f","-C","-e",c->executable,pc,NULL};fflush(out);tool(args,fileno(out));}
@@ -270,6 +280,9 @@ void tsfp_native_crash_signal(int sig,siginfo_t *info,void *context){
 #ifdef __APPLE__
         c->pc=uc->uc_mcontext->__ss.__pc;c->sp=uc->uc_mcontext->__ss.__sp;
         for(int i=0;i<29;i++)c->registers[i]=uc->uc_mcontext->__ss.__x[i];c->registers[29]=uc->uc_mcontext->__ss.__fp;c->registers[30]=uc->uc_mcontext->__ss.__lr;
+#elif defined(__aarch64__)
+        c->pc=(uint64_t)uc->uc_mcontext.pc;c->sp=(uint64_t)uc->uc_mcontext.sp;
+        for(int i=0;i<31;i++)c->registers[i]=(uint64_t)uc->uc_mcontext.regs[i];
 #else
         c->pc=(uint64_t)uc->uc_mcontext.gregs[REG_RIP];c->sp=(uint64_t)uc->uc_mcontext.gregs[REG_RSP];
         for(int i=0;i<23;i++)c->registers[i]=(uint64_t)uc->uc_mcontext.gregs[i];

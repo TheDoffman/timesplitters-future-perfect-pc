@@ -299,3 +299,15 @@ The input fixture checks placement and live updates under denied host policy.
 
 View & HUD visibility labels are HUD & UI and Version watermark (no Show prefix);
 the three visibility switches now persist via the shared controls JSON.
+
+## Audio loop boundaries
+
+Patch2310 adds an exclusive `loop_end_bytes` (zero=whole source) and
+`recomp_dsound_buffer_end` shared by the buffer clock and PCM pump. Valid native
+or legacy lengths convert from encoded blocks to decoded frames; bad lengths
+retain the existing valid-start/full-tail fallback. Looping uses intro then
+[start,end); one-shots retain the whole source. Live bounds advance old guest
+time on model refresh, reset queued output, then normalize in the new region. Paused positions
+stay intact until resume; a running seek beyond the loop end resumes at start.
+`audio_buffer_regions.c` checks production-decoded PCM, fractional clocks/refusal,
+tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.

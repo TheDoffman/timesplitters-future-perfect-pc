@@ -1006,11 +1006,6 @@ zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md
 
 Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
 
-Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
-
-The0236 fixture reads UTF-8 for bridge box-drawing comments (CI4cb4697c);
-native calendar source and the accepted binary are unchanged.
-
 [Native multiplayer and crossplay validation](multiplayer-ui.md).
 
 [Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
@@ -1040,3 +1035,5 @@ Mac omits2620/2625; Story uses production guards.
 [PR](release-speed.md).
 
 Coronas: [tests](hud-sizing.md#world-light-coronas).
+
+[Linux ARM64 build/tests](build-test-continuation.md#linux-arm64).

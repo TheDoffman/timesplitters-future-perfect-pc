@@ -11,11 +11,32 @@
 
 Keyboard & mouse · 4K & ultrawide · Custom controls · Online multiplayer
 
-<p>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip"><img src="docs/assets/download-linux-launcher.svg" alt="Download the latest Linux launcher (x64)" width="280" height="52"></a>
-</p>
+Choose your platform to download the launcher.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="33%">
+      <h3>Windows</h3>
+      <p>Windows 10/11 &middot; x64</p>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the Windows x64 launcher" width="240" height="45"></a>
+      <p><sub>Launcher ZIP</sub></p>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <h3>macOS</h3>
+      <p>Apple Silicon &middot; M1 or newer</p>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the macOS Apple Silicon launcher" width="240" height="45"></a>
+      <p><sub>Launcher ZIP</sub></p>
+    </td>
+    <td align="center" valign="top" width="34%">
+      <h3>Linux</h3>
+      <p>Linux &middot; x64</p>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip"><img src="docs/assets/download-linux-launcher.svg" alt="Download the Linux x64 launcher" width="240" height="45"></a>
+      <p><sub>Launcher ZIP</sub></p>
+      <hr>
+      <p><a href="docs/development/linux.md#linux-arm64-developer-build"><strong>ARM64 &middot; Build from source</strong></a><br><sub>Experimental &middot; No package yet</sub></p>
+    </td>
+  </tr>
+</table>
 
 <sub>Direct ZIP downloads of the latest stable launcher &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
 
@@ -51,7 +72,7 @@ all three platforms. Update the launcher and game before playing together.
 
 ## <img src="docs/assets/icon-play.svg" alt="" width="24" height="24"> Start playing
 
-Windows, Mac and Linux use the same installation steps:
+Windows, Mac and Linux x64 use the same installation steps:
 
 | Step | Installation |
 | :---: | --- |
@@ -112,6 +133,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | **Windows 10/11 x64** | [Vulkan rendering and startup troubleshooting](docs/players/windows-vulkan.md), keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
 | **Mac (Apple Silicon)** | Native launcher, game and experimental Online/LAN multiplayer. Intel Macs are unsupported. The app is not notarized; see [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution), [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
 | **Linux x64 (experimental)** | Native launcher and portable SDL/Vulkan game package, with experimental Online/LAN multiplayer. Package, isolated gameplay and X11/Wayland renderer checks pass under Ubuntu/WSL. Physical desktop GPU/Wayland, controller and Steam Deck acceptance remain pending. See the [Linux launcher guide](docs/players/linux-launcher.md) and [acceptance limits](docs/development/linux-acceptance.md). |
+| **Linux ARM64 (developer build)** | Native game cross-build available [from source](docs/development/linux.md#linux-arm64-developer-build). The full build and MMIO tests under emulation pass; physical ARM64 handheld gameplay and performance remain unverified. No ARM64 launcher or release package is available. |
 
 <a name="pc-features"></a>
 
@@ -230,6 +252,8 @@ Report security vulnerabilities privately using the [security policy](SECURITY.m
 
 The project statically recompiles the Xbox executable into native code; it does
 not recover the original C/C++ source. The pinned runtime source is bundled with its credits and licenses, and the [independent tooling replacement](docs/development/independent-runtime.md) is in progress. See [bundled runtime source](docs/development/building.md#bundled-runtime-source) for setup verification and remaining dependencies.
+
+The Linux ARM64 port was contributed by [DCKcode in discussion #615](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/615).
 
 Original project code and documentation are licensed under **GPL-3.0-only**,
 except where stated otherwise. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

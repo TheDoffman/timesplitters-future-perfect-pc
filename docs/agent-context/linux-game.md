@@ -558,3 +558,11 @@ against the reference's non-native no-draw fallback. Its indexing/dispatch
 algorithm is unchanged, and all three negative mutations remain mandatory.
 
 Linux main initializes SDL video before guest/audio workers through video_startup_sdl.h. Otherwise audio-first SDL initialization on a worker can claim SDL main/event thread ownership, causing the renderer to reject window creation while audio continues. Initialization logs the selected X11/Wayland backend and exits before guest boot on failure. No Vulkan ICD is forced; RADV remains system-selected. Real SDL tests require Xvfb and headless Weston and reject an audio-first negative control.
+
+## Linux ARM64
+
+Discussion #615 supplies DCKcode's ARM64 port (fork revision e01fe553a8d1f031f12d54dea344a42bcca8a518). The integration uses the shared ARM64 decoder/device policy, Linux ucontext fault recovery and architecture-specific crash metadata. Patch 2413 selects the adapter and runs the existing ARM64 protected-page fixture instead of omitting MMIO tests.
+
+`build-native-linux-arm64.py --game-dir PATH --setup --generate` cross-builds against the checksummed Steam Runtime 4 arm64 sysroot and DXC pin. It requires Linux Python 3.12+, clang/clang++, lld, CMake, Ninja, make, pkg-config and dpkg-deb. Setup overlays pinned Debian 13 GTK development packages into the private sysroot. Build output stays in build/linux-arm64/game. Online resolves python3 on the target. This is a developer build; the existing x64 package/launcher/runner do not become ARM64 distributions. ARM handheld performance and gameplay require hardware acceptance.
+
+Setup creates the pinned runtime before querying its revision. Incremental builds also apply the complete patch ledger, and inherited host PKG_CONFIG_PATH is cleared. The cross-built tsfp_native_mmio_test must execute on ARM64 (or explicitly labelled emulation); it is not run on the x64 build host. Portable fixture test_linux_arm64.py checks register results, SP/writeback, discarded zero-register loads, fault rejection and CRTC acknowledgement through production source.

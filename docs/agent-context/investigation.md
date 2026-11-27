@@ -540,3 +540,5 @@ Visibility patch3064 extends the late device tail after3062. The repository-cont
 exact-order fixture now includes it (109 entries before the final marker patch).
 Stage the intended patch before refreshing; focused patch tracking/context tests
 and actual full apply/generation/build are separate from historical upgrade suites.
+
+ARM64 integration615 uses a focused worktree; bounded build/system guide notes continue in their existing continuation files to preserve the 64KiB guide limit. See linux-game.md#linux-arm64.

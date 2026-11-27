@@ -1,0 +1,83 @@
+{
+  "provenance": "Debian 13 (trixie) official binary-arm64 Packages index, checked 2026-11-27; GTK development overlay for Steam Runtime 4, no maintainer scripts executed. Not an ARM64 runtime distribution.",
+  "packages": [
+    {
+      "name": "libatk-bridge2.0-0t64",
+      "version": "2.56.2-1+deb13u2",
+      "url": "https://deb.debian.org/debian/pool/main/a/at-spi2-core/libatk-bridge2.0-0t64_2.56.2-1+deb13u2_arm64.deb",
+      "sha256": "b86030826a7f81a3a2a8442d58a8a61a7d01376a97ba62c1f2d410f5e6f1b885"
+    },
+    {
+      "name": "libatk-bridge2.0-dev",
+      "version": "2.56.2-1+deb13u2",
+      "url": "https://deb.debian.org/debian/pool/main/a/at-spi2-core/libatk-bridge2.0-dev_2.56.2-1+deb13u2_arm64.deb",
+      "sha256": "bc5aa8181c03dd27ed77ed9a8e6862078b46e55a54f060f4b448062d26307220"
+    },
+    {
+      "name": "libatk1.0-0t64",
+      "version": "2.56.2-1+deb13u2",
+      "url": "https://deb.debian.org/debian/pool/main/a/at-spi2-core/libatk1.0-0t64_2.56.2-1+deb13u2_arm64.deb",
+      "sha256": "c35cd1a2bd7f6750e56a0755571b091a13fdb606354312088626ba639719c953"
+    },
+    {
+      "name": "libatk1.0-dev",
+      "version": "2.56.2-1+deb13u2",
+      "url": "https://deb.debian.org/debian/pool/main/a/at-spi2-core/libatk1.0-dev_2.56.2-1+deb13u2_arm64.deb",
+      "sha256": "986d52487744e917001129b539330a7719a2c7d5068dc46afda1653166a279a2"
+    },
+    {
+      "name": "libatspi2.0-0t64",
+      "version": "2.56.2-1+deb13u2",
+      "url": "https://deb.debian.org/debian/pool/main/a/at-spi2-core/libatspi2.0-0t64_2.56.2-1+deb13u2_arm64.deb",
+      "sha256": "0b5266747ef215e161152772081ce3b2990d72d02447185faa1af661e11e2d39"
+    },
+    {
+      "name": "libatspi2.0-dev",
+      "version": "2.56.2-1+deb13u2",
+      "url": "https://deb.debian.org/debian/pool/main/a/at-spi2-core/libatspi2.0-dev_2.56.2-1+deb13u2_arm64.deb",
+      "sha256": "519f9f4a3e5162753517d98d7fc22c8a511be9cfe973286f03fa15e3a62f2e69"
+    },
+    {
+      "name": "libcolord2",
+      "version": "1.4.7-3",
+      "url": "https://deb.debian.org/debian/pool/main/c/colord/libcolord2_1.4.7-3_arm64.deb",
+      "sha256": "409ea712ced2cdaed5775ff2179a1f414fb5de79f645c305bbea8f9b40e727dc"
+    },
+    {
+      "name": "libgtk-3-0t64",
+      "version": "3.24.49-3",
+      "url": "https://deb.debian.org/debian/pool/main/g/gtk+3.0/libgtk-3-0t64_3.24.49-3_arm64.deb",
+      "sha256": "84f5dfbeadf9fc8c1e12f18a2010b1cce45481aba5c3db427d98d6601d95ec82"
+    },
+    {
+      "name": "libgtk-3-dev",
+      "version": "3.24.49-3",
+      "url": "https://deb.debian.org/debian/pool/main/g/gtk+3.0/libgtk-3-dev_3.24.49-3_arm64.deb",
+      "sha256": "83ee43ba00793fe87840e195097b00d087dad9a550f453ca53a36816f6a636aa"
+    },
+    {
+      "name": "libcloudproviders-dev",
+      "version": "0.3.6-2",
+      "url": "https://deb.debian.org/debian/pool/main/libc/libcloudproviders/libcloudproviders-dev_0.3.6-2_arm64.deb",
+      "sha256": "e1293f878eb0d1f530e7b7a307a340784ae7f8b7c01383fb9d776fccfb3f31b7"
+    },
+    {
+      "name": "libcloudproviders0",
+      "version": "0.3.6-2",
+      "url": "https://deb.debian.org/debian/pool/main/libc/libcloudproviders/libcloudproviders0_0.3.6-2_arm64.deb",
+      "sha256": "ee5b472cdf4c7d40ef0ff5b120d9d1407ace49dc3fbf61f8a88edf5c802d1466"
+    },
+    {
+      "name": "libepoxy-dev",
+      "version": "1.5.10-2",
+      "url": "https://deb.debian.org/debian/pool/main/libe/libepoxy/libepoxy-dev_1.5.10-2_arm64.deb",
+      "sha256": "c1beaac7a060fd581c1fa800e2457452ea6ab2bbcffdef1c39b5c1124a498e61"
+    },
+    {
+      "name": "libepoxy0",
+      "version": "1.5.10-2",
+      "url": "https://deb.debian.org/debian/pool/main/libe/libepoxy/libepoxy0_1.5.10-2_arm64.deb",
+      "sha256": "905fbc7fb73bd620a10c1c02118bb760d42826a7212bfddadcda9d10d5a23d81"
+    }
+  ]
+}

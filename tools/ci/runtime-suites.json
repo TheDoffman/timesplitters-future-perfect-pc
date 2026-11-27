@@ -24,6 +24,7 @@
     "tests/textures/texture_nonpak.py",
     "tests/textures/texture_variants.py",
     "tests/gameplay/test_native_mac_tools.py",
+    "tests/gameplay/test_linux_arm64.py",
     "tests/launcher/test_native_mac_launcher.py",
     "tests/repository/test_testing_profile.py",
     "tests/compiler/test_disc_image.py",
