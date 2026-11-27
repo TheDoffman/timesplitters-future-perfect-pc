@@ -1040,3 +1040,5 @@ Mac omits2620/2625; Story uses production guards.
 [PR](release-speed.md).
 
 Coronas: [tests](hud-sizing.md#world-light-coronas).
+
+Linux ARM64: `tools/build/build-native-linux-arm64.py` cross-builds using the pinned Steam Runtime 4 sysroot, ARM64 DXC and decoder-only FFmpeg. Setup prepares the runtime before revision checks; all builds apply the complete patch ledger. pkg-config searches only target dependencies. `tests/gameplay/test_linux_arm64.py` executes the Linux register adapter/device policy and checks fresh/incremental orchestration and checksum rejection. Native ARM64 execution is separate from cross compilation. See [Linux integration](linux-game.md).

@@ -963,3 +963,5 @@ time on model refresh, reset queued output, then normalize in the new region. Pa
 stay intact until resume; a running seek beyond the loop end resumes at start.
 `audio_buffer_regions.c` checks production-decoded PCM, fractional clocks/refusal,
 tiny/multiple wraps, pause/live/rate/seek and unchanged source bytes.
+
+[Linux ARM64 ucontext/MMIO and crash metadata](linux-game.md#linux-arm64).

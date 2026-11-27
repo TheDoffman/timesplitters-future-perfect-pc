@@ -82,7 +82,11 @@ static int guest_main(void *unused)
     }
     fclose(f);
 #ifdef __linux__
+#if defined(__aarch64__)
+    printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — Linux arm64\n");
+#else
     printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — Linux x64\n");
+#endif
 #else
     printf("[NATIVE-BOOT] TimeSplitters: Future Perfect — macOS ARM64\n");
 #endif
