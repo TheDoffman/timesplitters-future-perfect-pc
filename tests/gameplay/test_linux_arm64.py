@@ -1,9 +1,10 @@
 """ARM64 build orchestration and executable host-context regressions."""
 import importlib.util
-import json
 import os
+import platform
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 
 import pytest
@@ -99,3 +100,47 @@ def test_wrong_host_rejected_before_setup(tmp_path, monkeypatch):
     monkeypatch.setattr(module, 'build', lambda args: pytest.fail('wrong-host mutation'))
     with pytest.raises(SystemExit) as error: module.main()
     assert error.value.code == 2
+
+
+@pytest.mark.skipif(sys.platform != 'linux', reason='Linux signal delivery')
+def test_real_arm64_protected_page_recovery(tmp_path):
+    native = platform.machine().lower() in ('aarch64', 'arm64')
+    compiler = shutil.which('clang' if native else 'aarch64-linux-gnu-gcc')
+    emulator = shutil.which('qemu-aarch64')
+    if not compiler or (not native and not emulator):
+        pytest.skip('Needs native ARM64 or aarch64-linux-gnu-gcc and qemu-aarch64')
+    # Reuse the real protected-page fixture and project arena/alias services.
+    # Only VirtualProtect spelling and APU declarations are supplied here.
+    platform_header = tmp_path / 'platform/win32_compat.h'
+    platform_header.parent.mkdir()
+    platform_header.write_text('''#pragma once
+#include <stdint.h>
+#include <stddef.h>
+#include <sys/mman.h>
+typedef uint32_t DWORD;
+#define PAGE_READONLY 2
+static inline int VirtualProtect(void *p,size_t n,DWORD flags,DWORD *old) {
+    (void)flags; *old=0; return mprotect(p,n,PROT_READ)==0;
+}
+''')
+    apu = tmp_path / 'apu/apu.h'; apu.parent.mkdir()
+    apu.write_text('''#pragma once
+#include <stdint.h>
+typedef struct MCPXAPUState MCPXAPUState;
+extern MCPXAPUState *g_apu_state;
+uint64_t mcpx_apu_mmio_read(MCPXAPUState *,uint64_t,unsigned);
+void mcpx_apu_mmio_write(MCPXAPUState *,uint64_t,uint64_t,unsigned);
+''')
+    sources = [ROOT / 'tests/gameplay/native_mmio.c', ROOT / 'src/native/mmio_linux_arm64.c',
+               ROOT / 'src/native/shared_host.c']
+    sources += [ROOT / 'src/runtime' / name for name in
+                ('shared_views.c', 'owned_arena.c', 'mmio_views.c', 'guest_arena_service.c')]
+    exe = tmp_path / 'arm64-mmio'
+    subprocess.run([compiler, '-static', '-std=c11', '-D_GNU_SOURCE', '-O2', '-g',
+                    '-Wall', '-Wextra', '-Werror', '-I' + str(tmp_path),
+                    '-I' + str(ROOT / 'src/native'), '-I' + str(ROOT / 'src/runtime'),
+                    *map(str, sources), '-o', str(exe)], check=True, capture_output=True, text=True)
+    result = subprocess.run(([emulator] if not native else []) + [str(exe)],
+                            capture_output=True, text=True, timeout=45)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'PASS: ARM64 decoder, protected register writes' in result.stdout

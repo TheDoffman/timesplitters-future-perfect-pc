@@ -1,6 +1,7 @@
 /* Linux aarch64 counterpart of the runtime's x86 VEH register-access handlers.
  * Guest MMIO stays protected. Shared writable aliases avoid changing page
  * protection while another guest thread is running. */
+#define _GNU_SOURCE 1
 #include "arm64_access.h"
 #include "mmio_device.h"
 #include <signal.h>

@@ -1006,11 +1006,6 @@ zero-pitch ABI expectations remain checked. See [tank controls](mounted-mouse.md
 
 Stage0235: [original pool imports and native surface retirement](kernel-pool.md).
 
-Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
-
-The0236 fixture reads UTF-8 for bridge box-drawing comments (CI4cb4697c);
-native calendar source and the accepted binary are unchanged.
-
 [Native multiplayer and crossplay validation](multiplayer-ui.md).
 
 [Strings](kernel-strings.md), [RTL](kernel-rtl.md), [formatting](guest-printf.md), [numbers](guest-numbers.md).
@@ -1041,4 +1036,4 @@ Mac omits2620/2625; Story uses production guards.
 
 Coronas: [tests](hud-sizing.md#world-light-coronas).
 
-Linux ARM64: `tools/build/build-native-linux-arm64.py` cross-builds using the pinned Steam Runtime 4 sysroot, ARM64 DXC and decoder-only FFmpeg. Setup prepares the runtime before revision checks; all builds apply the complete patch ledger. pkg-config searches only target dependencies. `tests/gameplay/test_linux_arm64.py` executes the Linux register adapter/device policy and checks fresh/incremental orchestration and checksum rejection. Native ARM64 execution is separate from cross compilation. See [Linux integration](linux-game.md).
+[Linux ARM64 build/tests](build-test-continuation.md#linux-arm64).
