@@ -1,3 +1,17 @@
+## Native Linux ARM64 contribution (#615, 2026-11-27)
+
+**Linux extension implemented; no new Mac adaptation required.** Functional build
+revision c0b1a826d adds Linux ARM64 ucontext/MMIO, crash metadata, patch 2413 CPU/test
+selection and a pinned developer cross-build. macOS retains its existing ARM64
+decoder/device policy and Darwin adapter, with no duplicated game logic or
+changed defaults. Full ARM64 Linux and x64 Linux builds pass; both linked MMIO
+tests pass (ARM64 under QEMU). Portable MSVC and Linux host/crash/patch/context
+tests pass. Native Mac build/gameplay and physical ARM64 Linux acceptance were
+not performed. The 150-second x64 Story gameplay regression passes with both pause/resume
+cycles confirmed, reviewed captures and zero Vulkan validation errors; see
+STATUS.md for exact provenance. Local only; no ARM64 launcher/package
+or release has been published.
+
 ## Mansion lighting/query contamination (2026-11-26)
 
 **Shared fix implemented locally; native Mac CPU checks passed.** Host feedback

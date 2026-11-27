@@ -165,14 +165,14 @@ GPU asserts stay on; AO logs scene/pixel failures.
 
 Local-player tests: controls-options.md.
 
-## Linux ARM64
-
-Linux ARM64: `tools/build/build-native-linux-arm64.py` cross-builds using the pinned Steam Runtime 4 sysroot, ARM64 DXC and decoder-only FFmpeg. Setup prepares the runtime before revision checks; all builds apply the complete patch ledger. pkg-config searches only target dependencies. `tests/gameplay/test_linux_arm64.py` executes the Linux register adapter/device policy and checks fresh/incremental orchestration and checksum rejection. Native ARM64 execution is separate from cross compilation. See [Linux integration](linux-game.md).
-
 Stage0236: [original absolute-time codec and guest calendar imports](kernel-time.md).
 
 The0236 fixture reads UTF-8 for bridge box-drawing comments (CI4cb4697c);
 native calendar source and the accepted binary are unchanged.
+
+## Linux ARM64
+
+Linux ARM64: `tools/build/build-native-linux-arm64.py` cross-builds using the pinned Steam Runtime 4 sysroot, ARM64 DXC and decoder-only FFmpeg. Setup prepares the runtime before revision checks; all builds apply the complete patch ledger. pkg-config searches only target dependencies. `tests/gameplay/test_linux_arm64.py` executes the Linux register adapter/device policy and checks fresh/incremental orchestration and checksum rejection. Native ARM64 execution is separate from cross compilation. See [Linux integration](linux-game.md).
 
 
 The Linux-only protected-page test also cross-compiles the existing ARM64 fixture with the actual arena/alias services and Linux ucontext, then runs under qemu-aarch64 when available. It skips without native ARM64 or that explicit tool pair. The portable context test still runs on MSVC. DXC setup always verifies/replays the pinned package even if old headers exist.
