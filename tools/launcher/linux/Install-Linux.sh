@@ -21,7 +21,7 @@ import urllib.request
 import zipfile
 
 REPOSITORY = 'TheDoffman/timesplitters-future-perfect-pc'
-API = 'https://api.github.com/repos/' + REPOSITORY + '/releases?per_page=20&page='
+API = 'https://api.github.com/repos/' + REPOSITORY + '/releases?per_page=100&page='
 MAX_ARCHIVE = 256 * 1024**2
 EXECUTABLE = 'TimeSplitters.Launcher'
 MANIFEST = 'Support/Launcher/manifest.json'
@@ -89,6 +89,20 @@ def select_release(releases, suffix):
         raise ValueError('No stable ' + suffix + ' launcher package is published yet. No x64/ARM64 substitution was made.')
     _, version, tag, asset, sides = max(candidates, key=lambda value: value[0])
     return version, tag, asset, sides
+
+
+def read_releases():
+    # Match the launcher's complete-catalog policy: frequent game previews
+    # must not hide the newest compatible stable launcher on a later page.
+    releases = []
+    for page in range(1, 101):
+        batch = json.loads(read_small(API + str(page), 4 * 1024**2))
+        if not isinstance(batch, list):
+            raise ValueError('Invalid release response.')
+        releases.extend(batch)
+        if len(batch) < 100:
+            return releases
+    raise ValueError('Too many release pages; no partial launcher catalog was selected.')
 
 
 def checksum(asset, tag, sides):
@@ -178,15 +192,7 @@ def main(argv=None):
     if platform.system() != 'Linux':
         parser.error('Run this installer on Linux.')
     suffix = architecture()
-    releases = []
-    for page in range(1, 6):
-        batch = json.loads(read_small(API + str(page), 4 * 1024**2))
-        if not isinstance(batch, list):
-            raise ValueError('Invalid release response.')
-        releases.extend(batch)
-        if len(batch) < 20:
-            break
-    version, tag, asset, sides = select_release(releases, suffix)
+    version, tag, asset, sides = select_release(read_releases(), suffix)
     if args.check:
         print(json.dumps({'platform': suffix, 'version': version, 'asset': asset['name']}))
         return 0

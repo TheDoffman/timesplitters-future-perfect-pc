@@ -9,6 +9,7 @@ accept both Linux platform values. Windows and Darwin adapters keep their policy
 
 `tools/launcher/linux/Install-Linux.sh` is the single Linux download bootstrap.
 It requires Python 3, resolves the newest stable matching launcher release,
+walks the complete release catalog (100 pages maximum; no partial selection),
 checks project URLs, bounded size/SHA256, sealed application metadata, ELF CPU
 and installer_protocol=1 before executing the temporary self-contained launcher.
 Old public packages without that command are rejected before execution. The

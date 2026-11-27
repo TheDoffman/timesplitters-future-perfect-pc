@@ -76,6 +76,24 @@ def test_foreign_release_url_rejected():
         installer().select_release([item], 'linux-x64')
 
 
+def test_game_preview_pages_do_not_hide_a_stable_launcher(monkeypatch):
+    module = installer(); arm = release(archive('linux-arm64'), 'linux-arm64')
+    calls = []
+    def read(url, limit):
+        calls.append(url)
+        return json.dumps([dict(tag_name='game-preview')] * 100 if len(calls) == 1 else [arm]).encode()
+    monkeypatch.setattr(module, 'read_small', read)
+    assert module.select_release(module.read_releases(), 'linux-arm64')[0] == '1.8.0'
+    assert calls == [module.API+'1', module.API+'2']
+
+
+def test_release_page_limit_never_installs_from_partial_catalog(monkeypatch):
+    module = installer()
+    monkeypatch.setattr(module, 'read_small', lambda *args: json.dumps([release(archive())] * 100).encode())
+    with pytest.raises(ValueError, match='no partial launcher catalog'):
+        module.read_releases()
+
+
 @pytest.mark.parametrize('suffix', ['linux-x64', 'linux-arm64'])
 def test_verified_bootstrap_matches_architecture(tmp_path, suffix):
     module = installer(); path = tmp_path / 'launcher.zip'; path.write_bytes(archive(suffix))

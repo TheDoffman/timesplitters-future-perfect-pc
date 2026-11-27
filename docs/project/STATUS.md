@@ -13,12 +13,19 @@ the existing launcher's lock/recovery/install transaction. CI adds a native
 Linux ARM64 launcher runner alongside x64, Windows and Mac. Version 1.7.2 is
 unchanged; no new release or README installer download has been published.
 
-Windows bootstrap/release/compatibility/CI/context checks pass: 182 tests and
+Windows bootstrap/release/compatibility/CI/context checks pass: 184 tests and
 54 subtests (test-only GIT_CONFIG_COUNT=0 avoids the desktop environment's empty
 Git config values disappearing in Windows Python subprocesses). Native Linux
 x64 launcher adapters, 68 shared UI groups, package install/repair/restart and
 automatic-installer idempotence/lock/personal-file checks pass under Xvfb.
 The ARM64 launcher cross-publishes successfully with the locked runtime graph.
+The real x64 bootstrap hands the actual package to the native installer CLI,
+installs and repeats without rewriting the executable or a personal fixture.
+The actual ARM64 installer CLI also passes under QEMU with the target sysroot:
+correct ARM64 package, repeated install and personal-file preservation. This is
+emulated CPU/installation evidence, not native desktop or GPU acceptance.
+A source --check attempt is blocked by the existing private/game symlink (the
+launcher deliberately rejects linked installation paths); the fixture remains.
 Native ARM64, Windows and Mac CI for PR #619 are pending. Physical ARM64
 Linux gameplay/GPU and Steam Deck acceptance remain unverified.
 
