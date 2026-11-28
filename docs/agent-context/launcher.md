@@ -8,10 +8,11 @@ Tests: `test_launcher_release.py`, `test_publish_release.py`; no OS adapter chan
 [Cold startup network ordering and tests](launcher-startup.md). Both launcher
 hosts use shared TextureUpdateCheck.StartAfter; request ordering changes only.
 
-Launcher1.8.0/game0.7.2 preparation (2026-11-27) follows published1.7.2/0.7.1.
-Versioned notes cover redesign, setup and Linux CPU selection. Use the official
-four-platform workflow; verify22 assets/aliases. Installation/update formats
-and optional textures are unchanged. [Procedure](../release/launcher-releases.md).
+Launcher1.8.1 prepares the merged Home Update now / Play current version fix
+since published1.8.0. Game stays0.7.2. Notes: launcher-v1.8.1.md; policy/host
+checks: launcher-update-action.md. Use the official four-platform workflow after
+main merge; verify22 assets/aliases. Formats and optional textures unchanged.
+[Procedure](../release/launcher-releases.md).
 
 Renderer restart metadata and shared preference: [in-game flow](opengl-recovery.md#in-game-renderer-restart).
 

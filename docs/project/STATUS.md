@@ -1,3 +1,15 @@
+## Launcher1.8.1 release preparation
+
+Launcher-only patch release for merged PR625: Home offers Update now for a newer
+compatible game on the installed/selected channel, with explicit Play current
+version and preserved busy/Playing/download guards. Game stays0.7.2. Versioned
+Before/Now notes reviewed; public1.8.0 remains immutable. Windows maintained
+build-launcher.ps1 -Test -RequireArtwork passes, including full updater/sharedUI,
+settings, sessions and maintenance checks. Python launcher-publication/Linux
+installer tests pass68 tests and23 subtests. Context and whitespace checks pass.
+Four-platform candidate CI/package checks and main integration are still required;
+source preparation is not publication. Physical Deck acceptance is not claimed.
+
 ## README launcher1.8.0 preview refresh
 
 The README now depicts the published launcher1.8.0 home screen, describes Play,
