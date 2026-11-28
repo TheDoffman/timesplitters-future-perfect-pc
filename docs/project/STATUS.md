@@ -1,3 +1,47 @@
+## 2026-11-28 - Console/focus integration and Home status overlap
+
+Recovered the complete previously staged console/focus change from the missing
+Launcher Redesign worktree's retained Git index. The original index/branch and
+other active checkouts were preserved. Integrated onto current main c1a5d828a in
+feature/launcher-console-focus-status; newer Home Update now/Play current version,
+launcher1.8.1 and Linux ARM64 changes remain intact. Earlier November26 evidence
+below describes the original task snapshot, not today's integration build.
+
+The reported Home overlap came from an absolute texture-status bottom offset
+intersecting the game-status line. Shared HomeStatusPage now lays out game status,
+texture status and progress in measured rows on WPF/Avalonia. Real Home previews
+at1184/940 widths were inspected with the reported text. Shared regression checks
+assert non-overlap with long messages at300/536/780 logical widths. Updated the
+existing appearance test to find the new selectable ConsoleOutput adapter.
+Windows full -Test and clean-host CI results are recorded in the associated PR;
+Python shared-theme/focus propagation passes4 cases. No game data or preferences
+were changed; publication/version updates are outside this source integration.
+
+## 2026-11-26 - Console severity colors and dropdown focus (local)
+
+Uncommitted feature/console-severity-colors, based on eec4cb2bf. Shared severity
+classification colors selectable console lines by importance on WPF/Avalonia;
+original logs and stream tags stay intact. Dropdowns and disclosure headers use
+keyboard-only focus cues, avoiding persistent mouse-focus boxes.
+
+Windows x64/.NET Framework4.8 app/test compilation passes. Standalone shared
+ConsolePresentation checks pass explicit levels on both pipes, zero/positive
+failure counters, distinct rich runs, original UTF8/newlines and read-only/clear.
+WPF screenshot of the real Console page was inspected. Appearance tests pass
+button/dropdown/disclosure focus guards, then stop at the existing download guard
+because an unrelated game process is running. Full Windows -Test remains blocked
+by that session; no unrelated processes were stopped. Local logs are
+build/integration-notes/console-{windows,focus,linux}.log.
+
+Linux/WSL Ubuntu24.04 x64/.NET8/Avalonia11.3.22 passes69 shared UI groups and
+package install/corruption/repair/helper-restart preservation checks. Native Mac
+ARM64/.NET8/Avalonia11.3.22 compiles/signs and passes67 shared UI groups. Both
+native hosts pass60 page/size renders at1x including the console, settings draft
+retention and animation cancellation. Mac package lifecycle was not rerun;
+physical Deck, Retina/multi-monitor and physical controller acceptance are not
+claimed. Existing isolated native fixtures were updated only after baseline
+checks of affected compiled files. No version bump, push, merge or release.
+
 ## Launcher1.8.1 release preparation
 
 Launcher-only patch release for merged PR625: Home offers Update now for a newer

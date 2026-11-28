@@ -74,7 +74,7 @@ public static class LauncherAppearanceDetails
             }
         }
         if(page=="Console"){
-            var output=Tree(root).OfType<TextBox>().First(t=>t.Name=="GameConsoleOutput");
+            var output=Tree(root).OfType<TimeSplitters.Launcher.ConsoleOutput>().First(t=>t.Name=="GameConsoleOutput");
             if(Mark(attached,output)){
                 var border=(Border)output.Parent;border.Child=null;
                 var holder=new Grid();holder.Children.Add(output);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -31,6 +31,54 @@ public static class LauncherSharedUiChecks
 #endif
     }
     static T Find<T>(Element root,string name) where T:Element { return All(root).OfType<T>().Single(c=>c.Name==name); }
+    public static void ConsolePresentation()
+    {
+        foreach(string pipe in new[]{"[OUT] ","[ERR] "}){
+            Need(GameLogTail.Severity(pipe+"[WARN] Optional lookup failed")==ConsoleSeverity.Warning,"Warning must not become an error because of its pipe or wording");
+            Need(GameLogTail.Severity(pipe+"[INFO] Error reporting enabled")==ConsoleSeverity.Info,"Explicit information level lost");
+            Need(GameLogTail.Severity(pipe+"[TRACE] frame=24")==ConsoleSeverity.Debug,"Trace importance lost");
+            Need(GameLogTail.Severity(pipe+"[PRESENT] failed=0")==ConsoleSeverity.Normal,"Healthy counters must stay neutral");
+            Need(GameLogTail.Severity(pipe+"[PRESENT] failed=1")==ConsoleSeverity.Error,"Positive failure counter lost");
+            Need(GameLogTail.Severity(pipe+"[FATAL] Device lost")==ConsoleSeverity.Error,"Fatal message not prominent");
+        }
+        string sample="[OUT] [INFO] Ready café\n[ERR] Warning: reconnecting\n[OUT] [ERROR] Device lost\n[OUT] [DEBUG] retries=1";
+        var output=new ConsoleOutput();output.Text=sample;
+        Need(output.IsReadOnly&&output.Text==sample,"Console must retain read-only original text");
+#if MACOS || LINUX
+        var text=(SelectableTextBlock)((ScrollViewer)output.Content).Content;
+        var runs=text.Inlines.OfType<Avalonia.Controls.Documents.Run>().ToArray();
+        Need(string.Concat(runs.Select(r=>r.Text))==sample,"Native copy source lost text or line breaks");
+        Need(runs.Select(r=>r.Foreground.ToString()).Distinct().Count()==4,"Native severity runs lost distinct colors");
+#else
+        var rich=(RichTextBox)output.Content;var paragraph=(System.Windows.Documents.Paragraph)rich.Document.Blocks.FirstBlock;
+        var runs=paragraph.Inlines.OfType<System.Windows.Documents.Run>().ToArray();
+        Need(rich.IsReadOnly&&string.Concat(runs.Select(r=>r.Text))==sample,"WPF copy source lost text or line breaks");
+        Need(runs.Select(r=>r.Foreground.ToString()).Distinct().Count()==4,"WPF severity runs lost distinct colors");
+#endif
+        output.Text="";Need(output.Text=="","Console clear failed");
+    }
+    public static void HomeStatusLayout()
+    {
+        var kind=new TextBlock {Text="UP TO DATE",FontSize=8};var status=new TextBlock {Text="Game closed.",FontSize=10};
+        var texture=new TextBlock {Text="Texture check unavailable - a longer explanation must fit without covering the other status",FontSize=10};
+        var progress=new ProgressBar();var home=new HomeStatusPage(kind,status,texture,progress);
+        foreach(double width in new[]{300d,536d,780d}){
+            home.View.Measure(new Size(width,100));home.View.Arrange(new Rect(0,0,width,100));
+#if MACOS || LINUX
+            double kindBottom=kind.TranslatePoint(new Point(0,kind.Bounds.Height),home.View).Value.Y;
+            double textureTop=texture.TranslatePoint(new Point(0,0),home.View).Value.Y;
+            double textureBottom=texture.TranslatePoint(new Point(0,texture.Bounds.Height),home.View).Value.Y;
+            double progressTop=progress.TranslatePoint(new Point(0,0),home.View).Value.Y;
+#else
+            double kindBottom=kind.TranslatePoint(new Point(0,kind.ActualHeight),home.View).Y;
+            double textureTop=texture.TranslatePoint(new Point(0,0),home.View).Y;
+            double textureBottom=texture.TranslatePoint(new Point(0,texture.ActualHeight),home.View).Y;
+            double progressTop=progress.TranslatePoint(new Point(0,0),home.View).Y;
+#endif
+            Need(kindBottom<=textureTop&&textureBottom<=progressTop,"Home status lines or progress overlap at width "+width);
+            Need(texture.DesiredSize.Height>=10,"Texture status text was clipped vertically");
+        }
+    }
     public static int Run()
     {
 #if MACOS || LINUX
@@ -268,6 +316,8 @@ public static class LauncherSharedUiChecks
                 }
                 Need(!GameLogTail.IsError(null)&&!GameLogTail.IsError("  "),"Empty input classified as an error");
             });
+            Test("console severity colors preserve original selectable text",ConsolePresentation);
+            Test("Home texture and game status rows do not overlap",HomeStatusLayout);
             Test("console tails live shared files, preserves UTF8 and separates errors",()=>{
                 string folder=Path.Combine(root,"console");Directory.CreateDirectory(folder);
                 var tail=new GameLogTail(folder);tail.Poll();Need(tail.Text(false)=="","Missing log should be empty");

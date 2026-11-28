@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using TimeSplitters.Launcher;
 
@@ -63,6 +64,13 @@ public static class LauncherAppearanceChecks
                 Need(focusButton.FocusVisualStyle!=null,"keyboard navigation lost its focus cue");
             }finally{focusWindow.Close();}
             Console.WriteLine("PASS working layout: pointer/programmatic button focus keeps its normal border; keyboard focus adorner retained");
+            var combo=new ComboBox {ItemsSource=new[]{"One","Two"},SelectedIndex=0};var expander=new Expander {Header="Options",Content="Details"};
+            var focusPanel=new StackPanel();focusPanel.Children.Add(combo);focusPanel.Children.Add(expander);
+            var fields=new Window {Content=focusPanel,Width=320,Height=180,Left=-20000,Top=-20000,WindowStartupLocation=WindowStartupLocation.Manual};fields.Resources.MergedDictionaries.Add(PageTheme.Resources());
+            try {fields.Show();fields.Activate();combo.Focus();fields.UpdateLayout();Need(combo.FocusVisualStyle!=null,"dropdown lost keyboard cue");Need(((SolidColorBrush)combo.BorderBrush).Color==((SolidColorBrush)Ui.Brush("#39658C")).Color,"dropdown retained click-focus border");
+                var toggle=(System.Windows.Controls.Primitives.ToggleButton)expander.Template.FindName("HeaderToggle",expander);toggle.Focus();fields.UpdateLayout();var face=(Border)toggle.Template.FindName("Face",toggle);Need(face.BorderBrush==System.Windows.Media.Brushes.Transparent&&toggle.FocusVisualStyle!=null,"disclosure retained click-focus border or lost keyboard cue");
+            }finally{fields.Close();}
+            Console.WriteLine("PASS working layout: dropdown and disclosure pointer focus keep normal borders; keyboard cues retained");
             var shell=ui.Appearance;Need(!shell.MainAction.IsEnabled,"empty installation offered an enabled launch");
             Await(ui.AppearanceCheck());shell.RefreshState();Need(ui.AppearanceCatalog.Length==1 && shell.MainAction.IsEnabled && ui.AppearanceCommand=="UpdateButton","live catalog did not drive Install");
             Put(root,"Saves/profile","my save");Put(root,"custom.txt","keep");
@@ -86,7 +94,7 @@ public static class LauncherAppearanceChecks
             ui.AppearanceNavigate("Repair");Click(Named<Button>(ui.Window.Content as DependencyObject,"VerifyGameFiles"));Until(()=>!ui.AppearanceBusy);
             Need(Named<TextBox>(ui.Window.Content as DependencyObject,"VerificationReport").Text.Length>0,"native verification report was lost");
             Console.WriteLine("PASS working layout: real verification remains reachable and reports missing installation");
-            ui.AppearanceNavigate("Console");Need(Named<TextBox>(ui.Window.Content as DependencyObject,"GameConsoleOutput").Text.Length==0,"empty Console was fabricated");
+            ui.AppearanceNavigate("Console");Need(Named<ConsoleOutput>(ui.Window.Content as DependencyObject,"GameConsoleOutput").Text.Length==0,"empty Console was fabricated");
             // Reuse the existing inert direct-process probe, never a game binary.
             Directory.CreateDirectory(Core.PathIn(root,"Bin"));File.Copy(typeof(LauncherAppearanceChecks).Assembly.Location,Core.PathIn(root,"Bin/futureperfect_recomp.exe"));Put(root,"Bin/probe-exit.txt","0");Put(root,"Launch.ps1","fixture");
             Await(ui.LaunchGame());Need(Directory.GetFiles(Core.PathIn(root,"Logs"),"*.out").Any(file=>File.ReadAllText(file).Contains("DIRECT_GAME_STARTED")),"real native launch adapter did not run the inert probe");

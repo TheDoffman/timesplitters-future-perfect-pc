@@ -1,3 +1,43 @@
+## Home status text overlap (2026-11-28)
+
+HomeStatusPage.cs is shared by WPF LauncherAppearance and native NativeAppearance.
+Game status/kind, optional texture status and progress occupy measured rows. The
+old absolute texture-label bottom offset intersected the game-status row; it is
+removed on both hosts. Texture status is single-line/ellipsized at narrow widths,
+retaining its existing host tooltip/details and visibility. Update now/current
+Play and download/Playing eligibility remain unchanged. Shared HomeStatusLayout
+measures actual row geometry at300/536/780 logical widths, including long texture
+messages; the regular native/Windows page-size matrices cover the real shell.
+
+## Console severity colors (2026-11-26)
+
+ConsolePage.cs keeps GameLogTail's explicit-level-first severity rules and adds
+Normal/Debug/Info/Warning/Error. Error/Fatal/Panic/Critical are coral #FF9E95;
+Warn/Warning are amber #FFD18A; Info is blue #85D4FF; Debug/Trace use #9EB4C8;
+normal output remains #C7D9E8. OUT/ERR identify the stream, never importance.
+Explicit Info/Warning overrides failure-related wording; zero-error counters stay
+neutral while positive failures remain errors. Errors only uses this same policy.
+
+ConsoleOutput is a selectable read-only document adapter: WPF RichTextBox and
+native SelectableTextBlock inside ScrollViewer. Both render shared classified
+runs and retain original line text/stream markers for copying. No capture/log
+files change. Existing bounded tail, pause, clear and follow controls remain.
+The footer legend explains colors. MinimalTools/empty-state adapters now find
+ConsoleOutput rather than TextBox. Shared ConsolePresentation checks exercise
+both streams, explicit priorities, failure counters, colored runs and original
+UTF8/newlines/clear; existing tail/filter tests remain authoritative.
+
+## Dropdown mouse focus (2026-11-26)
+
+ComboBox no longer paints its border for IsKeyboardFocusWithin; the field and
+Expander HeaderToggle use NavigationFocus through WPF FocusVisualStyle, which is
+keyboard-only. The expander's IsKeyboardFocused template trigger is removed.
+Native generation strips WPF adorner attributes and retains a focus-visible
+header border; native ComboBox already uses focus-visible. Hover, selection,
+Tab/keyboard operation, controller focus and control focusability are preserved.
+Windows appearance checks focus both controls and assert normal borders plus
+available keyboard cues; Python generation checks guard the shared/native mapping.
+
 ## Home Update now and Play current version (2026-11-27)
 
 [Update action contract and checks](launcher-update-action.md): a strictly newer

@@ -77,6 +77,7 @@ def template_node(node):
  for item in node.iter():
   item.tag='{'+A+'}'+local(item.tag)
   item.attrib.pop('TargetType',None)
+  item.attrib.pop('FocusVisualStyle',None)
   if local(item.tag)=='ContentPresenter':
    item.attrib.pop('ContentSource',None)
    item.set('Content','{TemplateBinding Content}')
@@ -125,6 +126,8 @@ def generate_theme(source,destination):
    resources=ET.Element('{'+A+'}Styles.Resources');styles.insert(0,resources)
    theme=ET.SubElement(resources,'{'+A+'}ControlTheme',{'{'+X+'}Key':'SharedExpanderHeader','TargetType':'ToggleButton'})
    converted=template_styles(theme,toggle,'^')
+   focus_style=ET.SubElement(theme,'{'+A+'}Style',{'Selector':'^:focus-visible /template/ Border#Face'})
+   ET.SubElement(focus_style,'{'+A+'}Setter',{'Property':'BorderBrush','Value':source_root.find(".//{"+W+"}Style[@{"+X+"}Key='NavigationFocus']//{"+W+"}Border").attrib['BorderBrush']})
    setter=ET.SubElement(theme,'{'+A+'}Setter',{'Property':'Template'});setter.append(converted)
    # Map parent Header to the native toggle Content, and IsExpanded to IsChecked.
    style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':'Expander'})

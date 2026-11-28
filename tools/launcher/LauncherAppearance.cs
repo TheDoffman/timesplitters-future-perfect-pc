@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Windows;
@@ -103,10 +103,11 @@ public sealed class LauncherAppearance {
         foreach(int size in new[]{470,410,340,180,145})aperture.Children.Add(new System.Windows.Shapes.Ellipse {Width=size,Height=size,Stroke=Ink("#85D4FF"),StrokeThickness=size==410?2:1,StrokeDashArray=size==470?new DoubleCollection {1,9}:null});stage.Children.Add(aperture);
         var logo=Find<Image>("HeroTitle");Detach(logo);logo.Width=600;logo.MaxWidth=600;logo.HorizontalAlignment=HorizontalAlignment.Center;logo.VerticalAlignment=VerticalAlignment.Center;logo.Margin=new Thickness(0,0,0,12);logo.Effect=new DropShadowEffect {Color=Colors.Black,BlurRadius=30,ShadowDepth=5,Opacity=1};stage.Children.Add(logo);
         var dock=actionDock=new Grid {Margin=new Thickness(28,0,28,18),VerticalAlignment=VerticalAlignment.Bottom,Height=104};dock.ColumnDefinitions.Add(new ColumnDefinition());dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(80)});dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(8)});dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(260)});
-        var operation=new Grid {VerticalAlignment=VerticalAlignment.Bottom,Margin=new Thickness(0,0,22,0),Height=32};operation.RowDefinitions.Add(new RowDefinition());operation.RowDefinitions.Add(new RowDefinition {Height=new GridLength(3)});
-        var copy=new DockPanel {LastChildFill=true,Margin=new Thickness(0,0,0,8)};kind=Text("READY TO PLAY",8,"#65C7FF");kind.FontWeight=FontWeights.SemiBold;kind.Margin=new Thickness(0,0,20,0);DockPanel.SetDock(kind,Dock.Left);copy.Children.Add(kind);
-        status=Find<TextBlock>("StatusText");Detach(status);status.FontSize=10;status.Foreground=Ink("#B4C7D8");status.TextAlignment=TextAlignment.Right;status.TextTrimming=TextTrimming.CharacterEllipsis;status.TextWrapping=TextWrapping.NoWrap;copy.Children.Add(status);operation.Children.Add(copy);
-        progress=Find<ProgressBar>("OperationProgress");Detach(progress);progress.Height=3;progress.Foreground=Ink("#65C7FF");progress.Background=Ink("#204566");Grid.SetRow(progress,1);operation.Children.Add(progress);dock.Children.Add(operation);
+        kind=Text("READY TO PLAY",8,"#65C7FF");kind.FontWeight=FontWeights.SemiBold;
+        status=Find<TextBlock>("StatusText");Detach(status);status.FontSize=10;status.Foreground=Ink("#B4C7D8");
+        progress=Find<ProgressBar>("OperationProgress");Detach(progress);progress.Foreground=Ink("#65C7FF");progress.Background=Ink("#204566");
+        var textureStatus=Find<TextBlock>("TextureUpdateStatus");Detach(textureStatus);textureStatus.FontSize=10;
+        var operation=new HomeStatusPage(kind,status,textureStatus,progress).View;operation.Margin=new Thickness(0,0,22,0);dock.Children.Add(operation);
         var homeLinks=new StackPanel {Orientation=Orientation.Horizontal,Margin=new Thickness(0,0,0,48),HorizontalAlignment=HorizontalAlignment.Left,VerticalAlignment=VerticalAlignment.Bottom};dock.Children.Add(homeLinks);
         var newsLink=Button("What's new  →",()=>Navigate("What's new"));newsLink.FontSize=12;newsLink.Padding=new Thickness(0);newsLink.MinHeight=28;newsLink.Margin=new Thickness(0,0,20,0);newsLink.Background=Brushes.Transparent;newsLink.BorderThickness=new Thickness(0,0,0,1);newsLink.BorderBrush=Brushes.Transparent;newsLink.Foreground=Ink("#85D4FF");newsLink.ToolTip="Read game and launcher release notes";System.Windows.Automation.AutomationProperties.SetName(newsLink,"What's new");homeLinks.Children.Add(newsLink);
         newsAnchor=homeLinks;
@@ -151,7 +152,6 @@ public sealed class LauncherAppearance {
         channels=new GameChannelMenu(window,stage,version,ui.AppearancePicker,()=>Navigate("Versions"),async release=>{try{await ui.AppearanceSwitch(release);}catch(Exception ex){ui.SetStatus(ex.Message);}RefreshState();},ui.AppearanceInstalled);
         motion=new LauncherMotion(window,stage,aperture,backdrop,art,logo,channels);
         playingContent=new StackPanel {Orientation=Orientation.Horizontal};playingDot=new System.Windows.Shapes.Ellipse {Width=6,Height=6,Fill=Ink("#B6E3FF"),Margin=new Thickness(0,0,12,0),VerticalAlignment=VerticalAlignment.Center};playingContent.Children.Add(playingDot);playingContent.Children.Add(Text("P L A Y I N G",14,"#E4EDF5"));
-        var textureStatus=Find<TextBlock>("TextureUpdateStatus");Detach(textureStatus);textureStatus.Margin=new Thickness(28,0,390,34);textureStatus.FontSize=10;textureStatus.VerticalAlignment=VerticalAlignment.Bottom;stage.Children.Add(textureStatus);
         LauncherAppearanceDetails.Remember(window,Core.PathIn(root,".launcher/window-state.json"));
         LauncherAppearanceDetails.FitWindow(window,shell);
         tutorial=new LauncherTutorialPage(root,ui.AppearanceGameInstalled&&ui.AppearanceDataReady);

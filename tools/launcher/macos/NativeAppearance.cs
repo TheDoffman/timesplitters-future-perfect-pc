@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -73,10 +73,10 @@ public sealed partial class NativeWindow {
             header.Margin=new Thickness(28,14,28,0);header.VerticalAlignment=VerticalAlignment.Top;home.Children.Add(header);
             home.Children.Add(new Border {Height=1,Background=Ink("#294E70"),Margin=new Thickness(0,38,0,0),VerticalAlignment=VerticalAlignment.Top});
             var dock=actionDock=new Grid {ColumnDefinitions=new ColumnDefinitions("*,80,8,260"),Height=108,Margin=new Thickness(28,0,28,18),VerticalAlignment=VerticalAlignment.Bottom};home.Children.Add(dock);
-            var operation=new Grid {RowDefinitions=new RowDefinitions("*,3"),Height=32,Margin=new Thickness(0,0,22,0),VerticalAlignment=VerticalAlignment.Bottom};dock.Children.Add(operation);
-            var row=new Grid {ColumnDefinitions=new ColumnDefinitions("Auto,*"),Margin=new Thickness(0,0,0,8)};operation.Children.Add(row);row.Children.Add(kind);
-            var status=owner.Find<TextBlock>("StatusText");Detach(status);status.FontSize=10;status.TextWrapping=TextWrapping.NoWrap;status.TextTrimming=TextTrimming.CharacterEllipsis;status.HorizontalAlignment=HorizontalAlignment.Right;Grid.SetColumn(status,1);row.Children.Add(status);
-            var progress=owner.Find<ProgressBar>("UpdateProgress");Detach(progress);progress.Height=3;Grid.SetRow(progress,1);operation.Children.Add(progress);
+            var status=owner.Find<TextBlock>("StatusText");Detach(status);status.FontSize=10;
+            var texture=owner.Find<TextBlock>("TextureUpdateStatus");Detach(texture);texture.FontSize=10;
+            var progress=owner.Find<ProgressBar>("UpdateProgress");Detach(progress);
+            var operation=new HomeStatusPage(kind,status,texture,progress).View;operation.Margin=new Thickness(0,0,22,0);dock.Children.Add(operation);
             var details=owner.Find<TextBlock>("TransferDetails");Detach(details);details.FontSize=10;details.TextTrimming=TextTrimming.CharacterEllipsis;details.MaxHeight=28;details.Margin=new Thickness(28,0,390,64);details.VerticalAlignment=VerticalAlignment.Bottom;home.Children.Add(details);
             var links=new StackPanel {Orientation=Orientation.Horizontal,Spacing=20,VerticalAlignment=VerticalAlignment.Bottom,Margin=new Thickness(0,0,0,48)};dock.Children.Add(links);
             foreach(var pair in new[]{("What's new →",(System.Action)(()=>Navigate("What's new"))),("Join Discord ↗",()=>NativeHost.Open(ReleaseClient.DiscordInvite)),("View on GitHub ↗",()=>NativeHost.Open(ReleaseClient.ReleasesPage.Replace("/releases","")))}){var b=Action(pair.Item1,pair.Item2);b.FontSize=12;b.Padding=new Thickness(0);b.Background=Brushes.Transparent;b.BorderThickness=new Thickness(0);b.Foreground=Ink("#85D4FF");b.Margin=new Thickness(0);links.Children.Add(b);}
@@ -88,7 +88,6 @@ public sealed partial class NativeWindow {
             if(LinuxHandheld.Profile.Enabled){dock.Height=132;links.Margin=new Thickness(0,0,0,52);channel.MinHeight=44;channelPanel.Margin=new Thickness(0,0,28,154);var help=Copy("A Select   B Back   LB/RB Focus   Y Keyboard   Right stick Scroll",13);handheldHint=help;help.Margin=new Thickness(28,43,28,0);help.VerticalAlignment=VerticalAlignment.Top;home.Children.Add(help);}
 #endif
             toolsAnchor=gear;newsAnchor=links;
-            var texture=owner.Find<TextBlock>("TextureUpdateStatus");Detach(texture);texture.FontSize=10;texture.Margin=new Thickness(28,0,390,35);texture.VerticalAlignment=VerticalAlignment.Bottom;home.Children.Add(texture);
             shade.Background=Ink("#E60B1420");shade.IsVisible=false;shell.Children.Add(shade);dialog.Background=Ink("#0D1926");dialog.BorderBrush=Ink("#36506A");dialog.BorderThickness=new Thickness(1);dialog.Margin=new Thickness(22,48,22,20);shade.Children.Add(dialog);
             var frame=new Grid {RowDefinitions=new RowDefinitions("56,40,*")};dialog.Child=frame;
             var heading=new DockPanel {Margin=new Thickness(26,4,20,0)};var back=Action("← Home",Home);DockPanel.SetDock(back,Dock.Right);heading.Children.Add(back);
@@ -206,7 +205,7 @@ public sealed partial class NativeWindow {
         static async Task Loop(Control target,AvaloniaProperty property,double from,double to,int seconds,bool alternate,CancellationToken token){try{var animation=new Animation {Duration=TimeSpan.FromSeconds(seconds),IterationCount=new IterationCount(alternate?2UL:1UL),PlaybackDirection=alternate?PlaybackDirection.Alternate:PlaybackDirection.Normal,Children={new KeyFrame {Cue=new Cue(0),Setters={new Setter(property,from)}},new KeyFrame {Cue=new Cue(1),Setters={new Setter(property,to)}}}};while(!token.IsCancellationRequested)await animation.RunAsync(target,token);}catch(OperationCanceledException){}}
         internal static void Empty(Control root,string name,string description){var target=root.GetLogicalDescendants().OfType<Control>().FirstOrDefault(c=>c.Name==name);if(target==null)return;
             if(target.Parent is Border border){border.Child=null;var holder=new Grid();holder.Children.Add(target);border.Child=holder;}
-            if(!(target.Parent is Panel parent))return;var note=parent.Children.OfType<TextBlock>().FirstOrDefault(c=>c.Name==name+"Empty");if(note==null){note=Copy(description,12);note.Name=name+"Empty";note.Margin=new Thickness(20);note.IsHitTestVisible=false;note.VerticalAlignment=VerticalAlignment.Top;parent.Children.Add(note);}note.IsVisible=target is ComboBox choices?choices.ItemCount==0:target is TextBox output?string.IsNullOrWhiteSpace(output.Text):false;
+            if(!(target.Parent is Panel parent))return;var note=parent.Children.OfType<TextBlock>().FirstOrDefault(c=>c.Name==name+"Empty");if(note==null){note=Copy(description,12);note.Name=name+"Empty";note.Margin=new Thickness(20);note.IsHitTestVisible=false;note.VerticalAlignment=VerticalAlignment.Top;parent.Children.Add(note);}note.IsVisible=target is ComboBox choices?choices.ItemCount==0:target is ConsoleOutput console?string.IsNullOrWhiteSpace(console.Text):target is TextBox output?string.IsNullOrWhiteSpace(output.Text):false;
         }
         void Channels(){UpdateVersionMenu();versionMenu.ShowMain();}
         void Tracks(){UpdateVersionMenu();versionMenu.ShowPreview();}

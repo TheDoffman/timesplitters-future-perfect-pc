@@ -49,6 +49,20 @@ class SharedLauncherUi(unittest.TestCase):
             self.assertIn('Button:disabled /template/ Border#Face', result)
             self.assertIn('Property="Opacity" Value="0.25"', result)
 
+    def test_dropdown_and_disclosure_keep_keyboard_only_focus(self):
+        tree=ET.parse(SOURCE/'PageTheme.xaml')
+        combo=tree.getroot().find('{'+layout.W+'}Style[@TargetType="ComboBox"]')
+        self.assertIsNotNone(combo.find('{'+layout.W+'}Setter[@Property="FocusVisualStyle"]'))
+        self.assertIsNone(combo.find('.//{'+layout.W+'}Trigger[@Property="IsKeyboardFocusWithin"]'))
+        expander=tree.getroot().find('{'+layout.W+'}Style[@TargetType="Expander"]')
+        self.assertIsNone(expander.find('.//{'+layout.W+'}Trigger[@Property="IsKeyboardFocused"]'))
+        self.assertIsNotNone(expander.find('.//{'+layout.W+'}ToggleButton[@FocusVisualStyle]'))
+        with tempfile.TemporaryDirectory() as directory:
+            target=Path(directory)/'PageTheme.axaml';layout.generate_theme(SOURCE/'PageTheme.xaml',target)
+            native=target.read_text(encoding='utf-8')
+            self.assertIn('^:focus-visible /template/ Border#Face',native)
+            self.assertNotIn('FocusVisualStyle',native)
+
     def test_both_builds_compile_all_shared_pages_and_ui_tests(self):
         windows = (ROOT/'tools/build/build-launcher.ps1').read_text(encoding='utf-8')
         mac = (SOURCE/'macos/NativeLauncher.csproj').read_text(encoding='utf-8')

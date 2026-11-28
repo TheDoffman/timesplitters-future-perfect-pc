@@ -52,6 +52,7 @@
     </ControlTemplate></Setter.Value></Setter>
   </Style>
   <Style TargetType='ComboBox'>
+    <Setter Property='FocusVisualStyle' Value='{StaticResource NavigationFocus}'/>
     <Setter Property='Background' Value='#08182B'/><Setter Property='Foreground' Value='#E4EDF5'/>
     <Setter Property='BorderBrush' Value='#39658C'/><Setter Property='BorderThickness' Value='1'/>
     <Setter Property='Padding' Value='10,8'/><Setter Property='MinHeight' Value='38'/>
@@ -78,7 +79,6 @@
         </Popup>
       </Grid>
       <ControlTemplate.Triggers>
-        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter Property='BorderBrush' Value='#85D4FF'/></Trigger>
         <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
       </ControlTemplate.Triggers>
     </ControlTemplate></Setter.Value></Setter>
@@ -116,7 +116,7 @@
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Expander'>
       <StackPanel>
         <ToggleButton x:Name='HeaderToggle' Focusable='True' HorizontalContentAlignment='Stretch' Foreground='{TemplateBinding Foreground}'
-                      IsChecked='{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}'>
+                      IsChecked='{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}' FocusVisualStyle='{StaticResource NavigationFocus}'>
           <ToggleButton.Template><ControlTemplate TargetType='ToggleButton'>
             <Border x:Name='Face' Background='Transparent' BorderBrush='Transparent' BorderThickness='1' Padding='0,3'>
               <Grid><Grid.ColumnDefinitions><ColumnDefinition Width='22'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions>
@@ -127,7 +127,6 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property='IsChecked' Value='True'><Setter TargetName='Chevron' Property='RenderTransform'><Setter.Value><RotateTransform Angle='90'/></Setter.Value></Setter></Trigger>
-              <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#85D4FF'/></Trigger>
               <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='Background' Value='#1D354A'/></Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate></ToggleButton.Template>
