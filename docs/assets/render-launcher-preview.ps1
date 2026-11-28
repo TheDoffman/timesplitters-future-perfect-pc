@@ -1,7 +1,7 @@
 #requires -Version 5.1
 <#
-Render the documented v1.7.0 Windows launcher with isolated Stable sample data.
-Run with Windows PowerShell -STA. Supply the source-built application recorded
+Render the documented v1.8.0 Windows launcher with isolated Stable sample data.
+Run with Windows PowerShell -STA. Supply the published application recorded
 in README.md beside this script. No game, updater or live network check runs.
 #>
 [CmdletBinding()]
@@ -15,9 +15,9 @@ if (!$Output) { $Output = Join-Path $PSScriptRoot 'launcher-preview.png' }
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
     throw 'Run this script with Windows PowerShell -STA.'
 }
-$expectedHash = 'dcb32a5a6f1e673e08afc9c9776815b4d1c4a23f7b8b1eb44fbdc65750c04436'
+$expectedHash = 'eb9e3aad6531842b8b5ebb61415f7b5e8afa78f156eec18e92c2ee6d5addecb9'
 if ((Get-FileHash -LiteralPath $ApplicationPath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expectedHash) {
-    throw 'Application does not match the documented v1.7.0 preview build.'
+    throw 'Application does not match the documented v1.8.0 preview build.'
 }
 $PreviewRoot = [IO.Path]::GetFullPath($PreviewRoot)
 if (Test-Path -LiteralPath $PreviewRoot) {
@@ -33,14 +33,23 @@ try {
     $releases = [Array]::CreateInstance($assembly.GetType('TimeSplitters.Launcher.Release'), 0)
     $setChannels = $ui.GetType().GetMethod('SetChannels', [Reflection.BindingFlags]'Instance,NonPublic')
     $null = $setChannels.Invoke($ui, [object[]]@($releases, 'stable'))
-    $ui.Window.FindName('InstalledLabel').Text = 'v0.7.0 (sample)'
+    $ui.Window.FindName('InstalledLabel').Text = 'v0.7.2 (sample)'
     $ui.Window.FindName('ChannelBadge').Text = [char]0x25cf + '  STABLE CHANNEL'
+    # The released redesign is a presentation adapter over the existing controls.
+    # Supply only in-memory sample state; no real installation or game is used.
+    $flags = [Reflection.BindingFlags]'Instance,NonPublic'
+    $ui.GetType().GetField('installed', $flags).SetValue($ui, 'v0.7.2 (sample)')
+    $ui.GetType().GetField('gameInstalled', $flags).SetValue($ui, $true)
+    $ui.GetType().GetField('validData', $flags).SetValue($ui, $true)
+    $appearance = New-Object TimeSplitters.Launcher.LauncherAppearance($ui)
     $visual = $ui.Window.Content
-    $visual.Background = $ui.Window.Background
-    $visual.Measure([Windows.Size]::new(1152, 772))
-    $visual.Arrange([Windows.Rect]::new(0, 0, 1152, 772))
+    # Off-screen windows have no ActualWidth; use the normal desktop layout size.
+    $visual.Child.Width = 1184
+    $visual.Child.Height = 684
+    $visual.Measure([Windows.Size]::new(1184, 684))
+    $visual.Arrange([Windows.Rect]::new(0, 0, 1184, 684))
     $visual.UpdateLayout()
-    $bitmap = [Windows.Media.Imaging.RenderTargetBitmap]::new(1152, 772, 96, 96, [Windows.Media.PixelFormats]::Pbgra32)
+    $bitmap = [Windows.Media.Imaging.RenderTargetBitmap]::new(1184, 684, 96, 96, [Windows.Media.PixelFormats]::Pbgra32)
     $bitmap.Render($visual)
     $encoder = New-Object Windows.Media.Imaging.PngBitmapEncoder
     $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($bitmap))

@@ -29,16 +29,17 @@ Choose your platform to download the launcher.
     </td>
     <td align="center" valign="top" width="34%">
       <h3>Linux</h3>
-      <p>Linux &middot; x64</p>
-      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip"><img src="docs/assets/download-linux-launcher.svg" alt="Download the Linux x64 launcher" width="240" height="45"></a>
-      <p><sub>Launcher ZIP</sub></p>
+      <p>Linux launcher &middot; x64 / ARM64</p>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Install-Linux.sh"><img src="docs/assets/download-linux-launcher.svg" alt="Download the Linux launcher installer" width="240" height="45"></a>
+      <p><sub>Installer detects your CPU &middot; Python 3 required</sub></p>
+      <p><sub>Manual ZIPs: <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip">x64</a> &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-arm64.zip">ARM64</a></sub></p>
       <hr>
-      <p><a href="docs/development/linux.md#linux-arm64-developer-build"><strong>ARM64 &middot; Build from source</strong></a><br><sub>Experimental &middot; No package yet</sub></p>
+      <p><a href="docs/development/linux.md#linux-arm64-developer-build"><strong>ARM64 game &middot; Build from source</strong></a><br><sub>Experimental &middot; No prebuilt game package yet</sub></p>
     </td>
   </tr>
 </table>
 
-<sub>Direct ZIP downloads of the latest stable launcher &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
+<sub>Latest stable launchers: Windows/Mac ZIPs and the Linux installer &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes &amp; checksums</a></sub>
 
 **[Install & play](#start-playing)** · [Launcher guides](#guides--support) · [Multiplayer](docs/players/multiplayer.md) · [Build from source](docs/development/building.md)
 
@@ -46,10 +47,11 @@ Choose your platform to download the launcher.
 
 </div>
 
-**Stable multiplayer release:** [Game 0.7.0](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.7.0)
-and [launcher 1.7.0](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.7.0)
-bring Online Arcade hosting and joining into the game's **Multiplayer** menu on
-all three platforms. Update the launcher and game before playing together.
+**Latest Stable releases:** [Game 0.7.2](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/v0.7.2)
+and [launcher 1.8.0](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.8.0).
+The launcher has a redesigned home screen, guided setup and a Linux installer.
+Online Arcade hosting and joining are available through the game's **Multiplayer**
+menu on all three game platforms. Update the launcher and game before playing together.
 
 <table>
   <tr>
@@ -76,13 +78,13 @@ Windows, Mac and Linux x64 use the same installation steps:
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip), [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip), or [Linux x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip). The download starts directly; you can also use the buttons above. |
-| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. On Linux, preserve executable permissions and run **TimeSplitters.Launcher**, keeping `Support` with it. The larger Linux game ZIP also includes **Launch.sh**. |
-| **03** | **Install the game runtime.** Keep **Update channel → Stable**, then choose **Install release**. The launcher downloads and verifies the latest available game build for your platform. Choose a preview only when opting into testing. |
-| **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
-| **05** | **Press Play Game.** The launcher minimizes while the game runs and returns when you finish. |
+| **01** | **Download the launcher:** [Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip), [Mac (Apple Silicon)](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip), or the [Linux installer](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Install-Linux.sh). The download starts directly; you can also use the buttons above. |
+| **02** | **Extract and open.** Extract the whole ZIP to a writable folder. On Windows, open **TimeSplitters Launcher.exe**, keeping `Bin` and `Support` with it. On Mac, open **TimeSplitters Launcher.app**, keeping its `Support` folder beside it. On Linux, run `bash TimeSplitters-Install-Linux.sh`; it verifies and installs the matching x64 or ARM64 launcher, then opens it. Python 3 is required. For a manual ZIP, preserve executable permissions and run **TimeSplitters.Launcher**, keeping `Support` with it. ARM64 game support remains a developer source build. The larger Linux game ZIP also includes **Launch.sh**. |
+| **03** | **Install the game runtime.** Keep **Stable** selected in the game version / channel picker. Follow guided setup and choose **Install game**, or use **Install release** on Home. The launcher downloads and verifies the latest available game build for your platform. Choose a preview only when opting into testing. |
+| **04** | **Import your game once.** In guided setup, choose **Choose ISO**. You can also use **Locate ISO** or **Use extracted files** in the installation tools for a folder containing `default.xbe`, `pak` and `xmv`. |
+| **05** | **Press Play.** The launcher minimizes while the game runs and returns when you finish. |
 
-**Next time:** open the launcher and choose **Play Game**. Installed play remains
+**Next time:** open the launcher and choose **Play**. Installed play remains
 available offline. Use **Check updates → Update release** to install a newer game
 build when available. Launcher and game versions are separate.
 
@@ -91,10 +93,16 @@ texture download. See [cloning without optional textures](CONTRIBUTING.md#clone-
 
 ### Launcher preview
 
-![TimeSplitters launcher v1.7.0 with Stable selected, Play Game, Game settings and Tools & Logs](docs/assets/launcher-preview.png)
+![Launcher 1.8.0 with its navy home screen, TimeSplitters artwork, Stable version picker, settings gear and Play button](docs/assets/launcher-preview.png)
 
-Launcher v1.7.0 interface preview with illustrative game 0.7.0 installation data.
-**Stable** is selected, matching the setup instructions above.
+Launcher **1.8.0** puts **Play**, the **settings gear** and the **game version /
+channel picker** on a simpler home screen. Deep navy panels, blue actions and
+serif text surround the original TimeSplitters artwork. **What's new** opens the
+release notes; guided first-install setup helps new players get started.
+
+Rendered from the published Windows launcher with illustrative game **0.7.2**
+installation data and **Stable** selected. This is an interface preview, not a
+screenshot of a running game.
 
 <details>
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>
@@ -102,7 +110,7 @@ Launcher v1.7.0 interface preview with illustrative game 0.7.0 installation data
 - **Windows:** Windows 10/11 x64 with .NET Framework 4.8.
 - **Linux:** x64, Ubuntu 24.04 / glibc 2.39 or newer, a desktop display and a working system Vulkan driver. Wayland needs XWayland. See the [Linux launcher guide](docs/players/linux-launcher.md).
 - **Mac:** Apple Silicon (M1 or newer). The launcher targets macOS 12+; the
-  published game 0.7.0 package requires **macOS 27+**. Check each game release's
+  published game 0.7.2 package requires **macOS 27+**. Check each game release's
   requirements before downloading. The [Mac guide](docs/players/macos.md)
   separately documents source builds and the legacy OpenGL fallback.
 - Your supported **US Xbox game**, title ID `45410066`; [exact executable hash](docs/development/building.md#inputs-and-generated-files).
@@ -118,7 +126,8 @@ Launcher v1.7.0 interface preview with illustrative game 0.7.0 installation data
   migrate automatically, retaining the original as a backup. Portable mode remains
   available. See [storage and migration](docs/players/macos.md#launcher-storage).
 
-Published builds do not require Python, Git or developer tools. The Mac launcher
+The game packages and launcher ZIPs do not require Python, Git or developer tools.
+The optional Linux installer script requires Python 3. The Mac launcher
 includes .NET and does not need CrossOver or the .NET SDK.
 
 </details>
@@ -133,7 +142,7 @@ and audio fidelity remain unverified. See [measured progress](docs/project/STATU
 | **Windows 10/11 x64** | [Vulkan rendering and startup troubleshooting](docs/players/windows-vulkan.md), keyboard and mouse, graphics settings and experimental Online/LAN multiplayer. See the [Windows launcher guide](docs/players/launcher.md), including [startup security prompts](docs/players/launcher.md#windows-security-prompts-at-startup). |
 | **Mac (Apple Silicon)** | Native launcher, game and experimental Online/LAN multiplayer. Intel Macs are unsupported. The app is not notarized; see [Mac installation and recovery guidance](docs/players/mac-launcher.md#shared-behavior-and-distribution), [Mac controls and source builds](docs/players/macos.md) and [remaining Mac work](docs/project/MAC_PORT_BACKLOG.md). |
 | **Linux x64 (experimental)** | Native launcher and portable SDL/Vulkan game package, with experimental Online/LAN multiplayer. Package, isolated gameplay and X11/Wayland renderer checks pass under Ubuntu/WSL. Physical desktop GPU/Wayland, controller and Steam Deck acceptance remain pending. See the [Linux launcher guide](docs/players/linux-launcher.md) and [acceptance limits](docs/development/linux-acceptance.md). |
-| **Linux ARM64 (developer build)** | Native game cross-build available [from source](docs/development/linux.md#linux-arm64-developer-build). The full build and MMIO tests under emulation pass; physical ARM64 handheld gameplay and performance remain unverified. No ARM64 launcher or release package is available. |
+| **Linux ARM64 (developer build)** | Native game cross-build available [from source](docs/development/linux.md#linux-arm64-developer-build). The full build and MMIO tests under emulation pass; physical ARM64 handheld gameplay and performance remain unverified. A native ARM64 launcher is available through the Linux installer above; no prebuilt ARM64 game package is available. |
 
 <a name="pc-features"></a>
 

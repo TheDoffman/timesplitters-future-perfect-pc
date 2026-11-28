@@ -1,3 +1,15 @@
+## README launcher1.8.0 preview refresh
+
+The README now depicts the published launcher1.8.0 home screen, describes Play,
+the settings gear and channel picker, and points to live0.7.2/1.8.0 releases and
+the architecture-aware Linux installer. ARM64 launcher and game availability
+remain distinct. The maintained preview script verifies the actual published
+Windows application SHA and renders1184x684 with isolated sample0.7.2/Stable
+state; visual inspection confirms artwork, navigation and actions fit. Image
+and binary hashes/reproduction are recorded in docs/assets/README.md. No game,
+network check or personal settings/saves used. Documentation-only; no runtime
+build/gameplay rerun required. Context and whitespace checks recorded locally.
+
 ## 2026-11-27 - Launcher version revised to 1.8.0
 
 The user selected launcher1.8.0 instead of the unpublished2.0.0 candidate.
