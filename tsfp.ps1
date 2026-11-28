@@ -62,6 +62,7 @@ if (!(Test-Path -LiteralPath $controlsPath)) {
     Copy-Item -LiteralPath (Join-Path $projectRoot 'config\pc-controls.default.json') -Destination $controlsPath
 }
 $previousProjectRoot = $env:TSFP_PROJECT_ROOT
+$buildTestEnvironment = @{}
 $env:TSFP_PROJECT_ROOT = $projectRoot
 Push-Location $projectRoot
 try {
@@ -199,6 +200,30 @@ try {
                         '--', "/p:CL_MPCount=$CompileJobs")
                     foreach ($dll in @('dxcompiler.dll', 'dxil.dll')) {
                         Copy-Item -LiteralPath (Join-Path $toolRoot "third_party/dxc/bin/x64/$dll") -Destination (Join-Path $buildRoot "$Configuration/$dll")
+                    }
+                    # Native build checks must not discover personal settings in AppData.
+                    $settingsTestRoot = Join-Path $projectRoot 'build\native-test-settings'
+                    New-Item -ItemType Directory -Force -Path $settingsTestRoot | Out-Null
+                    foreach ($name in @('', 'runtime.conf', 'pc-display.ini', 'controls.json', 'saves')) {
+                        $path = if ($name) { Join-Path $settingsTestRoot $name } else { $settingsTestRoot }
+                        if ((Test-Path -LiteralPath $path) -and
+                            ((Get-Item -LiteralPath $path).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                            throw "Refusing linked native test settings: $path"
+                        }
+                    }
+                    [IO.File]::WriteAllText((Join-Path $settingsTestRoot 'runtime.conf'), '')
+                    [IO.File]::WriteAllText((Join-Path $settingsTestRoot 'pc-display.ini'), '')
+                    Copy-Item -LiteralPath (Join-Path $projectRoot 'tests\fixtures\pc-controls.json') -Destination (Join-Path $settingsTestRoot 'controls.json')
+                    New-Item -ItemType Directory -Force -Path (Join-Path $settingsTestRoot 'saves') | Out-Null
+                    $testRoutes = @{
+                        RECOMP_DISPLAY_CONFIG = (Join-Path $settingsTestRoot 'runtime.conf')
+                        TSFP_DISPLAY_CONFIG = (Join-Path $settingsTestRoot 'pc-display.ini')
+                        RECOMP_INPUT_CONFIG = (Join-Path $settingsTestRoot 'controls.json')
+                        RECOMP_SAVE_DIR = (Join-Path $settingsTestRoot 'saves')
+                    }
+                    foreach ($name in $testRoutes.Keys) {
+                        $buildTestEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
+                        [Environment]::SetEnvironmentVariable($name, $testRoutes[$name])
                     }
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/graphics/ghost_targets.py'),
                         (Join-Path $buildRoot "xboxrecomp/src/replay/$Configuration/d3d8_replay.exe"), '--backend', 'd3d11')
@@ -340,5 +365,8 @@ try {
 }
 finally {
     Pop-Location
+    foreach ($name in $buildTestEnvironment.Keys) {
+        [Environment]::SetEnvironmentVariable($name, $buildTestEnvironment[$name])
+    }
     $env:TSFP_PROJECT_ROOT = $previousProjectRoot
 }

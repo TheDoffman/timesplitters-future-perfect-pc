@@ -131,6 +131,10 @@ int main(int argc, char **argv)
     fputs("0 key 87 1\n0 key 68 1\n0 key 82 1\n0 key 1 1\n0 key 2 1\n0 key 17 1\n0 wheel 1 0\n0 mouse 100 20\n", f); fclose(f);
     _putenv_s("TSFP_PC_INPUT_REPLAY", replay_file);
     _putenv_s("RECOMP_INPUT_CONFIG", argv[1]);
+    /* SDL/controller discovery can exceed the input
+       model's 100 ms stale-motion bound on a cold desktop. Finish that host
+       setup before the timed replay queues its first mouse sample. */
+    (void)recomp_bindings_present_mask();
     replay_epoch=GetTickCount64();
     pc_controls_attach(NULL);
     CHECK(recomp_bindings_sample(0, &pad));

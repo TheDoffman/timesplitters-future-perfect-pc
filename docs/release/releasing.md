@@ -1,12 +1,12 @@
 # Game releases: Stable and named previews
 
-The next Stable release is **0.7.1**, using the maintenance version explicitly
-selected by the user on 2026-11-23. It includes the merged renderer choices,
-controller Turn Speed extension, solo Arcade starts and gameplay fixes since
-0.7.0. Publish independent launcher **1.7.1** first through the official
-three-host workflow, verify its fifteen assets, then prepare the game draft
-with all nine platform assets. Source preparation is not publication or proof
-of complete platform/gameplay acceptance.
+The next Stable release is **0.7.2**, the maintenance scope selected by the user
+on 2026-11-27. It includes online reconnect, Uplink/color, marker and terminal
+input fixes since 0.7.1. Publish independent launcher **1.8.0** first through the
+official four-platform workflow and verify its22 assets, then prepare the game
+draft with all nine Windows x64/Mac ARM64/Linux x64 assets. Linux ARM64 game
+support remains a developer source build. Source preparation is not publication
+or proof of complete platform/gameplay acceptance.
 
 [Discord release notifications](discord-announcements.md): Stable and previews post to release-updates; announcements is for team posts.
 

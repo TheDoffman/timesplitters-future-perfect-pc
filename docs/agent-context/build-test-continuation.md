@@ -2,6 +2,18 @@
 
 [Main guide](build-test.md).
 
+## Native build isolation and replay
+
+Game0.7.2/launcher1.8.0 preparation requires three game packages/nine assets and
+four launcher packages/22 assets. Windows Build routes runtime, display, input
+and saves into `build/native-test-settings`, rejects linked fixtures and restores
+the caller's environment even on failure. Native checks must not read personal
+AppData settings. Controls replay warms SDL pad discovery with
+`recomp_bindings_present_mask` before queueing timed mouse input. Cold discovery
+was measured at110ms, exceeding the unchanged production100ms stale-motion guard.
+Every camera/input assertion remains. Run the native Build checks and the full
+publisher suite; this fixture repair does not establish actual gameplay.
+
 ## Game release channels and maintenance publication (2026-10-22)
 
 `tools/release/release_channels.py` owns canonical X.Y.Z[-channel.N] package identity and
