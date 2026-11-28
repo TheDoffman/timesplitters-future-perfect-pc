@@ -17,6 +17,7 @@ body:
         **Game releases**
 
         <!-- BEGIN AUTO GAME VERSIONS -->
+        - `v0.7.2`
         - `v0.7.1`
         - `v0.7.0`
         - `v0.7.0-beta.1`
@@ -46,12 +47,13 @@ body:
         - `v0.2.0-alpha.4`
         - `v0.2.0-alpha.3`
         - `v0.2.0-alpha.2`
-        - `v0.1.0-alpha.1`
         <!-- END AUTO GAME VERSIONS -->
 
         **Launcher releases**
 
         <!-- BEGIN AUTO LAUNCHER VERSIONS -->
+        - `v1.8.1`
+        - `v1.8.0`
         - `v1.7.2`
         - `v1.7.1`
         - `v1.7.0`
@@ -80,8 +82,6 @@ body:
         - `v1.2.11`
         - `v1.2.10`
         - `v1.2.9`
-        - `v1.2.8`
-        - `v1.2.7`
         <!-- END AUTO LAUNCHER VERSIONS -->
 
         </details>
