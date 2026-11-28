@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="280" height="52" viewBox="0 0 280 52" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="196" height="40" viewBox="0 0 196 40" role="img" aria-labelledby="title desc">
   <title id="title">Download Windows launcher</title>
-  <desc id="desc">Windows 10/11 · x64. Ice-blue button matching the launcher.</desc>
-  <rect x=".5" y=".5" width="279" height="51" rx="3" fill="#A7D9FA" stroke="#3B5268"/>
-  <path d="M26 15v14m-5-5 5 5 5-5M19 32v5h14v-5" fill="none" stroke="#112A40" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="155" y="23" text-anchor="middle" fill="#112A40" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="600" letter-spacing=".4">DOWNLOAD WINDOWS</text>
-  <text x="155" y="39" text-anchor="middle" fill="#24435C" font-family="Segoe UI,Arial,sans-serif" font-size="10">Windows 10/11 · x64</text>
+  <desc id="desc">Windows 10/11 x64 launcher ZIP. Compact navy button with a platform icon.</desc>
+  <rect x=".5" y=".5" width="195" height="39" rx="5" fill="#0D2035" stroke="#45617D"/>
+  <path d="M13 12.5 21 11.3v8.2h-8zm9.5-1.4L32 9.7v9.8h-9.5zM13 21h8v8.2L13 28zm9.5 0H32v9.8l-9.5-1.4z" fill="#85D4FF"/>
+  <text x="45" y="24.5" fill="#E4EDF5" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="600">Download Windows</text>
+  <path d="M178 14v11m-4-4 4 4 4-4" fill="none" stroke="#85D4FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

@@ -13,8 +13,10 @@ texture status and progress in measured rows on WPF/Avalonia. Real Home previews
 at1184/940 widths were inspected with the reported text. Shared regression checks
 assert non-overlap with long messages at300/536/780 logical widths. Updated the
 existing appearance test to find the new selectable ConsoleOutput adapter.
-Windows full -Test and clean-host CI results are recorded in the associated PR;
-Python shared-theme/focus propagation passes4 cases. No game data or preferences
+Windows full -Test passes121.86s; initial PR628 CI passes Windows, Mac ARM64,
+Linux x64/ARM64, combined package and PR validation. A later README-only main
+merge retains identical launcher/test bytes and both status entries; the updated
+PR runs fresh validation. Python shared-theme/focus propagation passes4 cases. No game data or preferences
 were changed; publication/version updates are outside this source integration.
 
 ## 2026-11-26 - Console severity colors and dropdown focus (local)
@@ -41,6 +43,23 @@ retention and animation cancellation. Mac package lifecycle was not rerun;
 physical Deck, Retina/multi-monitor and physical controller acceptance are not
 claimed. Existing isolated native fixtures were updated only after baseline
 checks of affected compiled files. No version bump, push, merge or release.
+## Borderless README downloads
+
+The platform download table is replaced with centered inline links, removing
+GitHub's cell borders around the Windows/Mac/Linux choices. Existing compact
+navy SVG buttons and all six platform/download/source destinations are retained.
+Platform requirements and Linux installer/manual ZIP/ARM64 game notes remain
+visible below the buttons. Structural/link checks, context and whitespace
+checks pass. Documentation-only layout; no runtime build required.
+
+## Compact README platform buttons
+
+README download buttons are196x40 navy SVGs with pale-blue platform icons and
+clear labels. Direct download destinations remain unchanged. A local browser
+render of all three at their actual size was visually inspected on white and
+GitHub-dark backgrounds; labels/icons/arrows fit without clipping. SVG XML,
+self-contained asset checks, link preservation, whitespace and context checks
+pass. Documentation artwork only; no launcher/game build required.
 
 ## Launcher1.8.1 release preparation
 
