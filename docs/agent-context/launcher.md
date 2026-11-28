@@ -1,4 +1,4 @@
-[Appearance and Home update actions](launcher-appearance.md): Home update/Play choices, shared UI/native appearance and preservation checks.
+[Appearance and console](launcher-appearance.md): Home status rows, console colors, pointer focus and shared/native checks.
 
 [Release notes](../release/release-notes.md): `release_notes.py` requires versioned
 Before/Now prose for game preparation and launcher dispatch/publication. All posts

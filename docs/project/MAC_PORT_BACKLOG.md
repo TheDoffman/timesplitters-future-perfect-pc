@@ -1,3 +1,25 @@
+## Shared Home status row integration (2026-11-28)
+
+**Implemented; host checks follow the associated PR.** HomeStatusPage rehosts
+existing kind/status/texture/progress controls in measured shared rows, replacing
+absolute offsets that caused texture-status overlap. Both WPF/Avalonia hosts use
+the same geometry; existing update opt-out and SteamOS dock adaptation remain.
+Recovered console/focus work is integrated on c1a5d828a, including Linux ARM64.
+Original native UI evidence is below; current clean-host build/package checks
+are separate PR evidence. See STATUS.md and launcher-appearance.md.
+
+## Console severity colors and pointer focus (2026-11-26)
+
+**Implemented locally; native UI verified.** Shared ConsolePage classification
+and palette render through WPF RichTextBox/native SelectableTextBlock adapters;
+copyable original logs, filters, pause and bounded tails remain shared. Native
+empty states and generated tools find ConsoleOutput. WPF dropdown/disclosure
+focus is keyboard-only; native focus-visible cues remain. Mac67/Linux69 UI groups
+and60 page/size renders per host pass; Windows compilation, rich-run and focus
+checks pass, with full regressions blocked by an unrelated game. Base eec4cb2bf,
+uncommitted; no platform capability deferred. Physical input/display acceptance
+and Mac package lifecycle were not rerun. See STATUS and launcher-appearance.md.
+
 ## Linux launcher architecture and installer (2026-11-27)
 
 **Implemented; native launcher CI verified.** On main base84e0bf271 after

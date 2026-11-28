@@ -281,7 +281,7 @@ public static class LauncherMaintenanceChecks
                         Require(report.Text=="Retained diagnostics report" && verification.Text=="Retained verification result" && ReferenceEquals(host.Content,area));
                         ui.ShowConsole();Require(tabs.SelectedIndex==2 && host.Visibility==System.Windows.Visibility.Visible);
                         var console=(System.Windows.DependencyObject)((System.Windows.Controls.TabItem)tabs.Items[2]).Content;
-                        Require(Descendants<System.Windows.Controls.TextBox>(console).Single(c=>c.Name=="GameConsoleOutput").IsReadOnly);
+                        Require(Descendants<TimeSplitters.Launcher.ConsoleOutput>(console).Single(c=>c.Name=="GameConsoleOutput").IsReadOnly);
                         ui.ShowMaintenance(true);Require(report.Text=="Retained diagnostics report" && verification.Text=="Retained verification result");
                         var busy=typeof(LauncherWindow).GetField("busy",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
                         var refresh=typeof(LauncherWindow).GetMethod("Refresh",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);

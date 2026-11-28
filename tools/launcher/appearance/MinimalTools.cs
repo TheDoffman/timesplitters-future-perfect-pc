@@ -95,7 +95,7 @@ public static class MinimalTools
         }
         if(page=="Console"){
             root.Margin=new Thickness(0);
-            var output=Tree(root).OfType<TextBox>().First(t=>t.Name=="GameConsoleOutput");output.Padding=new Thickness(16);output.FontSize=12;
+            var output=Tree(root).OfType<TimeSplitters.Launcher.ConsoleOutput>().First(t=>t.Name=="GameConsoleOutput");output.Padding=new Thickness(16);output.FontSize=12;
             var toolbar=Tree(root).OfType<WrapPanel>().First(p=>p.Children.OfType<Button>().Any(b=>b.Name=="PauseConsole"));
             var parent=(Panel)toolbar.Parent;var row=new UniformGrid {Rows=1,Columns=4,Margin=new Thickness(-4,0,-4,16)};Grid.SetRow(row,Grid.GetRow(toolbar));
             foreach(var item in toolbar.Children.OfType<FrameworkElement>().ToArray()){toolbar.Children.Remove(item);var button=item as Button;if(button!=null)SizeAction(button);else {item.Margin=new Thickness(4,0,4,0);item.HorizontalAlignment=HorizontalAlignment.Center;}row.Children.Add(item);}
