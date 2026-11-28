@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="280" height="52" viewBox="0 0 280 52" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="196" height="40" viewBox="0 0 196 40" role="img" aria-labelledby="title desc">
   <title id="title">Download Linux launcher</title>
-  <desc id="desc">Linux x64. Ubuntu 24.04 or newer. Experimental desktop support.</desc>
-  <rect x=".5" y=".5" width="279" height="51" rx="3" fill="#A7D9FA" stroke="#3B5268"/>
-  <path d="M26 15v14m-5-5 5 5 5-5M19 32v5h14v-5" fill="none" stroke="#112A40" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="155" y="23" text-anchor="middle" fill="#112A40" font-family="Segoe UI,Arial,sans-serif" font-size="13" font-weight="600" letter-spacing=".4">DOWNLOAD LINUX</text>
-  <text x="155" y="39" text-anchor="middle" fill="#24435C" font-family="Segoe UI,Arial,sans-serif" font-size="10">x64 · Ubuntu 24.04 or newer</text>
+  <desc id="desc">Linux installer selects x64 or ARM64. Compact navy button with a platform icon.</desc>
+  <rect x=".5" y=".5" width="195" height="39" rx="5" fill="#0D2035" stroke="#45617D"/>
+  <path d="M18 17c0-4 1.3-7 4.5-7s4.5 3 4.5 7c0 2 3.3 5.3 3.3 8.5 0 2.1-3.6 3.5-7.8 3.5s-7.8-1.4-7.8-3.5C14.7 22.3 18 19 18 17Z" fill="#85D4FF"/><ellipse cx="22.5" cy="23" rx="4.8" ry="5" fill="#DDEEFF"/><ellipse cx="20.8" cy="16" rx="1.3" ry="1.7" fill="#DDEEFF"/><ellipse cx="24.2" cy="16" rx="1.3" ry="1.7" fill="#DDEEFF"/><circle cx="21" cy="16.2" r=".6" fill="#0D2035"/><circle cx="24" cy="16.2" r=".6" fill="#0D2035"/><path d="m20 19 2.5-1.2L25 19l-2.5 1.6Zm-5 9 4-1 2 3h-7Zm11-1 4 1 1 2h-7Z" fill="#85D4FF"/>
+  <text x="45" y="24.5" fill="#E4EDF5" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="600">Download Linux</text>
+  <path d="M178 14v11m-4-4 4 4 4-4" fill="none" stroke="#85D4FF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

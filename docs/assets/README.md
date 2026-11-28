@@ -53,9 +53,11 @@
   This is fan-made lettering, not the official game logo. No raw game artwork
   or font file is included. The launcher preview in the README is always visible.
 - `download-windows-launcher.svg`, `download-mac-launcher.svg` and
-  `download-linux-launcher.svg`: flat pale-blue
-  platform buttons with the launcher's three-pixel corners, thin border and
-  line-icon weight. Links and accessible labels live in the README.
+  `download-linux-launcher.svg`: compact 196 x 40 navy download buttons with
+  pale-blue Windows, Apple and penguin platform symbols, a light label and a
+  download arrow. The small vector silhouettes are drawn directly in these SVGs;
+  no external icon/font files are needed. Opaque backgrounds and contrasting
+  borders work on light and dark pages. Links and accessible labels live in README.
 - `icon-play.svg`, `icon-settings.svg` and `icon-support.svg`: small section
   markers using the launcher's line-icon style; the settings glyph follows
   `Launcher.xaml`. Heading text remains Markdown with decorative empty image

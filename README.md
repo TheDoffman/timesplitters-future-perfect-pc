@@ -18,19 +18,19 @@ Choose your platform to download the launcher.
     <td align="center" valign="top" width="33%">
       <h3>Windows</h3>
       <p>Windows 10/11 &middot; x64</p>
-      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the Windows x64 launcher" width="240" height="45"></a>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the Windows x64 launcher" width="196" height="40"></a>
       <p><sub>Launcher ZIP</sub></p>
     </td>
     <td align="center" valign="top" width="33%">
       <h3>macOS</h3>
       <p>Apple Silicon &middot; M1 or newer</p>
-      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the macOS Apple Silicon launcher" width="240" height="45"></a>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the macOS Apple Silicon launcher" width="196" height="40"></a>
       <p><sub>Launcher ZIP</sub></p>
     </td>
     <td align="center" valign="top" width="34%">
       <h3>Linux</h3>
       <p>Linux launcher &middot; x64 / ARM64</p>
-      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Install-Linux.sh"><img src="docs/assets/download-linux-launcher.svg" alt="Download the Linux launcher installer" width="240" height="45"></a>
+      <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Install-Linux.sh"><img src="docs/assets/download-linux-launcher.svg" alt="Download the Linux launcher installer" width="196" height="40"></a>
       <p><sub>Installer detects your CPU &middot; Python 3 required</sub></p>
       <p><sub>Manual ZIPs: <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-x64.zip">x64</a> &middot; <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-linux-arm64.zip">ARM64</a></sub></p>
       <hr>
