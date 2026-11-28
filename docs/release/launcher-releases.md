@@ -1,12 +1,10 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher is **1.8.0**, the version selected by the user on
-2026-11-27 for the redesigned interface, guided setup and Linux installer.
-Reviewed emoji-free notes are in `notes/launcher-v1.8.0.md`. Publish through the four-platform workflow after the
-version PR reaches main, then verify all22 assets, including versionless aliases
-and the Linux installer/checksum. Game **0.7.2** is prepared independently for
-Windows x64, Mac ARM64 and Linux x64. Source preparation does not publish packages
-or replace native acceptance. Published1.7.2 remains immutable.
+The next Stable launcher is **1.8.1**, a maintenance update to make game updates
+visible on Home while retaining **Play current version**. Reviewed notes are in
+`notes/launcher-v1.8.1.md`. Publish through the four-platform workflow after its
+version PR reaches main, then verify all22 assets, aliases and Linux installer.
+Game **0.7.2** remains unchanged. Published launcher1.8.0 is immutable.
 
 Earlier Stable launcher **1.6.0** included shared
 audio/control settings, independent deadzones and texture/update-notice support.
@@ -22,7 +20,7 @@ It publishes all four packages in one GitHub release only after all four native 
 launcher regressions and package checks. Each installed launcher selects its own
 platform's update manifest. Game releases remain independent. [Game Stable and named preview channels](releasing.md) do not control launcher self-updates. Publish stable launcher 1.3.0+ before publishing games using the new channel strategy.
 
-## Pending Linux installer release
+## Linux installer assets
 
 The architecture-aware change extends the workflow to four packages: Windows
 x64, Mac ARM64, Linux x64 and Linux ARM64, tested on matching native runners.
@@ -33,9 +31,9 @@ build metadata, four ZIP aliases and the installer/checksum total **22 assets**.
 All must verify before publication. The fifteen-asset records above describe
 historical three-platform releases.
 
-This feature does not bump or republish 1.7.2. Choose a new unused version and
-review its player-facing release notes before publishing. Change the README
-Linux download to the installer only after that release and its asset are live.
+Launcher1.8.0 introduced the published installer and the README links to its
+live download. Choose a new unused version and review player-facing notes for
+subsequent updates; never overwrite an existing release.
 An ARM64 launcher can only offer ARM64 game releases that have actually been
 published; it cannot make an x64 runtime compatible with ARM64.
 
