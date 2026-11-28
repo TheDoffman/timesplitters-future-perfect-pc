@@ -37,7 +37,7 @@ update, running, offline and up-to-date states with an isolated synthetic root.
 No network download or game launch occurs in those new UI state tests. Existing
 installer/download/session tests remain the underlying command validation.
 
-## Validation evidence
+## Local validation evidence
 
 Windows full -Test passes95.12s, plus the focused --play-state check verifies the
 new main/opt-out states while retaining its unrelated process-identity probe.
@@ -51,5 +51,6 @@ adapter and pure policy are exercised on Linux. Physical Deck checks remain
 outside this local change. Preview state uses isolated synthetic release tags;
 no user game is downloaded, started or updated for the screenshot.
 
-Sources remain local in the separate worktree; no commit, push or publication
-has been requested for this change. The other Console/styling work is preserved.
+Implementation and validation use the separate worktree, preserving the other
+Console/styling work. Source integration and release publication are separate;
+this change does not publish a launcher or game release.
