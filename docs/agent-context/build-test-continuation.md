@@ -4,7 +4,7 @@
 
 ## Native build isolation and replay
 
-Game0.7.2/launcher2.0.0 preparation requires three game packages/nine assets and
+Game0.7.2/launcher1.8.0 preparation requires three game packages/nine assets and
 four launcher packages/22 assets. Windows Build routes runtime, display, input
 and saves into `build/native-test-settings`, rejects linked fixtures and restores
 the caller's environment even on failure. Native checks must not read personal

@@ -1,8 +1,8 @@
 # One launcher release for Windows, Mac and Linux
 
-The next Stable launcher is **2.0.0**, the redesigned-launcher milestone selected
-by the user on 2026-11-27. Reviewed emoji-free notes are in
-`notes/launcher-v2.0.0.md`. Publish through the four-platform workflow after the
+The next Stable launcher is **1.8.0**, the version selected by the user on
+2026-11-27 for the redesigned interface, guided setup and Linux installer.
+Reviewed emoji-free notes are in `notes/launcher-v1.8.0.md`. Publish through the four-platform workflow after the
 version PR reaches main, then verify all22 assets, including versionless aliases
 and the Linux installer/checksum. Game **0.7.2** is prepared independently for
 Windows x64, Mac ARM64 and Linux x64. Source preparation does not publish packages

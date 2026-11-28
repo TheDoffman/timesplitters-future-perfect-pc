@@ -1,4 +1,4 @@
-Launcher 2.0.0 introduces a redesigned interface, guided setup and simpler Linux installation.
+Launcher 1.8.0 introduces a redesigned interface, guided setup and simpler Linux installation.
 
 ## What changed
 
@@ -41,13 +41,13 @@ Close and reopen your existing launcher to check for its update. If it cannot
 start, download the ZIP matching your platform and retain your existing game
 installation, saves, settings and textures. Linux users can use the new installer.
 
-[Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/download/launcher-v2.0.0/TimeSplitters-Launcher-v2.0.0-windows-x64.zip) · [Apple Silicon Mac](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/download/launcher-v2.0.0/TimeSplitters-Launcher-v2.0.0-macos-arm64.zip) · [Linux installer](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/download/launcher-v2.0.0/TimeSplitters-Install-Linux.sh)
+[Windows x64](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/download/launcher-v1.8.0/TimeSplitters-Launcher-v1.8.0-windows-x64.zip) Â· [Apple Silicon Mac](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/download/launcher-v1.8.0/TimeSplitters-Launcher-v1.8.0-macos-arm64.zip) Â· [Linux installer](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/download/launcher-v1.8.0/TimeSplitters-Install-Linux.sh)
 
 ## Known issues and compatibility
 
 Launcher packages target Windows x64, Apple Silicon Mac, Linux x64 and Linux
 ARM64. The Mac app is ad-hoc signed and is not notarized. Game downloads have
 their own platform requirements; Linux ARM64 game support remains a developer
-source build. Game 0.7.2 is released separately. Launcher 2.0.0 retains the
+source build. Game 0.7.2 is released separately. Launcher 1.8.0 retains the
 existing installation and update format and does not require a fresh game-data
 import or a save conversion. Existing optional texture packs are retained.

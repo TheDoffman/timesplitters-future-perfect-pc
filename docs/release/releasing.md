@@ -2,7 +2,7 @@
 
 The next Stable release is **0.7.2**, the maintenance scope selected by the user
 on 2026-11-27. It includes online reconnect, Uplink/color, marker and terminal
-input fixes since 0.7.1. Publish independent launcher **2.0.0** first through the
+input fixes since 0.7.1. Publish independent launcher **1.8.0** first through the
 official four-platform workflow and verify its22 assets, then prepare the game
 draft with all nine Windows x64/Mac ARM64/Linux x64 assets. Linux ARM64 game
 support remains a developer source build. Source preparation is not publication

@@ -1,3 +1,15 @@
+## 2026-11-27 - Launcher version revised to 1.8.0
+
+The user selected launcher1.8.0 instead of the unpublished2.0.0 candidate.
+Game remains0.7.2. Shared version and numeric assembly/file attributes, versioned
+player notes and current release/context guides advance together. This changes
+the launcher identity only; game production code and launcher features are
+unchanged. Earlier2.0.0 packages and receipts are retained as superseded local
+evidence, not relabeled or published. Fresh1.8.0 launcher builds and game bundles
+must carry matching clean source provenance and pass their release gates.
+PR620 remains the release review; its historical branch name is retained so
+the open PR and review history are preserved. No main merge is authorized yet.
+
 ## 2026-11-27 - Game 0.7.2 and launcher 2.0.0 release preparation
 
 User selected maintenance game0.7.2 and launcher2.0.0 as the redesigned-launcher
