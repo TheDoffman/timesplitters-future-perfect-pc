@@ -30,7 +30,9 @@ namespace TimeSplitters.Launcher
         internal bool AppearanceRunning {get{return gameMonitoring || Core.GameRunning(root);}}
         internal void AppearanceRefreshPlayAvailability(bool running){Button("PlayButton").IsEnabled=!busy && gameInstalled && validData && !running;}
         internal bool AppearanceTransfer {get{return updateStop!=null;}}
-        internal string AppearanceCommand {get{return updateStop!=null?"PauseDownloadButton":AppearancePrimary;}}
+        internal bool AppearanceOffersUpdate {get{return !busy&&!checking&&!AppearanceOffline&&AppearancePrimary!="RetryButton"&&Button("UpdateButton").IsEnabled&&GameUpdateActionPage.NewerOnCurrentBranch(available,installed,SelectedGameChannel);}}
+        internal string AppearanceCommand {get{return updateStop!=null?"PauseDownloadButton":AppearanceOffersUpdate?"UpdateButton":AppearancePrimary;}}
+        internal async Task AppearancePlayCurrent(){if(AppearanceOffersUpdate&&Button("PlayButton").IsEnabled&&!AppearanceRunning)await Play();}
         internal Button AppearanceButton {get{return Button(AppearanceCommand);}}
         internal Release AppearanceInstalled {get{string tag=installed.Length>0?installed:gameInstalled?"Unversioned":"Not installed";string channel=installed.Length>0?GameChannels.Installed(root):SelectedGameChannel;return new Release {Tag=tag,Channel=channel,ChannelName=GameChannels.Name(channel)};}}
         internal string AppearancePage {

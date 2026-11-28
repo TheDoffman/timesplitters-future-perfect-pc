@@ -1,3 +1,11 @@
+## Home Update now and Play current version (2026-11-27)
+
+[Update action contract and checks](launcher-update-action.md): a strictly newer
+release on the installed/selected branch promotes the existing update command;
+a compact installed-version Play link preserves the opt-out. Running/transfer
+states keep priority, and native checks clear stale candidates. Both adapters
+use the shared GameUpdateActionPage eligibility and link event.
+
 ## Coordinated color treatment (2026-11-25)
 
 The launcher retains its navy/blue identity while echoing the game's permanent

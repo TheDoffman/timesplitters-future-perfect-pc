@@ -18,7 +18,7 @@ public static class LauncherPlayStateChecks
     }
     static void Need(bool condition,string message){if(!condition)throw new Exception(message);}
     static void Flag(LauncherWindow ui,string name,bool value){typeof(LauncherWindow).GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).SetValue(ui,value);}
-    static Process Hold(string root){string path=Core.PathIn(root,"Bin/futureperfect_recomp.exe");Directory.CreateDirectory(Path.GetDirectoryName(path));File.Copy(typeof(LauncherPlayStateChecks).Assembly.Location,path);return Process.Start(new ProcessStartInfo(path,"--play-state-hold"){UseShellExecute=false,CreateNoWindow=true});}
+    static Process Hold(string root){string path=Core.PathIn(root,"Bin/futureperfect_recomp.exe");Directory.CreateDirectory(Path.GetDirectoryName(path));if(!File.Exists(path))File.Copy(typeof(LauncherPlayStateChecks).Assembly.Location,path);return Process.Start(new ProcessStartInfo(path,"--play-state-hold"){UseShellExecute=false,CreateNoWindow=true});}
     static void Stop(Process child){if(child==null)return;try{if(!child.HasExited)child.Kill();child.WaitForExit();}finally{child.Dispose();}}
     static void Check()
     {
@@ -35,6 +35,17 @@ public static class LauncherPlayStateChecks
             var primary=(Button)typeof(LauncherAppearance).GetProperty("MainAction",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(shell,null);
             var original=(Button)ui.Window.FindName("PlayButton");
             original.IsEnabled=false;shell.RefreshState();Need(original.IsEnabled&&primary.IsEnabled,"Stale disabled Play did not recover with only another installation running.");
+            typeof(LauncherWindow).GetField("installed",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(ui,"v1.0.0");
+            var available=typeof(LauncherWindow).GetField("available",BindingFlags.Instance|BindingFlags.NonPublic);available.SetValue(ui,new Release {Tag="v1.1.0",Channel="stable"});
+            var update=(Button)ui.Window.FindName("UpdateButton");update.IsEnabled=true;shell.RefreshState();
+            var choice=(GameUpdateActionPage)typeof(LauncherAppearance).GetField("updateChoice",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(shell);
+            Need(ui.AppearanceCommand=="UpdateButton"&&System.Windows.Automation.AutomationProperties.GetName(primary)=="Update now"&&choice.PlayCurrent.Visibility==System.Windows.Visibility.Visible&&choice.PlayCurrent.IsEnabled,"Newer current-branch release did not promote Update now with opt-out Play");
+            own=Hold(root);Need(!own.WaitForExit(150),"Own update-state probe exited early.");shell.RefreshState();Need(!primary.IsEnabled&&System.Windows.Automation.AutomationProperties.GetName(primary)=="Playing"&&choice.PlayCurrent.Visibility!=System.Windows.Visibility.Visible,"Update offer overrode Playing or exposed opt-out");Stop(own);own=null;
+            ui.AppearanceOffline=true;shell.RefreshState();Need(ui.AppearanceCommand=="PlayButton"&&choice.PlayCurrent.Visibility!=System.Windows.Visibility.Visible,"Offline state retained a stale update");ui.AppearanceOffline=false;
+            available.SetValue(ui,new Release {Tag="v1.0.0",Channel="stable"});shell.RefreshState();Need(ui.AppearanceCommand=="PlayButton"&&choice.PlayCurrent.Visibility!=System.Windows.Visibility.Visible,"Current release did not return to Play");
+            available.SetValue(ui,new Release {Tag="v9.0.0-beta.1",Channel="beta"});shell.RefreshState();Need(ui.AppearanceCommand=="PlayButton","Another branch overrode Play");
+            available.SetValue(ui,null);typeof(LauncherWindow).GetField("installed",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(ui,"");update.IsEnabled=false;
+            Console.WriteLine("PASS main action: Update now for newer same-branch releases; current-version Play, Playing lock, offline fallback and return to Play.");
             own=Hold(root);Need(!own.WaitForExit(150),"Own inert probe exited early.");shell.RefreshState();Need(!primary.IsEnabled&&System.Windows.Automation.AutomationProperties.GetName(primary)=="Playing","Own running game did not show disabled Playing.");
             Stop(own);own=null;shell.RefreshState();Need(primary.IsEnabled&&System.Windows.Automation.AutomationProperties.GetName(primary)=="Play","Play did not recover after an externally launched game exited.");
             Flag(ui,"busy",true);shell.RefreshState();Need(!primary.IsEnabled,"Busy operation unexpectedly enabled Play.");Flag(ui,"busy",false);

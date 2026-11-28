@@ -1,5 +1,11 @@
 # Play with the Windows launcher
 
+When a newer compatible game release is available on your current branch, Home
+shows **Update now**. Choose **Play current version** just above it to keep playing
+your installed build without updating or changing branches. The update stays
+available for later. After updating, the main button returns to Play. While a
+game is running, it shows Playing and both actions are unavailable.
+
 [Back to the README](../../README.md)
 
 Open the [latest Windows launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest)

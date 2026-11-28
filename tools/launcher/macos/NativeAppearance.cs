@@ -33,7 +33,7 @@ public sealed partial class NativeWindow {
         readonly UniformGrid tabs=new UniformGrid {Rows=1,Columns=6};
         readonly Dictionary<string,Button> navigation=new Dictionary<string,Button>();
         readonly TextBlock title=Copy("Launcher tools",22),version=Copy("Game version ▾",11),kind=Copy("READY",9);
-        readonly Button primary,channel;
+        readonly Button primary,channel;readonly GameUpdateActionPage updateChoice;readonly Grid actionDock;
         readonly string[] hosts={"SettingsHost","SavesHost","NewsHost","VersionsHost","MaintenanceHost"};
         readonly Avalonia.Threading.DispatcherTimer timer=new Avalonia.Threading.DispatcherTimer {Interval=TimeSpan.FromSeconds(1)};
         string current="Home";bool refresh,tools;
@@ -72,7 +72,7 @@ public sealed partial class NativeWindow {
 #endif
             header.Margin=new Thickness(28,14,28,0);header.VerticalAlignment=VerticalAlignment.Top;home.Children.Add(header);
             home.Children.Add(new Border {Height=1,Background=Ink("#294E70"),Margin=new Thickness(0,38,0,0),VerticalAlignment=VerticalAlignment.Top});
-            var dock=new Grid {ColumnDefinitions=new ColumnDefinitions("*,80,8,260"),Height=108,Margin=new Thickness(28,0,28,18),VerticalAlignment=VerticalAlignment.Bottom};home.Children.Add(dock);
+            var dock=actionDock=new Grid {ColumnDefinitions=new ColumnDefinitions("*,80,8,260"),Height=108,Margin=new Thickness(28,0,28,18),VerticalAlignment=VerticalAlignment.Bottom};home.Children.Add(dock);
             var operation=new Grid {RowDefinitions=new RowDefinitions("*,3"),Height=32,Margin=new Thickness(0,0,22,0),VerticalAlignment=VerticalAlignment.Bottom};dock.Children.Add(operation);
             var row=new Grid {ColumnDefinitions=new ColumnDefinitions("Auto,*"),Margin=new Thickness(0,0,0,8)};operation.Children.Add(row);row.Children.Add(kind);
             var status=owner.Find<TextBlock>("StatusText");Detach(status);status.FontSize=10;status.TextWrapping=TextWrapping.NoWrap;status.TextTrimming=TextTrimming.CharacterEllipsis;status.HorizontalAlignment=HorizontalAlignment.Right;Grid.SetColumn(status,1);row.Children.Add(status);
@@ -81,7 +81,8 @@ public sealed partial class NativeWindow {
             var links=new StackPanel {Orientation=Orientation.Horizontal,Spacing=20,VerticalAlignment=VerticalAlignment.Bottom,Margin=new Thickness(0,0,0,48)};dock.Children.Add(links);
             foreach(var pair in new[]{("What's new →",(System.Action)(()=>Navigate("What's new"))),("Join Discord ↗",()=>NativeHost.Open(ReleaseClient.DiscordInvite)),("View on GitHub ↗",()=>NativeHost.Open(ReleaseClient.ReleasesPage.Replace("/releases","")))}){var b=Action(pair.Item1,pair.Item2);b.FontSize=12;b.Padding=new Thickness(0);b.Background=Brushes.Transparent;b.BorderThickness=new Thickness(0);b.Foreground=Ink("#85D4FF");b.Margin=new Thickness(0);links.Children.Add(b);}
             var gear=Action("⚙",()=>Navigate("Installation"));gear.Content=new Avalonia.Controls.Shapes.Path {Data=Geometry.Parse("M9.4,3.2 L14.6,3.2 L15.1,5.4 L16.3,6.1 L18.4,5.4 L21,9.9 L19.4,11.4 L19.4,12.8 L21,14.3 L18.4,18.8 L16.3,18.1 L15.1,18.8 L14.6,21 L9.4,21 L8.9,18.8 L7.7,18.1 L5.6,18.8 L3,14.3 L4.6,12.8 L4.6,11.4 L3,9.9 L5.6,5.4 L7.7,6.1 L8.9,5.4 Z M15,12 A3,3 0 1 1 9,12 A3,3 0 1 1 15,12"),Stroke=Ink("#D6E3F0"),StrokeThickness=1.5,Stretch=Stretch.Uniform,Width=26,Height=26};gear.Margin=new Thickness(0);gear.Height=80;gear.VerticalAlignment=VerticalAlignment.Bottom;AutomationProperties.SetName(gear,"Launcher tools and game settings");Grid.SetColumn(gear,1);dock.Children.Add(gear);
-            primary=Action("Play",Activate);primary.Margin=new Thickness(0);primary.Height=80;primary.FontSize=18;primary.VerticalAlignment=VerticalAlignment.Bottom;primary.Background=Ink("#85D4FF");primary.Foreground=Ink("#091C2C");Grid.SetColumn(primary,3);dock.Children.Add(primary);
+            primary=Action("Play",Activate);primary.Name="MainGameAction";primary.Margin=new Thickness(0);primary.Height=80;primary.FontSize=18;primary.VerticalAlignment=VerticalAlignment.Bottom;primary.Background=Ink("#85D4FF");primary.Foreground=Ink("#091C2C");Grid.SetColumn(primary,3);dock.Children.Add(primary);
+            updateChoice=new GameUpdateActionPage();updateChoice.PlayCurrentRequested+=()=>{if(OffersUpdate&&!owner.AppearanceGameRunning&&owner.Find<Button>("PlayButton").IsEnabled)owner.Run(owner.Play);};updateChoice.PlayCurrent.VerticalAlignment=VerticalAlignment.Bottom;updateChoice.PlayCurrent.Margin=new Thickness(0,0,0,80);Grid.SetColumn(updateChoice.PlayCurrent,3);dock.Children.Add(updateChoice.PlayCurrent);
             channel=Action("Game channel and version",()=>{if(channelPanel.IsVisible)CloseChannel();else Channels();});channel.Content=version;channel.Background=Brushes.Transparent;channel.BorderThickness=new Thickness(0);channel.Margin=new Thickness(0);channel.Padding=new Thickness(0);channel.MinHeight=24;channel.VerticalAlignment=VerticalAlignment.Top;channel.HorizontalAlignment=HorizontalAlignment.Right;Grid.SetColumn(channel,3);dock.Children.Add(channel);
 #if LINUX
             if(LinuxHandheld.Profile.Enabled){dock.Height=132;links.Margin=new Thickness(0,0,0,52);channel.MinHeight=44;channelPanel.Margin=new Thickness(0,0,28,154);var help=Copy("A Select   B Back   LB/RB Focus   Y Keyboard   Right stick Scroll",13);handheldHint=help;help.Margin=new Thickness(28,43,28,0);help.VerticalAlignment=VerticalAlignment.Top;home.Children.Add(help);}
@@ -99,7 +100,7 @@ public sealed partial class NativeWindow {
             foreach(string page in new[]{"Installation","Game settings","Saves","Repair","Diagnostics","Console"}){string captured=page;var b=Action(page,()=>Navigate(captured));b.FontSize=12;b.Margin=new Thickness(0);b.Padding=new Thickness(6);tabs.Children.Add(b);navigation[page]=b;}tabs.Margin=new Thickness(26,0,26,0);Grid.SetRow(tabs,1);frame.Children.Add(tabs);Grid.SetRow(pages,2);frame.Children.Add(pages);
             pages.Children.Add(originalHome);originalHome.IsVisible=false;
             foreach(string host in hosts){var control=owner.Find<ContentControl>(host);Detach(control);control.Margin=new Thickness(0);pages.Children.Add(control);}
-            versionMenu.Opened+=()=>{channelPanel.MaxHeight=Math.Max(240,owner.ClientSize.Height-170);channelPanel.IsVisible=true;};
+            versionMenu.Opened+=()=>{channelPanel.MaxHeight=Math.Max(240,owner.ClientSize.Height-18-actionDock.Height-60);channelPanel.IsVisible=true;};
             versionMenu.Closed+=()=>channelPanel.IsVisible=false;
             versionMenu.Browse+=()=>Navigate("Versions");versionMenu.Selected+=release=>owner.Run(()=>owner.Install(release));
             owner.Find<Control>("GameVersionsButton").IsVisible=false;
@@ -172,13 +173,21 @@ public sealed partial class NativeWindow {
             if(current!=page&&MotionAllowed){fade?.Cancel();fade=new CancellationTokenSource();_ = Fade(pages,fade.Token);}current=page;Refresh();
         }
         async Task Fade(Control view,CancellationToken token){try{var animation=new Animation {Duration=TimeSpan.FromMilliseconds(140),Children={new KeyFrame {Cue=new Cue(0),Setters={new Setter(Visual.OpacityProperty,.25)}},new KeyFrame {Cue=new Cue(1),Setters={new Setter(Visual.OpacityProperty,1d)}}}};await animation.RunAsync(view,token);}catch(OperationCanceledException){} }
-        string PrimaryAction=>owner.operation!=null?"PauseDownloadButton":owner.Find<Button>("PlayButton").IsEnabled?"PlayButton":owner.Find<Button>("UpdateButton").IsEnabled?"UpdateButton":File.Exists(Core.PathIn(owner.root,LauncherPlatform.GamePath(owner.root)))&&!File.Exists(Core.PathIn(owner.root,LauncherPlatform.Data(owner.root)+"/default.xbe"))?"ImportButton":"CheckButton";
+        string InstalledGameVersion {get{try{return Core.InstalledVersion(owner.root);}catch(Exception){return "";}}}
+        bool OffersUpdate=>!owner.busy&&!owner.appearanceOffline&&owner.Find<Button>("UpdateButton").IsEnabled&&GameUpdateActionPage.NewerOnCurrentBranch(owner.latest,InstalledGameVersion,owner.SelectedGameChannel);
+        string PrimaryAction=>owner.operation!=null?"PauseDownloadButton":OffersUpdate?"UpdateButton":owner.Find<Button>("PlayButton").IsEnabled?"PlayButton":owner.Find<Button>("UpdateButton").IsEnabled?"UpdateButton":File.Exists(Core.PathIn(owner.root,LauncherPlatform.GamePath(owner.root)))&&!File.Exists(Core.PathIn(owner.root,LauncherPlatform.Data(owner.root)+"/default.xbe"))?"ImportButton":"CheckButton";
         string InstalledCaption {get{if(owner.render)return "Stable · local build";try{string tag=NativeHost.Version(owner.root);return tag=="Not installed"?"Choose game version":GameChannels.Name(GameChannels.Installed(owner.root))+" · "+tag;}catch(Exception){return "Unknown version · review Diagnostics";}}}
         void Activate(){if(owner.gameRunning||!primary.IsEnabled)return;switch(PrimaryAction){case "PauseDownloadButton":owner.operation?.Cancel();break;case "PlayButton":owner.Run(owner.Play);break;case "UpdateButton":owner.Run(()=>owner.Install(owner.latest));break;case "ImportButton":owner.Run(()=>owner.Import(false));break;default:owner.Run(owner.Check);break;}}
         internal void Refresh(){if(refresh)return;refresh=true;try{
             bool running=owner.AppearanceGameRunning;owner.AppearanceRefreshPlayAvailability(running);bool installed=File.Exists(Core.PathIn(owner.root,LauncherPlatform.GamePath(owner.root)));bool canPlay=owner.Find<Button>("PlayButton").IsEnabled;bool canUpdate=owner.Find<Button>("UpdateButton").IsEnabled;
-            string action=running?"●  Playing":owner.operation!=null?Convert.ToString(owner.Find<Button>("PauseDownloadButton").Content):canPlay?"Play":canUpdate?Convert.ToString(owner.Find<Button>("UpdateButton").Content):installed?"Import game data":"Check for updates";
+            string action=running?"●  Playing":owner.operation!=null?Convert.ToString(owner.Find<Button>("PauseDownloadButton").Content):OffersUpdate?GameUpdateActionPage.UpdateNow:canPlay?"Play":canUpdate?Convert.ToString(owner.Find<Button>("UpdateButton").Content):installed?"Import game data":"Check for updates";
             primary.Content=action.ToUpperInvariant();primary.IsEnabled=!running&&(!owner.busy||owner.operation!=null)&&owner.Find<Button>(PrimaryAction).IsEnabled;primary.Background=Ink(running?"#667583":"#85D4FF");AutomationProperties.SetName(primary,running?"Playing":action);kind.Text=running?"GAME RUNNING":owner.busy?"OPERATION IN PROGRESS":"READY";
+            updateChoice.Update(OffersUpdate&&!running,canPlay,InstalledGameVersion);
+            double dockHeight=108,choiceHeight=28;
+#if LINUX
+            if(LinuxHandheld.Profile.Enabled){dockHeight=132;choiceHeight=44;}
+#endif
+            actionDock.Height=dockHeight+(updateChoice.PlayCurrent.IsVisible?choiceHeight:0);channelPanel.Margin=new Thickness(0,0,28,18+actionDock.Height+4);
             UpdateVersionMenu();channel.IsEnabled=!owner.busy&&!running;version.Text=InstalledCaption+" ▾";
             foreach(var pair in navigation)pair.Value.IsEnabled=!owner.busy&&(!running||pair.Key=="Diagnostics"||pair.Key=="Console");
             if(tutorial!=null)tutorial.UpdateSetup(installed,installed&&SetupDataValid(),Directory.Exists(Core.PathIn(owner.root,LauncherPlatform.Data(owner.root))),canUpdate,owner.Find<TextBlock>("StatusText").Text);

@@ -14,7 +14,7 @@ public sealed class LauncherAppearance {
     readonly LauncherWindow ui;readonly Window window;readonly string root;
     Grid shell,stage,shade,pages,originalHome,dialog,wizard;
     UniformGrid nav;TextBlock status,kind,version,title,toast;Button primary;ProgressBar progress;
-    GameChannelMenu channels;LauncherMotion motion;bool toolsRequested,pulsing;string lastPage;
+    GameChannelMenu channels;LauncherMotion motion;GameUpdateActionPage updateChoice;Grid actionDock;bool toolsRequested,pulsing;string lastPage;
     StackPanel playingContent;System.Windows.Shapes.Ellipse playingDot;System.Windows.Threading.DispatcherTimer timer;
     readonly HashSet<MaintenanceArea> observed=new HashSet<MaintenanceArea>();
     bool setupActionRunning;LauncherTutorialPage tutorial;TutorialShade tutorialShade;Grid tutorialLayer;Border tutorialHighlight;Button replayTutorial;FrameworkElement toolsAnchor,newsAnchor;
@@ -50,8 +50,10 @@ public sealed class LauncherAppearance {
     }
     public void RefreshState(){
         if(channels==null)return;bool running=ui.AppearanceRunning;ui.AppearanceRefreshPlayAvailability(running);string action=ui.AppearanceCommand;var native=ui.AppearanceButton;
-        string caption=running?"Playing":action=="PauseDownloadButton"?(Convert.ToString(native.Content).StartsWith("Cancel")?"Cancel":"Pause"):action=="PlayButton"?"Play":action=="UpdateButton"?Convert.ToString(native.Content):action=="ImportButton"?"Import game data":action=="RetryButton"?Convert.ToString(native.Content):"Open data folder";
+        string caption=running?"Playing":action=="PauseDownloadButton"?(Convert.ToString(native.Content).StartsWith("Cancel")?"Cancel":"Pause"):action=="PlayButton"?"Play":action=="UpdateButton"?(ui.AppearanceOffersUpdate?GameUpdateActionPage.UpdateNow:Convert.ToString(native.Content)):action=="ImportButton"?"Import game data":action=="RetryButton"?Convert.ToString(native.Content):"Open data folder";
         primary.Content=running?(object)playingContent:caption.ToUpperInvariant();primary.IsEnabled=!running && native.IsEnabled;primary.Background=running?Ink("#667583"):Gradient("#C3E5FC","#96CFF2");primary.Foreground=Ink(running?"#E4EDF5":"#091C2C");primary.BorderBrush=Ink(running?"#8593A0":"#D6EDFF");primary.ToolTip=running?"The game is running. Close it to play again.":native.ToolTip??caption;System.Windows.Automation.AutomationProperties.SetName(primary,caption);
+        updateChoice.Update(ui.AppearanceOffersUpdate&&!running,Find<Button>("PlayButton").IsEnabled,ui.AppearanceInstalled.Tag);
+        actionDock.Height=updateChoice.PlayCurrent.Visibility==Visibility.Visible?132:104;
         kind.Text=running?"GAME RUNNING":ui.AppearanceChecking?"CHECKING FOR UPDATES":ui.AppearanceBusy?"OPERATION IN PROGRESS":Convert.ToString(Find<TextBlock>("UpdateStateLabel").Text);
         channels.Update(ui.AppearanceCatalog,ui.AppearanceInstalled,ui.AppearanceBusy||ui.AppearanceChecking||running,ui.AppearanceOffline);
         foreach(Button b in nav.Children)b.IsEnabled=ui.AppearanceCanNavigate((string)b.Tag);
@@ -100,7 +102,7 @@ public sealed class LauncherAppearance {
         var aperture=new Grid {Width=480,Height=480,VerticalAlignment=VerticalAlignment.Center,HorizontalAlignment=HorizontalAlignment.Center,Margin=new Thickness(0,0,0,12),Opacity=0.25,IsHitTestVisible=false};
         foreach(int size in new[]{470,410,340,180,145})aperture.Children.Add(new System.Windows.Shapes.Ellipse {Width=size,Height=size,Stroke=Ink("#85D4FF"),StrokeThickness=size==410?2:1,StrokeDashArray=size==470?new DoubleCollection {1,9}:null});stage.Children.Add(aperture);
         var logo=Find<Image>("HeroTitle");Detach(logo);logo.Width=600;logo.MaxWidth=600;logo.HorizontalAlignment=HorizontalAlignment.Center;logo.VerticalAlignment=VerticalAlignment.Center;logo.Margin=new Thickness(0,0,0,12);logo.Effect=new DropShadowEffect {Color=Colors.Black,BlurRadius=30,ShadowDepth=5,Opacity=1};stage.Children.Add(logo);
-        var dock=new Grid {Margin=new Thickness(28,0,28,18),VerticalAlignment=VerticalAlignment.Bottom,Height=104};dock.ColumnDefinitions.Add(new ColumnDefinition());dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(80)});dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(8)});dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(260)});
+        var dock=actionDock=new Grid {Margin=new Thickness(28,0,28,18),VerticalAlignment=VerticalAlignment.Bottom,Height=104};dock.ColumnDefinitions.Add(new ColumnDefinition());dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(80)});dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(8)});dock.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(260)});
         var operation=new Grid {VerticalAlignment=VerticalAlignment.Bottom,Margin=new Thickness(0,0,22,0),Height=32};operation.RowDefinitions.Add(new RowDefinition());operation.RowDefinitions.Add(new RowDefinition {Height=new GridLength(3)});
         var copy=new DockPanel {LastChildFill=true,Margin=new Thickness(0,0,0,8)};kind=Text("READY TO PLAY",8,"#65C7FF");kind.FontWeight=FontWeights.SemiBold;kind.Margin=new Thickness(0,0,20,0);DockPanel.SetDock(kind,Dock.Left);copy.Children.Add(kind);
         status=Find<TextBlock>("StatusText");Detach(status);status.FontSize=10;status.Foreground=Ink("#B4C7D8");status.TextAlignment=TextAlignment.Right;status.TextTrimming=TextTrimming.CharacterEllipsis;status.TextWrapping=TextWrapping.NoWrap;copy.Children.Add(status);operation.Children.Add(copy);
@@ -117,10 +119,10 @@ public sealed class LauncherAppearance {
         var gear=Button("",()=>Navigate("Installation"));gear.Padding=new Thickness(0);gear.Width=80;gear.Height=80;gear.Margin=new Thickness(0);gear.VerticalAlignment=VerticalAlignment.Bottom;gear.ToolTip="Launcher tools and game settings";
         toolsAnchor=gear;
         gear.Content=new System.Windows.Shapes.Path {Data=Geometry.Parse("M9.4,3.2 L14.6,3.2 L15.1,5.4 L16.3,6.1 L18.4,5.4 L21,9.9 L19.4,11.4 L19.4,12.8 L21,14.3 L18.4,18.8 L16.3,18.1 L15.1,18.8 L14.6,21 L9.4,21 L8.9,18.8 L7.7,18.1 L5.6,18.8 L3,14.3 L4.6,12.8 L4.6,11.4 L3,9.9 L5.6,5.4 L7.7,6.1 L8.9,5.4 Z M15,12 A3,3 0 1 1 9,12 A3,3 0 1 1 15,12"),Stroke=Ink("#D6E3F0"),StrokeThickness=1.5,Stretch=Stretch.Uniform,Width=26,Height=26};System.Windows.Automation.AutomationProperties.SetName(gear,"Settings");Grid.SetColumn(gear,1);dock.Children.Add(gear);
-        var actions=new Grid();actions.RowDefinitions.Add(new RowDefinition {Height=new GridLength(24)});actions.RowDefinitions.Add(new RowDefinition {Height=new GridLength(80)});Grid.SetColumn(actions,3);dock.Children.Add(actions);
+        var actions=new Grid();actions.RowDefinitions.Add(new RowDefinition {Height=new GridLength(24)});actions.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});actions.RowDefinitions.Add(new RowDefinition {Height=new GridLength(80)});Grid.SetColumn(actions,3);dock.Children.Add(actions);
         version=Text("LATEST RELEASE   SAMPLE",9,"#65C7FF");version.HorizontalAlignment=HorizontalAlignment.Right;actions.Children.Add(version);
         Find<Button>("PlayButton").Visibility=Visibility.Collapsed;
-        primary=Button("PLAY",async()=>{await ui.AppearanceActivate();RefreshState();});primary.Height=80;primary.Margin=new Thickness(0);primary.FontSize=18;Grid.SetRow(primary,1);actions.Children.Add(primary);stage.Children.Add(dock);
+        primary=Button("PLAY",async()=>{await ui.AppearanceActivate();RefreshState();});primary.Name="MainGameAction";primary.Height=80;primary.Margin=new Thickness(0);primary.FontSize=18;Grid.SetRow(primary,2);actions.Children.Add(primary);updateChoice=new GameUpdateActionPage();updateChoice.PlayCurrentRequested+=async()=>await ui.AppearancePlayCurrent();Grid.SetRow(updateChoice.PlayCurrent,1);actions.Children.Add(updateChoice.PlayCurrent);stage.Children.Add(dock);
         var versionBadge=Text("LAUNCHER v"+LauncherVersion.Value+" · LOCAL BUILD",8,"#829BB2");versionBadge.Margin=new Thickness(28,12,0,0);versionBadge.HorizontalAlignment=HorizontalAlignment.Left;versionBadge.VerticalAlignment=VerticalAlignment.Top;stage.Children.Add(versionBadge);
         shade=new Grid {Background=Ink("#C2050D18"),Visibility=Visibility.Collapsed};shell.Children.Add(shade);
         var dismiss=new Border {Background=Brushes.Transparent};dismiss.MouseLeftButtonDown+=(s,e)=>Home();shade.Children.Add(dismiss);

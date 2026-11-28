@@ -1,4 +1,4 @@
-[Appearance, color, typography and checks](launcher-appearance.md): shared UI/native palette, focus, package preservation and experimental SteamOS labels.
+[Appearance and Home update actions](launcher-appearance.md): Home update/Play choices, shared UI/native appearance and preservation checks.
 
 [Release notes](../release/release-notes.md): `release_notes.py` requires versioned
 Before/Now prose for game preparation and launcher dispatch/publication. All posts
