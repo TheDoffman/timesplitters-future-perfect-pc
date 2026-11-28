@@ -1,3 +1,12 @@
+## Compact README platform buttons
+
+README download buttons are196x40 navy SVGs with pale-blue platform icons and
+clear labels. Direct download destinations remain unchanged. A local browser
+render of all three at their actual size was visually inspected on white and
+GitHub-dark backgrounds; labels/icons/arrows fit without clipping. SVG XML,
+self-contained asset checks, link preservation, whitespace and context checks
+pass. Documentation artwork only; no launcher/game build required.
+
 ## Launcher1.8.1 release preparation
 
 Launcher-only patch release for merged PR625: Home offers Update now for a newer
