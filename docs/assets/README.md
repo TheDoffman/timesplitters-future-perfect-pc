@@ -58,6 +58,8 @@
   download arrow. The small vector silhouettes are drawn directly in these SVGs;
   no external icon/font files are needed. Opaque backgrounds and contrasting
   borders work on light and dark pages. Links and accessible labels live in README.
+  The three download links use a centered paragraph, not a table, so GitHub adds
+  no surrounding platform-cell borders; inline buttons can wrap on narrow screens.
 - `icon-play.svg`, `icon-settings.svg` and `icon-support.svg`: small section
   markers using the launcher's line-icon style; the settings glyph follows
   `Launcher.xaml`. Heading text remains Markdown with decorative empty image

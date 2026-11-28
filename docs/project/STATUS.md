@@ -1,3 +1,12 @@
+## Borderless README downloads
+
+The platform download table is replaced with centered inline links, removing
+GitHub's cell borders around the Windows/Mac/Linux choices. Existing compact
+navy SVG buttons and all six platform/download/source destinations are retained.
+Platform requirements and Linux installer/manual ZIP/ARM64 game notes remain
+visible below the buttons. Structural/link checks, context and whitespace
+checks pass. Documentation-only layout; no runtime build required.
+
 ## Compact README platform buttons
 
 README download buttons are196x40 navy SVGs with pale-blue platform icons and
