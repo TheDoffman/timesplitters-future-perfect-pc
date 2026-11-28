@@ -120,6 +120,7 @@ namespace TimeSplitters.Launcher
             Label("ReadyTitle",gameRunning?"Game running":installed||render?(data||render?"Ready to play":"Set up game data"):"Install game");
             Label("ReadyDescription",gameRunning?"The launcher will return when the game closes.":installed||render?"Your "+LauncherPlatform.HostName+" game is ready. Adjust settings before you play.":"Install a "+LauncherPlatform.HostName+" release, then import your US Xbox game data.");
             AppearanceRefreshPlayAvailability(AppearanceGameRunning);
+            try{Find<Button>("UpdateButton").IsEnabled=!busy&&!AppearanceGameRunning&&!appearanceOffline&&!LauncherPlatform.Checkout(root)&&GameChannels.CanInstall(latest,Core.InstalledVersion(root));}catch(Exception){Find<Button>("UpdateButton").IsEnabled=false;}
             Label("DataLabel",data||render?"✓  Game data installed":"○  ISO required");
             Label("GameDataHint",data?"Your local game files are kept between updates.":"Import your supported US Xbox ISO or extracted game folder.");
             Find<Control>("ImportActions").IsVisible=!data&&!render;Find<Button>("OpenDataButton").IsVisible=data||render;Find<Expander>("GameDataExpander").IsExpanded=!data&&!render;
@@ -134,7 +135,7 @@ namespace TimeSplitters.Launcher
         bool appearanceOffline;
         async Task Check()
         {
-            if(busy)return;int revision=++checkRevision;string channel=SelectedGameChannel;Label("ReleaseTitle","Checking for updates…");
+            if(busy)return;int revision=++checkRevision;string channel=SelectedGameChannel;latest=null;Find<Button>("UpdateButton").IsEnabled=false;Refresh();Label("ReleaseTitle","Checking for updates…");
             GameUpdateNotice.Publish(root,null,channel);
             using(var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(8))){try{
                 var catalog=await client.ReadGameCatalog(timeout.Token);if(revision!=checkRevision)return;appearanceOffline=false;SetChannels(catalog,channel);latest=GameChannels.Select(catalog,channel);

@@ -68,6 +68,38 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("main Update now only offers a strictly newer release on the current branch",()=>{
+                foreach(var item in new[]{new[]{"v1.0.0","v1.1.0","stable"},new[]{"v1.1.0-beta.1","v1.1.0-beta.2","beta"},new[]{"v1.1.0-inputs.1","v1.1.0-inputs.2","inputs"}}){
+                    var release=new Release {Tag=item[1],Channel=item[2]};Need(GameUpdateActionPage.NewerOnCurrentBranch(release,item[0],item[2]),"Same-branch newer version was hidden");
+                    Need(!GameUpdateActionPage.NewerOnCurrentBranch(release,item[1],item[2]),"Current version offered an update");
+                    Need(!GameUpdateActionPage.NewerOnCurrentBranch(new Release {Tag=item[0],Channel=item[2]},item[1],item[2]),"Older version offered an update");
+                    Need(!GameUpdateActionPage.NewerOnCurrentBranch(release,item[0],item[2]=="stable"?"beta":"stable"),"Other selected branch replaced Play");
+                }
+                Need(!GameUpdateActionPage.NewerOnCurrentBranch(new Release {Tag="v9.0.0-beta.1",Channel="beta"},"v1.0.0","stable"),"Other release branch replaced Play");
+                Need(!GameUpdateActionPage.NewerOnCurrentBranch(null,"v1.0.0","stable")&&!GameUpdateActionPage.NewerOnCurrentBranch(new Release {Tag="v1.1.0",Channel="stable"},"","stable")&&!GameUpdateActionPage.NewerOnCurrentBranch(new Release {Tag="invalid",Channel="stable"},"v1.0.0","stable"),"Missing or malformed release offered an update");
+            });
+            Test("Play current version only dispatches while offered and playable",()=>{
+                var choice=new GameUpdateActionPage();int plays=0;choice.PlayCurrentRequested+=()=>plays++;
+                Click(choice.PlayCurrent);Need(plays==0,"Hidden opt-out launched the game");choice.Update(true,true,"v1.0.0");Click(choice.PlayCurrent);Need(plays==1&&Tip(choice.PlayCurrent).Contains("v1.0.0"),"Opt-out did not dispatch the installed version command");
+                choice.Update(true,false,"v1.0.0");Click(choice.PlayCurrent);choice.Update(false,true,"v1.0.0");Click(choice.PlayCurrent);Need(plays==1&&!choice.PlayCurrent.IsEnabled,"Disabled or withdrawn opt-out launched the game");
+            });
+#if MACOS || LINUX
+            Test("native main action prioritizes update, retains Play and locks both during gameplay",()=>{
+                string folder=Path.Combine(root,"update-main");Directory.CreateDirectory(folder);File.WriteAllText(Core.PathIn(folder,"BUILD.json"),Json.Encode(new {version="v1.0.0"}));
+                var window=new NativeWindow(folder,new[]{"--render-primary-test","unused.png"});
+                var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+                Action<string,object> set=(name,value)=>typeof(NativeWindow).GetField(name,flags).SetValue(window,value);
+                var appearance=typeof(NativeWindow).GetField("appearance",flags).GetValue(window);Action refresh=()=>appearance.GetType().GetMethod("Refresh",flags).Invoke(appearance,null);
+                try{
+                    var primary=Find<Button>((Element)window.Content,"MainGameAction");var play=Find<Button>((Element)window.Content,"PlayCurrentVersion");var update=window.FindControl<Button>("UpdateButton");
+                    var candidate=new Release {Tag="v1.1.0",Channel="stable"};typeof(NativeWindow).GetMethod("SetChannels",flags).Invoke(window,new object[]{new[]{candidate},"stable"});
+                    set("latest",candidate);update.IsEnabled=true;refresh();Need(Convert.ToString(primary.Content)=="UPDATE NOW"&&primary.IsEnabled&&play.IsVisible&&play.IsEnabled,"Native update did not retain opt-out Play");
+                    set("gameRunning",true);typeof(NativeWindow).GetMethod("Refresh",flags).Invoke(window,null);Need(!primary.IsEnabled&&Convert.ToString(primary.Content).Contains("PLAYING")&&!play.IsVisible,"Running game exposed update or opt-out");set("gameRunning",false);typeof(NativeWindow).GetMethod("Refresh",flags).Invoke(window,null);Need(Convert.ToString(primary.Content)=="UPDATE NOW"&&play.IsVisible,"Update offer did not return after the game closed");
+                    set("appearanceOffline",true);refresh();Need(Convert.ToString(primary.Content)=="PLAY"&&!play.IsVisible,"Offline state retained a stale update");set("appearanceOffline",false);
+                    set("latest",new Release {Tag="v1.0.0",Channel="stable"});refresh();Need(Convert.ToString(primary.Content)=="PLAY"&&!play.IsVisible,"Up-to-date native install did not return to Play");
+                }finally{window.Close();}
+            });
+#endif
             Test("tutorial spotlight leaves its live target clear and dims the rest",()=>{
                 var shade=new TutorialShade();shade.SetSpotlight(new Rect(10,20,100,40));var mask=shade.Mask(new Size(300,200));
                 Need(!mask.FillContains(new Point(60,40)),"Highlighted control is still covered by the scrim");Need(mask.FillContains(new Point(200,100)),"Background lost its dimming");
